@@ -1,13 +1,13 @@
 package com.endecorani.sigma_api.shared.presentation.controller;
 
 import com.endecorani.sigma_api.shared.application.crud.CrudService;
+import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
+import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 public abstract class AbstractCrudController<
         REQUEST,
@@ -21,7 +21,6 @@ public abstract class AbstractCrudController<
     public ResponseEntity<ApiResponse<RESPONSE>> create(
             @Valid @RequestBody REQUEST request
     ) {
-
         RESPONSE response = service().create(request);
 
         return ResponseEntity
@@ -39,7 +38,6 @@ public abstract class AbstractCrudController<
             @PathVariable ID id,
             @Valid @RequestBody REQUEST request
     ) {
-
         RESPONSE response = service().update(id, request);
 
         return ResponseEntity.ok(
@@ -54,7 +52,6 @@ public abstract class AbstractCrudController<
     public ResponseEntity<ApiResponse<RESPONSE>> findById(
             @PathVariable ID id
     ) {
-
         return ResponseEntity.ok(
                 ApiResponse.success(
                         service().findById(id)
@@ -63,14 +60,14 @@ public abstract class AbstractCrudController<
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<RESPONSE>>> findAll() {
-
+    public ResponseEntity<ApiResponse<PageResponse<RESPONSE>>> findAll(
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        service().findAll()
+                        service().findAll(pageRequest)
                 )
         );
-
     }
 
     @DeleteMapping("/{id}")

@@ -1,9 +1,10 @@
 package com.endecorani.sigma_api.shared.application.crud;
 
+import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
+import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
-
-import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 public abstract class AbstractCrudService<
         DOMAIN,
@@ -26,6 +27,7 @@ public abstract class AbstractCrudService<
     protected abstract String resourceName();
 
     @Override
+    @Transactional
     public RESPONSE create(REQUEST request) {
         DOMAIN domain = toDomain(request);
         DOMAIN saved = repository().save(domain);
@@ -33,29 +35,31 @@ public abstract class AbstractCrudService<
     }
 
     @Override
+    @Transactional
     public RESPONSE update(ID id, REQUEST request) {
-        DOMAIN domain = findEntityById(id);
+        DOMAIN domain = findDomainById(id);
         updateDomain(domain, request);
         DOMAIN updated = repository().save(domain);
         return toResponse(updated);
-
     }
 
     @Override
+    @Transactional(readOnly = true)
     public RESPONSE findById(ID id) {
-        return toResponse(findEntityById(id));
+        return toResponse(findDomainById(id));
     }
 
     @Override
-    public List<RESPONSE> findAll() {
-        return repository()
-                .findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    @Transactional(readOnly = true)
+    public PageResponse<RESPONSE> findAll(PageRequestDto pageRequest) {
+        return PageResponse.from(
+                repository().findAll(pageRequest.toPageable()),
+                this::toResponse
+        );
     }
 
     @Override
+    @Transactional
     public void delete(ID id) {
         if (!repository().existsById(id)) {
             throw new ResourceNotFoundException(
@@ -66,7 +70,7 @@ public abstract class AbstractCrudService<
         repository().deleteById(id);
     }
 
-    protected DOMAIN findEntityById(ID id) {
+    protected DOMAIN findDomainById(ID id) {
         return repository()
                 .findById(id)
                 .orElseThrow(() ->

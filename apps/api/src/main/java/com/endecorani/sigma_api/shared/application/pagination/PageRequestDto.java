@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.shared.application.pagination;
 
+import com.endecorani.sigma_api.shared.util.ApiConstants;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.PageRequest;
@@ -18,7 +19,7 @@ public record PageRequestDto(
                 message = "El tamaño debe ser mayor a 0"
         )
         @Max(
-                value = 100,
+                value = ApiConstants.MAX_PAGE_SIZE,
                 message = "El tamaño máximo permitido es 100"
         )
         Integer size,
@@ -26,27 +27,22 @@ public record PageRequestDto(
         Sort.Direction direction
 ) {
 
-    private static final int DEFAULT_PAGE = 0;
-    private static final int DEFAULT_SIZE = 20;
-    private static final String DEFAULT_SORT = "createdAt";
-
     public PageRequestDto {
-        page = page == null ? DEFAULT_PAGE : page;
-        size = size == null ? DEFAULT_SIZE : size;
-
+        page = page == null ? 0 : page;
+        size = size == null ? ApiConstants.DEFAULT_PAGE_SIZE : size;
         sortBy = sortBy == null || sortBy.isBlank()
-                ? DEFAULT_SORT
+                ? ApiConstants.DEFAULT_SORT_FIELD
                 : sortBy;
+        direction = direction == null
+                ? Sort.Direction.fromString(ApiConstants.DEFAULT_SORT_DIRECTION)
+                : direction;
     }
 
     public Pageable toPageable() {
-
-        Sort sort = Sort.by(direction, sortBy);
-
         return PageRequest.of(
                 page,
                 size,
-                sort
+                Sort.by(direction, sortBy)
         );
     }
 }
