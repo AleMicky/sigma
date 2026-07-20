@@ -1,20 +1,21 @@
 package com.endecorani.sigma_api.modules.activos.domain.model;
 
+import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TipoActivo {
+@SuperBuilder
+public class TipoActivo extends AuditableModel {
 
     private UUID id;
 
@@ -24,13 +25,4 @@ public class TipoActivo {
 
     @Builder.Default
     private boolean activo = true;
-
-    private Instant createdAt;
-
-    private Instant updatedAt;
-
-    private String createdBy;
-
-    private String updatedBy;
-
 }
