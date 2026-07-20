@@ -1,5 +1,7 @@
 package com.endecorani.sigma_api.shared.util;
 
+import java.util.Set;
+
 public final class ApiConstants {
     private ApiConstants() {}
 
@@ -12,4 +14,10 @@ public final class ApiConstants {
 
     public static final String DEFAULT_SORT_FIELD = "createdAt";
     public static final String DEFAULT_SORT_DIRECTION = "DESC";
+
+    public static final Set<String> BASE_SORT_FIELDS = Set.of(
+            "id",
+            "createdAt",
+            "updatedAt"
+    );
 }

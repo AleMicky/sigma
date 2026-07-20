@@ -4,7 +4,10 @@ import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
+import com.endecorani.sigma_api.shared.util.ApiConstants;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Set;
 
 public abstract class AbstractCrudService<
         DOMAIN,
@@ -25,6 +28,10 @@ public abstract class AbstractCrudService<
     protected abstract RESPONSE toResponse(DOMAIN domain);
 
     protected abstract String resourceName();
+
+    protected Set<String> allowedSortFields() {
+        return ApiConstants.BASE_SORT_FIELDS;
+    }
 
     @Override
     @Transactional
@@ -53,7 +60,7 @@ public abstract class AbstractCrudService<
     @Transactional(readOnly = true)
     public PageResponse<RESPONSE> findAll(PageRequestDto pageRequest) {
         return PageResponse.from(
-                repository().findAll(pageRequest.toPageable()),
+                repository().findAll(pageRequest.toPageable(allowedSortFields())),
                 this::toResponse
         );
     }

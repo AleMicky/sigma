@@ -4,9 +4,13 @@ import com.endecorani.sigma_api.shared.application.response.ApiErrorResponse;
 import com.endecorani.sigma_api.shared.domain.exception.DomainException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.core.PropertyReferenceException;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -54,5 +58,25 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("RESOURCE_NOT_FOUND", response.getBody().code());
+    }
+
+    @Test
+    void handleInvalidSortPropertyReturnsBadRequest() {
+        PropertyReferenceException exception = new PropertyReferenceException(
+                "foo",
+                TypeInformation.of(Object.class),
+                List.of()
+        );
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/tipos-activo");
+
+        ResponseEntity<ApiErrorResponse> response = handler.handleInvalidSortProperty(
+                exception,
+                request
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("INVALID_SORT_FIELD", response.getBody().code());
     }
 }

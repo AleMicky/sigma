@@ -12,6 +12,7 @@ import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -27,11 +28,25 @@ public class TipoActivoService extends AbstractCrudService<
     private static final int NOMBRE_MAX_LENGTH = 100;
     private static final int DESCRIPCION_MAX_LENGTH = 255;
 
+    private static final Set<String> SORT_FIELDS = Set.of(
+            "id",
+            "nombre",
+            "descripcion",
+            "activo",
+            "createdAt",
+            "updatedAt"
+    );
+
     private final TipoActivoRepository tipoActivoRepository;
 
     @Override
     protected CrudRepository<TipoActivo, UUID> repository() {
         return tipoActivoRepository;
+    }
+
+    @Override
+    protected Set<String> allowedSortFields() {
+        return SORT_FIELDS;
     }
 
     @Override

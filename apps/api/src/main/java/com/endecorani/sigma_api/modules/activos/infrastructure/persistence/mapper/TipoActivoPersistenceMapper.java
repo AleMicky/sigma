@@ -1,6 +1,5 @@
 package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.mapper;
 
-
 import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.TipoActivoEntity;
 import org.springframework.stereotype.Component;
@@ -8,32 +7,28 @@ import org.springframework.stereotype.Component;
 @Component
 public class TipoActivoPersistenceMapper {
 
-    public TipoActivoEntity toEntity(
-            TipoActivo domain
-    ) {
+    public TipoActivoEntity toEntity(TipoActivo domain) {
         if (domain == null) {
             return null;
         }
 
-        TipoActivoEntity entity =
-                new TipoActivoEntity();
-
+        TipoActivoEntity entity = new TipoActivoEntity();
         entity.setId(domain.getId());
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
         entity.setActivo(domain.isActivo());
 
-        entity.setCreatedAt(domain.getCreatedAt());
-        entity.setUpdatedAt(domain.getUpdatedAt());
-        entity.setCreatedBy(domain.getCreatedBy());
-        entity.setUpdatedBy(domain.getUpdatedBy());
+        if (domain.getCreatedAt() != null) {
+            entity.setCreatedAt(domain.getCreatedAt());
+        }
+        if (domain.getCreatedBy() != null) {
+            entity.setCreatedBy(domain.getCreatedBy());
+        }
 
         return entity;
     }
 
-    public TipoActivo toDomain(
-            TipoActivoEntity entity
-    ) {
+    public TipoActivo toDomain(TipoActivoEntity entity) {
         if (entity == null) {
             return null;
         }

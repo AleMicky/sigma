@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -189,6 +190,20 @@ public class GlobalExceptionHandler {
 
         );
 
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidSortProperty(
+            PropertyReferenceException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "INVALID_SORT_FIELD",
+                "El campo de ordenación '%s' no es válido"
+                        .formatted(exception.getPropertyName()),
+                request.getRequestURI()
+        );
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

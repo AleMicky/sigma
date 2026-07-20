@@ -1,6 +1,8 @@
 spring:
   application:
     name: sigma-api
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sigma_db}
     username: ${DB_USERNAME:postgres}
@@ -21,6 +23,12 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+sigma:
+  security:
+    local:
+      username: ${LOCAL_USERNAME:admin}
+      password: ${LOCAL_PASSWORD:admin}
+
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -28,4 +36,3 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
-

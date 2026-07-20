@@ -1,11 +1,14 @@
 package com.endecorani.sigma_api.shared.application.pagination;
 
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+
+import java.util.Set;
 
 public record PageRequestDto(
         @Min(
@@ -39,6 +42,17 @@ public record PageRequestDto(
     }
 
     public Pageable toPageable() {
+        return toPageable(ApiConstants.BASE_SORT_FIELDS);
+    }
+
+    public Pageable toPageable(Set<String> allowedSortFields) {
+        if (allowedSortFields == null || !allowedSortFields.contains(sortBy)) {
+            throw new BusinessException(
+                    "INVALID_SORT_FIELD",
+                    "El campo de ordenación '%s' no es válido".formatted(sortBy)
+            );
+        }
+
         return PageRequest.of(
                 page,
                 size,
