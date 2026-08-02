@@ -5,7 +5,7 @@ import { cn } from "@/shared/lib/utils"
 
 type RowActionsProps = {
   onEdit: () => void
-  onDelete: () => void
+  onDelete?: () => void
   editLabel?: string
   deleteLabel?: string
   deleteDisabled?: boolean
@@ -36,16 +36,18 @@ export function RowActions({
       >
         <Pencil />
       </Button>
-      <Button
-        type="button"
-        variant="destructive"
-        size="icon-sm"
-        aria-label={deleteLabel}
-        disabled={deleteDisabled}
-        onClick={onDelete}
-      >
-        <Trash2 />
-      </Button>
+      {onDelete ? (
+        <Button
+          type="button"
+          variant="destructive"
+          size="icon-sm"
+          aria-label={deleteLabel}
+          disabled={deleteDisabled}
+          onClick={onDelete}
+        >
+          <Trash2 />
+        </Button>
+      ) : null}
     </div>
   )
 }

@@ -29,7 +29,7 @@ export function Pagination({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-between gap-2 border-t px-2 py-2 sm:gap-3 sm:px-3",
+        "flex shrink-0 flex-wrap items-center justify-between gap-2 border-t bg-background px-2 py-2 sm:gap-3 sm:px-3",
         className,
       )}
     >
