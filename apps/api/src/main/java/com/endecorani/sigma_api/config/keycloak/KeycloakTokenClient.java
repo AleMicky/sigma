@@ -8,10 +8,15 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.StringJoiner;
 
 @Slf4j
 @Component
@@ -56,13 +61,14 @@ public class KeycloakTokenClient {
     }
 
     private KeycloakTokenResponse exchange(MultiValueMap<String, String> form) {
+        String encodedBody = encodeForm(form);
         try {
             String body = keycloakRestClient
                     .post()
                     .uri(properties.tokenUrl())
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .accept(MediaType.APPLICATION_JSON)
-                    .body(form)
+                    .body(encodedBody)
                     .retrieve()
                     .body(String.class);
 
@@ -82,6 +88,16 @@ public class KeycloakTokenClient {
             throw new UnauthorizedException(detail);
         } catch (UnauthorizedException exception) {
             throw exception;
+        } catch (ResourceAccessException exception) {
+            log.error(
+                    "Timeout o red al llamar a Keycloak (tokenUrl={}): {}",
+                    properties.tokenUrl(),
+                    exception.getMessage()
+            );
+            throw new UnauthorizedException(
+                    "Keycloak no respondió a tiempo (" + properties.tokenUrl()
+                            + "). Revisa red/firewall o que el servidor Keycloak esté arriba"
+            );
         } catch (Exception exception) {
             log.error(
                     "Error de red o configuración al llamar a Keycloak (tokenUrl={})",
@@ -92,6 +108,26 @@ public class KeycloakTokenClient {
                     "No se pudo conectar con Keycloak. Verifica KEYCLOAK_TOKEN_URL y la red"
             );
         }
+    }
+
+    private static String encodeForm(MultiValueMap<String, String> form) {
+        StringJoiner joiner = new StringJoiner("&");
+        form.forEach((key, values) -> {
+            if (values == null) {
+                return;
+            }
+            for (String value : values) {
+                if (value == null) {
+                    continue;
+                }
+                joiner.add(
+                        URLEncoder.encode(key, StandardCharsets.UTF_8)
+                                + "="
+                                + URLEncoder.encode(value, StandardCharsets.UTF_8)
+                );
+            }
+        });
+        return joiner.toString();
     }
 
     private KeycloakTokenResponse parseTokenResponse(String body) {

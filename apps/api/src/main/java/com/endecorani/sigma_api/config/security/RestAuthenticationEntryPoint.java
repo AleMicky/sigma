@@ -35,7 +35,7 @@ public class RestAuthenticationEntryPoint
                         HttpStatus.UNAUTHORIZED.value(),
                         HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                         "UNAUTHORIZED",
-                        "Debe autenticarse para acceder a este recurso",
+                        resolveMessage(authException),
                         request.getRequestURI()
                 );
 
@@ -55,5 +55,23 @@ public class RestAuthenticationEntryPoint
                 response.getOutputStream(),
                 errorResponse
         );
+    }
+
+    private static String resolveMessage(AuthenticationException authException) {
+        String detail = authException.getMessage();
+        if (detail == null || detail.isBlank()) {
+            return "Debe autenticarse para acceder a este recurso";
+        }
+        // An audience/issuer mismatch arrives as a nested cause message.
+        Throwable cause = authException.getCause();
+        if (cause != null && cause.getMessage() != null && !cause.getMessage().isBlank()) {
+            return "Token inválido: " + cause.getMessage();
+        }
+        if (detail.toLowerCase().contains("audience")
+                || detail.toLowerCase().contains("jwt")
+                || detail.toLowerCase().contains("bearer")) {
+            return "Token inválido: " + detail;
+        }
+        return "Debe autenticarse para acceder a este recurso";
     }
 }

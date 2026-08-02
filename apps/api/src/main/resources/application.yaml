@@ -6,7 +6,11 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://157.173.99.216:8081/realms/sigma}
-          audiences: ${KEYCLOAK_AUDIENCE:sigma-api}
+          # Keycloak por defecto pone aud=account. Aceptamos también sigma-api
+          # cuando exista el audience mapper en el client sigma-web.
+          audiences:
+            - account
+            - ${KEYCLOAK_AUDIENCE:sigma-api}
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sigma_db}
     username: ${DB_USERNAME:postgres}
