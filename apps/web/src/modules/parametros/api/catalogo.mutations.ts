@@ -1,4 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
+
+import { getErrorMessage } from "@/shared/api"
 
 import { catalogoKeys } from "./catalogo.keys"
 import {
@@ -15,6 +18,10 @@ export function useCreateCatalogo() {
     mutationFn: createCatalogo,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: catalogoKeys.lists() })
+      toast.success("Catálogo creado correctamente")
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -35,6 +42,10 @@ export function useUpdateCatalogo() {
       void queryClient.invalidateQueries({
         queryKey: catalogoKeys.detail(catalogo.id),
       })
+      toast.success("Catálogo actualizado correctamente")
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -46,6 +57,10 @@ export function useDeleteCatalogo() {
     mutationFn: deleteCatalogo,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: catalogoKeys.all })
+      toast.success("Catálogo eliminado correctamente")
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }

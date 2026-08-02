@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { FolderOpen, Pencil, Plus, Trash2 } from "lucide-react"
+import { ArrowLeft, FolderOpen, Pencil, Plus, Trash2 } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { isApiError } from "@/shared/api"
+import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { Pagination } from "@/shared/components/pagination"
 import { Button } from "@/shared/components/ui/button"
 import { Skeleton } from "@/shared/components/ui/skeleton"
+import { useIsMobile } from "@/shared/hooks/use-mobile"
 import { cn } from "@/shared/lib/utils"
 import type { PageResponse } from "@/shared/types/api.types"
 
@@ -23,6 +25,8 @@ import { CatalogoItemFormDialog } from "../components/CatalogoItemFormDialog"
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function CatalogosPage() {
+  const isMobile = useIsMobile()
+  const [mobileShowDetail, setMobileShowDetail] = useState(false)
   const [catalogoPage, setCatalogoPage] = useState(0)
   const [itemPage, setItemPage] = useState(0)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -45,6 +49,7 @@ export function CatalogosPage() {
   useEffect(() => {
     if (catalogos.length === 0) {
       setSelectedId(null)
+      setMobileShowDetail(false)
       return
     }
 
@@ -64,8 +69,21 @@ export function CatalogosPage() {
     }
   }, [catalogoPage, catalogosQuery.data?.totalPages])
 
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileShowDetail(false)
+    }
+  }, [isMobile])
+
   const selected =
     catalogos.find((catalogo) => catalogo.id === selectedId) ?? null
+
+  function handleSelectCatalogo(id: string) {
+    setSelectedId(id)
+    if (isMobile) {
+      setMobileShowDetail(true)
+    }
+  }
 
   function openCreateCatalogo() {
     setEditingCatalogo(null)
@@ -87,43 +105,101 @@ export function CatalogosPage() {
     setItemDialogOpen(true)
   }
 
+  const showMaster = !isMobile || !mobileShowDetail
+  const showDetail = !isMobile || mobileShowDetail
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between gap-3 border-b px-6 py-4 md:px-8">
-        <h1 className="font-heading text-xl font-semibold tracking-tight">
-          Catálogos
-        </h1>
-        <Button size="sm" type="button" onClick={openCreateCatalogo}>
-          <Plus />
-          Crear
-        </Button>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex items-center justify-between gap-2 border-b px-4 py-3 sm:gap-3 sm:px-6 sm:py-4 md:px-8">
+        <div className="flex min-w-0 items-center gap-2">
+          {isMobile && mobileShowDetail ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Volver a catálogos"
+              onClick={() => setMobileShowDetail(false)}
+            >
+              <ArrowLeft />
+            </Button>
+          ) : null}
+          <h1 className="truncate font-heading text-lg font-semibold tracking-tight sm:text-xl">
+            {isMobile && mobileShowDetail && selected
+              ? selected.nombre
+              : "Catálogos"}
+          </h1>
+        </div>
+        {showMaster ? (
+          <Button
+            size="sm"
+            type="button"
+            onClick={openCreateCatalogo}
+            className="shrink-0"
+          >
+            <Plus />
+            Crear
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            type="button"
+            onClick={openCreateItem}
+            className="shrink-0"
+          >
+            <Plus />
+            Agregar
+          </Button>
+        )}
       </div>
 
-      <div className="grid min-h-0 flex-1 md:grid-cols-[minmax(240px,340px)_1fr]">
-        <MasterPanel
-          catalogos={catalogos}
-          page={catalogosQuery.data}
-          selectedId={selectedId}
-          isLoading={catalogosQuery.isLoading}
-          errorMessage={
-            catalogosQuery.isError
-              ? isApiError(catalogosQuery.error)
-                ? catalogosQuery.error.message
-                : "No se pudieron cargar los catálogos."
-              : null
-          }
-          onSelect={setSelectedId}
-          onCreate={openCreateCatalogo}
-          onEdit={openEditCatalogo}
-          onPageChange={setCatalogoPage}
-        />
-        <DetailPanel
-          catalogo={selected}
-          itemPage={itemPage}
-          onPageChange={setItemPage}
-          onCreateItem={openCreateItem}
-          onEditItem={openEditItem}
-        />
+      <div
+        className={cn(
+          "grid min-h-0 flex-1 overflow-hidden",
+          "md:grid-cols-[minmax(220px,32%)_1fr] lg:grid-cols-[minmax(260px,340px)_1fr]",
+        )}
+      >
+        <div
+          className={cn(
+            "min-h-0 min-w-0",
+            showMaster ? "flex" : "hidden",
+            "md:flex",
+          )}
+        >
+          <MasterPanel
+            catalogos={catalogos}
+            page={catalogosQuery.data}
+            selectedId={selectedId}
+            isLoading={catalogosQuery.isLoading}
+            errorMessage={
+              catalogosQuery.isError
+                ? isApiError(catalogosQuery.error)
+                  ? catalogosQuery.error.message
+                  : "No se pudieron cargar los catálogos."
+                : null
+            }
+            onSelect={handleSelectCatalogo}
+            onCreate={openCreateCatalogo}
+            onEdit={openEditCatalogo}
+            onPageChange={setCatalogoPage}
+          />
+        </div>
+
+        <div
+          className={cn(
+            "min-h-0 min-w-0",
+            showDetail ? "flex" : "hidden",
+            "md:flex",
+          )}
+        >
+          <DetailPanel
+            catalogo={selected}
+            itemPage={itemPage}
+            hidePrimaryAction={isMobile && mobileShowDetail}
+            onPageChange={setItemPage}
+            onCreateItem={openCreateItem}
+            onEditItem={openEditItem}
+          />
+        </div>
       </div>
 
       <CatalogoFormDialog
@@ -134,6 +210,9 @@ export function CatalogosPage() {
         onSuccess={(saved) => {
           setSelectedId(saved.id)
           setCatalogoPage(0)
+          if (isMobile) {
+            setMobileShowDetail(true)
+          }
         }}
       />
 
@@ -177,10 +256,13 @@ function MasterPanel({
   onPageChange: (page: number) => void
 }) {
   const deleteMutation = useDeleteCatalogo()
+  const [catalogoToDelete, setCatalogoToDelete] = useState<Catalogo | null>(
+    null,
+  )
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-2 border-b p-4 md:border-r md:border-b-0">
+      <div className="flex w-full flex-col gap-2 border-b p-4 md:border-r md:border-b-0">
         <Skeleton className="h-4 w-20" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-12 w-full" />
@@ -191,7 +273,7 @@ function MasterPanel({
 
   if (errorMessage) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 border-b p-8 text-center md:border-r md:border-b-0">
+      <div className="flex w-full flex-col items-center justify-center gap-2 border-b p-6 text-center sm:p-8 md:border-r md:border-b-0">
         <p className="text-sm text-destructive">{errorMessage}</p>
       </div>
     )
@@ -199,13 +281,13 @@ function MasterPanel({
 
   if (catalogos.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 border-b p-8 text-center md:border-r md:border-b-0">
+      <div className="flex w-full flex-col items-center justify-center gap-3 border-b p-6 text-center sm:p-8 md:border-r md:border-b-0">
         <span className="flex size-10 items-center justify-center rounded-lg border bg-muted">
           <FolderOpen className="size-4 text-muted-foreground" />
         </span>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 px-2">
           <p className="text-sm font-medium">No hay catálogos</p>
-          <p className="max-w-56 text-xs text-muted-foreground">
+          <p className="mx-auto max-w-56 text-xs text-muted-foreground">
             Crea un catálogo maestro, por ejemplo Tipo de documento.
           </p>
         </div>
@@ -218,13 +300,13 @@ function MasterPanel({
   }
 
   return (
-    <div className="flex min-h-0 flex-col border-b md:border-r md:border-b-0">
-      <div className="border-b px-4 py-3">
+    <div className="flex w-full min-h-0 flex-col border-b md:border-r md:border-b-0">
+      <div className="hidden border-b px-4 py-3 md:block">
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           Maestros
         </p>
       </div>
-      <ul className="min-h-0 flex-1 overflow-y-auto p-2">
+      <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
         {catalogos.map((catalogo) => {
           const isActive = catalogo.id === selectedId
 
@@ -244,14 +326,14 @@ function MasterPanel({
                   <span className="truncate text-sm font-medium">
                     {catalogo.nombre}
                   </span>
-                  <code className="w-fit rounded bg-background/80 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  <code className="w-fit max-w-full truncate rounded bg-background/80 px-1.5 py-0.5 text-[10px] text-muted-foreground">
                     {catalogo.codigo}
                   </code>
                 </button>
-                <div className="flex shrink-0 gap-0.5 py-2 pr-2 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="flex shrink-0 gap-0.5 py-2 pr-2 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="default"
                     size="icon-sm"
                     aria-label="Editar catálogo"
                     onClick={() => onEdit(catalogo)}
@@ -260,19 +342,11 @@ function MasterPanel({
                   </Button>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="destructive"
                     size="icon-sm"
                     aria-label="Eliminar catálogo"
                     disabled={deleteMutation.isPending}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `¿Eliminar el catálogo "${catalogo.nombre}"?`,
-                        )
-                      ) {
-                        void deleteMutation.mutateAsync(catalogo.id)
-                      }
-                    }}
+                    onClick={() => setCatalogoToDelete(catalogo)}
                   >
                     <Trash2 />
                   </Button>
@@ -285,6 +359,27 @@ function MasterPanel({
       {page ? (
         <Pagination page={page} onPageChange={onPageChange} />
       ) : null}
+
+      <ConfirmDeleteDialog
+        open={Boolean(catalogoToDelete)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCatalogoToDelete(null)
+          }
+        }}
+        title="Eliminar catálogo"
+        description={
+          catalogoToDelete
+            ? `¿Seguro que deseas eliminar "${catalogoToDelete.nombre}"? También se eliminarán sus valores.`
+            : "¿Seguro que deseas eliminar este catálogo?"
+        }
+        isPending={deleteMutation.isPending}
+        onConfirm={async () => {
+          if (!catalogoToDelete) return
+          await deleteMutation.mutateAsync(catalogoToDelete.id)
+          setCatalogoToDelete(null)
+        }}
+      />
     </div>
   )
 }
@@ -292,12 +387,14 @@ function MasterPanel({
 function DetailPanel({
   catalogo,
   itemPage,
+  hidePrimaryAction = false,
   onPageChange,
   onCreateItem,
   onEditItem,
 }: {
   catalogo: Catalogo | null
   itemPage: number
+  hidePrimaryAction?: boolean
   onPageChange: (page: number) => void
   onCreateItem: () => void
   onEditItem: (item: CatalogoItem) => void
@@ -311,6 +408,7 @@ function DetailPanel({
     }),
   })
   const deleteMutation = useDeleteCatalogoItem()
+  const [itemToDelete, setItemToDelete] = useState<CatalogoItem | null>(null)
 
   useEffect(() => {
     const totalPages = itemsQuery.data?.totalPages ?? 0
@@ -321,8 +419,8 @@ function DetailPanel({
 
   if (!catalogo) {
     return (
-      <div className="flex flex-1 items-center justify-center p-8">
-        <p className="text-sm text-muted-foreground">
+      <div className="flex w-full flex-1 items-center justify-center p-6 sm:p-8">
+        <p className="text-center text-sm text-muted-foreground">
           Selecciona un catálogo para ver sus valores.
         </p>
       </div>
@@ -332,28 +430,30 @@ function DetailPanel({
   const items = itemsQuery.data?.content ?? []
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <div className="flex items-start justify-between gap-3 border-b px-6 py-4">
+    <div className="flex w-full min-h-0 flex-col">
+      <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3 sm:px-6 sm:py-4">
         <div className="min-w-0 flex flex-1 flex-col gap-2">
           <div className="min-w-0 flex flex-col gap-0.5">
-            <h2 className="truncate text-base font-semibold tracking-tight">
+            <h2 className="hidden truncate text-base font-semibold tracking-tight md:block">
               {catalogo.nombre}
             </h2>
-            <code className="w-fit rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            <code className="w-fit max-w-full truncate rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
               {catalogo.codigo}
             </code>
           </div>
           <AuditInfo data={catalogo} />
         </div>
-        <Button
-          size="sm"
-          type="button"
-          className="shrink-0"
-          onClick={onCreateItem}
-        >
-          <Plus />
-          Agregar valor
-        </Button>
+        {!hidePrimaryAction ? (
+          <Button
+            size="sm"
+            type="button"
+            className="w-full shrink-0 sm:w-auto"
+            onClick={onCreateItem}
+          >
+            <Plus />
+            Agregar valor
+          </Button>
+        ) : null}
       </div>
 
       {itemsQuery.isLoading ? (
@@ -363,15 +463,15 @@ function DetailPanel({
           <Skeleton className="h-10 w-full" />
         </div>
       ) : itemsQuery.isError ? (
-        <div className="flex flex-1 items-center justify-center p-8">
-          <p className="text-sm text-destructive">
+        <div className="flex flex-1 items-center justify-center p-6 sm:p-8">
+          <p className="text-center text-sm text-destructive">
             {isApiError(itemsQuery.error)
               ? itemsQuery.error.message
               : "No se pudieron cargar los valores."}
           </p>
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center sm:p-8">
           <p className="text-sm font-medium">Sin valores</p>
           <p className="max-w-64 text-xs text-muted-foreground">
             Agrega ítems hijos, por ejemplo CI o Pasaporte.
@@ -383,25 +483,25 @@ function DetailPanel({
         </div>
       ) : (
         <>
-          <ul className="min-h-0 flex-1 overflow-y-auto p-2 md:p-3">
+          <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 sm:p-3">
             {items.map((item) => (
               <li
                 key={item.id}
-                className="group flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 hover:bg-muted/50"
+                className="group flex items-start justify-between gap-2 rounded-lg px-2 py-2.5 hover:bg-muted/50 sm:items-center sm:gap-3 sm:px-3"
               >
                 <div className="min-w-0 flex flex-1 flex-col gap-0.5">
                   <span className="truncate text-sm font-medium">
                     {item.nombre}
                   </span>
-                  <code className="w-fit rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  <code className="w-fit max-w-full truncate rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                     {item.valor}
                   </code>
                   <AuditInfo data={item} compact />
                 </div>
-                <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="flex shrink-0 gap-0.5 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="default"
                     size="icon-sm"
                     aria-label="Editar valor"
                     onClick={() => onEditItem(item)}
@@ -410,19 +510,11 @@ function DetailPanel({
                   </Button>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="destructive"
                     size="icon-sm"
                     aria-label="Eliminar valor"
                     disabled={deleteMutation.isPending}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `¿Eliminar el valor "${item.nombre}"?`,
-                        )
-                      ) {
-                        void deleteMutation.mutateAsync(item.id)
-                      }
-                    }}
+                    onClick={() => setItemToDelete(item)}
                   >
                     <Trash2 />
                   </Button>
@@ -436,6 +528,27 @@ function DetailPanel({
               onPageChange={onPageChange}
             />
           ) : null}
+
+          <ConfirmDeleteDialog
+            open={Boolean(itemToDelete)}
+            onOpenChange={(open) => {
+              if (!open) {
+                setItemToDelete(null)
+              }
+            }}
+            title="Eliminar valor"
+            description={
+              itemToDelete
+                ? `¿Seguro que deseas eliminar "${itemToDelete.nombre}"?`
+                : "¿Seguro que deseas eliminar este valor?"
+            }
+            isPending={deleteMutation.isPending}
+            onConfirm={async () => {
+              if (!itemToDelete) return
+              await deleteMutation.mutateAsync(itemToDelete.id)
+              setItemToDelete(null)
+            }}
+          />
         </>
       )}
     </div>

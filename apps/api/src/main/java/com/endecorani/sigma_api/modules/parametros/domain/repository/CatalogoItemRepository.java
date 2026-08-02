@@ -24,4 +24,17 @@ public interface CatalogoItemRepository extends CrudRepository<CatalogoItem, UUI
             String valor,
             UUID id
     );
+
+    Integer findMaxOrdenByCatalogoId(UUID catalogoId);
+
+    boolean existsByCatalogoIdAndOrden(
+            UUID catalogoId,
+            Integer orden
+    );
+
+    boolean existsByCatalogoIdAndOrdenAndIdNot(
+            UUID catalogoId,
+            Integer orden,
+            UUID id
+    );
 }

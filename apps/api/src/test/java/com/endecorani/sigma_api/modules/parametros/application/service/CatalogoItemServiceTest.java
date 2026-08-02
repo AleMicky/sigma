@@ -49,8 +49,8 @@ class CatalogoItemServiceTest {
     }
 
     @Test
-    void createNormalizesFieldsAndDefaultsOrden() {
-        CatalogoItemResponse response = service.create(
+    void createNormalizesFieldsAndAutoIncrementsOrden() {
+        CatalogoItemResponse first = service.create(
                 new CatalogoItemRequest(
                         catalogoId,
                         "  Cédula   de identidad ",
@@ -58,12 +58,40 @@ class CatalogoItemServiceTest {
                         null
                 )
         );
+        CatalogoItemResponse second = service.create(
+                new CatalogoItemRequest(
+                        catalogoId,
+                        "Pasaporte",
+                        "PAS",
+                        null
+                )
+        );
 
-        assertEquals(catalogoId, response.catalogoId());
-        assertEquals("Cédula de identidad", response.nombre());
-        assertEquals("ci", response.valor());
-        assertEquals(0, response.orden());
-        assertEquals(1, itemRepository.items.size());
+        assertEquals(catalogoId, first.catalogoId());
+        assertEquals("Cédula de identidad", first.nombre());
+        assertEquals("ci", first.valor());
+        assertEquals(0, first.orden());
+        assertEquals(1, second.orden());
+        assertEquals(2, itemRepository.items.size());
+    }
+
+    @Test
+    void createRejectsDuplicateOrdenInSameCatalogo() {
+        itemRepository.items.add(existing(catalogoId, "CI", "Cédula", 1));
+
+        ConflictException exception = assertThrows(
+                ConflictException.class,
+                () -> service.create(
+                        new CatalogoItemRequest(
+                                catalogoId,
+                                "Pasaporte",
+                                "PAS",
+                                1
+                        )
+                )
+        );
+
+        assertEquals("CATALOGO_ITEM_ORDEN_ALREADY_EXISTS", exception.getCode());
     }
 
     @Test
@@ -84,7 +112,7 @@ class CatalogoItemServiceTest {
 
     @Test
     void createRejectsDuplicateValorInSameCatalogo() {
-        itemRepository.items.add(existing(catalogoId, "CI", "Cédula"));
+        itemRepository.items.add(existing(catalogoId, "CI", "Cédula", 0));
 
         ConflictException exception = assertThrows(
                 ConflictException.class,
@@ -112,9 +140,9 @@ class CatalogoItemServiceTest {
                         .build()
         );
 
-        itemRepository.items.add(existing(catalogoId, "CI", "Cédula"));
-        itemRepository.items.add(existing(catalogoId, "PAS", "Pasaporte"));
-        itemRepository.items.add(existing(otherCatalogoId, "X", "Otro"));
+        itemRepository.items.add(existing(catalogoId, "CI", "Cédula", 0));
+        itemRepository.items.add(existing(catalogoId, "PAS", "Pasaporte", 1));
+        itemRepository.items.add(existing(otherCatalogoId, "X", "Otro", 0));
 
         PageResponse<CatalogoItemResponse> page = service.findByCatalogoId(
                 catalogoId,
@@ -139,7 +167,7 @@ class CatalogoItemServiceTest {
 
     @Test
     void updateAllowsSameValorOnSameRecord() {
-        CatalogoItem stored = existing(catalogoId, "CI", "Cédula");
+        CatalogoItem stored = existing(catalogoId, "CI", "Cédula", 0);
         itemRepository.items.add(stored);
 
         CatalogoItemResponse response = service.update(
@@ -160,14 +188,15 @@ class CatalogoItemServiceTest {
     private static CatalogoItem existing(
             UUID catalogoId,
             String valor,
-            String nombre
+            String nombre,
+            int orden
     ) {
         return CatalogoItem.builder()
                 .id(UUID.randomUUID())
                 .catalogoId(catalogoId)
                 .valor(valor)
                 .nombre(nombre)
-                .orden(0)
+                .orden(orden)
                 .build();
     }
 
@@ -306,6 +335,39 @@ class CatalogoItemServiceTest {
                     !item.getId().equals(id)
                             && item.getCatalogoId().equals(catalogoId)
                             && item.getValor().equalsIgnoreCase(valor)
+            );
+        }
+
+        @Override
+        public Integer findMaxOrdenByCatalogoId(UUID catalogoId) {
+            return items.stream()
+                    .filter(item -> item.getCatalogoId().equals(catalogoId))
+                    .map(CatalogoItem::getOrden)
+                    .max(Integer::compareTo)
+                    .orElse(null);
+        }
+
+        @Override
+        public boolean existsByCatalogoIdAndOrden(
+                UUID catalogoId,
+                Integer orden
+        ) {
+            return items.stream().anyMatch(item ->
+                    item.getCatalogoId().equals(catalogoId)
+                            && item.getOrden().equals(orden)
+            );
+        }
+
+        @Override
+        public boolean existsByCatalogoIdAndOrdenAndIdNot(
+                UUID catalogoId,
+                Integer orden,
+                UUID id
+        ) {
+            return items.stream().anyMatch(item ->
+                    !item.getId().equals(id)
+                            && item.getCatalogoId().equals(catalogoId)
+                            && item.getOrden().equals(orden)
             );
         }
     }

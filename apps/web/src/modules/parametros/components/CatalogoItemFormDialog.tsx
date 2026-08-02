@@ -63,18 +63,24 @@ export function CatalogoItemFormDialog({
     onSubmit: async ({ value }) => {
       setFormError(null)
 
-      const payload = {
-        catalogoId,
-        nombre: value.nombre.trim(),
-        valor: value.valor.trim(),
-        orden: value.orden ?? 0,
-      }
-
       try {
         if (isEditing && item) {
-          await updateMutation.mutateAsync({ id: item.id, payload })
+          await updateMutation.mutateAsync({
+            id: item.id,
+            payload: {
+              catalogoId,
+              nombre: value.nombre.trim(),
+              valor: value.valor.trim(),
+              orden: value.orden ?? 0,
+            },
+          })
         } else {
-          await createMutation.mutateAsync(payload)
+          await createMutation.mutateAsync({
+            catalogoId,
+            nombre: value.nombre.trim(),
+            valor: value.valor.trim(),
+            orden: null,
+          })
         }
 
         onSuccess?.()
@@ -190,42 +196,43 @@ export function CatalogoItemFormDialog({
               }}
             </form.Field>
 
-            <form.Field name="orden">
-              {(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
+            {isEditing ? (
+              <form.Field name="orden">
+                {(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
 
-                return (
-                  <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor={field.name}>
-                      Orden{" "}
-                      <span className="text-xs font-normal text-muted-foreground">
-                        (opcional)
-                      </span>
-                    </FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="number"
-                      min={0}
-                      value={field.state.value ?? 0}
-                      onBlur={field.handleBlur}
-                      onChange={(e) =>
-                        field.handleChange(
-                          e.target.value === ""
-                            ? 0
-                            : Number(e.target.value),
-                        )
-                      }
-                      aria-invalid={isInvalid}
-                    />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            </form.Field>
+                  return (
+                    <Field data-invalid={isInvalid || undefined}>
+                      <FieldLabel htmlFor={field.name}>Orden</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type="number"
+                        min={0}
+                        value={field.state.value ?? 0}
+                        onBlur={field.handleBlur}
+                        onChange={(e) =>
+                          field.handleChange(
+                            e.target.value === ""
+                              ? 0
+                              : Number(e.target.value),
+                          )
+                        }
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                El orden se asigna automáticamente al crear el valor.
+              </p>
+            )}
 
             {formError ? (
               <p className="text-sm text-destructive" role="alert">

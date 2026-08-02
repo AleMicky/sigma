@@ -46,17 +46,17 @@ export function AuditInfo({
   return (
     <dl
       className={cn(
-        "grid gap-1 text-xs text-muted-foreground sm:grid-cols-2",
+        "grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2 sm:gap-1",
         className,
       )}
     >
       <div className="min-w-0">
         <dt className="font-medium tracking-wide uppercase">Creado</dt>
-        <dd className="truncate">{createdLabel}</dd>
+        <dd className="break-words sm:truncate">{createdLabel}</dd>
       </div>
       <div className="min-w-0">
         <dt className="font-medium tracking-wide uppercase">Actualizado</dt>
-        <dd className="truncate">{updatedLabel}</dd>
+        <dd className="break-words sm:truncate">{updatedLabel}</dd>
       </div>
     </dl>
   )

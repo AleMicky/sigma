@@ -78,4 +78,30 @@ public class CatalogoItemRepositoryImpl
                 id
         );
     }
+
+    @Override
+    public Integer findMaxOrdenByCatalogoId(UUID catalogoId) {
+        return springRepository.findMaxOrdenByCatalogoId(catalogoId);
+    }
+
+    @Override
+    public boolean existsByCatalogoIdAndOrden(
+            UUID catalogoId,
+            Integer orden
+    ) {
+        return springRepository.existsByCatalogo_IdAndOrden(catalogoId, orden);
+    }
+
+    @Override
+    public boolean existsByCatalogoIdAndOrdenAndIdNot(
+            UUID catalogoId,
+            Integer orden,
+            UUID id
+    ) {
+        return springRepository.existsByCatalogo_IdAndOrdenAndIdNot(
+                catalogoId,
+                orden,
+                id
+        );
+    }
 }

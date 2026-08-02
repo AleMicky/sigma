@@ -83,7 +83,7 @@ public class CatalogoItemService extends AbstractCrudService<
                 .catalogoId(request.catalogoId())
                 .nombre(requireNormalizedNombre(request.nombre()))
                 .valor(valor)
-                .orden(resolveOrden(request.orden()))
+                .orden(resolveOrdenForCreate(request.catalogoId(), request.orden()))
                 .build();
     }
 
@@ -101,10 +101,16 @@ public class CatalogoItemService extends AbstractCrudService<
                 domain.getId()
         );
 
+        int orden = resolveOrdenForUpdate(
+                request.catalogoId(),
+                request.orden(),
+                domain.getId()
+        );
+
         domain.setCatalogoId(request.catalogoId());
         domain.setNombre(requireNormalizedNombre(request.nombre()));
         domain.setValor(valor);
-        domain.setOrden(resolveOrden(request.orden()));
+        domain.setOrden(orden);
     }
 
     @Override
@@ -199,7 +205,73 @@ public class CatalogoItemService extends AbstractCrudService<
         return normalized;
     }
 
-    private int resolveOrden(Integer orden) {
-        return orden == null ? 0 : orden;
+    private int resolveOrdenForCreate(UUID catalogoId, Integer orden) {
+        if (orden == null) {
+            Integer maxOrden = catalogoItemRepository
+                    .findMaxOrdenByCatalogoId(catalogoId);
+            return maxOrden == null ? 0 : maxOrden + 1;
+        }
+
+        if (orden < 0) {
+            throw new BusinessException(
+                    "INVALID_CATALOGO_ITEM_ORDEN",
+                    "El orden no puede ser negativo"
+            );
+        }
+
+        validateUniqueOrdenForCreate(catalogoId, orden);
+        return orden;
+    }
+
+    private int resolveOrdenForUpdate(
+            UUID catalogoId,
+            Integer orden,
+            UUID currentId
+    ) {
+        int resolved = orden == null ? 0 : orden;
+
+        if (resolved < 0) {
+            throw new BusinessException(
+                    "INVALID_CATALOGO_ITEM_ORDEN",
+                    "El orden no puede ser negativo"
+            );
+        }
+
+        validateUniqueOrdenForUpdate(catalogoId, resolved, currentId);
+        return resolved;
+    }
+
+    private void validateUniqueOrdenForCreate(
+            UUID catalogoId,
+            int orden
+    ) {
+        if (catalogoItemRepository.existsByCatalogoIdAndOrden(
+                catalogoId,
+                orden
+        )) {
+            throw new ConflictException(
+                    "CATALOGO_ITEM_ORDEN_ALREADY_EXISTS",
+                    "Ya existe un ítem con el orden '%d' en este catálogo"
+                            .formatted(orden)
+            );
+        }
+    }
+
+    private void validateUniqueOrdenForUpdate(
+            UUID catalogoId,
+            int orden,
+            UUID currentId
+    ) {
+        if (catalogoItemRepository.existsByCatalogoIdAndOrdenAndIdNot(
+                catalogoId,
+                orden,
+                currentId
+        )) {
+            throw new ConflictException(
+                    "CATALOGO_ITEM_ORDEN_ALREADY_EXISTS",
+                    "Ya existe otro ítem con el orden '%d' en este catálogo"
+                            .formatted(orden)
+            );
+        }
     }
 }
