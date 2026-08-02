@@ -47,7 +47,8 @@ public class SecurityConfig {
                                 .requestMatchers(
                                         HttpMethod.POST,
                                         "/api/v1/auth/login",
-                                        "/api/v1/auth/refresh"
+                                        "/api/v1/auth/refresh",
+                                        "/api/v1/auth/logout"
                                 )
                                 .permitAll()
                                 .requestMatchers(
@@ -89,7 +90,8 @@ public class SecurityConfig {
             String path = request.getRequestURI();
             if (HttpMethod.POST.matches(request.getMethod())
                     && (PATH_MATCHER.match("/api/v1/auth/login", path)
-                    || PATH_MATCHER.match("/api/v1/auth/refresh", path))) {
+                    || PATH_MATCHER.match("/api/v1/auth/refresh", path)
+                    || PATH_MATCHER.match("/api/v1/auth/logout", path))) {
                 return null;
             }
             return delegate.resolve(request);

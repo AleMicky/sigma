@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './../../routes/login'
 import { Route as DashboardIndexRouteImport } from './../../routes/_dashboard/index'
 import { Route as DashboardActivosRouteImport } from './../../routes/_dashboard/activos'
 import { Route as DashboardParametrosRouteRouteImport } from './../../routes/_dashboard/parametros/route'
+import { Route as DashboardPerfilRouteImport } from './../../routes/_dashboard/perfil'
 import { Route as DashboardTiposActivoRouteRouteImport } from './../../routes/_dashboard/tipos-activo/route'
 import { Route as DashboardParametrosCatalogosRouteImport } from './../../routes/_dashboard/parametros/catalogos'
 import { Route as DashboardParametrosGestionRouteImport } from './../../routes/_dashboard/parametros/gestion'
@@ -47,6 +48,11 @@ const DashboardParametrosRouteRoute =
     path: '/parametros',
     getParentRoute: () => DashboardRoute,
   } as any)
+const DashboardPerfilRoute = DashboardPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardTiposActivoRouteRoute =
   DashboardTiposActivoRouteRouteImport.update({
     id: '/tipos-activo',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/parametros': typeof DashboardParametrosRouteRouteWithChildren
   '/tipos-activo': typeof DashboardTiposActivoRouteRouteWithChildren
   '/activos': typeof DashboardActivosRoute
+  '/perfil': typeof DashboardPerfilRoute
   '/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
   '/parametros/gestion': typeof DashboardParametrosGestionRoute
   '/parametros/tipos-dato': typeof DashboardParametrosTiposDatoRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/parametros': typeof DashboardParametrosRouteRouteWithChildren
   '/activos': typeof DashboardActivosRoute
+  '/perfil': typeof DashboardPerfilRoute
   '/': typeof DashboardIndexRoute
   '/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
   '/parametros/gestion': typeof DashboardParametrosGestionRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_dashboard/parametros': typeof DashboardParametrosRouteRouteWithChildren
   '/_dashboard/tipos-activo': typeof DashboardTiposActivoRouteRouteWithChildren
   '/_dashboard/activos': typeof DashboardActivosRoute
+  '/_dashboard/perfil': typeof DashboardPerfilRoute
   '/_dashboard/': typeof DashboardIndexRoute
   '/_dashboard/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
   '/_dashboard/parametros/gestion': typeof DashboardParametrosGestionRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/parametros'
     | '/tipos-activo'
     | '/activos'
+    | '/perfil'
     | '/parametros/catalogos'
     | '/parametros/gestion'
     | '/parametros/tipos-dato'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/parametros'
     | '/activos'
+    | '/perfil'
     | '/'
     | '/parametros/catalogos'
     | '/parametros/gestion'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/_dashboard/parametros'
     | '/_dashboard/tipos-activo'
     | '/_dashboard/activos'
+    | '/_dashboard/perfil'
     | '/_dashboard/'
     | '/_dashboard/parametros/catalogos'
     | '/_dashboard/parametros/gestion'
@@ -212,6 +224,13 @@ declare module '@tanstack/react-router' {
       path: '/parametros'
       fullPath: '/parametros'
       preLoaderRoute: typeof DashboardParametrosRouteRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/perfil': {
+      id: '/_dashboard/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof DashboardPerfilRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/_dashboard/tipos-activo': {
@@ -306,6 +325,7 @@ interface DashboardRouteChildren {
   DashboardParametrosRouteRoute: typeof DashboardParametrosRouteRouteWithChildren
   DashboardTiposActivoRouteRoute: typeof DashboardTiposActivoRouteRouteWithChildren
   DashboardActivosRoute: typeof DashboardActivosRoute
+  DashboardPerfilRoute: typeof DashboardPerfilRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -313,6 +333,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardParametrosRouteRoute: DashboardParametrosRouteRouteWithChildren,
   DashboardTiposActivoRouteRoute: DashboardTiposActivoRouteRouteWithChildren,
   DashboardActivosRoute: DashboardActivosRoute,
+  DashboardPerfilRoute: DashboardPerfilRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 

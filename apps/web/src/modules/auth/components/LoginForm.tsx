@@ -1,9 +1,9 @@
 import { useState, type ComponentProps } from "react"
 import { useForm } from "@tanstack/react-form"
 import { useNavigate } from "@tanstack/react-router"
+import { Eye, EyeOff } from "lucide-react"
 
 import { appConfig, routes } from "@/app/config"
-import { useAuthStore } from "@/app/store/auth.store"
 import { Button } from "@/shared/components/ui/button"
 import {
   Field,
@@ -15,7 +15,7 @@ import {
 import { Input } from "@/shared/components/ui/input"
 import { isApiError } from "@/shared/api"
 import { cn } from "@/shared/lib/utils"
-import { login } from "../api/auth.api"
+import { useLogin } from "../api/auth.mutations"
 import { defaultLoginValues, loginSchema } from "../schemas/login.schema"
 
 export function LoginForm({
@@ -23,8 +23,9 @@ export function LoginForm({
   ...props
 }: ComponentProps<"div">) {
   const navigate = useNavigate()
-  const setSession = useAuthStore((state) => state.setSession)
+  const loginMutation = useLogin()
   const [formError, setFormError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const form = useForm({
     defaultValues: defaultLoginValues,
@@ -35,15 +36,9 @@ export function LoginForm({
       setFormError(null)
 
       try {
-        const session = await login({
+        await loginMutation.mutateAsync({
           username: value.username.trim(),
           password: value.password,
-        })
-
-        setSession({
-          user: session.user,
-          accessToken: session.accessToken,
-          refreshToken: session.refreshToken,
         })
 
         await navigate({ to: routes.home })
@@ -75,6 +70,7 @@ export function LoginForm({
 
       <form
         className="flex flex-col gap-5"
+        autoComplete="off"
         onSubmit={(e) => {
           e.preventDefault()
           e.stopPropagation()
@@ -94,7 +90,7 @@ export function LoginForm({
                     id={field.name}
                     name={field.name}
                     type="text"
-                    autoComplete="username"
+                    autoComplete="off"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -117,17 +113,33 @@ export function LoginForm({
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor={field.name}>Contraseña</FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type="password"
-                    autoComplete="current-password"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                    className="h-11"
-                  />
+                  <div className="relative">
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="off"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      className="h-11 pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="absolute top-1/2 right-1.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={
+                        showPassword
+                          ? "Ocultar contraseña"
+                          : "Mostrar contraseña"
+                      }
+                    >
+                      {showPassword ? <EyeOff /> : <Eye />}
+                    </Button>
+                  </div>
                   {isInvalid && (
                     <FieldError errors={field.state.meta.errors} />
                   )}

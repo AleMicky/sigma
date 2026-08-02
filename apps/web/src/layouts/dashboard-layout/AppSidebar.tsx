@@ -2,7 +2,13 @@ import { useEffect, useState, type ComponentProps } from "react"
 import { Link, useRouterState } from "@tanstack/react-router"
 import { ChevronLeft, ChevronRight, ChevronsUpDown, Search } from "lucide-react"
 
-import { appConfig } from "@/app/config"
+import {
+  appConfig,
+  findActiveNavItem,
+  isPathActive,
+  navItems,
+  type NavItem,
+} from "@/app/config"
 import { Button } from "@/shared/components/ui/button"
 import {
   Sidebar,
@@ -20,12 +26,6 @@ import {
   useSidebar,
 } from "@/shared/components/ui/sidebar"
 
-import {
-  findActiveNavItem,
-  isPathActive,
-  navItems,
-  type NavItem,
-} from "./nav"
 import { UserMenu } from "./UserMenu"
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {

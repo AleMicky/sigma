@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.auth.application.dto.AuthTokenResponse;
 import com.endecorani.sigma_api.modules.auth.application.dto.AuthUserResponse;
 import com.endecorani.sigma_api.modules.auth.application.dto.KeycloakTokenResponse;
 import com.endecorani.sigma_api.modules.auth.application.dto.LoginRequest;
+import com.endecorani.sigma_api.modules.auth.application.dto.LogoutRequest;
 import com.endecorani.sigma_api.modules.auth.application.dto.RefreshTokenRequest;
 import com.endecorani.sigma_api.shared.domain.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,10 @@ public class AuthService {
                 request.refreshToken()
         );
         return toAuthTokenResponse(tokens);
+    }
+
+    public void logout(LogoutRequest request) {
+        keycloakTokenClient.logout(request.refreshToken());
     }
 
     public AuthUserResponse getCurrentUser(Authentication authentication) {

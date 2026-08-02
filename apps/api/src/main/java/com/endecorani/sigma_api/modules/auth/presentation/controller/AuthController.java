@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.auth.application.dto.AuthTokenResponse;
 import com.endecorani.sigma_api.modules.auth.application.dto.AuthUserResponse;
 import com.endecorani.sigma_api.modules.auth.application.dto.LoginRequest;
+import com.endecorani.sigma_api.modules.auth.application.dto.LogoutRequest;
 import com.endecorani.sigma_api.modules.auth.application.dto.RefreshTokenRequest;
 import com.endecorani.sigma_api.modules.auth.application.service.AuthService;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
@@ -64,6 +65,21 @@ public class AuthController {
                         "Sesión renovada",
                         authService.refresh(request)
                 )
+        );
+    }
+
+    @PostMapping("/logout")
+    @SecurityRequirements
+    @Operation(
+            summary = "Cerrar sesión",
+            description = "Invalida el refresh token en Keycloak (logout endpoint). No requiere Authorize de Swagger."
+    )
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @Valid @RequestBody LogoutRequest request
+    ) {
+        authService.logout(request);
+        return ResponseEntity.ok(
+                ApiResponse.success("Sesión cerrada")
         );
     }
 

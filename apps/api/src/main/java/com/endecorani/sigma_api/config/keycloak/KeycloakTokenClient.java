@@ -50,9 +50,17 @@ public class KeycloakTokenClient {
         return exchange(form);
     }
 
+    public void logout(String refreshToken) {
+        MultiValueMap<String, String> form = baseForm(null);
+        form.add(REFRESH_TOKEN, refreshToken);
+        postForm(properties.resolvedLogoutUrl(), form, false);
+    }
+
     private MultiValueMap<String, String> baseForm(String grantType) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add(GRANT_TYPE, grantType);
+        if (grantType != null) {
+            form.add(GRANT_TYPE, grantType);
+        }
         form.add(CLIENT_ID, properties.clientId());
         if (properties.clientSecret() != null && !properties.clientSecret().isBlank()) {
             form.add(CLIENT_SECRET, properties.clientSecret());
@@ -61,26 +69,36 @@ public class KeycloakTokenClient {
     }
 
     private KeycloakTokenResponse exchange(MultiValueMap<String, String> form) {
+        String body = postForm(properties.tokenUrl(), form, true);
+        KeycloakTokenResponse response = parseTokenResponse(body);
+        if (response.accessToken() == null || response.accessToken().isBlank()) {
+            throw new UnauthorizedException("Keycloak no devolvió un access token válido");
+        }
+        return response;
+    }
+
+    private String postForm(
+            String url,
+            MultiValueMap<String, String> form,
+            boolean expectBody
+    ) {
         String encodedBody = encodeForm(form);
         try {
             String body = keycloakRestClient
                     .post()
-                    .uri(properties.tokenUrl())
+                    .uri(url)
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .accept(MediaType.APPLICATION_JSON)
                     .body(encodedBody)
                     .retrieve()
                     .body(String.class);
 
-            KeycloakTokenResponse response = parseTokenResponse(body);
-            if (response.accessToken() == null || response.accessToken().isBlank()) {
-                throw new UnauthorizedException("Keycloak no devolvió un access token válido");
-            }
-            return response;
+            return expectBody ? body : null;
         } catch (RestClientResponseException exception) {
             String detail = parseKeycloakError(exception.getResponseBodyAsString());
             log.warn(
-                    "Keycloak token endpoint rechazó la solicitud (clientId={}, status={}): {}",
+                    "Keycloak rechazó la solicitud (url={}, clientId={}, status={}): {}",
+                    url,
                     properties.clientId(),
                     exception.getStatusCode().value(),
                     detail
@@ -90,18 +108,18 @@ public class KeycloakTokenClient {
             throw exception;
         } catch (ResourceAccessException exception) {
             log.error(
-                    "Timeout o red al llamar a Keycloak (tokenUrl={}): {}",
-                    properties.tokenUrl(),
+                    "Timeout o red al llamar a Keycloak (url={}): {}",
+                    url,
                     exception.getMessage()
             );
             throw new UnauthorizedException(
-                    "Keycloak no respondió a tiempo (" + properties.tokenUrl()
+                    "Keycloak no respondió a tiempo (" + url
                             + "). Revisa red/firewall o que el servidor Keycloak esté arriba"
             );
         } catch (Exception exception) {
             log.error(
-                    "Error de red o configuración al llamar a Keycloak (tokenUrl={})",
-                    properties.tokenUrl(),
+                    "Error de red o configuración al llamar a Keycloak (url={})",
+                    url,
                     exception
             );
             throw new UnauthorizedException(

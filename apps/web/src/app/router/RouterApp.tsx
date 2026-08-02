@@ -2,8 +2,10 @@ import { useEffect, useState } from "react"
 import { RouterProvider } from "@tanstack/react-router"
 import { useShallow } from "zustand/react/shallow"
 
+import { queryClient } from "@/app/query/queryClient"
 import { router } from "@/app/router/router"
 import { useAuthStore } from "@/app/store/auth.store"
+import { authKeys } from "@/modules/auth/api/auth.keys"
 
 export function RouterApp() {
   const auth = useAuthStore(
@@ -28,6 +30,13 @@ export function RouterApp() {
 
   useEffect(() => {
     if (!hydrated) return
+
+    if (auth.user) {
+      queryClient.setQueryData(authKeys.me(), auth.user)
+    } else {
+      queryClient.removeQueries({ queryKey: authKeys.all })
+    }
+
     void router.invalidate()
   }, [auth.isAuthenticated, auth.user, hydrated])
 

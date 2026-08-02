@@ -1,4 +1,7 @@
-export { apiConfig } from "./api.config";
-export { appConfig } from "./app.config";
-export { env } from "./env";
-export { routes } from "./routes";
+export { apiConfig } from "./api.config"
+export { appConfig } from "./app.config"
+export { env } from "./env"
+export { navItems } from "./nav.config"
+export { routes } from "./routes"
+export type { AppPath, NavItem, NavLeaf } from "@/shared/types/nav.types"
+export { findActiveNavItem, isPathActive } from "@/shared/utils/nav.utils"

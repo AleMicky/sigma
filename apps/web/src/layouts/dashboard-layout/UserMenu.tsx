@@ -1,7 +1,9 @@
-import { ChevronsUpDown, LogOut } from "lucide-react"
+import { ChevronsUpDown, LogOut, UserRound } from "lucide-react"
 import { useNavigate } from "@tanstack/react-router"
 
+import { routes } from "@/app/config"
 import { useAuthStore } from "@/app/store/auth.store"
+import { useLogout } from "@/modules/auth/api/auth.mutations"
 import {
   Avatar,
   AvatarFallback,
@@ -35,15 +37,20 @@ export function UserMenu() {
   const navigate = useNavigate()
   const { isMobile } = useSidebar()
   const user = useAuthStore((state) => state.user)
-  const clearSession = useAuthStore((state) => state.clearSession)
+  const logoutMutation = useLogout()
 
   const displayName = user?.name ?? "Usuario"
   const subtitle = user?.roles?.[0] ?? "Organización"
   const initials = getInitials(displayName)
 
-  function handleLogout() {
-    clearSession()
-    void navigate({ to: "/login" })
+  async function handleLogout() {
+    try {
+      await logoutMutation.mutateAsync()
+    } catch {
+      // La sesión local se limpia igual si Keycloak ya invalidó el token.
+    } finally {
+      await navigate({ to: "/login" })
+    }
   }
 
   return (
@@ -91,7 +98,16 @@ export function UserMenu() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+              <DropdownMenuItem
+                onClick={() => void navigate({ to: routes.perfil })}
+              >
+                <UserRound />
+                Mi perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => void handleLogout()}
+              >
                 <LogOut />
                 Cerrar sesión
               </DropdownMenuItem>
