@@ -2,10 +2,13 @@ import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { FolderOpen, Pencil, Plus, Trash2 } from "lucide-react"
 
+import { appConfig } from "@/app/config"
 import { isApiError } from "@/shared/api"
+import { Pagination } from "@/shared/components/pagination"
 import { Button } from "@/shared/components/ui/button"
 import { Skeleton } from "@/shared/components/ui/skeleton"
 import { cn } from "@/shared/lib/utils"
+import type { PageResponse } from "@/shared/types/api.types"
 
 import { useDeleteCatalogo } from "../api/catalogo.mutations"
 import { catalogoQueries } from "../api/catalogo.queries"
@@ -14,31 +17,28 @@ import { useDeleteCatalogoItem } from "../api/catalogo-item.mutations"
 import { catalogoItemQueries } from "../api/catalogo-item.queries"
 import type { CatalogoItem } from "../api/catalogo-item.service"
 import { AuditInfo } from "../components/AuditInfo"
-import { CatalogoFormSheet } from "../components/CatalogoFormSheet"
-import { CatalogoItemFormSheet } from "../components/CatalogoItemFormSheet"
+import { CatalogoFormDialog } from "../components/CatalogoFormDialog"
+import { CatalogoItemFormDialog } from "../components/CatalogoItemFormDialog"
 
-const LIST_PARAMS = {
-  page: 0,
-  size: 100,
-  sortBy: "nombre",
-  direction: "ASC" as const,
-}
-
-const ITEM_LIST_PARAMS = {
-  page: 0,
-  size: 100,
-  sortBy: "orden",
-  direction: "ASC" as const,
-}
+const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function CatalogosPage() {
+  const [catalogoPage, setCatalogoPage] = useState(0)
+  const [itemPage, setItemPage] = useState(0)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [catalogoSheetOpen, setCatalogoSheetOpen] = useState(false)
+  const [catalogoDialogOpen, setCatalogoDialogOpen] = useState(false)
   const [editingCatalogo, setEditingCatalogo] = useState<Catalogo | null>(null)
-  const [itemSheetOpen, setItemSheetOpen] = useState(false)
+  const [itemDialogOpen, setItemDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<CatalogoItem | null>(null)
 
-  const catalogosQuery = useQuery(catalogoQueries.list(LIST_PARAMS))
+  const catalogosQuery = useQuery(
+    catalogoQueries.list({
+      page: catalogoPage,
+      size: PAGE_SIZE,
+      sortBy: "nombre",
+      direction: "ASC",
+    }),
+  )
 
   const catalogos = catalogosQuery.data?.content ?? []
 
@@ -53,27 +53,38 @@ export function CatalogosPage() {
     }
   }, [catalogos, selectedId])
 
+  useEffect(() => {
+    setItemPage(0)
+  }, [selectedId])
+
+  useEffect(() => {
+    const totalPages = catalogosQuery.data?.totalPages ?? 0
+    if (totalPages > 0 && catalogoPage > totalPages - 1) {
+      setCatalogoPage(totalPages - 1)
+    }
+  }, [catalogoPage, catalogosQuery.data?.totalPages])
+
   const selected =
     catalogos.find((catalogo) => catalogo.id === selectedId) ?? null
 
   function openCreateCatalogo() {
     setEditingCatalogo(null)
-    setCatalogoSheetOpen(true)
+    setCatalogoDialogOpen(true)
   }
 
   function openEditCatalogo(catalogo: Catalogo) {
     setEditingCatalogo(catalogo)
-    setCatalogoSheetOpen(true)
+    setCatalogoDialogOpen(true)
   }
 
   function openCreateItem() {
     setEditingItem(null)
-    setItemSheetOpen(true)
+    setItemDialogOpen(true)
   }
 
   function openEditItem(item: CatalogoItem) {
     setEditingItem(item)
-    setItemSheetOpen(true)
+    setItemDialogOpen(true)
   }
 
   return (
@@ -91,6 +102,7 @@ export function CatalogosPage() {
       <div className="grid min-h-0 flex-1 md:grid-cols-[minmax(240px,340px)_1fr]">
         <MasterPanel
           catalogos={catalogos}
+          page={catalogosQuery.data}
           selectedId={selectedId}
           isLoading={catalogosQuery.isLoading}
           errorMessage={
@@ -103,29 +115,40 @@ export function CatalogosPage() {
           onSelect={setSelectedId}
           onCreate={openCreateCatalogo}
           onEdit={openEditCatalogo}
+          onPageChange={setCatalogoPage}
         />
         <DetailPanel
           catalogo={selected}
+          itemPage={itemPage}
+          onPageChange={setItemPage}
           onCreateItem={openCreateItem}
           onEditItem={openEditItem}
         />
       </div>
 
-      <CatalogoFormSheet
+      <CatalogoFormDialog
         key={editingCatalogo?.id ?? "new-catalogo"}
-        open={catalogoSheetOpen}
-        onOpenChange={setCatalogoSheetOpen}
+        open={catalogoDialogOpen}
+        onOpenChange={setCatalogoDialogOpen}
         catalogo={editingCatalogo}
-        onSuccess={(saved) => setSelectedId(saved.id)}
+        onSuccess={(saved) => {
+          setSelectedId(saved.id)
+          setCatalogoPage(0)
+        }}
       />
 
       {selected ? (
-        <CatalogoItemFormSheet
+        <CatalogoItemFormDialog
           key={editingItem?.id ?? `new-item-${selected.id}`}
-          open={itemSheetOpen}
-          onOpenChange={setItemSheetOpen}
+          open={itemDialogOpen}
+          onOpenChange={setItemDialogOpen}
           catalogoId={selected.id}
           item={editingItem}
+          onSuccess={() => {
+            if (!editingItem) {
+              setItemPage(0)
+            }
+          }}
         />
       ) : null}
     </div>
@@ -134,20 +157,24 @@ export function CatalogosPage() {
 
 function MasterPanel({
   catalogos,
+  page,
   selectedId,
   isLoading,
   errorMessage,
   onSelect,
   onCreate,
   onEdit,
+  onPageChange,
 }: {
   catalogos: Catalogo[]
+  page?: PageResponse<Catalogo>
   selectedId: string | null
   isLoading: boolean
   errorMessage: string | null
   onSelect: (id: string) => void
   onCreate: () => void
   onEdit: (catalogo: Catalogo) => void
+  onPageChange: (page: number) => void
 }) {
   const deleteMutation = useDeleteCatalogo()
 
@@ -255,26 +282,42 @@ function MasterPanel({
           )
         })}
       </ul>
+      {page ? (
+        <Pagination page={page} onPageChange={onPageChange} />
+      ) : null}
     </div>
   )
 }
 
 function DetailPanel({
   catalogo,
+  itemPage,
+  onPageChange,
   onCreateItem,
   onEditItem,
 }: {
   catalogo: Catalogo | null
+  itemPage: number
+  onPageChange: (page: number) => void
   onCreateItem: () => void
   onEditItem: (item: CatalogoItem) => void
 }) {
   const itemsQuery = useQuery({
-    ...catalogoItemQueries.byCatalogo(
-      catalogo?.id ?? "",
-      ITEM_LIST_PARAMS,
-    ),
+    ...catalogoItemQueries.byCatalogo(catalogo?.id ?? "", {
+      page: itemPage,
+      size: PAGE_SIZE,
+      sortBy: "orden",
+      direction: "ASC",
+    }),
   })
   const deleteMutation = useDeleteCatalogoItem()
+
+  useEffect(() => {
+    const totalPages = itemsQuery.data?.totalPages ?? 0
+    if (totalPages > 0 && itemPage > totalPages - 1) {
+      onPageChange(totalPages - 1)
+    }
+  }, [itemPage, itemsQuery.data?.totalPages, onPageChange])
 
   if (!catalogo) {
     return (
@@ -339,53 +382,61 @@ function DetailPanel({
           </Button>
         </div>
       ) : (
-        <ul className="min-h-0 flex-1 overflow-y-auto p-2 md:p-3">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="group flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 hover:bg-muted/50"
-            >
-              <div className="min-w-0 flex flex-1 flex-col gap-0.5">
-                <span className="truncate text-sm font-medium">
-                  {item.nombre}
-                </span>
-                <code className="w-fit rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                  {item.valor}
-                </code>
-                <AuditInfo data={item} compact />
-              </div>
-              <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Editar valor"
-                  onClick={() => onEditItem(item)}
-                >
-                  <Pencil />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Eliminar valor"
-                  disabled={deleteMutation.isPending}
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `¿Eliminar el valor "${item.nombre}"?`,
-                      )
-                    ) {
-                      void deleteMutation.mutateAsync(item.id)
-                    }
-                  }}
-                >
-                  <Trash2 />
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="min-h-0 flex-1 overflow-y-auto p-2 md:p-3">
+            {items.map((item) => (
+              <li
+                key={item.id}
+                className="group flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 hover:bg-muted/50"
+              >
+                <div className="min-w-0 flex flex-1 flex-col gap-0.5">
+                  <span className="truncate text-sm font-medium">
+                    {item.nombre}
+                  </span>
+                  <code className="w-fit rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    {item.valor}
+                  </code>
+                  <AuditInfo data={item} compact />
+                </div>
+                <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Editar valor"
+                    onClick={() => onEditItem(item)}
+                  >
+                    <Pencil />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Eliminar valor"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `¿Eliminar el valor "${item.nombre}"?`,
+                        )
+                      ) {
+                        void deleteMutation.mutateAsync(item.id)
+                      }
+                    }}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {itemsQuery.data ? (
+            <Pagination
+              page={itemsQuery.data}
+              onPageChange={onPageChange}
+            />
+          ) : null}
+        </>
       )}
     </div>
   )

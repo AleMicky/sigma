@@ -4,91 +4,88 @@ import { useForm } from "@tanstack/react-form"
 import { isApiError } from "@/shared/api"
 import { Button } from "@/shared/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog"
+import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/shared/components/ui/sheet"
 
 import {
-  useCreateCatalogoItem,
-  useUpdateCatalogoItem,
-} from "../api/catalogo-item.mutations"
-import type { CatalogoItem } from "../api/catalogo-item.service"
+  useCreateCatalogo,
+  useUpdateCatalogo,
+} from "../api/catalogo.mutations"
+import type { Catalogo } from "../api/catalogo.service"
 import {
-  catalogoItemSchema,
-  defaultCatalogoItemValues,
-} from "../schemas/catalogo-item.schema"
+  catalogoSchema,
+  defaultCatalogoValues,
+  type CatalogoDto,
+} from "../schemas/catalogo.schema"
 
-type CatalogoItemFormSheetProps = {
+type CatalogoFormDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  catalogoId: string
-  item?: CatalogoItem | null
+  catalogo?: Catalogo | null
+  onSuccess?: (catalogo: Catalogo) => void
 }
 
-export function CatalogoItemFormSheet({
+export function CatalogoFormDialog({
   open,
   onOpenChange,
-  catalogoId,
-  item,
-}: CatalogoItemFormSheetProps) {
-  const isEditing = Boolean(item)
-  const createMutation = useCreateCatalogoItem()
-  const updateMutation = useUpdateCatalogoItem()
+  catalogo,
+  onSuccess,
+}: CatalogoFormDialogProps) {
+  const isEditing = Boolean(catalogo)
+  const createMutation = useCreateCatalogo()
+  const updateMutation = useUpdateCatalogo()
   const [formError, setFormError] = useState<string | null>(null)
 
   const form = useForm({
-    defaultValues: item
-      ? {
-          nombre: item.nombre,
-          valor: item.valor,
-          orden: item.orden,
-        }
-      : defaultCatalogoItemValues,
+    defaultValues: catalogo
+      ? { codigo: catalogo.codigo, nombre: catalogo.nombre }
+      : defaultCatalogoValues,
     validators: {
-      onSubmit: catalogoItemSchema,
+      onSubmit: catalogoSchema,
     },
     onSubmit: async ({ value }) => {
       setFormError(null)
-
-      const payload = {
-        catalogoId,
+      const payload: CatalogoDto = {
+        codigo: value.codigo.trim(),
         nombre: value.nombre.trim(),
-        valor: value.valor.trim(),
-        orden: value.orden ?? 0,
       }
 
       try {
-        if (isEditing && item) {
-          await updateMutation.mutateAsync({ id: item.id, payload })
-        } else {
-          await createMutation.mutateAsync(payload)
-        }
+        const saved =
+          isEditing && catalogo
+            ? await updateMutation.mutateAsync({
+                id: catalogo.id,
+                payload,
+              })
+            : await createMutation.mutateAsync(payload)
 
+        onSuccess?.(saved)
         onOpenChange(false)
         form.reset()
       } catch (error) {
         setFormError(
           isApiError(error)
             ? error.message
-            : "No se pudo guardar el valor.",
+            : "No se pudo guardar el catálogo.",
         )
       }
     },
   })
 
   return (
-    <Sheet
+    <Dialog
       open={open}
       onOpenChange={(next) => {
         if (!next) {
@@ -98,20 +95,24 @@ export function CatalogoItemFormSheet({
         onOpenChange(next)
       }}
     >
-      <SheetContent side="right" className="w-full sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>
-            {isEditing ? "Editar valor" : "Agregar valor"}
-          </SheetTitle>
-          <SheetDescription>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {isEditing ? "Editar catálogo" : "Nuevo catálogo"}
+          </DialogTitle>
+          <DialogDescription>
             {isEditing
-              ? "Actualiza el ítem del catálogo seleccionado."
-              : "Agrega un ítem hijo, por ejemplo CI o Pasaporte."}
-          </SheetDescription>
-        </SheetHeader>
+              ? "Actualiza el código y nombre del catálogo maestro."
+              : "Define un catálogo maestro, por ejemplo Tipo de documento."}{" "}
+            <span className="text-muted-foreground">
+              Los campos con <span className="text-destructive">*</span> son
+              obligatorios.
+            </span>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
-          className="flex flex-1 flex-col gap-4 px-4"
+          className="flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -119,22 +120,29 @@ export function CatalogoItemFormSheet({
           }}
         >
           <FieldGroup>
-            <form.Field name="valor">
+            <form.Field name="codigo">
               {(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
 
                 return (
                   <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      Código{" "}
+                      <span className="text-destructive" aria-hidden>
+                        *
+                      </span>
+                    </FieldLabel>
                     <Input
                       id={field.name}
                       name={field.name}
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
+                      required
+                      aria-required
                       aria-invalid={isInvalid}
-                      placeholder="CI"
+                      placeholder="TIPO_DOCUMENTO"
                     />
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
@@ -151,47 +159,22 @@ export function CatalogoItemFormSheet({
 
                 return (
                   <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      Nombre{" "}
+                      <span className="text-destructive" aria-hidden>
+                        *
+                      </span>
+                    </FieldLabel>
                     <Input
                       id={field.name}
                       name={field.name}
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
+                      required
+                      aria-required
                       aria-invalid={isInvalid}
-                      placeholder="Cédula de identidad"
-                    />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            </form.Field>
-
-            <form.Field name="orden">
-              {(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-
-                return (
-                  <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor={field.name}>Orden</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="number"
-                      min={0}
-                      value={field.state.value ?? 0}
-                      onBlur={field.handleBlur}
-                      onChange={(e) =>
-                        field.handleChange(
-                          e.target.value === ""
-                            ? 0
-                            : Number(e.target.value),
-                        )
-                      }
-                      aria-invalid={isInvalid}
+                      placeholder="Tipo de documento"
                     />
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
@@ -208,24 +191,28 @@ export function CatalogoItemFormSheet({
             ) : null}
           </FieldGroup>
 
-          <SheetFooter className="px-0">
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancelar
+            </Button>
             <form.Subscribe
               selector={(state) =>
                 [state.canSubmit, state.isSubmitting] as const
               }
             >
               {([canSubmit, isSubmitting]) => (
-                <Button
-                  type="submit"
-                  disabled={!canSubmit || isSubmitting}
-                >
+                <Button type="submit" disabled={!canSubmit || isSubmitting}>
                   {isSubmitting ? "Guardando…" : "Guardar"}
                 </Button>
               )}
             </form.Subscribe>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
