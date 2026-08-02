@@ -14,6 +14,12 @@ public interface CatalogoItemRepository extends CrudRepository<CatalogoItem, UUI
             Pageable pageable
     );
 
+    Page<CatalogoItem> searchByCatalogoId(
+            UUID catalogoId,
+            String query,
+            Pageable pageable
+    );
+
     boolean existsByCatalogoIdAndValorIgnoreCase(
             UUID catalogoId,
             String valor

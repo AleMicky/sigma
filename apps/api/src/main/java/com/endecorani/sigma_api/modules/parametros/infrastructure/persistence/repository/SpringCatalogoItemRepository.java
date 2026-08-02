@@ -22,6 +22,21 @@ public interface SpringCatalogoItemRepository
             Pageable pageable
     );
 
+    @Query("""
+            select item
+            from CatalogoItemEntity item
+            where item.catalogo.id = :catalogoId
+              and (
+                   lower(item.nombre) like lower(concat('%', :query, '%'))
+                   or lower(item.valor) like lower(concat('%', :query, '%'))
+              )
+            """)
+    Page<CatalogoItemEntity> searchByCatalogoId(
+            @Param("catalogoId") UUID catalogoId,
+            @Param("query") String query,
+            Pageable pageable
+    );
+
     boolean existsByCatalogo_IdAndValorIgnoreCase(
             UUID catalogoId,
             String valor

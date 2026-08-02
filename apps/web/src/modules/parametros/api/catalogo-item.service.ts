@@ -24,6 +24,7 @@ export type CatalogoItemPayload = {
 
 export type CatalogoItemListParams = PageParams & {
   catalogoId?: string
+  q?: string
 }
 
 export async function listCatalogoItems(

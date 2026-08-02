@@ -5,12 +5,15 @@ import com.endecorani.sigma_api.modules.parametros.application.dto.CatalogoRespo
 import com.endecorani.sigma_api.modules.parametros.domain.model.Catalogo;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.CatalogoRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
+import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
+import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.UUID;
@@ -47,6 +50,26 @@ public class CatalogoService extends AbstractCrudService<
     @Override
     protected Set<String> allowedSortFields() {
         return SORT_FIELDS;
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CatalogoResponse> search(
+            String query,
+            PageRequestDto pageRequest
+    ) {
+        String normalized = StringUtils.normalize(query);
+
+        if (normalized == null) {
+            return findAll(pageRequest);
+        }
+
+        return PageResponse.from(
+                catalogoRepository.search(
+                        normalized,
+                        pageRequest.toPageable(allowedSortFields())
+                ),
+                this::toResponse
+        );
     }
 
     @Override

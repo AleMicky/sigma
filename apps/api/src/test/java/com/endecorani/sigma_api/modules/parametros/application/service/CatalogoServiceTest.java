@@ -163,5 +163,17 @@ class CatalogoServiceTest {
                             && item.getCodigo().equalsIgnoreCase(codigo)
             );
         }
+
+        @Override
+        public Page<Catalogo> search(String query, Pageable pageable) {
+            String normalized = query.toLowerCase();
+            List<Catalogo> filtered = items.stream()
+                    .filter(item ->
+                            item.getCodigo().toLowerCase().contains(normalized)
+                                    || item.getNombre().toLowerCase().contains(normalized)
+                    )
+                    .toList();
+            return new PageImpl<>(filtered, pageable, filtered.size());
+        }
     }
 }

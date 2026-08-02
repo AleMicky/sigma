@@ -56,6 +56,17 @@ public class CatalogoItemRepositoryImpl
     }
 
     @Override
+    public Page<CatalogoItem> searchByCatalogoId(
+            UUID catalogoId,
+            String query,
+            Pageable pageable
+    ) {
+        return springRepository
+                .searchByCatalogoId(catalogoId, query, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public boolean existsByCatalogoIdAndValorIgnoreCase(
             UUID catalogoId,
             String valor

@@ -15,10 +15,20 @@ export const catalogoItemQueries = {
       queryFn: () => listCatalogoItems(filters),
     }),
 
-  byCatalogo: (catalogoId: string, params?: PageParams) =>
+  byCatalogo: (
+    catalogoId: string,
+    params?: PageParams & { q?: string },
+  ) =>
     queryOptions({
       queryKey: catalogoItemKeys.list({ ...params, catalogoId }),
-      queryFn: () => listCatalogoItems({ ...params, catalogoId }),
+      queryFn: () => {
+        const q = params?.q?.trim()
+        return listCatalogoItems({
+          ...params,
+          catalogoId,
+          ...(q ? { q } : {}),
+        })
+      },
       enabled: Boolean(catalogoId),
     }),
 

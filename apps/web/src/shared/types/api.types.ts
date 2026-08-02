@@ -14,4 +14,5 @@ export type PageParams = {
   size?: number
   sortBy?: string
   direction?: "ASC" | "DESC"
+  q?: string
 }

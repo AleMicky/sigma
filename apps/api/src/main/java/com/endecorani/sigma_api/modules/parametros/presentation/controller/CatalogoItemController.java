@@ -56,12 +56,14 @@ public class CatalogoItemController
     @Operation(summary = "Listar ítems filtrados por catálogo")
     public ResponseEntity<ApiResponse<PageResponse<CatalogoItemResponse>>> findByCatalogoId(
             @RequestParam UUID catalogoId,
+            @RequestParam(required = false) String q,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         catalogoItemService.findByCatalogoId(
                                 catalogoId,
+                                q,
                                 pageRequest
                         )
                 )

@@ -9,7 +9,11 @@ export const catalogoQueries = {
   list: (filters?: PageParams) =>
     queryOptions({
       queryKey: catalogoKeys.list(filters),
-      queryFn: () => listCatalogos(filters),
+      queryFn: () => {
+        const { q, ...rest } = filters ?? {}
+        const trimmed = q?.trim()
+        return listCatalogos(trimmed ? { ...rest, q: trimmed } : rest)
+      },
     }),
 
   detail: (id: string) =>

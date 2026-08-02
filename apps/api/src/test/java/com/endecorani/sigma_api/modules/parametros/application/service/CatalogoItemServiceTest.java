@@ -259,6 +259,18 @@ class CatalogoItemServiceTest {
                             && item.getCodigo().equalsIgnoreCase(codigo)
             );
         }
+
+        @Override
+        public Page<Catalogo> search(String query, Pageable pageable) {
+            String normalized = query.toLowerCase();
+            List<Catalogo> filtered = items.stream()
+                    .filter(item ->
+                            item.getCodigo().toLowerCase().contains(normalized)
+                                    || item.getNombre().toLowerCase().contains(normalized)
+                    )
+                    .toList();
+            return new PageImpl<>(filtered, pageable, filtered.size());
+        }
     }
 
     private static final class InMemoryCatalogoItemRepository
@@ -310,6 +322,23 @@ class CatalogoItemServiceTest {
         ) {
             List<CatalogoItem> filtered = items.stream()
                     .filter(item -> item.getCatalogoId().equals(catalogoId))
+                    .toList();
+            return new PageImpl<>(filtered, pageable, filtered.size());
+        }
+
+        @Override
+        public Page<CatalogoItem> searchByCatalogoId(
+                UUID catalogoId,
+                String query,
+                Pageable pageable
+        ) {
+            String normalized = query.toLowerCase();
+            List<CatalogoItem> filtered = items.stream()
+                    .filter(item -> item.getCatalogoId().equals(catalogoId))
+                    .filter(item ->
+                            item.getNombre().toLowerCase().contains(normalized)
+                                    || item.getValor().toLowerCase().contains(normalized)
+                    )
                     .toList();
             return new PageImpl<>(filtered, pageable, filtered.size());
         }

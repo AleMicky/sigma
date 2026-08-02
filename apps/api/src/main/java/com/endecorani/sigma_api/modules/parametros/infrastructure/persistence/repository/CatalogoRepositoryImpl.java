@@ -7,6 +7,8 @@ import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.ma
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
@@ -54,5 +56,12 @@ public class CatalogoRepositoryImpl
             UUID id
     ) {
         return springRepository.existsByCodigoIgnoreCaseAndIdNot(codigo, id);
+    }
+
+    @Override
+    public Page<Catalogo> search(String query, Pageable pageable) {
+        return springRepository
+                .search(query, pageable)
+                .map(mapper::toDomain);
     }
 }

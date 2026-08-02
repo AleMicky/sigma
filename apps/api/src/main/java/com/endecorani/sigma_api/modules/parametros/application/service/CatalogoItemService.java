@@ -61,12 +61,35 @@ public class CatalogoItemService extends AbstractCrudService<
             UUID catalogoId,
             PageRequestDto pageRequest
     ) {
+        return findByCatalogoId(catalogoId, null, pageRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CatalogoItemResponse> findByCatalogoId(
+            UUID catalogoId,
+            String query,
+            PageRequestDto pageRequest
+    ) {
         requireCatalogoExists(catalogoId);
 
+        String normalized = StringUtils.normalize(query);
+        var pageable = pageRequest.toPageable(allowedSortFields());
+
+        if (normalized == null) {
+            return PageResponse.from(
+                    catalogoItemRepository.findByCatalogoId(
+                            catalogoId,
+                            pageable
+                    ),
+                    this::toResponse
+            );
+        }
+
         return PageResponse.from(
-                catalogoItemRepository.findByCatalogoId(
+                catalogoItemRepository.searchByCatalogoId(
                         catalogoId,
-                        pageRequest.toPageable(allowedSortFields())
+                        normalized,
+                        pageable
                 ),
                 this::toResponse
         );
