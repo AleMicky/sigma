@@ -21,5 +21,7 @@ export const axiosInstance = axios.create({
 declare module "axios" {
     export interface AxiosRequestConfig {
         skipAuth?: boolean;
+        /** Marca un reintento tras refresh para evitar bucles 401. */
+        _retry?: boolean;
     }
 }

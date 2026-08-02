@@ -3,6 +3,7 @@ import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 import { useAuthStore } from "@/app/store/auth.store"
 import { DashboardLayout } from "@/layouts/dashboard-layout/DashboardLayout"
 import { authQueries } from "@/modules/auth/api/auth.queries"
+import { isApiError } from "@/shared/api"
 
 export const Route = createFileRoute("/_dashboard")({
   beforeLoad: async ({ context }) => {
@@ -23,9 +24,17 @@ export const Route = createFileRoute("/_dashboard")({
           refreshToken,
         })
       }
-    } catch {
-      useAuthStore.getState().clearSession()
-      throw redirect({ to: "/login" })
+    } catch (error) {
+      // El interceptor ya limpia la sesión si el refresh falla.
+      if (!useAuthStore.getState().isAuthenticated) {
+        throw redirect({ to: "/login" })
+      }
+
+      // Solo expulsar por 401; no tumbar la sesión por red/5xx.
+      if (isApiError(error) && error.status === 401) {
+        useAuthStore.getState().clearSession()
+        throw redirect({ to: "/login" })
+      }
     }
   },
   component: DashboardRoute,

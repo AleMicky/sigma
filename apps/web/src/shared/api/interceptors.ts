@@ -6,7 +6,9 @@ import type {
 
 import { appConfig } from "@/app/config/app.config";
 import { routes } from "@/app/config/routes";
+import type { AuthUser } from "@/app/router/router.context";
 import { useAuthStore } from "@/app/store/auth.store";
+import { authEndpoints } from "@/modules/auth/api/auth.endpoints";
 
 import { axiosInstance } from "./axios";
 import { parseApiError } from "./errors";
@@ -16,6 +18,12 @@ type ApiSuccessEnvelope<T> = {
     message: string;
     data: T;
     timestamp: string;
+};
+
+type RefreshTokenResponse = {
+    accessToken: string;
+    refreshToken: string | null;
+    user: AuthUser;
 };
 
 function isSuccessEnvelope(
@@ -67,28 +75,108 @@ function handleRequestError(
     return Promise.reject(parseApiError(error));
 }
 
-function handleResponseError(
-    error: AxiosError,
-): Promise<never> {
-    const apiError = parseApiError(error);
+function redirectToLogin(): void {
+    useAuthStore.getState().clearSession();
 
-    if (apiError.status === 401) {
-        useAuthStore.getState().clearSession();
+    const currentPath = window.location.pathname;
 
-        const currentPath =
-            window.location.pathname;
+    if (currentPath !== routes.login) {
+        const redirectUrl = encodeURIComponent(
+            window.location.href,
+        );
 
-        if (currentPath !== routes.login) {
-            const redirectUrl = encodeURIComponent(
-                window.location.href,
-            );
+        window.location.href =
+            `${routes.login}?redirect=${redirectUrl}`;
+    }
+}
 
-            window.location.href =
-                `${routes.login}?redirect=${redirectUrl}`;
-        }
+function isAuthRefreshRequest(
+    config?: InternalAxiosRequestConfig,
+): boolean {
+    const url = config?.url ?? "";
+    return url.includes(authEndpoints.refresh);
+}
+
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+    if (refreshPromise) {
+        return refreshPromise;
     }
 
-    return Promise.reject(apiError);
+    refreshPromise = (async () => {
+        const refreshToken =
+            useAuthStore.getState().refreshToken;
+
+        if (!refreshToken) {
+            throw new Error("No hay refresh token");
+        }
+
+        const response = await axiosInstance.post<
+            RefreshTokenResponse
+        >(
+            authEndpoints.refresh,
+            { refreshToken },
+            { skipAuth: true },
+        );
+
+        const session = response.data;
+
+        if (!session?.accessToken || !session.user) {
+            throw new Error("Refresh incompleto");
+        }
+
+        useAuthStore.getState().setSession({
+            user: session.user,
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken,
+        });
+
+        return session.accessToken;
+    })().finally(() => {
+        refreshPromise = null;
+    });
+
+    return refreshPromise;
+}
+
+async function handleResponseError(
+    error: AxiosError,
+): Promise<AxiosResponse | never> {
+    const apiError = parseApiError(error);
+    const config = error.config;
+
+    if (apiError.status !== 401 || !config) {
+        return Promise.reject(apiError);
+    }
+
+    // Login/logout u otras llamadas públicas: solo rechazar.
+    // Refresh fallido: sesión inválida → login.
+    if (config.skipAuth) {
+        if (isAuthRefreshRequest(config)) {
+            redirectToLogin();
+        }
+
+        return Promise.reject(apiError);
+    }
+
+    // Ya se reintentó tras refresh y sigue 401.
+    if (config._retry) {
+        redirectToLogin();
+        return Promise.reject(apiError);
+    }
+
+    try {
+        const accessToken = await refreshAccessToken();
+        config._retry = true;
+        config.headers.Authorization =
+            `Bearer ${accessToken}`;
+
+        return axiosInstance.request(config);
+    } catch {
+        redirectToLogin();
+        return Promise.reject(apiError);
+    }
 }
 
 let interceptorsRegistered = false;
