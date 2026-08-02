@@ -88,23 +88,24 @@ class TipoDatoServiceTest {
     }
 
     @Test
-    void updateRejectsDuplicateCodigoIgnoreCase() {
-        TipoDato first = existing("ALPHA", "Alpha", false);
-        TipoDato second = existing("BETA", "Beta", false);
-        repository.items.add(first);
-        repository.items.add(second);
+    void updateRejectsCodigoChange() {
+        TipoDato stored = existing("BETA", "Beta", false);
+        repository.items.add(stored);
 
-        assertThrows(
-                ConflictException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> service.update(
-                        second.getId(),
-                        new TipoDatoRequest("alpha", "Beta", null, false)
+                        stored.getId(),
+                        new TipoDatoRequest("ALPHA", "Beta", null, false)
                 )
         );
+
+        assertEquals("TIPO_DATO_CODIGO_IMMUTABLE", exception.getCode());
+        assertEquals("BETA", stored.getCodigo());
     }
 
     @Test
-    void updateAllowsSameCodigoOnSameRecord() {
+    void updateKeepsCodigoAndUpdatesOtherFields() {
         TipoDato stored = existing("SELECT", "Selección", true);
         repository.items.add(stored);
 

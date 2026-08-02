@@ -92,10 +92,8 @@ public class TipoDatoService extends AbstractCrudService<
             TipoDato domain,
             TipoDatoRequest request
     ) {
-        String codigo = requireNormalizedCodigo(request.codigo());
-        validateUniqueCodigoForUpdate(codigo, domain.getId());
+        rejectCodigoChange(domain.getCodigo(), request.codigo());
 
-        domain.setCodigo(codigo);
         domain.setNombre(requireNormalizedNombre(request.nombre()));
         domain.setDescripcion(normalizeDescripcion(request.descripcion()));
         domain.setPermiteOpciones(requirePermiteOpciones(request.permiteOpciones()));
@@ -131,18 +129,13 @@ public class TipoDatoService extends AbstractCrudService<
         }
     }
 
-    private void validateUniqueCodigoForUpdate(
-            String codigo,
-            UUID currentId
-    ) {
-        if (tipoDatoRepository.existsByCodigoIgnoreCaseAndIdNot(
-                codigo,
-                currentId
-        )) {
-            throw new ConflictException(
-                    "TIPO_DATO_ALREADY_EXISTS",
-                    "Ya existe otro tipo de dato con el código '%s'"
-                            .formatted(codigo)
+    private void rejectCodigoChange(String currentCodigo, String requestedCodigo) {
+        String normalized = StringUtils.normalize(requestedCodigo);
+
+        if (normalized == null || !normalized.equalsIgnoreCase(currentCodigo)) {
+            throw new BusinessException(
+                    "TIPO_DATO_CODIGO_IMMUTABLE",
+                    "El código del tipo de dato no se puede modificar"
             );
         }
     }

@@ -55,7 +55,7 @@ export function TipoDatoFormDialog({
     onSubmit: async ({ value }) => {
       setFormError(null)
       const payload: TipoDatoDto = {
-        codigo: value.codigo.trim(),
+        codigo: isEditing && tipoDato ? tipoDato.codigo : value.codigo.trim(),
         nombre: value.nombre.trim(),
         descripcion: value.descripcion.trim(),
         permiteOpciones: value.permiteOpciones,
@@ -96,7 +96,7 @@ export function TipoDatoFormDialog({
       title={isEditing ? "Editar tipo de dato" : "Nuevo tipo de dato"}
       description={
         isEditing
-          ? "Actualiza el código, nombre y opciones del tipo de dato."
+          ? "Actualiza el nombre, descripción y opciones del tipo de dato. El código no se puede modificar."
           : "Define un tipo disponible para atributos, por ejemplo SELECT o FECHA."
       }
       formError={formError}
@@ -123,7 +123,9 @@ export function TipoDatoFormDialog({
       <form.Field name="codigo">
         {(field) => {
           const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+            !isEditing &&
+            field.state.meta.isTouched &&
+            !field.state.meta.isValid
 
           return (
             <Field data-invalid={isInvalid || undefined}>
@@ -135,10 +137,17 @@ export function TipoDatoFormDialog({
                 name={field.name}
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
+                onChange={(e) => {
+                  if (!isEditing) {
+                    field.handleChange(e.target.value)
+                  }
+                }}
                 required
+                disabled={isEditing}
+                readOnly={isEditing}
                 aria-required
                 aria-invalid={isInvalid}
+                aria-readonly={isEditing || undefined}
                 placeholder="SELECT"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
