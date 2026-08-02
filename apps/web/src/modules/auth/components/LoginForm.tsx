@@ -13,7 +13,7 @@ import {
   FieldLabel,
 } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
-import { ApiError } from "@/shared/lib/api-client"
+import { isApiError } from "@/shared/api"
 import { cn } from "@/shared/lib/utils"
 import { login } from "../api/auth.api"
 import { defaultLoginValues, loginSchema } from "../schemas/login.schema"
@@ -48,7 +48,7 @@ export function LoginForm({
 
         await navigate({ to: routes.home })
       } catch (error) {
-        if (error instanceof ApiError) {
+        if (isApiError(error)) {
           setFormError(
             error.status === 401
               ? "Usuario o contraseña incorrectos"

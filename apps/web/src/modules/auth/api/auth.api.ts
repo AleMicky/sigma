@@ -1,6 +1,6 @@
 import { apiConfig } from "@/app/config"
 import type { AuthUser } from "@/app/router/router.context"
-import { apiRequest } from "@/shared/lib/api-client"
+import { http } from "@/shared/api"
 
 export type AuthTokenResponse = {
   accessToken: string
@@ -18,23 +18,26 @@ export type LoginPayload = {
 export async function login(
   payload: LoginPayload,
 ): Promise<AuthTokenResponse> {
-  return apiRequest<AuthTokenResponse>(apiConfig.endpoints.auth.login, {
-    method: "POST",
-    body: payload,
-    auth: false,
-  })
+  return http.post<AuthTokenResponse, LoginPayload>(
+    apiConfig.endpoints.auth.login,
+    payload,
+    { skipAuth: true },
+  )
 }
 
 export async function refreshSession(
   refreshToken: string,
 ): Promise<AuthTokenResponse> {
-  return apiRequest<AuthTokenResponse>(apiConfig.endpoints.auth.refresh, {
-    method: "POST",
-    body: { refreshToken },
-    auth: false,
-  })
+  return http.post<
+    AuthTokenResponse,
+    { refreshToken: string }
+  >(
+    apiConfig.endpoints.auth.refresh,
+    { refreshToken },
+    { skipAuth: true },
+  )
 }
 
 export async function getCurrentUser(): Promise<AuthUser> {
-  return apiRequest<AuthUser>(apiConfig.endpoints.auth.me)
+  return http.get<AuthUser>(apiConfig.endpoints.auth.me)
 }
