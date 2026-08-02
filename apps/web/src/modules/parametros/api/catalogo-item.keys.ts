@@ -1,3 +1,4 @@
+import { createResourceKeys } from "@/shared/api"
 import type { PageParams } from "@/shared/types/api.types"
 
 export type CatalogoItemListFilters = PageParams & {
@@ -5,11 +6,7 @@ export type CatalogoItemListFilters = PageParams & {
   q?: string
 }
 
-export const catalogoItemKeys = {
-  all: ["catalogo-items"] as const,
-  lists: () => [...catalogoItemKeys.all, "list"] as const,
-  list: (filters?: CatalogoItemListFilters) =>
-    [...catalogoItemKeys.lists(), filters] as const,
-  details: () => [...catalogoItemKeys.all, "detail"] as const,
-  detail: (id: string) => [...catalogoItemKeys.details(), id] as const,
-}
+export const catalogoItemKeys = createResourceKeys<
+  "catalogo-items",
+  CatalogoItemListFilters
+>("catalogo-items")

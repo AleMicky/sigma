@@ -1,12 +1,6 @@
 import { formatDateTime } from "@/shared/utils/date.utils"
 import { cn } from "@/shared/lib/utils"
-
-export type AuditableFields = {
-  createdAt: string
-  updatedAt: string | null
-  createdBy: string | null
-  updatedBy: string | null
-}
+import type { AuditableFields } from "@/shared/types/audit.types"
 
 type AuditInfoProps = {
   data: AuditableFields

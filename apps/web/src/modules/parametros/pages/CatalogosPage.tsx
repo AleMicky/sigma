@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, FolderOpen, Pencil, Plus, Trash2 } from "lucide-react"
+import { ArrowLeft, FolderOpen, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
-import { isApiError } from "@/shared/api"
+import { getErrorMessage } from "@/shared/api"
+import { AuditInfo } from "@/shared/components/audit-info"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
+import { EmptyState } from "@/shared/components/empty-state"
+import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { Pagination } from "@/shared/components/pagination"
+import { RowActions } from "@/shared/components/row-actions"
+import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
-import { Skeleton } from "@/shared/components/ui/skeleton"
-import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { useIsMobile } from "@/shared/hooks/use-mobile"
+import {
+  useClampPage,
+  usePaginatedSearch,
+} from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 import type { PageResponse } from "@/shared/types/api.types"
 
@@ -19,42 +26,40 @@ import type { Catalogo } from "../api/catalogo.service"
 import { useDeleteCatalogoItem } from "../api/catalogo-item.mutations"
 import { catalogoItemQueries } from "../api/catalogo-item.queries"
 import type { CatalogoItem } from "../api/catalogo-item.service"
-import { AuditInfo } from "../components/AuditInfo"
 import { CatalogoFormDialog } from "../components/CatalogoFormDialog"
 import { CatalogoItemFormDialog } from "../components/CatalogoItemFormDialog"
-import { SearchField } from "../components/SearchField"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function CatalogosPage() {
   const isMobile = useIsMobile()
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
-  const [catalogoPage, setCatalogoPage] = useState(0)
-  const [itemPage, setItemPage] = useState(0)
-  const [catalogoSearch, setCatalogoSearch] = useState("")
-  const [itemSearch, setItemSearch] = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [catalogoDialogOpen, setCatalogoDialogOpen] = useState(false)
   const [editingCatalogo, setEditingCatalogo] = useState<Catalogo | null>(null)
   const [itemDialogOpen, setItemDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<CatalogoItem | null>(null)
 
-  const debouncedCatalogoSearch = useDebouncedValue(catalogoSearch)
-  const debouncedItemSearch = useDebouncedValue(itemSearch)
+  const catalogoSearch = usePaginatedSearch()
+  const itemSearch = usePaginatedSearch({ resetKey: selectedId })
 
   const catalogosQuery = useQuery(
     catalogoQueries.list({
-      page: catalogoPage,
+      page: catalogoSearch.page,
       size: PAGE_SIZE,
       sortBy: "nombre",
       direction: "ASC",
-      ...(debouncedCatalogoSearch.trim()
-        ? { q: debouncedCatalogoSearch.trim() }
-        : {}),
+      ...(catalogoSearch.query ? { q: catalogoSearch.query } : {}),
     }),
   )
 
   const catalogos = catalogosQuery.data?.content ?? []
+
+  useClampPage(
+    catalogoSearch.page,
+    catalogoSearch.setPage,
+    catalogosQuery.data?.totalPages,
+  )
 
   useEffect(() => {
     if (catalogos.length === 0) {
@@ -67,26 +72,6 @@ export function CatalogosPage() {
       setSelectedId(catalogos[0]?.id ?? null)
     }
   }, [catalogos, selectedId])
-
-  useEffect(() => {
-    setItemPage(0)
-    setItemSearch("")
-  }, [selectedId])
-
-  useEffect(() => {
-    setCatalogoPage(0)
-  }, [debouncedCatalogoSearch])
-
-  useEffect(() => {
-    setItemPage(0)
-  }, [debouncedItemSearch])
-
-  useEffect(() => {
-    const totalPages = catalogosQuery.data?.totalPages ?? 0
-    if (totalPages > 0 && catalogoPage > totalPages - 1) {
-      setCatalogoPage(totalPages - 1)
-    }
-  }, [catalogoPage, catalogosQuery.data?.totalPages])
 
   useEffect(() => {
     if (!isMobile) {
@@ -188,21 +173,19 @@ export function CatalogosPage() {
             catalogos={catalogos}
             page={catalogosQuery.data}
             selectedId={selectedId}
-            search={catalogoSearch}
+            search={catalogoSearch.search}
             isLoading={catalogosQuery.isLoading}
             isFetching={catalogosQuery.isFetching}
             errorMessage={
               catalogosQuery.isError
-                ? isApiError(catalogosQuery.error)
-                  ? catalogosQuery.error.message
-                  : "No se pudieron cargar los catálogos."
+                ? getErrorMessage(catalogosQuery.error)
                 : null
             }
-            onSearchChange={setCatalogoSearch}
+            onSearchChange={catalogoSearch.setSearch}
             onSelect={handleSelectCatalogo}
             onCreate={openCreateCatalogo}
             onEdit={openEditCatalogo}
-            onPageChange={setCatalogoPage}
+            onPageChange={catalogoSearch.setPage}
           />
         </div>
 
@@ -215,12 +198,12 @@ export function CatalogosPage() {
         >
           <DetailPanel
             catalogo={selected}
-            itemPage={itemPage}
-            search={itemSearch}
-            searchQuery={debouncedItemSearch}
+            itemPage={itemSearch.page}
+            search={itemSearch.search}
+            searchQuery={itemSearch.debouncedSearch}
             hidePrimaryAction={isMobile && mobileShowDetail}
-            onSearchChange={setItemSearch}
-            onPageChange={setItemPage}
+            onSearchChange={itemSearch.setSearch}
+            onPageChange={itemSearch.setPage}
             onCreateItem={openCreateItem}
             onEditItem={openEditItem}
           />
@@ -234,7 +217,7 @@ export function CatalogosPage() {
         catalogo={editingCatalogo}
         onSuccess={(saved) => {
           setSelectedId(saved.id)
-          setCatalogoPage(0)
+          catalogoSearch.setPage(0)
           if (isMobile) {
             setMobileShowDetail(true)
           }
@@ -250,7 +233,7 @@ export function CatalogosPage() {
           item={editingItem}
           onSuccess={() => {
             if (!editingItem) {
-              setItemPage(0)
+              itemSearch.setPage(0)
             }
           }}
         />
@@ -307,37 +290,27 @@ function MasterPanel({
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col gap-2 p-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
+        <ListSkeleton />
       ) : errorMessage ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center sm:p-8">
-          <p className="text-sm text-destructive">{errorMessage}</p>
-        </div>
+        <EmptyState title={errorMessage} className="text-destructive" />
       ) : catalogos.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center sm:p-8">
-          <span className="flex size-10 items-center justify-center rounded-lg border bg-muted">
-            <FolderOpen className="size-4 text-muted-foreground" />
-          </span>
-          <div className="flex flex-col gap-1 px-2">
-            <p className="text-sm font-medium">
-              {hasSearch ? "Sin resultados" : "No hay catálogos"}
-            </p>
-            <p className="mx-auto max-w-56 text-xs text-muted-foreground">
-              {hasSearch
-                ? "Prueba con otro código o nombre."
-                : "Crea un catálogo maestro, por ejemplo Tipo de documento."}
-            </p>
-          </div>
-          {!hasSearch ? (
-            <Button size="sm" type="button" onClick={onCreate}>
-              <Plus />
-              Crear
-            </Button>
-          ) : null}
-        </div>
+        <EmptyState
+          icon={<FolderOpen className="size-4 text-muted-foreground" />}
+          title={hasSearch ? "Sin resultados" : "No hay catálogos"}
+          description={
+            hasSearch
+              ? "Prueba con otro código o nombre."
+              : "Crea un catálogo maestro, por ejemplo Tipo de documento."
+          }
+          action={
+            !hasSearch ? (
+              <Button size="sm" type="button" onClick={onCreate}>
+                <Plus />
+                Crear
+              </Button>
+            ) : null
+          }
+        />
       ) : (
         <>
           <ul
@@ -371,26 +344,14 @@ function MasterPanel({
                         {catalogo.codigo}
                       </code>
                     </button>
-                    <div className="flex shrink-0 gap-0.5 py-2 pr-2 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100">
-                      <Button
-                        type="button"
-                        variant="default"
-                        size="icon-sm"
-                        aria-label="Editar catálogo"
-                        onClick={() => onEdit(catalogo)}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon-sm"
-                        aria-label="Eliminar catálogo"
-                        disabled={deleteMutation.isPending}
-                        onClick={() => setCatalogoToDelete(catalogo)}
-                      >
-                        <Trash2 />
-                      </Button>
+                    <div className="py-2 pr-2">
+                      <RowActions
+                        editLabel="Editar catálogo"
+                        deleteLabel="Eliminar catálogo"
+                        deleteDisabled={deleteMutation.isPending}
+                        onEdit={() => onEdit(catalogo)}
+                        onDelete={() => setCatalogoToDelete(catalogo)}
+                      />
                     </div>
                   </div>
                 </li>
@@ -461,12 +422,7 @@ function DetailPanel({
   const [itemToDelete, setItemToDelete] = useState<CatalogoItem | null>(null)
   const hasSearch = search.trim().length > 0
 
-  useEffect(() => {
-    const totalPages = itemsQuery.data?.totalPages ?? 0
-    if (totalPages > 0 && itemPage > totalPages - 1) {
-      onPageChange(totalPages - 1)
-    }
-  }, [itemPage, itemsQuery.data?.totalPages, onPageChange])
+  useClampPage(itemPage, onPageChange, itemsQuery.data?.totalPages)
 
   if (!catalogo) {
     return (
@@ -516,36 +472,29 @@ function DetailPanel({
       </div>
 
       {itemsQuery.isLoading ? (
-        <div className="flex flex-col gap-2 p-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
+        <ListSkeleton rowClassName="h-10" />
       ) : itemsQuery.isError ? (
-        <div className="flex flex-1 items-center justify-center p-6 sm:p-8">
-          <p className="text-center text-sm text-destructive">
-            {isApiError(itemsQuery.error)
-              ? itemsQuery.error.message
-              : "No se pudieron cargar los valores."}
-          </p>
-        </div>
+        <EmptyState
+          title={getErrorMessage(itemsQuery.error)}
+          className="text-destructive"
+        />
       ) : items.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center sm:p-8">
-          <p className="text-sm font-medium">
-            {hasSearch ? "Sin resultados" : "Sin valores"}
-          </p>
-          <p className="max-w-64 text-xs text-muted-foreground">
-            {hasSearch
+        <EmptyState
+          title={hasSearch ? "Sin resultados" : "Sin valores"}
+          description={
+            hasSearch
               ? "Prueba con otro valor o nombre."
-              : "Agrega ítems hijos, por ejemplo CI o Pasaporte."}
-          </p>
-          {!hasSearch ? (
-            <Button size="sm" type="button" onClick={onCreateItem}>
-              <Plus />
-              Agregar valor
-            </Button>
-          ) : null}
-        </div>
+              : "Agrega ítems hijos, por ejemplo CI o Pasaporte."
+          }
+          action={
+            !hasSearch ? (
+              <Button size="sm" type="button" onClick={onCreateItem}>
+                <Plus />
+                Agregar valor
+              </Button>
+            ) : null
+          }
+        />
       ) : (
         <>
           <ul
@@ -568,27 +517,13 @@ function DetailPanel({
                   </code>
                   <AuditInfo data={item} compact />
                 </div>
-                <div className="flex shrink-0 gap-0.5 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100">
-                  <Button
-                    type="button"
-                    variant="default"
-                    size="icon-sm"
-                    aria-label="Editar valor"
-                    onClick={() => onEditItem(item)}
-                  >
-                    <Pencil />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon-sm"
-                    aria-label="Eliminar valor"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => setItemToDelete(item)}
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
+                <RowActions
+                  editLabel="Editar valor"
+                  deleteLabel="Eliminar valor"
+                  deleteDisabled={deleteMutation.isPending}
+                  onEdit={() => onEditItem(item)}
+                  onDelete={() => setItemToDelete(item)}
+                />
               </li>
             ))}
           </ul>

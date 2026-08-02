@@ -19,3 +19,12 @@ export type {
     ApiErrorResponse,
     ApiValidationError,
 } from "./errors";
+
+export {
+    createCrudService,
+    createResourceEndpoints,
+    createResourceKeys,
+} from "./resource";
+export type { CrudService, ResourceEndpoints } from "./resource";
+
+export { createCrudMutations } from "./crud-mutations";

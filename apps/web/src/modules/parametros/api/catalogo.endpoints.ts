@@ -1,4 +1,3 @@
-export const catalogoEndpoints = {
-  root: "/catalogos",
-  byId: (id: string) => `/catalogos/${id}`,
-} as const
+import { createResourceEndpoints } from "@/shared/api"
+
+export const catalogoEndpoints = createResourceEndpoints("/catalogos")
