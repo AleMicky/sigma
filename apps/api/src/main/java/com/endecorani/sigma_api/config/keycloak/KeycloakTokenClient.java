@@ -1,0 +1,170 @@
+package com.endecorani.sigma_api.config.keycloak;
+
+import com.endecorani.sigma_api.modules.auth.application.dto.KeycloakTokenResponse;
+import com.endecorani.sigma_api.shared.domain.exception.UnauthorizedException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class KeycloakTokenClient {
+
+    private static final String GRANT_TYPE = "grant_type";
+    private static final String CLIENT_ID = "client_id";
+    private static final String CLIENT_SECRET = "client_secret";
+    private static final String USERNAME = "username";
+    private static final String PASSWORD = "password";
+    private static final String REFRESH_TOKEN = "refresh_token";
+    private static final String SCOPE = "scope";
+    private static final String OPENID_SCOPE = "openid profile email";
+
+    private final KeycloakProperties properties;
+    private final JsonMapper jsonMapper;
+    private final RestClient keycloakRestClient;
+
+    public KeycloakTokenResponse passwordGrant(String username, String password) {
+        MultiValueMap<String, String> form = baseForm("password");
+        form.add(USERNAME, username);
+        form.add(PASSWORD, password);
+        form.add(SCOPE, OPENID_SCOPE);
+        return exchange(form);
+    }
+
+    public KeycloakTokenResponse refreshGrant(String refreshToken) {
+        MultiValueMap<String, String> form = baseForm("refresh_token");
+        form.add(REFRESH_TOKEN, refreshToken);
+        return exchange(form);
+    }
+
+    private MultiValueMap<String, String> baseForm(String grantType) {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add(GRANT_TYPE, grantType);
+        form.add(CLIENT_ID, properties.clientId());
+        if (properties.clientSecret() != null && !properties.clientSecret().isBlank()) {
+            form.add(CLIENT_SECRET, properties.clientSecret());
+        }
+        return form;
+    }
+
+    private KeycloakTokenResponse exchange(MultiValueMap<String, String> form) {
+        try {
+            String body = keycloakRestClient
+                    .post()
+                    .uri(properties.tokenUrl())
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(form)
+                    .retrieve()
+                    .body(String.class);
+
+            KeycloakTokenResponse response = parseTokenResponse(body);
+            if (response.accessToken() == null || response.accessToken().isBlank()) {
+                throw new UnauthorizedException("Keycloak no devolvió un access token válido");
+            }
+            return response;
+        } catch (RestClientResponseException exception) {
+            String detail = parseKeycloakError(exception.getResponseBodyAsString());
+            log.warn(
+                    "Keycloak token endpoint rechazó la solicitud (clientId={}, status={}): {}",
+                    properties.clientId(),
+                    exception.getStatusCode().value(),
+                    detail
+            );
+            throw new UnauthorizedException(detail);
+        } catch (UnauthorizedException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            log.error(
+                    "Error de red o configuración al llamar a Keycloak (tokenUrl={})",
+                    properties.tokenUrl(),
+                    exception
+            );
+            throw new UnauthorizedException(
+                    "No se pudo conectar con Keycloak. Verifica KEYCLOAK_TOKEN_URL y la red"
+            );
+        }
+    }
+
+    private KeycloakTokenResponse parseTokenResponse(String body) {
+        if (body == null || body.isBlank()) {
+            throw new UnauthorizedException("Keycloak no devolvió un access token válido");
+        }
+
+        JsonNode node = jsonMapper.readTree(body);
+        return new KeycloakTokenResponse(
+                textOrNull(node, "access_token"),
+                textOrNull(node, "refresh_token"),
+                longOrNull(node, "expires_in"),
+                longOrNull(node, "refresh_expires_in"),
+                textOrNull(node, "token_type"),
+                textOrNull(node, "scope")
+        );
+    }
+
+    private String parseKeycloakError(String body) {
+        if (body == null || body.isBlank()) {
+            return "Keycloak rechazó la autenticación sin detalle";
+        }
+
+        try {
+            JsonNode node = jsonMapper.readTree(body);
+            String error = textOrEmpty(node, "error");
+            String description = textOrEmpty(node, "error_description");
+
+            return switch (error) {
+                case "invalid_client", "unauthorized_client" ->
+                        "Client Keycloak inválido (" + properties.clientId()
+                                + "). Verifica KEYCLOAK_CLIENT_ID y KEYCLOAK_CLIENT_SECRET"
+                                + (description.isBlank() ? "" : ": " + description);
+                case "invalid_grant" -> {
+                    if (description.toLowerCase().contains("not fully set up")) {
+                        yield "La cuenta en Keycloak no está completa (Required actions pendientes). "
+                                + "En Users → admin.sigma quita UPDATE_PASSWORD / VERIFY_EMAIL / CONFIGURE_TOTP";
+                    }
+                    yield description.isBlank()
+                            ? "Usuario o contraseña incorrectos, o Direct Access Grants deshabilitado"
+                            : description;
+                }
+                case "invalid_scope" ->
+                        "Scope inválido en la solicitud a Keycloak"
+                                + (description.isBlank() ? "" : ": " + description);
+                default -> description.isBlank()
+                        ? (error.isBlank() ? "Credenciales inválidas o token rechazado por Keycloak" : error)
+                        : error + ": " + description;
+            };
+        } catch (Exception ignored) {
+            return "Credenciales inválidas o token rechazado por Keycloak";
+        }
+    }
+
+    private static String textOrNull(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        if (value == null || value.isNull()) {
+            return null;
+        }
+        String text = value.asText("").trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private static Long longOrNull(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        if (value == null || value.isNull() || !value.isNumber()) {
+            return null;
+        }
+        return value.asLong();
+    }
+
+    private static String textOrEmpty(JsonNode node, String field) {
+        String value = textOrNull(node, field);
+        return value == null ? "" : value;
+    }
+}

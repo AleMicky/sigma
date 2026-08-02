@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="900" viewBox="0 0 720 900" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Ilustración corporativa para sistema de mantenimiento</title>
+  <desc id="desc">Panel técnico corporativo con maquinaria industrial, métricas y elementos de mantenimiento preventivo.</desc>
+  <defs>
+    <linearGradient id="background" x1="66" y1="24" x2="667" y2="875" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#152B4A"/>
+      <stop offset="1" stop-color="#071321"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="112" y1="201" x2="601" y2="714" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#193654" stop-opacity=".96"/>
+      <stop offset="1" stop-color="#0D2136" stop-opacity=".96"/>
+    </linearGradient>
+    <linearGradient id="machine" x1="245" y1="353" x2="509" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DDE7EF"/>
+      <stop offset="1" stop-color="#8FA8BB"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#3CB8E8"/>
+      <stop offset="1" stop-color="#1979B5"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" stroke="#A8C3D6" stroke-opacity=".07"/>
+    </pattern>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#02070D" flood-opacity=".38"/>
+    </filter>
+  </defs>
+
+  <rect width="720" height="900" rx="30" fill="url(#background)"/>
+  <rect width="720" height="900" rx="30" fill="url(#grid)"/>
+  <path d="M720 0H492L720 254V0Z" fill="#2799CC" fill-opacity=".08"/>
+  <path d="M0 900H268L0 633V900Z" fill="#2799CC" fill-opacity=".06"/>
+
+  <!-- Corporate header mark -->
+  <g transform="translate(70 66)">
+    <rect width="46" height="46" rx="10" fill="#2CA6D6"/>
+    <path d="M14 31V16H21L27 24L33 16V31" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="62" y="4" width="142" height="9" rx="4.5" fill="#EDF6FB" fill-opacity=".92"/>
+    <rect x="62" y="23" width="93" height="7" rx="3.5" fill="#AFC6D6" fill-opacity=".45"/>
+  </g>
+  <g transform="translate(577 72)" fill="#9BB7CA">
+    <circle cx="0" cy="0" r="4"/><circle cx="18" cy="0" r="4"/><circle cx="36" cy="0" r="4"/>
+  </g>
+
+  <!-- Main technical panel -->
+  <g filter="url(#shadow)">
+    <rect x="64" y="155" width="592" height="613" rx="28" fill="url(#panel)" stroke="#A9C7D9" stroke-opacity=".17"/>
+    <path d="M64 229H656" stroke="#9ABACD" stroke-opacity=".15"/>
+    <circle cx="96" cy="192" r="5" fill="#2EB1DE"/>
+    <rect x="112" y="187" width="126" height="10" rx="5" fill="#E8F3F8" fill-opacity=".82"/>
+    <rect x="531" y="181" width="93" height="24" rx="12" fill="#173D55"/>
+    <circle cx="547" cy="193" r="4" fill="#50D19A"/>
+    <rect x="559" y="189" width="48" height="7" rx="3.5" fill="#CDE0E9" fill-opacity=".58"/>
+  </g>
+
+  <!-- Left metrics -->
+  <g>
+    <rect x="91" y="259" width="164" height="91" rx="16" fill="#102940" stroke="#88B5CB" stroke-opacity=".15"/>
+    <rect x="109" y="277" width="66" height="7" rx="3.5" fill="#A9C1D0" fill-opacity=".48"/>
+    <path d="M111 325L133 305L153 316L179 288L205 305L236 278" stroke="#35B1DF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M111 326H236" stroke="#89A8BA" stroke-opacity=".18"/>
+
+    <rect x="91" y="370" width="164" height="88" rx="16" fill="#102940" stroke="#88B5CB" stroke-opacity=".15"/>
+    <circle cx="132" cy="414" r="24" stroke="#24495F" stroke-width="8"/>
+    <path d="M132 390A24 24 0 0 1 152 427" stroke="#4BC991" stroke-width="8" stroke-linecap="round"/>
+    <rect x="170" y="392" width="57" height="8" rx="4" fill="#E8F3F8" fill-opacity=".75"/>
+    <rect x="170" y="410" width="39" height="6" rx="3" fill="#9DB9CA" fill-opacity=".4"/>
+    <rect x="170" y="428" width="47" height="6" rx="3" fill="#9DB9CA" fill-opacity=".25"/>
+
+    <rect x="91" y="478" width="164" height="171" rx="16" fill="#102940" stroke="#88B5CB" stroke-opacity=".15"/>
+    <rect x="109" y="498" width="80" height="7" rx="3.5" fill="#A9C1D0" fill-opacity=".48"/>
+    <g stroke="#36566B">
+      <path d="M109 533H237"/><path d="M109 565H237"/><path d="M109 597H237"/>
+    </g>
+    <g fill="#3AB5DE">
+      <circle cx="116" cy="533" r="4"/><circle cx="116" cy="565" r="4"/>
+    </g>
+    <circle cx="116" cy="597" r="4" fill="#E9B949"/>
+    <g fill="#C5D8E2" fill-opacity=".56">
+      <rect x="130" y="529" width="82" height="7" rx="3.5"/>
+      <rect x="130" y="561" width="67" height="7" rx="3.5"/>
+      <rect x="130" y="593" width="91" height="7" rx="3.5"/>
+    </g>
+    <g fill="#5C7A8C">
+      <rect x="130" y="540" width="49" height="4" rx="2"/>
+      <rect x="130" y="572" width="38" height="4" rx="2"/>
+      <rect x="130" y="604" width="57" height="4" rx="2"/>
+    </g>
+  </g>
+
+  <!-- Industrial machine -->
+  <g filter="url(#shadow)">
+    <rect x="285" y="294" width="307" height="355" rx="22" fill="#0B1B2B" stroke="#8EB3C7" stroke-opacity=".2"/>
+    <path d="M305 318H572" stroke="#83A7BB" stroke-opacity=".17"/>
+    <circle cx="318" cy="307" r="4" fill="#31B1DF"/>
+    <rect x="332" y="303" width="75" height="7" rx="3.5" fill="#D8E9F1" fill-opacity=".55"/>
+
+    <!-- press body -->
+    <path d="M345 357H531V590H345V357Z" fill="url(#machine)"/>
+    <path d="M365 379H511V553H365V379Z" fill="#10283B"/>
+    <rect x="385" y="401" width="106" height="32" rx="5" fill="#183D56"/>
+    <circle cx="402" cy="417" r="6" fill="#52CB94"/>
+    <circle cx="425" cy="417" r="6" fill="#E3B441"/>
+    <rect x="448" y="412" width="29" height="9" rx="4.5" fill="#8EABBA"/>
+    <path d="M413 454H463V478H413V454Z" fill="#9DB4C2"/>
+    <path d="M429 478H447V519H429V478Z" fill="#C9D6DE"/>
+    <path d="M396 519H480L491 553H385L396 519Z" fill="#657F90"/>
+    <path d="M368 575H508" stroke="#58788B" stroke-width="5"/>
+    <rect x="331" y="590" width="214" height="34" rx="6" fill="#6F8C9E"/>
+    <path d="M355 624V646M521 624V646" stroke="#7795A7" stroke-width="12"/>
+
+    <!-- machine side status -->
+    <rect x="544" y="375" width="28" height="107" rx="7" fill="#17364B"/>
+    <circle cx="558" cy="395" r="6" fill="#50CE96"/>
+    <circle cx="558" cy="420" r="6" fill="#2EAADB"/>
+    <circle cx="558" cy="445" r="6" fill="#E9B949"/>
+    <path d="M558 461V470" stroke="#779DB0" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Floating preventive maintenance card -->
+  <g filter="url(#shadow)">
+    <rect x="377" y="672" width="246" height="119" rx="18" fill="#173650" stroke="#83BDD7" stroke-opacity=".26"/>
+    <rect x="397" y="693" width="45" height="45" rx="12" fill="#1E526D"/>
+    <g transform="translate(419.5 715.5)">
+      <path d="M0-13L5-10L9-11L12-7L10-2L13 2L10 7L5 7L2 12L-3 11L-6 7L-11 6L-12 1L-9-3L-10-8L-5-11Z" fill="#43B8E2"/>
+      <circle r="5" fill="#163C53"/>
+    </g>
+    <rect x="457" y="695" width="111" height="8" rx="4" fill="#E4F1F6" fill-opacity=".76"/>
+    <rect x="457" y="713" width="72" height="6" rx="3" fill="#9DB8C7" fill-opacity=".4"/>
+    <rect x="397" y="757" width="204" height="7" rx="3.5" fill="#294E63"/>
+    <rect x="397" y="757" width="157" height="7" rx="3.5" fill="url(#blue)"/>
+  </g>
+
+  <!-- Blueprint details -->
+  <g opacity=".42" stroke="#75BBD6" stroke-width="1.5">
+    <path d="M284 264H328M306 242V286"/>
+    <circle cx="306" cy="264" r="13"/>
+    <path d="M603 263H625V285"/>
+    <path d="M603 559H625V537"/>
+  </g>
+
+  <!-- Footer indicator -->
+  <g transform="translate(70 832)">
+    <rect width="242" height="8" rx="4" fill="#C8DBE5" fill-opacity=".12"/>
+    <rect width="156" height="8" rx="4" fill="#299FCF"/>
+    <rect x="265" width="82" height="8" rx="4" fill="#C8DBE5" fill-opacity=".09"/>
+  </g>
+</svg>

@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="900" viewBox="0 0 720 900" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Ilustración para login de sistema de mantenimiento</title>
+  <desc id="desc">Técnico de mantenimiento con una tableta, engranajes, herramientas y paneles de control sobre un fondo azul.</desc>
+  <defs>
+    <linearGradient id="bg" x1="80" y1="30" x2="650" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F3D91"/>
+      <stop offset="1" stop-color="#071A3D"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="253" y1="277" x2="518" y2="650" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#40C9FF"/>
+      <stop offset="1" stop-color="#1482E8"/>
+    </linearGradient>
+    <linearGradient id="shirt" x1="244" y1="438" x2="432" y2="731" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2A9EF2"/>
+      <stop offset="1" stop-color="#0B5FB9"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#020B1D" flood-opacity=".34"/>
+    </filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+  </defs>
+
+  <rect width="720" height="900" rx="36" fill="url(#bg)"/>
+  <circle cx="610" cy="116" r="190" fill="#2A9EF2" fill-opacity=".12"/>
+  <circle cx="93" cy="754" r="205" fill="#3AD5FF" fill-opacity=".08"/>
+  <path d="M0 254C126 196 211 285 328 244C457 198 542 96 720 146V0H0V254Z" fill="#53D7FF" fill-opacity=".06"/>
+  <g opacity=".24" stroke="#75DFFF" stroke-width="2">
+    <path d="M70 154H233"/><path d="M70 174H187"/><path d="M491 746H647"/><path d="M536 766H647"/>
+    <circle cx="70" cy="154" r="4" fill="#75DFFF"/><circle cx="647" cy="746" r="4" fill="#75DFFF"/>
+  </g>
+
+  <!-- Floating maintenance cards -->
+  <g filter="url(#shadow)">
+    <rect x="70" y="224" width="178" height="126" rx="22" fill="#123B73" stroke="#62CFFF" stroke-opacity=".35"/>
+    <rect x="91" y="246" width="44" height="44" rx="12" fill="#1C8FE3" fill-opacity=".28"/>
+    <path d="M105 276L122 259M104 259l18 18" stroke="#6FE0FF" stroke-width="5" stroke-linecap="round"/>
+    <rect x="151" y="248" width="69" height="9" rx="4.5" fill="#A8E9FF" fill-opacity=".8"/>
+    <rect x="151" y="267" width="49" height="7" rx="3.5" fill="#A8E9FF" fill-opacity=".35"/>
+    <rect x="91" y="310" width="129" height="8" rx="4" fill="#A8E9FF" fill-opacity=".25"/>
+    <rect x="91" y="310" width="92" height="8" rx="4" fill="#4ED4FF"/>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="503" y="276" width="147" height="154" rx="22" fill="#123B73" stroke="#62CFFF" stroke-opacity=".35"/>
+    <circle cx="576.5" cy="332" r="28" stroke="#54D5FF" stroke-width="8" stroke-dasharray="118 58" transform="rotate(-70 576.5 332)"/>
+    <path d="M576 320V334L586 340" stroke="#D8F7FF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="531" y="379" width="91" height="8" rx="4" fill="#A8E9FF" fill-opacity=".75"/>
+    <rect x="545" y="397" width="63" height="6" rx="3" fill="#A8E9FF" fill-opacity=".3"/>
+  </g>
+
+  <!-- Large decorative gear -->
+  <g opacity=".38" transform="translate(573 574)">
+    <path d="M0-76L12-72L18-58L34-57L42-45L37-30L49-19L47-4L33 4L34 20L23 30L8 27L-1 40L-16 38L-23 23L-39 22L-47 10L-42-5L-54-16L-52-31L-38-39L-39-55L-28-65L-13-62Z" fill="#58D8FF"/>
+    <circle r="31" fill="#0A2858" stroke="#B7F1FF" stroke-width="9"/>
+  </g>
+
+  <!-- Technician -->
+  <ellipse cx="356" cy="790" rx="218" ry="36" fill="#020B1D" fill-opacity=".28" filter="url(#soft)"/>
+  <g filter="url(#shadow)">
+    <!-- legs -->
+    <path d="M297 673L354 673L341 797H278L297 673Z" fill="#102D58"/>
+    <path d="M361 669L419 672L445 797H381L361 669Z" fill="#0B2348"/>
+    <path d="M278 790H343V815H253C253 801 263 792 278 790Z" fill="#06152F"/>
+    <path d="M382 790H445C464 793 475 801 475 815H381L382 790Z" fill="#06152F"/>
+    <!-- torso -->
+    <path d="M272 432C295 411 328 402 361 402C398 402 433 413 455 438L438 675C396 695 313 695 275 674L260 478L272 432Z" fill="url(#shirt)"/>
+    <path d="M341 401L361 425L383 401L398 416L381 463H341L324 416L341 401Z" fill="#BDEFFF"/>
+    <path d="M352 426H370L377 457L362 474L347 457L352 426Z" fill="#0B4D9B"/>
+    <path d="M278 444C250 456 231 489 213 548L258 565L292 483L278 444Z" fill="#1687D9"/>
+    <path d="M446 442C474 453 490 481 506 525L463 546L429 480L446 442Z" fill="#0D6FC5"/>
+    <!-- head and helmet -->
+    <path d="M315 320C315 277 336 249 369 249C404 249 426 276 425 320V350C425 386 402 411 370 411C337 411 315 386 315 350V320Z" fill="#E8A77D"/>
+    <path d="M320 328C327 323 334 316 337 306C358 316 390 316 414 303C418 313 421 323 423 335V302C423 270 402 247 369 247C336 247 315 270 315 303L320 328Z" fill="#17365D"/>
+    <path d="M304 306C304 262 330 231 369 231C408 231 434 262 434 306H304Z" fill="#FFD34F"/>
+    <path d="M331 245C344 232 354 225 369 225C385 225 397 232 408 245L413 306H325L331 245Z" fill="#FFB72E"/>
+    <rect x="297" y="298" width="144" height="18" rx="9" fill="#FFE47E"/>
+    <path d="M350 349C361 357 378 357 389 349" stroke="#9C513E" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="342" cy="331" r="4" fill="#24354D"/><circle cx="398" cy="331" r="4" fill="#24354D"/>
+    <!-- arms and tablet -->
+    <path d="M214 543C203 573 213 597 241 605C258 610 278 594 289 578L258 550L214 543Z" fill="#E8A77D"/>
+    <path d="M501 520C519 551 516 577 492 590C477 598 458 590 444 574L463 537L501 520Z" fill="#E8A77D"/>
+    <g transform="rotate(-4 368 566)">
+      <rect x="274" y="493" width="184" height="145" rx="18" fill="#06162F" stroke="#6BDAFF" stroke-width="4"/>
+      <rect x="291" y="511" width="150" height="104" rx="10" fill="url(#accent)"/>
+      <path d="M313 577L337 553L358 569L397 533L421 552" stroke="#E9FBFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="365" cy="627" r="5" fill="#99E8FF"/>
+    </g>
+    <path d="M239 587C247 573 262 565 277 568L300 579L289 609L256 608C241 606 233 598 239 587Z" fill="#E8A77D"/>
+    <path d="M489 575C481 563 468 558 454 563L436 578L450 604L480 597C493 594 497 584 489 575Z" fill="#E8A77D"/>
+    <!-- badge -->
+    <rect x="398" y="475" width="35" height="45" rx="6" fill="#E8F8FF"/>
+    <circle cx="415.5" cy="489" r="7" fill="#44C8F5"/>
+    <rect x="406" y="502" width="19" height="4" rx="2" fill="#8EB8D1"/>
+    <rect x="410" y="510" width="11" height="3" rx="1.5" fill="#B5D1E0"/>
+  </g>
+
+  <!-- Tool icons -->
+  <g transform="translate(92 581) rotate(-18)" opacity=".9">
+    <path d="M42 7C30 3 16 6 8 16L26 28L18 46L0 42C0 56 9 69 23 74C34 78 45 75 53 68L88 103C95 110 107 110 114 103C121 96 121 84 114 77L79 42C86 21 68 2 47 6L60 19L50 35L32 30L42 7Z" fill="#5DDCFF"/>
+    <circle cx="101" cy="90" r="6" fill="#0D3268"/>
+  </g>
+  <g transform="translate(585 681) rotate(28)" opacity=".75">
+    <rect x="-8" y="26" width="16" height="92" rx="8" fill="#66DFFF"/>
+    <path d="M-30 22C-18 2 18 2 30 22L15 35H-15L-30 22Z" fill="#BDF4FF"/>
+  </g>
+
+  <g fill="#8BE8FF">
+    <circle cx="124" cy="408" r="5"/><circle cx="602" cy="494" r="4"/><circle cx="156" cy="702" r="3"/>
+  </g>
+</svg>

@@ -6,6 +6,7 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://157.173.99.216:8081/realms/sigma}
+          audiences: ${KEYCLOAK_AUDIENCE:sigma-api}
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sigma_db}
     username: ${DB_USERNAME:postgres}
@@ -35,15 +36,16 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
     persist-authorization: true
-    oauth:
-      client-id: ${KEYCLOAK_SWAGGER_CLIENT_ID:sigma-swagger}
-      use-pkce-with-authorization-code-grant: true
 
 app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  keycloak:
+    token-url: ${KEYCLOAK_TOKEN_URL:http://157.173.99.216:8081/realms/sigma/protocol/openid-connect/token}
+    client-id: ${KEYCLOAK_CLIENT_ID:sigma-web}
+    client-secret: ${KEYCLOAK_CLIENT_SECRET:}
+    audience: ${KEYCLOAK_AUDIENCE:sigma-api}
   openapi:
     title: Sigma API
     description: API REST para el Sistema SIGMA
     version: v1
-    keycloak:
-      authorization-url: ${KEYCLOAK_AUTHORIZATION_URL:http://157.173.99.216:8081/realms/sigma/protocol/openid-connect/auth}
-      token-url: ${KEYCLOAK_TOKEN_URL:http://157.173.99.216:8081/realms/sigma/protocol/openid-connect/token}
