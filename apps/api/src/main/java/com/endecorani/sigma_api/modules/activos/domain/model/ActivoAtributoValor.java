@@ -15,5 +15,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 public class ActivoAtributoValor extends AuditableModel {
+
     private UUID id;
+
+    private UUID activoId;
+
+    private UUID activoAtributoId;
+
+    private String valor;
 }

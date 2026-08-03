@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { ImageIcon, Package, Plus } from "lucide-react"
 
@@ -32,14 +33,12 @@ import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tip
 import { useDeleteActivo } from "../api/activo.mutations"
 import { activoQueries } from "../api/activo.queries"
 import type { Activo } from "../api/activo.service"
-import { ActivoFormDialog } from "../components/ActivoFormDialog"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 const ALL_TIPOS = "__all__"
 
 export function ActivosPage() {
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editing, setEditing] = useState<Activo | null>(null)
+  const navigate = useNavigate()
   const [toDelete, setToDelete] = useState<Activo | null>(null)
   const [tipoActivoId, setTipoActivoId] = useState<string>(ALL_TIPOS)
   const search = usePaginatedSearch({ resetKey: tipoActivoId })
@@ -75,14 +74,21 @@ export function ActivosPage() {
 
   useClampPage(search.page, search.setPage, activosQuery.data?.totalPages)
 
-  function openCreate() {
-    setEditing(null)
-    setDialogOpen(true)
+  function goCreate() {
+    void navigate({
+      to: "/activos/nuevo",
+      search:
+        tipoActivoId !== ALL_TIPOS
+          ? { tipoActivoId }
+          : {},
+    })
   }
 
-  function openEdit(activo: Activo) {
-    setEditing(activo)
-    setDialogOpen(true)
+  function goEdit(activo: Activo) {
+    void navigate({
+      to: "/activos/$activoId/editar",
+      params: { activoId: activo.id },
+    })
   }
 
   return (
@@ -96,7 +102,7 @@ export function ActivosPage() {
             <Button
               size="sm"
               type="button"
-              onClick={openCreate}
+              onClick={goCreate}
               className="shrink-0 md:hidden"
             >
               <Plus />
@@ -111,7 +117,7 @@ export function ActivosPage() {
         <Button
           size="sm"
           type="button"
-          onClick={openCreate}
+          onClick={goCreate}
           className="hidden shrink-0 md:inline-flex"
         >
           <Plus />
@@ -174,7 +180,7 @@ export function ActivosPage() {
             title: "Sin activos",
             description: "Crea el primer activo del inventario.",
             actionLabel: "Crear activo",
-            onAction: openCreate,
+            onAction: goCreate,
             searchDescription: "Prueba con otro código, nombre o tipo.",
           }}
         >
@@ -223,7 +229,7 @@ export function ActivosPage() {
                     editLabel="Editar activo"
                     deleteLabel="Eliminar activo"
                     deleteDisabled={deleteMutation.isPending}
-                    onEdit={() => openEdit(activo)}
+                    onEdit={() => goEdit(activo)}
                     onDelete={() => setToDelete(activo)}
                   />
                 }
@@ -232,24 +238,6 @@ export function ActivosPage() {
           }}
         </PaginatedList>
       </div>
-
-      <ActivoFormDialog
-        key={
-          editing?.id ??
-          `new-activo-${tipoActivoId !== ALL_TIPOS ? tipoActivoId : "all"}`
-        }
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        activo={editing}
-        defaultTipoActivoId={
-          tipoActivoId !== ALL_TIPOS ? tipoActivoId : undefined
-        }
-        onSuccess={() => {
-          if (!editing) {
-            search.setPage(0)
-          }
-        }}
-      />
 
       <ConfirmDeleteDialog
         open={Boolean(toDelete)}
