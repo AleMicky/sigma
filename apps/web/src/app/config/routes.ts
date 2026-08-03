@@ -40,5 +40,6 @@ export const routes = {
     areas: "/organizacion/areas",
     cargos: "/organizacion/cargos",
     personas: "/organizacion/personas",
+    migraciones: "/organizacion/migraciones",
   },
 } as const

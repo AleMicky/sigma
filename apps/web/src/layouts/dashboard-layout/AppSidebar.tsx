@@ -152,7 +152,7 @@ function MainMenu({
             <SidebarMenuButton
               isActive={isActive}
               tooltip={item.title}
-              render={<Link to={item.to} />}
+              render={<Link to={item.to as any} />}
               className="h-9 rounded-lg"
             >
               <item.icon />
@@ -205,7 +205,7 @@ function SubMenu({
               <SidebarMenuButton
                 isActive={isActive}
                 tooltip={child.title}
-                render={<Link to={child.to} />}
+                render={<Link to={child.to as any} />}
                 className="h-9 rounded-lg"
               >
                 <child.icon />

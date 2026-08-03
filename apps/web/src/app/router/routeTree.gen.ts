@@ -34,6 +34,7 @@ import { Route as DashboardActivosActivoIdEditarRouteImport } from './../../rout
 import { Route as DashboardOrganizacionAreasIndexRouteImport } from './../../routes/_dashboard/organizacion/areas/index'
 import { Route as DashboardOrganizacionCargosIndexRouteImport } from './../../routes/_dashboard/organizacion/cargos/index'
 import { Route as DashboardOrganizacionEmpleadosIndexRouteImport } from './../../routes/_dashboard/organizacion/empleados/index'
+import { Route as DashboardOrganizacionMigracionesIndexRouteImport } from './../../routes/_dashboard/organizacion/migraciones/index'
 import { Route as DashboardOrganizacionPersonasIndexRouteImport } from './../../routes/_dashboard/organizacion/personas/index'
 import { Route as DashboardTiposActivoTipoActivoIdIndexRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/index'
 import { Route as DashboardTiposActivoTipoActivoIdAtributosRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/atributos'
@@ -181,6 +182,12 @@ const DashboardOrganizacionEmpleadosIndexRoute =
     path: '/empleados/',
     getParentRoute: () => DashboardOrganizacionRouteRoute,
   } as any)
+const DashboardOrganizacionMigracionesIndexRoute =
+  DashboardOrganizacionMigracionesIndexRouteImport.update({
+    id: '/migraciones/',
+    path: '/migraciones/',
+    getParentRoute: () => DashboardOrganizacionRouteRoute,
+  } as any)
 const DashboardOrganizacionPersonasIndexRoute =
   DashboardOrganizacionPersonasIndexRouteImport.update({
     id: '/personas/',
@@ -233,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/organizacion/areas/': typeof DashboardOrganizacionAreasIndexRoute
   '/organizacion/cargos/': typeof DashboardOrganizacionCargosIndexRoute
   '/organizacion/empleados/': typeof DashboardOrganizacionEmpleadosIndexRoute
+  '/organizacion/migraciones/': typeof DashboardOrganizacionMigracionesIndexRoute
   '/organizacion/personas/': typeof DashboardOrganizacionPersonasIndexRoute
   '/tipos-activo/$tipoActivoId/': typeof DashboardTiposActivoTipoActivoIdIndexRoute
 }
@@ -257,6 +265,7 @@ export interface FileRoutesByTo {
   '/organizacion/areas': typeof DashboardOrganizacionAreasIndexRoute
   '/organizacion/cargos': typeof DashboardOrganizacionCargosIndexRoute
   '/organizacion/empleados': typeof DashboardOrganizacionEmpleadosIndexRoute
+  '/organizacion/migraciones': typeof DashboardOrganizacionMigracionesIndexRoute
   '/organizacion/personas': typeof DashboardOrganizacionPersonasIndexRoute
   '/tipos-activo/$tipoActivoId': typeof DashboardTiposActivoTipoActivoIdIndexRoute
 }
@@ -289,6 +298,7 @@ export interface FileRoutesById {
   '/_dashboard/organizacion/areas/': typeof DashboardOrganizacionAreasIndexRoute
   '/_dashboard/organizacion/cargos/': typeof DashboardOrganizacionCargosIndexRoute
   '/_dashboard/organizacion/empleados/': typeof DashboardOrganizacionEmpleadosIndexRoute
+  '/_dashboard/organizacion/migraciones/': typeof DashboardOrganizacionMigracionesIndexRoute
   '/_dashboard/organizacion/personas/': typeof DashboardOrganizacionPersonasIndexRoute
   '/_dashboard/tipos-activo/$tipoActivoId/': typeof DashboardTiposActivoTipoActivoIdIndexRoute
 }
@@ -321,6 +331,7 @@ export interface FileRouteTypes {
     | '/organizacion/areas/'
     | '/organizacion/cargos/'
     | '/organizacion/empleados/'
+    | '/organizacion/migraciones/'
     | '/organizacion/personas/'
     | '/tipos-activo/$tipoActivoId/'
   fileRoutesByTo: FileRoutesByTo
@@ -345,6 +356,7 @@ export interface FileRouteTypes {
     | '/organizacion/areas'
     | '/organizacion/cargos'
     | '/organizacion/empleados'
+    | '/organizacion/migraciones'
     | '/organizacion/personas'
     | '/tipos-activo/$tipoActivoId'
   id:
@@ -376,6 +388,7 @@ export interface FileRouteTypes {
     | '/_dashboard/organizacion/areas/'
     | '/_dashboard/organizacion/cargos/'
     | '/_dashboard/organizacion/empleados/'
+    | '/_dashboard/organizacion/migraciones/'
     | '/_dashboard/organizacion/personas/'
     | '/_dashboard/tipos-activo/$tipoActivoId/'
   fileRoutesById: FileRoutesById
@@ -562,6 +575,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardOrganizacionEmpleadosIndexRouteImport
       parentRoute: typeof DashboardOrganizacionRouteRoute
     }
+    '/_dashboard/organizacion/migraciones/': {
+      id: '/_dashboard/organizacion/migraciones/'
+      path: '/migraciones'
+      fullPath: '/organizacion/migraciones/'
+      preLoaderRoute: typeof DashboardOrganizacionMigracionesIndexRouteImport
+      parentRoute: typeof DashboardOrganizacionRouteRoute
+    }
     '/_dashboard/organizacion/personas/': {
       id: '/_dashboard/organizacion/personas/'
       path: '/personas'
@@ -629,6 +649,7 @@ interface DashboardOrganizacionRouteRouteChildren {
   DashboardOrganizacionAreasIndexRoute: typeof DashboardOrganizacionAreasIndexRoute
   DashboardOrganizacionCargosIndexRoute: typeof DashboardOrganizacionCargosIndexRoute
   DashboardOrganizacionEmpleadosIndexRoute: typeof DashboardOrganizacionEmpleadosIndexRoute
+  DashboardOrganizacionMigracionesIndexRoute: typeof DashboardOrganizacionMigracionesIndexRoute
   DashboardOrganizacionPersonasIndexRoute: typeof DashboardOrganizacionPersonasIndexRoute
 }
 
@@ -640,6 +661,8 @@ const DashboardOrganizacionRouteRouteChildren: DashboardOrganizacionRouteRouteCh
       DashboardOrganizacionCargosIndexRoute,
     DashboardOrganizacionEmpleadosIndexRoute:
       DashboardOrganizacionEmpleadosIndexRoute,
+    DashboardOrganizacionMigracionesIndexRoute:
+      DashboardOrganizacionMigracionesIndexRoute,
     DashboardOrganizacionPersonasIndexRoute:
       DashboardOrganizacionPersonasIndexRoute,
   }

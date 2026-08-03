@@ -100,7 +100,7 @@ function HomePage() {
                     {links.map((link) => (
                       <li key={link.to}>
                         <Link
-                          to={link.to}
+                          to={link.to as any}
                           className="group flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-muted"
                         >
                           <link.icon className="size-4 text-muted-foreground" />
