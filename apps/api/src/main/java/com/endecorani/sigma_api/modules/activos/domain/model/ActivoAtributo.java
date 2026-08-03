@@ -18,6 +18,24 @@ public class ActivoAtributo extends AuditableModel {
 
     private UUID tipoActivoId;
 
-    @Builder.Default
-    private boolean activo = true;
+    private String codigo;
+
+    private String etiqueta;
+
+    private String descripcion;
+
+    private UUID tipoDatoId;
+
+    private Integer orden;
+
+    private Boolean requerido;
+
+    private Boolean visible;
+
+    private Boolean editable;
+
+    private String valorDefecto;
+
+    private String opciones; // JSON, solo para SELECT/MULTISELECT
+
 }
