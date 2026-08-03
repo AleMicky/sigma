@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Boxes,
+  FileText,
   FolderTree,
   LayoutDashboard,
   List,
@@ -39,6 +40,11 @@ export const navItems: NavItem[] = [
         title: "Categorías",
         to: routes.categorias.root,
         icon: FolderTree,
+      },
+      {
+        title: "Tipos de documento",
+        to: routes.tiposDocumento.root,
+        icon: FileText,
       },
     ],
   },

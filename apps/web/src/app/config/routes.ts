@@ -23,6 +23,10 @@ export const routes = {
     root: "/categorias",
   },
 
+  tiposDocumento: {
+    root: "/tipos-documento",
+  },
+
   parametros: {
     root: "/parametros",
     gestion: "/parametros/gestion",
