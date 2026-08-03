@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.activos.application.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @Schema(
@@ -33,9 +34,25 @@ public record TipoActivoRequest (
         String descripcion,
 
         @Schema(
-                description = "Indica si el tipo de activo está habilitado",
-                example = "true"
+                description = "Color hexadecimal del tipo (#RRGGBB)",
+                example = "#2563EB"
         )
-        Boolean activo
+        @Pattern(
+                regexp = "^$|^#(?:[0-9A-Fa-f]{6})$",
+                message = "El color debe tener el formato #RRGGBB"
+        )
+        @Size(max = 7, message = "El color no puede superar 7 caracteres")
+        String color,
+
+        @Schema(
+                description = "Nombre del icono Lucide",
+                example = "Car"
+        )
+        @Pattern(
+                regexp = "^$|^[A-Za-z][A-Za-z0-9]*$",
+                message = "El icono debe ser un nombre Lucide válido"
+        )
+        @Size(max = 50, message = "El icono no puede superar 50 caracteres")
+        String icono
 ) {
 }

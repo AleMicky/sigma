@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -27,12 +28,22 @@ public class TipoActivoService extends AbstractCrudService<
     private static final int NOMBRE_MIN_LENGTH = 2;
     private static final int NOMBRE_MAX_LENGTH = 100;
     private static final int DESCRIPCION_MAX_LENGTH = 255;
+    private static final int COLOR_MAX_LENGTH = 7;
+    private static final int ICONO_MAX_LENGTH = 50;
+
+    private static final Pattern COLOR_PATTERN = Pattern.compile(
+            "^#(?:[0-9A-Fa-f]{6})$"
+    );
+    private static final Pattern ICONO_PATTERN = Pattern.compile(
+            "^[A-Za-z][A-Za-z0-9]*$"
+    );
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
             "nombre",
             "descripcion",
-            "activo",
+            "color",
+            "icono",
             "createdAt",
             "updatedAt"
     );
@@ -57,7 +68,8 @@ public class TipoActivoService extends AbstractCrudService<
         return TipoActivo.builder()
                 .nombre(nombre)
                 .descripcion(normalizeDescripcion(request.descripcion()))
-                .activo(resolveActivo(request.activo()))
+                .color(normalizeColor(request.color()))
+                .icono(normalizeIcono(request.icono()))
                 .build();
     }
 
@@ -71,7 +83,8 @@ public class TipoActivoService extends AbstractCrudService<
 
         domain.setNombre(nombre);
         domain.setDescripcion(normalizeDescripcion(request.descripcion()));
-        domain.setActivo(resolveActivo(request.activo()));
+        domain.setColor(normalizeColor(request.color()));
+        domain.setIcono(normalizeIcono(request.icono()));
     }
 
     @Override
@@ -80,7 +93,8 @@ public class TipoActivoService extends AbstractCrudService<
                 domain.getId(),
                 domain.getNombre(),
                 domain.getDescripcion(),
-                domain.isActivo(),
+                domain.getColor(),
+                domain.getIcono(),
                 domain.getCreatedAt(),
                 domain.getUpdatedAt(),
                 domain.getCreatedBy(),
@@ -150,7 +164,38 @@ public class TipoActivoService extends AbstractCrudService<
         return normalized;
     }
 
-    private boolean resolveActivo(Boolean activo) {
-        return activo == null || activo;
+    private String normalizeColor(String value) {
+        String trimmed = StringUtils.trimToNull(value);
+        if (trimmed == null) {
+            return null;
+        }
+
+        String color = trimmed.toUpperCase();
+        if (color.length() > COLOR_MAX_LENGTH
+                || !COLOR_PATTERN.matcher(color).matches()) {
+            throw new BusinessException(
+                    "INVALID_TIPO_ACTIVO_COLOR",
+                    "El color debe tener el formato #RRGGBB"
+            );
+        }
+
+        return color;
+    }
+
+    private String normalizeIcono(String value) {
+        String icono = StringUtils.trimToNull(value);
+        if (icono == null) {
+            return null;
+        }
+
+        if (icono.length() > ICONO_MAX_LENGTH
+                || !ICONO_PATTERN.matcher(icono).matches()) {
+            throw new BusinessException(
+                    "INVALID_TIPO_ACTIVO_ICONO",
+                    "El icono debe ser un nombre Lucide válido"
+            );
+        }
+
+        return icono;
     }
 }

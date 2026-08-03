@@ -2,7 +2,6 @@ package com.endecorani.sigma_api.modules.activos.domain.model;
 
 import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,6 +22,7 @@ public class TipoActivo extends AuditableModel {
 
     private String descripcion;
 
-    @Builder.Default
-    private boolean activo = true;
+    private String color;
+
+    private String icono;
 }

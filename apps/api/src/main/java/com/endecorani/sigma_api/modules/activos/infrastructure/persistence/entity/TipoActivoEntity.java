@@ -29,9 +29,15 @@ public class TipoActivoEntity extends BaseEntity {
     private String descripcion;
 
     @Column(
-            name = "activo",
-            nullable = false
+            name = "color",
+            length = 7
     )
-    private boolean activo = true;
+    private String color;
+
+    @Column(
+            name = "icono",
+            length = 50
+    )
+    private String icono;
 
 }

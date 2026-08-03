@@ -29,10 +29,16 @@ public record TipoActivoResponse(
         String descripcion,
 
         @Schema(
-                description = "Estado del registro",
-                example = "true"
+                description = "Color hexadecimal del tipo (#RRGGBB)",
+                example = "#2563EB"
         )
-        boolean activo,
+        String color,
+
+        @Schema(
+                description = "Nombre del icono Lucide",
+                example = "Car"
+        )
+        String icono,
 
         @Schema(description = "Fecha de creación")
         Instant createdAt,

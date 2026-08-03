@@ -18,7 +18,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,14 +34,20 @@ class TipoActivoServiceTest {
     }
 
     @Test
-    void createNormalizesNombreAndDefaultsActivo() {
+    void createNormalizesNombreDescripcionColorAndIcono() {
         TipoActivoResponse response = service.create(
-                new TipoActivoRequest("  Vehículo   liviano ", "  Desc  ", null)
+                new TipoActivoRequest(
+                        "  Vehículo   liviano ",
+                        "  Desc  ",
+                        " #2563eb ",
+                        " Car "
+                )
         );
 
         assertEquals("Vehículo liviano", response.nombre());
         assertEquals("Desc", response.descripcion());
-        assertTrue(response.activo());
+        assertEquals("#2563EB", response.color());
+        assertEquals("Car", response.icono());
         assertEquals(1, repository.items.size());
     }
 
@@ -50,9 +55,21 @@ class TipoActivoServiceTest {
     void createRejectsNombreTooShortAfterNormalize() {
         assertThrows(
                 BusinessException.class,
-                () -> service.create(new TipoActivoRequest(" a ", null, true))
+                () -> service.create(
+                        new TipoActivoRequest(" a ", null, null, null)
+                )
         );
         assertTrue(repository.items.isEmpty());
+    }
+
+    @Test
+    void createRejectsInvalidColor() {
+        assertThrows(
+                BusinessException.class,
+                () -> service.create(
+                        new TipoActivoRequest("Equipo", null, "blue", null)
+                )
+        );
     }
 
     @Test
@@ -62,7 +79,7 @@ class TipoActivoServiceTest {
         ConflictException exception = assertThrows(
                 ConflictException.class,
                 () -> service.create(
-                        new TipoActivoRequest("vehículo", null, true)
+                        new TipoActivoRequest("vehículo", null, null, null)
                 )
         );
 
@@ -70,19 +87,21 @@ class TipoActivoServiceTest {
     }
 
     @Test
-    void updateReplacesActivoEvenWhenNull() {
+    void updateClearsOptionalFieldsWhenNull() {
         TipoActivo stored = existing("Equipo");
-        stored.setActivo(false);
+        stored.setDescripcion("Anterior");
+        stored.setColor("#2563EB");
+        stored.setIcono("Laptop");
         repository.items.add(stored);
 
         TipoActivoResponse response = service.update(
                 stored.getId(),
-                new TipoActivoRequest("Equipo", null, null)
+                new TipoActivoRequest("Equipo", null, null, null)
         );
 
-        assertTrue(response.activo());
         assertNull(response.descripcion());
-        assertTrue(repository.items.getFirst().isActivo());
+        assertNull(response.color());
+        assertNull(response.icono());
     }
 
     @Test
@@ -96,7 +115,7 @@ class TipoActivoServiceTest {
                 ConflictException.class,
                 () -> service.update(
                         second.getId(),
-                        new TipoActivoRequest("alpha", null, true)
+                        new TipoActivoRequest("alpha", null, null, null)
                 )
         );
     }
@@ -108,19 +127,24 @@ class TipoActivoServiceTest {
 
         TipoActivoResponse response = service.update(
                 stored.getId(),
-                new TipoActivoRequest("Equipo", "Nueva desc", false)
+                new TipoActivoRequest(
+                        "Equipo",
+                        "Nueva desc",
+                        "#0D9488",
+                        "Laptop"
+                )
         );
 
         assertEquals("Equipo", response.nombre());
         assertEquals("Nueva desc", response.descripcion());
-        assertFalse(response.activo());
+        assertEquals("#0D9488", response.color());
+        assertEquals("Laptop", response.icono());
     }
 
     private static TipoActivo existing(String nombre) {
         return TipoActivo.builder()
                 .id(UUID.randomUUID())
                 .nombre(nombre)
-                .activo(true)
                 .build();
     }
 
