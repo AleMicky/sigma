@@ -14,6 +14,7 @@ public class TipoActivoPersistenceMapper {
 
         TipoActivoEntity entity = new TipoActivoEntity();
         entity.setId(domain.getId());
+        entity.setCategoriaId(domain.getCategoriaId());
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
         entity.setColor(domain.getColor());
@@ -36,6 +37,7 @@ public class TipoActivoPersistenceMapper {
 
         return TipoActivo.builder()
                 .id(entity.getId())
+                .categoriaId(entity.getCategoriaId())
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
                 .color(entity.getColor())

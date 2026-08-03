@@ -13,10 +13,15 @@ import { getTipoActivoIcon } from "../lib/tipo-activo-icons"
 
 type TipoActivoCardProps = {
   tipoActivo: TipoActivo
+  categoriaNombre?: string | null
   onEdit: (tipoActivo: TipoActivo) => void
 }
 
-export function TipoActivoCard({ tipoActivo, onEdit }: TipoActivoCardProps) {
+export function TipoActivoCard({
+  tipoActivo,
+  categoriaNombre,
+  onEdit,
+}: TipoActivoCardProps) {
   const deleteMutation = useDeleteTipoActivo()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const Icon = getTipoActivoIcon(tipoActivo.icono)
@@ -34,9 +39,16 @@ export function TipoActivoCard({ tipoActivo, onEdit }: TipoActivoCardProps) {
 
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex items-start justify-between gap-2">
-            <span className="truncate text-sm font-medium">
-              {tipoActivo.nombre}
-            </span>
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="truncate text-sm font-medium">
+                {tipoActivo.nombre}
+              </span>
+              {categoriaNombre ? (
+                <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  {categoriaNombre}
+                </span>
+              ) : null}
+            </div>
 
             <RowActions
               className="shrink-0"

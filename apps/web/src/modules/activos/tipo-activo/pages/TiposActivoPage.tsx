@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Plus, Tags } from "lucide-react"
 
 import { appConfig } from "@/app/config"
+import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.queries"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -38,7 +39,26 @@ export function TiposActivoPage() {
     }),
   )
 
+  const categoriasQuery = useQuery(
+    categoriaQueries.list({
+      page: 0,
+      size: 100,
+      sortBy: "orden",
+      direction: "ASC",
+    }),
+  )
+
   const tipos = tiposQuery.data?.content ?? []
+  const categoriasById = useMemo(
+    () =>
+      new Map(
+        (categoriasQuery.data?.content ?? []).map((categoria) => [
+          categoria.id,
+          categoria.nombre,
+        ]),
+      ),
+    [categoriasQuery.data?.content],
+  )
 
   useClampPage(search.page, search.setPage, tiposQuery.data?.totalPages)
 
@@ -144,6 +164,9 @@ export function TiposActivoPage() {
                   <TipoActivoCard
                     key={tipoActivo.id}
                     tipoActivo={tipoActivo}
+                    categoriaNombre={categoriasById.get(
+                      tipoActivo.categoriaId,
+                    )}
                     onEdit={openEdit}
                   />
                 ))}

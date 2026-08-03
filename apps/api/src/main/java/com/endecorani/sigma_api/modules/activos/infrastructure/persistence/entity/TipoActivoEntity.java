@@ -8,12 +8,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(schema = "activos", name = "tipos_activo")
 public class TipoActivoEntity extends BaseEntity {
+
+    @Column(
+            name = "categoria_id",
+            nullable = false
+    )
+    private UUID categoriaId;
 
     @Column(
             name = "nombre",

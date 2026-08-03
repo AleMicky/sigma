@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
+import { useQuery } from "@tanstack/react-query"
 
+import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.queries"
 import { isApiError } from "@/shared/api"
 import {
   FormDialog,
@@ -9,6 +11,13 @@ import {
 } from "@/shared/components/form-dialog"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 
 import {
@@ -43,9 +52,23 @@ export function TipoActivoFormDialog({
   const updateMutation = useUpdateTipoActivo()
   const [formError, setFormError] = useState<string | null>(null)
 
+  const categoriasQuery = useQuery(
+    categoriaQueries.list({
+      page: 0,
+      size: 100,
+      sortBy: "orden",
+      direction: "ASC",
+    }),
+  )
+  const categorias = categoriasQuery.data?.content ?? []
+  const categoriasById = new Map(
+    categorias.map((categoria) => [categoria.id, categoria]),
+  )
+
   const form = useForm({
     defaultValues: tipoActivo
       ? {
+          categoriaId: tipoActivo.categoriaId,
           nombre: tipoActivo.nombre,
           descripcion: tipoActivo.descripcion ?? "",
           color: tipoActivo.color ?? "",
@@ -58,6 +81,7 @@ export function TipoActivoFormDialog({
     onSubmit: async ({ value }) => {
       setFormError(null)
       const payload: TipoActivoDto = {
+        categoriaId: value.categoriaId,
         nombre: value.nombre.trim(),
         descripcion: value.descripcion.trim(),
         color: value.color ? normalizeHexColor(value.color) : "",
@@ -66,6 +90,7 @@ export function TipoActivoFormDialog({
 
       try {
         const body = {
+          categoriaId: payload.categoriaId,
           nombre: payload.nombre,
           descripcion: payload.descripcion || null,
           color: payload.color || null,
@@ -101,8 +126,8 @@ export function TipoActivoFormDialog({
       title={isEditing ? "Editar tipo de activo" : "Nuevo tipo de activo"}
       description={
         isEditing
-          ? "Actualiza los datos, el color y el icono del tipo de activo."
-          : "Define un tipo de activo, por ejemplo Vehículo o Equipo."
+          ? "Actualiza la categoría, los datos, el color y el icono del tipo."
+          : "Define un tipo de activo y asócialo a una categoría."
       }
       formError={formError}
       onCancel={() => {
@@ -125,6 +150,42 @@ export function TipoActivoFormDialog({
         </form.Subscribe>
       }
     >
+      <form.Field name="categoriaId">
+        {(field) => {
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
+          const selected = categoriasById.get(field.state.value)
+
+          return (
+            <Field data-invalid={isInvalid || undefined}>
+              <RequiredFieldLabel htmlFor={field.name}>
+                Categoría
+              </RequiredFieldLabel>
+              <Select
+                value={field.state.value || null}
+                onValueChange={(value) => field.handleChange(value ?? "")}
+              >
+                <SelectTrigger id={field.name} className="w-full">
+                  <SelectValue placeholder="Seleccionar categoría">
+                    {selected
+                      ? `${selected.nombre} (${selected.codigo})`
+                      : null}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {categorias.map((categoria) => (
+                    <SelectItem key={categoria.id} value={categoria.id}>
+                      {categoria.nombre} ({categoria.codigo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+            </Field>
+          )
+        }}
+      </form.Field>
+
       <form.Field name="nombre">
         {(field) => {
           const isInvalid =

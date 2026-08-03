@@ -18,6 +18,8 @@ public class TipoActivo extends AuditableModel {
 
     private UUID id;
 
+    private UUID categoriaId;
+
     private String nombre;
 
     private String descripcion;

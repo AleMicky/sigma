@@ -2,10 +2,13 @@ package com.endecorani.sigma_api.modules.activos.application.service;
 
 import com.endecorani.sigma_api.modules.activos.application.dto.TipoActivoRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.TipoActivoResponse;
+import com.endecorani.sigma_api.modules.activos.domain.model.Categoria;
 import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
+import com.endecorani.sigma_api.modules.activos.domain.repository.CategoriaRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
+import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
@@ -24,19 +27,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TipoActivoServiceTest {
 
+    private static final UUID CATEGORIA_ID = UUID.fromString(
+            "a1b2c3d4-e5f6-4011-8001-000000000001"
+    );
+
     private InMemoryTipoActivoRepository repository;
+    private InMemoryCategoriaRepository categoriaRepository;
     private TipoActivoService service;
 
     @BeforeEach
     void setUp() {
         repository = new InMemoryTipoActivoRepository();
-        service = new TipoActivoService(repository);
+        categoriaRepository = new InMemoryCategoriaRepository();
+        categoriaRepository.items.add(
+                Categoria.builder()
+                        .id(CATEGORIA_ID)
+                        .codigo("GENERAL")
+                        .nombre("General")
+                        .orden(0)
+                        .build()
+        );
+        service = new TipoActivoService(repository, categoriaRepository);
     }
 
     @Test
     void createNormalizesNombreDescripcionColorAndIcono() {
         TipoActivoResponse response = service.create(
                 new TipoActivoRequest(
+                        CATEGORIA_ID,
                         "  Vehículo   liviano ",
                         "  Desc  ",
                         " #2563eb ",
@@ -44,6 +62,7 @@ class TipoActivoServiceTest {
                 )
         );
 
+        assertEquals(CATEGORIA_ID, response.categoriaId());
         assertEquals("Vehículo liviano", response.nombre());
         assertEquals("Desc", response.descripcion());
         assertEquals("#2563EB", response.color());
@@ -52,11 +71,28 @@ class TipoActivoServiceTest {
     }
 
     @Test
+    void createRejectsMissingCategoria() {
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> service.create(
+                        new TipoActivoRequest(
+                                UUID.randomUUID(),
+                                "Equipo",
+                                null,
+                                null,
+                                null
+                        )
+                )
+        );
+        assertTrue(repository.items.isEmpty());
+    }
+
+    @Test
     void createRejectsNombreTooShortAfterNormalize() {
         assertThrows(
                 BusinessException.class,
                 () -> service.create(
-                        new TipoActivoRequest(" a ", null, null, null)
+                        new TipoActivoRequest(CATEGORIA_ID, " a ", null, null, null)
                 )
         );
         assertTrue(repository.items.isEmpty());
@@ -67,7 +103,13 @@ class TipoActivoServiceTest {
         assertThrows(
                 BusinessException.class,
                 () -> service.create(
-                        new TipoActivoRequest("Equipo", null, "blue", null)
+                        new TipoActivoRequest(
+                                CATEGORIA_ID,
+                                "Equipo",
+                                null,
+                                "blue",
+                                null
+                        )
                 )
         );
     }
@@ -79,7 +121,13 @@ class TipoActivoServiceTest {
         ConflictException exception = assertThrows(
                 ConflictException.class,
                 () -> service.create(
-                        new TipoActivoRequest("vehículo", null, null, null)
+                        new TipoActivoRequest(
+                                CATEGORIA_ID,
+                                "vehículo",
+                                null,
+                                null,
+                                null
+                        )
                 )
         );
 
@@ -96,7 +144,7 @@ class TipoActivoServiceTest {
 
         TipoActivoResponse response = service.update(
                 stored.getId(),
-                new TipoActivoRequest("Equipo", null, null, null)
+                new TipoActivoRequest(CATEGORIA_ID, "Equipo", null, null, null)
         );
 
         assertNull(response.descripcion());
@@ -115,7 +163,13 @@ class TipoActivoServiceTest {
                 ConflictException.class,
                 () -> service.update(
                         second.getId(),
-                        new TipoActivoRequest("alpha", null, null, null)
+                        new TipoActivoRequest(
+                                CATEGORIA_ID,
+                                "alpha",
+                                null,
+                                null,
+                                null
+                        )
                 )
         );
     }
@@ -128,6 +182,7 @@ class TipoActivoServiceTest {
         TipoActivoResponse response = service.update(
                 stored.getId(),
                 new TipoActivoRequest(
+                        CATEGORIA_ID,
                         "Equipo",
                         "Nueva desc",
                         "#0D9488",
@@ -135,6 +190,7 @@ class TipoActivoServiceTest {
                 )
         );
 
+        assertEquals(CATEGORIA_ID, response.categoriaId());
         assertEquals("Equipo", response.nombre());
         assertEquals("Nueva desc", response.descripcion());
         assertEquals("#0D9488", response.color());
@@ -144,6 +200,7 @@ class TipoActivoServiceTest {
     private static TipoActivo existing(String nombre) {
         return TipoActivo.builder()
                 .id(UUID.randomUUID())
+                .categoriaId(CATEGORIA_ID)
                 .nombre(nombre)
                 .build();
     }
@@ -206,6 +263,67 @@ class TipoActivoServiceTest {
                     !item.getId().equals(id)
                             && item.getNombre().equalsIgnoreCase(nombre)
             );
+        }
+    }
+
+    private static final class InMemoryCategoriaRepository
+            implements CategoriaRepository {
+
+        private final List<Categoria> items = new ArrayList<>();
+
+        @Override
+        public Categoria save(Categoria entity) {
+            return entity;
+        }
+
+        @Override
+        public Optional<Categoria> findById(UUID id) {
+            return items.stream()
+                    .filter(item -> item.getId().equals(id))
+                    .findFirst();
+        }
+
+        @Override
+        public List<Categoria> findAll() {
+            return List.copyOf(items);
+        }
+
+        @Override
+        public Page<Categoria> findAll(Pageable pageable) {
+            return new PageImpl<>(List.copyOf(items), pageable, items.size());
+        }
+
+        @Override
+        public boolean existsById(UUID id) {
+            return items.stream().anyMatch(item -> item.getId().equals(id));
+        }
+
+        @Override
+        public void deleteById(UUID id) {
+            items.removeIf(item -> item.getId().equals(id));
+        }
+
+        @Override
+        public boolean existsByCodigoIgnoreCase(String codigo) {
+            return false;
+        }
+
+        @Override
+        public boolean existsByCodigoIgnoreCaseAndIdNot(
+                String codigo,
+                UUID id
+        ) {
+            return false;
+        }
+
+        @Override
+        public Page<Categoria> search(String query, Pageable pageable) {
+            return Page.empty(pageable);
+        }
+
+        @Override
+        public Integer findMaxOrden() {
+            return null;
         }
     }
 }

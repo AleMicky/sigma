@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
+import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.queries"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -27,6 +28,11 @@ export function TipoActivoDetailPage({
 
   const tipoQuery = useQuery(tipoActivoQueries.detail(tipoActivoId))
   const tipoActivo = tipoQuery.data
+
+  const categoriaQuery = useQuery({
+    ...categoriaQueries.detail(tipoActivo?.categoriaId ?? ""),
+    enabled: Boolean(tipoActivo?.categoriaId),
+  })
 
   const tabs = [
     {
@@ -73,9 +79,16 @@ export function TipoActivoDetailPage({
                 icono={tipoActivo.icono}
               />
               <div className="min-w-0 flex flex-1 flex-col gap-0.5">
-                <h1 className="truncate font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-                  {tipoActivo.nombre}
-                </h1>
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <h1 className="truncate font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+                    {tipoActivo.nombre}
+                  </h1>
+                  {categoriaQuery.data ? (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                      {categoriaQuery.data.nombre}
+                    </span>
+                  ) : null}
+                </div>
                 {tipoActivo.descripcion ? (
                   <p className="line-clamp-2 text-sm text-muted-foreground">
                     {tipoActivo.descripcion}

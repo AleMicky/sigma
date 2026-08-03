@@ -3,6 +3,7 @@ import { z } from "zod"
 import { TIPO_ACTIVO_ICON_OPTIONS } from "../lib/tipo-activo-icons"
 
 export const tipoActivoSchema = z.object({
+  categoriaId: z.string().min(1, "Selecciona una categoría"),
   nombre: z
     .string()
     .min(2, "El nombre debe tener al menos 2 caracteres")
@@ -29,6 +30,7 @@ export const tipoActivoSchema = z.object({
 export type TipoActivoDto = z.infer<typeof tipoActivoSchema>
 
 export const defaultTipoActivoValues: TipoActivoDto = {
+  categoriaId: "",
   nombre: "",
   descripcion: "",
   color: "",

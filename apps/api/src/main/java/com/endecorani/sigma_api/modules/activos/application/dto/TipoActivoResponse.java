@@ -17,6 +17,12 @@ public record TipoActivoResponse(
         UUID id,
 
         @Schema(
+                description = "Identificador de la categoría",
+                example = "a1b2c3d4-e5f6-4011-8001-000000000001"
+        )
+        UUID categoriaId,
+
+        @Schema(
                 description = "Nombre del tipo de activo",
                 example = "Vehículo"
         )

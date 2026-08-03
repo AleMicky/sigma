@@ -4,6 +4,7 @@ import type { AuditableEntity } from "@/shared/types/audit.types"
 import { tipoActivoEndpoints } from "./tipo-activo.endpoints"
 
 export type TipoActivo = AuditableEntity & {
+  categoriaId: string
   nombre: string
   descripcion: string | null
   color: string | null
@@ -11,6 +12,7 @@ export type TipoActivo = AuditableEntity & {
 }
 
 export type TipoActivoPayload = {
+  categoriaId: string
   nombre: string
   descripcion?: string | null
   color?: string | null

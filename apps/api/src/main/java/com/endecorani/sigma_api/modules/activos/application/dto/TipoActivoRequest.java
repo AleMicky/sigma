@@ -2,14 +2,25 @@ package com.endecorani.sigma_api.modules.activos.application.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
+import java.util.UUID;
 
 @Schema(
         name = "TipoActivoRequest",
         description = "Datos necesarios para registrar o actualizar un tipo de activo"
 )
-public record TipoActivoRequest (
+public record TipoActivoRequest(
+        @Schema(
+                description = "Identificador de la categoría a la que pertenece",
+                example = "a1b2c3d4-e5f6-4011-8001-000000000001",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
+        @NotNull(message = "La categoría es obligatoria")
+        UUID categoriaId,
+
         @Schema(
                 description = "Nombre del tipo de activo",
                 example = "Vehículo",

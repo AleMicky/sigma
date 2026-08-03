@@ -3,10 +3,12 @@ package com.endecorani.sigma_api.modules.activos.application.service;
 import com.endecorani.sigma_api.modules.activos.application.dto.TipoActivoRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.TipoActivoResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
+import com.endecorani.sigma_api.modules.activos.domain.repository.CategoriaRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
+import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,7 @@ public class TipoActivoService extends AbstractCrudService<
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
+            "categoriaId",
             "nombre",
             "descripcion",
             "color",
@@ -49,6 +52,7 @@ public class TipoActivoService extends AbstractCrudService<
     );
 
     private final TipoActivoRepository tipoActivoRepository;
+    private final CategoriaRepository categoriaRepository;
 
     @Override
     protected CrudRepository<TipoActivo, UUID> repository() {
@@ -62,10 +66,13 @@ public class TipoActivoService extends AbstractCrudService<
 
     @Override
     protected TipoActivo toDomain(TipoActivoRequest request) {
+        requireCategoriaExists(request.categoriaId());
+
         String nombre = requireNormalizedNombre(request.nombre());
         validateUniqueNameForCreate(nombre);
 
         return TipoActivo.builder()
+                .categoriaId(request.categoriaId())
                 .nombre(nombre)
                 .descripcion(normalizeDescripcion(request.descripcion()))
                 .color(normalizeColor(request.color()))
@@ -78,9 +85,12 @@ public class TipoActivoService extends AbstractCrudService<
             TipoActivo domain,
             TipoActivoRequest request
     ) {
+        requireCategoriaExists(request.categoriaId());
+
         String nombre = requireNormalizedNombre(request.nombre());
         validateUniqueNameForUpdate(nombre, domain.getId());
 
+        domain.setCategoriaId(request.categoriaId());
         domain.setNombre(nombre);
         domain.setDescripcion(normalizeDescripcion(request.descripcion()));
         domain.setColor(normalizeColor(request.color()));
@@ -91,6 +101,7 @@ public class TipoActivoService extends AbstractCrudService<
     protected TipoActivoResponse toResponse(TipoActivo domain) {
         return new TipoActivoResponse(
                 domain.getId(),
+                domain.getCategoriaId(),
                 domain.getNombre(),
                 domain.getDescripcion(),
                 domain.getColor(),
@@ -105,6 +116,13 @@ public class TipoActivoService extends AbstractCrudService<
     @Override
     protected String resourceName() {
         return "Tipo de activo";
+    }
+
+    private void requireCategoriaExists(UUID categoriaId) {
+        if (categoriaId == null
+                || !categoriaRepository.existsById(categoriaId)) {
+            throw new ResourceNotFoundException("Categoría", categoriaId);
+        }
     }
 
     private void validateUniqueNameForCreate(String nombre) {
