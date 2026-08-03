@@ -51,6 +51,11 @@ function addAuthorizationHeader(
         }
     }
 
+    // Deja que el navegador defina el boundary de multipart.
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+        config.headers.delete("Content-Type");
+    }
+
     config.headers["Accept-Language"] =
         appConfig.locale;
     config.headers["X-Timezone"] =

@@ -38,4 +38,6 @@ public class ActivoAtributo extends AuditableModel {
 
     private String opciones; // JSON, solo para SELECT/MULTISELECT
 
+    private String urlImagen;
+
 }

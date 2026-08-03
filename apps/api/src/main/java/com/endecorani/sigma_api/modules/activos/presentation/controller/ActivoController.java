@@ -1,9 +1,9 @@
 package com.endecorani.sigma_api.modules.activos.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.activos.application.dto.ActivoAtributoRequest;
-import com.endecorani.sigma_api.modules.activos.application.dto.ActivoAtributoResponse;
-import com.endecorani.sigma_api.modules.activos.application.service.ActivoAtributoService;
+import com.endecorani.sigma_api.modules.activos.application.dto.ActivoRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.ActivoResponse;
+import com.endecorani.sigma_api.modules.activos.application.service.ActivoService;
 import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -31,42 +31,31 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(ApiConstants.API_V1 + "/activo-atributos")
+@RequestMapping(ApiConstants.API_V1 + "/activos")
 @RequiredArgsConstructor
-@Tag(
-        name = "Atributos de activo",
-        description = "Administración de atributos personalizados por tipo de activo"
-)
+@Tag(name = "Activos", description = "Administración de activos")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 @PreAuthorize("hasAnyRole('ADMIN')")
-public class ActivoAtributoController
-        extends AbstractCrudController<
-        ActivoAtributoRequest,
-        ActivoAtributoResponse,
-        UUID
-        > {
+public class ActivoController
+        extends AbstractCrudController<ActivoRequest, ActivoResponse, UUID> {
 
-    private final ActivoAtributoService activoAtributoService;
+    private final ActivoService activoService;
 
     @Override
-    protected CrudService<
-            ActivoAtributoRequest,
-            ActivoAtributoResponse,
-            UUID
-            > service() {
-        return activoAtributoService;
+    protected CrudService<ActivoRequest, ActivoResponse, UUID> service() {
+        return activoService;
     }
 
     @GetMapping(params = "tipoActivoId")
-    @Operation(summary = "Listar atributos filtrados por tipo de activo")
-    public ResponseEntity<ApiResponse<PageResponse<ActivoAtributoResponse>>> findByTipoActivoId(
+    @Operation(summary = "Listar activos filtrados por tipo de activo")
+    public ResponseEntity<ApiResponse<PageResponse<ActivoResponse>>> findByTipoActivoId(
             @RequestParam UUID tipoActivoId,
             @RequestParam(required = false) String q,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        activoAtributoService.findByTipoActivoId(
+                        activoService.findByTipoActivoId(
                                 tipoActivoId,
                                 q,
                                 pageRequest
@@ -75,32 +64,43 @@ public class ActivoAtributoController
         );
     }
 
+    @GetMapping(params = {"q", "!tipoActivoId"})
+    @Operation(summary = "Buscar activos por código o nombre")
+    public ResponseEntity<ApiResponse<PageResponse<ActivoResponse>>> search(
+            @RequestParam String q,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(activoService.search(q, pageRequest))
+        );
+    }
+
     @PostMapping(
             value = "/{id}/imagen",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
-    @Operation(summary = "Subir o reemplazar la imagen del atributo")
-    public ResponseEntity<ApiResponse<ActivoAtributoResponse>> uploadImagen(
+    @Operation(summary = "Subir o reemplazar la imagen del activo")
+    public ResponseEntity<ApiResponse<ActivoResponse>> uploadImagen(
             @PathVariable UUID id,
             @RequestParam("file") MultipartFile file
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Imagen actualizada correctamente",
-                        activoAtributoService.uploadImagen(id, file)
+                        activoService.uploadImagen(id, file)
                 )
         );
     }
 
     @DeleteMapping("/{id}/imagen")
-    @Operation(summary = "Eliminar la imagen del atributo")
-    public ResponseEntity<ApiResponse<ActivoAtributoResponse>> deleteImagen(
+    @Operation(summary = "Eliminar la imagen del activo")
+    public ResponseEntity<ApiResponse<ActivoResponse>> deleteImagen(
             @PathVariable UUID id
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Imagen eliminada correctamente",
-                        activoAtributoService.deleteImagen(id)
+                        activoService.deleteImagen(id)
                 )
         );
     }

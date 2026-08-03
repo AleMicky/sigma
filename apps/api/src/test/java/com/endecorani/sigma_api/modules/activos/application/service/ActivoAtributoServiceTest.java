@@ -9,6 +9,7 @@ import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoAtributo
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.model.TipoDato;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.TipoDatoRepository;
+import com.endecorani.sigma_api.shared.application.storage.ImageStorageService;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
@@ -17,11 +18,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockMultipartFile;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +39,7 @@ class ActivoAtributoServiceTest {
     private InMemoryActivoAtributoRepository atributoRepository;
     private InMemoryTipoActivoRepository tipoActivoRepository;
     private InMemoryTipoDatoRepository tipoDatoRepository;
+    private FakeImageStorageService imageStorageService;
     private ActivoAtributoService service;
 
     private UUID tipoActivoId;
@@ -46,11 +51,13 @@ class ActivoAtributoServiceTest {
         atributoRepository = new InMemoryActivoAtributoRepository();
         tipoActivoRepository = new InMemoryTipoActivoRepository();
         tipoDatoRepository = new InMemoryTipoDatoRepository();
+        imageStorageService = new FakeImageStorageService();
         service = new ActivoAtributoService(
                 atributoRepository,
                 tipoActivoRepository,
                 tipoDatoRepository,
-                JsonMapper.builder().build()
+                JsonMapper.builder().build(),
+                imageStorageService
         );
 
         TipoActivo tipoActivo = TipoActivo.builder()
@@ -275,6 +282,49 @@ class ActivoAtributoServiceTest {
         assertNull(response.descripcion());
         assertNull(response.valorDefecto());
         assertNull(response.opciones());
+    }
+
+    @Test
+    void uploadImagenStoresUrlAndDeleteRemovesIt() {
+        ActivoAtributo stored = existing(tipoActivoId, "PLACA", 0);
+        atributoRepository.items.add(stored);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "placa.png",
+                "image/png",
+                new byte[] {1, 2, 3}
+        );
+
+        ActivoAtributoResponse uploaded = service.uploadImagen(
+                stored.getId(),
+                file
+        );
+
+        assertEquals(
+                "/api/v1/files/activo-atributos/" + stored.getId() + ".png",
+                uploaded.urlImagen()
+        );
+        assertTrue(imageStorageService.storedUrls.contains(uploaded.urlImagen()));
+
+        ActivoAtributoResponse cleared = service.deleteImagen(stored.getId());
+        assertNull(cleared.urlImagen());
+        assertFalse(imageStorageService.storedUrls.contains(uploaded.urlImagen()));
+    }
+
+    @Test
+    void deleteAlsoRemovesStoredImage() {
+        ActivoAtributo stored = existing(tipoActivoId, "PLACA", 0);
+        stored.setUrlImagen(
+                "/api/v1/files/activo-atributos/" + stored.getId() + ".jpg"
+        );
+        atributoRepository.items.add(stored);
+        imageStorageService.storedUrls.add(stored.getUrlImagen());
+
+        service.delete(stored.getId());
+
+        assertTrue(atributoRepository.items.isEmpty());
+        assertFalse(imageStorageService.storedUrls.contains(stored.getUrlImagen()));
     }
 
     private ActivoAtributoRequest selectRequest(
@@ -544,6 +594,34 @@ class ActivoAtributoServiceTest {
         @Override
         public Page<TipoDato> search(String query, Pageable pageable) {
             return Page.empty(pageable);
+        }
+    }
+
+    private static final class FakeImageStorageService
+            implements ImageStorageService {
+
+        private final Set<String> storedUrls = new HashSet<>();
+
+        @Override
+        public String store(
+                String folder,
+                UUID entityId,
+                org.springframework.web.multipart.MultipartFile file
+        ) {
+            String extension = switch (file.getContentType()) {
+                case "image/png" -> "png";
+                case "image/webp" -> "webp";
+                case "image/gif" -> "gif";
+                default -> "jpg";
+            };
+            String url = "/api/v1/files/" + folder + "/" + entityId + "." + extension;
+            storedUrls.add(url);
+            return url;
+        }
+
+        @Override
+        public void delete(String publicUrl) {
+            storedUrls.remove(publicUrl);
         }
     }
 }

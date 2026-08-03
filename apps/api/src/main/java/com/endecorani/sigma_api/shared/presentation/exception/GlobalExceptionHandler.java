@@ -19,6 +19,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 
@@ -62,6 +63,19 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNPROCESSABLE_CONTENT,
                 exception.getCode(),
                 exception.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSize(
+            MaxUploadSizeExceededException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                "INVALID_IMAGE_SIZE",
+                "El archivo supera el tamaño máximo permitido",
                 request.getRequestURI()
         );
     }

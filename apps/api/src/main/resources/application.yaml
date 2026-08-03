@@ -1,6 +1,10 @@
 spring:
   application:
     name: sigma-api
+  servlet:
+    multipart:
+      max-file-size: ${STORAGE_MAX_FILE_SIZE:5MB}
+      max-request-size: ${STORAGE_MAX_REQUEST_SIZE:5MB}
   security:
     oauth2:
       resourceserver:
@@ -54,3 +58,11 @@ app:
     title: Sigma API
     description: API REST para el Sistema SIGMA
     version: v1
+  storage:
+    base-dir: ${STORAGE_BASE_DIR:./uploads}
+    max-file-size-bytes: ${STORAGE_MAX_FILE_SIZE_BYTES:5242880}
+    allowed-content-types:
+      - image/jpeg
+      - image/png
+      - image/webp
+      - image/gif

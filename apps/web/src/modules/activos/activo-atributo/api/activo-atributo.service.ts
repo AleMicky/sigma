@@ -1,4 +1,4 @@
-import { createCrudService } from "@/shared/api"
+import { createCrudService, http, uploadImage } from "@/shared/api"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 import type { PageParams } from "@/shared/types/api.types"
 
@@ -21,6 +21,7 @@ export type ActivoAtributo = AuditableEntity & {
   editable: boolean
   valorDefecto: string | null
   opciones: ActivoAtributoOpcion[] | null
+  urlImagen: string | null
 }
 
 export type ActivoAtributoPayload = {
@@ -53,3 +54,16 @@ export const getActivoAtributo = crud.get
 export const createActivoAtributo = crud.create
 export const updateActivoAtributo = crud.update
 export const deleteActivoAtributo = crud.remove
+
+export function uploadActivoAtributoImagen(id: string, file: File) {
+  return uploadImage<ActivoAtributo>(
+    `${activoAtributoEndpoints.byId(id)}/imagen`,
+    file,
+  )
+}
+
+export function deleteActivoAtributoImagen(id: string) {
+  return http.delete<ActivoAtributo>(
+    `${activoAtributoEndpoints.byId(id)}/imagen`,
+  )
+}

@@ -11,6 +11,7 @@ import com.endecorani.sigma_api.modules.parametros.domain.repository.TipoDatoRep
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.application.storage.ImageStorageService;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
@@ -19,6 +20,7 @@ import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
@@ -37,6 +39,7 @@ public class ActivoAtributoService extends AbstractCrudService<
         UUID
         > {
 
+    private static final String IMAGE_FOLDER = "activo-atributos";
     private static final int CODIGO_MIN_LENGTH = 2;
     private static final int CODIGO_MAX_LENGTH = 50;
     private static final int ETIQUETA_MIN_LENGTH = 2;
@@ -61,6 +64,7 @@ public class ActivoAtributoService extends AbstractCrudService<
     private final TipoActivoRepository tipoActivoRepository;
     private final TipoDatoRepository tipoDatoRepository;
     private final JsonMapper jsonMapper;
+    private final ImageStorageService imageStorageService;
 
     @Override
     protected CrudRepository<ActivoAtributo, UUID> repository() {
@@ -163,6 +167,35 @@ public class ActivoAtributoService extends AbstractCrudService<
         domain.setOpciones(normalizeOpciones(request.opciones(), tipoDato));
     }
 
+    @Transactional
+    public ActivoAtributoResponse uploadImagen(UUID id, MultipartFile file) {
+        ActivoAtributo domain = findDomainById(id);
+        String url = imageStorageService.store(IMAGE_FOLDER, id, file);
+        domain.setUrlImagen(url);
+        return toResponse(activoAtributoRepository.save(domain));
+    }
+
+    @Transactional
+    public ActivoAtributoResponse deleteImagen(UUID id) {
+        ActivoAtributo domain = findDomainById(id);
+        if (domain.getUrlImagen() != null) {
+            imageStorageService.delete(domain.getUrlImagen());
+            domain.setUrlImagen(null);
+            domain = activoAtributoRepository.save(domain);
+        }
+        return toResponse(domain);
+    }
+
+    @Override
+    @Transactional
+    public void delete(UUID id) {
+        ActivoAtributo domain = findDomainById(id);
+        if (domain.getUrlImagen() != null) {
+            imageStorageService.delete(domain.getUrlImagen());
+        }
+        activoAtributoRepository.deleteById(id);
+    }
+
     @Override
     protected ActivoAtributoResponse toResponse(ActivoAtributo domain) {
         return new ActivoAtributoResponse(
@@ -178,6 +211,7 @@ public class ActivoAtributoService extends AbstractCrudService<
                 domain.getEditable(),
                 domain.getValorDefecto(),
                 deserializeOpciones(domain.getOpciones()),
+                domain.getUrlImagen(),
                 domain.getCreatedAt(),
                 domain.getUpdatedAt(),
                 domain.getCreatedBy(),

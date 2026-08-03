@@ -8,6 +8,12 @@ export { http } from "./http";
 export type { HttpClient } from "./http";
 
 export {
+    fetchAuthenticatedBlob,
+    toApiRelativePath,
+    uploadImage,
+} from "./files";
+
+export {
     ApiError,
     getErrorMessage,
     isApiError,

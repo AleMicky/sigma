@@ -46,3 +46,7 @@ pnpm-debug.log*
 
 # Docker / datos locales
 docker-data/
+
+# Archivos subidos localmente
+uploads/
+**/uploads/
