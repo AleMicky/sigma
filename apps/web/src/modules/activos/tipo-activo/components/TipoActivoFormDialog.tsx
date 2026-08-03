@@ -97,6 +97,7 @@ export function TipoActivoFormDialog({
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
+      size="lg"
       title={isEditing ? "Editar tipo de activo" : "Nuevo tipo de activo"}
       description={
         isEditing

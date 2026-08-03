@@ -9,8 +9,12 @@ export const routes = {
 
   tiposActivo: {
     root: "/tipos-activo",
-    atributos: "/tipos-activo/atributos",
     historial: "/tipos-activo/historial",
+    detail: (tipoActivoId: string) => `/tipos-activo/${tipoActivoId}`,
+    atributos: (tipoActivoId: string) =>
+      `/tipos-activo/${tipoActivoId}/atributos`,
+    componentes: (tipoActivoId: string) =>
+      `/tipos-activo/${tipoActivoId}/componentes`,
   },
 
   parametros: {

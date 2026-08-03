@@ -32,7 +32,11 @@ export function RowActions({
         variant="default"
         size="icon-sm"
         aria-label={editLabel}
-        onClick={onEdit}
+        onClick={(event) => {
+          event.stopPropagation()
+          event.preventDefault()
+          onEdit()
+        }}
       >
         <Pencil />
       </Button>
@@ -43,7 +47,11 @@ export function RowActions({
           size="icon-sm"
           aria-label={deleteLabel}
           disabled={deleteDisabled}
-          onClick={onDelete}
+          onClick={(event) => {
+            event.stopPropagation()
+            event.preventDefault()
+            onDelete()
+          }}
         >
           <Trash2 />
         </Button>

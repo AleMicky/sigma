@@ -10,6 +10,15 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog"
 import { FieldGroup, FieldLabel } from "@/shared/components/ui/field"
+import { cn } from "@/shared/lib/utils"
+
+type FormDialogSize = "sm" | "md" | "lg"
+
+const FORM_DIALOG_SIZE_CLASS: Record<FormDialogSize, string> = {
+  sm: "max-w-md",
+  md: "max-w-lg sm:max-w-xl",
+  lg: "max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl",
+}
 
 type FormDialogProps = {
   open: boolean
@@ -23,6 +32,8 @@ type FormDialogProps = {
   /** Extra footer actions after Cancel (typically the submit button). */
   footer: ReactNode
   cancelLabel?: string
+  size?: FormDialogSize
+  className?: string
 }
 
 export function FormDialog({
@@ -36,6 +47,8 @@ export function FormDialog({
   children,
   footer,
   cancelLabel = "Cancelar",
+  size = "md",
+  className,
 }: FormDialogProps) {
   function handleOpenChange(next: boolean) {
     if (!next) {
@@ -52,8 +65,14 @@ export function FormDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          "max-h-[min(92dvh,52rem)] gap-0 overflow-hidden p-0",
+          FORM_DIALOG_SIZE_CLASS[size],
+          className,
+        )}
+      >
+        <DialogHeader className="shrink-0 border-b border-border px-4 py-3 sm:px-5 sm:py-4">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             {description}{" "}
@@ -64,17 +83,22 @@ export function FormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <FieldGroup>
-            {children}
-            {formError ? (
-              <p className="text-sm text-destructive" role="alert">
-                {formError}
-              </p>
-            ) : null}
-          </FieldGroup>
+        <form
+          className="flex min-h-0 flex-1 flex-col"
+          onSubmit={handleSubmit}
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5">
+            <FieldGroup>
+              {children}
+              {formError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {formError}
+                </p>
+              ) : null}
+            </FieldGroup>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t border-border px-4 py-3 sm:px-5">
             <Button
               type="button"
               variant="outline"
