@@ -92,7 +92,7 @@ export function ActivosPage() {
   }
 
   return (
-    <PageShell className="h-full min-h-0 max-w-5xl gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-10 md:py-0">
+    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
       <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:gap-4 sm:py-6 md:flex-row md:items-start md:justify-between md:py-8">
         <div className="min-w-0 flex flex-1 flex-col gap-1">
           <div className="flex items-start justify-between gap-3">
@@ -127,20 +127,20 @@ export function ActivosPage() {
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex shrink-0 flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex w-full flex-col gap-3 sm:max-w-xl sm:flex-row">
+          <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             <SearchField
               value={search.search}
               onChange={search.setSearch}
               placeholder="Buscar por código o nombre…"
               aria-label="Buscar activos"
-              className="w-full"
+              className="w-full min-w-0 sm:flex-1"
             />
             <Select
               value={tipoActivoId}
               onValueChange={(value) => setTipoActivoId(value ?? ALL_TIPOS)}
             >
               <SelectTrigger
-                className="w-full sm:w-56"
+                className="w-full shrink-0 sm:w-56"
                 aria-label="Filtrar por tipo"
               >
                 <SelectValue placeholder="Todos los tipos">
