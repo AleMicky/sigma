@@ -53,7 +53,7 @@ export function TiposActivoPage() {
   }
 
   return (
-    <PageShell className="h-full min-h-0 max-w-6xl gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-10 md:py-0">
+    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
       <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:gap-4 sm:py-6 md:flex-row md:items-start md:justify-between md:py-8">
         <div className="min-w-0 flex flex-1 flex-col gap-1">
           <div className="flex items-start justify-between gap-3">
@@ -93,7 +93,7 @@ export function TiposActivoPage() {
           onChange={search.setSearch}
           placeholder="Buscar por nombre…"
           aria-label="Buscar tipos de activo"
-          className="w-full max-w-full sm:max-w-sm"
+          className="w-full min-w-0"
         />
       </div>
 
@@ -102,7 +102,7 @@ export function TiposActivoPage() {
           <ListSkeleton
             rows={6}
             rowClassName="h-24 rounded-xl"
-            className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3"
+            className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
           />
         ) : tiposQuery.isError ? (
           <EmptyState
@@ -139,7 +139,7 @@ export function TiposActivoPage() {
                 tiposQuery.isFetching && "opacity-70",
               )}
             >
-              <ul className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <ul className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {tipos.map((tipoActivo) => (
                   <TipoActivoCard
                     key={tipoActivo.id}
@@ -154,7 +154,7 @@ export function TiposActivoPage() {
               <Pagination
                 page={tiposQuery.data}
                 onPageChange={search.setPage}
-                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-10 md:px-10"
+                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10"
               />
             ) : null}
           </>
