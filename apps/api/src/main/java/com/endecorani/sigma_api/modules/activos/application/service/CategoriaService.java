@@ -5,12 +5,15 @@ import com.endecorani.sigma_api.modules.activos.application.dto.CategoriaRespons
 import com.endecorani.sigma_api.modules.activos.domain.model.Categoria;
 import com.endecorani.sigma_api.modules.activos.domain.repository.CategoriaRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
+import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
+import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.UUID;
@@ -52,6 +55,26 @@ public class CategoriaService extends AbstractCrudService<
         return SORT_FIELDS;
     }
 
+    @Transactional(readOnly = true)
+    public PageResponse<CategoriaResponse> search(
+            String query,
+            PageRequestDto pageRequest
+    ) {
+        String normalized = StringUtils.normalize(query);
+
+        if (normalized == null) {
+            return findAll(pageRequest);
+        }
+
+        return PageResponse.from(
+                categoriaRepository.search(
+                        normalized,
+                        pageRequest.toPageable(allowedSortFields())
+                ),
+                this::toResponse
+        );
+    }
+
     @Override
     protected Categoria toDomain(CategoriaRequest request) {
         String codigo = requireNormalizedCodigo(request.codigo());
@@ -61,7 +84,7 @@ public class CategoriaService extends AbstractCrudService<
                 .codigo(codigo)
                 .nombre(requireNormalizedNombre(request.nombre()))
                 .descripcion(normalizeDescripcion(request.descripcion()))
-                .orden(resolveOrden(request.orden()))
+                .orden(resolveOrdenForCreate(request.orden()))
                 .build();
     }
 
@@ -76,7 +99,7 @@ public class CategoriaService extends AbstractCrudService<
         domain.setCodigo(codigo);
         domain.setNombre(requireNormalizedNombre(request.nombre()));
         domain.setDescripcion(normalizeDescripcion(request.descripcion()));
-        domain.setOrden(resolveOrden(request.orden()));
+        domain.setOrden(resolveOrdenForUpdate(request.orden()));
     }
 
     @Override
@@ -172,9 +195,10 @@ public class CategoriaService extends AbstractCrudService<
         return normalized;
     }
 
-    private int resolveOrden(Integer orden) {
+    private int resolveOrdenForCreate(Integer orden) {
         if (orden == null) {
-            return 0;
+            Integer maxOrden = categoriaRepository.findMaxOrden();
+            return maxOrden == null ? 0 : maxOrden + 1;
         }
 
         if (orden < 0) {
@@ -185,5 +209,18 @@ public class CategoriaService extends AbstractCrudService<
         }
 
         return orden;
+    }
+
+    private int resolveOrdenForUpdate(Integer orden) {
+        int resolved = orden == null ? 0 : orden;
+
+        if (resolved < 0) {
+            throw new BusinessException(
+                    "INVALID_CATEGORIA_ORDEN",
+                    "El orden no puede ser negativo"
+            );
+        }
+
+        return resolved;
     }
 }

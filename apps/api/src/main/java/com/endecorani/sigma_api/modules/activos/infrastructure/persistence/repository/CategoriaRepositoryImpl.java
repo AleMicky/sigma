@@ -7,6 +7,8 @@ import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.mappe
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
@@ -66,5 +68,17 @@ public class CategoriaRepositoryImpl
                         codigo,
                         id
                 );
+    }
+
+    @Override
+    public Page<Categoria> search(String query, Pageable pageable) {
+        return springRepository
+                .search(query, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public Integer findMaxOrden() {
+        return springRepository.findMaxOrden();
     }
 }

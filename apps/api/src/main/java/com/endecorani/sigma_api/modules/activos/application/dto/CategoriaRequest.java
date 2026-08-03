@@ -47,7 +47,7 @@ public record CategoriaRequest(
         String descripcion,
 
         @Schema(
-                description = "Orden de visualización",
+                description = "Orden de visualización. Si se omite al crear, se asigna automáticamente el siguiente valor",
                 example = "1"
         )
         @Min(value = 0, message = "El orden no puede ser negativo")

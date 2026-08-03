@@ -19,6 +19,10 @@ export const routes = {
       `/tipos-activo/${tipoActivoId}/componentes`,
   },
 
+  categorias: {
+    root: "/categorias",
+  },
+
   parametros: {
     root: "/parametros",
     gestion: "/parametros/gestion",

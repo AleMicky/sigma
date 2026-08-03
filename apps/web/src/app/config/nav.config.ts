@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Boxes,
+  FolderTree,
   LayoutDashboard,
   List,
   Settings2,
@@ -33,6 +34,11 @@ export const navItems: NavItem[] = [
         title: "Tipos de activo",
         to: routes.tiposActivo.root,
         icon: Tags,
+      },
+      {
+        title: "Categorías",
+        to: routes.categorias.root,
+        icon: FolderTree,
       },
     ],
   },
