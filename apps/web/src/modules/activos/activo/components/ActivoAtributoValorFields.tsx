@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { cn } from "@/shared/lib/utils"
 
 type ActivoAtributoValorFieldsProps = {
   atributos: ActivoAtributo[]
@@ -38,22 +39,28 @@ export function ActivoAtributoValorFields({
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {atributos.map((atributo) => {
         const tipoDato = tiposDatoById.get(atributo.tipoDatoId)
         const codigo = (tipoDato?.codigo ?? "TEXT").toUpperCase()
         const value = valores[atributo.id] ?? ""
         const error = errors[atributo.id]
         const fieldDisabled = disabled || !atributo.editable
-        const label = atributo.etiqueta
         const fieldId = `atributo-${atributo.id}`
+        const wide = codigo === "TEXTAREA" || codigo === "MULTISELECT"
 
         return (
-          <Field key={atributo.id} data-invalid={error ? true : undefined}>
+          <Field
+            key={atributo.id}
+            data-invalid={error ? true : undefined}
+            className={cn(wide && "md:col-span-2 xl:col-span-3")}
+          >
             {atributo.requerido ? (
-              <RequiredFieldLabel htmlFor={fieldId}>{label}</RequiredFieldLabel>
+              <RequiredFieldLabel htmlFor={fieldId}>
+                {atributo.etiqueta}
+              </RequiredFieldLabel>
             ) : (
-              <FieldLabel htmlFor={fieldId}>{label}</FieldLabel>
+              <FieldLabel htmlFor={fieldId}>{atributo.etiqueta}</FieldLabel>
             )}
 
             {atributo.descripcion ? (
@@ -205,7 +212,7 @@ function AtributoInput({
     const selected = parseMultiselect(value)
 
     return (
-      <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+      <div className="grid gap-2 sm:grid-cols-2">
         {opciones.map((opcion) => {
           const checked = selected.some(
             (item) => item.toLowerCase() === opcion.value.toLowerCase(),

@@ -294,17 +294,19 @@ export function ActivoFormPage({
     valoresQuery.isLoading,
   ])
 
+  const selectedTipo = tiposById.get(tipoActivoId)
+
   if (isEditing && activoQuery.isLoading) {
     return (
-      <PageShell className="max-w-3xl">
-        <ListSkeleton rows={6} rowClassName="h-12 rounded-xl" />
+      <PageShell className="max-w-5xl">
+        <ListSkeleton rows={8} rowClassName="h-12 rounded-xl" />
       </PageShell>
     )
   }
 
   if (isEditing && activoQuery.isError) {
     return (
-      <PageShell className="max-w-3xl">
+      <PageShell className="max-w-5xl">
         <EmptyState
           title={getErrorMessage(activoQuery.error)}
           className="text-destructive"
@@ -324,35 +326,33 @@ export function ActivoFormPage({
   }
 
   return (
-    <PageShell className="max-w-3xl gap-0 px-4 py-0 sm:px-6 md:px-10 md:py-0">
-      <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:py-6 md:py-8">
-        <div className="flex items-start gap-3">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            render={<Link to={routes.activos.root} />}
-            aria-label="Volver a activos"
-            className="mt-0.5 shrink-0"
-          >
-            <ArrowLeft />
-          </Button>
-          <div className="min-w-0 flex-1">
-            <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-              {isEditing ? "Editar activo" : "Crear activo"}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {isEditing
-                ? "Actualiza los datos y los atributos del activo."
-                : "Registra un activo y completa los atributos de su tipo."}{" "}
-              Los campos con <span className="text-destructive">*</span> son
-              obligatorios.
-            </p>
-          </div>
+    <PageShell className="max-w-5xl gap-0 px-4 py-0 sm:px-6 md:px-10 md:py-0">
+      <header className="flex shrink-0 items-start gap-3 border-b py-4 sm:py-6 md:py-8">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          render={<Link to={routes.activos.root} />}
+          aria-label="Volver a activos"
+          className="mt-0.5 shrink-0"
+        >
+          <ArrowLeft />
+        </Button>
+        <div className="min-w-0 flex-1">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+            {isEditing ? "Editar activo" : "Crear activo"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isEditing
+              ? "Actualiza los datos del activo y sus atributos."
+              : "Completa el formulario para registrar un nuevo activo."}{" "}
+            Los campos con <span className="text-destructive">*</span> son
+            obligatorios.
+          </p>
         </div>
       </header>
 
       <form
-        className="flex flex-1 flex-col gap-6 py-6"
+        className="flex flex-col gap-8 py-6 pb-10"
         onSubmit={(event) => {
           event.preventDefault()
           event.stopPropagation()
@@ -368,134 +368,108 @@ export function ActivoFormPage({
             onRemoveExistingChange={setRemoveExistingImage}
           />
 
-          <form.Field name="tipoActivoId">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              const selected = tiposById.get(field.state.value)
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <form.Field name="tipoActivoId">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                const selected = tiposById.get(field.state.value)
 
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <RequiredFieldLabel htmlFor={field.name}>
-                    Tipo de activo
-                  </RequiredFieldLabel>
-                  <Select
-                    value={field.state.value || null}
-                    onValueChange={(value) =>
-                      field.handleChange(value ?? "")
-                    }
-                    disabled={tiposQuery.isLoading}
-                  >
-                    <SelectTrigger
-                      id={field.name}
-                      aria-invalid={isInvalid}
-                      className="w-full"
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <RequiredFieldLabel htmlFor={field.name}>
+                      Tipo de activo
+                    </RequiredFieldLabel>
+                    <Select
+                      value={field.state.value || null}
+                      onValueChange={(value) =>
+                        field.handleChange(value ?? "")
+                      }
+                      disabled={tiposQuery.isLoading}
                     >
-                      <SelectValue placeholder="Selecciona un tipo">
-                        {selected?.nombre ?? null}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tipos.map((tipo) => (
-                        <SelectItem key={tipo.id} value={tipo.id}>
-                          {tipo.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
+                      <SelectTrigger
+                        id={field.name}
+                        aria-invalid={isInvalid}
+                        className="w-full"
+                      >
+                        <SelectValue placeholder="Selecciona un tipo">
+                          {selected?.nombre ?? null}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tipos.map((tipo) => (
+                          <SelectItem key={tipo.id} value={tipo.id}>
+                            {tipo.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
 
-          <form.Field name="codigo">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+            <form.Field name="codigo">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
 
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <RequiredFieldLabel htmlFor={field.name}>
-                    Código
-                  </RequiredFieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    required
-                    aria-required
-                    aria-invalid={isInvalid}
-                    placeholder="VEH-001"
-                  />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <RequiredFieldLabel htmlFor={field.name}>
+                      Código
+                    </RequiredFieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      required
+                      aria-required
+                      aria-invalid={isInvalid}
+                      placeholder="VEH-001"
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
 
-          <form.Field name="nombre">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+            <form.Field name="nombre">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
 
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <RequiredFieldLabel htmlFor={field.name}>
-                    Nombre
-                  </RequiredFieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    required
-                    aria-required
-                    aria-invalid={isInvalid}
-                    placeholder="Toyota Hilux"
-                  />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <RequiredFieldLabel htmlFor={field.name}>
+                      Nombre
+                    </RequiredFieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      required
+                      aria-required
+                      aria-invalid={isInvalid}
+                      placeholder="Toyota Hilux"
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
 
-          <form.Field name="descripcion">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor={field.name}>Descripción</FieldLabel>
-                  <Textarea
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                    placeholder="Camioneta de operaciones"
-                    rows={2}
-                  />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <div className="grid gap-4 sm:grid-cols-2">
             <form.Field name="ubicacion">
               {(field) => {
                 const isInvalid =
@@ -547,17 +521,47 @@ export function ActivoFormPage({
                 )
               }}
             </form.Field>
+
+            <form.Field name="descripcion">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+
+                return (
+                  <Field
+                    data-invalid={isInvalid || undefined}
+                    className="md:col-span-2"
+                  >
+                    <FieldLabel htmlFor={field.name}>Descripción</FieldLabel>
+                    <Textarea
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      placeholder="Camioneta de operaciones"
+                      rows={3}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
           </div>
         </FieldGroup>
 
         <section className="flex flex-col gap-4 border-t pt-6">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-heading text-lg font-semibold tracking-tight">
-              Atributos del tipo
+          <div>
+            <h2 className="text-base font-medium">
+              Atributos
+              {selectedTipo ? ` · ${selectedTipo.nombre}` : ""}
             </h2>
             <p className="text-sm text-muted-foreground">
               {tipoActivoId
-                ? "Completa los campos definidos para el tipo seleccionado."
+                ? "Completa los atributos del tipo seleccionado."
                 : "Selecciona un tipo de activo para ver sus atributos."}
             </p>
           </div>
@@ -593,7 +597,7 @@ export function ActivoFormPage({
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-4 pb-8">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-4">
           <Button
             type="button"
             variant="outline"
