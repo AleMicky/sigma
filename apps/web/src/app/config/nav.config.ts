@@ -1,6 +1,9 @@
 import {
   BookOpen,
   Boxes,
+  Briefcase,
+  Building,
+  Building2,
   FileText,
   FolderTree,
   LayoutDashboard,
@@ -9,6 +12,8 @@ import {
   SlidersHorizontal,
   Tags,
   Type,
+  UserCheck,
+  Users,
 } from "lucide-react"
 
 import type { NavItem } from "@/shared/types/nav.types"
@@ -20,6 +25,33 @@ export const navItems: NavItem[] = [
     title: "Inicio",
     to: routes.home,
     icon: LayoutDashboard,
+  },
+  {
+    title: "Organización",
+    to: routes.organizacion.root,
+    icon: Building2,
+    children: [
+      {
+        title: "Empleados",
+        to: routes.organizacion.empleados,
+        icon: UserCheck,
+      },
+      {
+        title: "Áreas",
+        to: routes.organizacion.areas,
+        icon: Building,
+      },
+      {
+        title: "Cargos",
+        to: routes.organizacion.cargos,
+        icon: Briefcase,
+      },
+      {
+        title: "Personas",
+        to: routes.organizacion.personas,
+        icon: Users,
+      },
+    ],
   },
   {
     title: "Activos",

@@ -33,4 +33,12 @@ export const routes = {
     catalogos: "/parametros/catalogos",
     tiposDato: "/parametros/tipos-dato",
   },
+
+  organizacion: {
+    root: "/organizacion",
+    empleados: "/organizacion/empleados",
+    areas: "/organizacion/areas",
+    cargos: "/organizacion/cargos",
+    personas: "/organizacion/personas",
+  },
 } as const
