@@ -82,12 +82,6 @@ public record ActivoAtributoResponse(
         )
         List<ActivoAtributoOpcionDto> opciones,
 
-        @Schema(
-                description = "URL pública de la imagen",
-                example = "/api/v1/files/activo-atributos/4e8236fc-6daa-4814-b7f7-a5d0d37383d8.jpg"
-        )
-        String urlImagen,
-
         @Schema(description = "Fecha de creación")
         Instant createdAt,
 

@@ -25,7 +25,6 @@ public class ActivoAtributoPersistenceMapper {
         entity.setEditable(domain.getEditable());
         entity.setValorDefecto(domain.getValorDefecto());
         entity.setOpciones(domain.getOpciones());
-        entity.setUrlImagen(domain.getUrlImagen());
 
         if (domain.getCreatedAt() != null) {
             entity.setCreatedAt(domain.getCreatedAt());
@@ -55,7 +54,6 @@ public class ActivoAtributoPersistenceMapper {
                 .editable(entity.getEditable())
                 .valorDefecto(entity.getValorDefecto())
                 .opciones(entity.getOpciones())
-                .urlImagen(entity.getUrlImagen())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())

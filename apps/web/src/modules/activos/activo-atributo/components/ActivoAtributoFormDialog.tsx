@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { useForm } from "@tanstack/react-form"
 import { Plus, Trash2 } from "lucide-react"
 
@@ -9,7 +9,6 @@ import {
   FormDialogSubmit,
   RequiredFieldLabel,
 } from "@/shared/components/form-dialog"
-import { ImageUploadField } from "@/shared/components/image-upload-field"
 import { Button } from "@/shared/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
@@ -23,16 +22,11 @@ import {
 import { Textarea } from "@/shared/components/ui/textarea"
 import { tipoDatoQueries } from "@/modules/parametros/tipo-dato/api/tipo-dato.queries"
 
-import { activoAtributoKeys } from "../api/activo-atributo.keys"
 import {
   useCreateActivoAtributo,
   useUpdateActivoAtributo,
 } from "../api/activo-atributo.mutations"
-import {
-  deleteActivoAtributoImagen,
-  uploadActivoAtributoImagen,
-  type ActivoAtributo,
-} from "../api/activo-atributo.service"
+import type { ActivoAtributo } from "../api/activo-atributo.service"
 import {
   defaultActivoAtributoValues,
   activoAtributoSchema,
@@ -54,12 +48,9 @@ export function ActivoAtributoFormDialog({
   onSuccess,
 }: ActivoAtributoFormDialogProps) {
   const isEditing = Boolean(atributo)
-  const queryClient = useQueryClient()
   const createMutation = useCreateActivoAtributo()
   const updateMutation = useUpdateActivoAtributo()
   const [formError, setFormError] = useState<string | null>(null)
-  const [pendingFile, setPendingFile] = useState<File | null>(null)
-  const [removeExistingImage, setRemoveExistingImage] = useState(false)
 
   const tiposDatoQuery = useQuery(
     tipoDatoQueries.list({
@@ -128,35 +119,18 @@ export function ActivoAtributoFormDialog({
       }
 
       try {
-        let savedId = atributo?.id
-
         if (isEditing && atributo) {
           await updateMutation.mutateAsync({
             id: atributo.id,
             payload,
           })
         } else {
-          const created = await createMutation.mutateAsync(payload)
-          savedId = created.id
-        }
-
-        if (savedId && pendingFile) {
-          await uploadActivoAtributoImagen(savedId, pendingFile)
-          void queryClient.invalidateQueries({
-            queryKey: activoAtributoKeys.lists(),
-          })
-        } else if (savedId && removeExistingImage && atributo?.urlImagen) {
-          await deleteActivoAtributoImagen(savedId)
-          void queryClient.invalidateQueries({
-            queryKey: activoAtributoKeys.lists(),
-          })
+          await createMutation.mutateAsync(payload)
         }
 
         onSuccess?.()
         onOpenChange(false)
         form.reset()
-        setPendingFile(null)
-        setRemoveExistingImage(false)
       } catch (error) {
         setFormError(
           isApiError(error)
@@ -181,8 +155,6 @@ export function ActivoAtributoFormDialog({
       formError={formError}
       onCancel={() => {
         setFormError(null)
-        setPendingFile(null)
-        setRemoveExistingImage(false)
         form.reset()
       }}
       onSubmit={() => form.handleSubmit()}
@@ -201,14 +173,6 @@ export function ActivoAtributoFormDialog({
         </form.Subscribe>
       }
     >
-      <ImageUploadField
-        currentUrl={atributo?.urlImagen}
-        file={pendingFile}
-        onFileChange={setPendingFile}
-        removeExisting={removeExistingImage}
-        onRemoveExistingChange={setRemoveExistingImage}
-      />
-
       <form.Field name="codigo">
         {(field) => {
           const isInvalid =

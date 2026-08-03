@@ -87,7 +87,4 @@ public class ActivoAtributoEntity extends BaseEntity {
             columnDefinition = "jsonb"
     )
     private String opciones;
-
-    @Column(name = "url_imagen", length = 500)
-    private String urlImagen;
 }

@@ -1,11 +1,10 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { ImageIcon, ListChecks, Plus } from "lucide-react"
+import { ListChecks, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
 import { AuditInfo } from "@/shared/components/audit-info"
-import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import {
   DetailListItem,
@@ -127,15 +126,6 @@ export function TipoActivoAtributosPage({
 
           return (
             <DetailListItem
-              leading={
-                <AuthenticatedImage
-                  src={atributo.urlImagen}
-                  alt={atributo.etiqueta}
-                  className="size-10 rounded-md"
-                  fallbackClassName="size-10 rounded-md"
-                  fallback={<ImageIcon className="size-4" />}
-                />
-              }
               title={atributo.etiqueta}
               subtitle={
                 <div className="flex flex-wrap items-center gap-1.5">
