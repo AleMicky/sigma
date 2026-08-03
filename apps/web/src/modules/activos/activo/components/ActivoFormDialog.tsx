@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "@tanstack/react-form"
 
@@ -66,6 +66,10 @@ export function ActivoFormDialog({
   )
 
   const tipos = tiposQuery.data?.content ?? []
+  const tiposById = useMemo(
+    () => new Map(tipos.map((tipo) => [tipo.id, tipo])),
+    [tipos],
+  )
 
   const form = useForm({
     defaultValues: activo
@@ -178,6 +182,7 @@ export function ActivoFormDialog({
         {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
+          const selected = tiposById.get(field.state.value)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
@@ -196,7 +201,9 @@ export function ActivoFormDialog({
                   aria-invalid={isInvalid}
                   className="w-full"
                 >
-                  <SelectValue placeholder="Selecciona un tipo" />
+                  <SelectValue placeholder="Selecciona un tipo">
+                    {selected?.nombre ?? null}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {tipos.map((tipo) => (

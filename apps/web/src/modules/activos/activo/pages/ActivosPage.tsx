@@ -137,7 +137,11 @@ export function ActivosPage() {
                 className="w-full sm:w-56"
                 aria-label="Filtrar por tipo"
               >
-                <SelectValue placeholder="Todos los tipos" />
+                <SelectValue placeholder="Todos los tipos">
+                  {tipoActivoId === ALL_TIPOS
+                    ? "Todos los tipos"
+                    : (tiposById.get(tipoActivoId)?.nombre ?? null)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_TIPOS}>Todos los tipos</SelectItem>
