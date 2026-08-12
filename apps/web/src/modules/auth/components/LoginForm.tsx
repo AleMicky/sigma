@@ -1,7 +1,7 @@
 import { useState, type ComponentProps } from "react"
 import { useForm } from "@tanstack/react-form"
 import { useNavigate } from "@tanstack/react-router"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, User, Lock, ArrowRight, Loader2 } from "lucide-react"
 
 import { appConfig, routes } from "@/app/config"
 import { Button } from "@/shared/components/ui/button"
@@ -58,13 +58,14 @@ export function LoginForm({
   })
 
   return (
-    <div className={cn("flex flex-col gap-8", className)} {...props}>
+    <div className={cn("flex flex-col gap-7", className)} {...props}>
       <div className="flex flex-col gap-2">
-        <h2 className="font-heading text-2xl font-semibold tracking-tight">
+        <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground md:text-3xl">
           Iniciar sesión
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Usa tu usuario corporativo para entrar a {appConfig.shortName}.
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Ingresa tus credenciales corporativas para acceder a{" "}
+          <span className="font-medium text-foreground">{appConfig.shortName}</span>.
         </p>
       </div>
 
@@ -77,7 +78,7 @@ export function LoginForm({
           void form.handleSubmit()
         }}
       >
-        <FieldGroup>
+        <FieldGroup className="gap-4.5">
           <form.Field name="username">
             {(field) => {
               const isInvalid =
@@ -85,18 +86,24 @@ export function LoginForm({
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor={field.name}>Usuario</FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type="text"
-                    autoComplete="off"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                    className="h-11"
-                  />
+                  <FieldLabel htmlFor={field.name} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Usuario
+                  </FieldLabel>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/70 pointer-events-none" />
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="text"
+                      autoComplete="username"
+                      placeholder="Ej. usuario.corporativo"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      className="h-11 pl-10 pr-3 bg-muted/30 focus-visible:bg-background transition-colors"
+                    />
+                  </div>
                   {isInvalid && (
                     <FieldError errors={field.state.meta.errors} />
                   )}
@@ -112,32 +119,38 @@ export function LoginForm({
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor={field.name}>Contraseña</FieldLabel>
+                  <FieldLabel htmlFor={field.name} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Contraseña
+                  </FieldLabel>
                   <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/70 pointer-events-none" />
                     <Input
                       id={field.name}
                       name={field.name}
                       type={showPassword ? "text" : "password"}
-                      autoComplete="off"
+                      autoComplete="current-password"
+                      placeholder="••••••••"
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
                       aria-invalid={isInvalid}
-                      className="h-11 pr-10"
+                      className="h-11 pl-10 pr-10 bg-muted/30 focus-visible:bg-background transition-colors"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon-sm"
                       className="absolute top-1/2 right-1.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setShowPassword((prev) => !prev)}
+                      tabIndex={-1}
                       aria-label={
                         showPassword
                           ? "Ocultar contraseña"
                           : "Mostrar contraseña"
                       }
                     >
-                      {showPassword ? <EyeOff /> : <Eye />}
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </Button>
                   </div>
                   {isInvalid && (
@@ -149,12 +162,12 @@ export function LoginForm({
           </form.Field>
 
           {formError ? (
-            <p className="text-sm text-destructive" role="alert">
-              {formError}
-            </p>
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+              <p role="alert" className="font-medium">{formError}</p>
+            </div>
           ) : null}
 
-          <Field>
+          <Field className="pt-1">
             <form.Subscribe
               selector={(state) => [state.canSubmit, state.isSubmitting] as const}
             >
@@ -163,9 +176,19 @@ export function LoginForm({
                   type="submit"
                   size="lg"
                   disabled={!canSubmit || isSubmitting}
-                  className="h-11 w-full"
+                  className="h-11 w-full font-semibold shadow-md transition-all hover:shadow-lg active:scale-[0.99] gap-2"
                 >
-                  {isSubmitting ? "Entrando…" : "Entrar"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      <span>Iniciando sesión…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Entrar al sistema</span>
+                      <ArrowRight className="size-4" />
+                    </>
+                  )}
                 </Button>
               )}
             </form.Subscribe>
@@ -173,10 +196,10 @@ export function LoginForm({
         </FieldGroup>
       </form>
 
-      <FieldDescription className="text-xs text-muted-foreground">
+      <FieldDescription className="text-xs text-muted-foreground leading-normal border-t border-border/50 pt-4">
         Al continuar, aceptas los{" "}
-        <a href="#">Términos de servicio</a> y la{" "}
-        <a href="#">Política de privacidad</a>.
+        <a href="#" className="underline underline-offset-4 hover:text-foreground font-medium transition-colors">Términos de servicio</a> y la{" "}
+        <a href="#" className="underline underline-offset-4 hover:text-foreground font-medium transition-colors">Política de privacidad</a>.
       </FieldDescription>
     </div>
   )
