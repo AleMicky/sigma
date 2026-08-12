@@ -24,10 +24,8 @@ services:
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
       KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-sigma-api}
       JAVA_OPTS: "-Xms256m -Xmx512m"
-    ports:
-      - "${SERVER_PORT:-8080}:8080"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/v3/api-docs || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -35,7 +33,7 @@ services:
     volumes:
       - sigma_uploads:/app/uploads
     networks:
-      - sigma-network
+      - infraestructura-network
 
   # ── React Frontend ───────────────────────────────────────────
   web:
@@ -47,17 +45,15 @@ services:
         VITE_APP_NAME: ${VITE_APP_NAME:-SIGMA}
     container_name: sigma-web
     restart: unless-stopped
-    ports:
-      - "${WEB_PORT:-3000}:80"
     depends_on:
       api:
         condition: service_healthy
     networks:
-      - sigma-network
+      - infraestructura-network
 
 volumes:
   sigma_uploads:
 
 networks:
-  sigma-network:
-    driver: bridge
+  infraestructura-network:
+    external: true
