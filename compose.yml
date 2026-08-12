@@ -1,0 +1,66 @@
+name: sigma-dev
+
+services:
+  # ── PostgreSQL ───────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: sigma-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-sigma_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - sigma_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-sigma_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sigma-network
+
+  # ── Spring Boot API ──────────────────────────────────────────
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: sigma-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DB_HOST: postgres
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    volumes:
+      - sigma_uploads:/app/uploads
+    networks:
+      - sigma-network
+
+  # ── React Frontend ───────────────────────────────────────────
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+        VITE_APP_NAME: ${VITE_APP_NAME:-SIGMA}
+    container_name: sigma-web
+    ports:
+      - "3000:80"
+    networks:
+      - sigma-network
+
+volumes:
+  sigma_postgres_data:
+  sigma_uploads:
+
+networks:
+  sigma-network:
+    driver: bridge
