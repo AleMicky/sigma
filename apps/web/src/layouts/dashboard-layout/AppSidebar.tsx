@@ -1,114 +1,90 @@
 import { useEffect, useState, type ComponentProps } from "react"
 import { Link, useRouterState } from "@tanstack/react-router"
-import { ChevronLeft, ChevronRight, Search } from "lucide-react"
+import { ChevronRight, Search } from "lucide-react"
 
 import logoEndeCorani from "@/assets/logo-ende-corani.png"
 import {
   appConfig,
-  findActiveNavItem,
   isPathActive,
   navItems,
-  type NavItem,
 } from "@/app/config"
 import { Button } from "@/shared/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInput,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from "@/shared/components/ui/sidebar"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/shared/components/ui/tooltip"
 
 import { UserMenu } from "./UserMenu"
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  })
-  const { setOpen, state } = useSidebar()
-  const [activeGroup, setActiveGroup] = useState<NavItem | null>(() =>
-    findActiveNavItem(pathname),
-  )
-
-  useEffect(() => {
-    setActiveGroup(findActiveNavItem(pathname))
-  }, [pathname])
-
-  function openGroup(item: NavItem) {
-    setActiveGroup(item)
-    if (state === "collapsed") {
-      setOpen(true)
-    }
-  }
-
-  function goBackToMain() {
-    setActiveGroup(null)
-  }
-
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/60 bg-sidebar" {...props}>
-      <SidebarHeader className="gap-3 px-3 pt-3">
-        <div className="flex items-center gap-2">
-          <SidebarMenuButton
-            size="lg"
-            render={<Link to="/" />}
-            tooltip={appConfig.name}
-            className="min-w-0 flex-1 gap-3 data-[size=lg]:h-11 data-[size=lg]:px-2 group-data-[collapsible=icon]:justify-center"
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-border/60 bg-sidebar/95 backdrop-blur-sm transition-all"
+      {...props}
+    >
+      <SidebarHeader className="gap-3 px-3 pt-3 pb-2">
+        <div className="flex items-center justify-between gap-2">
+          <Link
+            to="/"
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-1 transition-colors hover:bg-sidebar-accent/70 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
           >
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-sm ring-1 ring-black/10 dark:ring-white/20">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-2xs ring-1 ring-black/10 dark:bg-white/90 dark:ring-white/20">
               <img
                 src={logoEndeCorani}
                 alt="ENDE Corani"
                 className="size-full object-contain"
               />
             </div>
-            <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="truncate font-bold tracking-tight text-foreground">
+            <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+              <span className="truncate text-sm font-bold tracking-tight text-foreground font-heading">
                 {appConfig.shortName}
               </span>
-              <span className="truncate text-[11px] font-medium text-muted-foreground">
+              <span className="truncate text-[11px] font-medium text-muted-foreground/90">
                 ENDE Corani S.A.
               </span>
             </div>
-          </SidebarMenuButton>
+          </Link>
         </div>
 
-        <div className="relative group-data-[collapsible=icon]:hidden">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <SidebarInput
-            placeholder="Buscar en el sistema..."
-            className="h-8.5 rounded-lg border-border/50 bg-muted/30 pl-8 pr-12 shadow-none transition-colors focus-visible:bg-background"
-            readOnly
-          />
-          <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border bg-background px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground/80 shadow-2xs">
-            ⌘K
-          </kbd>
-        </div>
+        <SidebarSearch />
       </SidebarHeader>
 
       <SidebarContent className="px-2">
-        <SidebarGroup className="px-0">
-          <SidebarGroupContent>
-            {activeGroup?.children ? (
-              <SubMenu
-                group={activeGroup}
-                pathname={pathname}
-                onBack={goBackToMain}
-              />
-            ) : (
-              <MainMenu
-                pathname={pathname}
-                onOpenGroup={openGroup}
-              />
-            )}
+        <SidebarGroup className="px-1 py-1">
+          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 group-data-[collapsible=icon]:hidden">
+            Navegación Principal
+          </SidebarGroupLabel>
+          <SidebarGroupContent className="mt-1">
+            <NavigationMenu />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
@@ -122,50 +98,211 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   )
 }
 
-function MainMenu({
-  pathname,
-  onOpenGroup,
-}: {
-  pathname: string
-  onOpenGroup: (item: NavItem) => void
-}) {
+function SidebarSearch() {
+  const { state, setOpen } = useSidebar()
+
+  if (state === "collapsed") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8.5 rounded-lg text-muted-foreground hover:bg-sidebar-accent hover:text-foreground mx-auto flex items-center justify-center"
+              onClick={() => setOpen(true)}
+            />
+          }
+        >
+          <Search className="size-4" />
+        </TooltipTrigger>
+        <TooltipContent side="right" align="center">
+          Buscar en el sistema (⌘K)
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
   return (
-    <SidebarMenu className="gap-0.5">
+    <div className="relative group-data-[collapsible=icon]:hidden">
+      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+      <SidebarInput
+        placeholder="Buscar en el sistema..."
+        className="h-8.5 rounded-lg border-border/50 bg-muted/40 pl-8 pr-12 text-xs shadow-none transition-all hover:border-border/80 focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring"
+        readOnly
+      />
+      <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border/60 bg-background px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground/80 shadow-2xs">
+        ⌘K
+      </kbd>
+    </div>
+  )
+}
+
+function NavigationMenu() {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+  const { state } = useSidebar()
+
+  // Track expanded groups in expanded mode
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {}
+    navItems.forEach((item) => {
+      if (item.children) {
+        const isChildActive = item.children.some((child) =>
+          isPathActive(pathname, child.to)
+        )
+        if (isChildActive || isPathActive(pathname, item.to)) {
+          initial[item.title] = true
+        }
+      }
+    })
+    return initial
+  })
+
+  // Auto expand active parent group on navigation
+  useEffect(() => {
+    navItems.forEach((item) => {
+      if (item.children) {
+        const isChildActive = item.children.some((child) =>
+          isPathActive(pathname, child.to)
+        )
+        if (isChildActive) {
+          setOpenGroups((prev) => ({ ...prev, [item.title]: true }))
+        }
+      }
+    })
+  }, [pathname])
+
+  function toggleGroup(title: string) {
+    setOpenGroups((prev) => ({ ...prev, [title]: !prev[title] }))
+  }
+
+  return (
+    <SidebarMenu className="gap-1">
       {navItems.map((item) => {
         const hasChildren = Boolean(item.children?.length)
-        const isActive = hasChildren
-          ? item.children!.some((child) => isPathActive(pathname, child.to)) ||
-          isPathActive(pathname, item.to)
-          : isPathActive(pathname, item.to)
+        const isChildActive = Boolean(
+          item.children?.some((child) => isPathActive(pathname, child.to))
+        )
+        const isSelfActive = isPathActive(pathname, item.to)
+        const isActive = isChildActive || isSelfActive
+        const isOpen = Boolean(openGroups[item.title])
 
-        if (hasChildren) {
+        // Single item without sub-items
+        if (!hasChildren) {
           return (
-            <SidebarMenuItem key={item.title}>
+            <SidebarMenuItem key={item.to}>
               <SidebarMenuButton
-                isActive={isActive}
-                tooltip={`${item.title} — ver opciones`}
-                className="h-9 rounded-lg"
-                onClick={() => onOpenGroup(item)}
+                isActive={isSelfActive}
+                tooltip={item.title}
+                render={<Link to={item.to as any} />}
+                className={`relative h-9.5 rounded-lg font-medium transition-all ${isSelfActive
+                    ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:rounded-r-full before:bg-primary"
+                    : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground"
+                  }`}
               >
-                <item.icon />
+                <item.icon className={`size-4 shrink-0 ${isSelfActive ? "text-primary" : ""}`} />
                 <span>{item.title}</span>
-                <ChevronRight className="ml-auto size-4 text-muted-foreground group-data-[collapsible=icon]:hidden" />
               </SidebarMenuButton>
             </SidebarMenuItem>
           )
         }
 
+        // Item with children in Collapsed Icon mode: Flyout Dropdown Menu
+        if (state === "collapsed") {
+          return (
+            <SidebarMenuItem key={item.title}>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      tooltip={item.title}
+                      className={`relative h-9.5 rounded-lg transition-all ${isActive
+                          ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:rounded-r-full before:bg-primary"
+                          : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground"
+                        }`}
+                    />
+                  }
+                >
+                  <item.icon className={`size-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                  <span>{item.title}</span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  side="right"
+                  align="start"
+                  sideOffset={8}
+                  className="min-w-48 rounded-xl p-1.5 shadow-xl border-border/60"
+                >
+                  <DropdownMenuLabel className="px-2 py-1.5 text-xs font-bold text-foreground">
+                    {item.title}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="my-1" />
+                  {item.children?.map((child) => {
+                    const isSubActive = isPathActive(pathname, child.to)
+                    return (
+                      <DropdownMenuItem
+                        key={child.to}
+                        render={<Link to={child.to as any} />}
+                        className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium cursor-pointer transition-colors ${isSubActive
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+                          }`}
+                      >
+                        <child.icon className={`size-4 shrink-0 ${isSubActive ? "text-primary" : ""}`} />
+                        <span>{child.title}</span>
+                      </DropdownMenuItem>
+                    )
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          )
+        }
+
+        // Item with children in Expanded mode: Accordion Collapsible
         return (
-          <SidebarMenuItem key={item.to}>
+          <SidebarMenuItem key={item.title}>
             <SidebarMenuButton
               isActive={isActive}
               tooltip={item.title}
-              render={<Link to={item.to as any} />}
-              className="h-9 rounded-lg"
+              onClick={() => toggleGroup(item.title)}
+              className={`relative h-9.5 rounded-lg font-medium transition-all ${isActive && !isOpen
+                  ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:rounded-r-full before:bg-primary"
+                  : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground"
+                }`}
             >
-              <item.icon />
-              <span>{item.title}</span>
+              <item.icon className={`size-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
+              <span className="flex-1 text-left">{item.title}</span>
+              <ChevronRight
+                className={`size-4 text-muted-foreground/70 transition-transform duration-200 ${isOpen ? "rotate-90 text-foreground" : ""
+                  }`}
+              />
             </SidebarMenuButton>
+
+            {isOpen && (
+              <SidebarMenuSub className="my-1 ml-4 border-l border-border/60 pl-2.5 gap-0.5">
+                {item.children?.map((child) => {
+                  const isSubActive = isPathActive(pathname, child.to)
+                  return (
+                    <SidebarMenuSubItem key={child.to}>
+                      <SidebarMenuSubButton
+                        isActive={isSubActive}
+                        render={<Link to={child.to as any} />}
+                        className={`relative h-8.5 rounded-lg px-2.5 text-xs font-medium transition-all ${isSubActive
+                            ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-1 before:rounded-r-full before:bg-primary"
+                            : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground"
+                          }`}
+                      >
+                        <child.icon className={`size-3.5 shrink-0 ${isSubActive ? "text-primary" : ""}`} />
+                        <span>{child.title}</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  )
+                })}
+              </SidebarMenuSub>
+            )}
           </SidebarMenuItem>
         )
       })}
@@ -173,56 +310,3 @@ function MainMenu({
   )
 }
 
-function SubMenu({
-  group,
-  pathname,
-  onBack,
-}: {
-  group: NavItem
-  pathname: string
-  onBack: () => void
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="mb-1 flex items-center gap-1 group-data-[collapsible=icon]:justify-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-full justify-start gap-2 px-2 text-muted-foreground group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-          onClick={onBack}
-        >
-          <ChevronLeft className="size-4" />
-          <span className="truncate group-data-[collapsible=icon]:hidden">
-            Menú principal
-          </span>
-        </Button>
-      </div>
-
-      <div className="mb-1 px-2 group-data-[collapsible=icon]:hidden">
-        <p className="truncate text-xs font-medium text-muted-foreground">
-          {group.title}
-        </p>
-      </div>
-
-      <SidebarMenu className="gap-0.5">
-        {group.children?.map((child) => {
-          const isActive = isPathActive(pathname, child.to)
-
-          return (
-            <SidebarMenuItem key={child.to}>
-              <SidebarMenuButton
-                isActive={isActive}
-                tooltip={child.title}
-                render={<Link to={child.to as any} />}
-                className="h-9 rounded-lg"
-              >
-                <child.icon />
-                <span>{child.title}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )
-        })}
-      </SidebarMenu>
-    </div>
-  )
-}

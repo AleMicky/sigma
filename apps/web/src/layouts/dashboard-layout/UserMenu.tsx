@@ -61,6 +61,7 @@ export function UserMenu() {
             render={
               <SidebarMenuButton
                 size="lg"
+                tooltip={displayName}
                 className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground hover:bg-sidebar-accent/70 transition-colors"
               />
             }
