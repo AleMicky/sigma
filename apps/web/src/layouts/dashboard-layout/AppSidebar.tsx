@@ -1,7 +1,8 @@
 import { useEffect, useState, type ComponentProps } from "react"
 import { Link, useRouterState } from "@tanstack/react-router"
-import { ChevronLeft, ChevronRight, ChevronsUpDown, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, Search } from "lucide-react"
 
+import logoEndeCorani from "@/assets/logo-ende-corani.png"
 import {
   appConfig,
   findActiveNavItem,
@@ -53,34 +54,41 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   }
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" className="border-r border-border/60 bg-sidebar" {...props}>
       <SidebarHeader className="gap-3 px-3 pt-3">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <SidebarMenuButton
             size="lg"
             render={<Link to="/" />}
-            tooltip={appConfig.shortName}
-            className="min-w-0 flex-1 gap-2 data-[size=lg]:h-9 data-[size=lg]:px-2"
+            tooltip={appConfig.name}
+            className="min-w-0 flex-1 gap-3 data-[size=lg]:h-11 data-[size=lg]:px-2 group-data-[collapsible=icon]:justify-center"
           >
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-foreground text-[11px] font-semibold text-background">
-              {appConfig.shortName.charAt(0)}
-            </span>
-            <span className="truncate text-sm font-medium">
-              {appConfig.shortName}
-            </span>
-            <ChevronsUpDown className="ml-auto size-3.5 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-sm ring-1 ring-black/10 dark:ring-white/20">
+              <img
+                src={logoEndeCorani}
+                alt="ENDE Corani"
+                className="size-full object-contain"
+              />
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+              <span className="truncate font-bold tracking-tight text-foreground">
+                {appConfig.shortName}
+              </span>
+              <span className="truncate text-[11px] font-medium text-muted-foreground">
+                ENDE Corani S.A.
+              </span>
+            </div>
           </SidebarMenuButton>
-          <SidebarTrigger className="size-8 shrink-0 group-data-[collapsible=icon]:hidden" />
         </div>
 
         <div className="relative group-data-[collapsible=icon]:hidden">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <SidebarInput
-            placeholder="Buscar..."
-            className="h-9 rounded-lg border-transparent bg-background pl-8 pr-12 shadow-none"
+            placeholder="Buscar en el sistema..."
+            className="h-8.5 rounded-lg border-border/50 bg-muted/30 pl-8 pr-12 shadow-none transition-colors focus-visible:bg-background"
             readOnly
           />
-          <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-md border bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground">
+          <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border bg-background px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground/80 shadow-2xs">
             ⌘K
           </kbd>
         </div>
@@ -105,7 +113,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="px-3 pb-3">
+      <SidebarFooter className="px-3 pb-3 pt-2 border-t border-border/40">
         <UserMenu />
       </SidebarFooter>
 
@@ -127,7 +135,7 @@ function MainMenu({
         const hasChildren = Boolean(item.children?.length)
         const isActive = hasChildren
           ? item.children!.some((child) => isPathActive(pathname, child.to)) ||
-            isPathActive(pathname, item.to)
+          isPathActive(pathname, item.to)
           : isPathActive(pathname, item.to)
 
         if (hasChildren) {
