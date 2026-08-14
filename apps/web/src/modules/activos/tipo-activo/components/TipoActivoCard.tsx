@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Eye, Layers, Sliders } from "lucide-react"
 
+import { routes } from "@/app/config/routes"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Button } from "@/shared/components/ui/button"
@@ -15,12 +16,14 @@ type TipoActivoCardProps = {
   tipoActivo: TipoActivo
   categoriaNombre?: string | null
   onEdit: (tipoActivo: TipoActivo) => void
+  onQuickView?: (tipoActivo: TipoActivo) => void
 }
 
 export function TipoActivoCard({
   tipoActivo,
   categoriaNombre,
   onEdit,
+  onQuickView,
 }: TipoActivoCardProps) {
   const deleteMutation = useDeleteTipoActivo()
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -28,28 +31,50 @@ export function TipoActivoCard({
   const color = tipoActivo.color || DEFAULT_TIPO_ACTIVO_COLOR
 
   return (
-    <li className="group flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-3 sm:p-4">
-      <div className="flex min-w-0 gap-2.5 sm:gap-3">
-        <span
-          className="flex size-8 shrink-0 items-center justify-center rounded-lg text-white sm:size-9"
-          style={{ backgroundColor: color }}
-        >
-          <Icon className="size-3.5 sm:size-4" />
-        </span>
+    <li className="group relative flex min-w-0 flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 transition-all duration-200 hover:border-primary/40 hover:shadow-md">
+      {/* Top Color Accent Line */}
+      <div
+        className="absolute top-0 left-0 right-0 h-1 transition-opacity opacity-70 group-hover:opacity-100"
+        style={{ backgroundColor: color }}
+      />
 
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">
-              <span className="truncate text-sm font-medium">
+      <div className="flex flex-col gap-3 min-w-0">
+        <div className="flex items-start justify-between gap-3 pt-1">
+          <div className="flex items-center gap-3 min-w-0">
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-xs transition-transform group-hover:scale-105"
+              style={{ backgroundColor: color }}
+            >
+              <Icon className="size-5" />
+            </span>
+
+            <div className="flex flex-col min-w-0">
+              <button
+                type="button"
+                onClick={() => onQuickView?.(tipoActivo)}
+                className="text-left font-heading font-semibold text-foreground hover:text-primary transition-colors truncate text-base"
+              >
                 {tipoActivo.nombre}
-              </span>
+              </button>
               {categoriaNombre ? (
-                <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground w-fit mt-0.5 border border-border/40">
                   {categoriaNombre}
                 </span>
               ) : null}
             </div>
+          </div>
 
+          <div className="flex items-center gap-1 shrink-0">
+            {onQuickView ? (
+              <Button
+                size="icon-xs"
+                variant="ghost"
+                title="Ver resumen"
+                onClick={() => onQuickView(tipoActivo)}
+              >
+                <Eye className="size-3.5" />
+              </Button>
+            ) : null}
             <RowActions
               className="shrink-0"
               editLabel="Editar tipo de activo"
@@ -59,29 +84,54 @@ export function TipoActivoCard({
               onDelete={() => setConfirmOpen(true)}
             />
           </div>
-
-          {tipoActivo.descripcion ? (
-            <p className="line-clamp-2 text-sm text-muted-foreground sm:line-clamp-3">
-              {tipoActivo.descripcion}
-            </p>
-          ) : null}
         </div>
+
+        {tipoActivo.descripcion ? (
+          <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed min-h-[2.25rem]">
+            {tipoActivo.descripcion}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground/60 italic min-h-[2.25rem]">
+            Sin descripción registrada.
+          </p>
+        )}
       </div>
 
-      <Button
-        size="sm"
-        variant="outline"
-        className="w-full"
-        render={
-          <Link
-            to="/tipos-activo/$tipoActivoId/atributos"
-            params={{ tipoActivoId: tipoActivo.id }}
-          />
-        }
-      >
-        Ver detalle
-        <ArrowRight data-icon="inline-end" />
-      </Button>
+      <div className="mt-4 flex items-center gap-2 pt-3 border-t border-border/60">
+        <Button
+          size="sm"
+          variant="outline"
+          className="flex-1 text-xs justify-between"
+          render={
+            <Link
+              to={routes.tiposActivo.atributos(tipoActivo.id)}
+            />
+          }
+        >
+          <span className="inline-flex items-center gap-1.5 truncate">
+            <Sliders className="size-3.5 text-muted-foreground" />
+            Atributos
+          </span>
+          <ArrowRight className="size-3 text-muted-foreground shrink-0" />
+        </Button>
+
+        <Button
+          size="sm"
+          variant="outline"
+          className="flex-1 text-xs justify-between"
+          render={
+            <Link
+              to={routes.tiposActivo.componentes(tipoActivo.id)}
+            />
+          }
+        >
+          <span className="inline-flex items-center gap-1.5 truncate">
+            <Layers className="size-3.5 text-muted-foreground" />
+            Comp.
+          </span>
+          <ArrowRight className="size-3 text-muted-foreground shrink-0" />
+        </Button>
+      </div>
 
       <ConfirmDeleteDialog
         open={confirmOpen}
