@@ -6,6 +6,7 @@ import com.endecorani.sigma_api.modules.activos.domain.model.Documentos;
 import com.endecorani.sigma_api.modules.activos.domain.model.TiposDocumento;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.DocumentosRepository;
+import com.endecorani.sigma_api.modules.activos.domain.repository.DocumentosSearchCriteria;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TiposDocumentoRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -16,8 +17,6 @@ import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundExceptio
 import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -168,42 +167,19 @@ public class DocumentosService extends AbstractCrudService<
             String query,
             PageRequestDto pageRequest
     ) {
-        String normalized = StringUtils.normalize(query);
-        Pageable pageable = pageRequest.toPageable(allowedSortFields());
+        DocumentosSearchCriteria criteria = new DocumentosSearchCriteria(
+                activoId,
+                tipoDocumentoId,
+                StringUtils.normalize(query)
+        );
 
-        Page<Documentos> page;
-        if (activoId != null && tipoDocumentoId != null) {
-            if (normalized == null) {
-                page = documentosRepository.findByActivoIdAndTipoDocumentoId(
-                        activoId, tipoDocumentoId, pageable
-                );
-            } else {
-                page = documentosRepository.searchByActivoIdAndTipoDocumentoId(
-                        activoId, tipoDocumentoId, normalized, pageable
-                );
-            }
-        } else if (activoId != null) {
-            if (normalized == null) {
-                page = documentosRepository.findByActivoId(activoId, pageable);
-            } else {
-                page = documentosRepository.searchByActivoId(activoId, normalized, pageable);
-            }
-        } else if (tipoDocumentoId != null) {
-            if (normalized == null) {
-                page = documentosRepository.findByTipoDocumentoId(tipoDocumentoId, pageable);
-            } else {
-                page = documentosRepository.searchByTipoDocumentoId(
-                        tipoDocumentoId, normalized, pageable
-                );
-            }
-        } else {
-            if (normalized == null) {
-                return findAll(pageRequest);
-            }
-            page = documentosRepository.search(normalized, pageable);
-        }
-
-        return PageResponse.from(page, this::toResponse);
+        return PageResponse.from(
+                documentosRepository.findAll(
+                        criteria,
+                        pageRequest.toPageable(allowedSortFields())
+                ),
+                this::toResponse
+        );
     }
 
     @Override

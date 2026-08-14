@@ -6,6 +6,7 @@ import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.AreaRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoSearchCriteria;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -16,8 +17,6 @@ import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundExceptio
 import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,50 +66,20 @@ public class EmpleadoService extends AbstractCrudService<
             String query,
             PageRequestDto pageRequest
     ) {
-        String normalized = StringUtils.normalize(query);
-        Pageable pageable = pageRequest.toPageable(allowedSortFields());
+        EmpleadoSearchCriteria criteria = new EmpleadoSearchCriteria(
+                personaId,
+                areaId,
+                cargoId,
+                StringUtils.normalize(query)
+        );
 
-        boolean hasArea = areaId != null;
-        boolean hasCargo = cargoId != null;
-        boolean hasPersona = personaId != null;
-
-        Page<Empleado> page;
-        if (hasArea && hasCargo && hasPersona) {
-            page = normalized == null
-                    ? empleadoRepository.findByAreaIdAndCargoIdAndPersonaId(areaId, cargoId, personaId, pageable)
-                    : empleadoRepository.searchByAreaIdAndCargoIdAndPersonaId(areaId, cargoId, personaId, normalized, pageable);
-        } else if (hasArea && hasCargo) {
-            page = normalized == null
-                    ? empleadoRepository.findByAreaIdAndCargoId(areaId, cargoId, pageable)
-                    : empleadoRepository.searchByAreaIdAndCargoId(areaId, cargoId, normalized, pageable);
-        } else if (hasArea && hasPersona) {
-            page = normalized == null
-                    ? empleadoRepository.findByAreaIdAndPersonaId(areaId, personaId, pageable)
-                    : empleadoRepository.searchByAreaIdAndPersonaId(areaId, personaId, normalized, pageable);
-        } else if (hasCargo && hasPersona) {
-            page = normalized == null
-                    ? empleadoRepository.findByCargoIdAndPersonaId(cargoId, personaId, pageable)
-                    : empleadoRepository.searchByCargoIdAndPersonaId(cargoId, personaId, normalized, pageable);
-        } else if (hasArea) {
-            page = normalized == null
-                    ? empleadoRepository.findByAreaId(areaId, pageable)
-                    : empleadoRepository.searchByAreaId(areaId, normalized, pageable);
-        } else if (hasCargo) {
-            page = normalized == null
-                    ? empleadoRepository.findByCargoId(cargoId, pageable)
-                    : empleadoRepository.searchByCargoId(cargoId, normalized, pageable);
-        } else if (hasPersona) {
-            page = normalized == null
-                    ? empleadoRepository.findByPersonaId(personaId, pageable)
-                    : empleadoRepository.searchByPersonaId(personaId, normalized, pageable);
-        } else {
-            if (normalized == null) {
-                return findAll(pageRequest);
-            }
-            page = empleadoRepository.search(normalized, pageable);
-        }
-
-        return PageResponse.from(page, this::toResponse);
+        return PageResponse.from(
+                empleadoRepository.findAll(
+                        criteria,
+                        pageRequest.toPageable(allowedSortFields())
+                ),
+                this::toResponse
+        );
     }
 
     @Override

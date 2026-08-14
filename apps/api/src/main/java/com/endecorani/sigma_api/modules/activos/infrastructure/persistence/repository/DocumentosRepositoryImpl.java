@@ -2,8 +2,10 @@ package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repo
 
 import com.endecorani.sigma_api.modules.activos.domain.model.Documentos;
 import com.endecorani.sigma_api.modules.activos.domain.repository.DocumentosRepository;
+import com.endecorani.sigma_api.modules.activos.domain.repository.DocumentosSearchCriteria;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.DocumentosEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.mapper.DocumentosPersistenceMapper;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.specification.DocumentosSpecifications;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;
@@ -51,73 +53,12 @@ public class DocumentosRepositoryImpl
     }
 
     @Override
-    public Page<Documentos> findByActivoId(UUID activoId, Pageable pageable) {
-        return springRepository
-                .findByActivoId(activoId, pageable)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public Page<Documentos> findByTipoDocumentoId(UUID tipoDocumentoId, Pageable pageable) {
-        return springRepository
-                .findByTipoDocumentoId(tipoDocumentoId, pageable)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public Page<Documentos> findByActivoIdAndTipoDocumentoId(
-            UUID activoId,
-            UUID tipoDocumentoId,
+    public Page<Documentos> findAll(
+            DocumentosSearchCriteria criteria,
             Pageable pageable
     ) {
         return springRepository
-                .findByActivoIdAndTipoDocumentoId(activoId, tipoDocumentoId, pageable)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public Page<Documentos> search(String query, Pageable pageable) {
-        return springRepository
-                .search(query, pageable)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public Page<Documentos> searchByActivoId(
-            UUID activoId,
-            String query,
-            Pageable pageable
-    ) {
-        return springRepository
-                .searchByActivoId(activoId, query, pageable)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public Page<Documentos> searchByTipoDocumentoId(
-            UUID tipoDocumentoId,
-            String query,
-            Pageable pageable
-    ) {
-        return springRepository
-                .searchByTipoDocumentoId(tipoDocumentoId, query, pageable)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public Page<Documentos> searchByActivoIdAndTipoDocumentoId(
-            UUID activoId,
-            UUID tipoDocumentoId,
-            String query,
-            Pageable pageable
-    ) {
-        return springRepository
-                .searchByActivoIdAndTipoDocumentoId(
-                        activoId,
-                        tipoDocumentoId,
-                        query,
-                        pageable
-                )
+                .findAll(DocumentosSpecifications.withCriteria(criteria), pageable)
                 .map(mapper::toDomain);
     }
 }

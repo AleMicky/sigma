@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.shared.presentation.exception;
 
 import com.endecorani.sigma_api.shared.application.response.ApiErrorResponse;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.DomainException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,29 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+    @Test
+    void handleBusinessReturnsUnprocessableEntityWithExceptionCode() {
+        BusinessException exception = new BusinessException(
+                "INVALID_ACTIVO_CODIGO",
+                "El código debe tener entre 2 y 50 caracteres"
+        );
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/activos");
+
+        ResponseEntity<ApiErrorResponse> response = handler.handleBusiness(
+                exception,
+                request
+        );
+
+        assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("INVALID_ACTIVO_CODIGO", response.getBody().code());
+        assertEquals(
+                "El código debe tener entre 2 y 50 caracteres",
+                response.getBody().message()
+        );
+    }
 
     @Test
     void handleDomainReturnsBadRequestWithExceptionCode() {

@@ -8,6 +8,7 @@ import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.presentation.controller.AbstractCrudController;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -58,11 +60,26 @@ public class DocumentosController
         return documentosService;
     }
 
+    @Override
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Crear documento sin archivo (no permitido)",
+            description = "Los documentos deben registrarse con multipart/form-data incluyendo el archivo"
+    )
+    public ResponseEntity<ApiResponse<DocumentosResponse>> create(
+            @Valid @RequestBody DocumentosRequest request
+    ) {
+        throw new BusinessException(
+                "DOCUMENTO_FILE_REQUIRED",
+                "Los documentos deben registrarse con un archivo adjunto (multipart/form-data)"
+        );
+    }
+
     @PostMapping(
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     @Operation(summary = "Registrar un documento con su archivo")
-    public ResponseEntity<ApiResponse<DocumentosResponse>> create(
+    public ResponseEntity<ApiResponse<DocumentosResponse>> createWithFile(
             @RequestPart("file") MultipartFile file,
             @Valid @RequestPart("data") DocumentosRequest request
     ) {
