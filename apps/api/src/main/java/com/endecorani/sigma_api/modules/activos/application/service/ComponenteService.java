@@ -40,6 +40,7 @@ public class ComponenteService extends AbstractCrudService<
             "codigo",
             "nombre",
             "descripcion",
+            "activo",
             "createdAt",
             "updatedAt"
     );
@@ -100,6 +101,7 @@ public class ComponenteService extends AbstractCrudService<
                 .codigo(codigo)
                 .nombre(requireNormalizedNombre(request.nombre()))
                 .descripcion(normalizeDescripcion(request.descripcion()))
+                .activo(resolveActivo(request.activo()))
                 .build();
     }
 
@@ -121,6 +123,7 @@ public class ComponenteService extends AbstractCrudService<
         domain.setCodigo(codigo);
         domain.setNombre(requireNormalizedNombre(request.nombre()));
         domain.setDescripcion(normalizeDescripcion(request.descripcion()));
+        domain.setActivo(resolveActivo(request.activo()));
     }
 
     @Override
@@ -131,6 +134,7 @@ public class ComponenteService extends AbstractCrudService<
                 domain.getCodigo(),
                 domain.getNombre(),
                 domain.getDescripcion(),
+                domain.getActivo(),
                 domain.getCreatedAt(),
                 domain.getUpdatedAt(),
                 domain.getCreatedBy(),
@@ -141,6 +145,14 @@ public class ComponenteService extends AbstractCrudService<
     @Override
     protected String resourceName() {
         return "Componente";
+    }
+
+    @Transactional
+    public ComponenteResponse toggleActivo(UUID id, Boolean activo) {
+        Componente domain = findDomainById(id);
+        domain.setActivo(activo);
+        Componente updated = componenteRepository.save(domain);
+        return toResponse(updated);
     }
 
     private void requireTipoActivoExists(UUID tipoActivoId) {
@@ -228,5 +240,9 @@ public class ComponenteService extends AbstractCrudService<
         }
 
         return normalized;
+    }
+
+    private Boolean resolveActivo(Boolean value) {
+        return value != null ? value : Boolean.TRUE;
     }
 }

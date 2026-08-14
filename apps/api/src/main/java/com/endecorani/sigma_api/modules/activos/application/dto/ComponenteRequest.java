@@ -54,6 +54,12 @@ public record ComponenteRequest(
                 max = 255,
                 message = "La descripción no puede superar los 255 caracteres"
         )
-        String descripcion
+        String descripcion,
+
+        @Schema(
+                description = "Indica si el componente está activo",
+                example = "true"
+        )
+        Boolean activo
 ) {
 }

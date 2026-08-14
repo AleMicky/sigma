@@ -28,4 +28,7 @@ public class ComponenteEntity extends BaseEntity {
 
     @Column(name = "descripcion", length = 255)
     private String descripcion;
+
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = true;
 }

@@ -18,6 +18,7 @@ public class ComponentePersistenceMapper {
         entity.setCodigo(domain.getCodigo());
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
+        entity.setActivo(domain.getActivo());
 
         if (domain.getCreatedAt() != null) {
             entity.setCreatedAt(domain.getCreatedAt());
@@ -40,6 +41,7 @@ public class ComponentePersistenceMapper {
                 .codigo(entity.getCodigo())
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
+                .activo(entity.getActivo())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())

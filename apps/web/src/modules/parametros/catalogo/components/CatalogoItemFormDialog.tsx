@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
+import { Layers, Wand2 } from "lucide-react"
 
 import { isApiError } from "@/shared/api"
 import {
@@ -7,6 +8,7 @@ import {
   FormDialogSubmit,
   RequiredFieldLabel,
 } from "@/shared/components/form-dialog"
+import { Button } from "@/shared/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 
@@ -26,6 +28,15 @@ type CatalogoItemFormDialogProps = {
   catalogoId: string
   item?: CatalogoItem | null
   onSuccess?: () => void
+}
+
+function formatValue(val: string): string {
+  return val
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9_-]/g, "_")
 }
 
 export function CatalogoItemFormDialog({
@@ -91,11 +102,11 @@ export function CatalogoItemFormDialog({
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={isEditing ? "Editar valor" : "Agregar valor"}
+      title={isEditing ? "Editar valor de catálogo" : "Agregar valor al catálogo"}
       description={
         isEditing
-          ? "Actualiza el ítem del catálogo seleccionado."
-          : "Agrega un ítem hijo, por ejemplo CI o Pasaporte."
+          ? "Actualiza las propiedades del ítem del catálogo."
+          : "Define un nuevo ítem hijo, por ejemplo 'CI' o 'Pasaporte'."
       }
       formError={formError}
       onCancel={() => {
@@ -122,12 +133,28 @@ export function CatalogoItemFormDialog({
         {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
+          const formatted = formatValue(field.state.value)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
-              <RequiredFieldLabel htmlFor={field.name}>
-                Valor
-              </RequiredFieldLabel>
+              <div className="flex items-center justify-between">
+                <RequiredFieldLabel htmlFor={field.name}>
+                  Valor (Clave Almacenada)
+                </RequiredFieldLabel>
+                {field.state.value && field.state.value !== formatted ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => field.handleChange(formatted)}
+                    className="h-6 gap-1 text-[11px] text-primary"
+                    title="Convertir a mayúsculas sin espacios"
+                  >
+                    <Wand2 className="size-3" />
+                    Formatear
+                  </Button>
+                ) : null}
+              </div>
               <Input
                 id={field.name}
                 name={field.name}
@@ -138,7 +165,16 @@ export function CatalogoItemFormDialog({
                 aria-required
                 aria-invalid={isInvalid}
                 placeholder="CI"
+                className="font-mono text-sm uppercase"
               />
+              <div className="flex items-center justify-between text-xs text-muted-foreground pt-0.5">
+                <span>Clave interna guardada en la base de datos.</span>
+                {field.state.value ? (
+                  <code className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+                    {field.state.value.toUpperCase()}
+                  </code>
+                ) : null}
+              </div>
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
@@ -153,7 +189,7 @@ export function CatalogoItemFormDialog({
           return (
             <Field data-invalid={isInvalid || undefined}>
               <RequiredFieldLabel htmlFor={field.name}>
-                Nombre
+                Nombre Visible (Etiqueta)
               </RequiredFieldLabel>
               <Input
                 id={field.name}
@@ -164,8 +200,11 @@ export function CatalogoItemFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Cédula de identidad"
+                placeholder="Cédula de Identidad"
               />
+              <p className="text-xs text-muted-foreground">
+                Texto legible presentado en selectores y reportes.
+              </p>
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
@@ -180,7 +219,7 @@ export function CatalogoItemFormDialog({
 
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor={field.name}>Orden</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Orden de Presentación</FieldLabel>
                 <Input
                   id={field.name}
                   name={field.name}
@@ -194,7 +233,11 @@ export function CatalogoItemFormDialog({
                     )
                   }
                   aria-invalid={isInvalid}
+                  className="w-32 font-mono"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Número relativo para posicionar este ítem en la lista desplegable.
+                </p>
                 {isInvalid && (
                   <FieldError errors={field.state.meta.errors} />
                 )}
@@ -203,9 +246,12 @@ export function CatalogoItemFormDialog({
           }}
         </form.Field>
       ) : (
-        <p className="text-xs text-muted-foreground">
-          El orden se asigna automáticamente al crear el valor.
-        </p>
+        <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
+          <Layers className="size-4 text-primary shrink-0" />
+          <span>
+            El número de orden de este ítem se asignará automáticamente al final de la lista.
+          </span>
+        </div>
       )}
     </FormDialog>
   )

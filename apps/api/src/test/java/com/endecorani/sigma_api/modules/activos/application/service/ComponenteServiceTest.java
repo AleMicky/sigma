@@ -59,7 +59,8 @@ class ComponenteServiceTest {
                         tipoActivoId,
                         "  motor   principal ",
                         "  Motor   principal ",
-                        "  Desc  "
+                        "  Desc  ",
+                        true
                 )
         );
 
@@ -67,6 +68,7 @@ class ComponenteServiceTest {
         assertEquals("Motor principal", response.nombre());
         assertEquals("Desc", response.descripcion());
         assertEquals(tipoActivoId, response.tipoActivoId());
+        assertTrue(response.activo());
         assertEquals(1, componenteRepository.items.size());
     }
 
@@ -79,7 +81,8 @@ class ComponenteServiceTest {
                                 UUID.randomUUID(),
                                 "MOTOR",
                                 "Motor",
-                                null
+                                null,
+                                true
                         )
                 )
         );
@@ -95,7 +98,8 @@ class ComponenteServiceTest {
                                 tipoActivoId,
                                 " a ",
                                 "Motor",
-                                null
+                                null,
+                                true
                         )
                 )
         );
@@ -113,7 +117,8 @@ class ComponenteServiceTest {
                                 tipoActivoId,
                                 "motor",
                                 "Motor",
-                                null
+                                null,
+                                true
                         )
                 )
         );
@@ -133,7 +138,8 @@ class ComponenteServiceTest {
                         tipoActivoId,
                         "MOTOR",
                         "Motor",
-                        null
+                        null,
+                        true
                 )
         );
 
@@ -155,7 +161,8 @@ class ComponenteServiceTest {
                                 tipoActivoId,
                                 "motor",
                                 "Transmisión",
-                                null
+                                null,
+                                true
                         )
                 )
         );
@@ -172,7 +179,8 @@ class ComponenteServiceTest {
                         tipoActivoId,
                         "MOTOR",
                         "Motor actualizado",
-                        "Nueva desc"
+                        "Nueva desc",
+                        true
                 )
         );
 

@@ -1,4 +1,4 @@
-import { createCrudService } from "@/shared/api"
+import { createCrudService, http } from "@/shared/api"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 import type { PageParams } from "@/shared/types/api.types"
 
@@ -9,6 +9,7 @@ export type Componente = AuditableEntity & {
   codigo: string
   nombre: string
   descripcion: string | null
+  activo: boolean
 }
 
 export type ComponentePayload = {
@@ -34,3 +35,13 @@ export const getComponente = crud.get
 export const createComponente = crud.create
 export const updateComponente = crud.update
 export const deleteComponente = crud.remove
+
+export async function setActivoComponente(
+  id: string,
+  activo: boolean,
+): Promise<Componente> {
+  return http.patch<Componente>(`${componenteEndpoints.byId(id)}/activo`, {
+    activo,
+  })
+}
+

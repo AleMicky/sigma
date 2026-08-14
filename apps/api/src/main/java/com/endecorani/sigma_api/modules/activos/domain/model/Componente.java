@@ -25,4 +25,6 @@ public class Componente extends AuditableModel {
     private String nombre;
 
     private String descripcion;
+
+    private Boolean activo;
 }

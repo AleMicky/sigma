@@ -40,6 +40,12 @@ public record ComponenteResponse(
         )
         String descripcion,
 
+        @Schema(
+                description = "Indica si el componente está activo",
+                example = "true"
+        )
+        Boolean activo,
+
         @Schema(description = "Fecha de creación")
         Instant createdAt,
 
