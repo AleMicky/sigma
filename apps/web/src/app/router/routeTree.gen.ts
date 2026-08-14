@@ -26,6 +26,7 @@ import { Route as DashboardOrganizacionIndexRouteImport } from './../../routes/_
 import { Route as DashboardParametrosCatalogosRouteImport } from './../../routes/_dashboard/parametros/catalogos'
 import { Route as DashboardParametrosGestionRouteImport } from './../../routes/_dashboard/parametros/gestion'
 import { Route as DashboardParametrosTiposDatoRouteImport } from './../../routes/_dashboard/parametros/tipos-dato'
+import { Route as DashboardParametrosUbicacionesRouteImport } from './../../routes/_dashboard/parametros/ubicaciones'
 import { Route as DashboardTiposActivoIndexRouteImport } from './../../routes/_dashboard/tipos-activo/index'
 import { Route as DashboardTiposActivoTipoActivoIdRouteRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/route'
 import { Route as DashboardTiposActivoHistorialRouteImport } from './../../routes/_dashboard/tipos-activo/historial'
@@ -134,6 +135,12 @@ const DashboardParametrosTiposDatoRoute =
     path: '/tipos-dato',
     getParentRoute: () => DashboardParametrosRouteRoute,
   } as any)
+const DashboardParametrosUbicacionesRoute =
+  DashboardParametrosUbicacionesRouteImport.update({
+    id: '/ubicaciones',
+    path: '/ubicaciones',
+    getParentRoute: () => DashboardParametrosRouteRoute,
+  } as any)
 const DashboardTiposActivoIndexRoute =
   DashboardTiposActivoIndexRouteImport.update({
     id: '/',
@@ -228,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
   '/parametros/gestion': typeof DashboardParametrosGestionRoute
   '/parametros/tipos-dato': typeof DashboardParametrosTiposDatoRoute
+  '/parametros/ubicaciones': typeof DashboardParametrosUbicacionesRoute
   '/tipos-activo/historial': typeof DashboardTiposActivoHistorialRoute
   '/activos/': typeof DashboardActivosIndexRoute
   '/categorias/': typeof DashboardCategoriasIndexRoute
@@ -253,6 +261,7 @@ export interface FileRoutesByTo {
   '/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
   '/parametros/gestion': typeof DashboardParametrosGestionRoute
   '/parametros/tipos-dato': typeof DashboardParametrosTiposDatoRoute
+  '/parametros/ubicaciones': typeof DashboardParametrosUbicacionesRoute
   '/tipos-activo/historial': typeof DashboardTiposActivoHistorialRoute
   '/activos': typeof DashboardActivosIndexRoute
   '/categorias': typeof DashboardCategoriasIndexRoute
@@ -286,6 +295,7 @@ export interface FileRoutesById {
   '/_dashboard/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
   '/_dashboard/parametros/gestion': typeof DashboardParametrosGestionRoute
   '/_dashboard/parametros/tipos-dato': typeof DashboardParametrosTiposDatoRoute
+  '/_dashboard/parametros/ubicaciones': typeof DashboardParametrosUbicacionesRoute
   '/_dashboard/tipos-activo/historial': typeof DashboardTiposActivoHistorialRoute
   '/_dashboard/activos/': typeof DashboardActivosIndexRoute
   '/_dashboard/categorias/': typeof DashboardCategoriasIndexRoute
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/parametros/catalogos'
     | '/parametros/gestion'
     | '/parametros/tipos-dato'
+    | '/parametros/ubicaciones'
     | '/tipos-activo/historial'
     | '/activos/'
     | '/categorias/'
@@ -344,6 +355,7 @@ export interface FileRouteTypes {
     | '/parametros/catalogos'
     | '/parametros/gestion'
     | '/parametros/tipos-dato'
+    | '/parametros/ubicaciones'
     | '/tipos-activo/historial'
     | '/activos'
     | '/categorias'
@@ -376,6 +388,7 @@ export interface FileRouteTypes {
     | '/_dashboard/parametros/catalogos'
     | '/_dashboard/parametros/gestion'
     | '/_dashboard/parametros/tipos-dato'
+    | '/_dashboard/parametros/ubicaciones'
     | '/_dashboard/tipos-activo/historial'
     | '/_dashboard/activos/'
     | '/_dashboard/categorias/'
@@ -517,6 +530,13 @@ declare module '@tanstack/react-router' {
       path: '/tipos-dato'
       fullPath: '/parametros/tipos-dato'
       preLoaderRoute: typeof DashboardParametrosTiposDatoRouteImport
+      parentRoute: typeof DashboardParametrosRouteRoute
+    }
+    '/_dashboard/parametros/ubicaciones': {
+      id: '/_dashboard/parametros/ubicaciones'
+      path: '/ubicaciones'
+      fullPath: '/parametros/ubicaciones'
+      preLoaderRoute: typeof DashboardParametrosUbicacionesRouteImport
       parentRoute: typeof DashboardParametrosRouteRoute
     }
     '/_dashboard/tipos-activo/': {
@@ -676,6 +696,7 @@ interface DashboardParametrosRouteRouteChildren {
   DashboardParametrosCatalogosRoute: typeof DashboardParametrosCatalogosRoute
   DashboardParametrosGestionRoute: typeof DashboardParametrosGestionRoute
   DashboardParametrosTiposDatoRoute: typeof DashboardParametrosTiposDatoRoute
+  DashboardParametrosUbicacionesRoute: typeof DashboardParametrosUbicacionesRoute
 }
 
 const DashboardParametrosRouteRouteChildren: DashboardParametrosRouteRouteChildren =
@@ -683,6 +704,7 @@ const DashboardParametrosRouteRouteChildren: DashboardParametrosRouteRouteChildr
     DashboardParametrosCatalogosRoute: DashboardParametrosCatalogosRoute,
     DashboardParametrosGestionRoute: DashboardParametrosGestionRoute,
     DashboardParametrosTiposDatoRoute: DashboardParametrosTiposDatoRoute,
+    DashboardParametrosUbicacionesRoute: DashboardParametrosUbicacionesRoute,
   }
 
 const DashboardParametrosRouteRouteWithChildren =

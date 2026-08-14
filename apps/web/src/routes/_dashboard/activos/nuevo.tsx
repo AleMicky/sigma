@@ -8,7 +8,7 @@ const searchSchema = z.object({
 })
 
 export const Route = createFileRoute("/_dashboard/activos/nuevo")({
-  validateSearch: searchSchema,
+  validateSearch: (search: Record<string, unknown>) => searchSchema.parse(search),
   component: ActivoNuevoRoute,
 })
 

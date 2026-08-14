@@ -32,6 +32,7 @@ export const routes = {
     gestion: "/parametros/gestion",
     catalogos: "/parametros/catalogos",
     tiposDato: "/parametros/tipos-dato",
+    ubicaciones: "/parametros/ubicaciones",
   },
 
   organizacion: {
