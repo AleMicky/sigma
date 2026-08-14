@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { MapPin, Plus } from "lucide-react"
+import { HelpCircle, MapPin, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
@@ -16,13 +16,14 @@ import {
 import { cn } from "@/shared/lib/utils"
 
 import { ubicacionQueries } from "../api/ubicacion.queries"
-import type { TipoUbicacion, Ubicacion, UbicacionTreeNode } from "../api/ubicacion.service"
+import type { Ubicacion, UbicacionTreeNode } from "../api/ubicacion.service"
 import { UbicacionCard } from "../components/UbicacionCard"
 import {
   UbicacionFilterToolbar,
   type ViewMode,
 } from "../components/UbicacionFilterToolbar"
-import { UbicacionFormDialog } from "../components/UbicacionFormDialog"
+import { UbicacionFormSheet } from "../components/UbicacionFormSheet"
+import { UbicacionHelpModal } from "../components/UbicacionHelpModal"
 import { UbicacionQuickViewSheet } from "../components/UbicacionQuickViewSheet"
 import { UbicacionStats } from "../components/UbicacionStats"
 import { UbicacionTableView } from "../components/UbicacionTableView"
@@ -35,6 +36,7 @@ const ALL_TIPOS = "__all__"
 export function UbicacionesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("tree")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [helpModalOpen, setHelpModalOpen] = useState(false)
   const [editing, setEditing] = useState<Ubicacion | null>(null)
   const [presetParentId, setPresetParentId] = useState<string | null>(null)
   const [quickViewId, setQuickViewId] = useState<string | null>(null)
@@ -72,23 +74,7 @@ export function UbicacionesPage() {
   // Quick view detailed location item
   const selectedQuickViewLoc = useMemo(() => {
     if (!quickViewId) return null
-    return (
-      ubicacionesList.find((u) => u.id === quickViewId) ?? {
-        id: quickViewId,
-        codigo: "...",
-        nombre: "Cargando...",
-        tipo: "CIUDAD" as TipoUbicacion,
-        ubicacionPadreId: null,
-        descripcion: null,
-        direccion: null,
-        latitud: null,
-        longitud: null,
-        createdAt: "",
-        updatedAt: "",
-        createdBy: "",
-        updatedBy: "",
-      }
-    )
+    return ubicacionesList.find((u) => u.id === quickViewId) ?? null
   }, [quickViewId, ubicacionesList])
 
   const selectedQuickViewParent = useMemo(() => {
@@ -136,30 +122,53 @@ export function UbicacionesPage() {
             <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
               Ubicaciones
             </h1>
-            <Button
-              size="sm"
-              type="button"
-              onClick={() => openCreate()}
-              className="shrink-0 md:hidden"
-            >
-              <Plus />
-              <span className="sr-only sm:not-sr-only">Crear</span>
-            </Button>
+            <div className="flex items-center gap-1.5 shrink-0 md:hidden">
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                onClick={() => setHelpModalOpen(true)}
+              >
+                <HelpCircle className="size-4 text-primary" />
+                <span className="sr-only sm:not-sr-only">Guía</span>
+              </Button>
+              <Button
+                size="sm"
+                type="button"
+                onClick={() => openCreate()}
+              >
+                <Plus className="size-4" />
+                <span className="sr-only sm:not-sr-only">Crear</span>
+              </Button>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
             Administra la estructura jerárquica de sedes, edificios, plantas, áreas y oficinas.
           </p>
         </div>
 
-        <Button
-          size="sm"
-          type="button"
-          onClick={() => openCreate()}
-          className="hidden shrink-0 self-start md:inline-flex"
-        >
-          <Plus />
-          Crear Ubicación
-        </Button>
+        <div className="hidden shrink-0 self-start md:flex md:items-center md:gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            onClick={() => setHelpModalOpen(true)}
+            className="gap-1.5 border-border/80 hover:bg-muted"
+          >
+            <HelpCircle className="size-4 text-primary" />
+            <span>Guía de Estructura</span>
+          </Button>
+
+          <Button
+            size="sm"
+            type="button"
+            onClick={() => openCreate()}
+            className="gap-1.5"
+          >
+            <Plus className="size-4" />
+            <span>Crear Ubicación</span>
+          </Button>
+        </div>
       </header>
 
       {/* Stats Cards Section */}
@@ -304,8 +313,8 @@ export function UbicacionesPage() {
         )}
       </div>
 
-      {/* Form Dialog Modal */}
-      <UbicacionFormDialog
+      {/* Form Drawer Sheet */}
+      <UbicacionFormSheet
         key={editing?.id ?? presetParentId ?? "new-ubicacion"}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -326,6 +335,12 @@ export function UbicacionesPage() {
         ubicacion={selectedQuickViewLoc}
         parentLocation={selectedQuickViewParent}
         onEdit={openEdit}
+      />
+
+      {/* Structural Hierarchy Help Modal */}
+      <UbicacionHelpModal
+        open={helpModalOpen}
+        onOpenChange={setHelpModalOpen}
       />
     </PageShell>
   )
