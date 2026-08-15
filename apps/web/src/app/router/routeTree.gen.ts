@@ -27,6 +27,7 @@ import { Route as DashboardParametrosCatalogosRouteImport } from './../../routes
 import { Route as DashboardParametrosGestionRouteImport } from './../../routes/_dashboard/parametros/gestion'
 import { Route as DashboardParametrosTiposDatoRouteImport } from './../../routes/_dashboard/parametros/tipos-dato'
 import { Route as DashboardParametrosUbicacionesRouteImport } from './../../routes/_dashboard/parametros/ubicaciones'
+import { Route as DashboardParametrosUnidadesMedidaRouteImport } from './../../routes/_dashboard/parametros/unidades-medida'
 import { Route as DashboardTiposActivoIndexRouteImport } from './../../routes/_dashboard/tipos-activo/index'
 import { Route as DashboardTiposActivoTipoActivoIdRouteRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/route'
 import { Route as DashboardTiposActivoHistorialRouteImport } from './../../routes/_dashboard/tipos-activo/historial'
@@ -141,6 +142,12 @@ const DashboardParametrosUbicacionesRoute =
     path: '/ubicaciones',
     getParentRoute: () => DashboardParametrosRouteRoute,
   } as any)
+const DashboardParametrosUnidadesMedidaRoute =
+  DashboardParametrosUnidadesMedidaRouteImport.update({
+    id: '/unidades-medida',
+    path: '/unidades-medida',
+    getParentRoute: () => DashboardParametrosRouteRoute,
+  } as any)
 const DashboardTiposActivoIndexRoute =
   DashboardTiposActivoIndexRouteImport.update({
     id: '/',
@@ -236,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/parametros/gestion': typeof DashboardParametrosGestionRoute
   '/parametros/tipos-dato': typeof DashboardParametrosTiposDatoRoute
   '/parametros/ubicaciones': typeof DashboardParametrosUbicacionesRoute
+  '/parametros/unidades-medida': typeof DashboardParametrosUnidadesMedidaRoute
   '/tipos-activo/historial': typeof DashboardTiposActivoHistorialRoute
   '/activos/': typeof DashboardActivosIndexRoute
   '/categorias/': typeof DashboardCategoriasIndexRoute
@@ -262,6 +270,7 @@ export interface FileRoutesByTo {
   '/parametros/gestion': typeof DashboardParametrosGestionRoute
   '/parametros/tipos-dato': typeof DashboardParametrosTiposDatoRoute
   '/parametros/ubicaciones': typeof DashboardParametrosUbicacionesRoute
+  '/parametros/unidades-medida': typeof DashboardParametrosUnidadesMedidaRoute
   '/tipos-activo/historial': typeof DashboardTiposActivoHistorialRoute
   '/activos': typeof DashboardActivosIndexRoute
   '/categorias': typeof DashboardCategoriasIndexRoute
@@ -296,6 +305,7 @@ export interface FileRoutesById {
   '/_dashboard/parametros/gestion': typeof DashboardParametrosGestionRoute
   '/_dashboard/parametros/tipos-dato': typeof DashboardParametrosTiposDatoRoute
   '/_dashboard/parametros/ubicaciones': typeof DashboardParametrosUbicacionesRoute
+  '/_dashboard/parametros/unidades-medida': typeof DashboardParametrosUnidadesMedidaRoute
   '/_dashboard/tipos-activo/historial': typeof DashboardTiposActivoHistorialRoute
   '/_dashboard/activos/': typeof DashboardActivosIndexRoute
   '/_dashboard/categorias/': typeof DashboardCategoriasIndexRoute
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/parametros/gestion'
     | '/parametros/tipos-dato'
     | '/parametros/ubicaciones'
+    | '/parametros/unidades-medida'
     | '/tipos-activo/historial'
     | '/activos/'
     | '/categorias/'
@@ -356,6 +367,7 @@ export interface FileRouteTypes {
     | '/parametros/gestion'
     | '/parametros/tipos-dato'
     | '/parametros/ubicaciones'
+    | '/parametros/unidades-medida'
     | '/tipos-activo/historial'
     | '/activos'
     | '/categorias'
@@ -389,6 +401,7 @@ export interface FileRouteTypes {
     | '/_dashboard/parametros/gestion'
     | '/_dashboard/parametros/tipos-dato'
     | '/_dashboard/parametros/ubicaciones'
+    | '/_dashboard/parametros/unidades-medida'
     | '/_dashboard/tipos-activo/historial'
     | '/_dashboard/activos/'
     | '/_dashboard/categorias/'
@@ -537,6 +550,13 @@ declare module '@tanstack/react-router' {
       path: '/ubicaciones'
       fullPath: '/parametros/ubicaciones'
       preLoaderRoute: typeof DashboardParametrosUbicacionesRouteImport
+      parentRoute: typeof DashboardParametrosRouteRoute
+    }
+    '/_dashboard/parametros/unidades-medida': {
+      id: '/_dashboard/parametros/unidades-medida'
+      path: '/unidades-medida'
+      fullPath: '/parametros/unidades-medida'
+      preLoaderRoute: typeof DashboardParametrosUnidadesMedidaRouteImport
       parentRoute: typeof DashboardParametrosRouteRoute
     }
     '/_dashboard/tipos-activo/': {
@@ -697,6 +717,7 @@ interface DashboardParametrosRouteRouteChildren {
   DashboardParametrosGestionRoute: typeof DashboardParametrosGestionRoute
   DashboardParametrosTiposDatoRoute: typeof DashboardParametrosTiposDatoRoute
   DashboardParametrosUbicacionesRoute: typeof DashboardParametrosUbicacionesRoute
+  DashboardParametrosUnidadesMedidaRoute: typeof DashboardParametrosUnidadesMedidaRoute
 }
 
 const DashboardParametrosRouteRouteChildren: DashboardParametrosRouteRouteChildren =
@@ -705,6 +726,8 @@ const DashboardParametrosRouteRouteChildren: DashboardParametrosRouteRouteChildr
     DashboardParametrosGestionRoute: DashboardParametrosGestionRoute,
     DashboardParametrosTiposDatoRoute: DashboardParametrosTiposDatoRoute,
     DashboardParametrosUbicacionesRoute: DashboardParametrosUbicacionesRoute,
+    DashboardParametrosUnidadesMedidaRoute:
+      DashboardParametrosUnidadesMedidaRoute,
   }
 
 const DashboardParametrosRouteRouteWithChildren =

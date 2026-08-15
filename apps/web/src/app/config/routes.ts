@@ -33,6 +33,7 @@ export const routes = {
     catalogos: "/parametros/catalogos",
     tiposDato: "/parametros/tipos-dato",
     ubicaciones: "/parametros/ubicaciones",
+    unidadesMedida: "/parametros/unidades-medida",
   },
 
   organizacion: {
