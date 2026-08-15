@@ -27,12 +27,6 @@ public class CategoriaService extends AbstractCrudService<
         UUID
         > {
 
-    private static final int CODIGO_MIN_LENGTH = 2;
-    private static final int CODIGO_MAX_LENGTH = 50;
-    private static final int NOMBRE_MIN_LENGTH = 2;
-    private static final int NOMBRE_MAX_LENGTH = 100;
-    private static final int DESCRIPCION_MAX_LENGTH = 255;
-
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
             "codigo",
@@ -77,13 +71,13 @@ public class CategoriaService extends AbstractCrudService<
 
     @Override
     protected Categoria toDomain(CategoriaRequest request) {
-        String codigo = requireNormalizedCodigo(request.codigo());
+        String codigo = StringUtils.normalize(request.codigo());
         validateUniqueCodigoForCreate(codigo);
 
         return Categoria.builder()
                 .codigo(codigo)
-                .nombre(requireNormalizedNombre(request.nombre()))
-                .descripcion(normalizeDescripcion(request.descripcion()))
+                .nombre(StringUtils.normalize(request.nombre()))
+                .descripcion(StringUtils.normalize(request.descripcion()))
                 .orden(resolveOrdenForCreate(request.orden()))
                 .build();
     }
@@ -93,12 +87,12 @@ public class CategoriaService extends AbstractCrudService<
             Categoria domain,
             CategoriaRequest request
     ) {
-        String codigo = requireNormalizedCodigo(request.codigo());
+        String codigo = StringUtils.normalize(request.codigo());
         validateUniqueCodigoForUpdate(codigo, domain.getId());
 
         domain.setCodigo(codigo);
-        domain.setNombre(requireNormalizedNombre(request.nombre()));
-        domain.setDescripcion(normalizeDescripcion(request.descripcion()));
+        domain.setNombre(StringUtils.normalize(request.nombre()));
+        domain.setDescripcion(StringUtils.normalize(request.descripcion()));
         domain.setOrden(resolveOrdenForUpdate(request.orden()));
     }
 
@@ -146,53 +140,6 @@ public class CategoriaService extends AbstractCrudService<
                             .formatted(codigo)
             );
         }
-    }
-
-    private String requireNormalizedCodigo(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized == null
-                || normalized.length() < CODIGO_MIN_LENGTH
-                || normalized.length() > CODIGO_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_CATEGORIA_CODIGO",
-                    "El código debe tener entre %d y %d caracteres"
-                            .formatted(CODIGO_MIN_LENGTH, CODIGO_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private String requireNormalizedNombre(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized == null
-                || normalized.length() < NOMBRE_MIN_LENGTH
-                || normalized.length() > NOMBRE_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_CATEGORIA_NOMBRE",
-                    "El nombre debe tener entre %d y %d caracteres"
-                            .formatted(NOMBRE_MIN_LENGTH, NOMBRE_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private String normalizeDescripcion(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized != null
-                && normalized.length() > DESCRIPCION_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_CATEGORIA_DESCRIPCION",
-                    "La descripción no puede superar los %d caracteres"
-                            .formatted(DESCRIPCION_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
     }
 
     private int resolveOrdenForCreate(Integer orden) {

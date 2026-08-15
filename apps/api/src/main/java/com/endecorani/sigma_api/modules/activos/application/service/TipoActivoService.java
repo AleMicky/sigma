@@ -27,9 +27,6 @@ public class TipoActivoService extends AbstractCrudService<
         UUID
         > {
 
-    private static final int NOMBRE_MIN_LENGTH = 2;
-    private static final int NOMBRE_MAX_LENGTH = 100;
-    private static final int DESCRIPCION_MAX_LENGTH = 255;
     private static final int COLOR_MAX_LENGTH = 7;
     private static final int ICONO_MAX_LENGTH = 50;
 
@@ -68,13 +65,13 @@ public class TipoActivoService extends AbstractCrudService<
     protected TipoActivo toDomain(TipoActivoRequest request) {
         requireCategoriaExists(request.categoriaId());
 
-        String nombre = requireNormalizedNombre(request.nombre());
+        String nombre = StringUtils.normalize(request.nombre());
         validateUniqueNameForCreate(nombre);
 
         return TipoActivo.builder()
                 .categoriaId(request.categoriaId())
                 .nombre(nombre)
-                .descripcion(normalizeDescripcion(request.descripcion()))
+                .descripcion(StringUtils.normalize(request.descripcion()))
                 .color(normalizeColor(request.color()))
                 .icono(normalizeIcono(request.icono()))
                 .build();
@@ -87,12 +84,12 @@ public class TipoActivoService extends AbstractCrudService<
     ) {
         requireCategoriaExists(request.categoriaId());
 
-        String nombre = requireNormalizedNombre(request.nombre());
+        String nombre = StringUtils.normalize(request.nombre());
         validateUniqueNameForUpdate(nombre, domain.getId());
 
         domain.setCategoriaId(request.categoriaId());
         domain.setNombre(nombre);
-        domain.setDescripcion(normalizeDescripcion(request.descripcion()));
+        domain.setDescripcion(StringUtils.normalize(request.descripcion()));
         domain.setColor(normalizeColor(request.color()));
         domain.setIcono(normalizeIcono(request.icono()));
     }
@@ -149,37 +146,6 @@ public class TipoActivoService extends AbstractCrudService<
                             .formatted(nombre)
             );
         }
-    }
-
-    private String requireNormalizedNombre(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized == null
-                || normalized.length() < NOMBRE_MIN_LENGTH
-                || normalized.length() > NOMBRE_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_TIPO_ACTIVO_NOMBRE",
-                    "El nombre debe tener entre %d y %d caracteres"
-                            .formatted(NOMBRE_MIN_LENGTH, NOMBRE_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private String normalizeDescripcion(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized != null
-                && normalized.length() > DESCRIPCION_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_TIPO_ACTIVO_DESCRIPCION",
-                    "La descripción no puede superar los %d caracteres"
-                            .formatted(DESCRIPCION_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
     }
 
     private String normalizeColor(String value) {

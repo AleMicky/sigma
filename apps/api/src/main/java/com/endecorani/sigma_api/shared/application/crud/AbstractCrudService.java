@@ -68,12 +68,7 @@ public abstract class AbstractCrudService<
     @Override
     @Transactional
     public void delete(ID id) {
-        if (!repository().existsById(id)) {
-            throw new ResourceNotFoundException(
-                    resourceName(),
-                    id
-            );
-        }
+        findDomainById(id);
         repository().deleteById(id);
     }
 

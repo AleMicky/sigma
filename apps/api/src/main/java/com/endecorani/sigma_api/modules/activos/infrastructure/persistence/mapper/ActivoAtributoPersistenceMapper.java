@@ -26,13 +26,6 @@ public class ActivoAtributoPersistenceMapper {
         entity.setValorDefecto(domain.getValorDefecto());
         entity.setOpciones(domain.getOpciones());
 
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

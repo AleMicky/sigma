@@ -28,7 +28,6 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-
     public ResponseEntity<ApiErrorResponse> handleNotFound(
             ResourceNotFoundException exception,
             HttpServletRequest request

@@ -18,13 +18,6 @@ public class ActivoAtributoValorPersistenceMapper {
         entity.setActivoAtributoId(domain.getActivoAtributoId());
         entity.setValor(domain.getValor());
 
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

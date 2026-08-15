@@ -16,14 +16,6 @@ public class CatalogoPersistenceMapper {
         entity.setId(domain.getId());
         entity.setCodigo(domain.getCodigo());
         entity.setNombre(domain.getNombre());
-
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

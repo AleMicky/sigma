@@ -18,14 +18,6 @@ public class UnidadMedidaPersistenceMapper {
         entity.setNombre(domain.getNombre());
         entity.setSimbolo(domain.getSimbolo());
         entity.setPermiteDecimal(domain.getPermiteDecimal());
-
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

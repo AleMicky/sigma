@@ -29,13 +29,6 @@ public class PersonaPersistenceMapper {
         if (domain.getActivo() != null) {
             entity.setActivo(domain.getActivo());
         }
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

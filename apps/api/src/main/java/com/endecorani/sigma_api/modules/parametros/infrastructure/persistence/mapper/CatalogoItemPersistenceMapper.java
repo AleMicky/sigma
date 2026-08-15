@@ -24,14 +24,6 @@ public class CatalogoItemPersistenceMapper {
             catalogo.setId(domain.getCatalogoId());
             entity.setCatalogo(catalogo);
         }
-
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

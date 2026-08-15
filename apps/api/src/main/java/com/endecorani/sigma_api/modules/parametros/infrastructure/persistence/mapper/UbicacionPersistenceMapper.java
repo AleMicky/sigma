@@ -27,14 +27,6 @@ public class UbicacionPersistenceMapper {
             padre.setId(domain.getUbicacionPadreId());
             entity.setUbicacionPadre(padre);
         }
-
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

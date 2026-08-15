@@ -19,14 +19,6 @@ public class AreaPersistenceMapper {
         entity.setDescripcion(domain.getDescripcion());
         entity.setSistemaOrigen(domain.getSistemaOrigen());
         entity.setCodigoExterno(domain.getCodigoExterno());
-
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

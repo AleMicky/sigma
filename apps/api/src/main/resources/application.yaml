@@ -9,7 +9,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://157.173.99.216:8081/realms/sigma}
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/sigma}
           # Keycloak por defecto pone aud=account. Aceptamos también sigma-api
           # cuando exista el audience mapper en el client sigma-web.
           audiences:
@@ -49,8 +49,8 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   keycloak:
-    token-url: ${KEYCLOAK_TOKEN_URL:http://157.173.99.216:8081/realms/sigma/protocol/openid-connect/token}
-    logout-url: ${KEYCLOAK_LOGOUT_URL:http://157.173.99.216:8081/realms/sigma/protocol/openid-connect/logout}
+    token-url: ${KEYCLOAK_TOKEN_URL:http://localhost:8081/realms/sigma/protocol/openid-connect/token}
+    logout-url: ${KEYCLOAK_LOGOUT_URL:http://localhost:8081/realms/sigma/protocol/openid-connect/logout}
     client-id: ${KEYCLOAK_CLIENT_ID:sigma-web}
     client-secret: ${KEYCLOAK_CLIENT_SECRET:}
     audience: ${KEYCLOAK_AUDIENCE:sigma-api}

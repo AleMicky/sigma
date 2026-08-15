@@ -37,11 +37,6 @@ public class ActivoAtributoService extends AbstractCrudService<
         UUID
         > {
 
-    private static final int CODIGO_MIN_LENGTH = 2;
-    private static final int CODIGO_MAX_LENGTH = 50;
-    private static final int ETIQUETA_MIN_LENGTH = 2;
-    private static final int ETIQUETA_MAX_LENGTH = 100;
-    private static final int DESCRIPCION_MAX_LENGTH = 255;
     private static final int VALOR_DEFECTO_MAX_LENGTH = 255;
     private static final int OPCION_FIELD_MAX_LENGTH = 100;
 
@@ -108,14 +103,14 @@ public class ActivoAtributoService extends AbstractCrudService<
         requireTipoActivoExists(request.tipoActivoId());
         TipoDato tipoDato = requireTipoDato(request.tipoDatoId());
 
-        String codigo = requireNormalizedCodigo(request.codigo());
+        String codigo = StringUtils.normalize(request.codigo());
         validateUniqueCodigoForCreate(request.tipoActivoId(), codigo);
 
         return ActivoAtributo.builder()
                 .tipoActivoId(request.tipoActivoId())
                 .codigo(codigo)
-                .etiqueta(requireNormalizedEtiqueta(request.etiqueta()))
-                .descripcion(normalizeDescripcion(request.descripcion()))
+                .etiqueta(StringUtils.normalize(request.etiqueta()))
+                .descripcion(StringUtils.normalize(request.descripcion()))
                 .tipoDatoId(tipoDato.getId())
                 .orden(resolveOrdenForCreate(
                         request.tipoActivoId(),
@@ -137,7 +132,7 @@ public class ActivoAtributoService extends AbstractCrudService<
         requireTipoActivoExists(request.tipoActivoId());
         TipoDato tipoDato = requireTipoDato(request.tipoDatoId());
 
-        String codigo = requireNormalizedCodigo(request.codigo());
+        String codigo = StringUtils.normalize(request.codigo());
         validateUniqueCodigoForUpdate(
                 request.tipoActivoId(),
                 codigo,
@@ -152,8 +147,8 @@ public class ActivoAtributoService extends AbstractCrudService<
 
         domain.setTipoActivoId(request.tipoActivoId());
         domain.setCodigo(codigo);
-        domain.setEtiqueta(requireNormalizedEtiqueta(request.etiqueta()));
-        domain.setDescripcion(normalizeDescripcion(request.descripcion()));
+        domain.setEtiqueta(StringUtils.normalize(request.etiqueta()));
+        domain.setDescripcion(StringUtils.normalize(request.descripcion()));
         domain.setTipoDatoId(tipoDato.getId());
         domain.setOrden(orden);
         domain.setRequerido(defaultIfNull(request.requerido(), false));
@@ -236,53 +231,6 @@ public class ActivoAtributoService extends AbstractCrudService<
                             .formatted(codigo)
             );
         }
-    }
-
-    private String requireNormalizedCodigo(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized == null
-                || normalized.length() < CODIGO_MIN_LENGTH
-                || normalized.length() > CODIGO_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_ACTIVO_ATRIBUTO_CODIGO",
-                    "El código debe tener entre %d y %d caracteres"
-                            .formatted(CODIGO_MIN_LENGTH, CODIGO_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private String requireNormalizedEtiqueta(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized == null
-                || normalized.length() < ETIQUETA_MIN_LENGTH
-                || normalized.length() > ETIQUETA_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_ACTIVO_ATRIBUTO_ETIQUETA",
-                    "La etiqueta debe tener entre %d y %d caracteres"
-                            .formatted(ETIQUETA_MIN_LENGTH, ETIQUETA_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private String normalizeDescripcion(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized != null
-                && normalized.length() > DESCRIPCION_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_ACTIVO_ATRIBUTO_DESCRIPCION",
-                    "La descripción no puede superar los %d caracteres"
-                            .formatted(DESCRIPCION_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
     }
 
     private String normalizeValorDefecto(String value) {

@@ -21,14 +21,6 @@ public class TiposDocumentoPersistenceMapper {
         entity.setDescripcion(domain.getDescripcion());
         entity.setRequiereVencimiento(domain.getRequiereVencimiento());
 
-
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

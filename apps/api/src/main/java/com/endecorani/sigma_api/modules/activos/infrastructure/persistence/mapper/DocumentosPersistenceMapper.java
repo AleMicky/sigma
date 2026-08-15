@@ -27,13 +27,6 @@ public class DocumentosPersistenceMapper {
         entity.setFechaDocumento(domain.getFechaDocumento());
         entity.setFechaVencimiento(domain.getFechaVencimiento());
 
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

@@ -20,13 +20,6 @@ public class TipoActivoPersistenceMapper {
         entity.setColor(domain.getColor());
         entity.setIcono(domain.getIcono());
 
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

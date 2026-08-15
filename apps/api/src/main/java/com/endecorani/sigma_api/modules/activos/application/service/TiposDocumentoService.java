@@ -7,7 +7,6 @@ import com.endecorani.sigma_api.modules.activos.domain.repository.TiposDocumento
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
-import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
@@ -26,12 +25,6 @@ public class TiposDocumentoService extends AbstractCrudService<
         TiposDocumentoResponse,
         UUID
         > {
-
-    private static final int CODIGO_MIN_LENGTH = 2;
-    private static final int CODIGO_MAX_LENGTH = 50;
-    private static final int NOMBRE_MIN_LENGTH = 2;
-    private static final int NOMBRE_MAX_LENGTH = 100;
-    private static final int DESCRIPCION_MAX_LENGTH = 255;
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -76,14 +69,16 @@ public class TiposDocumentoService extends AbstractCrudService<
 
     @Override
     protected TiposDocumento toDomain(TiposDocumentoRequest request) {
-        String codigo = requireNormalizedCodigo(request.codigo());
+        String codigo = StringUtils.normalize(request.codigo());
         validateUniqueCodigoForCreate(codigo);
 
         return TiposDocumento.builder()
                 .codigo(codigo)
-                .nombre(requireNormalizedNombre(request.nombre()))
-                .descripcion(normalizeDescripcion(request.descripcion()))
-                .requiereVencimiento(resolveRequiereVencimiento(request.requiereVencimiento()))
+                .nombre(StringUtils.normalize(request.nombre()))
+                .descripcion(StringUtils.normalize(request.descripcion()))
+                .requiereVencimiento(request.requiereVencimiento() != null
+                        ? request.requiereVencimiento()
+                        : Boolean.FALSE)
                 .build();
     }
 
@@ -92,13 +87,15 @@ public class TiposDocumentoService extends AbstractCrudService<
             TiposDocumento domain,
             TiposDocumentoRequest request
     ) {
-        String codigo = requireNormalizedCodigo(request.codigo());
+        String codigo = StringUtils.normalize(request.codigo());
         validateUniqueCodigoForUpdate(codigo, domain.getId());
 
         domain.setCodigo(codigo);
-        domain.setNombre(requireNormalizedNombre(request.nombre()));
-        domain.setDescripcion(normalizeDescripcion(request.descripcion()));
-        domain.setRequiereVencimiento(resolveRequiereVencimiento(request.requiereVencimiento()));
+        domain.setNombre(StringUtils.normalize(request.nombre()));
+        domain.setDescripcion(StringUtils.normalize(request.descripcion()));
+        domain.setRequiereVencimiento(request.requiereVencimiento() != null
+                ? request.requiereVencimiento()
+                : Boolean.FALSE);
     }
 
     @Override
@@ -145,56 +142,5 @@ public class TiposDocumentoService extends AbstractCrudService<
                             .formatted(codigo)
             );
         }
-    }
-
-    private String requireNormalizedCodigo(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized == null
-                || normalized.length() < CODIGO_MIN_LENGTH
-                || normalized.length() > CODIGO_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_TIPO_DOCUMENTO_CODIGO",
-                    "El código debe tener entre %d y %d caracteres"
-                            .formatted(CODIGO_MIN_LENGTH, CODIGO_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private String requireNormalizedNombre(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized == null
-                || normalized.length() < NOMBRE_MIN_LENGTH
-                || normalized.length() > NOMBRE_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_TIPO_DOCUMENTO_NOMBRE",
-                    "El nombre debe tener entre %d y %d caracteres"
-                            .formatted(NOMBRE_MIN_LENGTH, NOMBRE_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private String normalizeDescripcion(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized != null
-                && normalized.length() > DESCRIPCION_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_TIPO_DOCUMENTO_DESCRIPCION",
-                    "La descripción no puede superar los %d caracteres"
-                            .formatted(DESCRIPCION_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private boolean resolveRequiereVencimiento(Boolean value) {
-        return Boolean.TRUE.equals(value);
     }
 }

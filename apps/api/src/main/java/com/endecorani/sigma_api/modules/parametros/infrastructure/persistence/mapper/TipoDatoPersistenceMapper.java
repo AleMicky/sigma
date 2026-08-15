@@ -19,13 +19,6 @@ public class TipoDatoPersistenceMapper {
         entity.setDescripcion(domain.getDescripcion());
         entity.setPermiteOpciones(domain.getPermiteOpciones());
 
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 

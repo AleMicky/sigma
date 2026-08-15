@@ -25,14 +25,6 @@ public class PeriodoPersistenceMapper {
             gestion.setId(domain.getGestionId());
             entity.setGestion(gestion);
         }
-
-        if (domain.getCreatedAt() != null) {
-            entity.setCreatedAt(domain.getCreatedAt());
-        }
-        if (domain.getCreatedBy() != null) {
-            entity.setCreatedBy(domain.getCreatedBy());
-        }
-
         return entity;
     }
 
