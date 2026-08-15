@@ -7,13 +7,14 @@ import jakarta.persistence.Table;
 import lombok.*;
 
 @Entity
+@Table(schema = "inventarios", name = "categorias_insumo")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(schema = "inventarios", name = "categorias_insumo")
-public class CategoriaInsumo extends BaseEntity {
+public class CategoriaInsumoEntity extends BaseEntity {
+
     @Column(nullable = false, unique = true, length = 20)
     private String codigo;
 
