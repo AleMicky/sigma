@@ -44,4 +44,20 @@ export const routes = {
     personas: "/organizacion/personas",
     migraciones: "/organizacion/migraciones",
   },
+
+  inventarios: {
+    root: "/inventarios",
+    nuevo: "/inventarios/nuevo",
+    editar: (insumoId: string) => `/inventarios/${insumoId}/editar`,
+    tiposInsumo: {
+      root: "/inventarios/tipos-insumo",
+      detail: (tipoInsumoId: string) => `/inventarios/tipos-insumo/${tipoInsumoId}`,
+      atributos: (tipoInsumoId: string) =>
+        `/inventarios/tipos-insumo/${tipoInsumoId}/atributos`,
+    },
+    categorias: {
+      root: "/inventarios/categorias",
+    },
+  },
 } as const
+

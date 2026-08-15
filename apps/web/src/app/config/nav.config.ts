@@ -89,9 +89,32 @@ export const navItems: NavItem[] = [
     ],
   },
   {
+    title: "Inventarios",
+    to: routes.inventarios.root,
+    icon: Boxes,
+    children: [
+      {
+        title: "Insumos",
+        to: routes.inventarios.root,
+        icon: List,
+      },
+      {
+        title: "Tipos de insumo",
+        to: routes.inventarios.tiposInsumo.root,
+        icon: Tags,
+      },
+      {
+        title: "Categorías",
+        to: routes.inventarios.categorias.root,
+        icon: FolderTree,
+      },
+    ],
+  },
+  {
     title: "Parámetros",
     to: routes.parametros.root,
     icon: Settings2,
+
     children: [
       {
         title: "Gestión",

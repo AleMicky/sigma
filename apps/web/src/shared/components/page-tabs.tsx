@@ -30,6 +30,8 @@ export function PageTabs({ tabs, activeTo, className }: PageTabsProps) {
             key={tab.to}
             to={tab.to}
             className={cn(
+
+
               "relative shrink-0 px-3 py-2.5 text-sm whitespace-nowrap transition-colors",
               isActive
                 ? "font-medium text-foreground"
