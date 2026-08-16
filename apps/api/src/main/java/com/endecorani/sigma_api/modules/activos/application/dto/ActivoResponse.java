@@ -42,10 +42,10 @@ public record ActivoResponse(
         UUID tipoActivoId,
 
         @Schema(
-                description = "Ubicación",
-                example = "Sede central"
+                description = "Identificador de la ubicación",
+                example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
         )
-        String ubicacion,
+        UUID ubicacionId,
 
         @Schema(
                 description = "Fecha de adquisición",

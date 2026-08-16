@@ -6,6 +6,9 @@ import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
+import com.endecorani.sigma_api.modules.parametros.domain.enums.TipoUbicacion;
+import com.endecorani.sigma_api.modules.parametros.domain.model.Ubicacion;
+import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.storage.ImageStorageService;
@@ -38,19 +41,23 @@ class ActivoServiceTest {
 
     private InMemoryActivoRepository activoRepository;
     private InMemoryTipoActivoRepository tipoActivoRepository;
+    private InMemoryUbicacionRepository ubicacionRepository;
     private FakeImageStorageService imageStorageService;
     private ActivoService service;
 
     private UUID tipoActivoId;
+    private UUID ubicacionId;
 
     @BeforeEach
     void setUp() {
         activoRepository = new InMemoryActivoRepository();
         tipoActivoRepository = new InMemoryTipoActivoRepository();
+        ubicacionRepository = new InMemoryUbicacionRepository();
         imageStorageService = new FakeImageStorageService();
         service = new ActivoService(
                 activoRepository,
                 tipoActivoRepository,
+                ubicacionRepository,
                 imageStorageService
         );
 
@@ -60,6 +67,15 @@ class ActivoServiceTest {
                 .build();
         tipoActivoRepository.items.add(tipoActivo);
         tipoActivoId = tipoActivo.getId();
+
+        Ubicacion ubicacion = Ubicacion.builder()
+                .id(UUID.randomUUID())
+                .codigo("UB-001")
+                .nombre("Sede Central")
+                .tipo(TipoUbicacion.EDIFICIO)
+                .build();
+        ubicacionRepository.items.add(ubicacion);
+        ubicacionId = ubicacion.getId();
     }
 
     @Test
@@ -70,7 +86,7 @@ class ActivoServiceTest {
                         "  Toyota   Hilux ",
                         "  Camioneta  ",
                         tipoActivoId,
-                        "  Sede   central ",
+                        ubicacionId,
                         LocalDate.of(2024, 1, 15)
                 )
         );
@@ -78,7 +94,7 @@ class ActivoServiceTest {
         assertEquals("veh-001", response.codigo());
         assertEquals("Toyota Hilux", response.nombre());
         assertEquals("Camioneta", response.descripcion());
-        assertEquals("Sede central", response.ubicacion());
+        assertEquals(ubicacionId, response.ubicacionId());
         assertEquals(LocalDate.of(2024, 1, 15), response.fechaAdquisicion());
         assertNull(response.urlImagen());
     }
@@ -94,6 +110,23 @@ class ActivoServiceTest {
                                 null,
                                 UUID.randomUUID(),
                                 null,
+                                null
+                        )
+                )
+        );
+    }
+
+    @Test
+    void createRejectsUnknownUbicacion() {
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> service.create(
+                        new ActivoRequest(
+                                "VEH-001",
+                                "Toyota",
+                                null,
+                                tipoActivoId,
+                                UUID.randomUUID(),
                                 null
                         )
                 )
@@ -376,6 +409,101 @@ class ActivoServiceTest {
             return items.stream().anyMatch(item ->
                     !item.getId().equals(id)
                             && item.getNombre().equalsIgnoreCase(nombre)
+            );
+        }
+    }
+
+    private static final class InMemoryUbicacionRepository
+            implements UbicacionRepository {
+
+        private final List<Ubicacion> items = new ArrayList<>();
+
+        @Override
+        public Ubicacion save(Ubicacion entity) {
+            if (entity.getId() == null) {
+                entity.setId(UUID.randomUUID());
+            }
+            items.removeIf(item -> item.getId().equals(entity.getId()));
+            items.add(entity);
+            return entity;
+        }
+
+        @Override
+        public Optional<Ubicacion> findById(UUID id) {
+            return items.stream()
+                    .filter(item -> item.getId().equals(id))
+                    .findFirst();
+        }
+
+        @Override
+        public List<Ubicacion> findAll() {
+            return List.copyOf(items);
+        }
+
+        @Override
+        public Page<Ubicacion> findAll(Pageable pageable) {
+            return new PageImpl<>(List.copyOf(items), pageable, items.size());
+        }
+
+        @Override
+        public boolean existsById(UUID id) {
+            return items.stream().anyMatch(item -> item.getId().equals(id));
+        }
+
+        @Override
+        public void deleteById(UUID id) {
+            items.removeIf(item -> item.getId().equals(id));
+        }
+
+        @Override
+        public boolean existsByCodigoIgnoreCase(String codigo) {
+            return items.stream().anyMatch(item ->
+                    item.getCodigo().equalsIgnoreCase(codigo)
+            );
+        }
+
+        @Override
+        public boolean existsByCodigoIgnoreCaseAndIdNot(
+                String codigo,
+                UUID id
+        ) {
+            return items.stream().anyMatch(item ->
+                    !item.getId().equals(id)
+                            && item.getCodigo().equalsIgnoreCase(codigo)
+            );
+        }
+
+        @Override
+        public Page<Ubicacion> search(String query, Pageable pageable) {
+            return new PageImpl<>(List.copyOf(items), pageable, items.size());
+        }
+
+        @Override
+        public Page<Ubicacion> findByTipo(TipoUbicacion tipo, Pageable pageable) {
+            List<Ubicacion> filtered = items.stream()
+                    .filter(item -> item.getTipo() == tipo)
+                    .toList();
+            return new PageImpl<>(filtered, pageable, filtered.size());
+        }
+
+        @Override
+        public List<Ubicacion> findByUbicacionPadreId(UUID ubicacionPadreId) {
+            return items.stream()
+                    .filter(item -> ubicacionPadreId.equals(item.getUbicacionPadreId()))
+                    .toList();
+        }
+
+        @Override
+        public List<Ubicacion> findByUbicacionPadreIdIsNull() {
+            return items.stream()
+                    .filter(item -> item.getUbicacionPadreId() == null)
+                    .toList();
+        }
+
+        @Override
+        public boolean existsByUbicacionPadreId(UUID ubicacionPadreId) {
+            return items.stream().anyMatch(item ->
+                    ubicacionPadreId.equals(item.getUbicacionPadreId())
             );
         }
     }

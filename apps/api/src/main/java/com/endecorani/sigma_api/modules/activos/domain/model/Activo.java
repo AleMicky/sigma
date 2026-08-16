@@ -27,7 +27,7 @@ public class Activo extends AuditableModel {
 
     private UUID tipoActivoId;
 
-    private String ubicacion;
+    private UUID ubicacionId;
 
     private LocalDate fechaAdquisicion;
 

@@ -58,14 +58,10 @@ public record ActivoRequest(
         UUID tipoActivoId,
 
         @Schema(
-                description = "Ubicación del activo",
-                example = "Sede central"
+                description = "Identificador de la ubicación del activo",
+                example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
         )
-        @Size(
-                max = 255,
-                message = "La ubicación no puede superar los 255 caracteres"
-        )
-        String ubicacion,
+        UUID ubicacionId,
 
         @Schema(
                 description = "Fecha de adquisición",

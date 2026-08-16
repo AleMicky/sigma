@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.activos.application.dto.ActivoResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
+import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -37,13 +38,12 @@ public class ActivoService extends AbstractCrudService<
     private static final int NOMBRE_MIN_LENGTH = 2;
     private static final int NOMBRE_MAX_LENGTH = 100;
     private static final int DESCRIPCION_MAX_LENGTH = 255;
-    private static final int UBICACION_MAX_LENGTH = 255;
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
             "codigo",
             "nombre",
-            "ubicacion",
+            "ubicacionId",
             "fechaAdquisicion",
             "createdAt",
             "updatedAt"
@@ -51,6 +51,7 @@ public class ActivoService extends AbstractCrudService<
 
     private final ActivoRepository activoRepository;
     private final TipoActivoRepository tipoActivoRepository;
+    private final UbicacionRepository ubicacionRepository;
     private final ImageStorageService imageStorageService;
 
     @Override
@@ -141,6 +142,7 @@ public class ActivoService extends AbstractCrudService<
     @Override
     protected Activo toDomain(ActivoRequest request) {
         requireTipoActivoExists(request.tipoActivoId());
+        requireUbicacionExists(request.ubicacionId());
 
         String codigo = requireNormalizedCodigo(request.codigo());
         validateUniqueCodigoForCreate(codigo);
@@ -150,7 +152,7 @@ public class ActivoService extends AbstractCrudService<
                 .nombre(requireNormalizedNombre(request.nombre()))
                 .descripcion(normalizeDescripcion(request.descripcion()))
                 .tipoActivoId(request.tipoActivoId())
-                .ubicacion(normalizeUbicacion(request.ubicacion()))
+                .ubicacionId(request.ubicacionId())
                 .fechaAdquisicion(request.fechaAdquisicion())
                 .build();
     }
@@ -158,6 +160,7 @@ public class ActivoService extends AbstractCrudService<
     @Override
     protected void updateDomain(Activo domain, ActivoRequest request) {
         requireTipoActivoExists(request.tipoActivoId());
+        requireUbicacionExists(request.ubicacionId());
 
         String codigo = requireNormalizedCodigo(request.codigo());
         validateUniqueCodigoForUpdate(codigo, domain.getId());
@@ -166,7 +169,7 @@ public class ActivoService extends AbstractCrudService<
         domain.setNombre(requireNormalizedNombre(request.nombre()));
         domain.setDescripcion(normalizeDescripcion(request.descripcion()));
         domain.setTipoActivoId(request.tipoActivoId());
-        domain.setUbicacion(normalizeUbicacion(request.ubicacion()));
+        domain.setUbicacionId(request.ubicacionId());
         domain.setFechaAdquisicion(request.fechaAdquisicion());
     }
 
@@ -178,7 +181,7 @@ public class ActivoService extends AbstractCrudService<
                 domain.getNombre(),
                 domain.getDescripcion(),
                 domain.getTipoActivoId(),
-                domain.getUbicacion(),
+                domain.getUbicacionId(),
                 domain.getFechaAdquisicion(),
                 domain.getUrlImagen(),
                 domain.getCreatedAt(),
@@ -196,6 +199,12 @@ public class ActivoService extends AbstractCrudService<
     private void requireTipoActivoExists(UUID tipoActivoId) {
         if (!tipoActivoRepository.existsById(tipoActivoId)) {
             throw new ResourceNotFoundException("Tipo de activo", tipoActivoId);
+        }
+    }
+
+    private void requireUbicacionExists(UUID ubicacionId) {
+        if (ubicacionId != null && !ubicacionRepository.existsById(ubicacionId)) {
+            throw new ResourceNotFoundException("Ubicación", ubicacionId);
         }
     }
 
@@ -257,20 +266,6 @@ public class ActivoService extends AbstractCrudService<
                     "INVALID_ACTIVO_DESCRIPCION",
                     "La descripción no puede superar los %d caracteres"
                             .formatted(DESCRIPCION_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private String normalizeUbicacion(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized != null && normalized.length() > UBICACION_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_ACTIVO_UBICACION",
-                    "La ubicación no puede superar los %d caracteres"
-                            .formatted(UBICACION_MAX_LENGTH)
             );
         }
 

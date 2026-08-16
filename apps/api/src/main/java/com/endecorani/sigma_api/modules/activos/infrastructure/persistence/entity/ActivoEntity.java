@@ -30,8 +30,10 @@ public class ActivoEntity extends BaseEntity {
     @Column(name = "tipo_activo_id", nullable = false)
     private UUID tipoActivoId;
 
-    @Column(name = "ubicacion", length = 255)
-    private String ubicacion;
+    @Column(
+            name = "ubicacion_id"
+    )
+    private UUID ubicacionId;
 
     @Column(name = "fecha_adquisicion")
     private LocalDate fechaAdquisicion;
