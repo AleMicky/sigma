@@ -1,13 +1,14 @@
 import { useState } from "react"
-import { Eye, ImageIcon, MapPin } from "lucide-react"
+import { Calendar, Eye, ImageIcon, MapPin, Package } from "lucide-react"
 
+import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
+import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
+import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
+import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Button } from "@/shared/components/ui/button"
-import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
-import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
-import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 
 import { useDeleteActivo } from "../api/activo.mutations"
 import type { Activo } from "../api/activo.service"
@@ -30,65 +31,127 @@ export function ActivoCard({
   const deleteMutation = useDeleteActivo()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const tipoColor = tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
+  const TipoIcon = tipoActivo ? getTipoActivoIcon(tipoActivo.icono) : Package
+
+  const formattedDate = activo.fechaAdquisicion
+    ? new Date(activo.fechaAdquisicion).toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null
 
   return (
-    <li className="group relative flex min-w-0 flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 transition-all duration-200 hover:border-primary/40 hover:shadow-md">
-      {/* Top Color Accent */}
+    <li className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5">
+      {/* Top Accent Color Bar */}
       <div
-        className="absolute top-0 left-0 right-0 h-1 transition-opacity opacity-70 group-hover:opacity-100"
+        className="h-1 w-full shrink-0 transition-opacity opacity-80 group-hover:opacity-100"
         style={{ backgroundColor: tipoColor }}
       />
 
-      <div className="flex flex-col gap-3 min-w-0">
-        <div className="flex items-start justify-between gap-3 pt-1">
-          <div className="flex items-center gap-3 min-w-0">
-            <AuthenticatedImage
-              src={activo.urlImagen}
-              alt={activo.nombre}
-              className="size-12 shrink-0 rounded-xl object-cover border border-border/60 shadow-xs transition-transform group-hover:scale-105"
-              fallbackClassName="size-12 shrink-0 rounded-xl bg-muted flex items-center justify-center border border-border/60 shadow-xs"
-              fallback={<ImageIcon className="size-5 text-muted-foreground/60" />}
-            />
-
-            <div className="flex flex-col min-w-0">
-              <button
-                type="button"
-                onClick={() => onQuickView?.(activo)}
-                className="text-left font-heading font-semibold text-foreground hover:text-primary transition-colors truncate text-base"
-              >
-                {activo.nombre}
-              </button>
-              <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border/40 shrink-0">
-                  {activo.codigo}
-                </code>
-                {tipoActivo ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground truncate">
-                    <span
-                      aria-hidden
-                      className="size-2 rounded-full shrink-0"
-                      style={{ backgroundColor: tipoColor }}
-                    />
-                    <span className="truncate">{tipoActivo.nombre}</span>
-                  </span>
-                ) : null}
-              </div>
+      {/* Image Preview Banner with Floating Badges */}
+      <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted/40 border-b border-border/50">
+        <AuthenticatedImage
+          src={activo.urlImagen}
+          alt={activo.nombre}
+          className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+          fallbackClassName="size-full flex flex-col items-center justify-center bg-gradient-to-br from-muted/30 to-muted/80 text-muted-foreground/50"
+          fallback={
+            <div className="flex flex-col items-center gap-1.5">
+              <ImageIcon className="size-8 opacity-40" />
+              <span className="text-[11px] font-medium tracking-wide">Sin imagen</span>
             </div>
+          }
+        />
+
+        {/* Gradient Overlay for contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 pointer-events-none" />
+
+        {/* Floating Top Badge: Tipo de Activo */}
+        {tipoActivo ? (
+          <div className="absolute top-2.5 left-2.5 z-10">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-md backdrop-blur-md text-white border border-white/20"
+              style={{ backgroundColor: `${tipoColor}dd` }}
+            >
+              <TipoIcon className="size-3 shrink-0" />
+              <span className="truncate max-w-[120px]">{tipoActivo.nombre}</span>
+            </span>
+          </div>
+        ) : null}
+
+        {/* Floating Top Action: Quick View */}
+        {onQuickView ? (
+          <Button
+            size="icon-xs"
+            variant="secondary"
+            className="absolute top-2.5 right-2.5 z-10 size-7 rounded-lg bg-background/80 shadow-md backdrop-blur-md opacity-90 transition-opacity hover:opacity-100 hover:bg-background"
+            title="Vista rápida"
+            onClick={() => onQuickView(activo)}
+          >
+            <Eye className="size-3.5" />
+          </Button>
+        ) : null}
+      </div>
+
+      {/* Card Body */}
+      <div className="flex flex-1 flex-col justify-between p-4 gap-3">
+        <div className="flex flex-col gap-2">
+          {/* Code & Acquisition Date */}
+          <div className="flex items-center justify-between gap-2">
+            <code className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground border border-border/60">
+              {activo.codigo}
+            </code>
+
+            {formattedDate ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                <Calendar className="size-3 shrink-0" />
+                {formattedDate}
+              </span>
+            ) : null}
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
-            {onQuickView ? (
-              <Button
-                size="icon-xs"
-                variant="ghost"
-                title="Ver resumen"
-                onClick={() => onQuickView(activo)}
+          {/* Title */}
+          <button
+            type="button"
+            onClick={() => onQuickView?.(activo)}
+            className="text-left font-heading text-base font-bold text-foreground hover:text-primary transition-colors line-clamp-1"
+          >
+            {activo.nombre}
+          </button>
+
+          {/* Description */}
+          {activo.descripcion ? (
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+              {activo.descripcion}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground/50 italic line-clamp-1">
+              Sin descripción adicional
+            </p>
+          )}
+        </div>
+
+        {/* Bottom Section: Location & Row Actions */}
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+          <div className="min-w-0 flex-1">
+            {ubicacion ? (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-lg bg-muted/60 px-2 py-1 text-xs text-muted-foreground border border-border/40 truncate max-w-full"
+                title={`${ubicacion.codigo} - ${ubicacion.nombre}`}
               >
-                <Eye className="size-3.5" />
-              </Button>
-            ) : null}
+                <MapPin className="size-3 shrink-0 text-primary" />
+                <span className="truncate">{ubicacion.nombre}</span>
+              </span>
+            ) : (
+              <span className="text-xs italic text-muted-foreground/60">
+                Sin ubicación
+              </span>
+            )}
+          </div>
+
+          <div className="shrink-0">
             <RowActions
-              className="shrink-0"
               editLabel="Editar activo"
               deleteLabel="Eliminar activo"
               deleteDisabled={deleteMutation.isPending}
@@ -97,17 +160,6 @@ export function ActivoCard({
             />
           </div>
         </div>
-
-        {ubicacion ? (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-            <MapPin className="size-3.5 text-muted-foreground shrink-0" />
-            <span className="truncate">{ubicacion.nombre}</span>
-          </div>
-        ) : (
-          <span className="text-xs text-muted-foreground/60 italic mt-1">
-            Sin ubicación registrada.
-          </span>
-        )}
       </div>
 
       <ConfirmDeleteDialog
