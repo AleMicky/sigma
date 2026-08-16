@@ -45,6 +45,7 @@ public class ActivoService extends AbstractCrudService<
             "nombre",
             "ubicacionId",
             "fechaAdquisicion",
+            "activo",
             "createdAt",
             "updatedAt"
     );
@@ -129,6 +130,14 @@ public class ActivoService extends AbstractCrudService<
         return toResponse(domain);
     }
 
+    @Transactional
+    public ActivoResponse toggleActivo(UUID id, Boolean activo) {
+        Activo domain = findDomainById(id);
+        domain.setActivo(resolveActivo(activo));
+        Activo updated = activoRepository.save(domain);
+        return toResponse(updated);
+    }
+
     @Override
     @Transactional
     public void delete(UUID id) {
@@ -154,6 +163,7 @@ public class ActivoService extends AbstractCrudService<
                 .tipoActivoId(request.tipoActivoId())
                 .ubicacionId(request.ubicacionId())
                 .fechaAdquisicion(request.fechaAdquisicion())
+                .activo(resolveActivo(request.activo()))
                 .build();
     }
 
@@ -171,6 +181,7 @@ public class ActivoService extends AbstractCrudService<
         domain.setTipoActivoId(request.tipoActivoId());
         domain.setUbicacionId(request.ubicacionId());
         domain.setFechaAdquisicion(request.fechaAdquisicion());
+        domain.setActivo(resolveActivo(request.activo()));
     }
 
     @Override
@@ -184,6 +195,7 @@ public class ActivoService extends AbstractCrudService<
                 domain.getUbicacionId(),
                 domain.getFechaAdquisicion(),
                 domain.getUrlImagen(),
+                domain.getActivo(),
                 domain.getCreatedAt(),
                 domain.getUpdatedAt(),
                 domain.getCreatedBy(),
@@ -194,6 +206,10 @@ public class ActivoService extends AbstractCrudService<
     @Override
     protected String resourceName() {
         return "Activo";
+    }
+
+    private Boolean resolveActivo(Boolean value) {
+        return value != null ? value : Boolean.TRUE;
     }
 
     private void requireTipoActivoExists(UUID tipoActivoId) {

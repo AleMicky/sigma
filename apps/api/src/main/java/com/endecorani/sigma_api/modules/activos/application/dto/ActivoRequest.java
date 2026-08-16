@@ -67,6 +67,22 @@ public record ActivoRequest(
                 description = "Fecha de adquisición",
                 example = "2024-01-15"
         )
-        LocalDate fechaAdquisicion
+        LocalDate fechaAdquisicion,
+
+        @Schema(
+                description = "Indica si el activo está activo",
+                example = "true"
+        )
+        Boolean activo
 ) {
+    public ActivoRequest(
+            String codigo,
+            String nombre,
+            String descripcion,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            LocalDate fechaAdquisicion
+    ) {
+        this(codigo, nombre, descripcion, tipoActivoId, ubicacionId, fechaAdquisicion, null);
+    }
 }

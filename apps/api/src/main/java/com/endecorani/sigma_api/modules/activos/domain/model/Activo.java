@@ -32,4 +32,6 @@ public class Activo extends AuditableModel {
     private LocalDate fechaAdquisicion;
 
     private String urlImagen;
+
+    private Boolean activo;
 }

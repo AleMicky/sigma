@@ -21,6 +21,7 @@ public class ActivoPersistenceMapper {
         entity.setUbicacionId(domain.getUbicacionId());
         entity.setFechaAdquisicion(domain.getFechaAdquisicion());
         entity.setUrlImagen(domain.getUrlImagen());
+        entity.setActivo(domain.getActivo());
 
         return entity;
     }
@@ -39,6 +40,7 @@ public class ActivoPersistenceMapper {
                 .ubicacionId(entity.getUbicacionId())
                 .fechaAdquisicion(entity.getFechaAdquisicion())
                 .urlImagen(entity.getUrlImagen())
+                .activo(entity.getActivo())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())

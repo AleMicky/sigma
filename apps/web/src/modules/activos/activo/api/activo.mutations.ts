@@ -8,6 +8,7 @@ import {
   createActivo,
   deleteActivo,
   deleteActivoImagen,
+  setActivoActivo,
   updateActivo,
   uploadActivoImagen,
   type Activo,
@@ -62,6 +63,26 @@ export function useDeleteActivoImagen() {
         queryKey: activoKeys.detail(entity.id),
       })
       toast.success("Imagen eliminada correctamente")
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
+    },
+  })
+}
+
+export function useSetActivoActivo() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, activo }: { id: string; activo: boolean }) =>
+      setActivoActivo(id, activo),
+    onSuccess: (_, { activo }) => {
+      void queryClient.invalidateQueries({ queryKey: activoKeys.all })
+      toast.success(
+        activo
+          ? "Activo dado de alta correctamente"
+          : "Activo dado de baja correctamente",
+      )
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))

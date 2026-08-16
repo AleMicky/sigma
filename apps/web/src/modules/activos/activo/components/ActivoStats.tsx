@@ -14,6 +14,7 @@ export function ActivoStats({
   totalTipos,
 }: ActivoStatsProps) {
   const conUbicacion = activos.filter((a) => Boolean(a.ubicacionId)).length
+  const activosBaja = activos.filter((a) => a.activo === false).length
 
   return (
     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
@@ -25,11 +26,17 @@ export function ActivoStats({
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
             Total Activos
           </span>
-          <div className="flex items-baseline gap-1">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
             <span className="font-heading text-lg font-bold tracking-tight">
               {totalActivos}
             </span>
-            <span className="text-[11px] text-muted-foreground">registrados</span>
+            {activosBaja > 0 ? (
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                ({activosBaja} de baja)
+              </span>
+            ) : (
+              <span className="text-[11px] text-muted-foreground">registrados</span>
+            )}
           </div>
         </div>
       </div>

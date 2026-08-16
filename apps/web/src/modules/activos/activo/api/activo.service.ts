@@ -12,6 +12,7 @@ export type Activo = AuditableEntity & {
   ubicacionId: string | null
   fechaAdquisicion: string | null
   urlImagen: string | null
+  activo: boolean
 }
 
 export type ActivoPayload = {
@@ -21,6 +22,7 @@ export type ActivoPayload = {
   tipoActivoId: string
   ubicacionId?: string | null
   fechaAdquisicion?: string | null
+  activo?: boolean
 }
 
 export type ActivoListParams = PageParams & {
@@ -44,4 +46,13 @@ export function uploadActivoImagen(id: string, file: File) {
 
 export function deleteActivoImagen(id: string) {
   return http.delete<Activo>(`${activoEndpoints.byId(id)}/imagen`)
+}
+
+export async function setActivoActivo(
+  id: string,
+  activo: boolean,
+): Promise<Activo> {
+  return http.patch<Activo>(`${activoEndpoints.byId(id)}/activo`, {
+    activo,
+  })
 }

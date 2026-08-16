@@ -40,4 +40,7 @@ public class ActivoEntity extends BaseEntity {
 
     @Column(name = "url_imagen", length = 500)
     private String urlImagen;
+
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = true;
 }

@@ -59,6 +59,12 @@ public record ActivoResponse(
         )
         String urlImagen,
 
+        @Schema(
+                description = "Indica si el activo está activo",
+                example = "true"
+        )
+        Boolean activo,
+
         @Schema(description = "Fecha de creación")
         Instant createdAt,
 

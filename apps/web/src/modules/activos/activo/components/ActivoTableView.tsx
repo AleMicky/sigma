@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
-import { Calendar, FileText, ImageIcon, MapPin, Package } from "lucide-react"
+import { Calendar, FileText, ImageIcon, MapPin, Package, Power, PowerOff } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
@@ -11,9 +11,11 @@ import { TIPO_UBICACION_CONFIG } from "@/modules/parametros/ubicacion/components
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
+import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { cn } from "@/shared/lib/utils"
 
-import { useDeleteActivo } from "../api/activo.mutations"
+import { useDeleteActivo, useSetActivoActivo } from "../api/activo.mutations"
 import type { Activo } from "../api/activo.service"
 
 type ActivoTableViewProps = {
@@ -43,6 +45,9 @@ export function ActivoTableView({
               </th>
               <th scope="col" className="px-3 py-2.5 sm:px-4">
                 Tipo
+              </th>
+              <th scope="col" className="px-3 py-2.5 sm:px-4">
+                Estado
               </th>
               <th scope="col" className="hidden px-3 py-2.5 md:table-cell sm:px-4">
                 Ubicación
@@ -88,7 +93,12 @@ function ActivoTableRow({
   onEdit: (activo: Activo) => void
 }) {
   const deleteMutation = useDeleteActivo()
+  const setActivoMutation = useSetActivoActivo()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const isActivo = activo.activo !== false
+  const isToggling =
+    setActivoMutation.isPending && setActivoMutation.variables?.id === activo.id
+
   const tipoColor = tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
   const TipoIcon = tipoActivo ? getTipoActivoIcon(tipoActivo.icono) : Package
 
@@ -104,14 +114,22 @@ function ActivoTableRow({
   const UbicacionIcon = ubicacionConfig?.icon || MapPin
 
   return (
-    <tr className="group hover:bg-muted/30 transition-colors">
+    <tr
+      className={cn(
+        "group hover:bg-muted/30 transition-colors",
+        !isActivo && "bg-muted/15 opacity-80",
+      )}
+    >
       {/* Activo Image + Title + Description */}
       <td className="px-3 py-2 sm:px-4 sm:py-2.5">
         <div className="flex items-center gap-2.5 max-w-sm sm:max-w-md">
           <AuthenticatedImage
             src={activo.urlImagen}
             alt={activo.nombre}
-            className="size-9 shrink-0 rounded-lg object-cover border border-border/70 shadow-xs transition-transform group-hover:scale-105"
+            className={cn(
+              "size-9 shrink-0 rounded-lg object-cover border border-border/70 shadow-xs transition-transform group-hover:scale-105",
+              !isActivo && "grayscale-[0.35]",
+            )}
             fallbackClassName="size-9 shrink-0 rounded-lg bg-muted/60 flex items-center justify-center border border-border/70 shadow-xs"
             fallback={<ImageIcon className="size-4 text-muted-foreground/50" />}
           />
@@ -145,7 +163,7 @@ function ActivoTableRow({
           <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-muted/70 text-foreground border border-border/60">
             <span
               className="size-2 rounded-full shrink-0"
-              style={{ backgroundColor: tipoColor }}
+              style={{ backgroundColor: isActivo ? tipoColor : "#9ca3af" }}
             />
             <TipoIcon className="size-3 shrink-0 text-muted-foreground" />
             <span className="truncate max-w-[120px]">{tipoActivo.nombre}</span>
@@ -153,6 +171,21 @@ function ActivoTableRow({
         ) : (
           <span className="text-xs text-muted-foreground/50 italic">—</span>
         )}
+      </td>
+
+      {/* Estado (Alta / Baja) */}
+      <td className="px-3 py-2 sm:px-4 sm:py-2.5">
+        <Badge
+          variant={isActivo ? "default" : "outline"}
+          className={cn(
+            "text-[10px] font-medium transition-colors h-5 px-1.5",
+            isActivo
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+              : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+          )}
+        >
+          {isActivo ? "Activo" : "De baja"}
+        </Badge>
       </td>
 
       {/* Ubicación */}
@@ -182,6 +215,34 @@ function ActivoTableRow({
       {/* Acciones */}
       <td className="px-3 py-2 text-right sm:px-4 sm:py-2.5">
         <div className="flex items-center justify-end gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            disabled={isToggling}
+            onClick={() => {
+              setActivoMutation.mutate({
+                id: activo.id,
+                activo: !isActivo,
+              })
+            }}
+            className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+            title={
+              isActivo
+                ? "Dar de baja el activo"
+                : "Dar de alta el activo"
+            }
+          >
+            {isActivo ? (
+              <PowerOff className="size-3.5 text-amber-600" />
+            ) : (
+              <Power className="size-3.5 text-emerald-600" />
+            )}
+            <span className="hidden xl:inline">
+              {isActivo ? "Baja" : "Alta"}
+            </span>
+          </Button>
+
           <Button
             size="icon-xs"
             variant="ghost"
