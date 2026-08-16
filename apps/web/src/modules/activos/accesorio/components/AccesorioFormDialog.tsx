@@ -3,6 +3,8 @@ import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
 
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
+import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
+import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
 import { isApiError } from "@/shared/api"
 import {
   FormDialog,
@@ -167,15 +169,46 @@ export function AccesorioFormDialog({
                 >
                   <SelectTrigger id={field.name} className="w-full">
                     <SelectValue placeholder="Seleccionar tipo de activo">
-                      {selected ? selected.nombre : null}
+                      {selected ? (
+                        <div className="flex items-center gap-2 truncate">
+                          <span
+                            className="size-2 rounded-full shrink-0"
+                            style={{
+                              backgroundColor:
+                                selected.color || DEFAULT_TIPO_ACTIVO_COLOR,
+                            }}
+                          />
+                          <span className="truncate font-medium text-foreground">
+                            {selected.nombre}
+                          </span>
+                        </div>
+                      ) : null}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
-                    {tiposActivo.map((tipo) => (
-                      <SelectItem key={tipo.id} value={tipo.id}>
-                        {tipo.nombre}
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="max-h-60">
+                    {tiposActivo.map((tipo) => {
+                      const Icon = getTipoActivoIcon(tipo.icono)
+                      const color = tipo.color || DEFAULT_TIPO_ACTIVO_COLOR
+                      return (
+                        <SelectItem
+                          key={tipo.id}
+                          value={tipo.id}
+                          className="text-xs cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              className="flex size-4 shrink-0 items-center justify-center rounded text-white shadow-2xs"
+                              style={{ backgroundColor: color }}
+                            >
+                              <Icon className="size-2.5" />
+                            </span>
+                            <span className="truncate font-medium text-foreground">
+                              {tipo.nombre}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
