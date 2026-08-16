@@ -23,7 +23,6 @@ import type { Activo } from "../api/activo.service"
 import { ActivoCard } from "../components/ActivoCard"
 import { ActivoFilterToolbar } from "../components/ActivoFilterToolbar"
 import { ActivoHeader } from "../components/ActivoHeader"
-import { ActivoQuickViewSheet } from "../components/ActivoQuickViewSheet"
 import { ActivoTableView } from "../components/ActivoTableView"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
@@ -33,7 +32,6 @@ export function ActivosPage() {
   const navigate = useNavigate()
   const [tipoActivoId, setTipoActivoId] = useState<string>(ALL_TIPOS)
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid")
-  const [quickViewItem, setQuickViewItem] = useState<Activo | null>(null)
 
   const search = usePaginatedSearch({ resetKey: tipoActivoId })
 
@@ -206,7 +204,6 @@ export function ActivosPage() {
                           : undefined
                       }
                       onEdit={goEdit}
-                      onQuickView={(item) => setQuickViewItem(item)}
                     />
                   ))}
                 </ul>
@@ -216,7 +213,6 @@ export function ActivosPage() {
                   tiposById={tiposById}
                   ubicacionesById={ubicacionesById}
                   onEdit={goEdit}
-                  onQuickView={(item) => setQuickViewItem(item)}
                 />
               )}
             </div>
@@ -231,26 +227,6 @@ export function ActivosPage() {
           </>
         )}
       </div>
-
-      {/* Quick View Side Sheet */}
-      <ActivoQuickViewSheet
-        activo={quickViewItem}
-        tipoActivo={
-          quickViewItem
-            ? tiposById.get(quickViewItem.tipoActivoId)
-            : undefined
-        }
-        ubicacion={
-          quickViewItem?.ubicacionId
-            ? ubicacionesById.get(quickViewItem.ubicacionId)
-            : undefined
-        }
-        open={Boolean(quickViewItem)}
-        onOpenChange={(open) => {
-          if (!open) setQuickViewItem(null)
-        }}
-        onEdit={goEdit}
-      />
     </PageShell>
   )
 }

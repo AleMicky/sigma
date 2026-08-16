@@ -4,9 +4,11 @@ import {
   Briefcase,
   Building,
   Building2,
+  FileSearch,
   FileText,
   FolderTree,
   LayoutDashboard,
+  LayoutGrid,
   List,
   MapPin,
   Ruler,
@@ -74,7 +76,17 @@ export const navItems: NavItem[] = [
       {
         title: "Registro de Activos",
         to: routes.activos.root,
-        icon: List,
+        icon: Boxes,
+      },
+      {
+        title: "Catálogo de Activos",
+        to: routes.activos.catalogo,
+        icon: LayoutGrid,
+      },
+      {
+        title: "Consulta de Documentos",
+        to: routes.activos.consultaDocumentos,
+        icon: FileSearch,
       },
       {
         title: "Configuraciones",

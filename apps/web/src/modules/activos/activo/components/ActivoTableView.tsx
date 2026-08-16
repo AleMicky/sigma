@@ -1,6 +1,8 @@
 import { useState } from "react"
-import { Calendar, Eye, ImageIcon, MapPin, Package } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import { Calendar, FileText, ImageIcon, MapPin, Package } from "lucide-react"
 
+import { routes } from "@/app/config/routes"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
@@ -19,7 +21,6 @@ type ActivoTableViewProps = {
   tiposById: Map<string, TipoActivo>
   ubicacionesById?: Map<string, Ubicacion>
   onEdit: (activo: Activo) => void
-  onQuickView: (activo: Activo) => void
 }
 
 export function ActivoTableView({
@@ -27,7 +28,6 @@ export function ActivoTableView({
   tiposById,
   ubicacionesById,
   onEdit,
-  onQuickView,
 }: ActivoTableViewProps) {
   return (
     <div className="w-full overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs">
@@ -67,7 +67,6 @@ export function ActivoTableView({
                     : undefined
                 }
                 onEdit={onEdit}
-                onQuickView={onQuickView}
               />
             ))}
           </tbody>
@@ -82,13 +81,11 @@ function ActivoTableRow({
   tipoActivo,
   ubicacion,
   onEdit,
-  onQuickView,
 }: {
   activo: Activo
   tipoActivo?: TipoActivo | null
   ubicacion?: Ubicacion | null
   onEdit: (activo: Activo) => void
-  onQuickView: (activo: Activo) => void
 }) {
   const deleteMutation = useDeleteActivo()
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -119,13 +116,9 @@ function ActivoTableRow({
             fallback={<ImageIcon className="size-4 text-muted-foreground/50" />}
           />
           <div className="flex flex-col min-w-0">
-            <button
-              type="button"
-              onClick={() => onQuickView(activo)}
-              className="text-left font-heading font-semibold text-foreground hover:text-primary transition-colors truncate text-sm"
-            >
+            <span className="text-left font-heading font-semibold text-foreground transition-colors truncate text-sm">
               {activo.nombre}
-            </button>
+            </span>
             {activo.descripcion ? (
               <p className="text-xs text-muted-foreground truncate leading-relaxed">
                 {activo.descripcion}
@@ -139,49 +132,36 @@ function ActivoTableRow({
         </div>
       </td>
 
-      {/* Code */}
+      {/* Código Institucional */}
       <td className="px-3 py-2 sm:px-4 sm:py-2.5">
-        <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground border border-border/60">
+        <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs font-semibold text-foreground border border-border/60">
           {activo.codigo}
         </code>
       </td>
 
-      {/* Tipo de Activo Badge */}
+      {/* Tipo de Activo */}
       <td className="px-3 py-2 sm:px-4 sm:py-2.5">
         {tipoActivo ? (
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium border border-border/60 bg-muted/50 text-foreground"
-          >
+          <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-muted/70 text-foreground border border-border/60">
             <span
-              aria-hidden
-              className="flex size-3 items-center justify-center rounded-full text-white"
+              className="size-2 rounded-full shrink-0"
               style={{ backgroundColor: tipoColor }}
-            >
-              <TipoIcon className="size-2" />
-            </span>
-            <span className="truncate">{tipoActivo.nombre}</span>
+            />
+            <TipoIcon className="size-3 shrink-0 text-muted-foreground" />
+            <span className="truncate max-w-[120px]">{tipoActivo.nombre}</span>
           </span>
         ) : (
-          <span className="text-xs text-muted-foreground/60 italic">Sin tipo</span>
+          <span className="text-xs text-muted-foreground/50 italic">—</span>
         )}
       </td>
 
-      {/* Ubicacion */}
+      {/* Ubicación */}
       <td className="hidden px-3 py-2 md:table-cell sm:px-4 sm:py-2.5">
         {ubicacion ? (
-          <div className="flex items-center gap-1.5 max-w-[200px] truncate" title={`${ubicacion.codigo} - ${ubicacion.nombre}`}>
-            <span className="p-1 rounded-md bg-primary/10 text-primary shrink-0">
-              <UbicacionIcon className="size-3" />
-            </span>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-medium text-foreground truncate">
-                {ubicacion.nombre}
-              </span>
-              <code className="text-[10px] text-muted-foreground font-mono">
-                {ubicacion.codigo}
-              </code>
-            </div>
-          </div>
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <UbicacionIcon className="size-3.5 shrink-0 text-primary" />
+            <span className="truncate max-w-[150px]">{ubicacion.nombre}</span>
+          </span>
         ) : (
           <span className="text-xs text-muted-foreground/50 italic">—</span>
         )}
@@ -205,11 +185,11 @@ function ActivoTableRow({
           <Button
             size="icon-xs"
             variant="ghost"
-            title="Ver resumen"
-            onClick={() => onQuickView(activo)}
+            title="Ver ficha técnica"
+            render={<Link to={routes.activos.detail(activo.id)} />}
             className="hover:bg-primary/10 hover:text-primary transition-colors"
           >
-            <Eye className="size-3.5" />
+            <FileText className="size-3.5" />
           </Button>
 
           <RowActions

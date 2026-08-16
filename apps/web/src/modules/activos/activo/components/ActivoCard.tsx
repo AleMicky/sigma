@@ -1,5 +1,8 @@
 import { useState } from "react"
-import { Calendar, Eye, ImageIcon, MapPin, Package } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import { Calendar, FileText, ImageIcon, MapPin, Package } from "lucide-react"
+
+import { routes } from "@/app/config/routes"
 
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
@@ -18,7 +21,6 @@ type ActivoCardProps = {
   tipoActivo?: TipoActivo | null
   ubicacion?: Ubicacion | null
   onEdit: (activo: Activo) => void
-  onQuickView?: (activo: Activo) => void
 }
 
 export function ActivoCard({
@@ -26,7 +28,6 @@ export function ActivoCard({
   tipoActivo,
   ubicacion,
   onEdit,
-  onQuickView,
 }: ActivoCardProps) {
   const deleteMutation = useDeleteActivo()
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -80,18 +81,16 @@ export function ActivoCard({
           </div>
         ) : null}
 
-        {/* Floating Top Action: Quick View */}
-        {onQuickView ? (
-          <Button
-            size="icon-xs"
-            variant="secondary"
-            className="absolute top-2.5 right-2.5 z-10 size-7 rounded-lg bg-background/80 shadow-md backdrop-blur-md opacity-90 transition-opacity hover:opacity-100 hover:bg-background"
-            title="Vista rápida"
-            onClick={() => onQuickView(activo)}
-          >
-            <Eye className="size-3.5" />
-          </Button>
-        ) : null}
+        {/* Floating Top Action: Detail Link */}
+        <Button
+          size="icon-xs"
+          variant="secondary"
+          render={<Link to={routes.activos.detail(activo.id)} />}
+          className="absolute top-2.5 right-2.5 z-10 size-7 rounded-lg bg-background/80 shadow-md backdrop-blur-md opacity-90 transition-opacity hover:opacity-100 hover:bg-background"
+          title="Ver Ficha Técnica"
+        >
+          <FileText className="size-3.5" />
+        </Button>
       </div>
 
       {/* Card Body */}
@@ -112,13 +111,12 @@ export function ActivoCard({
           </div>
 
           {/* Title */}
-          <button
-            type="button"
-            onClick={() => onQuickView?.(activo)}
+          <Link
+            to={routes.activos.detail(activo.id)}
             className="text-left font-heading text-sm font-bold text-foreground hover:text-primary transition-colors line-clamp-1"
           >
             {activo.nombre}
-          </button>
+          </Link>
 
           {/* Description */}
           {activo.descripcion ? (

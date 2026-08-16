@@ -29,8 +29,10 @@ const pathLabels: Record<string, string> = {
   "/organizacion/migraciones": "Logs de Migración",
 
   // Activos
-  "/activos": "Activos",
+  "/activos": "Registro de Activos",
   "/activos/nuevo": "Nuevo Activo",
+  "/activos/catalogo": "Catálogo de Activos",
+  "/activos/consulta-documentos": "Consulta de Documentos",
   "/tipos-activo": "Tipos de Activo",
   "/tipos-activo/historial": "Historial",
   "/categorias": "Categorías",
