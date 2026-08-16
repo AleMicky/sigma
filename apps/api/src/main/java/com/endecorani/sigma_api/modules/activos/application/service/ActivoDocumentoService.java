@@ -64,15 +64,14 @@ public class ActivoDocumentoService extends AbstractCrudService<ActivoDocumento,
         TiposDocumento tipoDocumento = requireTipoDocumento(request.tipoDocumentoId());
         requireFechaVencimientoIfNecessary(tipoDocumento, request.fechaVencimiento());
 
-        UUID documentoId = UUID.randomUUID();
+        UUID fileId = UUID.randomUUID();
         DocumentStorageService.StoredFile stored = documentStorageService.store(
                 DOCUMENT_FOLDER,
-                documentoId,
+                fileId,
                 file
         );
 
         ActivoDocumento domain = ActivoDocumento.builder()
-                .id(documentoId)
                 .activoId(request.activoId())
                 .tipoDocumentoId(request.tipoDocumentoId())
                 .numeroDocumento(request.numeroDocumento())

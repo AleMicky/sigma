@@ -77,15 +77,14 @@ public class DocumentosService extends AbstractCrudService<
                 request.fechaVencimiento()
         );
 
-        UUID documentoId = UUID.randomUUID();
+        UUID fileId = UUID.randomUUID();
         DocumentStorageService.StoredFile stored = documentStorageService.store(
                 DOCUMENT_FOLDER,
-                documentoId,
+                fileId,
                 file
         );
 
         Documentos domain = Documentos.builder()
-                .id(documentoId)
                 .activoId(request.activoId())
                 .tipoDocumentoId(request.tipoDocumentoId())
                 .nombre(nombre)

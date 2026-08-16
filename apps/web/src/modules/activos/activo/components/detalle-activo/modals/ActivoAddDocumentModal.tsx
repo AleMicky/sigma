@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { AlertCircle, FilePlus, FileText, Upload, X } from "lucide-react"
+import { FilePlus, FileText, Upload, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { useCreateActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.mutations"
@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { cn } from "@/shared/lib/utils"
 
 type ActivoAddDocumentModalProps = {
   open: boolean
@@ -132,7 +133,7 @@ export function ActivoAddDocumentModal({
           numeroDocumento: numeroDocumento.trim() || null,
           descripcion: descripcion.trim() || null,
           fechaEmision: fechaEmision || null,
-          fechaVencimiento: fechaVencimiento || null,
+          fechaVencimiento: requiereVencimiento ? fechaVencimiento || null : null,
         },
         file: selectedFile,
       })
@@ -145,13 +146,13 @@ export function ActivoAddDocumentModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-base">
             <FilePlus className="size-4.5 text-primary" />
             Adjuntar Documento
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs">
             Asocia una póliza, certificación, acta o comprobante técnico al activo{" "}
             <span className="font-mono font-semibold text-foreground">
               {activoCodigo}
@@ -160,54 +161,40 @@ export function ActivoAddDocumentModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 py-2 text-xs">
-          {/* Tipo de Documento */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-semibold">
-              Tipo de Documento <span className="text-destructive">*</span>
-            </Label>
-            <Select
-              value={tipoDocumentoId}
-              onValueChange={(val) => {
-                if (val) setTipoDocumentoId(val)
-              }}
-            >
-              <SelectTrigger className="h-8.5 text-xs">
-                <SelectValue placeholder="Selecciona un tipo de documento..." />
-              </SelectTrigger>
-              <SelectContent className="z-50 max-h-56">
-                {tiposDocumento.map((tipo) => (
-                  <SelectItem key={tipo.id} value={tipo.id}>
-                    <div className="flex items-center gap-2">
-                      <span>{tipo.nombre}</span>
-                      {tipo.requiereVencimiento && (
-                        <span className="text-[10px] text-amber-600 font-bold bg-amber-500/10 px-1 py-0.2 rounded">
-                          Requiere vencimiento
-                        </span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Nombre / Título */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-semibold">
-              Título / Nombre del Documento <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej. SOAT 2026 - Renovación Anual"
-              className="h-8.5 text-xs"
-              required
-            />
-          </div>
-
-          {/* N° Documento y Fechas */}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 py-1 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Tipo de Documento */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold">
+                Tipo de Documento <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={tipoDocumentoId}
+                onValueChange={(val) => {
+                  const nextId = val ?? ""
+                  setTipoDocumentoId(nextId)
+                  const nextTipo = tiposDocumento.find((t) => t.id === nextId)
+                  if (!nextTipo?.requiereVencimiento) {
+                    setFechaVencimiento("")
+                  }
+                }}
+              >
+                <SelectTrigger className="h-9 w-full text-xs">
+                  <SelectValue placeholder="Seleccionar tipo...">
+                    {selectedTipo ? selectedTipo.nombre : undefined}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="z-50 max-h-56">
+                  {tiposDocumento.map((tipo) => (
+                    <SelectItem key={tipo.id} value={tipo.id}>
+                      {tipo.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* N° Documento / Código Ref */}
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-semibold">
                 N° de Póliza / Código Ref.
@@ -216,111 +203,130 @@ export function ActivoAddDocumentModal({
                 value={numeroDocumento}
                 onChange={(e) => setNumeroDocumento(e.target.value)}
                 placeholder="Ej. POL-9921-A"
-                className="h-8.5 text-xs"
+                className="h-9 text-xs"
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            {/* Nombre / Título (Full Width) */}
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <Label className="text-xs font-semibold">
+                Título / Nombre del Documento <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Ej. SOAT 2026 - Renovación Anual"
+                className="h-9 text-xs"
+                required
+              />
+            </div>
+
+            {/* Fecha de Emisión */}
+            <div
+              className={cn(
+                "flex flex-col gap-1.5",
+                requiereVencimiento ? "sm:col-span-1" : "sm:col-span-2",
+              )}
+            >
               <Label className="text-xs font-semibold">Fecha de Emisión</Label>
               <Input
                 type="date"
                 value={fechaEmision}
                 onChange={(e) => setFechaEmision(e.target.value)}
-                className="h-8.5 text-xs font-mono"
+                className="h-9 text-xs font-mono"
               />
             </div>
-          </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-semibold flex items-center justify-between">
-              <span>
-                Fecha de Vencimiento{" "}
-                {requiereVencimiento && (
-                  <span className="text-destructive font-bold">*</span>
-                )}
-              </span>
-              {requiereVencimiento && (
-                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                  Obligatorio para este tipo
-                </span>
-              )}
-            </Label>
-            <Input
-              type="date"
-              value={fechaVencimiento}
-              onChange={(e) => setFechaVencimiento(e.target.value)}
-              className="h-8.5 text-xs font-mono"
-              required={requiereVencimiento}
-            />
-          </div>
-
-          {/* Descripción */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-semibold">Descripción / Observaciones</Label>
-            <Textarea
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Detalles sobre cobertura, aseguradora o alcance..."
-              rows={2}
-              className="text-xs resize-none min-h-[50px]"
-            />
-          </div>
-
-          {/* Archivo Adjunto */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-semibold">
-              Archivo Adjunto <span className="text-destructive">*</span>
-            </Label>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-            />
-
-            {!selectedFile ? (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="p-4 border-2 border-dashed border-border/80 rounded-xl bg-muted/20 flex flex-col items-center justify-center gap-1.5 hover:bg-muted/40 hover:border-primary/40 transition-colors cursor-pointer text-center"
-              >
-                <Upload className="size-5 text-muted-foreground" />
-                <span className="text-xs font-semibold text-foreground">
-                  Selecciona o arrastra un archivo
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  PDF, JPG, PNG, DOCX (Máx 20 MB)
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-primary/30 bg-primary/5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <FileText className="size-4 text-primary shrink-0" />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-medium text-foreground truncate">
-                      {selectedFile.name}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                    </span>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  size="icon-xs"
-                  variant="ghost"
-                  onClick={() => {
-                    setSelectedFile(null)
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = ""
-                    }
-                  }}
-                  className="text-muted-foreground hover:text-destructive shrink-0"
-                >
-                  <X className="size-3.5" />
-                </Button>
+            {/* Fecha de Vencimiento (Visible solo si requiere vencimiento) */}
+            {requiereVencimiento && (
+              <div className="flex flex-col gap-1.5 sm:col-span-1">
+                <Label className="text-xs font-semibold flex items-center justify-between">
+                  <span>
+                    Fecha de Vencimiento{" "}
+                    <span className="text-destructive font-bold">*</span>
+                  </span>
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                    Requerido
+                  </span>
+                </Label>
+                <Input
+                  type="date"
+                  value={fechaVencimiento}
+                  onChange={(e) => setFechaVencimiento(e.target.value)}
+                  className="h-9 text-xs font-mono"
+                  required
+                />
               </div>
             )}
+
+            {/* Descripción */}
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <Label className="text-xs font-semibold">Descripción / Observaciones</Label>
+              <Textarea
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                placeholder="Detalles sobre cobertura, aseguradora o alcance..."
+                rows={2}
+                className="text-xs resize-none min-h-[56px]"
+              />
+            </div>
+
+            {/* Archivo Adjunto */}
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <Label className="text-xs font-semibold">
+                Archivo Adjunto <span className="text-destructive">*</span>
+              </Label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+              />
+
+              {!selectedFile ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-4 border-2 border-dashed border-border/80 rounded-xl bg-muted/20 flex flex-col items-center justify-center gap-1.5 hover:bg-muted/40 hover:border-primary/40 transition-colors cursor-pointer text-center"
+                >
+                  <Upload className="size-5 text-muted-foreground" />
+                  <span className="text-xs font-semibold text-foreground">
+                    Selecciona o arrastra un archivo
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    PDF, JPG, PNG, DOCX (Máx 20 MB)
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-primary/30 bg-primary/5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="size-4 text-primary shrink-0" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-medium text-foreground truncate">
+                        {selectedFile.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={() => {
+                      setSelectedFile(null)
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = ""
+                      }
+                    }}
+                    className="text-muted-foreground hover:text-destructive shrink-0"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           <DialogFooter className="pt-2">
