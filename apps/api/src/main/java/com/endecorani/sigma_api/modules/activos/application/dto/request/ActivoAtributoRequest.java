@@ -1,5 +1,6 @@
-package com.endecorani.sigma_api.modules.activos.application.dto;
+package com.endecorani.sigma_api.modules.activos.application.dto.request;
 
+import com.endecorani.sigma_api.modules.activos.application.dto.ActivoAtributoOpcionDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

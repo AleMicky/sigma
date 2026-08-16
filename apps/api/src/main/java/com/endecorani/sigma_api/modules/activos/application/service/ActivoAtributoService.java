@@ -1,8 +1,8 @@
 package com.endecorani.sigma_api.modules.activos.application.service;
 
 import com.endecorani.sigma_api.modules.activos.application.dto.ActivoAtributoOpcionDto;
-import com.endecorani.sigma_api.modules.activos.application.dto.ActivoAtributoRequest;
-import com.endecorani.sigma_api.modules.activos.application.dto.ActivoAtributoResponse;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoAtributoRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoAtributoResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.ActivoAtributo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoAtributoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;

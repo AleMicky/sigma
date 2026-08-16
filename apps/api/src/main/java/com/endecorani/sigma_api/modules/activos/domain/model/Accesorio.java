@@ -1,4 +1,6 @@
 package com.endecorani.sigma_api.modules.activos.domain.model;
 
-public class Accesorio {
+import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
+
+public class Accesorio extends AuditableModel {
 }

@@ -1,7 +1,7 @@
 package com.endecorani.sigma_api.modules.activos.application.service;
 
-import com.endecorani.sigma_api.modules.activos.application.dto.DocumentosRequest;
-import com.endecorani.sigma_api.modules.activos.application.dto.DocumentosResponse;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.DocumentosRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.response.DocumentosResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.Documentos;
 import com.endecorani.sigma_api.modules.activos.domain.model.TiposDocumento;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;

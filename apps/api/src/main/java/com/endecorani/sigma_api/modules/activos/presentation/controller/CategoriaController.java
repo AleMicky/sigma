@@ -1,8 +1,8 @@
 package com.endecorani.sigma_api.modules.activos.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.activos.application.dto.CategoriaRequest;
-import com.endecorani.sigma_api.modules.activos.application.dto.CategoriaResponse;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.CategoriaRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.response.CategoriaResponse;
 import com.endecorani.sigma_api.modules.activos.application.service.CategoriaService;
 import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;

@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.activos.application.dto;
+package com.endecorani.sigma_api.modules.activos.application.dto.request;
 
 
 import io.swagger.v3.oas.annotations.media.Schema;

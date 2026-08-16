@@ -1,7 +1,7 @@
 package com.endecorani.sigma_api.modules.activos.application.service;
 
-import com.endecorani.sigma_api.modules.activos.application.dto.ActivoAsignacionRequest;
-import com.endecorani.sigma_api.modules.activos.application.dto.ActivoAsignacionResponse;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoAsignacionRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoAsignacionResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.ActivoAsignacion;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoAsignacionRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoAsignacionSearchCriteria;

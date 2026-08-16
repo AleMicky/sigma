@@ -1,7 +1,7 @@
 package com.endecorani.sigma_api.modules.activos.application.service;
 
-import com.endecorani.sigma_api.modules.activos.application.dto.CategoriaRequest;
-import com.endecorani.sigma_api.modules.activos.application.dto.CategoriaResponse;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.CategoriaRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.response.CategoriaResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.Categoria;
 import com.endecorani.sigma_api.modules.activos.domain.repository.CategoriaRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
