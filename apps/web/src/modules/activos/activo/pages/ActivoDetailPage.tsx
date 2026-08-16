@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { routes } from "@/app/config/routes"
 import { activoAtributoQueries } from "@/modules/activos/activo-atributo/api/activo-atributo.queries"
 import { activoAtributoValorQueries } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.queries"
+import { activoDocumentoQueries } from "@/modules/activos/activo-documento/api/activo-documento.queries"
 import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.queries"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
@@ -32,7 +33,6 @@ import {
   ActivoHistorialTab,
   ActivoImagePreviewModal,
   ActivoInfoTab,
-  type DocumentoItem,
   type MantenimientoItem,
   type TabType,
 } from "../components/detalle-activo"
@@ -120,59 +120,15 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
   const color = tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
   const Icon = getTipoActivoIcon(tipoActivo?.icono)
 
-  // Mock list of documents for this asset
-  const [documentos, setDocumentos] = useState<DocumentoItem[]>([
-    {
-      id: "doc-1",
-      titulo: "SOAT Vigente",
-      codigoRef: "SOAT-2026-99482",
-      tipo: "Seguro Obligatorio",
-      fechaEmision: "15/11/2025",
-      fechaVencimiento: "15/11/2026",
-      estado: "vigente",
-      tamano: "1.4 MB",
-    },
-    {
-      id: "doc-2",
-      titulo: "Revisión Técnica Vehicular",
-      codigoRef: "RTV-0824-2025",
-      tipo: "Inspección Técnica",
-      fechaEmision: "28/05/2025",
-      fechaVencimiento: "28/05/2026",
-      estado: "por_vencer",
-      tamano: "2.8 MB",
-    },
-    {
-      id: "doc-3",
-      titulo: "Póliza de Seguro Todo Riesgo",
-      codigoRef: "POL-SEC-58291",
-      tipo: "Póliza de Seguro",
-      fechaEmision: "10/01/2025",
-      fechaVencimiento: "10/01/2027",
-      estado: "vigente",
-      tamano: "3.5 MB",
-    },
-    {
-      id: "doc-4",
-      titulo: "Acta de Asignación y Recepción",
-      codigoRef: "ACTA-ENT-0012",
-      tipo: "Acta de Custodia",
-      fechaEmision: "12/01/2025",
-      fechaVencimiento: "Indefinida",
-      estado: "vigente",
-      tamano: "850 KB",
-    },
-    {
-      id: "doc-5",
-      titulo: "Manual de Operación & Ficha de Fábrica",
-      codigoRef: "MAN-FAB-001",
-      tipo: "Manual Técnico",
-      fechaEmision: "01/01/2024",
-      fechaVencimiento: "No Aplica",
-      estado: "vigente",
-      tamano: "5.2 MB",
-    },
-  ])
+  // Real list of documents for this asset
+  const documentosQuery = useQuery(
+    activoDocumentoQueries.byActivo(activoId, {
+      size: 100,
+      sortBy: "createdAt",
+      direction: "DESC",
+    }),
+  )
+  const documentos = documentosQuery.data?.content ?? []
 
   // Mock list of maintenance history
   const [mantenimientos, setMantenimientos] = useState<MantenimientoItem[]>([
@@ -225,10 +181,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
       setActiveTab("informacion")
     }
     setIsEditing(editing)
-  }
-
-  function handleAddDocument(newDoc: DocumentoItem) {
-    setDocumentos((prev) => [newDoc, ...prev])
   }
 
   function handleAddMantenimiento(newMaint: MantenimientoItem) {
@@ -327,7 +279,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
 
         {activeTab === "documentacion" && (
           <ActivoDocumentosTab
-            documentos={documentos}
+            activoId={activo.id}
             docSearch={docSearch}
             onSearchChange={setDocSearch}
             docFilter={docFilter}
@@ -363,8 +315,8 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
       <ActivoAddDocumentModal
         open={isAddDocOpen}
         onOpenChange={setIsAddDocOpen}
+        activoId={activo.id}
         activoCodigo={activo.codigo}
-        onAddDocument={handleAddDocument}
       />
 
       <ActivoImagePreviewModal

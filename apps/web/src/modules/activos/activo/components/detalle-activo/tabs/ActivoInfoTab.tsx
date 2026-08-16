@@ -68,7 +68,11 @@ import {
 import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
 
-import type { DocumentoItem } from "../types"
+import type { ActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.service"
+import {
+  formatDateString,
+  getDocumentoEstado,
+} from "./ActivoDocumentosTab"
 
 type ActivoInfoTabProps = {
   activo: Activo
@@ -80,7 +84,7 @@ type ActivoInfoTabProps = {
   valoresByAtributoId: Map<string, string>
   rawValores?: ActivoAtributoValor[]
   tiposDatoById?: Map<string, TipoDato>
-  documentos: DocumentoItem[]
+  documentos: ActivoDocumento[]
   isEditing?: boolean
   onToggleEdit?: (editing: boolean) => void
   onOpenAddDocument: () => void
@@ -982,58 +986,72 @@ export function ActivoInfoTab({
 
             {/* Document List */}
             <div className="flex flex-col gap-2">
-              {documentos.slice(0, 4).map((doc) => (
-                <div
-                  key={doc.id}
-                  className={cn(
-                    "flex items-center justify-between gap-2 p-2.5 rounded-xl border transition-all",
-                    doc.estado === "vigente"
-                      ? "border-border/70 bg-muted/20 hover:border-primary/40"
-                      : doc.estado === "por_vencer"
-                      ? "border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50"
-                      : "border-destructive/30 bg-destructive/5 hover:border-destructive/50",
-                  )}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
+              {documentos.length === 0 ? (
+                <div className="py-4 text-center text-xs text-muted-foreground border border-dashed rounded-xl bg-muted/10">
+                  Sin documentos adjuntos
+                </div>
+              ) : (
+                documentos.slice(0, 4).map((doc) => {
+                  const estado = getDocumentoEstado(doc.fechaVencimiento)
+                  return (
                     <div
+                      key={doc.id}
                       className={cn(
-                        "flex size-7 shrink-0 items-center justify-center rounded-lg",
-                        doc.estado === "vigente"
-                          ? "bg-primary/10 text-primary"
-                          : doc.estado === "por_vencer"
-                          ? "bg-amber-500/15 text-amber-600"
-                          : "bg-destructive/15 text-destructive",
+                        "flex items-center justify-between gap-2 p-2.5 rounded-xl border transition-all",
+                        estado === "vigente"
+                          ? "border-border/70 bg-muted/20 hover:border-primary/40"
+                          : estado === "por_vencer"
+                          ? "border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50"
+                          : "border-destructive/30 bg-destructive/5 hover:border-destructive/50",
                       )}
                     >
-                      <FileText className="size-3.5" />
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-bold text-foreground truncate">
-                        {doc.titulo}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        Vence: {doc.fechaVencimiento}
-                      </span>
-                    </div>
-                  </div>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div
+                          className={cn(
+                            "flex size-7 shrink-0 items-center justify-center rounded-lg",
+                            estado === "vigente"
+                              ? "bg-primary/10 text-primary"
+                              : estado === "por_vencer"
+                              ? "bg-amber-500/15 text-amber-600"
+                              : "bg-destructive/15 text-destructive",
+                          )}
+                        >
+                          <FileText className="size-3.5" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span
+                            className="text-xs font-bold text-foreground truncate"
+                            title={doc.nombre}
+                          >
+                            {doc.nombre}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {doc.fechaVencimiento
+                              ? `Vence: ${formatDateString(doc.fechaVencimiento)}`
+                              : "Sin vencimiento"}
+                          </span>
+                        </div>
+                      </div>
 
-                  <div className="shrink-0">
-                    {doc.estado === "vigente" ? (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                        Vigente
-                      </span>
-                    ) : doc.estado === "por_vencer" ? (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
-                        Por vencer
-                      </span>
-                    ) : (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-destructive/15 text-destructive border border-destructive/25">
-                        Vencido
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                      <div className="shrink-0">
+                        {estado === "vigente" ? (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                            Vigente
+                          </span>
+                        ) : estado === "por_vencer" ? (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                            Por vencer
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-destructive/15 text-destructive border border-destructive/25">
+                            Vencido
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })
+              )}
             </div>
 
             {/* Add Document Action */}
