@@ -1,7 +1,9 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
+import { CalendarClock, FileCheck } from "lucide-react"
 
 import { isApiError } from "@/shared/api"
+import { AuditInfo } from "@/shared/components/audit-info"
 import {
   FormDialog,
   FormDialogSubmit,
@@ -93,8 +95,8 @@ export function TipoDocumentoFormDialog({
       title={isEditing ? "Editar tipo de documento" : "Nuevo tipo de documento"}
       description={
         isEditing
-          ? "Actualiza el código, nombre, descripción o si requiere fecha de vencimiento."
-          : "Define un tipo de documento para los activos, por ejemplo Factura o póliza de seguro."
+          ? "Actualiza la configuración de este tipo de documento y sus reglas de control de vencimiento."
+          : "Define un nuevo tipo de documento para clasificar y parametrizar los adjuntos de los activos."
       }
       formError={formError}
       onCancel={() => {
@@ -125,19 +127,25 @@ export function TipoDocumentoFormDialog({
           return (
             <Field data-invalid={isInvalid || undefined}>
               <RequiredFieldLabel htmlFor={field.name}>
-                Código
+                Código Identificador
               </RequiredFieldLabel>
               <Input
                 id={field.name}
                 name={field.name}
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
+                onChange={(e) =>
+                  field.handleChange(e.target.value.toUpperCase().replace(/\s+/g, "_"))
+                }
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="FACTURA"
+                placeholder="EJ: FACTURA, POLIZA_SEGURO"
+                className="font-mono uppercase"
               />
+              <p className="text-[11px] text-muted-foreground">
+                Código técnico único en mayúsculas (ej. POLIZA_SEGURO, GARANTIA).
+              </p>
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
@@ -163,7 +171,7 @@ export function TipoDocumentoFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Factura de compra"
+                placeholder="Factura de compra, Póliza de seguro vehicular"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -186,7 +194,7 @@ export function TipoDocumentoFormDialog({
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
                 aria-invalid={isInvalid}
-                placeholder="Documento que acredita la adquisición del activo"
+                placeholder="Detalle o propósito de este tipo de documento..."
                 rows={3}
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -197,7 +205,14 @@ export function TipoDocumentoFormDialog({
 
       <form.Field name="requiereVencimiento">
         {(field) => (
-          <Field orientation="horizontal" className="pt-1">
+          <div
+            onClick={() => field.handleChange(!field.state.value)}
+            className={`flex items-start gap-3 rounded-xl border p-3.5 cursor-pointer transition-colors ${
+              field.state.value
+                ? "border-amber-500/40 bg-amber-500/5 text-amber-950 dark:text-amber-100"
+                : "border-border/60 bg-muted/20 hover:bg-muted/40"
+            }`}
+          >
             <input
               id={field.name}
               name={field.name}
@@ -205,14 +220,40 @@ export function TipoDocumentoFormDialog({
               checked={field.state.value}
               onBlur={field.handleBlur}
               onChange={(e) => field.handleChange(e.target.checked)}
-              className="size-4 rounded border border-input accent-primary"
+              onClick={(e) => e.stopPropagation()}
+              className="mt-0.5 size-4 rounded border border-input accent-amber-600 dark:accent-amber-500 cursor-pointer"
             />
-            <FieldLabel htmlFor={field.name} className="font-normal">
-              Requiere fecha de vencimiento
-            </FieldLabel>
-          </Field>
+            <div className="flex-1 space-y-0.5">
+              <label
+                htmlFor={field.name}
+                className="text-xs font-semibold flex items-center gap-1.5 cursor-pointer text-foreground"
+              >
+                {field.state.value ? (
+                  <CalendarClock className="size-3.5 text-amber-600 dark:text-amber-400" />
+                ) : (
+                  <FileCheck className="size-3.5 text-muted-foreground" />
+                )}
+                Requiere fecha de vencimiento
+              </label>
+              <p className="text-[11px] text-muted-foreground leading-normal">
+                {field.state.value
+                  ? "Se exigirá registrar la fecha de expiración para activar avisos de caducidad en el activo."
+                  : "Documento permanente. No se requerirá fecha de caducidad obligatoria."}
+              </p>
+            </div>
+          </div>
         )}
       </form.Field>
+
+      {/* Audit info in edit mode */}
+      {isEditing && tipoDocumento ? (
+        <div className="rounded-lg border bg-muted/30 p-3 pt-2.5 space-y-1 mt-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Auditoría
+          </p>
+          <AuditInfo data={tipoDocumento} />
+        </div>
+      ) : null}
     </FormDialog>
   )
 }
