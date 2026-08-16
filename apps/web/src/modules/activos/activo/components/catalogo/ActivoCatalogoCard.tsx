@@ -1,33 +1,28 @@
-import { useState } from "react"
-import { Calendar, Edit, ImageIcon, MapPin, Package } from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
+import { Calendar, FileText, ImageIcon, MapPin, Package } from "lucide-react"
 
+import { routes } from "@/app/config/routes"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
-import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
-import { RowActions } from "@/shared/components/row-actions"
 import { Button } from "@/shared/components/ui/button"
 
-import { useDeleteActivo } from "../api/activo.mutations"
-import type { Activo } from "../api/activo.service"
+import type { Activo } from "../../api/activo.service"
 
-interface ActivoCardProps {
+interface ActivoCatalogoCardProps {
   activo: Activo
   tipoActivo?: TipoActivo | null
   ubicacion?: Ubicacion | null
-  onEdit: (activo: Activo) => void
 }
 
-export function ActivoCard({
+export function ActivoCatalogoCard({
   activo,
   tipoActivo,
   ubicacion,
-  onEdit,
-}: ActivoCardProps) {
-  const deleteMutation = useDeleteActivo()
-  const [confirmOpen, setConfirmOpen] = useState(false)
+}: ActivoCatalogoCardProps) {
+  const navigate = useNavigate()
   const tipoColor = tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
   const TipoIcon = tipoActivo ? getTipoActivoIcon(tipoActivo.icono) : Package
 
@@ -39,8 +34,21 @@ export function ActivoCard({
       })
     : null
 
+  function handleCardClick(e: React.MouseEvent) {
+    const target = e.target as HTMLElement
+    if (target.closest("button, a, [role='button'], input, select, textarea")) {
+      return
+    }
+    void navigate({
+      to: routes.activos.detail(activo.id),
+    })
+  }
+
   return (
-    <li className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5">
+    <li
+      onClick={handleCardClick}
+      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
+    >
       {/* Top Accent Color Bar */}
       <div
         className="h-1 w-full shrink-0 transition-opacity opacity-80 group-hover:opacity-100"
@@ -78,15 +86,18 @@ export function ActivoCard({
           </div>
         ) : null}
 
-        {/* Floating Top Action: Direct Edit Button */}
+        {/* Floating Top Action: Detail Link */}
         <Button
           size="icon-xs"
           variant="secondary"
-          onClick={() => onEdit(activo)}
+          onClick={(e) => {
+            e.stopPropagation()
+            void navigate({ to: routes.activos.detail(activo.id) })
+          }}
           className="absolute top-2.5 right-2.5 z-10 size-7 rounded-lg bg-background/80 shadow-md backdrop-blur-md opacity-90 transition-opacity hover:opacity-100 hover:bg-background"
-          title="Editar activo"
+          title="Ver Ficha Técnica"
         >
-          <Edit className="size-3.5" />
+          <FileText className="size-3.5" />
         </Button>
       </div>
 
@@ -107,14 +118,10 @@ export function ActivoCard({
             ) : null}
           </div>
 
-          {/* Title - clicking title triggers onEdit to navigate to form page */}
-          <button
-            type="button"
-            onClick={() => onEdit(activo)}
-            className="text-left font-heading text-sm font-bold text-foreground hover:text-primary transition-colors line-clamp-1 cursor-pointer"
-          >
+          {/* Title */}
+          <h3 className="font-heading text-sm font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
             {activo.nombre}
-          </button>
+          </h3>
 
           {/* Description */}
           {activo.descripcion ? (
@@ -128,7 +135,7 @@ export function ActivoCard({
           )}
         </div>
 
-        {/* Bottom Section: Location & Row Actions (Edit / Delete) */}
+        {/* Bottom Section: Location */}
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
           <div className="min-w-0 flex-1">
             {ubicacion ? (
@@ -146,29 +153,11 @@ export function ActivoCard({
             )}
           </div>
 
-          <div className="shrink-0">
-            <RowActions
-              editLabel="Editar activo"
-              deleteLabel="Eliminar activo"
-              deleteDisabled={deleteMutation.isPending}
-              onEdit={() => onEdit(activo)}
-              onDelete={() => setConfirmOpen(true)}
-            />
-          </div>
+          <span className="text-[11px] font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+            Ver ficha →
+          </span>
         </div>
       </div>
-
-      <ConfirmDeleteDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Eliminar activo"
-        description={`¿Seguro que deseas eliminar "${activo.nombre}"?`}
-        isPending={deleteMutation.isPending}
-        onConfirm={async () => {
-          await deleteMutation.mutateAsync(activo.id)
-          setConfirmOpen(false)
-        }}
-      />
     </li>
   )
 }
