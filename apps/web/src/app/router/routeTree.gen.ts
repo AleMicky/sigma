@@ -54,7 +54,6 @@ import { Route as DashboardOrganizacionEmpleadosIndexRouteImport } from './../..
 import { Route as DashboardOrganizacionMigracionesIndexRouteImport } from './../../routes/_dashboard/organizacion/migraciones/index'
 import { Route as DashboardOrganizacionPersonasIndexRouteImport } from './../../routes/_dashboard/organizacion/personas/index'
 import { Route as DashboardTiposActivoTipoActivoIdIndexRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/index'
-import { Route as DashboardTiposActivoTipoActivoIdAccesoriosRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/accesorios'
 import { Route as DashboardTiposActivoTipoActivoIdAtributosRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/atributos'
 import { Route as DashboardTiposActivoTipoActivoIdComponentesRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/componentes'
 import { Route as DashboardInventariosTiposInsumoTipoInsumoIdIndexRouteImport } from './../../routes/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/index'
@@ -322,12 +321,6 @@ const DashboardTiposActivoTipoActivoIdIndexRoute =
     path: '/',
     getParentRoute: () => DashboardTiposActivoTipoActivoIdRouteRoute,
   } as any)
-const DashboardTiposActivoTipoActivoIdAccesoriosRoute =
-  DashboardTiposActivoTipoActivoIdAccesoriosRouteImport.update({
-    id: '/accesorios',
-    path: '/accesorios',
-    getParentRoute: () => DashboardTiposActivoTipoActivoIdRouteRoute,
-  } as any)
 const DashboardTiposActivoTipoActivoIdAtributosRoute =
   DashboardTiposActivoTipoActivoIdAtributosRouteImport.update({
     id: '/atributos',
@@ -388,7 +381,6 @@ export interface FileRoutesByFullPath {
   '/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
-  '/tipos-activo/$tipoActivoId/accesorios': typeof DashboardTiposActivoTipoActivoIdAccesoriosRoute
   '/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
   '/activos/$activoId/': typeof DashboardActivosActivoIdIndexRoute
@@ -428,7 +420,6 @@ export interface FileRoutesByTo {
   '/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
-  '/tipos-activo/$tipoActivoId/accesorios': typeof DashboardTiposActivoTipoActivoIdAccesoriosRoute
   '/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
   '/activos/$activoId': typeof DashboardActivosActivoIdIndexRoute
@@ -481,7 +472,6 @@ export interface FileRoutesById {
   '/_dashboard/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/_dashboard/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/_dashboard/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
-  '/_dashboard/tipos-activo/$tipoActivoId/accesorios': typeof DashboardTiposActivoTipoActivoIdAccesoriosRoute
   '/_dashboard/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/_dashboard/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
   '/_dashboard/activos/$activoId/': typeof DashboardActivosActivoIdIndexRoute
@@ -534,7 +524,6 @@ export interface FileRouteTypes {
     | '/activos/$activoId/editar'
     | '/activos/catalogo/$activoId'
     | '/inventarios/$insumoId/editar'
-    | '/tipos-activo/$tipoActivoId/accesorios'
     | '/tipos-activo/$tipoActivoId/atributos'
     | '/tipos-activo/$tipoActivoId/componentes'
     | '/activos/$activoId/'
@@ -574,7 +563,6 @@ export interface FileRouteTypes {
     | '/activos/$activoId/editar'
     | '/activos/catalogo/$activoId'
     | '/inventarios/$insumoId/editar'
-    | '/tipos-activo/$tipoActivoId/accesorios'
     | '/tipos-activo/$tipoActivoId/atributos'
     | '/tipos-activo/$tipoActivoId/componentes'
     | '/activos/$activoId'
@@ -626,7 +614,6 @@ export interface FileRouteTypes {
     | '/_dashboard/activos/$activoId/editar'
     | '/_dashboard/activos/catalogo/$activoId'
     | '/_dashboard/inventarios/$insumoId/editar'
-    | '/_dashboard/tipos-activo/$tipoActivoId/accesorios'
     | '/_dashboard/tipos-activo/$tipoActivoId/atributos'
     | '/_dashboard/tipos-activo/$tipoActivoId/componentes'
     | '/_dashboard/activos/$activoId/'
@@ -965,13 +952,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTiposActivoTipoActivoIdIndexRouteImport
       parentRoute: typeof DashboardTiposActivoTipoActivoIdRouteRoute
     }
-    '/_dashboard/tipos-activo/$tipoActivoId/accesorios': {
-      id: '/_dashboard/tipos-activo/$tipoActivoId/accesorios'
-      path: '/accesorios'
-      fullPath: '/tipos-activo/$tipoActivoId/accesorios'
-      preLoaderRoute: typeof DashboardTiposActivoTipoActivoIdAccesoriosRouteImport
-      parentRoute: typeof DashboardTiposActivoTipoActivoIdRouteRoute
-    }
     '/_dashboard/tipos-activo/$tipoActivoId/atributos': {
       id: '/_dashboard/tipos-activo/$tipoActivoId/atributos'
       path: '/atributos'
@@ -1185,7 +1165,6 @@ const DashboardParametrosRouteRouteWithChildren =
   )
 
 interface DashboardTiposActivoTipoActivoIdRouteRouteChildren {
-  DashboardTiposActivoTipoActivoIdAccesoriosRoute: typeof DashboardTiposActivoTipoActivoIdAccesoriosRoute
   DashboardTiposActivoTipoActivoIdAtributosRoute: typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   DashboardTiposActivoTipoActivoIdComponentesRoute: typeof DashboardTiposActivoTipoActivoIdComponentesRoute
   DashboardTiposActivoTipoActivoIdIndexRoute: typeof DashboardTiposActivoTipoActivoIdIndexRoute
@@ -1193,8 +1172,6 @@ interface DashboardTiposActivoTipoActivoIdRouteRouteChildren {
 
 const DashboardTiposActivoTipoActivoIdRouteRouteChildren: DashboardTiposActivoTipoActivoIdRouteRouteChildren =
   {
-    DashboardTiposActivoTipoActivoIdAccesoriosRoute:
-      DashboardTiposActivoTipoActivoIdAccesoriosRoute,
     DashboardTiposActivoTipoActivoIdAtributosRoute:
       DashboardTiposActivoTipoActivoIdAtributosRoute,
     DashboardTiposActivoTipoActivoIdComponentesRoute:

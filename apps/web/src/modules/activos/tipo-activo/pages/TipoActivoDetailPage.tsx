@@ -47,10 +47,6 @@ export function TipoActivoDetailPage({
       label: "Componentes",
       to: routes.tiposActivo.componentes(tipoActivoId),
     },
-    {
-      label: "Accesorios",
-      to: routes.tiposActivo.accesorios(tipoActivoId),
-    },
   ]
 
   const activeTo =
