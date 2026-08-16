@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 
 import { isApiError } from "@/shared/api"
+import { AuditInfo } from "@/shared/components/audit-info"
 import {
   FormDialog,
   FormDialogSubmit,
@@ -93,8 +94,8 @@ export function CategoriaFormDialog({
       title={isEditing ? "Editar categoría" : "Nueva categoría"}
       description={
         isEditing
-          ? "Actualiza el código, nombre, descripción u orden de la categoría."
-          : "Define una categoría para clasificar activos, por ejemplo infraestructura."
+          ? "Actualiza la configuración, denominación o posición de orden de la categoría."
+          : "Define una nueva categoría para organizar y catalogar activos."
       }
       formError={formError}
       onCancel={() => {
@@ -125,19 +126,25 @@ export function CategoriaFormDialog({
           return (
             <Field data-invalid={isInvalid || undefined}>
               <RequiredFieldLabel htmlFor={field.name}>
-                Código
+                Código Identificador
               </RequiredFieldLabel>
               <Input
                 id={field.name}
                 name={field.name}
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
+                onChange={(e) =>
+                  field.handleChange(e.target.value.toUpperCase().replace(/\s+/g, "_"))
+                }
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="INFRAESTRUCTURA"
+                placeholder="EJ: VEHICULOS, COMPUTO"
+                className="font-mono uppercase"
               />
+              <p className="text-[11px] text-muted-foreground">
+                Código único en mayúsculas sin espacios (ej. MOBILIARIO, EQUIPO_MEDICO).
+              </p>
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
@@ -152,7 +159,7 @@ export function CategoriaFormDialog({
           return (
             <Field data-invalid={isInvalid || undefined}>
               <RequiredFieldLabel htmlFor={field.name}>
-                Nombre
+                Nombre de la Categoría
               </RequiredFieldLabel>
               <Input
                 id={field.name}
@@ -163,7 +170,7 @@ export function CategoriaFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Infraestructura"
+                placeholder="Equipos de Cómputo y Telecomunicaciones"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -186,7 +193,7 @@ export function CategoriaFormDialog({
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
                 aria-invalid={isInvalid}
-                placeholder="Activos de infraestructura institucional"
+                placeholder="Criterios y alcance de bienes incluidos en esta categoría..."
                 rows={3}
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -203,7 +210,7 @@ export function CategoriaFormDialog({
 
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor={field.name}>Orden</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Orden de visualización</FieldLabel>
                 <Input
                   id={field.name}
                   name={field.name}
@@ -217,7 +224,11 @@ export function CategoriaFormDialog({
                     )
                   }
                   aria-invalid={isInvalid}
+                  className="font-mono"
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  Prioridad en menús desplegables (números menores aparecen primero).
+                </p>
                 {isInvalid && (
                   <FieldError errors={field.state.meta.errors} />
                 )}
@@ -226,10 +237,20 @@ export function CategoriaFormDialog({
           }}
         </form.Field>
       ) : (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-lg border border-border/60">
           El orden se asigna automáticamente al crear la categoría.
         </p>
       )}
+
+      {/* Audit info in edit mode */}
+      {isEditing && categoria ? (
+        <div className="rounded-lg border bg-muted/30 p-3 pt-2.5 space-y-1 mt-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Auditoría
+          </p>
+          <AuditInfo data={categoria} />
+        </div>
+      ) : null}
     </FormDialog>
   )
 }
