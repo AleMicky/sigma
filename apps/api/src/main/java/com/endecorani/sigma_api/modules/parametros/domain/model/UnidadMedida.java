@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.parametros.domain.model;
 
 import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,6 +24,7 @@ public class UnidadMedida extends AuditableModel {
 
     private String simbolo;
 
+    @Builder.Default
     private Boolean permiteDecimal = false;
 
 }
