@@ -137,6 +137,19 @@ function SidebarSearch() {
   )
 }
 
+function isItemActive(pathname: string, item: (typeof navItems)[number]) {
+  if (isPathActive(pathname, item.to)) return true
+  if (item.children) {
+    return item.children.some((child) => {
+      if ("items" in child) {
+        return child.items.some((subItem) => isPathActive(pathname, subItem.to))
+      }
+      return isPathActive(pathname, child.to)
+    })
+  }
+  return false
+}
+
 function NavigationMenu() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -147,13 +160,8 @@ function NavigationMenu() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
     navItems.forEach((item) => {
-      if (item.children) {
-        const isChildActive = item.children.some((child) =>
-          isPathActive(pathname, child.to)
-        )
-        if (isChildActive || isPathActive(pathname, item.to)) {
-          initial[item.title] = true
-        }
+      if (item.children && isItemActive(pathname, item)) {
+        initial[item.title] = true
       }
     })
     return initial
@@ -162,13 +170,8 @@ function NavigationMenu() {
   // Auto expand active parent group on navigation
   useEffect(() => {
     navItems.forEach((item) => {
-      if (item.children) {
-        const isChildActive = item.children.some((child) =>
-          isPathActive(pathname, child.to)
-        )
-        if (isChildActive) {
-          setOpenGroups((prev) => ({ ...prev, [item.title]: true }))
-        }
+      if (item.children && isItemActive(pathname, item)) {
+        setOpenGroups((prev) => ({ ...prev, [item.title]: true }))
       }
     })
   }, [pathname])
@@ -181,11 +184,8 @@ function NavigationMenu() {
     <SidebarMenu className="gap-1">
       {navItems.map((item) => {
         const hasChildren = Boolean(item.children?.length)
-        const isChildActive = Boolean(
-          item.children?.some((child) => isPathActive(pathname, child.to))
-        )
-        const isSelfActive = isPathActive(pathname, item.to)
-        const isActive = isChildActive || isSelfActive
+        const isActive = isItemActive(pathname, item)
+        const isSelfActive = !hasChildren && isPathActive(pathname, item.to)
         const isOpen = Boolean(openGroups[item.title])
 
         // Single item without sub-items
@@ -196,13 +196,14 @@ function NavigationMenu() {
                 isActive={isSelfActive}
                 tooltip={item.title}
                 render={<Link to={item.to as any} />}
-                className={`relative h-9.5 rounded-lg font-medium transition-all ${isSelfActive
+                className={`relative h-9.5 rounded-lg px-2.5 text-xs font-medium transition-all ${
+                  isSelfActive
                     ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:rounded-r-full before:bg-primary"
-                    : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground"
-                  }`}
+                    : "text-foreground/80 hover:bg-sidebar-accent/80 hover:text-foreground"
+                }`}
               >
-                <item.icon className={`size-4 shrink-0 ${isSelfActive ? "text-primary" : ""}`} />
-                <span>{item.title}</span>
+                <item.icon className={`size-4 shrink-0 ${isSelfActive ? "text-primary" : "text-muted-foreground"}`} />
+                <span className="truncate">{item.title}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )
@@ -218,39 +219,70 @@ function NavigationMenu() {
                     <SidebarMenuButton
                       isActive={isActive}
                       tooltip={item.title}
-                      className={`relative h-9.5 rounded-lg transition-all ${isActive
+                      className={`relative h-9.5 rounded-lg transition-all ${
+                        isActive
                           ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:rounded-r-full before:bg-primary"
-                          : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground"
-                        }`}
+                          : "text-foreground/80 hover:bg-sidebar-accent/80 hover:text-foreground"
+                      }`}
                     />
                   }
                 >
-                  <item.icon className={`size-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
-                  <span>{item.title}</span>
+                  <item.icon className={`size-4 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="truncate">{item.title}</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   side="right"
                   align="start"
                   sideOffset={8}
-                  className="min-w-48 rounded-xl p-1.5 shadow-xl border-border/60"
+                  className="min-w-56 rounded-xl p-1.5 shadow-xl border-border/60 bg-popover/95 backdrop-blur-sm"
                 >
-                  <DropdownMenuLabel className="px-2 py-1.5 text-xs font-bold text-foreground">
+                  <DropdownMenuLabel className="px-2.5 py-1.5 text-xs font-bold text-foreground">
                     {item.title}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="my-1" />
-                  {item.children?.map((child) => {
+                  {item.children?.map((child, childIdx) => {
+                    if ("items" in child) {
+                      return (
+                        <div key={child.title || childIdx} className="pt-1">
+                          <DropdownMenuSeparator className="my-1 opacity-60" />
+                          <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                            <span className="size-1 rounded-full bg-primary/70" />
+                            <span>{child.title}</span>
+                          </div>
+                          {child.items.map((subItem) => {
+                            const isSubActive = isPathActive(pathname, subItem.to)
+                            return (
+                              <DropdownMenuItem
+                                key={subItem.to}
+                                render={<Link to={subItem.to as any} />}
+                                className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                                  isSubActive
+                                    ? "bg-primary/10 text-primary font-semibold"
+                                    : "text-foreground/80 hover:bg-sidebar-accent hover:text-foreground"
+                                }`}
+                              >
+                                <subItem.icon className={`size-4 shrink-0 ${isSubActive ? "text-primary" : "text-muted-foreground"}`} />
+                                <span className="truncate">{subItem.title}</span>
+                              </DropdownMenuItem>
+                            )
+                          })}
+                        </div>
+                      )
+                    }
+
                     const isSubActive = isPathActive(pathname, child.to)
                     return (
                       <DropdownMenuItem
                         key={child.to}
                         render={<Link to={child.to as any} />}
-                        className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium cursor-pointer transition-colors ${isSubActive
+                        className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                          isSubActive
                             ? "bg-primary/10 text-primary font-semibold"
-                            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
-                          }`}
+                            : "text-foreground/80 hover:bg-sidebar-accent hover:text-foreground"
+                        }`}
                       >
-                        <child.icon className={`size-4 shrink-0 ${isSubActive ? "text-primary" : ""}`} />
-                        <span>{child.title}</span>
+                        <child.icon className={`size-4 shrink-0 ${isSubActive ? "text-primary" : "text-muted-foreground"}`} />
+                        <span className="truncate">{child.title}</span>
                       </DropdownMenuItem>
                     )
                   })}
@@ -267,35 +299,70 @@ function NavigationMenu() {
               isActive={isActive}
               tooltip={item.title}
               onClick={() => toggleGroup(item.title)}
-              className={`relative h-9.5 rounded-lg font-medium transition-all ${isActive && !isOpen
+              className={`relative h-9.5 rounded-lg px-2.5 text-xs font-medium transition-all ${
+                isActive && !isOpen
                   ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:rounded-r-full before:bg-primary"
-                  : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground"
-                }`}
+                  : "text-foreground/80 hover:bg-sidebar-accent/80 hover:text-foreground"
+              }`}
             >
-              <item.icon className={`size-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
-              <span className="flex-1 text-left">{item.title}</span>
+              <item.icon className={`size-4 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+              <span className="flex-1 text-left truncate">{item.title}</span>
               <ChevronRight
-                className={`size-4 text-muted-foreground/70 transition-transform duration-200 ${isOpen ? "rotate-90 text-foreground" : ""
-                  }`}
+                className={`size-4 text-muted-foreground/70 transition-transform duration-200 ${
+                  isOpen ? "rotate-90 text-foreground" : ""
+                }`}
               />
             </SidebarMenuButton>
 
             {isOpen && (
-              <SidebarMenuSub className="my-1 ml-4 border-l border-border/60 pl-2.5 gap-0.5">
-                {item.children?.map((child) => {
+              <SidebarMenuSub className="my-1 ml-3.5 border-l border-border/60 pl-2.5 gap-0.5">
+                {item.children?.map((child, childIdx) => {
+                  if ("items" in child) {
+                    return (
+                      <div key={child.title || childIdx} className="pt-2 first:pt-0">
+                        <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 select-none">
+                          <span className="size-1 rounded-full bg-primary/70 shrink-0" />
+                          <span className="truncate">{child.title}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 mt-0.5">
+                          {child.items.map((subItem) => {
+                            const isSubActive = isPathActive(pathname, subItem.to)
+                            return (
+                              <SidebarMenuSubItem key={subItem.to}>
+                                <SidebarMenuSubButton
+                                  isActive={isSubActive}
+                                  render={<Link to={subItem.to as any} />}
+                                  className={`relative h-8.5 rounded-lg px-2.5 text-xs font-medium transition-all ${
+                                    isSubActive
+                                      ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-1 before:rounded-r-full before:bg-primary"
+                                      : "text-foreground/75 hover:bg-sidebar-accent/80 hover:text-foreground"
+                                  }`}
+                                >
+                                  <subItem.icon className={`size-3.5 shrink-0 ${isSubActive ? "text-primary" : "text-muted-foreground"}`} />
+                                  <span className="truncate">{subItem.title}</span>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  }
+
                   const isSubActive = isPathActive(pathname, child.to)
                   return (
                     <SidebarMenuSubItem key={child.to}>
                       <SidebarMenuSubButton
                         isActive={isSubActive}
                         render={<Link to={child.to as any} />}
-                        className={`relative h-8.5 rounded-lg px-2.5 text-xs font-medium transition-all ${isSubActive
+                        className={`relative h-8.5 rounded-lg px-2.5 text-xs font-medium transition-all ${
+                          isSubActive
                             ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-1 before:rounded-r-full before:bg-primary"
-                            : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground"
-                          }`}
+                            : "text-foreground/75 hover:bg-sidebar-accent/80 hover:text-foreground"
+                        }`}
                       >
-                        <child.icon className={`size-3.5 shrink-0 ${isSubActive ? "text-primary" : ""}`} />
-                        <span>{child.title}</span>
+                        <child.icon className={`size-3.5 shrink-0 ${isSubActive ? "text-primary" : "text-muted-foreground"}`} />
+                        <span className="truncate">{child.title}</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   )
@@ -308,4 +375,3 @@ function NavigationMenu() {
     </SidebarMenu>
   )
 }
-

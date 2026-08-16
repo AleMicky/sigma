@@ -8,18 +8,23 @@ type DeepStringValues<T> = T extends string
 
 export type AppPath = DeepStringValues<typeof routes>
 
-/**
- * Convención de navegación (máx. 2 niveles en sidebar):
- * 1) Menú principal → módulos (Activos, Parámetros…)
- * 2) Submenú del módulo → pantallas (Gestión, Catálogos, Tipos de datos…)
- * 3+) No van en el sidebar: usar tabs / subrutas dentro de la página.
- */
 export type NavLeaf = {
   title: string
   to: AppPath
   icon: LucideIcon
 }
 
-export type NavItem = NavLeaf & {
-  children?: NavLeaf[]
+export type NavSubGroup = {
+  title: string
+  icon?: LucideIcon
+  items: NavLeaf[]
+}
+
+export type NavChild = NavLeaf | NavSubGroup
+
+export type NavItem = {
+  title: string
+  to: AppPath
+  icon: LucideIcon
+  children?: NavChild[]
 }

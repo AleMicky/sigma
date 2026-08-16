@@ -118,7 +118,7 @@ export function ActivosPage() {
     search.search.trim().length > 0 || tipoActivoId !== ALL_TIPOS
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0 flex flex-col">
+    <PageShell size="xl" layout="fill" padding="compact">
       {/* Extracted Header Component */}
       <ActivoHeader
         totalActivos={activosQuery.data?.totalElements ?? rawActivos.length}
@@ -225,7 +225,7 @@ export function ActivosPage() {
               <Pagination
                 page={activosQuery.data}
                 onPageChange={search.setPage}
-                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 py-2.5"
+                className="border-t border-border/50 py-2 bg-transparent"
               />
             ) : null}
           </>

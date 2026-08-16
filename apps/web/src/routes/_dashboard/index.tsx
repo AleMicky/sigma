@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { ArrowRight, ChevronRight } from "lucide-react"
 
-import { appConfig, navItems, routes } from "@/app/config"
+import { appConfig, flattenNavChildren, navItems, routes } from "@/app/config"
 import { useAuthStore } from "@/app/store/auth.store"
 import { PageShell } from "@/shared/components/page-shell"
 import { Button } from "@/shared/components/ui/button"
@@ -35,8 +35,8 @@ function HomePage() {
   const menuModules = navItems.filter((item) => item.to !== routes.home)
 
   return (
-    <PageShell>
-      <header className="flex flex-col gap-6 border-b pb-8 sm:flex-row sm:items-end sm:justify-between">
+    <PageShell size="xl" layout="scroll" padding="default">
+      <header className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-muted-foreground">
             {appConfig.shortName}
@@ -73,7 +73,7 @@ function HomePage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {menuModules.map((module) => {
             const links = module.children?.length
-              ? module.children
+              ? flattenNavChildren(module.children)
               : [{ title: module.title, to: module.to, icon: module.icon }]
 
             return (

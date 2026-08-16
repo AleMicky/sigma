@@ -28,19 +28,19 @@ export function TipoActivoTableView({
   return (
     <div className="w-full overflow-hidden rounded-xl border border-border bg-card shadow-xs">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b bg-muted/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <table className="w-full text-left text-xs">
+          <thead className="border-b bg-muted/40 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
             <tr>
-              <th scope="col" className="px-4 py-3 sm:px-6">
+              <th scope="col" className="px-3.5 py-2.5 sm:px-4">
                 Tipo de Activo
               </th>
-              <th scope="col" className="px-4 py-3 sm:px-6">
+              <th scope="col" className="px-3.5 py-2.5 sm:px-4">
                 Categoría
               </th>
-              <th scope="col" className="hidden px-4 py-3 md:table-cell sm:px-6">
+              <th scope="col" className="hidden px-3.5 py-2.5 md:table-cell sm:px-4">
                 Descripción
               </th>
-              <th scope="col" className="px-4 py-3 text-right sm:px-6">
+              <th scope="col" className="px-3.5 py-2.5 text-right sm:px-4">
                 Acciones
               </th>
             </tr>
@@ -80,13 +80,13 @@ function TipoActivoTableRow({
 
   return (
     <tr className="group hover:bg-accent/40 transition-colors">
-      <td className="px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-3">
+      <td className="px-3.5 py-2 sm:px-4">
+        <div className="flex items-center gap-2.5">
           <span
-            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white shadow-xs transition-transform group-hover:scale-105"
+            className="flex size-7.5 shrink-0 items-center justify-center rounded-lg text-white shadow-2xs transition-transform group-hover:scale-105"
             style={{ backgroundColor: color }}
           >
-            <Icon className="size-4" />
+            <Icon className="size-3.5" />
           </span>
           <div className="flex flex-col min-w-0">
             <button
@@ -100,24 +100,24 @@ function TipoActivoTableRow({
         </div>
       </td>
 
-      <td className="px-4 py-3 sm:px-6">
+      <td className="px-3.5 py-2 sm:px-4">
         {categoriaNombre ? (
-          <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground border border-border/40">
+          <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground border border-border/40">
             {categoriaNombre}
           </span>
         ) : (
-          <span className="text-xs text-muted-foreground italic">Sin categoría</span>
+          <span className="text-[11px] text-muted-foreground italic">Sin categoría</span>
         )}
       </td>
 
-      <td className="hidden px-4 py-3 md:table-cell sm:px-6 max-w-md">
+      <td className="hidden px-3.5 py-2 md:table-cell sm:px-4 max-w-md">
         <p className="line-clamp-1 text-xs text-muted-foreground">
           {tipoActivo.descripcion || "—"}
         </p>
       </td>
 
-      <td className="px-4 py-3 text-right sm:px-6">
-        <div className="flex items-center justify-end gap-1.5">
+      <td className="px-3.5 py-2 text-right sm:px-4">
+        <div className="flex items-center justify-end gap-1">
           <Button
             size="icon-xs"
             variant="ghost"

@@ -101,36 +101,36 @@ export function TiposActivoPage() {
     search.search.trim().length > 0 || selectedCategoriaId !== "ALL"
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0 flex flex-col">
-      {/* Top Header */}
-      <header className="flex shrink-0 flex-col gap-4 border-b py-4 sm:py-6 md:py-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Tags className="size-6" />
+    <PageShell size="xl" layout="fill" padding="compact">
+      {/* Compact Top Header */}
+      <header className="flex shrink-0 flex-col gap-2.5 border-b py-2.5 sm:py-3">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Tags className="size-5" />
             </div>
             <div className="flex flex-col">
-              <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+              <h1 className="font-heading text-xl font-bold tracking-tight sm:text-2xl">
                 Tipos de Activo
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Catálogo de tipos para clasificar y estructurar activos en la plataforma.
               </p>
             </div>
           </div>
 
           <Button
-            size="default"
+            size="sm"
             type="button"
             onClick={openCreate}
             className="shrink-0 self-start sm:self-auto shadow-xs font-medium"
           >
-            <Plus className="size-4" />
+            <Plus className="size-3.5" />
             Nuevo Tipo de Activo
           </Button>
         </div>
 
-        {/* Metrics Summary Row */}
+        {/* Compact Metrics Summary Row */}
         <TipoActivoStats
           totalTipos={tiposQuery.data?.totalElements ?? rawTipos.length}
           totalCategorias={categorias.length}
@@ -139,14 +139,14 @@ export function TiposActivoPage() {
       </header>
 
       {/* Filter and View Mode Toolbar */}
-      <div className="flex shrink-0 flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between border-b">
-        <div className="flex flex-1 flex-col gap-2.5 sm:flex-row sm:items-center">
+      <div className="flex shrink-0 flex-col gap-2.5 py-3 sm:flex-row sm:items-center sm:justify-between border-b">
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <SearchField
             value={search.search}
             onChange={search.setSearch}
             placeholder="Buscar por nombre o descripción…"
             aria-label="Buscar tipos de activo"
-            className="w-full sm:max-w-xs"
+            className="w-full sm:max-w-xs h-8.5 text-xs"
           />
 
           <Select
@@ -156,8 +156,8 @@ export function TiposActivoPage() {
               search.setPage(0)
             }}
           >
-            <SelectTrigger className="w-full sm:w-[220px]">
-              <div className="flex items-center gap-2 truncate">
+            <SelectTrigger className="w-full sm:w-[200px] h-8.5 text-xs">
+              <div className="flex items-center gap-1.5 truncate">
                 <Filter className="size-3.5 text-muted-foreground shrink-0" />
                 <SelectValue placeholder="Todas las categorías" />
               </div>
@@ -177,7 +177,7 @@ export function TiposActivoPage() {
               variant="ghost"
               size="sm"
               onClick={resetFilters}
-              className="text-xs text-muted-foreground hover:text-foreground shrink-0 self-start sm:self-auto"
+              className="h-8.5 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0 self-start sm:self-auto"
             >
               <RotateCcw className="size-3.5" />
               Limpiar filtros
@@ -186,15 +186,16 @@ export function TiposActivoPage() {
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex items-center gap-1 self-end sm:self-auto rounded-lg border border-border/80 bg-muted/30 p-1">
+        <div className="flex items-center gap-1 self-end sm:self-auto rounded-lg border border-border/80 bg-muted/30 p-0.5">
           <Button
             size="icon-xs"
             variant={viewMode === "grid" ? "secondary" : "ghost"}
             onClick={() => setViewMode("grid")}
             title="Vista Cuadrícula"
             aria-label="Vista Cuadrícula"
+            className="size-7"
           >
-            <LayoutGrid className="size-4" />
+            <LayoutGrid className="size-3.5" />
           </Button>
           <Button
             size="icon-xs"
@@ -202,19 +203,20 @@ export function TiposActivoPage() {
             onClick={() => setViewMode("table")}
             title="Vista Lista"
             aria-label="Vista Lista"
+            className="size-7"
           >
-            <List className="size-4" />
+            <List className="size-3.5" />
           </Button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
         {tiposQuery.isLoading ? (
           <ListSkeleton
             rows={8}
-            rowClassName="h-28 rounded-xl"
-            className="grid grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            rowClassName="h-24 rounded-xl"
+            className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           />
         ) : tiposQuery.isError ? (
           <EmptyState
@@ -237,12 +239,12 @@ export function TiposActivoPage() {
             action={
               hasActiveFilters ? (
                 <Button size="sm" variant="outline" onClick={resetFilters}>
-                  <RotateCcw className="size-4" />
+                  <RotateCcw className="size-3.5" />
                   Limpiar filtros
                 </Button>
               ) : (
                 <Button size="sm" type="button" onClick={openCreate}>
-                  <Plus className="size-4" />
+                  <Plus className="size-3.5" />
                   Nuevo Tipo de Activo
                 </Button>
               )
@@ -253,12 +255,12 @@ export function TiposActivoPage() {
           <>
             <div
               className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4 pr-1",
+                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 pr-1",
                 tiposQuery.isFetching && "opacity-75 transition-opacity",
               )}
             >
               {viewMode === "grid" ? (
-                <ul className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <ul className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {tipos.map((tipoActivo) => (
                     <TipoActivoCard
                       key={tipoActivo.id}
@@ -283,7 +285,7 @@ export function TiposActivoPage() {
               <Pagination
                 page={tiposQuery.data}
                 onPageChange={search.setPage}
-                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 py-3"
+                className="border-t border-border/50 py-2 bg-transparent"
               />
             ) : null}
           </>

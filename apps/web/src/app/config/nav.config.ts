@@ -55,9 +55,14 @@ export const navItems: NavItem[] = [
         icon: Users,
       },
       {
-        title: "Logs de Migración",
-        to: routes.organizacion.migraciones,
-        icon: ScrollText,
+        title: "Mantenimiento",
+        items: [
+          {
+            title: "Logs de Migración",
+            to: routes.organizacion.migraciones,
+            icon: ScrollText,
+          },
+        ],
       },
     ],
   },
@@ -72,19 +77,24 @@ export const navItems: NavItem[] = [
         icon: List,
       },
       {
-        title: "Tipos de activo",
-        to: routes.tiposActivo.root,
-        icon: Tags,
-      },
-      {
-        title: "Categorías",
-        to: routes.categorias.root,
-        icon: FolderTree,
-      },
-      {
-        title: "Tipos de documento",
-        to: routes.tiposDocumento.root,
-        icon: FileText,
+        title: "Configuraciones",
+        items: [
+          {
+            title: "Categorías",
+            to: routes.categorias.root,
+            icon: FolderTree,
+          },
+          {
+            title: "Tipos de activo",
+            to: routes.tiposActivo.root,
+            icon: Tags,
+          },
+          {
+            title: "Tipos de documento",
+            to: routes.tiposDocumento.root,
+            icon: FileText,
+          },
+        ],
       },
     ],
   },
@@ -99,14 +109,19 @@ export const navItems: NavItem[] = [
         icon: List,
       },
       {
-        title: "Tipos de insumo",
-        to: routes.inventarios.tiposInsumo.root,
-        icon: Tags,
-      },
-      {
-        title: "Categorías",
-        to: routes.inventarios.categorias.root,
-        icon: FolderTree,
+        title: "Configuraciones",
+        items: [
+          {
+            title: "Tipos de insumo",
+            to: routes.inventarios.tiposInsumo.root,
+            icon: Tags,
+          },
+          {
+            title: "Categorías",
+            to: routes.inventarios.categorias.root,
+            icon: FolderTree,
+          },
+        ],
       },
     ],
   },
@@ -114,7 +129,6 @@ export const navItems: NavItem[] = [
     title: "Parámetros",
     to: routes.parametros.root,
     icon: Settings2,
-
     children: [
       {
         title: "Gestión",
@@ -127,19 +141,24 @@ export const navItems: NavItem[] = [
         icon: BookOpen,
       },
       {
-        title: "Tipos de datos",
-        to: routes.parametros.tiposDato,
-        icon: Type,
-      },
-      {
-        title: "Ubicaciones",
-        to: routes.parametros.ubicaciones,
-        icon: MapPin,
-      },
-      {
-        title: "Unidades de medida",
-        to: routes.parametros.unidadesMedida,
-        icon: Ruler,
+        title: "Configuraciones",
+        items: [
+          {
+            title: "Tipos de datos",
+            to: routes.parametros.tiposDato,
+            icon: Type,
+          },
+          {
+            title: "Ubicaciones",
+            to: routes.parametros.ubicaciones,
+            icon: MapPin,
+          },
+          {
+            title: "Unidades de medida",
+            to: routes.parametros.unidadesMedida,
+            icon: Ruler,
+          },
+        ],
       },
     ],
   },
