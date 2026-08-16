@@ -18,6 +18,8 @@ public class Accesorio extends AuditableModel {
 
     private UUID id;
 
+    private UUID tipoActivoId;
+
     private String codigo;
 
     private String nombre;
