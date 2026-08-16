@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.activos.application.dto;
 
+import com.endecorani.sigma_api.modules.parametros.application.dto.UbicacionResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
@@ -42,10 +43,20 @@ public record ActivoResponse(
         UUID tipoActivoId,
 
         @Schema(
+                description = "Información del tipo de activo"
+        )
+        TipoActivoResponse tipoActivo,
+
+        @Schema(
                 description = "Identificador de la ubicación",
                 example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
         )
         UUID ubicacionId,
+
+        @Schema(
+                description = "Información de la ubicación"
+        )
+        UbicacionResponse ubicacion,
 
         @Schema(
                 description = "Fecha de adquisición",
@@ -78,3 +89,4 @@ public record ActivoResponse(
         String updatedBy
 ) {
 }
+

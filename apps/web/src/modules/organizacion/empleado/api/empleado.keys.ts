@@ -7,4 +7,10 @@ export type EmpleadoListFilters = PageParams & {
   cargoId?: string
 }
 
-export const empleadoKeys = createResourceKeys<"empleados", EmpleadoListFilters>("empleados")
+const baseKeys = createResourceKeys<"empleados", EmpleadoListFilters>("empleados")
+
+export const empleadoKeys = {
+  ...baseKeys,
+  byArea: (areaId: string, filters?: EmpleadoListFilters) =>
+    [...baseKeys.all, "by-area", areaId, filters] as const,
+}

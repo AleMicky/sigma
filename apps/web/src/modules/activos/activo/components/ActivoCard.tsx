@@ -24,8 +24,8 @@ interface ActivoCardProps {
 
 export function ActivoCard({
   activo,
-  tipoActivo,
-  ubicacion,
+  tipoActivo: tipoActivoProp,
+  ubicacion: ubicacionProp,
   onEdit,
 }: ActivoCardProps) {
   const deleteMutation = useDeleteActivo()
@@ -35,6 +35,8 @@ export function ActivoCard({
   const isToggling =
     setActivoMutation.isPending && setActivoMutation.variables?.id === activo.id
 
+  const tipoActivo = activo.tipoActivo ?? tipoActivoProp
+  const ubicacion = activo.ubicacion ?? ubicacionProp
   const tipoColor = tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
   const TipoIcon = tipoActivo ? getTipoActivoIcon(tipoActivo.icono) : Package
 

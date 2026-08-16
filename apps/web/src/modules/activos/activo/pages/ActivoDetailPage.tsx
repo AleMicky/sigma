@@ -58,7 +58,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
     ...tipoActivoQueries.detail(activo?.tipoActivoId ?? ""),
     enabled: Boolean(activo?.tipoActivoId),
   })
-  const tipoActivo = tipoActivoQuery.data
+  const tipoActivo = activo?.tipoActivo ?? tipoActivoQuery.data
 
   const categoriaQuery = useQuery({
     ...categoriaQueries.detail(tipoActivo?.categoriaId ?? ""),
@@ -68,9 +68,9 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
 
   const ubicacionQuery = useQuery({
     ...ubicacionQueries.detail(activo?.ubicacionId ?? ""),
-    enabled: Boolean(activo?.ubicacionId),
+    enabled: Boolean(!activo?.ubicacion && activo?.ubicacionId),
   })
-  const ubicacion = ubicacionQuery.data
+  const ubicacion = activo?.ubicacion ?? ubicacionQuery.data
 
   const ubicacionesQuery = useQuery(
     ubicacionQueries.list({

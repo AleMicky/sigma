@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Schema(
         name = "EmpleadoResponse",
-        description = "Información de un empleado"
+        description = "Información de un empleado con datos enriquecidos de persona, área y cargo"
 )
 public record EmpleadoResponse(
         @Schema(
@@ -24,16 +24,40 @@ public record EmpleadoResponse(
         UUID personaId,
 
         @Schema(
+                description = "Nombre completo de la persona asociada",
+                example = "Juan Carlos Pérez Gómez"
+        )
+        String personaNombreCompleto,
+
+        @Schema(
+                description = "Número de documento de la persona",
+                example = "1234567"
+        )
+        String personaDocumento,
+
+        @Schema(
                 description = "Identificador del área",
                 example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
         )
         UUID areaId,
 
         @Schema(
+                description = "Nombre del área",
+                example = "Operaciones y Mantenimiento"
+        )
+        String areaNombre,
+
+        @Schema(
                 description = "Identificador del cargo",
                 example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
         )
         UUID cargoId,
+
+        @Schema(
+                description = "Nombre del cargo",
+                example = "Supervisor de Mantenimiento"
+        )
+        String cargoNombre,
 
         @Schema(
                 description = "Código del empleado",

@@ -1,6 +1,8 @@
+import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
+import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 import { createCrudService, http, uploadImage } from "@/shared/api"
-import type { AuditableEntity } from "@/shared/types/audit.types"
 import type { PageParams } from "@/shared/types/api.types"
+import type { AuditableEntity } from "@/shared/types/audit.types"
 
 import { activoEndpoints } from "./activo.endpoints"
 
@@ -9,7 +11,9 @@ export type Activo = AuditableEntity & {
   nombre: string
   descripcion: string | null
   tipoActivoId: string
+  tipoActivo?: TipoActivo | null
   ubicacionId: string | null
+  ubicacion?: Ubicacion | null
   fechaAdquisicion: string | null
   urlImagen: string | null
   activo: boolean

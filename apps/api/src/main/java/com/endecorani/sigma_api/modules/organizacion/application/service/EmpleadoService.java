@@ -115,11 +115,52 @@ public class EmpleadoService extends AbstractCrudService<
 
     @Override
     protected EmpleadoResponse toResponse(Empleado domain) {
+        String personaNombre = null;
+        String personaDoc = null;
+        if (domain.getPersonaId() != null) {
+            var personaOpt = personaRepository.findById(domain.getPersonaId());
+            if (personaOpt.isPresent()) {
+                var p = personaOpt.get();
+                personaDoc = p.getNumeroDocumento();
+                StringBuilder sb = new StringBuilder();
+                if (p.getNombres() != null && !p.getNombres().isBlank()) {
+                    sb.append(p.getNombres().trim());
+                }
+                if (p.getPrimerApellido() != null && !p.getPrimerApellido().isBlank()) {
+                    if (!sb.isEmpty()) sb.append(" ");
+                    sb.append(p.getPrimerApellido().trim());
+                }
+                if (p.getSegundoApellido() != null && !p.getSegundoApellido().isBlank()) {
+                    if (!sb.isEmpty()) sb.append(" ");
+                    sb.append(p.getSegundoApellido().trim());
+                }
+                personaNombre = sb.toString();
+            }
+        }
+
+        String areaNombre = null;
+        if (domain.getAreaId() != null) {
+            areaNombre = areaRepository.findById(domain.getAreaId())
+                    .map(com.endecorani.sigma_api.modules.organizacion.domain.model.Area::getNombre)
+                    .orElse(null);
+        }
+
+        String cargoNombre = null;
+        if (domain.getCargoId() != null) {
+            cargoNombre = cargoRepository.findById(domain.getCargoId())
+                    .map(com.endecorani.sigma_api.modules.organizacion.domain.model.Cargo::getNombre)
+                    .orElse(null);
+        }
+
         return new EmpleadoResponse(
                 domain.getId(),
                 domain.getPersonaId(),
+                personaNombre,
+                personaDoc,
                 domain.getAreaId(),
+                areaNombre,
                 domain.getCargoId(),
+                cargoNombre,
                 domain.getCodigo(),
                 domain.getFechaInicio(),
                 domain.getFechaFin(),

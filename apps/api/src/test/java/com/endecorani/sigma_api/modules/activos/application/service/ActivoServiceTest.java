@@ -94,7 +94,10 @@ class ActivoServiceTest {
         assertEquals("veh-001", response.codigo());
         assertEquals("Toyota Hilux", response.nombre());
         assertEquals("Camioneta", response.descripcion());
+        assertEquals(tipoActivoId, response.tipoActivoId());
+        assertEquals("Vehículo", response.tipoActivo().nombre());
         assertEquals(ubicacionId, response.ubicacionId());
+        assertEquals("Sede Central", response.ubicacion().nombre());
         assertEquals(LocalDate.of(2024, 1, 15), response.fechaAdquisicion());
         assertNull(response.urlImagen());
     }

@@ -2,9 +2,11 @@ package com.endecorani.sigma_api.modules.activos.application.service;
 
 import com.endecorani.sigma_api.modules.activos.application.dto.ActivoRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.ActivoResponse;
+import com.endecorani.sigma_api.modules.activos.application.dto.TipoActivoResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
+import com.endecorani.sigma_api.modules.parametros.application.dto.UbicacionResponse;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -186,13 +188,54 @@ public class ActivoService extends AbstractCrudService<
 
     @Override
     protected ActivoResponse toResponse(Activo domain) {
+        TipoActivoResponse tipoActivoResponse = null;
+        if (domain.getTipoActivoId() != null) {
+            tipoActivoResponse = tipoActivoRepository.findById(domain.getTipoActivoId())
+                    .map(tipo -> new TipoActivoResponse(
+                            tipo.getId(),
+                            tipo.getCategoriaId(),
+                            tipo.getNombre(),
+                            tipo.getDescripcion(),
+                            tipo.getColor(),
+                            tipo.getIcono(),
+                            tipo.getCreatedAt(),
+                            tipo.getUpdatedAt(),
+                            tipo.getCreatedBy(),
+                            tipo.getUpdatedBy()
+                    ))
+                    .orElse(null);
+        }
+
+        UbicacionResponse ubicacionResponse = null;
+        if (domain.getUbicacionId() != null) {
+            ubicacionResponse = ubicacionRepository.findById(domain.getUbicacionId())
+                    .map(ubicacion -> new UbicacionResponse(
+                            ubicacion.getId(),
+                            ubicacion.getCodigo(),
+                            ubicacion.getNombre(),
+                            ubicacion.getDescripcion(),
+                            ubicacion.getTipo(),
+                            ubicacion.getUbicacionPadreId(),
+                            ubicacion.getDireccion(),
+                            ubicacion.getLatitud(),
+                            ubicacion.getLongitud(),
+                            ubicacion.getCreatedAt(),
+                            ubicacion.getUpdatedAt(),
+                            ubicacion.getCreatedBy(),
+                            ubicacion.getUpdatedBy()
+                    ))
+                    .orElse(null);
+        }
+
         return new ActivoResponse(
                 domain.getId(),
                 domain.getCodigo(),
                 domain.getNombre(),
                 domain.getDescripcion(),
                 domain.getTipoActivoId(),
+                tipoActivoResponse,
                 domain.getUbicacionId(),
+                ubicacionResponse,
                 domain.getFechaAdquisicion(),
                 domain.getUrlImagen(),
                 domain.getActivo(),

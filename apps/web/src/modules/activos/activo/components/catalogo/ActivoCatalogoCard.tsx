@@ -19,10 +19,12 @@ interface ActivoCatalogoCardProps {
 
 export function ActivoCatalogoCard({
   activo,
-  tipoActivo,
-  ubicacion,
+  tipoActivo: tipoActivoProp,
+  ubicacion: ubicacionProp,
 }: ActivoCatalogoCardProps) {
   const navigate = useNavigate()
+  const tipoActivo = activo.tipoActivo ?? tipoActivoProp
+  const ubicacion = activo.ubicacion ?? ubicacionProp
   const tipoColor = tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
   const TipoIcon = tipoActivo ? getTipoActivoIcon(tipoActivo.icono) : Package
 

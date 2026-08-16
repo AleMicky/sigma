@@ -1,7 +1,11 @@
 import { queryOptions } from "@tanstack/react-query"
 
 import { empleadoKeys, type EmpleadoListFilters } from "./empleado.keys"
-import { getEmpleado, listEmpleados } from "./empleado.service"
+import {
+  getEmpleado,
+  listEmpleados,
+  listEmpleadosByArea,
+} from "./empleado.service"
 
 export const empleadoQueries = {
   list: (filters?: EmpleadoListFilters) =>
@@ -12,6 +16,17 @@ export const empleadoQueries = {
         const trimmed = q?.trim()
         return listEmpleados(trimmed ? { ...rest, q: trimmed } : rest)
       },
+    }),
+
+  byArea: (areaId: string, filters?: Omit<EmpleadoListFilters, "areaId">) =>
+    queryOptions({
+      queryKey: empleadoKeys.byArea(areaId, filters),
+      queryFn: () => {
+        const { q, ...rest } = filters ?? {}
+        const trimmed = q?.trim()
+        return listEmpleadosByArea(areaId, trimmed ? { ...rest, q: trimmed } : rest)
+      },
+      enabled: Boolean(areaId),
     }),
 
   detail: (id: string) =>

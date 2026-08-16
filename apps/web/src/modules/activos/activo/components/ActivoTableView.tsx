@@ -65,11 +65,12 @@ export function ActivoTableView({
               <ActivoTableRow
                 key={activo.id}
                 activo={activo}
-                tipoActivo={tiposById.get(activo.tipoActivoId)}
+                tipoActivo={activo.tipoActivo ?? tiposById.get(activo.tipoActivoId)}
                 ubicacion={
-                  activo.ubicacionId
+                  activo.ubicacion ??
+                  (activo.ubicacionId
                     ? ubicacionesById?.get(activo.ubicacionId)
-                    : undefined
+                    : undefined)
                 }
                 onEdit={onEdit}
               />

@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,6 +51,34 @@ public class EmpleadoController
             UUID
             > service() {
         return empleadoService;
+    }
+
+    @GetMapping(params = "areaId")
+    @Operation(summary = "Listar empleados filtrados por área")
+    public ResponseEntity<ApiResponse<PageResponse<EmpleadoResponse>>> findByAreaId(
+            @RequestParam UUID areaId,
+            @RequestParam(required = false) String q,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        empleadoService.find(null, areaId, null, q, pageRequest)
+                )
+        );
+    }
+
+    @GetMapping("/area/{areaId}")
+    @Operation(summary = "Listar empleados pertenecientes a un área específica")
+    public ResponseEntity<ApiResponse<PageResponse<EmpleadoResponse>>> findByAreaPath(
+            @PathVariable UUID areaId,
+            @RequestParam(required = false) String q,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        empleadoService.find(null, areaId, null, q, pageRequest)
+                )
+        );
     }
 
     @GetMapping("/buscar")
