@@ -1,13 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router"
-
-import { ActivoDetailPage } from "@/modules/activos/activo/pages/ActivoDetailPage"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/_dashboard/activos/$activoId/")({
-  component: ActivoDetailRoute,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: "/activos/catalogo/$activoId",
+      params: { activoId: params.activoId },
+    })
+  },
 })
 
-function ActivoDetailRoute() {
-  const { activoId } = Route.useParams()
-
-  return <ActivoDetailPage activoId={activoId} />
-}

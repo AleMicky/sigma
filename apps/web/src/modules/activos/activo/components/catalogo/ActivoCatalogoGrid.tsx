@@ -6,7 +6,7 @@ import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { Pagination } from "@/shared/components/pagination"
 import { Button } from "@/shared/components/ui/button"
-import type { Page } from "@/shared/types/pagination.types"
+import type { PageResponse } from "@/shared/types/api.types"
 import { cn } from "@/shared/lib/utils"
 
 import type { Activo } from "../../api/activo.service"
@@ -20,7 +20,7 @@ interface ActivoCatalogoGridProps {
   activos: Activo[]
   tiposById: Map<string, TipoActivo>
   ubicacionesById: Map<string, Ubicacion>
-  pageData?: Page<Activo>
+  pageData?: PageResponse<Activo>
   onPageChange: (page: number) => void
   hasActiveFilters: boolean
   onResetFilters: () => void

@@ -1,4 +1,4 @@
-import { ChevronsUpDown, LogOut, UserRound, ShieldCheck } from "lucide-react"
+import { ChevronsUpDown, LogOut, UserRound } from "lucide-react"
 import { useNavigate } from "@tanstack/react-router"
 
 import { routes } from "@/app/config"

@@ -8,7 +8,7 @@ export const routes = {
     nuevo: "/activos/nuevo",
     catalogo: "/activos/catalogo",
     consultaDocumentos: "/activos/consulta-documentos",
-    detail: (activoId: string) => `/activos/${activoId}`,
+    detail: (activoId: string) => `/activos/catalogo/${activoId}`,
     editar: (activoId: string) => `/activos/${activoId}/editar`,
   },
 

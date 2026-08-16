@@ -3,41 +3,28 @@ import { Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
   ArrowLeft,
-  Calendar,
-  CheckCircle2,
-  Clock,
   Copy,
   Download,
   Edit2,
-  ExternalLink,
   Eye,
   FileCheck,
   FilePlus,
   FileSearch,
-  FileSpreadsheet,
   FileText,
   History,
   ImageIcon,
   Info,
-  Layers,
   MapPin,
   Maximize2,
-  Package,
   Plus,
   Printer,
-  RotateCcw,
   Route,
   Search,
-  Share2,
-  ShieldAlert,
   ShieldCheck,
   Sliders,
-  Tag,
   Upload,
   UserCheck,
-  Users,
   Wrench,
-  X,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -57,7 +44,6 @@ import { PageShell } from "@/shared/components/page-shell"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -1339,7 +1325,12 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
           <form onSubmit={handleAddDocument} className="flex flex-col gap-3 py-2 text-xs">
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Tipo de Documento</Label>
-              <Select value={newDocTipo} onValueChange={setNewDocTipo}>
+              <Select
+                value={newDocTipo}
+                onValueChange={(val) => {
+                  if (val) setNewDocTipo(val)
+                }}
+              >
                 <SelectTrigger className="h-8.5 text-xs">
                   <SelectValue />
                 </SelectTrigger>
