@@ -13,7 +13,7 @@ export function ActivoStats({
   activos,
   totalTipos,
 }: ActivoStatsProps) {
-  const conUbicacion = activos.filter((a) => Boolean(a.ubicacion?.trim())).length
+  const conUbicacion = activos.filter((a) => Boolean(a.ubicacionId)).length
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

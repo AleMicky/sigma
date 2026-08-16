@@ -11,7 +11,7 @@ type ActivoFormFooterProps = {
 
 export function ActivoFormFooter({ form }: ActivoFormFooterProps) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-3.5 bg-background/95 backdrop-blur-md border-t flex items-center justify-between gap-3">
+    <div className="sticky bottom-0 z-10 w-full py-3 bg-background/95 backdrop-blur-md border-t flex items-center justify-between gap-3 mt-auto">
       <p className="text-xs text-muted-foreground hidden sm:block">
         Los campos marcados con <span className="text-destructive font-bold">*</span> son requeridos.
       </p>

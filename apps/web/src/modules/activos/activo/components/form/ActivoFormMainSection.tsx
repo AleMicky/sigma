@@ -4,7 +4,17 @@ import { Calendar, FileText, MapPin } from "lucide-react"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
+import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
+import { TIPO_UBICACION_CONFIG } from "@/modules/parametros/ubicacion/components/TipoUbicacionBadge"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/shared/components/ui/combobox"
 import {
   Field,
   FieldError,
@@ -30,6 +40,9 @@ type ActivoFormMainSectionProps = {
   selectedColor: string
   SelectedIcon: ComponentType<{ className?: string }>
   tiposQueryLoading: boolean
+  ubicaciones?: Ubicacion[]
+  ubicacionesById?: Map<string, Ubicacion>
+  ubicacionesLoading?: boolean
 }
 
 export function ActivoFormMainSection({
@@ -40,6 +53,9 @@ export function ActivoFormMainSection({
   selectedColor,
   SelectedIcon,
   tiposQueryLoading,
+  ubicaciones = [],
+  ubicacionesById = new Map(),
+  ubicacionesLoading = false,
 }: ActivoFormMainSectionProps) {
   return (
     <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs space-y-4">
@@ -184,11 +200,13 @@ export function ActivoFormMainSection({
           }}
         </form.Field>
 
-        <form.Field name="ubicacion">
+        <form.Field name="ubicacionId">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {(field: any) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
+            const selectedUbicacion =
+              ubicacionesById.get(field.state.value) ?? null
 
             return (
               <Field data-invalid={isInvalid || undefined}>
@@ -198,15 +216,46 @@ export function ActivoFormMainSection({
                     Ubicación
                   </span>
                 </FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  aria-invalid={isInvalid}
-                  placeholder="Ej. Sede Central / Estacionamiento A"
-                />
+                <Combobox
+                  items={ubicaciones}
+                  itemToStringLabel={(item: Ubicacion) =>
+                    item ? `${item.codigo} - ${item.nombre}` : ""
+                  }
+                  itemToStringValue={(item: Ubicacion) => item?.id ?? ""}
+                  value={selectedUbicacion}
+                  onValueChange={(val: Ubicacion | null) =>
+                    field.handleChange(val?.id ?? "")
+                  }
+                  disabled={ubicacionesLoading}
+                >
+                  <ComboboxInput
+                    id={field.name}
+                    placeholder="Buscar o seleccionar ubicación…"
+                    showClear={Boolean(field.state.value)}
+                    aria-invalid={isInvalid}
+                    className="w-full"
+                  />
+                  <ComboboxContent className="z-50 max-h-60 min-w-[280px]">
+                    <ComboboxEmpty>No se encontraron ubicaciones.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(item: Ubicacion) => {
+                        const cfg = TIPO_UBICACION_CONFIG[item.tipo]
+                        const LocIcon = cfg?.icon || MapPin
+                        return (
+                          <ComboboxItem key={item.id} value={item}>
+                            <div className="flex items-center gap-2 truncate">
+                              <LocIcon className="size-3.5 text-muted-foreground shrink-0" />
+                              <code className="text-[10px] text-muted-foreground bg-muted px-1 rounded shrink-0">
+                                {item.codigo}
+                              </code>
+                              <span className="truncate">{item.nombre}</span>
+                            </div>
+                          </ComboboxItem>
+                        )
+                      }}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )

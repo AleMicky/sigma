@@ -9,7 +9,7 @@ export type Activo = AuditableEntity & {
   nombre: string
   descripcion: string | null
   tipoActivoId: string
-  ubicacion: string | null
+  ubicacionId: string | null
   fechaAdquisicion: string | null
   urlImagen: string | null
 }
@@ -19,7 +19,7 @@ export type ActivoPayload = {
   nombre: string
   descripcion?: string | null
   tipoActivoId: string
-  ubicacion?: string | null
+  ubicacionId?: string | null
   fechaAdquisicion?: string | null
 }
 

@@ -7,6 +7,7 @@ import { RowActions } from "@/shared/components/row-actions"
 import { Button } from "@/shared/components/ui/button"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
+import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 
 import { useDeleteActivo } from "../api/activo.mutations"
 import type { Activo } from "../api/activo.service"
@@ -14,6 +15,7 @@ import type { Activo } from "../api/activo.service"
 type ActivoCardProps = {
   activo: Activo
   tipoActivo?: TipoActivo | null
+  ubicacion?: Ubicacion | null
   onEdit: (activo: Activo) => void
   onQuickView?: (activo: Activo) => void
 }
@@ -21,6 +23,7 @@ type ActivoCardProps = {
 export function ActivoCard({
   activo,
   tipoActivo,
+  ubicacion,
   onEdit,
   onQuickView,
 }: ActivoCardProps) {
@@ -95,10 +98,10 @@ export function ActivoCard({
           </div>
         </div>
 
-        {activo.ubicacion ? (
+        {ubicacion ? (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
             <MapPin className="size-3.5 text-muted-foreground shrink-0" />
-            <span className="truncate">{activo.ubicacion}</span>
+            <span className="truncate">{ubicacion.nombre}</span>
           </div>
         ) : (
           <span className="text-xs text-muted-foreground/60 italic mt-1">

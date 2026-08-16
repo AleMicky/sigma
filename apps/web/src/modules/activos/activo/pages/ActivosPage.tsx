@@ -5,6 +5,7 @@ import { Package, Plus, RotateCcw } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
+import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -45,10 +46,27 @@ export function ActivosPage() {
     }),
   )
 
+  const ubicacionesQuery = useQuery(
+    ubicacionQueries.list({
+      page: 0,
+      size: 100,
+      sortBy: "nombre",
+      direction: "ASC",
+    }),
+  )
+
   const tipos = tiposQuery.data?.content ?? []
   const tiposById = useMemo(
     () => new Map(tipos.map((tipo) => [tipo.id, tipo])),
     [tipos],
+  )
+  const ubicaciones = useMemo(
+    () => ubicacionesQuery.data?.content ?? [],
+    [ubicacionesQuery.data?.content],
+  )
+  const ubicacionesById = useMemo(
+    () => new Map(ubicaciones.map((u) => [u.id, u])),
+    [ubicaciones],
   )
 
   const activosQuery = useQuery(
@@ -180,6 +198,11 @@ export function ActivosPage() {
                       key={activo.id}
                       activo={activo}
                       tipoActivo={tiposById.get(activo.tipoActivoId)}
+                      ubicacion={
+                        activo.ubicacionId
+                          ? ubicacionesById.get(activo.ubicacionId)
+                          : undefined
+                      }
                       onEdit={goEdit}
                       onQuickView={(item) => setQuickViewItem(item)}
                     />
@@ -189,6 +212,7 @@ export function ActivosPage() {
                 <ActivoTableView
                   activos={activos}
                   tiposById={tiposById}
+                  ubicacionesById={ubicacionesById}
                   onEdit={goEdit}
                   onQuickView={(item) => setQuickViewItem(item)}
                 />
@@ -212,6 +236,11 @@ export function ActivosPage() {
         tipoActivo={
           quickViewItem
             ? tiposById.get(quickViewItem.tipoActivoId)
+            : undefined
+        }
+        ubicacion={
+          quickViewItem?.ubicacionId
+            ? ubicacionesById.get(quickViewItem.ubicacionId)
             : undefined
         }
         open={Boolean(quickViewItem)}

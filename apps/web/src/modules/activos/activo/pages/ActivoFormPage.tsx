@@ -14,6 +14,7 @@ import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
 import { tipoDatoQueries } from "@/modules/parametros/tipo-dato/api/tipo-dato.queries"
+import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
 import { getErrorMessage, isApiError } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -92,6 +93,15 @@ export function ActivoFormPage({
     }),
   )
 
+  const ubicacionesQuery = useQuery(
+    ubicacionQueries.list({
+      page: 0,
+      size: 100,
+      sortBy: "nombre",
+      direction: "ASC",
+    }),
+  )
+
   const tipos = tiposQuery.data?.content ?? []
   const tiposById = useMemo(
     () => new Map(tipos.map((tipo) => [tipo.id, tipo])),
@@ -103,6 +113,14 @@ export function ActivoFormPage({
         (tiposDatoQuery.data?.content ?? []).map((tipo) => [tipo.id, tipo]),
       ),
     [tiposDatoQuery.data?.content],
+  )
+  const ubicaciones = useMemo(
+    () => ubicacionesQuery.data?.content ?? [],
+    [ubicacionesQuery.data?.content],
+  )
+  const ubicacionesById = useMemo(
+    () => new Map(ubicaciones.map((ubicacion) => [ubicacion.id, ubicacion])),
+    [ubicaciones],
   )
 
   const form = useForm({
@@ -137,7 +155,7 @@ export function ActivoFormPage({
         nombre: value.nombre.trim(),
         descripcion: value.descripcion.trim() || null,
         tipoActivoId: value.tipoActivoId,
-        ubicacion: value.ubicacion.trim() || null,
+        ubicacionId: value.ubicacionId?.trim() || null,
         fechaAdquisicion: value.fechaAdquisicion || null,
       }
 
@@ -236,7 +254,7 @@ export function ActivoFormPage({
     form.setFieldValue("nombre", activo.nombre)
     form.setFieldValue("descripcion", activo.descripcion ?? "")
     form.setFieldValue("tipoActivoId", activo.tipoActivoId)
-    form.setFieldValue("ubicacion", activo.ubicacion ?? "")
+    form.setFieldValue("ubicacionId", activo.ubicacionId ?? "")
     form.setFieldValue("fechaAdquisicion", activo.fechaAdquisicion ?? "")
   }, [activo, form, isEditing])
 
@@ -315,11 +333,11 @@ export function ActivoFormPage({
   }
 
   return (
-    <PageShell className="max-w-4xl gap-0 px-4 py-0 sm:px-6 md:px-8 md:py-0 flex flex-col min-h-0">
+    <PageShell className="max-w-7xl w-full mx-auto gap-0 px-4 py-0 sm:px-6 md:px-8 md:py-0 flex flex-col min-h-0">
       <ActivoFormHeader isEditing={isEditing} codigo={activo?.codigo} />
 
       <form
-        className="flex min-h-0 flex-1 flex-col gap-6 py-6 overflow-y-auto pr-1"
+        className="flex min-h-0 flex-1 flex-col gap-5 py-4 overflow-y-auto overflow-x-hidden pr-1"
         onSubmit={(event) => {
           event.preventDefault()
           event.stopPropagation()
@@ -333,44 +351,55 @@ export function ActivoFormPage({
           </div>
         ) : null}
 
-        <ActivoFormImageSection
-          currentUrl={activo?.urlImagen}
-          pendingFile={pendingFile}
-          onFileChange={setPendingFile}
-          removeExistingImage={removeExistingImage}
-          onRemoveExistingChange={setRemoveExistingImage}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* Side Media Panel */}
+          <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-5 lg:sticky lg:top-0">
+            <ActivoFormImageSection
+              currentUrl={activo?.urlImagen}
+              pendingFile={pendingFile}
+              onFileChange={setPendingFile}
+              removeExistingImage={removeExistingImage}
+              onRemoveExistingChange={setRemoveExistingImage}
+            />
+          </div>
 
-        <ActivoFormMainSection
-          form={form}
-          tipos={tipos}
-          tiposById={tiposById}
-          selectedTipo={selectedTipo}
-          selectedColor={selectedColor}
-          SelectedIcon={SelectedIcon}
-          tiposQueryLoading={tiposQuery.isLoading}
-        />
+          {/* Main Info & Dynamic Attributes */}
+          <div className="lg:col-span-8 xl:col-span-8 flex flex-col gap-5">
+            <ActivoFormMainSection
+              form={form}
+              tipos={tipos}
+              tiposById={tiposById}
+              selectedTipo={selectedTipo}
+              selectedColor={selectedColor}
+              SelectedIcon={SelectedIcon}
+              tiposQueryLoading={tiposQuery.isLoading}
+              ubicaciones={ubicaciones}
+              ubicacionesById={ubicacionesById}
+              ubicacionesLoading={ubicacionesQuery.isLoading}
+            />
 
-        <ActivoFormAtributosSection
-          tipoActivoId={tipoActivoId}
-          selectedTipo={selectedTipo}
-          atributosVisibles={atributosVisibles}
-          tiposDatoById={tiposDatoById}
-          valores={valores}
-          atributoErrors={atributoErrors}
-          isLoading={atributosQuery.isLoading}
-          isError={atributosQuery.isError}
-          error={atributosQuery.error}
-          onChange={(atributoId, value) => {
-            setValores((prev) => ({ ...prev, [atributoId]: value }))
-            setAtributoErrors((prev) => {
-              if (!prev[atributoId]) return prev
-              const next = { ...prev }
-              delete next[atributoId]
-              return next
-            })
-          }}
-        />
+            <ActivoFormAtributosSection
+              tipoActivoId={tipoActivoId}
+              selectedTipo={selectedTipo}
+              atributosVisibles={atributosVisibles}
+              tiposDatoById={tiposDatoById}
+              valores={valores}
+              atributoErrors={atributoErrors}
+              isLoading={atributosQuery.isLoading}
+              isError={atributosQuery.isError}
+              error={atributosQuery.error}
+              onChange={(atributoId, value) => {
+                setValores((prev) => ({ ...prev, [atributoId]: value }))
+                setAtributoErrors((prev) => {
+                  if (!prev[atributoId]) return prev
+                  const next = { ...prev }
+                  delete next[atributoId]
+                  return next
+                })
+              }}
+            />
+          </div>
+        </div>
 
         <ActivoFormFooter form={form} />
       </form>

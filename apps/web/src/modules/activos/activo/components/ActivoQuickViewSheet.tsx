@@ -13,12 +13,14 @@ import {
 } from "@/shared/components/ui/sheet"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
+import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 
 import type { Activo } from "../api/activo.service"
 
 type ActivoQuickViewSheetProps = {
   activo: Activo | null
   tipoActivo?: TipoActivo | null
+  ubicacion?: Ubicacion | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onEdit: (activo: Activo) => void
@@ -27,6 +29,7 @@ type ActivoQuickViewSheetProps = {
 export function ActivoQuickViewSheet({
   activo,
   tipoActivo,
+  ubicacion,
   open,
   onOpenChange,
   onEdit,
@@ -97,7 +100,7 @@ export function ActivoQuickViewSheet({
                 <div className="flex flex-col min-w-0">
                   <span className="text-xs font-medium text-muted-foreground">Ubicación</span>
                   <span className="text-sm font-medium truncate">
-                    {activo.ubicacion || "Sin ubicación asignada"}
+                    {ubicacion?.nombre || "Sin ubicación asignada"}
                   </span>
                 </div>
               </div>

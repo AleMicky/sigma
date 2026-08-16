@@ -13,9 +13,11 @@ export const activoSchema = z.object({
     .string()
     .max(255, "La descripción no puede superar 255 caracteres"),
   tipoActivoId: z.string().min(1, "Selecciona un tipo de activo"),
-  ubicacion: z
+  ubicacionId: z
     .string()
-    .max(255, "La ubicación no puede superar 255 caracteres"),
+    .max(255, "La ubicación no puede superar 255 caracteres")
+    .optional()
+    .nullable(),
   fechaAdquisicion: z.string(),
 })
 
@@ -26,6 +28,6 @@ export const defaultActivoValues: ActivoDto = {
   nombre: "",
   descripcion: "",
   tipoActivoId: "",
-  ubicacion: "",
+  ubicacionId: "",
   fechaAdquisicion: "",
 }

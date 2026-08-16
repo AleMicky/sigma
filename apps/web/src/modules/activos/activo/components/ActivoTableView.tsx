@@ -7,6 +7,7 @@ import { RowActions } from "@/shared/components/row-actions"
 import { Button } from "@/shared/components/ui/button"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
+import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 
 import { useDeleteActivo } from "../api/activo.mutations"
 import type { Activo } from "../api/activo.service"
@@ -14,6 +15,7 @@ import type { Activo } from "../api/activo.service"
 type ActivoTableViewProps = {
   activos: Activo[]
   tiposById: Map<string, TipoActivo>
+  ubicacionesById?: Map<string, Ubicacion>
   onEdit: (activo: Activo) => void
   onQuickView: (activo: Activo) => void
 }
@@ -21,6 +23,7 @@ type ActivoTableViewProps = {
 export function ActivoTableView({
   activos,
   tiposById,
+  ubicacionesById,
   onEdit,
   onQuickView,
 }: ActivoTableViewProps) {
@@ -53,6 +56,11 @@ export function ActivoTableView({
                 key={activo.id}
                 activo={activo}
                 tipoActivo={tiposById.get(activo.tipoActivoId)}
+                ubicacion={
+                  activo.ubicacionId
+                    ? ubicacionesById?.get(activo.ubicacionId)
+                    : undefined
+                }
                 onEdit={onEdit}
                 onQuickView={onQuickView}
               />
@@ -67,11 +75,13 @@ export function ActivoTableView({
 function ActivoTableRow({
   activo,
   tipoActivo,
+  ubicacion,
   onEdit,
   onQuickView,
 }: {
   activo: Activo
   tipoActivo?: TipoActivo | null
+  ubicacion?: Ubicacion | null
   onEdit: (activo: Activo) => void
   onQuickView: (activo: Activo) => void
 }) {
@@ -122,10 +132,10 @@ function ActivoTableRow({
       </td>
 
       <td className="hidden px-4 py-3 md:table-cell sm:px-6">
-        {activo.ubicacion ? (
+        {ubicacion ? (
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="size-3 shrink-0" />
-            {activo.ubicacion}
+            {ubicacion.nombre}
           </span>
         ) : (
           <span className="text-xs text-muted-foreground italic">—</span>
