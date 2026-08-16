@@ -40,7 +40,8 @@ export function ActivoFilterToolbar({
   onViewModeChange,
 }: ActivoFilterToolbarProps) {
   return (
-    <div className="flex shrink-0 flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between border-b">
+    <div className="flex shrink-0 flex-col gap-2.5 py-2.5 sm:py-3 sm:flex-row sm:items-center sm:justify-between border-b">
+
       <div className="flex flex-1 flex-col gap-2.5 sm:flex-row sm:items-center">
         <SearchField
           value={searchValue}

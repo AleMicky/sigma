@@ -30,27 +30,27 @@ export function ActivoTableView({
   onQuickView,
 }: ActivoTableViewProps) {
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
+    <div className="w-full overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-border/70 bg-muted/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <thead className="border-b border-border/70 bg-muted/40 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
             <tr>
-              <th scope="col" className="px-4 py-3.5 sm:px-6">
+              <th scope="col" className="px-3 py-2.5 sm:px-4">
                 Activo
               </th>
-              <th scope="col" className="px-4 py-3.5 sm:px-6">
+              <th scope="col" className="px-3 py-2.5 sm:px-4">
                 Código
               </th>
-              <th scope="col" className="px-4 py-3.5 sm:px-6">
+              <th scope="col" className="px-3 py-2.5 sm:px-4">
                 Tipo
               </th>
-              <th scope="col" className="hidden px-4 py-3.5 md:table-cell sm:px-6">
+              <th scope="col" className="hidden px-3 py-2.5 md:table-cell sm:px-4">
                 Ubicación
               </th>
-              <th scope="col" className="hidden px-4 py-3.5 lg:table-cell sm:px-6">
+              <th scope="col" className="hidden px-3 py-2.5 lg:table-cell sm:px-4">
                 Fecha Adquisición
               </th>
-              <th scope="col" className="px-4 py-3.5 text-right sm:px-6">
+              <th scope="col" className="px-3 py-2.5 text-right sm:px-4">
                 Acciones
               </th>
             </tr>
@@ -109,14 +109,14 @@ function ActivoTableRow({
   return (
     <tr className="group hover:bg-muted/30 transition-colors">
       {/* Activo Image + Title + Description */}
-      <td className="px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-3.5 max-w-sm sm:max-w-md">
+      <td className="px-3 py-2 sm:px-4 sm:py-2.5">
+        <div className="flex items-center gap-2.5 max-w-sm sm:max-w-md">
           <AuthenticatedImage
             src={activo.urlImagen}
             alt={activo.nombre}
-            className="size-11 shrink-0 rounded-xl object-cover border border-border/70 shadow-xs transition-transform group-hover:scale-105"
-            fallbackClassName="size-11 shrink-0 rounded-xl bg-muted/60 flex items-center justify-center border border-border/70 shadow-xs"
-            fallback={<ImageIcon className="size-5 text-muted-foreground/50" />}
+            className="size-9 shrink-0 rounded-lg object-cover border border-border/70 shadow-xs transition-transform group-hover:scale-105"
+            fallbackClassName="size-9 shrink-0 rounded-lg bg-muted/60 flex items-center justify-center border border-border/70 shadow-xs"
+            fallback={<ImageIcon className="size-4 text-muted-foreground/50" />}
           />
           <div className="flex flex-col min-w-0">
             <button
@@ -140,21 +140,21 @@ function ActivoTableRow({
       </td>
 
       {/* Code */}
-      <td className="px-4 py-3 sm:px-6">
-        <code className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground border border-border/60">
+      <td className="px-3 py-2 sm:px-4 sm:py-2.5">
+        <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground border border-border/60">
           {activo.codigo}
         </code>
       </td>
 
       {/* Tipo de Activo Badge */}
-      <td className="px-4 py-3 sm:px-6">
+      <td className="px-3 py-2 sm:px-4 sm:py-2.5">
         {tipoActivo ? (
           <span
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border border-border/60 bg-muted/50 text-foreground"
+            className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium border border-border/60 bg-muted/50 text-foreground"
           >
             <span
               aria-hidden
-              className="flex size-3.5 items-center justify-center rounded-full text-white"
+              className="flex size-3 items-center justify-center rounded-full text-white"
               style={{ backgroundColor: tipoColor }}
             >
               <TipoIcon className="size-2" />
@@ -167,7 +167,7 @@ function ActivoTableRow({
       </td>
 
       {/* Ubicacion */}
-      <td className="hidden px-4 py-3 md:table-cell sm:px-6">
+      <td className="hidden px-3 py-2 md:table-cell sm:px-4 sm:py-2.5">
         {ubicacion ? (
           <div className="flex items-center gap-1.5 max-w-[200px] truncate" title={`${ubicacion.codigo} - ${ubicacion.nombre}`}>
             <span className="p-1 rounded-md bg-primary/10 text-primary shrink-0">
@@ -188,7 +188,7 @@ function ActivoTableRow({
       </td>
 
       {/* Fecha de Adquisición */}
-      <td className="hidden px-4 py-3 lg:table-cell sm:px-6">
+      <td className="hidden px-3 py-2 lg:table-cell sm:px-4 sm:py-2.5">
         {formattedDate ? (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Calendar className="size-3.5 shrink-0 text-muted-foreground/70" />
@@ -200,8 +200,8 @@ function ActivoTableRow({
       </td>
 
       {/* Acciones */}
-      <td className="px-4 py-3 text-right sm:px-6">
-        <div className="flex items-center justify-end gap-1.5">
+      <td className="px-3 py-2 text-right sm:px-4 sm:py-2.5">
+        <div className="flex items-center justify-end gap-1">
           <Button
             size="icon-xs"
             variant="ghost"

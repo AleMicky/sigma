@@ -95,11 +95,11 @@ export function ActivoCard({
       </div>
 
       {/* Card Body */}
-      <div className="flex flex-1 flex-col justify-between p-4 gap-3">
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-1 flex-col justify-between p-3.5 gap-2.5">
+        <div className="flex flex-col gap-1.5">
           {/* Code & Acquisition Date */}
           <div className="flex items-center justify-between gap-2">
-            <code className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground border border-border/60">
+            <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground border border-border/60">
               {activo.codigo}
             </code>
 
@@ -115,14 +115,14 @@ export function ActivoCard({
           <button
             type="button"
             onClick={() => onQuickView?.(activo)}
-            className="text-left font-heading text-base font-bold text-foreground hover:text-primary transition-colors line-clamp-1"
+            className="text-left font-heading text-sm font-bold text-foreground hover:text-primary transition-colors line-clamp-1"
           >
             {activo.nombre}
           </button>
 
           {/* Description */}
           {activo.descripcion ? (
-            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-snug">
               {activo.descripcion}
             </p>
           ) : (
@@ -137,7 +137,7 @@ export function ActivoCard({
           <div className="min-w-0 flex-1">
             {ubicacion ? (
               <span
-                className="inline-flex items-center gap-1.5 rounded-lg bg-muted/60 px-2 py-1 text-xs text-muted-foreground border border-border/40 truncate max-w-full"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground border border-border/40 truncate max-w-full"
                 title={`${ubicacion.codigo} - ${ubicacion.nombre}`}
               >
                 <MapPin className="size-3 shrink-0 text-primary" />

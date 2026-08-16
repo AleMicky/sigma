@@ -145,12 +145,12 @@ export function ActivosPage() {
       />
 
       {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
         {activosQuery.isLoading ? (
           <ListSkeleton
             rows={8}
             rowClassName="h-28 rounded-xl"
-            className="grid grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           />
         ) : activosQuery.isError ? (
           <EmptyState
@@ -189,12 +189,12 @@ export function ActivosPage() {
           <>
             <div
               className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4 pr-1",
+                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 pr-1",
                 activosQuery.isFetching && "opacity-75 transition-opacity",
               )}
             >
               {viewMode === "grid" ? (
-                <ul className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <ul className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {activos.map((activo) => (
                     <ActivoCard
                       key={activo.id}
@@ -225,7 +225,7 @@ export function ActivosPage() {
               <Pagination
                 page={activosQuery.data}
                 onPageChange={search.setPage}
-                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 py-3"
+                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 py-2.5"
               />
             ) : null}
           </>

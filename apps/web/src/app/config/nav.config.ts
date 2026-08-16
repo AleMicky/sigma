@@ -67,7 +67,7 @@ export const navItems: NavItem[] = [
     icon: Boxes,
     children: [
       {
-        title: "Catálogo de Activos",
+        title: "Registro de Activos",
         to: routes.activos.root,
         icon: List,
       },
