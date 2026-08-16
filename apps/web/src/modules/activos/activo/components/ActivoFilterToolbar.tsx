@@ -1,4 +1,5 @@
-import { Filter, LayoutGrid, List, RotateCcw } from "lucide-react"
+import { FileSpreadsheet, Filter, LayoutGrid, List, RotateCcw } from "lucide-react"
+import { toast } from "sonner"
 
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
@@ -39,6 +40,13 @@ export function ActivoFilterToolbar({
   viewMode,
   onViewModeChange,
 }: ActivoFilterToolbarProps) {
+  function handleExportExcel() {
+    toast.info("Exportación a Excel", {
+      description:
+        "La generación de reportes y exportación en formato Excel (.xlsx) estará disponible próximamente.",
+    })
+  }
+
   return (
     <div className="flex shrink-0 flex-col gap-2.5 py-2.5 sm:py-3 sm:flex-row sm:items-center sm:justify-between border-b">
       <div className="flex flex-1 flex-wrap items-center gap-2.5">
@@ -47,7 +55,7 @@ export function ActivoFilterToolbar({
           onChange={onSearchChange}
           placeholder="Buscar por código o nombre del activo…"
           aria-label="Buscar activos"
-          className="w-full sm:w-80 md:w-96 lg:w-[420px]"
+          className="w-full sm:flex-1 sm:min-w-[300px] sm:max-w-xl lg:max-w-2xl"
         />
 
         <Select
@@ -107,26 +115,40 @@ export function ActivoFilterToolbar({
         ) : null}
       </div>
 
-      {/* View Mode Toggle */}
-      <div className="flex items-center gap-1 self-end sm:self-auto rounded-lg border border-border/80 bg-muted/30 p-1 shrink-0">
+      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
         <Button
-          size="icon-xs"
-          variant={viewMode === "grid" ? "secondary" : "ghost"}
-          onClick={() => onViewModeChange("grid")}
-          title="Vista Cuadrícula"
-          aria-label="Vista Cuadrícula"
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={handleExportExcel}
+          className="h-8 px-2.5 text-xs font-medium gap-1.5 shrink-0 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
+          title="Exportar a Excel"
         >
-          <LayoutGrid className="size-4" />
+          <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span className="hidden sm:inline">Exportar Excel</span>
         </Button>
-        <Button
-          size="icon-xs"
-          variant={viewMode === "table" ? "secondary" : "ghost"}
-          onClick={() => onViewModeChange("table")}
-          title="Vista Lista"
-          aria-label="Vista Lista"
-        >
-          <List className="size-4" />
-        </Button>
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-1 rounded-lg border border-border/80 bg-muted/30 p-1 shrink-0">
+          <Button
+            size="icon-xs"
+            variant={viewMode === "grid" ? "secondary" : "ghost"}
+            onClick={() => onViewModeChange("grid")}
+            title="Vista Cuadrícula"
+            aria-label="Vista Cuadrícula"
+          >
+            <LayoutGrid className="size-4" />
+          </Button>
+          <Button
+            size="icon-xs"
+            variant={viewMode === "table" ? "secondary" : "ghost"}
+            onClick={() => onViewModeChange("table")}
+            title="Vista Lista"
+            aria-label="Vista Lista"
+          >
+            <List className="size-4" />
+          </Button>
+        </div>
       </div>
     </div>
   )
