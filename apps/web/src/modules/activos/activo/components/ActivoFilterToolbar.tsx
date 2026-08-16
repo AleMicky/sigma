@@ -41,14 +41,13 @@ export function ActivoFilterToolbar({
 }: ActivoFilterToolbarProps) {
   return (
     <div className="flex shrink-0 flex-col gap-2.5 py-2.5 sm:py-3 sm:flex-row sm:items-center sm:justify-between border-b">
-
-      <div className="flex flex-1 flex-col gap-2.5 sm:flex-row sm:items-center">
+      <div className="flex flex-1 flex-wrap items-center gap-2.5">
         <SearchField
           value={searchValue}
           onChange={onSearchChange}
           placeholder="Buscar por código o nombre del activo…"
           aria-label="Buscar activos"
-          className="w-full sm:max-w-xs"
+          className="w-full sm:w-80 md:w-96 lg:w-[420px]"
         />
 
         <Select
@@ -71,7 +70,7 @@ export function ActivoFilterToolbar({
                           DEFAULT_TIPO_ACTIVO_COLOR,
                       }}
                     />
-                    <span>{tiposById.get(tipoActivoId)?.nombre}</span>
+                    <span className="truncate">{tiposById.get(tipoActivoId)?.nombre}</span>
                   </div>
                 )}
               </SelectValue>
@@ -100,16 +99,16 @@ export function ActivoFilterToolbar({
             variant="ghost"
             size="sm"
             onClick={onResetFilters}
-            className="text-xs text-muted-foreground hover:text-foreground shrink-0 self-start sm:self-auto"
+            className="text-xs text-muted-foreground hover:text-foreground shrink-0 h-8 px-2.5 gap-1.5 transition-colors"
           >
-            <RotateCcw className="size-3.5" />
+            <RotateCcw className="size-3.5 text-muted-foreground" />
             Limpiar filtros
           </Button>
         ) : null}
       </div>
 
       {/* View Mode Toggle */}
-      <div className="flex items-center gap-1 self-end sm:self-auto rounded-lg border border-border/80 bg-muted/30 p-1">
+      <div className="flex items-center gap-1 self-end sm:self-auto rounded-lg border border-border/80 bg-muted/30 p-1 shrink-0">
         <Button
           size="icon-xs"
           variant={viewMode === "grid" ? "secondary" : "ghost"}
