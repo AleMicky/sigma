@@ -3,12 +3,12 @@ import { z } from "zod"
 
 import { ActivoFormPage } from "@/modules/activos/activo/pages/ActivoFormPage"
 
-const searchSchema = z.object({
+const activoNuevoSearchSchema = z.object({
   tipoActivoId: z.string().optional(),
 })
 
 export const Route = createFileRoute("/_dashboard/activos/nuevo")({
-  validateSearch: (search: Record<string, unknown>) => searchSchema.parse(search),
+  validateSearch: activoNuevoSearchSchema,
   component: ActivoNuevoRoute,
 })
 

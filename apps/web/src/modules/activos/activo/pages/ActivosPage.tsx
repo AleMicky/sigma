@@ -82,7 +82,6 @@ export function ActivosPage() {
 
   const rawActivos = activosQuery.data?.content ?? []
 
-  // Ensure client-side filtering compatibility as resilient fallback
   const activos = useMemo(() => {
     if (tipoActivoId === ALL_TIPOS) return rawActivos
     return rawActivos.filter((item) => item.tipoActivoId === tipoActivoId)
@@ -94,7 +93,10 @@ export function ActivosPage() {
     void navigate({
       to: "/activos/nuevo",
       search: {
-        tipoActivoId: tipoActivoId !== ALL_TIPOS ? tipoActivoId : undefined,
+        tipoActivoId:
+          tipoActivoId !== ALL_TIPOS
+            ? tipoActivoId
+            : undefined,
       },
     })
   }
