@@ -62,37 +62,42 @@ export function UserMenu() {
               <SidebarMenuButton
                 size="lg"
                 tooltip={displayName}
-                className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground hover:bg-sidebar-accent/70 transition-colors"
+                className="group rounded-xl data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground hover:bg-sidebar-accent/80 transition-all duration-200"
               />
             }
           >
             <div className="relative shrink-0">
-              <Avatar className="size-8.5 rounded-lg border border-border/60 shadow-2xs">
-                <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 text-[11px] font-bold text-white">
+              <Avatar className="size-9 rounded-xl border border-primary/20 shadow-xs transition-transform duration-200 group-hover:scale-105">
+                <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-xs font-bold text-white shadow-inner">
                   {initials || "U"}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-sidebar" />
+              <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-sidebar animate-pulse" />
             </div>
-            <span className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="truncate font-semibold text-foreground">{displayName}</span>
-              <span className="truncate text-[11px] font-medium text-muted-foreground">
-                {subtitle}
+            <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+              <span className="truncate font-semibold text-foreground group-hover:text-primary transition-colors">
+                {displayName}
               </span>
-            </span>
-            <ChevronsUpDown className="ml-auto size-4 text-muted-foreground/70 group-data-[collapsible=icon]:hidden" />
+              <div className="flex items-center gap-1">
+                <span className="inline-block size-1 rounded-full bg-emerald-500" />
+                <span className="truncate text-[11px] font-medium text-muted-foreground">
+                  {subtitle}
+                </span>
+              </div>
+            </div>
+            <ChevronsUpDown className="ml-auto size-4 text-muted-foreground/70 transition-transform group-hover:text-foreground group-data-[collapsible=icon]:hidden" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-60 rounded-xl p-1.5 shadow-xl border-border/60"
+            className="min-w-64 rounded-2xl p-2 shadow-2xl border-border/60 bg-popover/95 backdrop-blur-md"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={10}
           >
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="font-normal p-2">
+              <DropdownMenuLabel className="font-normal p-2.5">
                 <div className="flex items-center gap-3">
-                  <Avatar className="size-9 rounded-lg border border-border/60">
-                    <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 text-xs font-bold text-white">
+                  <Avatar className="size-10 rounded-xl border border-primary/20 shadow-xs">
+                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-xs font-bold text-white">
                       {initials || "U"}
                     </AvatarFallback>
                   </Avatar>
@@ -103,29 +108,29 @@ export function UserMenu() {
                     <span className="truncate text-xs text-muted-foreground">
                       {user?.email ?? "usuario@endecorani.bo"}
                     </span>
-                    <div className="mt-1 flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                      <ShieldCheck className="size-3" />
-                      <span>Sesión Activa</span>
+                    <div className="mt-1 flex items-center gap-1.5 text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400">
+                      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Conectado con Keycloak</span>
                     </div>
                   </div>
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator className="my-1" />
+            <DropdownMenuSeparator className="my-1.5" />
             <DropdownMenuGroup className="gap-1">
               <DropdownMenuItem
-                className="rounded-lg cursor-pointer text-xs font-medium py-2"
+                className="rounded-xl cursor-pointer text-xs font-medium py-2 px-2.5 hover:bg-sidebar-accent transition-colors"
                 onClick={() => void navigate({ to: routes.perfil })}
               >
-                <UserRound className="size-4 text-muted-foreground" />
+                <UserRound className="size-4 text-primary shrink-0" />
                 <span>Mi perfil</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
-                className="rounded-lg cursor-pointer text-xs font-medium py-2"
+                className="rounded-xl cursor-pointer text-xs font-medium py-2 px-2.5 text-destructive hover:bg-destructive/10 transition-colors"
                 onClick={() => void handleLogout()}
               >
-                <LogOut className="size-4" />
+                <LogOut className="size-4 shrink-0" />
                 <span>Cerrar sesión</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
