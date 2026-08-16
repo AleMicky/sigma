@@ -36,6 +36,7 @@ const pathLabels: Record<string, string> = {
   "/tipos-activo": "Tipos de Activo",
   "/tipos-activo/historial": "Historial",
   "/categorias": "Categorías",
+  "/accesorios": "Accesorios",
   "/tipos-documento": "Tipos de Documento",
 
   // Inventarios
@@ -73,6 +74,7 @@ const segmentLabels: Record<string, string> = {
   personas: "Personas",
   migraciones: "Logs de Migración",
   categorias: "Categorías",
+  accesorios: "Accesorios",
   gestion: "Gestión",
   catalogos: "Catálogos",
   ubicaciones: "Ubicaciones",
@@ -116,6 +118,7 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbSegment[] {
   const isActivosSubModule =
     cleanPath.startsWith("/tipos-activo") ||
     cleanPath.startsWith("/categorias") ||
+    cleanPath.startsWith("/accesorios") ||
     cleanPath.startsWith("/tipos-documento")
 
   if (isActivosSubModule) {

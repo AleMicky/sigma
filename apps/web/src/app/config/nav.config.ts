@@ -11,6 +11,7 @@ import {
   LayoutGrid,
   List,
   MapPin,
+  Paperclip,
   Ruler,
   ScrollText,
   Settings2,
@@ -100,6 +101,11 @@ export const navItems: NavItem[] = [
             title: "Tipos de activo",
             to: routes.tiposActivo.root,
             icon: Tags,
+          },
+          {
+            title: "Accesorios",
+            to: routes.accesorios.root,
+            icon: Paperclip,
           },
           {
             title: "Tipos de documento",

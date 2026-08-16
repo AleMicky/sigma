@@ -20,10 +20,16 @@ export const routes = {
       `/tipos-activo/${tipoActivoId}/atributos`,
     componentes: (tipoActivoId: string) =>
       `/tipos-activo/${tipoActivoId}/componentes`,
+    accesorios: (tipoActivoId: string) =>
+      `/tipos-activo/${tipoActivoId}/accesorios`,
   },
 
   categorias: {
     root: "/categorias",
+  },
+
+  accesorios: {
+    root: "/accesorios",
   },
 
   tiposDocumento: {
