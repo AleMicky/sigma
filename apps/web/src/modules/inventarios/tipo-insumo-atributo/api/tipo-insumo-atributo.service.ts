@@ -11,6 +11,7 @@ export type TipoInsumoAtributo = AuditableEntity & {
   nombre: string
   requerido: boolean
   orden: number
+  opciones?: string | null
 }
 
 export type TipoInsumoAtributoPayload = {
@@ -20,6 +21,7 @@ export type TipoInsumoAtributoPayload = {
   nombre: string
   requerido?: boolean
   orden?: number
+  opciones?: string | null
 }
 
 export type TipoInsumoAtributoFilters = PageParams & {

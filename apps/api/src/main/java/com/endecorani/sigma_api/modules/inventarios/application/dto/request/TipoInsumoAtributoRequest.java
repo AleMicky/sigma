@@ -64,6 +64,12 @@ public record TipoInsumoAtributoRequest(
                 description = "Orden de visualización",
                 example = "1"
         )
-        Integer orden
+        Integer orden,
+
+        @Schema(
+                description = "Opciones configuradas en formato JSON para el atributo",
+                example = "[\"Opción 1\", \"Opción 2\"]"
+        )
+        String opciones
 ) {
 }

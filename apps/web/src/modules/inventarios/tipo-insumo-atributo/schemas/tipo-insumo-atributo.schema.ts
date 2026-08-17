@@ -16,6 +16,7 @@ export const tipoInsumoAtributoSchema = z.object({
     .number()
     .int("El orden debe ser un número entero")
     .min(0, "El orden no puede ser negativo"),
+  opciones: z.string().optional(),
 })
 
 export type TipoInsumoAtributoDto = z.infer<typeof tipoInsumoAtributoSchema>
@@ -27,4 +28,5 @@ export const defaultTipoInsumoAtributoValues: TipoInsumoAtributoDto = {
   nombre: "",
   requerido: false,
   orden: 0,
+  opciones: "",
 }

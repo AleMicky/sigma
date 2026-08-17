@@ -20,6 +20,7 @@ public class TipoInsumoAtributoPersistenceMapper {
         entity.setNombre(domain.getNombre());
         entity.setOrden(domain.getOrden());
         entity.setRequerido(domain.getRequerido());
+        entity.setOpciones(domain.getOpciones());
 
         return entity;
     }
@@ -37,6 +38,7 @@ public class TipoInsumoAtributoPersistenceMapper {
                 .nombre(entity.getNombre())
                 .requerido(entity.getRequerido())
                 .orden(entity.getOrden())
+                .opciones(entity.getOpciones())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())

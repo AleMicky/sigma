@@ -108,6 +108,7 @@ public class TipoInsumoAtributoService extends AbstractCrudService<
                         request.tipoInsumoId(),
                         request.orden()
                 ))
+                .opciones(StringUtils.normalize(request.opciones()))
                 .build();
     }
 
@@ -138,6 +139,7 @@ public class TipoInsumoAtributoService extends AbstractCrudService<
         domain.setNombre(requireNormalizedNombre(request.nombre()));
         domain.setRequerido(defaultIfNull(request.requerido(), false));
         domain.setOrden(orden);
+        domain.setOpciones(StringUtils.normalize(request.opciones()));
     }
 
     @Override
@@ -150,6 +152,7 @@ public class TipoInsumoAtributoService extends AbstractCrudService<
                 domain.getNombre(),
                 domain.getRequerido(),
                 domain.getOrden(),
+                domain.getOpciones(),
                 domain.getCreatedAt(),
                 domain.getUpdatedAt(),
                 domain.getCreatedBy(),
