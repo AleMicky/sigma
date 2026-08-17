@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { FolderTree, Plus } from "lucide-react"
+import { FolderTree, Plus, Filter } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { tipoInsumoQueries } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.queries"
@@ -11,6 +11,13 @@ import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
 import {
   useClampPage,
   usePaginatedSearch,
@@ -27,6 +34,7 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 export function CategoriasInsumoPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<CategoriaInsumo | null>(null)
+  const [selectedTipoInsumoId, setSelectedTipoInsumoId] = useState<string>("")
   const search = usePaginatedSearch()
 
   const tiposInsumoQuery = useQuery(
@@ -38,13 +46,15 @@ export function CategoriasInsumoPage() {
     }),
   )
 
+  const tiposInsumo = tiposInsumoQuery.data?.content ?? []
+
   const tiposInsumoMap = useMemo(() => {
     const map = new Map<string, { nombre: string; codigo: string }>()
-    tiposInsumoQuery.data?.content?.forEach((ti) => {
+    tiposInsumo.forEach((ti) => {
       map.set(ti.id, { nombre: ti.nombre, codigo: ti.codigo })
     })
     return map
-  }, [tiposInsumoQuery.data])
+  }, [tiposInsumo])
 
   const categoriasQuery = useQuery(
     categoriaInsumoQueries.list({
@@ -52,6 +62,7 @@ export function CategoriasInsumoPage() {
       size: PAGE_SIZE,
       sortBy: "nombre",
       direction: "ASC",
+      ...(selectedTipoInsumoId ? { tipoInsumoId: selectedTipoInsumoId } : {}),
       ...(search.query ? { q: search.query } : {}),
     }),
   )
@@ -93,7 +104,7 @@ export function CategoriasInsumoPage() {
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
-            Clasifica los insumos en grupos funcionales (ej. Lubricantes, Repuestos, Químicos).
+            Clasifica los insumos en grupos funcionales por tipo de insumo (ej. Lubricantes, Repuestos, Químicos).
           </p>
         </div>
 
@@ -108,15 +119,83 @@ export function CategoriasInsumoPage() {
         </Button>
       </header>
 
-      <div className="flex shrink-0 py-3">
+      <div className="flex shrink-0 flex-col gap-3 py-3 sm:flex-row sm:items-center">
         <SearchField
           value={search.search}
           onChange={search.setSearch}
           placeholder="Buscar por código, nombre o descripción…"
           aria-label="Buscar categorías de insumo"
-          className="w-full min-w-0"
+          className="w-full flex-1 min-w-0"
         />
+
+        <div className="w-full sm:w-64 shrink-0">
+          <Select
+            value={selectedTipoInsumoId || "ALL"}
+            onValueChange={(val) => {
+              setSelectedTipoInsumoId(val === "ALL" ? "" : (val ?? ""))
+              search.setPage(0)
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Todos los tipos de insumo">
+                {selectedTipoInsumoId && tiposInsumoMap.get(selectedTipoInsumoId)
+                  ? tiposInsumoMap.get(selectedTipoInsumoId)?.nombre
+                  : "Todos los tipos de insumo"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos los tipos de insumo</SelectItem>
+              {tiposInsumo.map((tipo) => (
+                <SelectItem key={tipo.id} value={tipo.id}>
+                  {tipo.nombre} ({tipo.codigo})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      {tiposInsumo.length > 0 && (
+        <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto pb-3 pt-1 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedTipoInsumoId("")
+              search.setPage(0)
+            }}
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-all cursor-pointer border",
+              !selectedTipoInsumoId
+                ? "border-primary bg-primary text-primary-foreground font-semibold shadow-2xs"
+                : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            Todos
+          </button>
+
+          {tiposInsumo.map((tipo) => {
+            const isSelected = selectedTipoInsumoId === tipo.id
+            return (
+              <button
+                key={tipo.id}
+                type="button"
+                onClick={() => {
+                  setSelectedTipoInsumoId(isSelected ? "" : tipo.id)
+                  search.setPage(0)
+                }}
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-all cursor-pointer border",
+                  isSelected
+                    ? "border-primary bg-primary text-primary-foreground font-semibold shadow-2xs"
+                    : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <span>{tipo.nombre}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {categoriasQuery.isLoading ? (
@@ -134,17 +213,29 @@ export function CategoriasInsumoPage() {
           <EmptyState
             icon={<FolderTree className="size-8 text-muted-foreground/60" />}
             title={
-              search.search.trim()
-                ? "Sin resultados para la búsqueda"
+              search.search.trim() || selectedTipoInsumoId
+                ? "Sin resultados para el filtro aplicado"
                 : "No hay categorías de insumo"
             }
             description={
-              search.search.trim()
-                ? "Prueba con otros términos de búsqueda."
+              search.search.trim() || selectedTipoInsumoId
+                ? "Prueba cambiando el tipo de insumo o borrando la búsqueda."
                 : "Comienza registrando la primera categoría de insumo para tu inventario."
             }
             action={
-              search.search.trim() ? undefined : (
+              search.search.trim() || selectedTipoInsumoId ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  onClick={() => {
+                    search.setSearch("")
+                    setSelectedTipoInsumoId("")
+                  }}
+                >
+                  Limpiar Filtros
+                </Button>
+              ) : (
                 <Button size="sm" type="button" onClick={openCreate}>
                   <Plus className="size-4" />
                   Crear Categoría
@@ -165,7 +256,10 @@ export function CategoriasInsumoPage() {
                   <CategoriaInsumoCard
                     key={categoria.id}
                     categoria={categoria}
-                    tipoInsumoNombre={tiposInsumoMap.get(categoria.tipoInsumoId)?.nombre}
+                    tipoInsumoNombre={
+                      categoria.tipoInsumo?.nombre ??
+                      (categoria.tipoInsumoId ? tiposInsumoMap.get(categoria.tipoInsumoId)?.nombre : undefined)
+                    }
                     onEdit={openEdit}
                   />
                 ))}
@@ -184,10 +278,11 @@ export function CategoriasInsumoPage() {
       </div>
 
       <CategoriaInsumoFormDialog
-        key={editing?.id ?? "new-categoria"}
+        key={editing?.id ?? `new-categoria-${selectedTipoInsumoId}`}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         categoria={editing}
+        defaultTipoInsumoId={selectedTipoInsumoId}
         onSuccess={() => {
           if (!editing) {
             search.setPage(0)

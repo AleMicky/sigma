@@ -34,6 +34,7 @@ type CategoriaInsumoFormDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   categoria?: CategoriaInsumo | null
+  defaultTipoInsumoId?: string
   onSuccess?: (categoria: CategoriaInsumo) => void
 }
 
@@ -41,6 +42,7 @@ export function CategoriaInsumoFormDialog({
   open,
   onOpenChange,
   categoria,
+  defaultTipoInsumoId,
   onSuccess,
 }: CategoriaInsumoFormDialogProps) {
   const isEditing = Boolean(categoria)
@@ -67,7 +69,10 @@ export function CategoriaInsumoFormDialog({
           nombre: categoria.nombre,
           descripcion: categoria.descripcion ?? "",
         }
-      : defaultCategoriaInsumoValues,
+      : {
+          ...defaultCategoriaInsumoValues,
+          tipoInsumoId: defaultTipoInsumoId ?? "",
+        },
     validators: {
       onSubmit: categoriaInsumoSchema,
     },
@@ -141,6 +146,7 @@ export function CategoriaInsumoFormDialog({
         {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
+          const selectedTipo = tiposInsumo.find((t) => t.id === field.state.value)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
@@ -152,7 +158,11 @@ export function CategoriaInsumoFormDialog({
                 onValueChange={(val) => field.handleChange(val ?? "")}
               >
                 <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                  <SelectValue placeholder="Selecciona un tipo de insumo…" />
+                  <SelectValue placeholder="Selecciona un tipo de insumo…">
+                    {selectedTipo
+                      ? `${selectedTipo.nombre} (${selectedTipo.codigo})`
+                      : categoria?.tipoInsumo?.nombre}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {tiposInsumo.map((tipo) => (
