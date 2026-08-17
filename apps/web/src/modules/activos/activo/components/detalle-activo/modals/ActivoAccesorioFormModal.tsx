@@ -3,12 +3,21 @@ import { useQuery } from "@tanstack/react-query"
 import { Layers, Loader2, Minus, Plus, Tag } from "lucide-react"
 
 import { accesorioQueries } from "@/modules/activos/accesorio/api/accesorio.queries"
+import type { Accesorio } from "@/modules/activos/accesorio/api/accesorio.service"
 import {
   useCreateActivoAccesorio,
   useUpdateActivoAccesorio,
 } from "@/modules/activos/activo-accesorio/api/activo-accesorio.mutations"
 import type { ActivoAccesorio } from "@/modules/activos/activo-accesorio/api/activo-accesorio.service"
 import { Button } from "@/shared/components/ui/button"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/shared/components/ui/combobox"
 import {
   Dialog,
   DialogContent,
@@ -19,13 +28,6 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 
 type ActivoAccesorioFormModalProps = {
@@ -56,7 +58,6 @@ export function ActivoAccesorioFormModal({
   const [numeroSerie, setNumeroSerie] = useState("")
   const [observacion, setObservacion] = useState("")
 
-
   // Fetch accessories
   const accesoriosQuery = useQuery({
     ...accesorioQueries.list({
@@ -86,6 +87,12 @@ export function ActivoAccesorioFormModal({
     }
     return list
   }, [accesorios, itemToEdit])
+
+  // Get the selected accessory object for display in Combobox
+  const selectedAccesorio = useMemo(
+    () => accesoriosList.find((acc) => acc.id === accesorioId) ?? null,
+    [accesoriosList, accesorioId],
+  )
 
   // Prefill when editing or opening
   useEffect(() => {
@@ -173,65 +180,70 @@ export function ActivoAccesorioFormModal({
           </DialogHeader>
 
           <div className="grid gap-3.5 py-1">
-            {/* Accesorio selection */}
+            {/* Accesorio selection with Autocomplete / Combobox */}
             <div className="space-y-1.5">
               <Label htmlFor="accesorio" className="text-xs font-semibold">
                 Accesorio <span className="text-destructive">*</span>
               </Label>
 
-              <Select
-                value={accesorioId}
-                onValueChange={(val) => setAccesorioId(val ?? "")}
+              <Combobox
+                items={accesoriosList}
+                itemToStringLabel={(item: Accesorio) =>
+                  item ? `${item.codigo ? `${item.codigo} - ` : ""}${item.nombre}` : ""
+                }
+                itemToStringValue={(item: Accesorio) => item?.id ?? ""}
+                value={selectedAccesorio}
+                onValueChange={(val: Accesorio | null) =>
+                  setAccesorioId(val?.id ?? "")
+                }
                 disabled={isPending || isEditing || accesoriosQuery.isLoading}
               >
-                <SelectTrigger id="accesorio" className="h-9 text-xs w-full">
-                  <SelectValue
-                    placeholder={
-                      accesoriosQuery.isLoading
-                        ? "Cargando accesorios..."
-                        : "Seleccione un accesorio..."
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {accesoriosList.map((acc) => {
-                    const matchesCategory =
-                      categoriaId && acc.catalogo?.id === categoriaId
-                    return (
-                      <SelectItem
-                        key={acc.id}
-                        value={acc.id}
-                        className="text-xs"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Tag className="size-3 text-muted-foreground" />
-                          <span className="font-semibold text-foreground">
-                            {acc.codigo}
-                          </span>
-                          <span className="text-muted-foreground">-</span>
-                          <span>{acc.nombre}</span>
-                          {matchesCategory && (
-                            <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                              Recomendado
+                <ComboboxInput
+                  id="accesorio"
+                  placeholder={
+                    accesoriosQuery.isLoading
+                      ? "Cargando accesorios..."
+                      : "Buscar accesorio por código o nombre..."
+                  }
+                  className="h-9 text-xs w-full"
+                  showClear
+                />
+                <ComboboxContent className="z-50 max-h-60 min-w-[280px]">
+                  <ComboboxEmpty>No se encontraron accesorios.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: Accesorio) => {
+                      const matchesCategory =
+                        categoriaId && item.catalogo?.id === categoriaId
+                      return (
+                        <ComboboxItem
+                          key={item.id}
+                          value={item}
+                          className="text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Tag className="size-3 text-muted-foreground" />
+                            <span className="font-semibold text-foreground">
+                              {item.codigo}
                             </span>
-                          )}
-                          {acc.catalogo?.nombre && !matchesCategory && (
-                            <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                              {acc.catalogo.nombre}
-                            </span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    )
-                  })}
-
-                  {accesoriosList.length === 0 && !accesoriosQuery.isLoading && (
-                    <div className="py-3 text-center text-xs text-muted-foreground">
-                      No hay accesorios registrados en el sistema.
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
+                            <span className="text-muted-foreground">-</span>
+                            <span>{item.nombre}</span>
+                            {matchesCategory && (
+                              <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                                Recomendado
+                              </span>
+                            )}
+                            {item.catalogo?.nombre && !matchesCategory && (
+                              <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                {item.catalogo.nombre}
+                              </span>
+                            )}
+                          </div>
+                        </ComboboxItem>
+                      )
+                    }}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </div>
 
             {/* Cantidad Stepper */}
