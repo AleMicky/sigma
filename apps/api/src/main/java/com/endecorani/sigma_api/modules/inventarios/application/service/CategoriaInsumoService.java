@@ -6,6 +6,7 @@ import com.endecorani.sigma_api.modules.inventarios.domain.model.CategoriaInsumo
 import com.endecorani.sigma_api.modules.inventarios.domain.repository.CategoriaInsumoRepository;
 import com.endecorani.sigma_api.modules.inventarios.domain.repository.TipoInsumoRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
+import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -136,16 +137,31 @@ public class CategoriaInsumoService extends AbstractCrudService<
 
     @Override
     protected CategoriaInsumoResponse toResponse(CategoriaInsumo domain) {
-        return new CategoriaInsumoResponse(
-                domain.getId(),
-                domain.getTipoInsumoId(),
-                domain.getCodigo(),
-                domain.getNombre(),
-                domain.getDescripcion(),
+        CategoriaInsumoResponse.TipoInsumoInfo tipoInsumoInfo = null;
+        if (domain.getTipoInsumoId() != null) {
+            tipoInsumoInfo = tipoInsumoRepository.findById(domain.getTipoInsumoId())
+                    .map(ti -> new CategoriaInsumoResponse.TipoInsumoInfo(
+                            ti.getId(),
+                            ti.getCodigo(),
+                            ti.getNombre()
+                    ))
+                    .orElse(null);
+        }
+
+        AuditoriaResponse auditoria = new AuditoriaResponse(
                 domain.getCreatedAt(),
                 domain.getUpdatedAt(),
                 domain.getCreatedBy(),
                 domain.getUpdatedBy()
+        );
+
+        return new CategoriaInsumoResponse(
+                domain.getId(),
+                tipoInsumoInfo,
+                domain.getCodigo(),
+                domain.getNombre(),
+                domain.getDescripcion(),
+                auditoria
         );
     }
 

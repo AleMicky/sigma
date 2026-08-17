@@ -36,9 +36,9 @@ export function CategoriaInsumoCard({
             <code className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-mono font-medium text-muted-foreground">
               {categoria.codigo}
             </code>
-            {tipoInsumoNombre && (
+            { (categoria.tipoInsumo?.nombre || tipoInsumoNombre) && (
               <span className="inline-flex items-center rounded-md bg-secondary/80 px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
-                {tipoInsumoNombre}
+                {categoria.tipoInsumo?.nombre || tipoInsumoNombre}
               </span>
             )}
           </div>

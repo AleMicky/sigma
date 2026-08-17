@@ -62,7 +62,7 @@ export function CategoriaInsumoFormDialog({
   const form = useForm({
     defaultValues: categoria
       ? {
-          tipoInsumoId: categoria.tipoInsumoId,
+          tipoInsumoId: categoria.tipoInsumo?.id ?? categoria.tipoInsumoId ?? "",
           codigo: categoria.codigo,
           nombre: categoria.nombre,
           descripcion: categoria.descripcion ?? "",

@@ -6,7 +6,12 @@ import type { PageParams } from "@/shared/types/api.types"
 import { categoriaInsumoEndpoints } from "./categoria-insumo.endpoints"
 
 export type CategoriaInsumo = AuditableEntity & {
-  tipoInsumoId: string
+  tipoInsumo?: {
+    id: string
+    codigo: string
+    nombre: string
+  } | null
+  tipoInsumoId?: string
   codigo: string
   nombre: string
   descripcion: string | null
