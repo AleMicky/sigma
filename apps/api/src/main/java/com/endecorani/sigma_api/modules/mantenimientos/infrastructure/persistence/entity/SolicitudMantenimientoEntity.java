@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.mantenimiento.infrastructure.persistence.entity;
+package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity;
 
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.Column;
@@ -18,7 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity
 @Table(
-        schema = "mantenimiento",
+        schema = "mantenimientos",
         name = "solicitudes_mantenimiento",
         indexes = {
                 @Index(
@@ -75,10 +75,11 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     private UUID tipoMantenimientoId;
 
     @Column(
-            name = "motivo_mantenimiento_id",
-            nullable = false
+            name = "motivo_mantenimiento",
+            nullable = false,
+            length = 50
     )
-    private UUID motivoMantenimientoId;
+    private String motivoMantenimiento;
 
     @Column(
             name = "prioridad_id",

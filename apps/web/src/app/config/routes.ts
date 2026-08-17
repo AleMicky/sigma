@@ -66,5 +66,11 @@ export const routes = {
       root: "/inventarios/categorias",
     },
   },
+
+  mantenimientos: {
+    root: "/mantenimientos",
+    tiposMantenimiento: "/mantenimientos/tipos-mantenimiento",
+    prioridades: "/mantenimientos/prioridades",
+  },
 } as const
 

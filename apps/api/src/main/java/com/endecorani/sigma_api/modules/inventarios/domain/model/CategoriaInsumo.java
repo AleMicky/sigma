@@ -18,6 +18,8 @@ public class CategoriaInsumo extends AuditableModel {
 
     private UUID id;
 
+    private UUID tipoInsumoId;
+
     private String codigo;
 
     private String nombre;

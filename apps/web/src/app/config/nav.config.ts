@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   BookOpen,
   Boxes,
   Briefcase,
@@ -20,6 +21,7 @@ import {
   Type,
   UserCheck,
   Users,
+  Wrench,
 } from "lucide-react"
 
 import type { NavItem } from "@/shared/types/nav.types"
@@ -177,6 +179,23 @@ export const navItems: NavItem[] = [
             icon: Ruler,
           },
         ],
+      },
+    ],
+  },
+  {
+    title: "Mantenimientos",
+    to: routes.mantenimientos.root,
+    icon: Wrench,
+    children: [
+      {
+        title: "Tipos de Mantenimiento",
+        to: routes.mantenimientos.tiposMantenimiento,
+        icon: Tags,
+      },
+      {
+        title: "Prioridades",
+        to: routes.mantenimientos.prioridades,
+        icon: AlertCircle,
       },
     ],
   },

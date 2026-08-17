@@ -53,6 +53,11 @@ const pathLabels: Record<string, string> = {
   "/parametros/ubicaciones": "Ubicaciones",
   "/parametros/unidades-medida": "Unidades de Medida",
 
+  // Mantenimientos
+  "/mantenimientos": "Mantenimientos",
+  "/mantenimientos/tipos-mantenimiento": "Tipos de Mantenimiento",
+  "/mantenimientos/prioridades": "Prioridades",
+
   // Perfil
   "/perfil": "Mi Perfil",
 }
@@ -63,6 +68,9 @@ const segmentLabels: Record<string, string> = {
   organizacion: "Organización",
   inventarios: "Inventarios",
   parametros: "Parámetros",
+  mantenimientos: "Mantenimientos",
+  "tipos-mantenimiento": "Tipos de Mantenimiento",
+  prioridades: "Prioridades",
   "tipos-activo": "Tipos de Activo",
   "tipos-insumo": "Tipos de Insumo",
   "tipos-documento": "Tipos de Documento",
