@@ -5,12 +5,14 @@ import {
   Briefcase,
   Building,
   Building2,
+  CheckSquare,
   FileSearch,
   FileText,
   FolderTree,
   LayoutDashboard,
   LayoutGrid,
   List,
+  ListTodo,
   MapPin,
   Paperclip,
   Ruler,
@@ -187,6 +189,21 @@ export const navItems: NavItem[] = [
     to: routes.mantenimientos.root,
     icon: Wrench,
     children: [
+      {
+        title: "Solicitudes",
+        to: routes.mantenimientos.solicitudes,
+        icon: FileText,
+      },
+      {
+        title: "Actividades",
+        to: routes.mantenimientos.actividades,
+        icon: ListTodo,
+      },
+      {
+        title: "Checklists",
+        to: routes.mantenimientos.checklists,
+        icon: CheckSquare,
+      },
       {
         title: "Tipos de Mantenimiento",
         to: routes.mantenimientos.tiposMantenimiento,

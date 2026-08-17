@@ -69,6 +69,9 @@ export const routes = {
 
   mantenimientos: {
     root: "/mantenimientos",
+    solicitudes: "/mantenimientos/solicitudes",
+    actividades: "/mantenimientos/actividades",
+    checklists: "/mantenimientos/checklists",
     tiposMantenimiento: "/mantenimientos/tipos-mantenimiento",
     prioridades: "/mantenimientos/prioridades",
   },
