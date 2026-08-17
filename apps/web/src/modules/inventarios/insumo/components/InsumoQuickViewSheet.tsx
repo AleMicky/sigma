@@ -54,15 +54,17 @@ export function InsumoQuickViewSheet({
     enabled: Boolean(insumo?.id) && open,
   })
 
+  const selectedTipoId = tipoInsumo?.id ?? categoria?.tipoInsumoId
+
   const atributosQuery = useQuery({
     ...tipoInsumoAtributoQueries.list({
-      tipoInsumoId: insumo?.tipoInsumoId,
+      tipoInsumoId: selectedTipoId,
       page: 0,
       size: 100,
       sortBy: "orden",
       direction: "ASC",
     }),
-    enabled: Boolean(insumo?.tipoInsumoId) && open,
+    enabled: Boolean(selectedTipoId) && open,
   })
 
   const valoresMap = useMemo(() => {

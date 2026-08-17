@@ -4,12 +4,20 @@ import type { AuditableEntity } from "@/shared/types/audit.types"
 
 import { insumoEndpoints } from "./insumo.endpoints"
 
+export type BaseInfo = {
+  id: string
+  codigo: string
+  nombre: string
+}
+
 export type Insumo = AuditableEntity & {
   codigo: string
   nombre: string
   descripcion: string | null
-  categoriaInsumoId: string
-  unidadMedidaId: string
+  categoriaInsumo?: BaseInfo | null
+  categoriaInsumoId?: string
+  unidadMedida?: BaseInfo | null
+  unidadMedidaId?: string
   marca: string | null
 }
 

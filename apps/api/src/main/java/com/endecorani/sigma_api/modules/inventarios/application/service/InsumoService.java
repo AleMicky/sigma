@@ -1,11 +1,13 @@
 package com.endecorani.sigma_api.modules.inventarios.application.service;
 
 import com.endecorani.sigma_api.modules.inventarios.application.dto.request.InsumoRequest;
+import com.endecorani.sigma_api.modules.inventarios.application.dto.response.CategoriaInsumoResponse;
 import com.endecorani.sigma_api.modules.inventarios.application.dto.response.InsumoResponse;
 import com.endecorani.sigma_api.modules.inventarios.domain.model.Insumo;
 import com.endecorani.sigma_api.modules.inventarios.domain.repository.CategoriaInsumoRepository;
 import com.endecorani.sigma_api.modules.inventarios.domain.repository.InsumoRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UnidadMedidaRepository;
+import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -121,18 +123,44 @@ public class InsumoService {
     }
 
     private InsumoResponse toResponse(Insumo domain) {
+        InsumoResponse.BaseInfo categoriaInsumoInfo = null;
+        if (domain.getCategoriaInsumoId() != null) {
+            categoriaInsumoInfo = categoriaInsumoRepository.findById(domain.getCategoriaInsumoId())
+                    .map(c -> new InsumoResponse.BaseInfo(
+                            c.getId(),
+                            c.getCodigo(),
+                            c.getNombre()
+                    ))
+                    .orElse(null);
+        }
+
+        InsumoResponse.BaseInfo unidadMedidaInfo = null;
+        if (domain.getUnidadMedidaId() != null) {
+            unidadMedidaInfo = unidadMedidaRepository.findById(domain.getUnidadMedidaId())
+                    .map(u -> new InsumoResponse.BaseInfo(
+                            u.getId(),
+                            u.getCodigo(),
+                            u.getNombre()
+                    ))
+                    .orElse(null);
+        }
+
+        AuditoriaResponse auditoria = new AuditoriaResponse(
+                domain.getCreatedAt(),
+                domain.getUpdatedAt(),
+                domain.getCreatedBy(),
+                domain.getUpdatedBy()
+        );
+
         return new InsumoResponse(
                 domain.getId(),
                 domain.getCodigo(),
                 domain.getNombre(),
                 domain.getDescripcion(),
-                domain.getCategoriaInsumoId(),
-                domain.getUnidadMedidaId(),
+                categoriaInsumoInfo,
+                unidadMedidaInfo,
                 domain.getMarca(),
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
+                auditoria
         );
     }
 

@@ -1,7 +1,5 @@
 import { queryOptions } from "@tanstack/react-query"
 
-import type { PageParams } from "@/shared/types/api.types"
-
 import { categoriaInsumoKeys } from "./categoria-insumo.keys"
 import {
   getCategoriaInsumo,

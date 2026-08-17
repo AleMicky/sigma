@@ -9,7 +9,6 @@ import { categoriaInsumoQueries } from "@/modules/inventarios/categoria-insumo/a
 import { insumoAtributoValorQueries } from "@/modules/inventarios/insumo-atributo-valor/api/insumo-atributo-valor.queries"
 import type { InsumoAtributoValor } from "@/modules/inventarios/insumo-atributo-valor/api/insumo-atributo-valor.service"
 import { tipoInsumoAtributoQueries } from "@/modules/inventarios/tipo-insumo-atributo/api/tipo-insumo-atributo.queries"
-import { tipoInsumoQueries } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.queries"
 
 import { tipoDatoQueries } from "@/modules/parametros/tipo-dato/api/tipo-dato.queries"
 import { unidadMedidaQueries } from "@/modules/parametros/unidad-medida/api/unidad-medida.queries"
@@ -81,14 +80,6 @@ export function InsumoFormPage({ insumoId }: InsumoFormPageProps) {
   }, [existingValoresQuery.data])
 
   // Fetch Catalogs
-  const tiposQuery = useQuery(
-    tipoInsumoQueries.list({
-      page: 0,
-      size: 100,
-      sortBy: "nombre",
-      direction: "ASC",
-    }),
-  )
   const categoriasQuery = useQuery(
     categoriaInsumoQueries.list({
       page: 0,
@@ -114,7 +105,6 @@ export function InsumoFormPage({ insumoId }: InsumoFormPageProps) {
     }),
   )
 
-  const tipos = tiposQuery.data?.content ?? []
   const categorias = categoriasQuery.data?.content ?? []
   const unidadesMedida = unidadesMedidaQuery.data?.content ?? []
 
@@ -132,8 +122,8 @@ export function InsumoFormPage({ insumoId }: InsumoFormPageProps) {
           codigo: insumo.codigo,
           nombre: insumo.nombre,
           descripcion: insumo.descripcion ?? "",
-          categoriaInsumoId: insumo.categoriaInsumoId,
-          unidadMedidaId: insumo.unidadMedidaId,
+          categoriaInsumoId: insumo.categoriaInsumo?.id ?? insumo.categoriaInsumoId ?? "",
+          unidadMedidaId: insumo.unidadMedida?.id ?? insumo.unidadMedidaId ?? "",
           marca: insumo.marca ?? "",
         }
       : defaultInsumoValues,

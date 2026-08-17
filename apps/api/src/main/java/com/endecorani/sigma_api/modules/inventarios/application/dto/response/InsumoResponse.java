@@ -1,8 +1,8 @@
 package com.endecorani.sigma_api.modules.inventarios.application.dto.response;
 
+import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Schema(
@@ -35,16 +35,14 @@ public record InsumoResponse(
         String descripcion,
 
         @Schema(
-                description = "ID de la categoría de insumo",
-                example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
+                description = "Información de la categoría de insumo"
         )
-        UUID categoriaInsumoId,
+        BaseInfo categoriaInsumo,
 
         @Schema(
-                description = "ID de la unidad de medida",
-                example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
+                description = "Información de la unidad de medida"
         )
-        UUID unidadMedidaId,
+        BaseInfo unidadMedida,
 
         @Schema(
                 description = "Marca del insumo",
@@ -52,16 +50,29 @@ public record InsumoResponse(
         )
         String marca,
 
-        @Schema(description = "Fecha de creación")
-        Instant createdAt,
-
-        @Schema(description = "Fecha de última actualización")
-        Instant updatedAt,
-
-        @Schema(description = "Usuario que creó el registro")
-        String createdBy,
-
-        @Schema(description = "Usuario que actualizó el registro")
-        String updatedBy
+        @Schema(
+                description = "Datos de auditoría"
+        )
+        AuditoriaResponse auditoria
 ) {
+        public record BaseInfo(
+                @Schema(
+                        description = "Identificador único",
+                        example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
+                )
+                UUID id,
+
+                @Schema(
+                        description = "Código",
+                        example = "COD-001"
+                )
+                String codigo,
+
+                @Schema(
+                        description = "Nombre",
+                        example = "Nombre Ejemplo"
+                )
+                String nombre
+        ) {}
 }
+

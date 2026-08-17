@@ -106,16 +106,20 @@ export function InsumosPage() {
   // Client-side fallback filter for additional safety
   const insumos = useMemo(() => {
     return rawInsumos.filter((item) => {
-      if (tipoInsumoId !== ALL_ITEMS && item.tipoInsumoId !== tipoInsumoId)
+      const catId = item.categoriaInsumo?.id ?? item.categoriaInsumoId
+      const cat = catId ? categoriasById.get(catId) : undefined
+      const tipoId = cat?.tipoInsumo?.id ?? cat?.tipoInsumoId
+
+      if (tipoInsumoId !== ALL_ITEMS && tipoId !== tipoInsumoId)
         return false
       if (
         categoriaInsumoId !== ALL_ITEMS &&
-        item.categoriaInsumoId !== categoriaInsumoId
+        catId !== categoriaInsumoId
       )
         return false
       return true
     })
-  }, [rawInsumos, tipoInsumoId, categoriaInsumoId])
+  }, [rawInsumos, tipoInsumoId, categoriaInsumoId, categoriasById])
 
   useClampPage(search.page, search.setPage, insumosQuery.data?.totalPages)
 
@@ -227,22 +231,30 @@ export function InsumosPage() {
             >
               {viewMode === "grid" ? (
                 <ul className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {insumos.map((insumo) => (
-                    <InsumoCard
-                      key={insumo.id}
-                      insumo={insumo}
-                      tipoInsumo={tiposById.get(insumo.tipoInsumoId)}
-                      categoria={categoriasById.get(insumo.categoriaInsumoId)}
-                      unidadMedida={unidadesMedidaById.get(insumo.unidadMedidaId)}
-                      onEdit={goEdit}
-                      onQuickView={(item) => setQuickViewItem(item)}
-                    />
-                  ))}
+                  {insumos.map((insumo) => {
+                    const catId = insumo.categoriaInsumo?.id ?? insumo.categoriaInsumoId
+                    const umId = insumo.unidadMedida?.id ?? insumo.unidadMedidaId
+                    const categoria = catId ? categoriasById.get(catId) : undefined
+                    const tipoId = categoria?.tipoInsumo?.id ?? categoria?.tipoInsumoId
+                    const tipoInsumo = tipoId ? tiposById.get(tipoId) : undefined
+                    const unidadMedida = umId ? unidadesMedidaById.get(umId) : undefined
+
+                    return (
+                      <InsumoCard
+                        key={insumo.id}
+                        insumo={insumo}
+                        tipoInsumo={tipoInsumo}
+                        categoria={categoria}
+                        unidadMedida={unidadMedida}
+                        onEdit={goEdit}
+                        onQuickView={(item) => setQuickViewItem(item)}
+                      />
+                    )
+                  })}
                 </ul>
               ) : (
                 <InsumoTableView
                   insumos={insumos}
-                  tiposById={tiposById}
                   categoriasById={categoriasById}
                   unidadesMedidaById={unidadesMedidaById}
                   onEdit={goEdit}
@@ -263,27 +275,28 @@ export function InsumosPage() {
       </div>
 
       {/* Quick View Side Sheet */}
-      <InsumoQuickViewSheet
-        insumo={quickViewItem}
-        tipoInsumo={
-          quickViewItem ? tiposById.get(quickViewItem.tipoInsumoId) : undefined
-        }
-        categoria={
-          quickViewItem
-            ? categoriasById.get(quickViewItem.categoriaInsumoId)
-            : undefined
-        }
-        unidadMedida={
-          quickViewItem
-            ? unidadesMedidaById.get(quickViewItem.unidadMedidaId)
-            : undefined
-        }
-        open={Boolean(quickViewItem)}
-        onOpenChange={(open) => {
-          if (!open) setQuickViewItem(null)
-        }}
-        onEdit={goEdit}
-      />
+      {(() => {
+        const catId = quickViewItem?.categoriaInsumo?.id ?? quickViewItem?.categoriaInsumoId
+        const umId = quickViewItem?.unidadMedida?.id ?? quickViewItem?.unidadMedidaId
+        const categoria = catId ? categoriasById.get(catId) : undefined
+        const tipoId = categoria?.tipoInsumo?.id ?? categoria?.tipoInsumoId
+        const tipoInsumo = tipoId ? tiposById.get(tipoId) : undefined
+        const unidadMedida = umId ? unidadesMedidaById.get(umId) : undefined
+
+        return (
+          <InsumoQuickViewSheet
+            insumo={quickViewItem}
+            tipoInsumo={tipoInsumo}
+            categoria={categoria}
+            unidadMedida={unidadMedida}
+            open={Boolean(quickViewItem)}
+            onOpenChange={(open) => {
+              if (!open) setQuickViewItem(null)
+            }}
+            onEdit={goEdit}
+          />
+        )
+      })()}
     </PageShell>
   )
 }

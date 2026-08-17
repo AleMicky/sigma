@@ -1,8 +1,7 @@
 import { useState } from "react"
-import { Eye, FolderTree, Package, Ruler, Tags } from "lucide-react"
+import { Eye, FolderTree, Package, Ruler } from "lucide-react"
 
 import type { CategoriaInsumo } from "@/modules/inventarios/categoria-insumo/api/categoria-insumo.service"
-import type { TipoInsumo } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.service"
 import type { UnidadMedida } from "@/modules/parametros/unidad-medida/api/unidad-medida.service"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
@@ -13,7 +12,6 @@ import type { Insumo } from "../api/insumo.service"
 
 type InsumoTableViewProps = {
   insumos: Insumo[]
-  tiposById: Map<string, TipoInsumo>
   categoriasById: Map<string, CategoriaInsumo>
   unidadesMedidaById: Map<string, UnidadMedida>
   onEdit: (insumo: Insumo) => void
@@ -22,7 +20,6 @@ type InsumoTableViewProps = {
 
 export function InsumoTableView({
   insumos,
-  tiposById,
   categoriasById,
   unidadesMedidaById,
   onEdit,
@@ -39,7 +36,6 @@ export function InsumoTableView({
             <tr>
               <th className="px-4 py-3">Insumo</th>
               <th className="px-4 py-3">Código</th>
-              <th className="px-4 py-3">Tipo</th>
               <th className="px-4 py-3">Categoría</th>
               <th className="px-4 py-3">Unidad Medida</th>
               <th className="px-4 py-3">Marca</th>
@@ -48,9 +44,10 @@ export function InsumoTableView({
           </thead>
           <tbody className="divide-y divide-border/40">
             {insumos.map((insumo) => {
-              const tipo = tiposById.get(insumo.tipoInsumoId)
-              const categoria = categoriasById.get(insumo.categoriaInsumoId)
-              const um = unidadesMedidaById.get(insumo.unidadMedidaId)
+              const categoriaName = insumo.categoriaInsumo?.nombre ?? (insumo.categoriaInsumoId ? categoriasById.get(insumo.categoriaInsumoId)?.nombre : undefined)
+              const umObj = insumo.unidadMedidaId ? unidadesMedidaById.get(insumo.unidadMedidaId) : undefined
+              const umName = insumo.unidadMedida?.nombre ?? umObj?.nombre
+              const umDetail = insumo.unidadMedida?.codigo ?? (umObj ? (umObj.simbolo ?? umObj.codigo) : undefined)
 
               return (
                 <tr
@@ -80,30 +77,20 @@ export function InsumoTableView({
                     </code>
                   </td>
                   <td className="px-4 py-3">
-                    {tipo ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300 border border-amber-500/20">
-                        <Tags className="size-2.5" />
-                        {tipo.nombre}
-                      </span>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {categoria ? (
+                    {categoriaName ? (
                       <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300 border border-blue-500/20">
                         <FolderTree className="size-2.5" />
-                        {categoria.nombre}
+                        {categoriaName}
                       </span>
                     ) : (
                       "—"
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {um ? (
+                    {umName ? (
                       <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
                         <Ruler className="size-2.5" />
-                        {um.nombre} ({um.simbolo ?? um.codigo})
+                        {umName} {umDetail ? `(${umDetail})` : ""}
                       </span>
                     ) : (
                       "—"

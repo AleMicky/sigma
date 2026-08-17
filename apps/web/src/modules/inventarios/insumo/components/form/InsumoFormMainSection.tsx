@@ -2,7 +2,6 @@ import type { AnyFieldApi } from "@tanstack/react-form"
 import { Package } from "lucide-react"
 
 import type { CategoriaInsumo } from "@/modules/inventarios/categoria-insumo/api/categoria-insumo.service"
-import type { TipoInsumo } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.service"
 import type { UnidadMedida } from "@/modules/parametros/unidad-medida/api/unidad-medida.service"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
