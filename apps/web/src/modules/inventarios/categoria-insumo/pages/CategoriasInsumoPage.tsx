@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { FolderTree, Plus, Filter } from "lucide-react"
+import { FolderTree, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { tipoInsumoQueries } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.queries"
@@ -55,6 +55,11 @@ export function CategoriasInsumoPage() {
     })
     return map
   }, [tiposInsumo])
+
+  const selectedTipo = useMemo(
+    () => tiposInsumo.find((t) => t.id === selectedTipoInsumoId),
+    [tiposInsumo, selectedTipoInsumoId],
+  )
 
   const categoriasQuery = useQuery(
     categoriaInsumoQueries.list({
@@ -138,8 +143,8 @@ export function CategoriasInsumoPage() {
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Todos los tipos de insumo">
-                {selectedTipoInsumoId && tiposInsumoMap.get(selectedTipoInsumoId)
-                  ? tiposInsumoMap.get(selectedTipoInsumoId)?.nombre
+                {selectedTipo
+                  ? `${selectedTipo.nombre} (${selectedTipo.codigo})`
                   : "Todos los tipos de insumo"}
               </SelectValue>
             </SelectTrigger>
@@ -154,48 +159,6 @@ export function CategoriasInsumoPage() {
           </Select>
         </div>
       </div>
-
-      {tiposInsumo.length > 0 && (
-        <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto pb-3 pt-1 scrollbar-none">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedTipoInsumoId("")
-              search.setPage(0)
-            }}
-            className={cn(
-              "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-all cursor-pointer border",
-              !selectedTipoInsumoId
-                ? "border-primary bg-primary text-primary-foreground font-semibold shadow-2xs"
-                : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            Todos
-          </button>
-
-          {tiposInsumo.map((tipo) => {
-            const isSelected = selectedTipoInsumoId === tipo.id
-            return (
-              <button
-                key={tipo.id}
-                type="button"
-                onClick={() => {
-                  setSelectedTipoInsumoId(isSelected ? "" : tipo.id)
-                  search.setPage(0)
-                }}
-                className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-all cursor-pointer border",
-                  isSelected
-                    ? "border-primary bg-primary text-primary-foreground font-semibold shadow-2xs"
-                    : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <span>{tipo.nombre}</span>
-              </button>
-            )
-          })}
-        </div>
-      )}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {categoriasQuery.isLoading ? (

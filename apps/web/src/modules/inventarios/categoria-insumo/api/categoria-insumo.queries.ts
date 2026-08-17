@@ -6,10 +6,11 @@ import { categoriaInsumoKeys } from "./categoria-insumo.keys"
 import {
   getCategoriaInsumo,
   listCategoriasInsumo,
+  type CategoriaInsumoFilters,
 } from "./categoria-insumo.service"
 
 export const categoriaInsumoQueries = {
-  list: (filters?: PageParams) =>
+  list: (filters?: CategoriaInsumoFilters) =>
     queryOptions({
       queryKey: categoriaInsumoKeys.list(filters),
       queryFn: () => {

@@ -5,13 +5,11 @@ import com.endecorani.sigma_api.modules.inventarios.application.dto.response.Cat
 import com.endecorani.sigma_api.modules.inventarios.domain.model.CategoriaInsumo;
 import com.endecorani.sigma_api.modules.inventarios.domain.repository.CategoriaInsumoRepository;
 import com.endecorani.sigma_api.modules.inventarios.domain.repository.TipoInsumoRepository;
-import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
-import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,12 +20,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class CategoriaInsumoService extends AbstractCrudService<
-        CategoriaInsumo,
-        CategoriaInsumoRequest,
-        CategoriaInsumoResponse,
-        UUID
-        > {
+public class CategoriaInsumoService {
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -41,14 +34,41 @@ public class CategoriaInsumoService extends AbstractCrudService<
     private final CategoriaInsumoRepository categoriaInsumoRepository;
     private final TipoInsumoRepository tipoInsumoRepository;
 
-    @Override
-    protected CrudRepository<CategoriaInsumo, UUID> repository() {
-        return categoriaInsumoRepository;
+    @Transactional(readOnly = true)
+    public PageResponse<CategoriaInsumoResponse> findAll(PageRequestDto pageRequest) {
+        var page = categoriaInsumoRepository.findAll(pageRequest.toPageable(SORT_FIELDS));
+        return PageResponse.from(page, this::toResponse);
     }
 
-    @Override
-    protected Set<String> allowedSortFields() {
-        return SORT_FIELDS;
+    @Transactional(readOnly = true)
+    public CategoriaInsumoResponse findById(UUID id) {
+        CategoriaInsumo domain = categoriaInsumoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría de insumo", id));
+        return toResponse(domain);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CategoriaInsumoResponse> find(
+            UUID tipoInsumoId,
+            String query,
+            PageRequestDto pageRequest
+    ) {
+        if (tipoInsumoId != null) {
+            return findByTipoInsumoId(tipoInsumoId, query, pageRequest);
+        }
+
+        String normalized = StringUtils.normalize(query);
+        if (normalized == null) {
+            return findAll(pageRequest);
+        }
+
+        return PageResponse.from(
+                categoriaInsumoRepository.search(
+                        normalized,
+                        pageRequest.toPageable(SORT_FIELDS)
+                ),
+                this::toResponse
+        );
     }
 
     @Transactional(readOnly = true)
@@ -60,7 +80,7 @@ public class CategoriaInsumoService extends AbstractCrudService<
         requireTipoInsumoExists(tipoInsumoId);
 
         String normalized = StringUtils.normalize(query);
-        var pageable = pageRequest.toPageable(allowedSortFields());
+        var pageable = pageRequest.toPageable(SORT_FIELDS);
 
         if (normalized == null) {
             return PageResponse.from(
@@ -82,61 +102,54 @@ public class CategoriaInsumoService extends AbstractCrudService<
         );
     }
 
-    @Transactional(readOnly = true)
-    public PageResponse<CategoriaInsumoResponse> search(
-            String query,
-            PageRequestDto pageRequest
-    ) {
-        String normalized = StringUtils.normalize(query);
-
-        if (normalized == null) {
-            return findAll(pageRequest);
-        }
-
-        return PageResponse.from(
-                categoriaInsumoRepository.search(
-                        normalized,
-                        pageRequest.toPageable(allowedSortFields())
-                ),
-                this::toResponse
-        );
-    }
-
-    @Override
-    protected CategoriaInsumo toDomain(CategoriaInsumoRequest request) {
+    @Transactional
+    public CategoriaInsumoResponse create(CategoriaInsumoRequest request) {
         requireTipoInsumoExists(request.tipoInsumoId());
         String codigo = StringUtils.normalize(request.codigo());
         validateUniqueCodigoForCreate(request.tipoInsumoId(), codigo);
 
-        return CategoriaInsumo.builder()
+        CategoriaInsumo domain = CategoriaInsumo.builder()
                 .tipoInsumoId(request.tipoInsumoId())
                 .codigo(codigo)
                 .nombre(StringUtils.normalize(request.nombre()))
                 .descripcion(StringUtils.normalize(request.descripcion()))
                 .build();
+
+        CategoriaInsumo saved = categoriaInsumoRepository.save(domain);
+        return toResponse(saved);
     }
 
-    @Override
-    protected void updateDomain(
-            CategoriaInsumo domain,
-            CategoriaInsumoRequest request
-    ) {
+    @Transactional
+    public CategoriaInsumoResponse update(UUID id, CategoriaInsumoRequest request) {
+        CategoriaInsumo domain = categoriaInsumoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría de insumo", id));
+
         requireTipoInsumoExists(request.tipoInsumoId());
         String codigo = StringUtils.normalize(request.codigo());
         validateUniqueCodigoForUpdate(
                 request.tipoInsumoId(),
                 codigo,
-                domain.getId()
+                id
         );
 
         domain.setTipoInsumoId(request.tipoInsumoId());
         domain.setCodigo(codigo);
         domain.setNombre(StringUtils.normalize(request.nombre()));
         domain.setDescripcion(StringUtils.normalize(request.descripcion()));
+
+        CategoriaInsumo updated = categoriaInsumoRepository.save(domain);
+        return toResponse(updated);
     }
 
-    @Override
-    protected CategoriaInsumoResponse toResponse(CategoriaInsumo domain) {
+    @Transactional
+    public void delete(UUID id) {
+        if (!categoriaInsumoRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Categoría de insumo", id);
+        }
+        categoriaInsumoRepository.deleteById(id);
+    }
+
+    private CategoriaInsumoResponse toResponse(CategoriaInsumo domain) {
         CategoriaInsumoResponse.TipoInsumoInfo tipoInsumoInfo = null;
         if (domain.getTipoInsumoId() != null) {
             tipoInsumoInfo = tipoInsumoRepository.findById(domain.getTipoInsumoId())
@@ -163,11 +176,6 @@ public class CategoriaInsumoService extends AbstractCrudService<
                 domain.getDescripcion(),
                 auditoria
         );
-    }
-
-    @Override
-    protected String resourceName() {
-        return "Categoría de insumo";
     }
 
     private void requireTipoInsumoExists(UUID tipoInsumoId) {
