@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { FolderTree, Plus } from "lucide-react"
+import { FolderTree, Plus, Filter } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { tipoInsumoQueries } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.queries"
@@ -94,15 +94,20 @@ export function CategoriasInsumoPage() {
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
       <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:gap-4 sm:py-6 md:flex-row md:items-start md:justify-between md:py-8">
         <div className="min-w-0 flex flex-1 flex-col gap-1">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
             <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
               Categorías de Insumo
             </h1>
+            {categoriasQuery.data && (
+              <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                {categoriasQuery.data.totalElements}
+              </span>
+            )}
             <Button
               size="sm"
               type="button"
               onClick={openCreate}
-              className="shrink-0 md:hidden"
+              className="shrink-0 md:hidden ml-auto"
             >
               <Plus className="size-4" />
               <span className="sr-only sm:not-sr-only">Crear</span>
@@ -117,14 +122,14 @@ export function CategoriasInsumoPage() {
           size="sm"
           type="button"
           onClick={openCreate}
-          className="hidden shrink-0 self-start md:inline-flex"
+          className="hidden shrink-0 self-start md:inline-flex shadow-xs"
         >
           <Plus className="size-4" />
           Nueva Categoría
         </Button>
       </header>
 
-      <div className="flex shrink-0 flex-col gap-3 py-3 sm:flex-row sm:items-center">
+      <div className="flex shrink-0 flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <SearchField
           value={search.search}
           onChange={search.setSearch}
@@ -133,7 +138,7 @@ export function CategoriasInsumoPage() {
           className="w-full flex-1 min-w-0"
         />
 
-        <div className="w-full sm:w-64 shrink-0">
+        <div className="w-full sm:w-72 shrink-0">
           <Select
             value={selectedTipoInsumoId || "ALL"}
             onValueChange={(val) => {
@@ -141,12 +146,15 @@ export function CategoriasInsumoPage() {
               search.setPage(0)
             }}
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Todos los tipos de insumo">
-                {selectedTipo
-                  ? `${selectedTipo.nombre} (${selectedTipo.codigo})`
-                  : "Todos los tipos de insumo"}
-              </SelectValue>
+            <SelectTrigger className="w-full h-10 rounded-xl bg-card border-border/80 text-xs shadow-2xs">
+              <div className="flex items-center gap-2 truncate">
+                <Filter className="size-3.5 text-primary shrink-0" />
+                <SelectValue placeholder="Todos los tipos de insumo">
+                  {selectedTipo
+                    ? `${selectedTipo.nombre} (${selectedTipo.codigo})`
+                    : "Todos los tipos de insumo"}
+                </SelectValue>
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Todos los tipos de insumo</SelectItem>
@@ -164,8 +172,8 @@ export function CategoriasInsumoPage() {
         {categoriasQuery.isLoading ? (
           <ListSkeleton
             rows={6}
-            rowClassName="h-24 rounded-xl"
-            className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+            rowClassName="h-28 rounded-2xl"
+            className="grid grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
           />
         ) : categoriasQuery.isError ? (
           <EmptyState
@@ -195,11 +203,12 @@ export function CategoriasInsumoPage() {
                     search.setSearch("")
                     setSelectedTipoInsumoId("")
                   }}
+                  className="rounded-xl"
                 >
                   Limpiar Filtros
                 </Button>
               ) : (
-                <Button size="sm" type="button" onClick={openCreate}>
+                <Button size="sm" type="button" onClick={openCreate} className="rounded-xl">
                   <Plus className="size-4" />
                   Crear Categoría
                 </Button>
@@ -210,11 +219,11 @@ export function CategoriasInsumoPage() {
           <>
             <div
               className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 pr-1",
+                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4 pt-1 pr-1",
                 categoriasQuery.isFetching && "opacity-70",
               )}
             >
-              <ul className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              <ul className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 {categorias.map((categoria) => (
                   <CategoriaInsumoCard
                     key={categoria.id}
