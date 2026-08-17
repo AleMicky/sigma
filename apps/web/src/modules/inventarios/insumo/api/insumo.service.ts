@@ -1,6 +1,6 @@
 import { createCrudService } from "@/shared/api"
 import type { PageParams } from "@/shared/types/api.types"
-import type { AuditableEntity } from "@/shared/types/audit.types"
+import type { AuditableEntity, AuditableFields } from "@/shared/types/audit.types"
 
 import { insumoEndpoints } from "./insumo.endpoints"
 
@@ -19,6 +19,7 @@ export type Insumo = AuditableEntity & {
   unidadMedida?: BaseInfo | null
   unidadMedidaId?: string
   marca: string | null
+  auditoria?: AuditableFields
 }
 
 export type InsumoPayload = {

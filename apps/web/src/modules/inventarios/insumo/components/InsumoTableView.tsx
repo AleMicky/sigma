@@ -3,6 +3,7 @@ import { Eye, FolderTree, Package, Ruler } from "lucide-react"
 
 import type { CategoriaInsumo } from "@/modules/inventarios/categoria-insumo/api/categoria-insumo.service"
 import type { UnidadMedida } from "@/modules/parametros/unidad-medida/api/unidad-medida.service"
+import { AuditInfo } from "@/shared/components/audit-info"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Button } from "@/shared/components/ui/button"
@@ -39,6 +40,7 @@ export function InsumoTableView({
               <th className="px-4 py-3">Categoría</th>
               <th className="px-4 py-3">Unidad Medida</th>
               <th className="px-4 py-3">Marca</th>
+              <th className="px-4 py-3">Auditoría</th>
               <th className="px-4 py-3 text-right">Acciones</th>
             </tr>
           </thead>
@@ -98,6 +100,13 @@ export function InsumoTableView({
                   </td>
                   <td className="px-4 py-3 text-muted-foreground font-medium">
                     {insumo.marca || "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <AuditInfo
+                      data={insumo.auditoria ?? insumo}
+                      compact
+                      className="max-w-[190px] text-[10px]"
+                    />
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">

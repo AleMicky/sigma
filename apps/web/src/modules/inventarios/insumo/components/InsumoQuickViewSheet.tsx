@@ -168,17 +168,13 @@ export function InsumoQuickViewSheet({
             </div>
 
             {/* Dynamic Attributes */}
-            <div className="flex flex-col gap-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <SlidersHorizontal className="size-3.5" />
-                Especificaciones y Atributos Técnicos
-              </h4>
+            {atributos.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <SlidersHorizontal className="size-3.5" />
+                  Especificaciones y Atributos Técnicos
+                </h4>
 
-              {atributos.length === 0 ? (
-                <p className="text-xs text-muted-foreground/60 italic p-3 rounded-xl border border-dashed border-border text-center">
-                  Este tipo de insumo no tiene atributos dinámicos configurados.
-                </p>
-              ) : (
                 <div className="rounded-xl border border-border/80 bg-card overflow-hidden">
                   <dl className="divide-y divide-border/40 text-xs">
                     {atributos.map((attr) => {
@@ -199,15 +195,15 @@ export function InsumoQuickViewSheet({
                     })}
                   </dl>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Audit Info */}
             <div className="flex flex-col gap-3 pt-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Registro y Auditoría
               </h4>
-              <AuditInfo data={insumo} />
+              <AuditInfo data={insumo.auditoria ?? insumo} />
             </div>
           </div>
         </div>

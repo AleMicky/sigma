@@ -24,15 +24,8 @@ export function InsumoFormAtributosSection({
   isLoading,
   hasTipoSelected,
 }: InsumoFormAtributosSectionProps) {
-  if (!hasTipoSelected) {
-    return (
-      <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 p-6 text-center">
-        <SlidersHorizontal className="size-6 text-muted-foreground/40 mx-auto mb-2" />
-        <p className="text-sm font-medium text-muted-foreground">
-          Selecciona un tipo de insumo arriba para cargar sus especificaciones y atributos dinámicos.
-        </p>
-      </div>
-    )
+  if (!hasTipoSelected || (!isLoading && atributos.length === 0)) {
+    return null
   }
 
   return (
@@ -51,10 +44,6 @@ export function InsumoFormAtributosSection({
 
       {isLoading ? (
         <ListSkeleton rows={3} rowClassName="h-10 rounded-lg" />
-      ) : atributos.length === 0 ? (
-        <p className="text-xs text-muted-foreground/60 italic p-3 text-center">
-          El tipo de insumo seleccionado no requiere atributos dinámicos adicionales.
-        </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {atributos.map((attr) => {

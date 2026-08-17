@@ -80,7 +80,10 @@ export function InsumoFilterToolbar({
             onValueChange={(val) => onCategoriaInsumoChange(val ?? "__all__")}
           >
             <SelectTrigger className="h-9 w-44 rounded-xl text-xs">
-              <SelectValue placeholder="Categoría" />
+              <SelectValue placeholder="Categoría">
+                {categorias.find((c) => c.id === categoriaInsumoId)?.nombre ??
+                  (categoriaInsumoId === "__all__" ? "Todas las categorías" : undefined)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__all__">Todas las categorías</SelectItem>

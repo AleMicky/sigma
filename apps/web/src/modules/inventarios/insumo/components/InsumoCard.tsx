@@ -4,6 +4,7 @@ import { Eye, FolderTree, Package, Ruler, Tags } from "lucide-react"
 import type { CategoriaInsumo } from "@/modules/inventarios/categoria-insumo/api/categoria-insumo.service"
 import type { TipoInsumo } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.service"
 import type { UnidadMedida } from "@/modules/parametros/unidad-medida/api/unidad-medida.service"
+import { AuditInfo } from "@/shared/components/audit-info"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Button } from "@/shared/components/ui/button"
@@ -102,15 +103,16 @@ export function InsumoCard({
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3">
+      <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3 gap-2">
+        <AuditInfo data={insumo.auditoria ?? insumo} compact className="text-[10px] min-w-0 flex-1" />
         <Button
           variant="outline"
           size="sm"
           onClick={() => onQuickView(insumo)}
-          className="w-full justify-center gap-1.5 rounded-lg text-xs font-medium hover:bg-accent"
+          className="justify-center gap-1.5 rounded-lg text-xs font-medium hover:bg-accent shrink-0"
         >
           <Eye className="size-3.5" />
-          Ver Ficha Técnica
+          Ficha
         </Button>
       </div>
 

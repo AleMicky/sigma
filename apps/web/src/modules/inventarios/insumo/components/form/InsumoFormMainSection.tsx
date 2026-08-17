@@ -119,6 +119,7 @@ export function InsumoFormMainSection({
           {(field: AnyFieldApi) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
+            const selectedCat = categorias.find((cat) => cat.id === field.state.value)
 
             return (
               <Field data-invalid={isInvalid || undefined}>
@@ -130,7 +131,9 @@ export function InsumoFormMainSection({
                   onValueChange={(val) => field.handleChange(val ?? "")}
                 >
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Selecciona una categoría…" />
+                    <SelectValue placeholder="Selecciona una categoría…">
+                      {selectedCat ? `${selectedCat.nombre} (${selectedCat.codigo})` : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {categorias.map((cat) => (
@@ -151,6 +154,7 @@ export function InsumoFormMainSection({
           {(field: AnyFieldApi) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
+            const selectedUm = unidadesMedida.find((um) => um.id === field.state.value)
 
             return (
               <Field data-invalid={isInvalid || undefined}>
@@ -162,7 +166,11 @@ export function InsumoFormMainSection({
                   onValueChange={(val) => field.handleChange(val ?? "")}
                 >
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Selecciona unidad de medida…" />
+                    <SelectValue placeholder="Selecciona unidad de medida…">
+                      {selectedUm
+                        ? `${selectedUm.nombre} (${selectedUm.simbolo ?? selectedUm.codigo})`
+                        : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {unidadesMedida.map((um) => (
