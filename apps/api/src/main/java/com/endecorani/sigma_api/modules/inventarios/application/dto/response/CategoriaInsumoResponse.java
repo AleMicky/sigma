@@ -17,6 +17,12 @@ public record CategoriaInsumoResponse(
         UUID id,
 
         @Schema(
+                description = "ID del tipo de insumo",
+                example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
+        )
+        UUID tipoInsumoId,
+
+        @Schema(
                 description = "Código de la categoría de insumo",
                 example = "ALIMENTOS"
         )

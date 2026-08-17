@@ -51,22 +51,54 @@ public class CategoriaInsumoRepositoryImpl
     }
 
     @Override
-    public boolean existsByCodigoIgnoreCase(String codigo) {
-        return springRepository.existsByCodigoIgnoreCase(codigo);
+    public boolean existsByTipoInsumoIdAndCodigoIgnoreCase(
+            UUID tipoInsumoId,
+            String codigo
+    ) {
+        return springRepository.existsByTipoInsumoIdAndCodigoIgnoreCase(
+                tipoInsumoId,
+                codigo
+        );
     }
 
     @Override
-    public boolean existsByCodigoIgnoreCaseAndIdNot(
+    public boolean existsByTipoInsumoIdAndCodigoIgnoreCaseAndIdNot(
+            UUID tipoInsumoId,
             String codigo,
             UUID id
     ) {
-        return springRepository.existsByCodigoIgnoreCaseAndIdNot(codigo, id);
+        return springRepository.existsByTipoInsumoIdAndCodigoIgnoreCaseAndIdNot(
+                tipoInsumoId,
+                codigo,
+                id
+        );
+    }
+
+    @Override
+    public Page<CategoriaInsumo> findByTipoInsumoId(
+            UUID tipoInsumoId,
+            Pageable pageable
+    ) {
+        return springRepository
+                .findByTipoInsumoId(tipoInsumoId, pageable)
+                .map(mapper::toDomain);
     }
 
     @Override
     public Page<CategoriaInsumo> search(String query, Pageable pageable) {
         return springRepository
                 .search(query, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<CategoriaInsumo> searchByTipoInsumoId(
+            UUID tipoInsumoId,
+            String query,
+            Pageable pageable
+    ) {
+        return springRepository
+                .searchByTipoInsumoId(tipoInsumoId, query, pageable)
                 .map(mapper::toDomain);
     }
 }

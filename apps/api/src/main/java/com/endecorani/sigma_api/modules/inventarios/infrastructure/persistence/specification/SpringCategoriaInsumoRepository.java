@@ -17,11 +17,20 @@ public interface SpringCategoriaInsumoRepository
         UUID
         > {
 
-    boolean existsByCodigoIgnoreCase(String codigo);
+    boolean existsByTipoInsumoIdAndCodigoIgnoreCase(
+            UUID tipoInsumoId,
+            String codigo
+    );
 
-    boolean existsByCodigoIgnoreCaseAndIdNot(
+    boolean existsByTipoInsumoIdAndCodigoIgnoreCaseAndIdNot(
+            UUID tipoInsumoId,
             String codigo,
             UUID id
+    );
+
+    Page<CategoriaInsumoEntity> findByTipoInsumoId(
+            UUID tipoInsumoId,
+            Pageable pageable
     );
 
     @Query("""
@@ -32,6 +41,20 @@ public interface SpringCategoriaInsumoRepository
                or lower(categoriaInsumo.descripcion) like lower(concat('%', :query, '%'))
             """)
     Page<CategoriaInsumoEntity> search(
+            @Param("query") String query,
+            Pageable pageable
+    );
+
+    @Query("""
+            select categoriaInsumo
+            from CategoriaInsumoEntity categoriaInsumo
+            where categoriaInsumo.tipoInsumo.id = :tipoInsumoId
+              and (lower(categoriaInsumo.codigo) like lower(concat('%', :query, '%'))
+               or lower(categoriaInsumo.nombre) like lower(concat('%', :query, '%'))
+               or lower(categoriaInsumo.descripcion) like lower(concat('%', :query, '%')))
+            """)
+    Page<CategoriaInsumoEntity> searchByTipoInsumoId(
+            @Param("tipoInsumoId") UUID tipoInsumoId,
             @Param("query") String query,
             Pageable pageable
     );

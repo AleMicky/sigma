@@ -29,4 +29,6 @@ public class TipoInsumoAtributo extends AuditableModel {
     private Boolean requerido;
 
     private Integer orden;
+
+    private String opciones;
 }

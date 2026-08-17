@@ -2,13 +2,24 @@ package com.endecorani.sigma_api.modules.inventarios.application.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import java.util.UUID;
 
 @Schema(
         name = "CategoriaInsumoRequest",
         description = "Datos necesarios para registrar o actualizar una categoría de insumo"
 )
 public record CategoriaInsumoRequest(
+        @Schema(
+                description = "ID del tipo de insumo al que pertenece la categoría",
+                example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
+        @NotNull(message = "El ID del tipo de insumo es obligatorio")
+        UUID tipoInsumoId,
+
         @Schema(
                 description = "Código único de la categoría de insumo",
                 example = "ALIMENTOS",

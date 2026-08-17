@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -61,6 +62,20 @@ public class CategoriaInsumoController
         return ResponseEntity.ok(
                 ApiResponse.success(
                         categoriaInsumoService.search(q, pageRequest)
+                )
+        );
+    }
+
+    @GetMapping("/tipo-insumo/{tipoInsumoId}")
+    @Operation(summary = "Obtener o buscar categorías de insumo por tipo de insumo")
+    public ResponseEntity<ApiResponse<PageResponse<CategoriaInsumoResponse>>> findByTipoInsumoId(
+            @PathVariable UUID tipoInsumoId,
+            @RequestParam(required = false) String q,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        categoriaInsumoService.findByTipoInsumoId(tipoInsumoId, q, pageRequest)
                 )
         );
     }

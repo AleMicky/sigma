@@ -9,12 +9,27 @@ import java.util.UUID;
 
 public interface CategoriaInsumoRepository extends CrudRepository<CategoriaInsumo, UUID> {
 
-    boolean existsByCodigoIgnoreCase(String codigo);
+    boolean existsByTipoInsumoIdAndCodigoIgnoreCase(
+            UUID tipoInsumoId,
+            String codigo
+    );
 
-    boolean existsByCodigoIgnoreCaseAndIdNot(
+    boolean existsByTipoInsumoIdAndCodigoIgnoreCaseAndIdNot(
+            UUID tipoInsumoId,
             String codigo,
             UUID id
     );
 
+    Page<CategoriaInsumo> findByTipoInsumoId(
+            UUID tipoInsumoId,
+            Pageable pageable
+    );
+
     Page<CategoriaInsumo> search(String query, Pageable pageable);
+
+    Page<CategoriaInsumo> searchByTipoInsumoId(
+            UUID tipoInsumoId,
+            String query,
+            Pageable pageable
+    );
 }
