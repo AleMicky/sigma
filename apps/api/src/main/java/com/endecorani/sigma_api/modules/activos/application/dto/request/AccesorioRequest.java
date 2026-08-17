@@ -13,12 +13,12 @@ import java.util.UUID;
 )
 public record AccesorioRequest(
         @Schema(
-                description = "Identificador del tipo de activo al que pertenece",
+                description = "Identificador de la categoría a la que pertenece",
                 example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8",
                 requiredMode = Schema.RequiredMode.REQUIRED
         )
-        @NotNull(message = "El tipo de activo es obligatorio")
-        UUID tipoActivoId,
+        @NotNull(message = "La categoría es obligatoria")
+        UUID categoriaId,
 
         @Schema(
                 description = "Código único del accesorio",

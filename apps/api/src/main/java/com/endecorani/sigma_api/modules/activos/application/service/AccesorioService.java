@@ -4,7 +4,7 @@ import com.endecorani.sigma_api.modules.activos.application.dto.request.Accesori
 import com.endecorani.sigma_api.modules.activos.application.dto.response.AccesorioResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.Accesorio;
 import com.endecorani.sigma_api.modules.activos.domain.repository.AccesorioRepository;
-import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
+import com.endecorani.sigma_api.modules.activos.domain.repository.CategoriaRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -25,7 +25,7 @@ public class AccesorioService {
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
-            "tipoActivoId",
+            "categoriaId",
             "codigo",
             "nombre",
             "descripcion",
@@ -34,17 +34,17 @@ public class AccesorioService {
     );
 
     private final AccesorioRepository accesorioRepository;
-    private final TipoActivoRepository tipoActivoRepository;
+    private final CategoriaRepository categoriaRepository;
 
     @Transactional
     public AccesorioResponse create(AccesorioRequest request) {
-        requireTipoActivoExists(request.tipoActivoId());
+        requireCategoriaExists(request.categoriaId());
 
         String codigo = StringUtils.normalize(request.codigo());
-        validateUniqueCodigoForCreate(request.tipoActivoId(), codigo);
+        validateUniqueCodigoForCreate(request.categoriaId(), codigo);
 
         Accesorio domain = Accesorio.builder()
-                .tipoActivoId(request.tipoActivoId())
+                .categoriaId(request.categoriaId())
                 .codigo(codigo)
                 .nombre(StringUtils.normalize(request.nombre()))
                 .descripcion(StringUtils.normalize(request.descripcion()))
@@ -58,18 +58,18 @@ public class AccesorioService {
             UUID id,
             AccesorioRequest request
     ) {
-        requireTipoActivoExists(request.tipoActivoId());
+        requireCategoriaExists(request.categoriaId());
 
         Accesorio domain = findDomainById(id);
 
         String codigo = StringUtils.normalize(request.codigo());
         validateUniqueCodigoForUpdate(
-                request.tipoActivoId(),
+                request.categoriaId(),
                 codigo,
                 id
         );
 
-        domain.setTipoActivoId(request.tipoActivoId());
+        domain.setCategoriaId(request.categoriaId());
         domain.setCodigo(codigo);
         domain.setNombre(StringUtils.normalize(request.nombre()));
         domain.setDescripcion(StringUtils.normalize(request.descripcion()));
@@ -104,20 +104,20 @@ public class AccesorioService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<AccesorioResponse> findByTipoActivoId(
-            UUID tipoActivoId,
+    public PageResponse<AccesorioResponse> findByCategoriaId(
+            UUID categoriaId,
             String query,
             PageRequestDto pageRequest
     ) {
-        requireTipoActivoExists(tipoActivoId);
+        requireCategoriaExists(categoriaId);
 
         String normalized = StringUtils.normalize(query);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
         if (normalized == null) {
             return PageResponse.from(
-                    accesorioRepository.findByTipoActivoId(
-                            tipoActivoId,
+                    accesorioRepository.findByCategoriaId(
+                            categoriaId,
                             pageable
                     ),
                     this::toResponse
@@ -125,8 +125,8 @@ public class AccesorioService {
         }
 
         return PageResponse.from(
-                accesorioRepository.searchByTipoActivoId(
-                        tipoActivoId,
+                accesorioRepository.searchByCategoriaId(
+                        categoriaId,
                         normalized,
                         pageable
                 ),
@@ -148,41 +148,41 @@ public class AccesorioService {
                 );
     }
 
-    private void requireTipoActivoExists(UUID tipoActivoId) {
-        if (!tipoActivoRepository.existsById(tipoActivoId)) {
-            throw new ResourceNotFoundException("Tipo de activo", tipoActivoId);
+    private void requireCategoriaExists(UUID categoriaId) {
+        if (!categoriaRepository.existsById(categoriaId)) {
+            throw new ResourceNotFoundException("Categoría", categoriaId);
         }
     }
 
     private void validateUniqueCodigoForCreate(
-            UUID tipoActivoId,
+            UUID categoriaId,
             String codigo
     ) {
-        if (accesorioRepository.existsByTipoActivoIdAndCodigoIgnoreCase(
-                tipoActivoId,
+        if (accesorioRepository.existsByCategoriaIdAndCodigoIgnoreCase(
+                categoriaId,
                 codigo
         )) {
             throw new ConflictException(
                     "ACCESORIO_ALREADY_EXISTS",
-                    "Ya existe un accesorio con el código '%s' para este tipo de activo"
+                    "Ya existe un accesorio con el código '%s' para esta categoría"
                             .formatted(codigo)
             );
         }
     }
 
     private void validateUniqueCodigoForUpdate(
-            UUID tipoActivoId,
+            UUID categoriaId,
             String codigo,
             UUID currentId
     ) {
-        if (accesorioRepository.existsByTipoActivoIdAndCodigoIgnoreCaseAndIdNot(
-                tipoActivoId,
+        if (accesorioRepository.existsByCategoriaIdAndCodigoIgnoreCaseAndIdNot(
+                categoriaId,
                 codigo,
                 currentId
         )) {
             throw new ConflictException(
                     "ACCESORIO_ALREADY_EXISTS",
-                    "Ya existe otro accesorio con el código '%s' para este tipo de activo"
+                    "Ya existe otro accesorio con el código '%s' para esta categoría"
                             .formatted(codigo)
             );
         }
@@ -190,12 +190,12 @@ public class AccesorioService {
 
     private AccesorioResponse toResponse(Accesorio domain) {
         AccesorioResponse.CatalogoInfo catalogoInfo = null;
-        if (domain.getTipoActivoId() != null) {
-            catalogoInfo = tipoActivoRepository.findById(domain.getTipoActivoId())
-                    .map(ta -> new AccesorioResponse.CatalogoInfo(
-                            ta.getId(),
-                            null,
-                            ta.getNombre()
+        if (domain.getCategoriaId() != null) {
+            catalogoInfo = categoriaRepository.findById(domain.getCategoriaId())
+                    .map(cat -> new AccesorioResponse.CatalogoInfo(
+                            cat.getId(),
+                            cat.getCodigo(),
+                            cat.getNombre()
                     ))
                     .orElse(null);
         }

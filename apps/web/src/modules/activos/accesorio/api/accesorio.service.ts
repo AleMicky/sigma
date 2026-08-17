@@ -20,14 +20,14 @@ export type Accesorio = {
 }
 
 export type AccesorioPayload = {
-  tipoActivoId: string
+  categoriaId: string
   codigo: string
   nombre: string
   descripcion?: string | null
 }
 
 export type AccesorioListParams = PageParams & {
-  tipoActivoId?: string
+  categoriaId?: string
   q?: string
 }
 

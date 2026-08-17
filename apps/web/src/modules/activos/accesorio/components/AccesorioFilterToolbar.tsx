@@ -1,9 +1,7 @@
 import { useMemo } from "react"
-import { LayoutGrid, List, RotateCcw, Tags } from "lucide-react"
+import { FolderTree, LayoutGrid, List, RotateCcw } from "lucide-react"
 
-import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
-import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
-import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
+import type { Categoria } from "@/modules/activos/categoria/api/categoria.service"
 import { SearchField } from "@/shared/components/search-field"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -20,9 +18,9 @@ export type ViewMode = "grid" | "table"
 type AccesorioFilterToolbarProps = {
   searchValue: string
   onSearchChange: (value: string) => void
-  selectedTipoActivoId: string
-  onTipoActivoChange: (tipoActivoId: string) => void
-  tiposActivo: TipoActivo[]
+  selectedCategoriaId: string
+  onCategoriaChange: (categoriaId: string) => void
+  categorias: Categoria[]
   hasActiveFilters: boolean
   onResetFilters: () => void
   viewMode: ViewMode
@@ -32,26 +30,26 @@ type AccesorioFilterToolbarProps = {
 export function AccesorioFilterToolbar({
   searchValue,
   onSearchChange,
-  selectedTipoActivoId,
-  onTipoActivoChange,
-  tiposActivo,
+  selectedCategoriaId,
+  onCategoriaChange,
+  categorias,
   hasActiveFilters,
   onResetFilters,
   viewMode,
   onViewModeChange,
 }: AccesorioFilterToolbarProps) {
-  const tiposActivoById = useMemo(
-    () => new Map(tiposActivo.map((t) => [t.id, t])),
-    [tiposActivo],
+  const categoriasById = useMemo(
+    () => new Map(categorias.map((c) => [c.id, c])),
+    [categorias],
   )
 
-  const selectedTipo =
-    selectedTipoActivoId !== "ALL"
-      ? tiposActivoById.get(selectedTipoActivoId)
+  const selectedCategoria =
+    selectedCategoriaId !== "ALL"
+      ? categoriasById.get(selectedCategoriaId)
       : null
 
   const activeFiltersCount =
-    (searchValue.trim() ? 1 : 0) + (selectedTipoActivoId !== "ALL" ? 1 : 0)
+    (searchValue.trim() ? 1 : 0) + (selectedCategoriaId !== "ALL" ? 1 : 0)
 
   return (
     <div className="flex flex-col gap-2 pt-2 pb-1.5 sm:flex-row sm:items-center sm:justify-between">
@@ -65,30 +63,24 @@ export function AccesorioFilterToolbar({
           className="w-full sm:max-w-xs h-8 text-xs"
         />
 
-        {/* Tipo de Activo Select Dropdown */}
+        {/* Categoría Select Dropdown */}
         <Select
-          value={selectedTipoActivoId}
-          onValueChange={(val) => onTipoActivoChange(val ?? "ALL")}
+          value={selectedCategoriaId}
+          onValueChange={(val) => onCategoriaChange(val ?? "ALL")}
         >
           <SelectTrigger className="h-8 w-full sm:w-[240px] text-xs bg-background">
-            <SelectValue placeholder="Filtrar por tipo de activo">
-              {selectedTipo ? (
+            <SelectValue placeholder="Filtrar por categoría">
+              {selectedCategoria ? (
                 <div className="flex items-center gap-2 truncate">
-                  <span
-                    className="size-2 rounded-full shrink-0 shadow-2xs"
-                    style={{
-                      backgroundColor:
-                        selectedTipo.color || DEFAULT_TIPO_ACTIVO_COLOR,
-                    }}
-                  />
+                  <FolderTree className="size-3.5 shrink-0 text-primary" />
                   <span className="truncate font-medium text-foreground">
-                    {selectedTipo.nombre}
+                    {selectedCategoria.nombre}
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 text-muted-foreground truncate">
-                  <Tags className="size-3.5 shrink-0" />
-                  <span className="truncate">Todos los tipos de activo</span>
+                  <FolderTree className="size-3.5 shrink-0" />
+                  <span className="truncate">Todas las categorías</span>
                 </div>
               )}
             </SelectValue>
@@ -98,33 +90,27 @@ export function AccesorioFilterToolbar({
               <div className="flex items-center gap-2">
                 <span className="size-2 rounded-full bg-muted-foreground/40 shrink-0" />
                 <span className="font-medium text-foreground">
-                  Todos los tipos de activo
+                  Todas las categorías
                 </span>
               </div>
             </SelectItem>
-            {tiposActivo.map((tipo) => {
-              const Icon = getTipoActivoIcon(tipo.icono)
-              const color = tipo.color || DEFAULT_TIPO_ACTIVO_COLOR
-              return (
-                <SelectItem
-                  key={tipo.id}
-                  value={tipo.id}
-                  className="text-xs cursor-pointer"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className="flex size-4 shrink-0 items-center justify-center rounded text-white shadow-2xs"
-                      style={{ backgroundColor: color }}
-                    >
-                      <Icon className="size-2.5" />
-                    </span>
-                    <span className="truncate font-medium text-foreground">
-                      {tipo.nombre}
-                    </span>
-                  </div>
-                </SelectItem>
-              )
-            })}
+            {categorias.map((cat) => (
+              <SelectItem
+                key={cat.id}
+                value={cat.id}
+                className="text-xs cursor-pointer"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <FolderTree className="size-3 text-muted-foreground shrink-0" />
+                  <span className="truncate font-medium text-foreground">
+                    {cat.nombre}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    ({cat.codigo})
+                  </span>
+                </div>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

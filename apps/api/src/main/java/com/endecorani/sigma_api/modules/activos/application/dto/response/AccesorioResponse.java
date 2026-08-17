@@ -17,7 +17,7 @@ public record AccesorioResponse(
         UUID id,
 
         @Schema(
-                description = "Información del catálogo / tipo de activo"
+                description = "Información del catálogo / categoría"
         )
         CatalogoInfo catalogo,
 
@@ -46,20 +46,20 @@ public record AccesorioResponse(
 ) {
     public record CatalogoInfo(
             @Schema(
-                    description = "Identificador del tipo de activo",
+                    description = "Identificador de la categoría",
                     example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
             )
             UUID id,
 
             @Schema(
-                    description = "Código del tipo de activo",
-                    example = "VEHICULO"
+                    description = "Código de la categoría",
+                    example = "VEHICULOS"
             )
             String codigo,
 
             @Schema(
-                    description = "Nombre del tipo de activo",
-                    example = "Vehículo"
+                    description = "Nombre de la categoría",
+                    example = "Vehículos"
             )
             String nombre
     ) {

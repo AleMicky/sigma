@@ -1,4 +1,4 @@
-import { Eye, MoreVertical, Paperclip, Pencil, Tags, Trash2 } from "lucide-react"
+import { Eye, FolderTree, MoreVertical, Paperclip, Pencil, Trash2 } from "lucide-react"
 
 import { AuditInfo } from "@/shared/components/audit-info"
 import { Badge } from "@/shared/components/ui/badge"
@@ -48,7 +48,7 @@ export function AccesorioCard({
                   variant="outline"
                   className="bg-primary/5 text-primary border-primary/20 text-[9px] font-medium py-0 px-1.5"
                 >
-                  <Tags className="size-2.5 mr-1 inline" />
+                  <FolderTree className="size-2.5 mr-1 inline" />
                   {accesorio.catalogo.nombre}
                 </Badge>
               ) : null}

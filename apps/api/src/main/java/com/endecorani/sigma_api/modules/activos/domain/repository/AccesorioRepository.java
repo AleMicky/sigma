@@ -18,8 +18,8 @@ public interface AccesorioRepository {
 
     Page<Accesorio> findAll(Pageable pageable);
 
-    Page<Accesorio> findByTipoActivoId(
-            UUID tipoActivoId,
+    Page<Accesorio> findByCategoriaId(
+            UUID categoriaId,
             Pageable pageable
     );
 
@@ -32,19 +32,19 @@ public interface AccesorioRepository {
             Pageable pageable
     );
 
-    Page<Accesorio> searchByTipoActivoId(
-            UUID tipoActivoId,
+    Page<Accesorio> searchByCategoriaId(
+            UUID categoriaId,
             String query,
             Pageable pageable
     );
 
-    boolean existsByTipoActivoIdAndCodigoIgnoreCase(
-            UUID tipoActivoId,
+    boolean existsByCategoriaIdAndCodigoIgnoreCase(
+            UUID categoriaId,
             String codigo
     );
 
-    boolean existsByTipoActivoIdAndCodigoIgnoreCaseAndIdNot(
-            UUID tipoActivoId,
+    boolean existsByCategoriaIdAndCodigoIgnoreCaseAndIdNot(
+            UUID categoriaId,
             String codigo,
             UUID id
     );

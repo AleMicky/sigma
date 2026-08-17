@@ -488,7 +488,7 @@ class ActivoAccesorioServiceTest {
         }
 
         @Override
-        public Page<Accesorio> findByTipoActivoId(UUID tipoActivoId, Pageable pageable) {
+        public Page<Accesorio> findByCategoriaId(UUID categoriaId, Pageable pageable) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
 
@@ -508,17 +508,17 @@ class ActivoAccesorioServiceTest {
         }
 
         @Override
-        public Page<Accesorio> searchByTipoActivoId(UUID tipoActivoId, String query, Pageable pageable) {
+        public Page<Accesorio> searchByCategoriaId(UUID categoriaId, String query, Pageable pageable) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
 
         @Override
-        public boolean existsByTipoActivoIdAndCodigoIgnoreCase(UUID tipoActivoId, String codigo) {
+        public boolean existsByCategoriaIdAndCodigoIgnoreCase(UUID categoriaId, String codigo) {
             return false;
         }
 
         @Override
-        public boolean existsByTipoActivoIdAndCodigoIgnoreCaseAndIdNot(UUID tipoActivoId, String codigo, UUID id) {
+        public boolean existsByCategoriaIdAndCodigoIgnoreCaseAndIdNot(UUID categoriaId, String codigo, UUID id) {
             return false;
         }
     }

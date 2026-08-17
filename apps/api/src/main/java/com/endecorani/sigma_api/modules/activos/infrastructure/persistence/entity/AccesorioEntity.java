@@ -21,24 +21,24 @@ import java.util.UUID;
         name = "accesorios",
         indexes = {
                 @Index(
-                        name = "idx_accesorio_tipo_activo",
-                        columnList = "tipo_activo_id"
+                        name = "idx_accesorios_categoria_id",
+                        columnList = "categoria_id"
                 )
         },
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_accesorio_tipo_codigo",
-                        columnNames = {"tipo_activo_id", "codigo"}
+                        name = "uk_accesorios_categoria_codigo_ci",
+                        columnNames = {"categoria_id", "codigo"}
                 )
         }
 )
 public class AccesorioEntity extends BaseEntity {
 
     @Column(
-            name = "tipo_activo_id",
+            name = "categoria_id",
             nullable = false
     )
-    private UUID tipoActivoId;
+    private UUID categoriaId;
 
     @Column(
             name = "codigo",

@@ -14,22 +14,22 @@ import java.util.UUID;
 public interface SpringAccesorioRepository
         extends JpaRepository<AccesorioEntity, UUID> {
 
-    Page<AccesorioEntity> findByTipoActivoId(
-            UUID tipoActivoId,
+    Page<AccesorioEntity> findByCategoriaId(
+            UUID categoriaId,
             Pageable pageable
     );
 
     @Query("""
             select accesorio
             from AccesorioEntity accesorio
-            where accesorio.tipoActivoId = :tipoActivoId
+            where accesorio.categoriaId = :categoriaId
               and (
                    lower(accesorio.codigo) like lower(concat('%', :query, '%'))
                    or lower(accesorio.nombre) like lower(concat('%', :query, '%'))
               )
             """)
-    Page<AccesorioEntity> searchByTipoActivoId(
-            @Param("tipoActivoId") UUID tipoActivoId,
+    Page<AccesorioEntity> searchByCategoriaId(
+            @Param("categoriaId") UUID categoriaId,
             @Param("query") String query,
             Pageable pageable
     );
@@ -45,13 +45,13 @@ public interface SpringAccesorioRepository
             Pageable pageable
     );
 
-    boolean existsByTipoActivoIdAndCodigoIgnoreCase(
-            UUID tipoActivoId,
+    boolean existsByCategoriaIdAndCodigoIgnoreCase(
+            UUID categoriaId,
             String codigo
     );
 
-    boolean existsByTipoActivoIdAndCodigoIgnoreCaseAndIdNot(
-            UUID tipoActivoId,
+    boolean existsByCategoriaIdAndCodigoIgnoreCaseAndIdNot(
+            UUID categoriaId,
             String codigo,
             UUID id
     );

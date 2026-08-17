@@ -5,6 +5,8 @@ import { ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 
 import { routes } from "@/app/config/routes"
+import { activoAccesorioQueries } from "@/modules/activos/activo-accesorio/api/activo-accesorio.queries"
+import type { ActivoAccesorio } from "@/modules/activos/activo-accesorio/api/activo-accesorio.service"
 import { activoAtributoQueries } from "@/modules/activos/activo-atributo/api/activo-atributo.queries"
 import { activoAtributoValorQueries } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.queries"
 import { activoDocumentoQueries } from "@/modules/activos/activo-documento/api/activo-documento.queries"
@@ -22,6 +24,8 @@ import { Button } from "@/shared/components/ui/button"
 
 import { activoQueries } from "../api/activo.queries"
 import {
+  ActivoAccesorioFormModal,
+  ActivoAccesoriosTab,
   ActivoAddDocumentModal,
   ActivoAddMantenimientoModal,
   ActivoAsignacionTab,
@@ -47,6 +51,8 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
   const [docFilter, setDocFilter] = useState<string>("todos")
   const [docSearch, setDocSearch] = useState<string>("")
   const [isAddDocOpen, setIsAddDocOpen] = useState(false)
+  const [isAddAccesorioOpen, setIsAddAccesorioOpen] = useState(false)
+  const [editingAccesorio, setEditingAccesorio] = useState<ActivoAccesorio | null>(null)
   const [isMantenimientoOpen, setIsMantenimientoOpen] = useState(false)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
 
@@ -121,6 +127,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
   const Icon = getTipoActivoIcon(tipoActivo?.icono)
 
   // Real list of documents for this asset
+  // Real list of documents for this asset
   const documentosQuery = useQuery(
     activoDocumentoQueries.byActivo(activoId, {
       size: 100,
@@ -129,6 +136,16 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
     }),
   )
   const documentos = documentosQuery.data?.content ?? []
+
+  // Real list of assigned accessories for this asset
+  const accesoriosQuery = useQuery(
+    activoAccesorioQueries.byActivo(activoId, {
+      size: 100,
+      sortBy: "createdAt",
+      direction: "DESC",
+    }),
+  )
+  const accesorios = accesoriosQuery.data?.content ?? []
 
   // Mock list of maintenance history
   const [mantenimientos, setMantenimientos] = useState<MantenimientoItem[]>([
@@ -185,6 +202,16 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
 
   function handleAddMantenimiento(newMaint: MantenimientoItem) {
     setMantenimientos((prev) => [newMaint, ...prev])
+  }
+
+  function handleOpenAddAccesorio() {
+    setEditingAccesorio(null)
+    setIsAddAccesorioOpen(true)
+  }
+
+  function handleEditAccesorio(item: ActivoAccesorio) {
+    setEditingAccesorio(item)
+    setIsAddAccesorioOpen(true)
   }
 
   if (activoQuery.isLoading) {
@@ -253,6 +280,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
             setActiveTab(tab)
           }}
           documentosCount={documentos.length}
+          accesoriosCount={accesorios.length}
           mantenimientosCount={mantenimientos.length}
         />
       </header>
@@ -288,6 +316,17 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
           />
         )}
 
+        {activeTab === "accesorios" && (
+          <ActivoAccesoriosTab
+            activoId={activo.id}
+            activoCodigo={activo.codigo}
+            activoNombre={activo.nombre}
+            tipoActivoId={activo.tipoActivoId}
+            onOpenAddAccesorio={handleOpenAddAccesorio}
+            onEditAccesorio={handleEditAccesorio}
+          />
+        )}
+
         {activeTab === "asignacion" && (
           <ActivoAsignacionTab activo={activo} ubicacion={ubicacion} />
         )}
@@ -317,6 +356,16 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
         onOpenChange={setIsAddDocOpen}
         activoId={activo.id}
         activoCodigo={activo.codigo}
+      />
+
+      <ActivoAccesorioFormModal
+        open={isAddAccesorioOpen}
+        onOpenChange={setIsAddAccesorioOpen}
+        activoId={activo.id}
+        activoCodigo={activo.codigo}
+        activoNombre={activo.nombre}
+        categoriaId={tipoActivo?.categoriaId}
+        itemToEdit={editingAccesorio}
       />
 
       <ActivoImagePreviewModal

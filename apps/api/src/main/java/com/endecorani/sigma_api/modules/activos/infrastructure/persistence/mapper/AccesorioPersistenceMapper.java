@@ -14,7 +14,7 @@ public class AccesorioPersistenceMapper {
 
         AccesorioEntity entity = new AccesorioEntity();
         entity.setId(domain.getId());
-        entity.setTipoActivoId(domain.getTipoActivoId());
+        entity.setCategoriaId(domain.getCategoriaId());
         entity.setCodigo(domain.getCodigo());
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
@@ -29,7 +29,7 @@ public class AccesorioPersistenceMapper {
 
         return Accesorio.builder()
                 .id(entity.getId())
-                .tipoActivoId(entity.getTipoActivoId())
+                .categoriaId(entity.getCategoriaId())
                 .codigo(entity.getCodigo())
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())

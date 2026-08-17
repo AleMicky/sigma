@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
+import { FolderTree } from "lucide-react"
 
-import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
-import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
-import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
+import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.queries"
 import { isApiError } from "@/shared/api"
 import {
   FormDialog,
@@ -35,7 +34,7 @@ import {
 type AccesorioFormDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  tipoActivoId?: string
+  categoriaId?: string
   accesorio?: Accesorio | null
   onSuccess?: () => void
 }
@@ -43,7 +42,7 @@ type AccesorioFormDialogProps = {
 export function AccesorioFormDialog({
   open,
   onOpenChange,
-  tipoActivoId: fixedTipoActivoId,
+  categoriaId: fixedCategoriaId,
   accesorio,
   onSuccess,
 }: AccesorioFormDialogProps) {
@@ -52,35 +51,35 @@ export function AccesorioFormDialog({
   const updateMutation = useUpdateAccesorio()
   const [formError, setFormError] = useState<string | null>(null)
 
-  const tiposActivoQuery = useQuery({
-    ...tipoActivoQueries.list({ page: 0, size: 100 }),
-    enabled: !fixedTipoActivoId || open,
+  const categoriasQuery = useQuery({
+    ...categoriaQueries.list({ page: 0, size: 100 }),
+    enabled: !fixedCategoriaId || open,
   })
 
-  const tiposActivo = useMemo(
-    () => tiposActivoQuery.data?.content ?? [],
-    [tiposActivoQuery.data?.content],
+  const categorias = useMemo(
+    () => categoriasQuery.data?.content ?? [],
+    [categoriasQuery.data?.content],
   )
 
-  const tiposActivoById = useMemo(
-    () => new Map(tiposActivo.map((t) => [t.id, t])),
-    [tiposActivo],
+  const categoriasById = useMemo(
+    () => new Map(categorias.map((c) => [c.id, c])),
+    [categorias],
   )
 
-  const initialTipoActivoId =
-    accesorio?.catalogo?.id ?? fixedTipoActivoId ?? ""
+  const initialCategoriaId =
+    accesorio?.catalogo?.id ?? fixedCategoriaId ?? ""
 
   const form = useForm({
     defaultValues: accesorio
       ? {
-          tipoActivoId: initialTipoActivoId,
+          categoriaId: initialCategoriaId,
           codigo: accesorio.codigo,
           nombre: accesorio.nombre,
           descripcion: accesorio.descripcion ?? "",
         }
       : {
           ...defaultAccesorioValues,
-          tipoActivoId: fixedTipoActivoId ?? "",
+          categoriaId: fixedCategoriaId ?? "",
         },
     validators: {
       onSubmit: accesorioSchema,
@@ -88,10 +87,10 @@ export function AccesorioFormDialog({
     onSubmit: async ({ value }) => {
       setFormError(null)
 
-      const targetTipoActivoId = fixedTipoActivoId || value.tipoActivoId
+      const targetCategoriaId = fixedCategoriaId || value.categoriaId
 
       const payload = {
-        tipoActivoId: targetTipoActivoId,
+        categoriaId: targetCategoriaId,
         codigo: value.codigo.trim(),
         nombre: value.nombre.trim(),
         descripcion: value.descripcion.trim() || null,
@@ -128,7 +127,7 @@ export function AccesorioFormDialog({
       description={
         isEditing
           ? "Actualiza la información del accesorio."
-          : "Define un accesorio asociado a un tipo de activo, como GPS o Botiquín."
+          : "Define un accesorio asociado a una categoría, como GPS o Botiquín."
       }
       formError={formError}
       onCancel={() => {
@@ -151,33 +150,27 @@ export function AccesorioFormDialog({
         </form.Subscribe>
       }
     >
-      {!fixedTipoActivoId && (
-        <form.Field name="tipoActivoId">
+      {!fixedCategoriaId && (
+        <form.Field name="categoriaId">
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
-            const selected = tiposActivoById.get(field.state.value)
+            const selected = categoriasById.get(field.state.value)
 
             return (
               <Field data-invalid={isInvalid || undefined}>
                 <RequiredFieldLabel htmlFor={field.name}>
-                  Tipo de Activo
+                  Categoría
                 </RequiredFieldLabel>
                 <Select
                   value={field.state.value || null}
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
                   <SelectTrigger id={field.name} className="w-full">
-                    <SelectValue placeholder="Seleccionar tipo de activo">
+                    <SelectValue placeholder="Seleccionar categoría">
                       {selected ? (
                         <div className="flex items-center gap-2 truncate">
-                          <span
-                            className="size-2 rounded-full shrink-0"
-                            style={{
-                              backgroundColor:
-                                selected.color || DEFAULT_TIPO_ACTIVO_COLOR,
-                            }}
-                          />
+                          <FolderTree className="size-3.5 shrink-0 text-primary" />
                           <span className="truncate font-medium text-foreground">
                             {selected.nombre}
                           </span>
@@ -186,29 +179,23 @@ export function AccesorioFormDialog({
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="max-h-60">
-                    {tiposActivo.map((tipo) => {
-                      const Icon = getTipoActivoIcon(tipo.icono)
-                      const color = tipo.color || DEFAULT_TIPO_ACTIVO_COLOR
-                      return (
-                        <SelectItem
-                          key={tipo.id}
-                          value={tipo.id}
-                          className="text-xs cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span
-                              className="flex size-4 shrink-0 items-center justify-center rounded text-white shadow-2xs"
-                              style={{ backgroundColor: color }}
-                            >
-                              <Icon className="size-2.5" />
-                            </span>
-                            <span className="truncate font-medium text-foreground">
-                              {tipo.nombre}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      )
-                    })}
+                    {categorias.map((cat) => (
+                      <SelectItem
+                        key={cat.id}
+                        value={cat.id}
+                        className="text-xs cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FolderTree className="size-3 text-muted-foreground shrink-0" />
+                          <span className="truncate font-medium text-foreground">
+                            {cat.nombre}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({cat.codigo})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}

@@ -15,21 +15,21 @@ export const accesorioQueries = {
       queryFn: () => listAccesorios(filters),
     }),
 
-  byTipoActivo: (
-    tipoActivoId: string,
+  byCategoria: (
+    categoriaId: string,
     params?: PageParams & { q?: string },
   ) =>
     queryOptions({
-      queryKey: accesorioKeys.list({ ...params, tipoActivoId }),
+      queryKey: accesorioKeys.list({ ...params, categoriaId }),
       queryFn: () => {
         const q = params?.q?.trim()
         return listAccesorios({
           ...params,
-          tipoActivoId,
+          categoriaId,
           ...(q ? { q } : {}),
         })
       },
-      enabled: Boolean(tipoActivoId),
+      enabled: Boolean(categoriaId),
     }),
 
   detail: (id: string) =>

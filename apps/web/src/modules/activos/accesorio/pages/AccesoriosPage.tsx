@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { HelpCircle, Paperclip, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
-import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
+import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.queries"
 import { getErrorMessage } from "@/shared/api"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { EmptyState } from "@/shared/components/empty-state"
@@ -40,24 +40,24 @@ export function AccesoriosPage() {
   const [editing, setEditing] = useState<Accesorio | null>(null)
   const [quickView, setQuickView] = useState<Accesorio | null>(null)
   const [deleting, setDeleting] = useState<Accesorio | null>(null)
-  const [selectedTipoActivoId, setSelectedTipoActivoId] = useState<string>("ALL")
+  const [selectedCategoriaId, setSelectedCategoriaId] = useState<string>("ALL")
 
-  const search = usePaginatedSearch({ resetKey: selectedTipoActivoId })
+  const search = usePaginatedSearch({ resetKey: selectedCategoriaId })
   const deleteMutation = useDeleteAccesorio()
 
-  const tiposActivoQuery = useQuery(
-    tipoActivoQueries.list({ page: 0, size: 100, sortBy: "nombre", direction: "ASC" }),
+  const categoriasQuery = useQuery(
+    categoriaQueries.list({ page: 0, size: 100, sortBy: "nombre", direction: "ASC" }),
   )
-  const tiposActivo = useMemo(
-    () => tiposActivoQuery.data?.content ?? [],
-    [tiposActivoQuery.data?.content],
+  const categorias = useMemo(
+    () => categoriasQuery.data?.content ?? [],
+    [categoriasQuery.data?.content],
   )
 
-  const isFilteredByTipo = selectedTipoActivoId !== "ALL"
+  const isFilteredByCategoria = selectedCategoriaId !== "ALL"
 
   const accesoriosQuery = useQuery(
-    isFilteredByTipo
-      ? accesorioQueries.byTipoActivo(selectedTipoActivoId, {
+    isFilteredByCategoria
+      ? accesorioQueries.byCategoria(selectedCategoriaId, {
           page: search.page,
           size: PAGE_SIZE,
           sortBy: "nombre",
@@ -98,12 +98,12 @@ export function AccesoriosPage() {
   }
 
   const hasActiveFilters = Boolean(
-    search.search.trim() || selectedTipoActivoId !== "ALL",
+    search.search.trim() || selectedCategoriaId !== "ALL",
   )
 
   function resetFilters() {
     search.setSearch("")
-    setSelectedTipoActivoId("ALL")
+    setSelectedCategoriaId("ALL")
   }
 
   async function handleDelete() {
@@ -143,7 +143,7 @@ export function AccesoriosPage() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-1">
-            Parametriza y gestiona los accesorios, periféricos y equipamiento secundario asociados a cada tipo de activo.
+            Parametriza y gestiona los accesorios, periféricos y equipamiento secundario asociados a cada categoría.
           </p>
         </div>
 
@@ -175,7 +175,7 @@ export function AccesoriosPage() {
       <div className="shrink-0 pt-2.5 pb-1">
         <AccesorioStats
           totalCount={accesoriosQuery.data?.totalElements}
-          tiposCount={tiposActivo.length}
+          tiposCount={categorias.length}
           conDescripcionCount={conDescripcionCount}
           isLoading={accesoriosQuery.isLoading}
         />
@@ -185,12 +185,12 @@ export function AccesoriosPage() {
       <AccesorioFilterToolbar
         searchValue={search.search}
         onSearchChange={search.setSearch}
-        selectedTipoActivoId={selectedTipoActivoId}
-        onTipoActivoChange={(val) => {
-          setSelectedTipoActivoId(val)
+        selectedCategoriaId={selectedCategoriaId}
+        onCategoriaChange={(val) => {
+          setSelectedCategoriaId(val)
           search.setPage(0)
         }}
-        tiposActivo={tiposActivo}
+        categorias={categorias}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={resetFilters}
         viewMode={viewMode}
@@ -226,7 +226,7 @@ export function AccesoriosPage() {
             }
             description={
               hasActiveFilters
-                ? "Prueba con otra búsqueda o selecciona otro tipo de activo."
+                ? "Prueba con otra búsqueda o selecciona otra categoría."
                 : "Crea el primer accesorio (ejemplo: GPS, EXTINTOR, RADIO) para comenzar."
             }
             action={
@@ -288,7 +288,7 @@ export function AccesoriosPage() {
         key={editing?.id ?? "new-accesorio"}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        tipoActivoId={selectedTipoActivoId !== "ALL" ? selectedTipoActivoId : undefined}
+        categoriaId={selectedCategoriaId !== "ALL" ? selectedCategoriaId : undefined}
         accesorio={editing}
         onSuccess={() => {
           if (!editing) {

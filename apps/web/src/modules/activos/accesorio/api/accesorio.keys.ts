@@ -2,7 +2,7 @@ import { createResourceKeys } from "@/shared/api"
 import type { PageParams } from "@/shared/types/api.types"
 
 export type AccesorioListFilters = PageParams & {
-  tipoActivoId?: string
+  categoriaId?: string
   q?: string
 }
 

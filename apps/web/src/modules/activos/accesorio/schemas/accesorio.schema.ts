@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 export const accesorioSchema = z.object({
-  tipoActivoId: z.string().min(1, "El tipo de activo es obligatorio"),
+  categoriaId: z.string().min(1, "La categoría es obligatoria"),
   codigo: z
     .string()
     .min(2, "El código debe tener al menos 2 caracteres")
@@ -18,7 +18,7 @@ export const accesorioSchema = z.object({
 export type AccesorioDto = z.infer<typeof accesorioSchema>
 
 export const defaultAccesorioValues: AccesorioDto = {
-  tipoActivoId: "",
+  categoriaId: "",
   codigo: "",
   nombre: "",
   descripcion: "",

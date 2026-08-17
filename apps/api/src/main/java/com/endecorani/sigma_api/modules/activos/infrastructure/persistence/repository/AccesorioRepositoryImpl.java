@@ -50,12 +50,12 @@ public class AccesorioRepositoryImpl implements AccesorioRepository {
     }
 
     @Override
-    public Page<Accesorio> findByTipoActivoId(
-            UUID tipoActivoId,
+    public Page<Accesorio> findByCategoriaId(
+            UUID categoriaId,
             Pageable pageable
     ) {
         return springRepository
-                .findByTipoActivoId(tipoActivoId, pageable)
+                .findByCategoriaId(categoriaId, pageable)
                 .map(mapper::toDomain);
     }
 
@@ -80,30 +80,30 @@ public class AccesorioRepositoryImpl implements AccesorioRepository {
     }
 
     @Override
-    public Page<Accesorio> searchByTipoActivoId(
-            UUID tipoActivoId,
+    public Page<Accesorio> searchByCategoriaId(
+            UUID categoriaId,
             String query,
             Pageable pageable
     ) {
         return springRepository
-                .searchByTipoActivoId(tipoActivoId, query, pageable)
+                .searchByCategoriaId(categoriaId, query, pageable)
                 .map(mapper::toDomain);
     }
 
     @Override
-    public boolean existsByTipoActivoIdAndCodigoIgnoreCase(
-            UUID tipoActivoId,
+    public boolean existsByCategoriaIdAndCodigoIgnoreCase(
+            UUID categoriaId,
             String codigo
     ) {
-        return springRepository.existsByTipoActivoIdAndCodigoIgnoreCase(tipoActivoId, codigo);
+        return springRepository.existsByCategoriaIdAndCodigoIgnoreCase(categoriaId, codigo);
     }
 
     @Override
-    public boolean existsByTipoActivoIdAndCodigoIgnoreCaseAndIdNot(
-            UUID tipoActivoId,
+    public boolean existsByCategoriaIdAndCodigoIgnoreCaseAndIdNot(
+            UUID categoriaId,
             String codigo,
             UUID id
     ) {
-        return springRepository.existsByTipoActivoIdAndCodigoIgnoreCaseAndIdNot(tipoActivoId, codigo, id);
+        return springRepository.existsByCategoriaIdAndCodigoIgnoreCaseAndIdNot(categoriaId, codigo, id);
     }
 }

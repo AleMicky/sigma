@@ -3,9 +3,9 @@ package com.endecorani.sigma_api.modules.activos.application.service;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.AccesorioRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.response.AccesorioResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.Accesorio;
-import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
+import com.endecorani.sigma_api.modules.activos.domain.model.Categoria;
 import com.endecorani.sigma_api.modules.activos.domain.repository.AccesorioRepository;
-import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
+import com.endecorani.sigma_api.modules.activos.domain.repository.CategoriaRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -26,33 +26,34 @@ import static org.junit.jupiter.api.Assertions.*;
 class AccesorioServiceTest {
 
     private InMemoryAccesorioRepository accesorioRepository;
-    private InMemoryTipoActivoRepository tipoActivoRepository;
+    private InMemoryCategoriaRepository categoriaRepository;
     private AccesorioService service;
 
-    private UUID tipoActivoId;
+    private UUID categoriaId;
 
     @BeforeEach
     void setUp() {
         accesorioRepository = new InMemoryAccesorioRepository();
-        tipoActivoRepository = new InMemoryTipoActivoRepository();
+        categoriaRepository = new InMemoryCategoriaRepository();
         service = new AccesorioService(
                 accesorioRepository,
-                tipoActivoRepository
+                categoriaRepository
         );
 
-        TipoActivo tipoActivo = TipoActivo.builder()
+        Categoria categoria = Categoria.builder()
                 .id(UUID.randomUUID())
-                .nombre("Vehículo")
+                .codigo("VEHICULOS")
+                .nombre("Vehículos")
                 .build();
-        tipoActivoRepository.items.add(tipoActivo);
-        tipoActivoId = tipoActivo.getId();
+        categoriaRepository.items.add(categoria);
+        categoriaId = categoria.getId();
     }
 
     @Test
     void createNormalizesCodigoNombreAndDescripcion() {
         AccesorioResponse response = service.create(
                 new AccesorioRequest(
-                        tipoActivoId,
+                        categoriaId,
                         "  gps   rastreador ",
                         "  GPS   Rastreador ",
                         "  Desc  "
@@ -63,13 +64,13 @@ class AccesorioServiceTest {
         assertEquals("GPS Rastreador", response.nombre());
         assertEquals("Desc", response.descripcion());
         assertNotNull(response.catalogo());
-        assertEquals(tipoActivoId, response.catalogo().id());
-        assertEquals("Vehículo", response.catalogo().nombre());
+        assertEquals(categoriaId, response.catalogo().id());
+        assertEquals("Vehículos", response.catalogo().nombre());
         assertEquals(1, accesorioRepository.items.size());
     }
 
     @Test
-    void createRejectsUnknownTipoActivo() {
+    void createRejectsUnknownCategoria() {
         assertThrows(
                 ResourceNotFoundException.class,
                 () -> service.create(
@@ -85,14 +86,14 @@ class AccesorioServiceTest {
     }
 
     @Test
-    void createRejectsDuplicateCodigoForSameTipoActivo() {
+    void createRejectsDuplicateCodigoForSameCategoria() {
         accesorioRepository.items.add(existing("GPS"));
 
         ConflictException exception = assertThrows(
                 ConflictException.class,
                 () -> service.create(
                         new AccesorioRequest(
-                                tipoActivoId,
+                                categoriaId,
                                 "gps",
                                 "GPS Nuevo",
                                 null
@@ -112,7 +113,7 @@ class AccesorioServiceTest {
         AccesorioResponse response = service.update(
                 stored.getId(),
                 new AccesorioRequest(
-                        tipoActivoId,
+                        categoriaId,
                         "GPS",
                         "GPS Navegador",
                         null
@@ -124,7 +125,7 @@ class AccesorioServiceTest {
     }
 
     @Test
-    void updateRejectsDuplicateCodigoForSameTipoActivo() {
+    void updateRejectsDuplicateCodigoForSameCategoria() {
         Accesorio first = existing("GPS");
         Accesorio second = existing("RADIO");
         accesorioRepository.items.add(first);
@@ -135,7 +136,7 @@ class AccesorioServiceTest {
                 () -> service.update(
                         second.getId(),
                         new AccesorioRequest(
-                                tipoActivoId,
+                                categoriaId,
                                 "gps",
                                 "Radio Actualizado",
                                 null
@@ -145,27 +146,27 @@ class AccesorioServiceTest {
     }
 
     @Test
-    void findByTipoActivoIdFiltersAndSearches() {
+    void findByCategoriaIdFiltersAndSearches() {
         accesorioRepository.items.add(existing("GPS", "GPS"));
         accesorioRepository.items.add(existing("RADIO", "Radio Comunicador"));
         accesorioRepository.items.add(
                 Accesorio.builder()
                         .id(UUID.randomUUID())
-                        .tipoActivoId(UUID.randomUUID())
+                        .categoriaId(UUID.randomUUID())
                         .codigo("OTRO")
                         .nombre("Otro")
                         .build()
         );
 
-        PageResponse<AccesorioResponse> all = service.findByTipoActivoId(
-                tipoActivoId,
+        PageResponse<AccesorioResponse> all = service.findByCategoriaId(
+                categoriaId,
                 null,
                 new PageRequestDto(0, 10, "codigo", null)
         );
         assertEquals(2, all.content().size());
 
-        PageResponse<AccesorioResponse> filtered = service.findByTipoActivoId(
-                tipoActivoId,
+        PageResponse<AccesorioResponse> filtered = service.findByCategoriaId(
+                categoriaId,
                 "radio",
                 new PageRequestDto(0, 10, "nombre", null)
         );
@@ -180,7 +181,7 @@ class AccesorioServiceTest {
     private Accesorio existing(String codigo, String nombre) {
         return Accesorio.builder()
                 .id(UUID.randomUUID())
-                .tipoActivoId(tipoActivoId)
+                .categoriaId(categoriaId)
                 .codigo(codigo)
                 .nombre(nombre)
                 .build();
@@ -219,12 +220,12 @@ class AccesorioServiceTest {
         }
 
         @Override
-        public Page<Accesorio> findByTipoActivoId(
-                UUID tipoActivoId,
+        public Page<Accesorio> findByCategoriaId(
+                UUID categoriaId,
                 Pageable pageable
         ) {
             List<Accesorio> filtered = items.stream()
-                    .filter(item -> item.getTipoActivoId().equals(tipoActivoId))
+                    .filter(item -> item.getCategoriaId().equals(categoriaId))
                     .toList();
             return new PageImpl<>(filtered, pageable, filtered.size());
         }
@@ -255,14 +256,14 @@ class AccesorioServiceTest {
         }
 
         @Override
-        public Page<Accesorio> searchByTipoActivoId(
-                UUID tipoActivoId,
+        public Page<Accesorio> searchByCategoriaId(
+                UUID categoriaId,
                 String query,
                 Pageable pageable
         ) {
             String q = query.toLowerCase();
             List<Accesorio> filtered = items.stream()
-                    .filter(item -> item.getTipoActivoId().equals(tipoActivoId))
+                    .filter(item -> item.getCategoriaId().equals(categoriaId))
                     .filter(item ->
                             item.getCodigo().toLowerCase().contains(q)
                                     || item.getNombre().toLowerCase().contains(q)
@@ -272,37 +273,37 @@ class AccesorioServiceTest {
         }
 
         @Override
-        public boolean existsByTipoActivoIdAndCodigoIgnoreCase(
-                UUID tipoActivoId,
+        public boolean existsByCategoriaIdAndCodigoIgnoreCase(
+                UUID categoriaId,
                 String codigo
         ) {
             return items.stream().anyMatch(item ->
-                    item.getTipoActivoId().equals(tipoActivoId)
+                    item.getCategoriaId().equals(categoriaId)
                             && item.getCodigo().equalsIgnoreCase(codigo)
             );
         }
 
         @Override
-        public boolean existsByTipoActivoIdAndCodigoIgnoreCaseAndIdNot(
-                UUID tipoActivoId,
+        public boolean existsByCategoriaIdAndCodigoIgnoreCaseAndIdNot(
+                UUID categoriaId,
                 String codigo,
                 UUID id
         ) {
             return items.stream().anyMatch(item ->
                     !item.getId().equals(id)
-                            && item.getTipoActivoId().equals(tipoActivoId)
+                            && item.getCategoriaId().equals(categoriaId)
                             && item.getCodigo().equalsIgnoreCase(codigo)
             );
         }
     }
 
-    private static final class InMemoryTipoActivoRepository
-            implements TipoActivoRepository {
+    private static final class InMemoryCategoriaRepository
+            implements CategoriaRepository {
 
-        private final List<TipoActivo> items = new ArrayList<>();
+        private final List<Categoria> items = new ArrayList<>();
 
         @Override
-        public TipoActivo save(TipoActivo entity) {
+        public Categoria save(Categoria entity) {
             if (entity.getId() == null) {
                 entity.setId(UUID.randomUUID());
             }
@@ -312,19 +313,19 @@ class AccesorioServiceTest {
         }
 
         @Override
-        public Optional<TipoActivo> findById(UUID id) {
+        public Optional<Categoria> findById(UUID id) {
             return items.stream()
                     .filter(item -> item.getId().equals(id))
                     .findFirst();
         }
 
         @Override
-        public List<TipoActivo> findAll() {
+        public List<Categoria> findAll() {
             return List.copyOf(items);
         }
 
         @Override
-        public Page<TipoActivo> findAll(Pageable pageable) {
+        public Page<Categoria> findAll(Pageable pageable) {
             return new PageImpl<>(List.copyOf(items), pageable, items.size());
         }
 
@@ -339,21 +340,41 @@ class AccesorioServiceTest {
         }
 
         @Override
-        public boolean existsByNombreIgnoreCase(String nombre) {
+        public boolean existsByCodigoIgnoreCase(String codigo) {
             return items.stream().anyMatch(item ->
-                    item.getNombre().equalsIgnoreCase(nombre)
+                    item.getCodigo().equalsIgnoreCase(codigo)
             );
         }
 
         @Override
-        public boolean existsByNombreIgnoreCaseAndIdNot(
-                String nombre,
+        public boolean existsByCodigoIgnoreCaseAndIdNot(
+                String codigo,
                 UUID id
         ) {
             return items.stream().anyMatch(item ->
                     !item.getId().equals(id)
-                            && item.getNombre().equalsIgnoreCase(nombre)
+                            && item.getCodigo().equalsIgnoreCase(codigo)
             );
+        }
+
+        @Override
+        public Page<Categoria> search(String query, Pageable pageable) {
+            String q = query.toLowerCase();
+            List<Categoria> filtered = items.stream()
+                    .filter(item ->
+                            item.getCodigo().toLowerCase().contains(q)
+                                    || item.getNombre().toLowerCase().contains(q)
+                    )
+                    .toList();
+            return new PageImpl<>(filtered, pageable, filtered.size());
+        }
+
+        @Override
+        public Integer findMaxOrden() {
+            return items.stream()
+                    .map(Categoria::getOrden)
+                    .max(Integer::compareTo)
+                    .orElse(0);
         }
     }
 }

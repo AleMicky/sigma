@@ -1,4 +1,4 @@
-import { Eye, Pencil, Tags, Trash2 } from "lucide-react"
+import { Eye, FolderTree, Pencil, Trash2 } from "lucide-react"
 
 import { AuditInfo } from "@/shared/components/audit-info"
 import { Badge } from "@/shared/components/ui/badge"
@@ -32,7 +32,7 @@ export function AccesorioTableView({
                 Nombre
               </th>
               <th scope="col" className="py-2.5 px-3">
-                Tipo de Activo
+                Categoría
               </th>
               <th scope="col" className="py-2.5 px-3">
                 Descripción
@@ -63,11 +63,11 @@ export function AccesorioTableView({
                   {item.nombre}
                 </td>
 
-                {/* Tipo de Activo */}
+                {/* Categoría */}
                 <td className="py-2 px-3">
                   {item.catalogo ? (
                     <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                      <Tags className="size-3" />
+                      <FolderTree className="size-3" />
                       {item.catalogo.nombre}
                     </span>
                   ) : (

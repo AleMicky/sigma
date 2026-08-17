@@ -1,4 +1,4 @@
-import { Paperclip, Pencil, Tags } from "lucide-react"
+import { FolderTree, Paperclip, Pencil } from "lucide-react"
 
 import { AuditInfo } from "@/shared/components/audit-info"
 import { Badge } from "@/shared/components/ui/badge"
@@ -41,7 +41,7 @@ export function AccesorioQuickViewSheet({
                 variant="outline"
                 className="gap-1 border-primary/30 bg-primary/10 text-primary"
               >
-                <Tags className="size-3" />
+                <FolderTree className="size-3" />
                 {accesorio.catalogo.nombre}
               </Badge>
             ) : null}
@@ -67,7 +67,7 @@ export function AccesorioQuickViewSheet({
             </div>
             <p className="text-sm font-medium leading-relaxed">
               {accesorio.catalogo
-                ? `Accesorio configurado para el tipo de activo "${accesorio.catalogo.nombre}".`
+                ? `Accesorio configurado para la categoría "${accesorio.catalogo.nombre}".`
                 : "Accesorio registrado en el catálogo maestro del sistema."}
             </p>
           </div>
@@ -91,7 +91,7 @@ export function AccesorioQuickViewSheet({
 
               <div className="rounded-lg border bg-muted/20 p-3">
                 <span className="text-xs text-muted-foreground block">
-                  Tipo de Activo
+                  Categoría
                 </span>
                 <span className="font-medium text-foreground">
                   {accesorio.catalogo?.nombre ?? "—"}

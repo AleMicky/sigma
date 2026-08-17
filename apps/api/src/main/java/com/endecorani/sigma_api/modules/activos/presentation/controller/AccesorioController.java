@@ -83,30 +83,25 @@ public class AccesorioController {
         );
     }
 
-    @GetMapping(params = "tipoActivoId")
-    @Operation(summary = "Listar accesorios filtrados por tipo de activo")
-    public ResponseEntity<ApiResponse<PageResponse<AccesorioResponse>>> findByTipoActivoId(
-            @RequestParam UUID tipoActivoId,
-            @RequestParam(required = false) String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        accesorioService.findByTipoActivoId(
-                                tipoActivoId,
-                                q,
-                                pageRequest
-                        )
-                )
-        );
-    }
-
     @GetMapping
     @Operation(summary = "Listar accesorios")
     public ResponseEntity<ApiResponse<PageResponse<AccesorioResponse>>> findAll(
+            @RequestParam(required = false) UUID categoriaId,
             @RequestParam(required = false) String q,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        if (categoriaId != null) {
+            return ResponseEntity.ok(
+                    ApiResponse.success(
+                            accesorioService.findByCategoriaId(
+                                    categoriaId,
+                                    q,
+                                    pageRequest
+                            )
+                    )
+            );
+        }
+
         return ResponseEntity.ok(
                 ApiResponse.success(
                         accesorioService.findAll(q, pageRequest)

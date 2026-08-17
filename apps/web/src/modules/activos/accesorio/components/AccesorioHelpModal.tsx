@@ -1,9 +1,9 @@
 import {
   CheckCircle2,
+  FolderTree,
   HelpCircle,
   Paperclip,
   Sparkles,
-  Tags,
 } from "lucide-react"
 
 import {
@@ -34,7 +34,7 @@ export function AccesorioHelpModal({
             </DialogTitle>
           </div>
           <DialogDescription>
-            Criterios y buenas prácticas para la configuración de accesorios y complementos por tipo de activo.
+            Criterios y buenas prácticas para la configuración de accesorios y complementos por categoría.
           </DialogDescription>
         </DialogHeader>
 
@@ -64,14 +64,14 @@ export function AccesorioHelpModal({
             </div>
           </div>
 
-          {/* Vinculación con Tipo de Activo */}
+          {/* Vinculación con Categoría */}
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-2">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-semibold">
-              <Tags className="size-4" />
-              <h4>Asociación por Tipo de Activo</h4>
+              <FolderTree className="size-4" />
+              <h4>Asociación por Categoría</h4>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Cada accesorio pertenece a un <strong>Tipo de Activo</strong> (ej. Vehículos, Equipos de Cómputo, Maquinaria Pesada). Esto permite que al registrar o inspeccionar un activo, solo se ofrezcan los accesorios compatibles.
+              Cada accesorio pertenece a una <strong>Categoría</strong> (ej. Vehículos, Equipos de Cómputo, Maquinaria Pesada). Esto permite que al registrar o inspeccionar un activo, se reconozcan los accesorios compatibles según su categoría.
             </p>
           </div>
 
@@ -88,7 +88,7 @@ export function AccesorioHelpModal({
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="size-3.5 text-primary shrink-0 mt-0.5" />
-                <span>La clave única se evalúa por tipo de activo, permitiendo códigos específicos dentro de cada categoría.</span>
+                <span>La clave única se evalúa por categoría, permitiendo códigos específicos dentro de cada categoría.</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="size-3.5 text-primary shrink-0 mt-0.5" />
