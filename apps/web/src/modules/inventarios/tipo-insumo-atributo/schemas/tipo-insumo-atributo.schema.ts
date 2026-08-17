@@ -1,5 +1,10 @@
 import { z } from "zod"
 
+export const tipoInsumoAtributOpcionSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+})
+
 export const tipoInsumoAtributoSchema = z.object({
   tipoDatoId: z.string().min(1, "El tipo de dato es obligatorio"),
   tipoInsumoId: z.string().min(1, "El tipo de insumo es obligatorio"),
@@ -16,7 +21,7 @@ export const tipoInsumoAtributoSchema = z.object({
     .number()
     .int("El orden debe ser un número entero")
     .min(0, "El orden no puede ser negativo"),
-  opciones: z.string().optional(),
+  opciones: z.array(tipoInsumoAtributOpcionSchema),
 })
 
 export type TipoInsumoAtributoDto = z.infer<typeof tipoInsumoAtributoSchema>
@@ -28,5 +33,6 @@ export const defaultTipoInsumoAtributoValues: TipoInsumoAtributoDto = {
   nombre: "",
   requerido: false,
   orden: 0,
-  opciones: "",
+  opciones: [],
 }
+

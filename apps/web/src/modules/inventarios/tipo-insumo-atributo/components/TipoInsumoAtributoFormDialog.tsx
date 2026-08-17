@@ -1,6 +1,7 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
+import { Plus, Trash2 } from "lucide-react"
 
 import { tipoDatoQueries } from "@/modules/parametros/tipo-dato/api/tipo-dato.queries"
 import { isApiError } from "@/shared/api"
@@ -9,6 +10,7 @@ import {
   FormDialogSubmit,
   RequiredFieldLabel,
 } from "@/shared/components/form-dialog"
+import { Button } from "@/shared/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import {
@@ -18,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select"
-import { Textarea } from "@/shared/components/ui/textarea"
 
 import {
   useCreateTipoInsumoAtributo,
@@ -36,6 +37,36 @@ type TipoInsumoAtributoFormDialogProps = {
   tipoInsumoId: string
   atributo?: TipoInsumoAtributo | null
   onSuccess?: (atributo: TipoInsumoAtributo) => void
+}
+
+function parseOpciones(
+  opciones: string | null | undefined,
+): Array<{ value: string; label: string }> {
+  if (!opciones) return []
+  try {
+    const parsed = JSON.parse(opciones)
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => {
+        if (typeof item === "string") {
+          return { value: item, label: item }
+        }
+        if (typeof item === "object" && item !== null) {
+          return {
+            value: String(item.value ?? item.val ?? item.label ?? ""),
+            label: String(item.label ?? item.nombre ?? item.value ?? ""),
+          }
+        }
+        return { value: String(item), label: String(item) }
+      })
+    }
+  } catch {
+    return opciones
+      .split(/[\n,]/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => ({ value: s, label: s }))
+  }
+  return []
 }
 
 export function TipoInsumoAtributoFormDialog({
@@ -60,6 +91,10 @@ export function TipoInsumoAtributoFormDialog({
   )
 
   const tiposDato = tiposDatoQuery.data?.content ?? []
+  const tiposById = useMemo(
+    () => new Map(tiposDato.map((tipo) => [tipo.id, tipo])),
+    [tiposDato],
+  )
 
   const form = useForm({
     defaultValues: atributo
@@ -70,7 +105,7 @@ export function TipoInsumoAtributoFormDialog({
           nombre: atributo.nombre,
           requerido: atributo.requerido ?? false,
           orden: atributo.orden ?? 0,
-          opciones: atributo.opciones ?? "",
+          opciones: parseOpciones(atributo.opciones),
         }
       : {
           ...defaultTipoInsumoAtributoValues,
@@ -82,6 +117,32 @@ export function TipoInsumoAtributoFormDialog({
     onSubmit: async ({ value }) => {
       setFormError(null)
 
+      const tipoDato = tiposById.get(value.tipoDatoId)
+      if (tipoDato?.permiteOpciones && value.opciones.length === 0) {
+        setFormError("Agrega al menos una opción para este tipo de dato.")
+        return
+      }
+
+      const validOpciones = value.opciones.filter(
+        (op) => op.value.trim() || op.label.trim(),
+      )
+
+      if (tipoDato?.permiteOpciones && validOpciones.length === 0) {
+        setFormError(
+          "Agrega al menos una opción válida para este tipo de dato.",
+        )
+        return
+      }
+
+      const opcionesJson = tipoDato?.permiteOpciones
+        ? JSON.stringify(
+            validOpciones.map((opcion) => ({
+              value: opcion.value.trim(),
+              label: opcion.label.trim() || opcion.value.trim(),
+            })),
+          )
+        : null
+
       const payload = {
         tipoDatoId: value.tipoDatoId,
         tipoInsumoId,
@@ -89,7 +150,7 @@ export function TipoInsumoAtributoFormDialog({
         nombre: value.nombre.trim(),
         requerido: value.requerido,
         orden: value.orden,
-        opciones: value.opciones?.trim() || null,
+        opciones: opcionesJson,
       }
 
       try {
@@ -203,6 +264,7 @@ export function TipoInsumoAtributoFormDialog({
         {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
+          const selected = tiposById.get(field.state.value)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
@@ -210,11 +272,24 @@ export function TipoInsumoAtributoFormDialog({
                 Tipo de dato
               </RequiredFieldLabel>
               <Select
-                value={field.state.value}
-                onValueChange={(val) => field.handleChange(val ?? "")}
+                value={field.state.value || null}
+                onValueChange={(val) => {
+                  const nextId = val ?? ""
+                  field.handleChange(nextId)
+                  const nextTipo = tiposById.get(nextId)
+                  if (!nextTipo?.permiteOpciones) {
+                    form.setFieldValue("opciones", [])
+                  } else if (form.state.values.opciones.length === 0) {
+                    form.setFieldValue("opciones", [{ value: "", label: "" }])
+                  }
+                }}
               >
                 <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                  <SelectValue placeholder="Selecciona un tipo de dato…" />
+                  <SelectValue placeholder="Selecciona un tipo de dato…">
+                    {selected
+                      ? `${selected.nombre} (${selected.codigo})`
+                      : null}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {tiposDato.map((tipo) => (
@@ -230,29 +305,91 @@ export function TipoInsumoAtributoFormDialog({
         }}
       </form.Field>
 
-      <form.Field name="opciones">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+      <form.Subscribe selector={(state) => state.values.tipoDatoId}>
+        {(tipoDatoId) => {
+          const tipoDato = tiposById.get(tipoDatoId)
+          if (!tipoDato?.permiteOpciones) return null
 
           return (
-            <Field data-invalid={isInvalid || undefined}>
-              <FieldLabel htmlFor={field.name}>Opciones (JSON)</FieldLabel>
-              <Textarea
-                id={field.name}
-                name={field.name}
-                value={field.state.value ?? ""}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                aria-invalid={isInvalid}
-                placeholder='Opcional. Formato JSON (ej: ["Opción 1", "Opción 2"])'
-                rows={3}
-              />
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
+            <form.Field name="opciones" mode="array">
+              {(field) => (
+                <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium">Opciones</p>
+                      <p className="text-xs text-muted-foreground">
+                        Requeridas para {tipoDato.codigo}.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        field.pushValue({ value: "", label: "" })
+                      }
+                    >
+                      <Plus className="size-4" />
+                      Agregar
+                    </Button>
+                  </div>
+
+                  {field.state.value.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Aún no hay opciones.
+                    </p>
+                  ) : (
+                    <ul className="flex flex-col gap-2">
+                      {field.state.value.map((_, index) => (
+                        <li
+                          key={index}
+                          className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
+                        >
+                          <form.Field name={`opciones[${index}].value`}>
+                            {(optionField) => (
+                              <Input
+                                value={optionField.state.value}
+                                onBlur={optionField.handleBlur}
+                                onChange={(e) =>
+                                  optionField.handleChange(e.target.value)
+                                }
+                                placeholder="Valor"
+                                aria-label={`Valor de opción ${index + 1}`}
+                              />
+                            )}
+                          </form.Field>
+                          <form.Field name={`opciones[${index}].label`}>
+                            {(optionField) => (
+                              <Input
+                                value={optionField.state.value}
+                                onBlur={optionField.handleBlur}
+                                onChange={(e) =>
+                                  optionField.handleChange(e.target.value)
+                                }
+                                placeholder="Etiqueta"
+                                aria-label={`Etiqueta de opción ${index + 1}`}
+                              />
+                            )}
+                          </form.Field>
+                          <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={`Eliminar opción ${index + 1}`}
+                            onClick={() => field.removeValue(index)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </form.Field>
           )
         }}
-      </form.Field>
+      </form.Subscribe>
 
       <div className="grid grid-cols-2 gap-4">
         <form.Field name="orden">
