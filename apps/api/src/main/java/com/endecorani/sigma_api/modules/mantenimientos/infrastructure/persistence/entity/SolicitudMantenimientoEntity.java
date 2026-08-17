@@ -13,6 +13,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -58,15 +59,11 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     )
     private String numero;
 
-    // Activo
-
     @Column(
             name = "activo_id",
             nullable = false
     )
     private UUID activoId;
-
-    // Clasificación
 
     @Column(
             name = "tipo_mantenimiento_id",
@@ -75,19 +72,16 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     private UUID tipoMantenimientoId;
 
     @Column(
-            name = "motivo_mantenimiento",
-            nullable = false,
-            length = 50
+            name = "motivo_mantenimiento_id",
+            nullable = false
     )
-    private String motivoMantenimiento;
+    private UUID motivoMantenimientoId;
 
     @Column(
             name = "prioridad_id",
             nullable = false
     )
     private UUID prioridadId;
-
-    // Solicitud
 
     @Column(
             name = "solicitante_id",
@@ -96,7 +90,8 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     private UUID solicitanteId;
 
     @Column(
-            name = "area_solicitante_id"
+            name = "area_solicitante_id",
+            nullable = false
     )
     private UUID areaSolicitanteId;
 
@@ -115,12 +110,9 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     private String descripcion;
 
     @Column(
-            name = "fecha_solicitud",
-            nullable = false
+            name = "fecha_solicitud"
     )
     private LocalDateTime fechaSolicitud;
-
-    // Aprobación
 
     @Column(
             name = "aprobado_por_id"
@@ -138,8 +130,6 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     )
     private String observacionAprobacion;
 
-    // Responsable
-
     @Column(
             name = "responsable_id"
     )
@@ -150,7 +140,6 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     )
     private LocalDateTime fechaAsignacion;
 
-    // Ejecución
 
     @Column(
             name = "fecha_inicio_mantenimiento"
@@ -162,7 +151,6 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     )
     private LocalDateTime fechaFinMantenimiento;
 
-    // Validación
 
     @Column(
             name = "supervisor_id"
@@ -180,8 +168,6 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     )
     private String observacionValidacion;
 
-    // Cierre
-
     @Column(
             name = "fecha_finalizacion"
     )
@@ -197,8 +183,6 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
             length = 1000
     )
     private String observacionCierre;
-
-    // Workflow
 
     @Column(
             name = "estado",

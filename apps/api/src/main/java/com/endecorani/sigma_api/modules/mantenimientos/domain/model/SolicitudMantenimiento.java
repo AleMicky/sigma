@@ -21,12 +21,15 @@ public class SolicitudMantenimiento extends AuditableModel {
 
     private String numero;
 
+    // Activo
     private UUID activoId;
 
+    // Clasificación
     private UUID tipoMantenimientoId;
-    private UUID motivoMantenimiento;
+    private UUID motivoMantenimientoId;
     private UUID prioridadId;
 
+    // Solicitud
     private UUID solicitanteId;
     private UUID areaSolicitanteId;
 
@@ -35,24 +38,30 @@ public class SolicitudMantenimiento extends AuditableModel {
 
     private LocalDateTime fechaSolicitud;
 
+    // Aprobación
     private UUID aprobadoPorId;
     private LocalDateTime fechaAprobacion;
     private String observacionAprobacion;
 
+    // Asignación
     private UUID responsableId;
     private LocalDateTime fechaAsignacion;
 
+    // Ejecución
     private LocalDateTime fechaInicioMantenimiento;
     private LocalDateTime fechaFinMantenimiento;
 
+    // Validación
     private UUID supervisorId;
     private LocalDateTime fechaValidacion;
     private String observacionValidacion;
 
+    // Cierre
     private LocalDateTime fechaFinalizacion;
     private UUID recibidoPorId;
     private String observacionCierre;
 
+    // Workflow
     private String estado;
     private String processInstanceId;
 }
