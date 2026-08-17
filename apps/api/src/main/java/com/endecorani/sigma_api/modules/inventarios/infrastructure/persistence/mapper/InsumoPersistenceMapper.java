@@ -3,7 +3,6 @@ package com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.
 import com.endecorani.sigma_api.modules.inventarios.domain.model.Insumo;
 import com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.entity.CategoriaInsumoEntity;
 import com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.entity.InsumoEntity;
-import com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.entity.TipoInsumoEntity;
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.entity.UnidadMedidaEntity;
 import org.springframework.stereotype.Component;
 
@@ -21,12 +20,6 @@ public class InsumoPersistenceMapper {
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
         entity.setMarca(domain.getMarca());
-
-        if (domain.getTipoInsumoId() != null) {
-            TipoInsumoEntity tipoInsumo = new TipoInsumoEntity();
-            tipoInsumo.setId(domain.getTipoInsumoId());
-            entity.setTipoInsumo(tipoInsumo);
-        }
 
         if (domain.getCategoriaInsumoId() != null) {
             CategoriaInsumoEntity categoriaInsumo = new CategoriaInsumoEntity();
@@ -53,11 +46,6 @@ public class InsumoPersistenceMapper {
                 .codigo(entity.getCodigo())
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
-                .tipoInsumoId(
-                        entity.getTipoInsumo() != null
-                                ? entity.getTipoInsumo().getId()
-                                : null
-                )
                 .categoriaInsumoId(
                         entity.getCategoriaInsumo() != null
                                 ? entity.getCategoriaInsumo().getId()

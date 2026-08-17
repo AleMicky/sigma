@@ -14,7 +14,6 @@ export const insumoSchema = z.object({
     .max(500, "La descripción no puede superar 500 caracteres")
     .optional()
     .nullable(),
-  tipoInsumoId: z.string().min(1, "El tipo de insumo es obligatorio"),
   categoriaInsumoId: z.string().min(1, "La categoría de insumo es obligatoria"),
   unidadMedidaId: z.string().min(1, "La unidad de medida es obligatoria"),
   marca: z
@@ -30,7 +29,6 @@ export const defaultInsumoValues: InsumoDto = {
   codigo: "",
   nombre: "",
   descripcion: "",
-  tipoInsumoId: "",
   categoriaInsumoId: "",
   unidadMedidaId: "",
   marca: "",

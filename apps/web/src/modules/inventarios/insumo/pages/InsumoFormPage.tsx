@@ -132,7 +132,6 @@ export function InsumoFormPage({ insumoId }: InsumoFormPageProps) {
           codigo: insumo.codigo,
           nombre: insumo.nombre,
           descripcion: insumo.descripcion ?? "",
-          tipoInsumoId: insumo.tipoInsumoId,
           categoriaInsumoId: insumo.categoriaInsumoId,
           unidadMedidaId: insumo.unidadMedidaId,
           marca: insumo.marca ?? "",
@@ -165,7 +164,6 @@ export function InsumoFormPage({ insumoId }: InsumoFormPageProps) {
               codigo: value.codigo.trim(),
               nombre: value.nombre.trim(),
               descripcion: value.descripcion?.trim() || null,
-              tipoInsumoId: value.tipoInsumoId,
               categoriaInsumoId: value.categoriaInsumoId,
               unidadMedidaId: value.unidadMedidaId,
               marca: value.marca?.trim() || null,
@@ -176,7 +174,6 @@ export function InsumoFormPage({ insumoId }: InsumoFormPageProps) {
             codigo: value.codigo.trim(),
             nombre: value.nombre.trim(),
             descripcion: value.descripcion?.trim() || null,
-            tipoInsumoId: value.tipoInsumoId,
             categoriaInsumoId: value.categoriaInsumoId,
             unidadMedidaId: value.unidadMedidaId,
             marca: value.marca?.trim() || null,
@@ -202,13 +199,19 @@ export function InsumoFormPage({ insumoId }: InsumoFormPageProps) {
     },
   })
 
-  // Track selected TipoInsumo to dynamically fetch attributes
-  const selectedTipoInsumoId = useStore(
+  // Track selected CategoriaInsumo to derive TipoInsumo and dynamically fetch attributes
+  const selectedCategoriaInsumoId = useStore(
     form.store,
-    (state) => state.values.tipoInsumoId,
+    (state) => state.values.categoriaInsumoId,
   )
 
+  const selectedCategoria = useMemo(
+    () => categorias.find((c) => c.id === selectedCategoriaInsumoId),
+    [categorias, selectedCategoriaInsumoId],
+  )
 
+  const selectedTipoInsumoId =
+    selectedCategoria?.tipoInsumo?.id ?? selectedCategoria?.tipoInsumoId ?? ""
 
   const atributosQuery = useQuery({
     ...tipoInsumoAtributoQueries.list({
@@ -279,7 +282,6 @@ export function InsumoFormPage({ insumoId }: InsumoFormPageProps) {
           {/* General Information Section */}
           <InsumoFormMainSection
             form={form}
-            tipos={tipos}
             categorias={categorias}
             unidadesMedida={unidadesMedida}
           />

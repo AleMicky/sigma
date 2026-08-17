@@ -49,14 +49,6 @@ public record InsumoRequest(
         String descripcion,
 
         @Schema(
-                description = "ID del tipo de insumo",
-                example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8",
-                requiredMode = Schema.RequiredMode.REQUIRED
-        )
-        @NotNull(message = "El tipo de insumo es obligatorio")
-        UUID tipoInsumoId,
-
-        @Schema(
                 description = "ID de la categoría de insumo",
                 example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8",
                 requiredMode = Schema.RequiredMode.REQUIRED

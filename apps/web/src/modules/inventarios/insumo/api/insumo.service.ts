@@ -8,7 +8,6 @@ export type Insumo = AuditableEntity & {
   codigo: string
   nombre: string
   descripcion: string | null
-  tipoInsumoId: string
   categoriaInsumoId: string
   unidadMedidaId: string
   marca: string | null
@@ -18,7 +17,6 @@ export type InsumoPayload = {
   codigo: string
   nombre: string
   descripcion?: string | null
-  tipoInsumoId: string
   categoriaInsumoId: string
   unidadMedidaId: string
   marca?: string | null

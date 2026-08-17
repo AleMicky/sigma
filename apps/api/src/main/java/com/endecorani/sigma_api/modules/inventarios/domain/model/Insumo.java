@@ -24,8 +24,6 @@ public class Insumo extends AuditableModel {
 
     private String descripcion;
 
-    private UUID tipoInsumoId;
-
     private UUID categoriaInsumoId;
 
     private UUID unidadMedidaId;

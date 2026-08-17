@@ -18,14 +18,12 @@ import { Textarea } from "@/shared/components/ui/textarea"
 
 type InsumoFormMainSectionProps = {
   form: any
-  tipos: TipoInsumo[]
   categorias: CategoriaInsumo[]
   unidadesMedida: UnidadMedida[]
 }
 
 export function InsumoFormMainSection({
   form,
-  tipos,
   categorias,
   unidadesMedida,
 }: InsumoFormMainSectionProps) {
@@ -111,38 +109,6 @@ export function InsumoFormMainSection({
                   placeholder="Mobil / Shell / SKF"
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
-
-        {/* Tipo de Insumo */}
-        <form.Field name="tipoInsumoId">
-          {(field: AnyFieldApi) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
-
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <RequiredFieldLabel htmlFor={field.name}>
-                  Tipo de Insumo
-                </RequiredFieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(val) => field.handleChange(val ?? "")}
-                >
-                  <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Selecciona un tipo…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tipos.map((tipo) => (
-                      <SelectItem key={tipo.id} value={tipo.id}>
-                        {tipo.nombre} ({tipo.codigo})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )

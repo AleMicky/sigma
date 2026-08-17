@@ -23,9 +23,6 @@ public class InsumoEntity extends BaseEntity {
     @Column(length = 500)
     private String descripcion;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "tipo_insumo_id", nullable = false)
-    private TipoInsumoEntity tipoInsumo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "categoria_insumo_id", nullable = false)
