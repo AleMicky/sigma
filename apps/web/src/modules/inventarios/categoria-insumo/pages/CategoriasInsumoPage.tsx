@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { FolderTree, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
+import { tipoInsumoQueries } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.queries"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -27,6 +28,23 @@ export function CategoriasInsumoPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<CategoriaInsumo | null>(null)
   const search = usePaginatedSearch()
+
+  const tiposInsumoQuery = useQuery(
+    tipoInsumoQueries.list({
+      page: 0,
+      size: 100,
+      sortBy: "nombre",
+      direction: "ASC",
+    }),
+  )
+
+  const tiposInsumoMap = useMemo(() => {
+    const map = new Map<string, { nombre: string; codigo: string }>()
+    tiposInsumoQuery.data?.content?.forEach((ti) => {
+      map.set(ti.id, { nombre: ti.nombre, codigo: ti.codigo })
+    })
+    return map
+  }, [tiposInsumoQuery.data])
 
   const categoriasQuery = useQuery(
     categoriaInsumoQueries.list({
@@ -147,6 +165,7 @@ export function CategoriasInsumoPage() {
                   <CategoriaInsumoCard
                     key={categoria.id}
                     categoria={categoria}
+                    tipoInsumoNombre={tiposInsumoMap.get(categoria.tipoInsumoId)?.nombre}
                     onEdit={openEdit}
                   />
                 ))}

@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
+import { useQuery } from "@tanstack/react-query"
 
+import { tipoInsumoQueries } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.queries"
 import { isApiError } from "@/shared/api"
 import {
   FormDialog,
@@ -9,6 +11,13 @@ import {
 } from "@/shared/components/form-dialog"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 
 import {
@@ -39,9 +48,21 @@ export function CategoriaInsumoFormDialog({
   const updateMutation = useUpdateCategoriaInsumo()
   const [formError, setFormError] = useState<string | null>(null)
 
+  const tiposInsumoQuery = useQuery(
+    tipoInsumoQueries.list({
+      page: 0,
+      size: 100,
+      sortBy: "nombre",
+      direction: "ASC",
+    }),
+  )
+
+  const tiposInsumo = tiposInsumoQuery.data?.content ?? []
+
   const form = useForm({
     defaultValues: categoria
       ? {
+          tipoInsumoId: categoria.tipoInsumoId,
           codigo: categoria.codigo,
           nombre: categoria.nombre,
           descripcion: categoria.descripcion ?? "",
@@ -59,12 +80,14 @@ export function CategoriaInsumoFormDialog({
             ? await updateMutation.mutateAsync({
                 id: categoria.id,
                 payload: {
+                  tipoInsumoId: value.tipoInsumoId,
                   codigo: value.codigo.trim(),
                   nombre: value.nombre.trim(),
                   descripcion: value.descripcion?.trim() || null,
                 },
               })
             : await createMutation.mutateAsync({
+                tipoInsumoId: value.tipoInsumoId,
                 codigo: value.codigo.trim(),
                 nombre: value.nombre.trim(),
                 descripcion: value.descripcion?.trim() || null,
@@ -90,7 +113,7 @@ export function CategoriaInsumoFormDialog({
       title={isEditing ? "Editar categoría de insumo" : "Nueva categoría de insumo"}
       description={
         isEditing
-          ? "Actualiza el código, nombre o descripción de la categoría de insumo."
+          ? "Actualiza el tipo de insumo, código, nombre o descripción de la categoría de insumo."
           : "Crea una categoría para clasificar insumos (ej. Materiales Eléctricos, Lubricantes)."
       }
       formError={formError}
@@ -114,6 +137,36 @@ export function CategoriaInsumoFormDialog({
         </form.Subscribe>
       }
     >
+      <form.Field name="tipoInsumoId">
+        {(field) => {
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
+
+          return (
+            <Field data-invalid={isInvalid || undefined}>
+              <RequiredFieldLabel htmlFor={field.name}>
+                Tipo de insumo
+              </RequiredFieldLabel>
+              <Select
+                value={field.state.value}
+                onValueChange={(val) => field.handleChange(val ?? "")}
+              >
+                <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                  <SelectValue placeholder="Selecciona un tipo de insumo…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tiposInsumo.map((tipo) => (
+                    <SelectItem key={tipo.id} value={tipo.id}>
+                      {tipo.nombre} ({tipo.codigo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+            </Field>
+          )
+        }}
+      </form.Field>
       <form.Field name="codigo">
         {(field) => {
           const isInvalid =

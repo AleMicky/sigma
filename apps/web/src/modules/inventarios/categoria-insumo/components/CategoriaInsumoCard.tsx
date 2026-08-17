@@ -9,11 +9,13 @@ import type { CategoriaInsumo } from "../api/categoria-insumo.service"
 
 type CategoriaInsumoCardProps = {
   categoria: CategoriaInsumo
+  tipoInsumoNombre?: string
   onEdit: (categoria: CategoriaInsumo) => void
 }
 
 export function CategoriaInsumoCard({
   categoria,
+  tipoInsumoNombre,
   onEdit,
 }: CategoriaInsumoCardProps) {
   const deleteMutation = useDeleteCategoriaInsumo()
@@ -34,6 +36,11 @@ export function CategoriaInsumoCard({
             <code className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-mono font-medium text-muted-foreground">
               {categoria.codigo}
             </code>
+            {tipoInsumoNombre && (
+              <span className="inline-flex items-center rounded-md bg-secondary/80 px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
+                {tipoInsumoNombre}
+              </span>
+            )}
           </div>
 
           <RowActions

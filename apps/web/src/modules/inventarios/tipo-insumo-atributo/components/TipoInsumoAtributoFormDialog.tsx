@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select"
+import { Textarea } from "@/shared/components/ui/textarea"
 
 import {
   useCreateTipoInsumoAtributo,
@@ -69,6 +70,7 @@ export function TipoInsumoAtributoFormDialog({
           nombre: atributo.nombre,
           requerido: atributo.requerido ?? false,
           orden: atributo.orden ?? 0,
+          opciones: atributo.opciones ?? "",
         }
       : {
           ...defaultTipoInsumoAtributoValues,
@@ -80,28 +82,24 @@ export function TipoInsumoAtributoFormDialog({
     onSubmit: async ({ value }) => {
       setFormError(null)
 
+      const payload = {
+        tipoDatoId: value.tipoDatoId,
+        tipoInsumoId,
+        codigo: value.codigo.trim(),
+        nombre: value.nombre.trim(),
+        requerido: value.requerido,
+        orden: value.orden,
+        opciones: value.opciones?.trim() || null,
+      }
+
       try {
         const saved =
           isEditing && atributo
             ? await updateMutation.mutateAsync({
                 id: atributo.id,
-                payload: {
-                  tipoDatoId: value.tipoDatoId,
-                  tipoInsumoId,
-                  codigo: value.codigo.trim(),
-                  nombre: value.nombre.trim(),
-                  requerido: value.requerido,
-                  orden: value.orden,
-                },
+                payload,
               })
-            : await createMutation.mutateAsync({
-                tipoDatoId: value.tipoDatoId,
-                tipoInsumoId,
-                codigo: value.codigo.trim(),
-                nombre: value.nombre.trim(),
-                requerido: value.requerido,
-                orden: value.orden,
-              })
+            : await createMutation.mutateAsync(payload)
 
         onSuccess?.(saved)
         onOpenChange(false)
@@ -226,6 +224,30 @@ export function TipoInsumoAtributoFormDialog({
                   ))}
                 </SelectContent>
               </Select>
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+            </Field>
+          )
+        }}
+      </form.Field>
+
+      <form.Field name="opciones">
+        {(field) => {
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
+
+          return (
+            <Field data-invalid={isInvalid || undefined}>
+              <FieldLabel htmlFor={field.name}>Opciones (JSON)</FieldLabel>
+              <Textarea
+                id={field.name}
+                name={field.name}
+                value={field.state.value ?? ""}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                aria-invalid={isInvalid}
+                placeholder='Opcional. Formato JSON (ej: ["Opción 1", "Opción 2"])'
+                rows={3}
+              />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
