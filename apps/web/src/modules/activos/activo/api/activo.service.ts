@@ -6,14 +6,31 @@ import type { AuditableEntity } from "@/shared/types/audit.types"
 
 import { activoEndpoints } from "./activo.endpoints"
 
+export type ActivoTipoActivoInfo = {
+  id: string
+  categoriaId: string
+  nombre: string
+  descripcion?: string | null
+  color?: string | null
+  icono?: string | null
+}
+
+export type ActivoUbicacionInfo = {
+  id: string
+  codigo: string
+  nombre: string
+  descripcion?: string | null
+  tipo?: string | null
+}
+
 export type Activo = AuditableEntity & {
   codigo: string
   nombre: string
   descripcion: string | null
-  tipoActivoId: string
-  tipoActivo?: TipoActivo | null
-  ubicacionId: string | null
-  ubicacion?: Ubicacion | null
+  tipoActivoId?: string
+  tipoActivo?: (TipoActivo & ActivoTipoActivoInfo) | null
+  ubicacionId?: string | null
+  ubicacion?: (Ubicacion & ActivoUbicacionInfo) | null
   fechaAdquisicion: string | null
   urlImagen: string | null
   activo: boolean

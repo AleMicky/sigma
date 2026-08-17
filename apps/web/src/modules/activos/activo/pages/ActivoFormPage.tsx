@@ -253,8 +253,8 @@ export function ActivoFormPage({
     form.setFieldValue("codigo", activo.codigo)
     form.setFieldValue("nombre", activo.nombre)
     form.setFieldValue("descripcion", activo.descripcion ?? "")
-    form.setFieldValue("tipoActivoId", activo.tipoActivoId)
-    form.setFieldValue("ubicacionId", activo.ubicacionId ?? "")
+    form.setFieldValue("tipoActivoId", activo.tipoActivo?.id ?? activo.tipoActivoId ?? "")
+    form.setFieldValue("ubicacionId", activo.ubicacion?.id ?? activo.ubicacionId ?? "")
     form.setFieldValue("fechaAdquisicion", activo.fechaAdquisicion ?? "")
   }, [activo, form, isEditing])
 

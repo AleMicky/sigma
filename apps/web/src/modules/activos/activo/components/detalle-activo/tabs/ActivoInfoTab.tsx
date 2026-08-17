@@ -228,7 +228,7 @@ export function ActivoInfoTab({
           codigo: formData.codigo.trim().toUpperCase(),
           nombre: formData.nombre.trim(),
           descripcion: formData.descripcion.trim() || null,
-          tipoActivoId: activo.tipoActivoId,
+          tipoActivoId: activo.tipoActivo?.id ?? activo.tipoActivoId ?? "",
           ubicacionId: formData.ubicacionId || null,
           fechaAdquisicion: formData.fechaAdquisicion || null,
           activo: formData.activo,

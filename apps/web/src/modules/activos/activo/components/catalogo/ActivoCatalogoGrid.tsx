@@ -104,11 +104,12 @@ export function ActivoCatalogoGrid({
             <ActivoCatalogoCard
               key={activo.id}
               activo={activo}
-              tipoActivo={tiposById.get(activo.tipoActivoId)}
+              tipoActivo={activo.tipoActivo ?? (activo.tipoActivoId ? tiposById.get(activo.tipoActivoId) : undefined)}
               ubicacion={
-                activo.ubicacionId
+                activo.ubicacion ??
+                (activo.ubicacionId
                   ? ubicacionesById.get(activo.ubicacionId)
-                  : undefined
+                  : undefined)
               }
             />
           ))}

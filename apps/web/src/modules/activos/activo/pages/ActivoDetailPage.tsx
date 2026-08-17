@@ -61,8 +61,8 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
   const activo = activoQuery.data
 
   const tipoActivoQuery = useQuery({
-    ...tipoActivoQueries.detail(activo?.tipoActivoId ?? ""),
-    enabled: Boolean(activo?.tipoActivoId),
+    ...tipoActivoQueries.detail(activo?.tipoActivo?.id ?? activo?.tipoActivoId ?? ""),
+    enabled: Boolean(!activo?.tipoActivo && (activo?.tipoActivo?.id || activo?.tipoActivoId)),
   })
   const tipoActivo = activo?.tipoActivo ?? tipoActivoQuery.data
 
@@ -364,7 +364,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
         activoId={activo.id}
         activoCodigo={activo.codigo}
         activoNombre={activo.nombre}
-        categoriaId={tipoActivo?.categoriaId}
+        categoriaId={activo.tipoActivo?.categoriaId ?? tipoActivo?.categoriaId}
         itemToEdit={editingAccesorio}
       />
 

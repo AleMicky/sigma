@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Layers, Loader2, Minus, Plus, Tag } from "lucide-react"
 
@@ -56,16 +56,36 @@ export function ActivoAccesorioFormModal({
   const [numeroSerie, setNumeroSerie] = useState("")
   const [observacion, setObservacion] = useState("")
 
+
   // Fetch accessories
-  const accesoriosQuery = useQuery(
-    accesorioQueries.list({
+  const accesoriosQuery = useQuery({
+    ...accesorioQueries.list({
+      categoriaId: categoriaId || undefined,
       page: 0,
-      size: 200,
+      size: 100,
       sortBy: "nombre",
       direction: "ASC",
     }),
-  )
+    enabled: open,
+  })
   const accesorios = accesoriosQuery.data?.content ?? []
+
+  // Ensure itemToEdit is present in the list when editing
+  const accesoriosList = useMemo(() => {
+    const list = [...accesorios]
+    if (
+      itemToEdit?.accesorio &&
+      !list.some((acc) => acc.id === itemToEdit.accesorio?.id)
+    ) {
+      list.unshift({
+        id: itemToEdit.accesorio.id,
+        codigo: itemToEdit.accesorio.codigo,
+        nombre: itemToEdit.accesorio.nombre,
+        descripcion: null,
+      })
+    }
+    return list
+  }, [accesorios, itemToEdit])
 
   // Prefill when editing or opening
   useEffect(() => {
@@ -158,16 +178,23 @@ export function ActivoAccesorioFormModal({
               <Label htmlFor="accesorio" className="text-xs font-semibold">
                 Accesorio <span className="text-destructive">*</span>
               </Label>
+
               <Select
                 value={accesorioId}
                 onValueChange={(val) => setAccesorioId(val ?? "")}
-                disabled={isPending || isEditing}
+                disabled={isPending || isEditing || accesoriosQuery.isLoading}
               >
-                <SelectTrigger id="accesorio" className="h-9 text-xs">
-                  <SelectValue placeholder="Seleccione un accesorio..." />
+                <SelectTrigger id="accesorio" className="h-9 text-xs w-full">
+                  <SelectValue
+                    placeholder={
+                      accesoriosQuery.isLoading
+                        ? "Cargando accesorios..."
+                        : "Seleccione un accesorio..."
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
-                  {accesorios.map((acc) => {
+                  {accesoriosList.map((acc) => {
                     const matchesCategory =
                       categoriaId && acc.catalogo?.id === categoriaId
                     return (
@@ -188,7 +215,7 @@ export function ActivoAccesorioFormModal({
                               Recomendado
                             </span>
                           )}
-                          {acc.catalogo && !matchesCategory && (
+                          {acc.catalogo?.nombre && !matchesCategory && (
                             <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                               {acc.catalogo.nombre}
                             </span>
@@ -197,7 +224,8 @@ export function ActivoAccesorioFormModal({
                       </SelectItem>
                     )
                   })}
-                  {accesorios.length === 0 && (
+
+                  {accesoriosList.length === 0 && !accesoriosQuery.isLoading && (
                     <div className="py-3 text-center text-xs text-muted-foreground">
                       No hay accesorios registrados en el sistema.
                     </div>
