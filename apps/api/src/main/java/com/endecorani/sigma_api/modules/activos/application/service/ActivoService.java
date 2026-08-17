@@ -2,22 +2,20 @@ package com.endecorani.sigma_api.modules.activos.application.service;
 
 import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse;
-import com.endecorani.sigma_api.modules.activos.application.dto.response.TipoActivoResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
-import com.endecorani.sigma_api.modules.parametros.application.dto.UbicacionResponse;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
-import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
+import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.storage.ImageStorageService;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
-import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,12 +25,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class ActivoService extends AbstractCrudService<
-        Activo,
-        ActivoRequest,
-        ActivoResponse,
-        UUID
-        > {
+public class ActivoService {
 
     private static final String IMAGE_FOLDER = "activos";
     private static final int CODIGO_MIN_LENGTH = 2;
@@ -45,6 +38,7 @@ public class ActivoService extends AbstractCrudService<
             "id",
             "codigo",
             "nombre",
+            "tipoActivoId",
             "ubicacionId",
             "fechaAdquisicion",
             "activo",
@@ -57,14 +51,72 @@ public class ActivoService extends AbstractCrudService<
     private final UbicacionRepository ubicacionRepository;
     private final ImageStorageService imageStorageService;
 
-    @Override
-    protected CrudRepository<Activo, UUID> repository() {
-        return activoRepository;
+    @Transactional
+    public ActivoResponse create(ActivoRequest request) {
+        requireTipoActivoExists(request.tipoActivoId());
+        requireUbicacionExists(request.ubicacionId());
+
+        String codigo = requireNormalizedCodigo(request.codigo());
+        validateUniqueCodigoForCreate(codigo);
+
+        Activo domain = Activo.builder()
+                .codigo(codigo)
+                .nombre(requireNormalizedNombre(request.nombre()))
+                .descripcion(normalizeDescripcion(request.descripcion()))
+                .tipoActivoId(request.tipoActivoId())
+                .ubicacionId(request.ubicacionId())
+                .fechaAdquisicion(request.fechaAdquisicion())
+                .activo(resolveActivo(request.activo()))
+                .build();
+
+        return toResponse(activoRepository.save(domain));
     }
 
-    @Override
-    protected Set<String> allowedSortFields() {
-        return SORT_FIELDS;
+    @Transactional
+    public ActivoResponse update(UUID id, ActivoRequest request) {
+        requireTipoActivoExists(request.tipoActivoId());
+        requireUbicacionExists(request.ubicacionId());
+
+        Activo domain = findDomainById(id);
+
+        String codigo = requireNormalizedCodigo(request.codigo());
+        validateUniqueCodigoForUpdate(codigo, domain.getId());
+
+        domain.setCodigo(codigo);
+        domain.setNombre(requireNormalizedNombre(request.nombre()));
+        domain.setDescripcion(normalizeDescripcion(request.descripcion()));
+        domain.setTipoActivoId(request.tipoActivoId());
+        domain.setUbicacionId(request.ubicacionId());
+        domain.setFechaAdquisicion(request.fechaAdquisicion());
+        domain.setActivo(resolveActivo(request.activo()));
+
+        return toResponse(activoRepository.save(domain));
+    }
+
+    @Transactional(readOnly = true)
+    public ActivoResponse findById(UUID id) {
+        return toResponse(findDomainById(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ActivoResponse> findAll(
+            String query,
+            PageRequestDto pageRequest
+    ) {
+        String normalized = StringUtils.normalize(query);
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+
+        if (normalized == null) {
+            return PageResponse.from(
+                    activoRepository.findAll(pageable),
+                    this::toResponse
+            );
+        }
+
+        return PageResponse.from(
+                activoRepository.search(normalized, pageable),
+                this::toResponse
+        );
     }
 
     @Transactional(readOnly = true)
@@ -76,7 +128,7 @@ public class ActivoService extends AbstractCrudService<
         requireTipoActivoExists(tipoActivoId);
 
         String normalized = StringUtils.normalize(query);
-        var pageable = pageRequest.toPageable(allowedSortFields());
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
         if (normalized == null) {
             return PageResponse.from(
@@ -101,10 +153,13 @@ public class ActivoService extends AbstractCrudService<
             PageRequestDto pageRequest
     ) {
         String normalized = StringUtils.normalize(query);
-        var pageable = pageRequest.toPageable(allowedSortFields());
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
         if (normalized == null) {
-            return findAll(pageRequest);
+            return PageResponse.from(
+                    activoRepository.findAll(pageable),
+                    this::toResponse
+            );
         }
 
         return PageResponse.from(
@@ -140,7 +195,6 @@ public class ActivoService extends AbstractCrudService<
         return toResponse(updated);
     }
 
-    @Override
     @Transactional
     public void delete(UUID id) {
         Activo domain = findDomainById(id);
@@ -150,105 +204,57 @@ public class ActivoService extends AbstractCrudService<
         activoRepository.deleteById(id);
     }
 
-    @Override
-    protected Activo toDomain(ActivoRequest request) {
-        requireTipoActivoExists(request.tipoActivoId());
-        requireUbicacionExists(request.ubicacionId());
-
-        String codigo = requireNormalizedCodigo(request.codigo());
-        validateUniqueCodigoForCreate(codigo);
-
-        return Activo.builder()
-                .codigo(codigo)
-                .nombre(requireNormalizedNombre(request.nombre()))
-                .descripcion(normalizeDescripcion(request.descripcion()))
-                .tipoActivoId(request.tipoActivoId())
-                .ubicacionId(request.ubicacionId())
-                .fechaAdquisicion(request.fechaAdquisicion())
-                .activo(resolveActivo(request.activo()))
-                .build();
+    private Activo findDomainById(UUID id) {
+        return activoRepository
+                .findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Activo", id)
+                );
     }
 
-    @Override
-    protected void updateDomain(Activo domain, ActivoRequest request) {
-        requireTipoActivoExists(request.tipoActivoId());
-        requireUbicacionExists(request.ubicacionId());
-
-        String codigo = requireNormalizedCodigo(request.codigo());
-        validateUniqueCodigoForUpdate(codigo, domain.getId());
-
-        domain.setCodigo(codigo);
-        domain.setNombre(requireNormalizedNombre(request.nombre()));
-        domain.setDescripcion(normalizeDescripcion(request.descripcion()));
-        domain.setTipoActivoId(request.tipoActivoId());
-        domain.setUbicacionId(request.ubicacionId());
-        domain.setFechaAdquisicion(request.fechaAdquisicion());
-        domain.setActivo(resolveActivo(request.activo()));
-    }
-
-    @Override
-    protected ActivoResponse toResponse(Activo domain) {
-        TipoActivoResponse tipoActivoResponse = null;
+    private ActivoResponse toResponse(Activo domain) {
+        ActivoResponse.TipoActivoInfo tipoActivoInfo = null;
         if (domain.getTipoActivoId() != null) {
-            tipoActivoResponse = tipoActivoRepository.findById(domain.getTipoActivoId())
-                    .map(tipo -> new TipoActivoResponse(
+            tipoActivoInfo = tipoActivoRepository.findById(domain.getTipoActivoId())
+                    .map(tipo -> new ActivoResponse.TipoActivoInfo(
                             tipo.getId(),
                             tipo.getCategoriaId(),
                             tipo.getNombre(),
-                            tipo.getDescripcion(),
-                            tipo.getColor(),
-                            tipo.getIcono(),
-                            tipo.getCreatedAt(),
-                            tipo.getUpdatedAt(),
-                            tipo.getCreatedBy(),
-                            tipo.getUpdatedBy()
+                            tipo.getDescripcion()
                     ))
                     .orElse(null);
         }
 
-        UbicacionResponse ubicacionResponse = null;
+        ActivoResponse.UbicacionInfo ubicacionInfo = null;
         if (domain.getUbicacionId() != null) {
-            ubicacionResponse = ubicacionRepository.findById(domain.getUbicacionId())
-                    .map(ubicacion -> new UbicacionResponse(
+            ubicacionInfo = ubicacionRepository.findById(domain.getUbicacionId())
+                    .map(ubicacion -> new ActivoResponse.UbicacionInfo(
                             ubicacion.getId(),
                             ubicacion.getCodigo(),
-                            ubicacion.getNombre(),
-                            ubicacion.getDescripcion(),
-                            ubicacion.getTipo(),
-                            ubicacion.getUbicacionPadreId(),
-                            ubicacion.getDireccion(),
-                            ubicacion.getLatitud(),
-                            ubicacion.getLongitud(),
-                            ubicacion.getCreatedAt(),
-                            ubicacion.getUpdatedAt(),
-                            ubicacion.getCreatedBy(),
-                            ubicacion.getUpdatedBy()
+                            ubicacion.getNombre()
                     ))
                     .orElse(null);
         }
+
+        AuditoriaResponse auditoria = new AuditoriaResponse(
+                domain.getCreatedAt(),
+                domain.getUpdatedAt(),
+                domain.getCreatedBy(),
+                domain.getUpdatedBy()
+        );
 
         return new ActivoResponse(
                 domain.getId(),
                 domain.getCodigo(),
                 domain.getNombre(),
                 domain.getDescripcion(),
-                domain.getTipoActivoId(),
-                tipoActivoResponse,
-                domain.getUbicacionId(),
-                ubicacionResponse,
+                tipoActivoInfo,
+                ubicacionInfo,
                 domain.getFechaAdquisicion(),
                 domain.getUrlImagen(),
                 domain.getActivo(),
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
+                auditoria
         );
-    }
-
-    @Override
-    protected String resourceName() {
-        return "Activo";
     }
 
     private Boolean resolveActivo(Boolean value) {

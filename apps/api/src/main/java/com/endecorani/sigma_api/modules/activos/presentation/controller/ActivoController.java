@@ -4,17 +4,16 @@ import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse;
 import com.endecorani.sigma_api.modules.activos.application.service.ActivoService;
-import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
-import com.endecorani.sigma_api.shared.presentation.controller.AbstractCrudController;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +23,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,14 +39,62 @@ import java.util.UUID;
 @Tag(name = "Activos", description = "Administración de activos")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 @PreAuthorize("hasAnyRole('ADMIN')")
-public class ActivoController
-        extends AbstractCrudController<ActivoRequest, ActivoResponse, UUID> {
+public class ActivoController {
 
     private final ActivoService activoService;
 
-    @Override
-    protected CrudService<ActivoRequest, ActivoResponse, UUID> service() {
-        return activoService;
+    @PostMapping
+    @Operation(summary = "Crear un nuevo activo")
+    public ResponseEntity<ApiResponse<ActivoResponse>> create(
+            @Valid @RequestBody ActivoRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        ApiResponse.success(
+                                "Registro creado correctamente",
+                                activoService.create(request)
+                        )
+                );
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Actualizar un activo existente")
+    public ResponseEntity<ApiResponse<ActivoResponse>> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody ActivoRequest request
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Registro actualizado correctamente",
+                        activoService.update(id, request)
+                )
+        );
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Obtener un activo por ID")
+    public ResponseEntity<ApiResponse<ActivoResponse>> findById(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        activoService.findById(id)
+                )
+        );
+    }
+
+    @GetMapping
+    @Operation(summary = "Listar activos con paginación y búsqueda opcional")
+    public ResponseEntity<ApiResponse<PageResponse<ActivoResponse>>> findAll(
+            @RequestParam(required = false) String q,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        activoService.findAll(q, pageRequest)
+                )
+        );
     }
 
     @GetMapping(params = "tipoActivoId")
@@ -64,17 +112,6 @@ public class ActivoController
                                 pageRequest
                         )
                 )
-        );
-    }
-
-    @GetMapping(params = {"q", "!tipoActivoId"})
-    @Operation(summary = "Buscar activos por código o nombre")
-    public ResponseEntity<ApiResponse<PageResponse<ActivoResponse>>> search(
-            @RequestParam String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(activoService.search(q, pageRequest))
         );
     }
 
@@ -118,6 +155,19 @@ public class ActivoController
         return ResponseEntity.ok(
                 ApiResponse.success(
                         activoService.toggleActivo(id, activo)
+                )
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Eliminar un activo")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable UUID id
+    ) {
+        activoService.delete(id);
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Registro eliminado correctamente"
                 )
         );
     }
