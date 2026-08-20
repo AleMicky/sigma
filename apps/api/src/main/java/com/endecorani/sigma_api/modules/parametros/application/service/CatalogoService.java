@@ -152,7 +152,7 @@ public class CatalogoService extends AbstractCrudService<
             );
         }
 
-        return normalized;
+        return normalized.toUpperCase();
     }
 
     private String requireNormalizedNombre(String value) {
