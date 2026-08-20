@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import {
   Box,
   CheckCircle2,
@@ -10,6 +11,7 @@ import {
   FileSpreadsheet,
   FileText,
   ImageIcon,
+  Loader2,
   Paperclip,
   Pencil,
   User,
@@ -28,9 +30,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/shared/components/ui/sheet"
+import { fetchAuthenticatedBlob } from "@/shared/api"
 import { formatDateTime } from "@/shared/utils/date.utils"
 import { cn } from "@/shared/lib/utils"
 
+import { solicitudQueries } from "../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
   SolicitudMantenimientoAdjunto,
@@ -67,7 +71,11 @@ function getFileIcon(tipoContenido?: string, nombreArchivo?: string) {
   if (["pdf"].includes(ext) || tipoContenido?.includes("pdf")) {
     return <FileText className="size-4 text-rose-500 shrink-0" />
   }
-  if (["xlsx", "xls", "csv"].includes(ext) || tipoContenido?.includes("sheet") || tipoContenido?.includes("excel")) {
+  if (
+    ["xlsx", "xls", "csv"].includes(ext) ||
+    tipoContenido?.includes("sheet") ||
+    tipoContenido?.includes("excel")
+  ) {
     return <FileSpreadsheet className="size-4 text-emerald-500 shrink-0" />
   }
   if (["json", "xml", "html"].includes(ext)) {
@@ -80,25 +88,78 @@ function getFileIcon(tipoContenido?: string, nombreArchivo?: string) {
 }
 
 export function SolicitudQuickViewSheet({
-  solicitud,
+  solicitud: initialSolicitud,
   open,
   onOpenChange,
   onEdit,
 }: SolicitudQuickViewSheetProps) {
-  const [selectedPreviewImage, setSelectedPreviewImage] = useState<string | null>(null)
+  const [selectedPreviewImage, setSelectedPreviewImage] = useState<{
+    url: string
+    name: string
+  } | null>(null)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  const solicitudId = initialSolicitud?.id ?? ""
+
+  // Fetch full detail and specific attachments list to ensure they are always present
+  const detailQuery = useQuery({
+    ...solicitudQueries.detail(solicitudId),
+    enabled: open && Boolean(solicitudId),
+  })
+
+  const adjuntosQuery = useQuery({
+    ...solicitudQueries.adjuntos(solicitudId, { size: 100 }),
+    enabled: open && Boolean(solicitudId),
+  })
+
+  const solicitud = detailQuery.data ?? initialSolicitud
+
+  const adjuntos = useMemo(() => {
+    if (adjuntosQuery.data?.content && adjuntosQuery.data.content.length > 0) {
+      return adjuntosQuery.data.content
+    }
+    if (detailQuery.data?.adjuntos && detailQuery.data.adjuntos.length > 0) {
+      return detailQuery.data.adjuntos
+    }
+    return initialSolicitud?.adjuntos ?? []
+  }, [adjuntosQuery.data, detailQuery.data, initialSolicitud])
+
+  const imageAdjuntos = useMemo(
+    () => adjuntos.filter((a) => isImageFile(a.tipoContenido, a.nombreArchivo)),
+    [adjuntos],
+  )
+  const docAdjuntos = useMemo(
+    () => adjuntos.filter((a) => !isImageFile(a.tipoContenido, a.nombreArchivo)),
+    [adjuntos],
+  )
+
+  const isLoadingAdjuntos =
+    (adjuntosQuery.isLoading || detailQuery.isLoading) && adjuntos.length === 0
+
+  async function handleDownloadFile(adj: SolicitudMantenimientoAdjunto) {
+    if (!adj.url) return
+    try {
+      setDownloadingId(adj.id)
+      const blob = await fetchAuthenticatedBlob(adj.url)
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = blobUrl
+      a.download = adj.nombreArchivo || "archivo"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch {
+      window.open(adj.url, "_blank")
+    } finally {
+      setDownloadingId(null)
+    }
+  }
 
   if (!solicitud) return null
 
   const estadoStyle = getEstadoBadgeStyles(solicitud.estado)
   const prioridadStyle = getPrioridadBadgeStyles(solicitud.prioridad?.nivel ?? 1)
-  const adjuntos = solicitud.adjuntos ?? []
-
-  const imageAdjuntos = adjuntos.filter((a) =>
-    isImageFile(a.tipoContenido, a.nombreArchivo),
-  )
-  const docAdjuntos = adjuntos.filter(
-    (a) => !isImageFile(a.tipoContenido, a.nombreArchivo),
-  )
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -211,21 +272,34 @@ export function SolicitudQuickViewSheet({
                 <Paperclip className="size-3 text-primary" />
                 Archivos Adjuntos ({adjuntos.length})
               </h4>
+              {isLoadingAdjuntos && (
+                <Loader2 className="size-3 animate-spin text-muted-foreground" />
+              )}
             </div>
 
-            {adjuntos.length === 0 ? (
-              <p className="text-muted-foreground/60 italic text-[11px] py-0.5">
-                Sin archivos adjuntos registrados.
+            {isLoadingAdjuntos ? (
+              <div className="flex items-center gap-2 py-3 justify-center text-muted-foreground text-[11px]">
+                <Loader2 className="size-3.5 animate-spin" />
+                <span>Cargando archivos adjuntos...</span>
+              </div>
+            ) : adjuntos.length === 0 ? (
+              <p className="text-muted-foreground/60 italic text-[11px] py-1">
+                Sin archivos adjuntos en esta solicitud.
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {/* Image Previews Grid */}
                 {imageAdjuntos.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
                     {imageAdjuntos.map((img) => (
                       <div
                         key={img.id}
-                        onClick={() => setSelectedPreviewImage(img.url)}
+                        onClick={() =>
+                          setSelectedPreviewImage({
+                            url: img.url,
+                            name: img.nombreArchivo,
+                          })
+                        }
                         className="group relative aspect-square rounded-lg border border-border/80 bg-muted/40 overflow-hidden cursor-pointer hover:border-primary/60 transition-all shadow-2xs"
                         title={img.nombreArchivo}
                       >
@@ -243,8 +317,8 @@ export function SolicitudQuickViewSheet({
                           }
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                          <span className="p-1 rounded bg-black/60 text-white">
-                            <Eye className="size-3" />
+                          <span className="p-1 rounded-md bg-black/60 text-white shadow-xs">
+                            <Eye className="size-3.5" />
                           </span>
                         </div>
                       </div>
@@ -254,7 +328,7 @@ export function SolicitudQuickViewSheet({
 
                 {/* Document Files List */}
                 {docAdjuntos.length > 0 && (
-                  <ul className="space-y-1 divide-y divide-border/40">
+                  <ul className="space-y-1.5 divide-y divide-border/40">
                     {docAdjuntos.map((adj: SolicitudMantenimientoAdjunto) => (
                       <li
                         key={adj.id}
@@ -263,7 +337,7 @@ export function SolicitudQuickViewSheet({
                         <div className="flex items-center gap-2 min-w-0">
                           {getFileIcon(adj.tipoContenido, adj.nombreArchivo)}
                           <div className="min-w-0">
-                            <p className="font-medium text-foreground truncate max-w-[200px] text-xs">
+                            <p className="font-medium text-foreground truncate max-w-[190px] sm:max-w-[240px] text-xs">
                               {adj.nombreArchivo}
                             </p>
                             <p className="text-[9.5px] text-muted-foreground">
@@ -274,16 +348,21 @@ export function SolicitudQuickViewSheet({
                         </div>
 
                         {adj.url ? (
-                          <a
-                            href={adj.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline shrink-0 p-1 rounded-md hover:bg-primary/10 transition-colors"
-                            title="Descargar o abrir archivo"
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDownloadFile(adj)}
+                            disabled={downloadingId === adj.id}
+                            className="h-7 px-2 text-[11px] gap-1 text-primary hover:text-primary hover:bg-primary/10 shrink-0"
+                            title="Descargar archivo"
                           >
-                            <Download className="size-3" />
-                            <span>Descargar</span>
-                          </a>
+                            {downloadingId === adj.id ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <Download className="size-3" />
+                            )}
+                            <span className="hidden sm:inline">Descargar</span>
+                          </Button>
                         ) : null}
                       </li>
                     ))}
@@ -413,12 +492,12 @@ export function SolicitudQuickViewSheet({
               className="relative max-w-xl max-h-[85vh] bg-background rounded-2xl overflow-hidden shadow-2xl p-2 flex flex-col gap-2"
             >
               <div className="flex items-center justify-between px-2 pt-1">
-                <span className="text-xs font-semibold text-foreground">
-                  Vista Previa de Imagen
+                <span className="text-xs font-semibold text-foreground truncate max-w-[300px]">
+                  {selectedPreviewImage.name || "Vista Previa"}
                 </span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <a
-                    href={selectedPreviewImage}
+                    href={selectedPreviewImage.url}
                     target="_blank"
                     rel="noreferrer"
                     className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
@@ -437,8 +516,8 @@ export function SolicitudQuickViewSheet({
               </div>
               <div className="rounded-xl overflow-hidden bg-black/5 flex items-center justify-center max-h-[70vh]">
                 <AuthenticatedImage
-                  src={selectedPreviewImage}
-                  alt="Vista previa de adjunto"
+                  src={selectedPreviewImage.url}
+                  alt={selectedPreviewImage.name || "Vista previa"}
                   className="max-h-[70vh] w-auto object-contain"
                 />
               </div>
