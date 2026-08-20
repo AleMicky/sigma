@@ -6,8 +6,6 @@ import {
   ArrowLeft,
   Box,
   Calendar,
-  CheckCircle2,
-  Clock,
   FileText,
   HelpCircle,
   ImageIcon,
@@ -15,7 +13,6 @@ import {
   Loader2,
   Paperclip,
   Send,
-  ShieldCheck,
   User,
   Wrench,
   X,
@@ -29,7 +26,6 @@ import { tipoMantenimientoQueries } from "@/modules/mantenimientos/tipo-mantenim
 import { empleadoQueries } from "@/modules/organizacion/empleado/api/empleado.queries"
 import type { Empleado } from "@/modules/organizacion/empleado/api/empleado.service"
 import { isApiError } from "@/shared/api"
-import { AuditInfo } from "@/shared/components/audit-info"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
 import { PageShell } from "@/shared/components/page-shell"
 import { Badge } from "@/shared/components/ui/badge"
@@ -68,6 +64,7 @@ import {
 } from "../lib/solicitud.utils"
 import {
   defaultSolicitudValues,
+  type SolicitudFormValues,
   solicitudSchema,
 } from "../schemas/solicitud.schema"
 
@@ -240,8 +237,16 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     [empleadosList],
   )
 
+  function getTodayDateString() {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, "0")
+    const day = String(now.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
+
   const form = useForm({
-    defaultValues: solicitud
+    defaultValues: (solicitud
       ? {
         titulo: solicitud.titulo,
         descripcion: solicitud.descripcion ?? "",
@@ -251,10 +256,13 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
         prioridadId: currentPrioridadId,
         solicitanteId: currentSolicitanteId,
         fechaSolicitud: solicitud.fechaSolicitud
-          ? solicitud.fechaSolicitud.substring(0, 16)
-          : "",
+          ? solicitud.fechaSolicitud.substring(0, 10)
+          : getTodayDateString(),
       }
-      : defaultSolicitudValues,
+      : {
+        ...defaultSolicitudValues,
+        fechaSolicitud: getTodayDateString(),
+      }) as SolicitudFormValues,
     validators: {
       onSubmit: solicitudSchema,
     },
@@ -270,7 +278,11 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
           tipoMantenimientoId: value.tipoMantenimientoId.trim(),
           prioridadId: value.prioridadId.trim(),
           solicitanteId: value.solicitanteId.trim(),
-          fechaSolicitud: value.fechaSolicitud ? value.fechaSolicitud : null,
+          fechaSolicitud: value.fechaSolicitud
+            ? (value.fechaSolicitud.includes("T")
+                ? value.fechaSolicitud
+                : `${value.fechaSolicitud}T00:00:00`)
+            : null,
         }
 
         if (isEditing && solicitudId) {
@@ -665,128 +677,88 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Solicitante Combobox */}
-                <form.Field name="solicitanteId">
-                  {(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    const selectedEmpleado =
-                      empleadosMap.get(field.state.value) ?? null
+              {/* Solicitante Combobox */}
+              <form.Field name="solicitanteId">
+                {(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  const selectedEmpleado =
+                    empleadosMap.get(field.state.value) ?? null
 
-                    return (
-                      <Field data-invalid={isInvalid || undefined}>
-                        <RequiredFieldLabel htmlFor={field.name}>
-                          Área / Nombre del Solicitante
-                        </RequiredFieldLabel>
-                        <Combobox
-                          items={empleadosList}
-                          itemToStringLabel={(item: Empleado) =>
-                            item
-                              ? `${item.personaNombreCompleto || item.codigo}${item.cargoNombre ? ` (${item.cargoNombre})` : ""}`
-                              : ""
+                  return (
+                    <Field data-invalid={isInvalid || undefined}>
+                      <RequiredFieldLabel htmlFor={field.name}>
+                        Área / Nombre del Solicitante
+                      </RequiredFieldLabel>
+                      <Combobox
+                        items={empleadosList}
+                        itemToStringLabel={(item: Empleado) =>
+                          item
+                            ? `${item.personaNombreCompleto || item.codigo}${item.cargoNombre ? ` (${item.cargoNombre})` : ""}`
+                            : ""
+                        }
+                        itemToStringValue={(item: Empleado) => item?.id ?? ""}
+                        value={selectedEmpleado}
+                        onValueChange={(val: Empleado | null) => {
+                          field.handleChange(val?.id ?? "")
+                        }}
+                        disabled={empleadosQuery.isLoading}
+                      >
+                        <ComboboxInput
+                          id={field.name}
+                          placeholder={
+                            empleadosQuery.isLoading
+                              ? "Cargando empleados..."
+                              : "Seleccionar Solicitante..."
                           }
-                          itemToStringValue={(item: Empleado) => item?.id ?? ""}
-                          value={selectedEmpleado}
-                          onValueChange={(val: Empleado | null) => {
-                            field.handleChange(val?.id ?? "")
-                          }}
-                          disabled={empleadosQuery.isLoading}
-                        >
-                          <ComboboxInput
-                            id={field.name}
-                            placeholder={
-                              empleadosQuery.isLoading
-                                ? "Cargando empleados..."
-                                : "Seleccionar Solicitante..."
-                            }
-                            showClear={Boolean(field.state.value)}
-                            aria-invalid={isInvalid}
-                            className="w-full h-10 text-sm shadow-2xs"
-                          />
-                          <ComboboxContent className="z-50 max-h-64 min-w-[320px]">
-                            <ComboboxEmpty>
-                              {empleadosQuery.isLoading ? (
-                                <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
-                                  <Loader2 className="size-3.5 animate-spin" />
-                                  <span>Cargando empleados...</span>
-                                </div>
-                              ) : (
-                                "No se encontraron empleados."
-                              )}
-                            </ComboboxEmpty>
-                            <ComboboxList>
-                              {(item: Empleado) => (
-                                <ComboboxItem
-                                  key={item.id}
-                                  value={item}
-                                  className="text-xs py-2"
-                                >
-                                  <div className="flex items-center gap-2 truncate">
-                                    <User className="size-3.5 text-muted-foreground shrink-0" />
-                                    <code className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
-                                      {item.codigo}
-                                    </code>
-                                    <span className="font-medium text-foreground truncate">
-                                      {item.personaNombreCompleto || item.codigo}
+                          showClear={Boolean(field.state.value)}
+                          aria-invalid={isInvalid}
+                          className="w-full h-10 text-sm shadow-2xs"
+                        />
+                        <ComboboxContent className="z-50 max-h-64 min-w-[320px]">
+                          <ComboboxEmpty>
+                            {empleadosQuery.isLoading ? (
+                              <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+                                <Loader2 className="size-3.5 animate-spin" />
+                                <span>Cargando empleados...</span>
+                              </div>
+                            ) : (
+                              "No se encontraron empleados."
+                            )}
+                          </ComboboxEmpty>
+                          <ComboboxList>
+                            {(item: Empleado) => (
+                              <ComboboxItem
+                                key={item.id}
+                                value={item}
+                                className="text-xs py-2"
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <User className="size-3.5 text-muted-foreground shrink-0" />
+                                  <code className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+                                    {item.codigo}
+                                  </code>
+                                  <span className="font-medium text-foreground truncate">
+                                    {item.personaNombreCompleto || item.codigo}
+                                  </span>
+                                  {item.cargoNombre ? (
+                                    <span className="ml-auto text-[10px] text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded shrink-0">
+                                      {item.cargoNombre}
                                     </span>
-                                    {item.cargoNombre ? (
-                                      <span className="ml-auto text-[10px] text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded shrink-0">
-                                        {item.cargoNombre}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                </ComboboxItem>
-                              )}
-                            </ComboboxList>
-                          </ComboboxContent>
-                        </Combobox>
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-
-                {/* ID de Solicitante (Visual Display / Badge) */}
-                <form.Subscribe
-                  selector={(state) => state.values.solicitanteId}
-                >
-                  {(solicitanteId) => {
-                    const emp = solicitanteId ? empleadosMap.get(solicitanteId) : null
-                    return (
-                      <Field>
-                        <FieldLabel htmlFor="id-solicitante-display">
-                          ID de Solicitante
-                        </FieldLabel>
-                        <div
-                          id="id-solicitante-display"
-                          className="flex h-10 w-full items-center justify-between rounded-lg border border-border/80 bg-muted/40 px-3 py-2 text-sm text-foreground shadow-2xs"
-                        >
-                          {emp ? (
-                            <div className="flex items-center gap-2 truncate">
-                              <code className="text-xs font-mono font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                                {emp.codigo}
-                              </code>
-                              <span className="text-xs text-muted-foreground truncate">
-                                {emp.cargoNombre || "Sin cargo registrado"}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">
-                              Pendiente de selección
-                            </span>
-                          )}
-                          {emp && (
-                            <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
-                          )}
-                        </div>
-                      </Field>
-                    )
-                  }}
-                </form.Subscribe>
-              </div>
+                                  ) : null}
+                                </div>
+                              </ComboboxItem>
+                            )}
+                          </ComboboxList>
+                        </ComboboxContent>
+                      </Combobox>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              </form.Field>
             </div>
 
             {/* SECCIÓN 3: DETALLES DE LA SOLICITUD */}
@@ -806,7 +778,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* ID de Activo / Ubicación */}
+                {/* Activo / Ubicación */}
                 <form.Field name="activoId">
                   {(field) => {
                     const isInvalid =
@@ -817,7 +789,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                     return (
                       <Field data-invalid={isInvalid || undefined}>
                         <RequiredFieldLabel htmlFor={field.name}>
-                          ID de Activo / Ubicación
+                          Activo / Ubicación
                         </RequiredFieldLabel>
                         <Combobox
                           items={activosList}
@@ -896,13 +868,12 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         <div className="relative">
                           <Input
                             id={field.name}
-                            type="datetime-local"
+                            type="date"
                             name={field.name}
                             value={field.state.value ?? ""}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
+                            disabled
                             aria-invalid={isInvalid}
-                            className="h-10 text-sm shadow-2xs pr-9"
+                            className="h-10 text-sm shadow-2xs pr-9 bg-muted/50 text-muted-foreground cursor-not-allowed"
                           />
                           <Calendar className="pointer-events-none absolute right-3 top-2.5 size-4 text-muted-foreground" />
                         </div>
@@ -1077,75 +1048,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
               </div>
             </div>
 
-            {/* SECCIÓN 4: SECCIÓN DE APROBACIÓN */}
-            <div className="p-5 sm:p-7 space-y-5">
-              <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <ShieldCheck className="size-4" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-foreground tracking-tight">
-                    Sección de Aprobación
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Estado actual del flujo de validación y control de auditoría.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Aprobado Por */}
-                <Field>
-                  <FieldLabel htmlFor="aprobado-por-status">
-                    Aprobado Por
-                  </FieldLabel>
-                  <div
-                    id="aprobado-por-status"
-                    className="flex h-10 w-full items-center justify-between rounded-lg border border-border/80 bg-muted/40 px-3 py-2 text-sm text-foreground shadow-2xs"
-                  >
-                    {isEditing && solicitud?.aprobadoPor ? (
-                      <span className="font-medium text-foreground">
-                        {solicitud.aprobadoPor.nombre}
-                      </span>
-                    ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="size-3.5" />
-                        <span className="text-xs">Pendiente de revisión</span>
-                      </div>
-                    )}
-                    <span className="text-[10px] font-mono text-muted-foreground uppercase bg-muted px-1.5 py-0.5 rounded">
-                      {isEditing ? (solicitud?.estado ?? "BORRADOR") : "PENDIENTE"}
-                    </span>
-                  </div>
-                </Field>
-
-                {/* Información de Aprobación o Nota */}
-                <div className="flex flex-col justify-center rounded-lg border border-dashed border-border/80 bg-muted/20 p-3 text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground">
-                    {isEditing && solicitud?.aprobadoPor
-                      ? `Aprobado el: ${solicitud.fechaAprobacion || "Sin fecha"}`
-                      : "Flujo automático de validación"}
-                  </p>
-                  <p className="text-[11px] mt-0.5">
-                    {isEditing && solicitud?.observacionAprobacion
-                      ? `Obs: ${solicitud.observacionAprobacion}`
-                      : "Al enviar la solicitud, quedará registrada para su evaluación técnica por el equipo de supervisión."}
-                  </p>
-                </div>
-              </div>
-
-              {/* Auditoría en modo edición */}
-              {isEditing && solicitud ? (
-                <div className="rounded-xl border border-border/70 bg-muted/30 p-4 space-y-2 mt-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Datos de Auditoría
-                  </p>
-                  <AuditInfo data={solicitud} />
-                </div>
-              ) : null}
-            </div>
-
-            {/* SECCIÓN 5: FOOTER DE ACCIONES */}
+            {/* FOOTER DE ACCIONES */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-muted/30 p-5 sm:px-7 rounded-b-2xl">
               <p className="text-xs text-muted-foreground">
                 Los campos marcados con{" "}
