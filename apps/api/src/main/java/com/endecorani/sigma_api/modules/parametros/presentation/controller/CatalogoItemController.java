@@ -116,10 +116,10 @@ public class CatalogoItemController {
         );
     }
 
-    @GetMapping(params = "codigo")
+    @GetMapping("/by-codigo/{codigo}")
     @Operation(summary = "Listar ítems filtrados por código de catálogo")
     public ResponseEntity<ApiResponse<PageResponse<CatalogoItemResponse>>> findByCodigo(
-            @RequestParam String codigo,
+            @PathVariable String codigo,
             @RequestParam(required = false) String q,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
