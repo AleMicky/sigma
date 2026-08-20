@@ -2,14 +2,18 @@ package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.SolicitudMantenimientoRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoAdjuntoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimiento;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoAdjunto;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.PrioridadRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoAdjuntoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMantenimientoRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.application.storage.DocumentStorageService;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
@@ -18,8 +22,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -46,10 +53,16 @@ public class SolicitudMantenimientoService {
             "updatedAt"
     );
 
+    private static final String ADJUNTO_FOLDER =
+            "solicitud_mantenimiento_adjuntos";
+
     private final SolicitudMantenimientoRepository repository;
     private final ActivoRepository activoRepository;
     private final TipoMantenimientoRepository tipoMantenimientoRepository;
     private final PrioridadRepository prioridadRepository;
+    private final SolicitudMantenimientoAdjuntoRepository
+            adjuntoRepository;
+    private final DocumentStorageService documentStorageService;
 
     @Transactional
     public SolicitudMantenimientoResponse create(
@@ -96,6 +109,81 @@ public class SolicitudMantenimientoService {
                         .build();
 
         return toResponse(repository.save(domain));
+    }
+
+    @Transactional
+    public SolicitudMantenimientoResponse createWithFiles(
+            SolicitudMantenimientoRequest request,
+            List<MultipartFile> files
+    ) {
+        SolicitudMantenimientoResponse response = create(request);
+
+        if (files != null && !files.isEmpty()) {
+            List<SolicitudMantenimientoAdjuntoResponse> adjuntos =
+                    new ArrayList<>();
+
+            for (MultipartFile file : files) {
+                UUID fileId = UUID.randomUUID();
+                DocumentStorageService.StoredFile stored =
+                        documentStorageService.store(
+                                ADJUNTO_FOLDER,
+                                fileId,
+                                file
+                        );
+
+                SolicitudMantenimientoAdjunto adjuntoDomain =
+                        SolicitudMantenimientoAdjunto.builder()
+                                .solicitudMantenimientoId(
+                                        response.id()
+                                )
+                                .nombreArchivo(
+                                        stored.nombreOriginal()
+                                )
+                                .tipoContenido(stored.mimeType())
+                                .size(stored.tamanoBytes())
+                                .url(stored.publicUrl())
+                                .build();
+
+                adjuntos.add(
+                        toAdjuntoResponse(
+                                adjuntoRepository.save(adjuntoDomain)
+                        )
+                );
+            }
+
+            return new SolicitudMantenimientoResponse(
+                    response.id(),
+                    response.numero(),
+                    response.activo(),
+                    response.tipoMantenimiento(),
+                    response.motivoMantenimientoId(),
+                    response.prioridad(),
+                    response.solicitante(),
+                    response.areaSolicitante(),
+                    response.titulo(),
+                    response.descripcion(),
+                    response.fechaSolicitud(),
+                    response.aprobadoPor(),
+                    response.fechaAprobacion(),
+                    response.observacionAprobacion(),
+                    response.responsable(),
+                    response.fechaAsignacion(),
+                    response.fechaInicioMantenimiento(),
+                    response.fechaFinMantenimiento(),
+                    response.supervisor(),
+                    response.fechaValidacion(),
+                    response.observacionValidacion(),
+                    response.fechaFinalizacion(),
+                    response.recibidoPor(),
+                    response.observacionCierre(),
+                    response.estado(),
+                    response.processInstanceId(),
+                    adjuntos,
+                    response.auditoria()
+            );
+        }
+
+        return response;
     }
 
     @Transactional
@@ -443,6 +531,29 @@ public class SolicitudMantenimientoService {
                 domain.getObservacionCierre(),
                 domain.getEstado(),
                 domain.getProcessInstanceId(),
+                List.of(),
+                auditoria
+        );
+    }
+
+    private SolicitudMantenimientoAdjuntoResponse toAdjuntoResponse(
+            SolicitudMantenimientoAdjunto domain
+    ) {
+        AuditoriaResponse auditoria = new AuditoriaResponse(
+                domain.getCreatedAt(),
+                domain.getUpdatedAt(),
+                domain.getCreatedBy(),
+                domain.getUpdatedBy()
+        );
+
+        return new SolicitudMantenimientoAdjuntoResponse(
+                domain.getId(),
+                domain.getSolicitudMantenimientoId(),
+                domain.getNombreArchivo(),
+                domain.getTipoContenido(),
+                domain.getSize(),
+                domain.getUrl(),
+                domain.getDescripcion(),
                 auditoria
         );
     }

@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaRespons
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Schema(
@@ -88,6 +89,9 @@ public record SolicitudMantenimientoResponse(
 
         @Schema(description = "ID de instancia del proceso")
         String processInstanceId,
+
+        @Schema(description = "Lista de adjuntos")
+        List<SolicitudMantenimientoAdjuntoResponse> adjuntos,
 
         @Schema(description = "Datos de auditoría")
         AuditoriaResponse auditoria
