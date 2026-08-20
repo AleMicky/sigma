@@ -1,4 +1,4 @@
-import { LayoutGrid, Table, X } from "lucide-react"
+import { X } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -9,8 +9,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select"
 import { SearchField } from "@/shared/components/search-field"
-
-export type ViewMode = "grid" | "table"
+import { cn } from "@/shared/lib/utils"
 
 type SolicitudFilterToolbarProps = {
   searchValue: string
@@ -19,18 +18,16 @@ type SolicitudFilterToolbarProps = {
   onStatusChange: (status: string) => void
   hasActiveFilters: boolean
   onResetFilters: () => void
-  viewMode: ViewMode
-  onViewModeChange: (mode: ViewMode) => void
 }
 
 const ESTADOS = [
-  { value: "all", label: "Todos los estados" },
-  { value: "borrador", label: "Borrador" },
-  { value: "solicitado", label: "Solicitado" },
-  { value: "aprobado", label: "Aprobado" },
-  { value: "en_proceso", label: "En Proceso" },
-  { value: "finalizado", label: "Finalizado" },
-  { value: "rechazado", label: "Rechazado" },
+  { value: "all", label: "Todos los estados", dot: "bg-muted-foreground/50" },
+  { value: "borrador", label: "Borrador", dot: "bg-zinc-400" },
+  { value: "solicitado", label: "Solicitado", dot: "bg-amber-500" },
+  { value: "aprobado", label: "Aprobado", dot: "bg-sky-500" },
+  { value: "en_proceso", label: "En Proceso", dot: "bg-blue-500" },
+  { value: "finalizado", label: "Finalizado", dot: "bg-emerald-500" },
+  { value: "rechazado", label: "Rechazado", dot: "bg-rose-500" },
 ]
 
 export function SolicitudFilterToolbar({
@@ -40,33 +37,59 @@ export function SolicitudFilterToolbar({
   onStatusChange,
   hasActiveFilters,
   onResetFilters,
-  viewMode,
-  onViewModeChange,
 }: SolicitudFilterToolbarProps) {
+  const currentStatusObj = ESTADOS.find(
+    (e) => e.value === (statusValue || "all"),
+  )
+
   return (
-    <div className="flex flex-col gap-2 pt-2 pb-1 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2.5 pt-2 pb-1 sm:flex-row sm:items-center sm:justify-between">
+      {/* Search & Status Filters */}
       <div className="flex flex-1 flex-wrap items-center gap-2">
-        <div className="w-full sm:w-64">
+        <div className="w-full sm:w-72">
           <SearchField
-            placeholder="Buscar por título, número, descripción..."
+            placeholder="Buscar por título, número, activo..."
             value={searchValue}
             onChange={onSearchChange}
-            className="w-full"
+            className="w-full h-9 text-xs"
           />
         </div>
 
-        <div className="w-40">
+        <div className="w-44">
           <Select
             value={statusValue || "all"}
-            onValueChange={(val) => onStatusChange(val === "all" ? "" : (val ?? ""))}
+            onValueChange={(val) =>
+              onStatusChange(val === "all" ? "" : (val ?? ""))
+            }
           >
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Estado" />
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Estado">
+                {currentStatusObj ? (
+                  <div className="flex items-center gap-2 truncate">
+                    <span
+                      className={cn(
+                        "size-2 rounded-full shrink-0 inline-block",
+                        currentStatusObj.dot,
+                      )}
+                    />
+                    <span className="truncate">{currentStatusObj.label}</span>
+                  </div>
+                ) : null}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="max-h-60">
               {ESTADOS.map((item) => (
-                <SelectItem key={item.value} value={item.value} className="text-xs">
-                  {item.label}
+                <SelectItem
+                  key={item.value}
+                  value={item.value}
+                  className="text-xs cursor-pointer py-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn("size-2 rounded-full shrink-0", item.dot)}
+                    />
+                    <span>{item.label}</span>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -79,39 +102,12 @@ export function SolicitudFilterToolbar({
             variant="ghost"
             type="button"
             onClick={onResetFilters}
-            className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+            className="h-9 gap-1.5 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60"
           >
             <X className="size-3.5" />
-            <span>Limpiar</span>
+            <span>Limpiar filtros</span>
           </Button>
         ) : null}
-      </div>
-
-      <div className="flex items-center gap-1 self-end sm:self-auto">
-        <div className="flex items-center rounded-md border border-border/80 bg-muted/40 p-0.5">
-          <Button
-            size="icon-xs"
-            variant={viewMode === "grid" ? "secondary" : "ghost"}
-            type="button"
-            onClick={() => onViewModeChange("grid")}
-            className="size-7 rounded-sm"
-            title="Vista de tarjetas"
-          >
-            <LayoutGrid className="size-3.5" />
-            <span className="sr-only">Tarjetas</span>
-          </Button>
-          <Button
-            size="icon-xs"
-            variant={viewMode === "table" ? "secondary" : "ghost"}
-            type="button"
-            onClick={() => onViewModeChange("table")}
-            className="size-7 rounded-sm"
-            title="Vista de tabla"
-          >
-            <Table className="size-3.5" />
-            <span className="sr-only">Tabla</span>
-          </Button>
-        </div>
       </div>
     </div>
   )

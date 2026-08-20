@@ -22,19 +22,14 @@ import { useDeleteSolicitud } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
 import { SolicitudCard } from "../components/SolicitudCard"
-import {
-  SolicitudFilterToolbar,
-  type ViewMode,
-} from "../components/SolicitudFilterToolbar"
+import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudQuickViewSheet } from "../components/SolicitudQuickViewSheet"
 import { SolicitudStats } from "../components/SolicitudStats"
-import { SolicitudTableView } from "../components/SolicitudTableView"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function SolicitudesPage() {
   const navigate = useNavigate()
-  const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const [statusFilter, setStatusFilter] = useState<string>("")
   const [quickView, setQuickView] = useState<SolicitudMantenimiento | null>(null)
   const [deleting, setDeleting] = useState<SolicitudMantenimiento | null>(null)
@@ -170,6 +165,8 @@ export function SolicitudesPage() {
           enProcesoCount={enProcesoCount}
           finalizadoCount={finalizadoCount}
           isLoading={solicitudesQuery.isLoading}
+          activeStatus={statusFilter}
+          onSelectStatus={setStatusFilter}
         />
       </div>
 
@@ -181,8 +178,6 @@ export function SolicitudesPage() {
         onStatusChange={setStatusFilter}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={resetFilters}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
       />
 
       {/* Content Section */}
@@ -190,14 +185,8 @@ export function SolicitudesPage() {
         {solicitudesQuery.isLoading ? (
           <ListSkeleton
             rows={6}
-            rowClassName={
-              viewMode === "grid" ? "h-28 rounded-lg" : "h-10 rounded-md"
-            }
-            className={
-              viewMode === "grid"
-                ? "grid grid-cols-1 gap-2.5 p-0 sm:grid-cols-2 xl:grid-cols-3"
-                : "flex flex-col gap-1.5"
-            }
+            rowClassName="h-36 rounded-2xl"
+            className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3"
           />
         ) : solicitudesQuery.isError ? (
           <EmptyState
@@ -248,26 +237,17 @@ export function SolicitudesPage() {
                 solicitudesQuery.isFetching && "opacity-70",
               )}
             >
-              {viewMode === "grid" ? (
-                <ul className="grid grid-cols-1 content-start gap-2.5 p-0.5 sm:grid-cols-2 xl:grid-cols-3">
-                  {solicitudes.map((item) => (
-                    <SolicitudCard
-                      key={item.id}
-                      solicitud={item}
-                      onEdit={openEdit}
-                      onQuickView={(s) => setQuickView(s)}
-                      onDelete={(s) => setDeleting(s)}
-                    />
-                  ))}
-                </ul>
-              ) : (
-                <SolicitudTableView
-                  solicitudes={solicitudes}
-                  onEdit={openEdit}
-                  onQuickView={(s) => setQuickView(s)}
-                  onDelete={(s) => setDeleting(s)}
-                />
-              )}
+              <ul className="grid grid-cols-1 content-start gap-3 p-0.5 sm:grid-cols-2 xl:grid-cols-3">
+                {solicitudes.map((item) => (
+                  <SolicitudCard
+                    key={item.id}
+                    solicitud={item}
+                    onEdit={openEdit}
+                    onQuickView={(s) => setQuickView(s)}
+                    onDelete={(s) => setDeleting(s)}
+                  />
+                ))}
+              </ul>
             </div>
 
             {solicitudesQuery.data ? (

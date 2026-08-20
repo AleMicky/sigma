@@ -6,10 +6,10 @@ import {
   Paperclip,
   Pencil,
   Trash2,
+  User,
   Wrench,
 } from "lucide-react"
 
-import { AuditInfo } from "@/shared/components/audit-info"
 import { Button } from "@/shared/components/ui/button"
 import {
   DropdownMenu,
@@ -19,11 +19,13 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
 import { formatDate } from "@/shared/utils/date.utils"
+import { cn } from "@/shared/lib/utils"
 
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
 import {
   getEstadoBadgeStyles,
   getPrioridadBadgeStyles,
+  getTipoMantenimientoBadgeClass,
 } from "../lib/solicitud.utils"
 
 type SolicitudCardProps = {
@@ -44,123 +46,161 @@ export function SolicitudCard({
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
 
   return (
-    <li className="group flex flex-col justify-between rounded-lg border border-border bg-card p-3.5 text-card-foreground shadow-2xs transition-all hover:border-primary/40 hover:shadow-xs">
+    <li
+      onClick={() => onQuickView(solicitud)}
+      className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-primary/50 hover:shadow-md cursor-pointer overflow-hidden"
+    >
       {/* Top Section */}
-      <div>
+      <div className="space-y-3">
         <div className="flex items-start justify-between gap-2">
+          {/* Folio, Estado y Prioridad */}
           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
             {solicitud.numero ? (
-              <code className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-primary">
+              <code className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-bold text-primary border border-primary/20">
                 {solicitud.numero}
               </code>
             ) : null}
             <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize ${estadoStyle}`}
+              className={cn(
+                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize",
+                estadoStyle,
+              )}
             >
               {solicitud.estado}
             </span>
             {solicitud.prioridad ? (
               <span
-                className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] font-semibold ${prioridadStyle}`}
+                className={cn(
+                  "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold",
+                  prioridadStyle,
+                )}
               >
                 {solicitud.prioridad.nombre}
               </span>
             ) : null}
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="size-7 text-muted-foreground opacity-70 hover:opacity-100 hover:text-foreground shrink-0"
-                />
-              }
-            >
-              <MoreVertical className="size-3.5" />
-              <span className="sr-only">Acciones</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36">
-              <DropdownMenuItem
-                onClick={() => onQuickView(solicitud)}
-                className="text-xs"
+          {/* Action Menu */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="size-7 rounded-lg text-muted-foreground opacity-70 hover:opacity-100 hover:text-foreground shrink-0"
+                  />
+                }
               >
-                <Eye className="size-3.5 mr-1.5" />
-                Ver Ficha
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onEdit(solicitud)}
-                className="text-xs"
-              >
-                <Pencil className="size-3.5 mr-1.5" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-xs text-destructive focus:text-destructive"
-                onClick={() => onDelete(solicitud)}
-              >
-                <Trash2 className="size-3.5 mr-1.5" />
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <MoreVertical className="size-4" />
+                <span className="sr-only">Acciones</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-38 rounded-xl shadow-lg">
+                <DropdownMenuItem
+                  onClick={() => onQuickView(solicitud)}
+                  className="text-xs cursor-pointer py-2"
+                >
+                  <Eye className="size-3.5 mr-2 text-primary" />
+                  Ver Detalles
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onEdit(solicitud)}
+                  className="text-xs cursor-pointer py-2"
+                >
+                  <Pencil className="size-3.5 mr-2 text-muted-foreground" />
+                  Editar Solicitud
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-xs text-destructive focus:text-destructive cursor-pointer py-2"
+                  onClick={() => onDelete(solicitud)}
+                >
+                  <Trash2 className="size-3.5 mr-2" />
+                  Eliminar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Title and Motivo */}
-        <div className="mt-2 space-y-1">
-          <h3 className="line-clamp-1 font-heading text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+        <div className="space-y-1">
+          <h3 className="line-clamp-1 font-heading text-sm font-bold text-foreground group-hover:text-primary transition-colors">
             {solicitud.titulo}
           </h3>
           {solicitud.motivoMantenimiento ? (
-            <p className="line-clamp-1 text-[11px] font-medium text-muted-foreground">
-              <span className="text-foreground/70">Motivo:</span> {solicitud.motivoMantenimiento}
+            <p className="line-clamp-1 text-xs font-medium text-muted-foreground">
+              <span className="text-foreground/80 font-semibold">Motivo:</span>{" "}
+              {solicitud.motivoMantenimiento}
             </p>
           ) : null}
-          <p className="line-clamp-2 text-xs text-muted-foreground/90 leading-relaxed">
+          <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
             {solicitud.descripcion}
           </p>
         </div>
 
-        {/* Tags / Info chips */}
-        <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
-          {solicitud.activo ? (
-            <div className="inline-flex items-center gap-1 rounded bg-muted/70 px-2 py-0.5 text-foreground/80 max-w-[200px] truncate">
-              <Box className="size-3 text-muted-foreground shrink-0" />
-              <span className="font-mono text-[10px] font-medium text-muted-foreground shrink-0">
-                {solicitud.activo.codigo}
-              </span>
-              <span className="truncate">{solicitud.activo.nombre}</span>
+        {/* Activo Card Strip */}
+        {solicitud.activo ? (
+          <div className="flex items-center gap-2 rounded-xl bg-muted/40 p-2 border border-border/60 text-xs">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background border shadow-2xs text-primary">
+              <Box className="size-3.5" />
             </div>
-          ) : null}
-
-          {solicitud.tipoMantenimiento ? (
-            <div className="inline-flex items-center gap-1 rounded bg-muted/50 px-2 py-0.5 text-muted-foreground">
-              <Wrench className="size-3 shrink-0" />
-              <span className="truncate">{solicitud.tipoMantenimiento.nombre}</span>
+            <div className="min-w-0 flex-1 truncate">
+              <p className="font-semibold text-foreground truncate text-xs">
+                <span className="font-mono text-primary font-bold mr-1 text-[11px]">
+                  {solicitud.activo.codigo}
+                </span>
+                {solicitud.activo.nombre}
+              </p>
             </div>
-          ) : null}
-
-          {solicitud.fechaSolicitud ? (
-            <div className="inline-flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
-              <Calendar className="size-3 shrink-0" />
-              <span>{formatDate(solicitud.fechaSolicitud)}</span>
-            </div>
-          ) : null}
-
-          {adjuntosCount > 0 ? (
-            <div className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-1.5 py-0.5 text-[10px] text-primary">
-              <Paperclip className="size-3" />
-              <span>{adjuntosCount}</span>
-            </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
 
-      {/* Footer with Audit info */}
-      <div className="mt-3 border-t border-border/60 pt-2 text-[10px]">
-        <AuditInfo data={solicitud} compact className="text-[10px]" />
+      {/* Footer Info Row */}
+      <div className="mt-4 pt-2.5 border-t border-border/60 flex items-center justify-between gap-2 text-xs">
+        {/* Tipo Mantenimiento Chip */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          {solicitud.tipoMantenimiento ? (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border truncate",
+                getTipoMantenimientoBadgeClass(solicitud.tipoMantenimiento.nombre, false),
+              )}
+            >
+              <Wrench className="size-3 shrink-0" />
+              <span className="truncate">{solicitud.tipoMantenimiento.nombre}</span>
+            </span>
+          ) : (
+            <span className="text-[10px] text-muted-foreground">General</span>
+          )}
+
+          {/* Adjuntos Pill */}
+          {adjuntosCount > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">
+              <Paperclip className="size-3" />
+              <span>{adjuntosCount}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Date & Solicitante */}
+        <div className="flex items-center gap-2 shrink-0 text-[10.5px] text-muted-foreground">
+          {solicitud.solicitante && (
+            <div className="hidden sm:flex items-center gap-1">
+              <User className="size-3" />
+              <span className="truncate max-w-[90px]">
+                {solicitud.solicitante.nombre}
+              </span>
+            </div>
+          )}
+          {solicitud.fechaSolicitud && (
+            <div className="flex items-center gap-1">
+              <Calendar className="size-3" />
+              <span>{formatDate(solicitud.fechaSolicitud)}</span>
+            </div>
+          )}
+        </div>
       </div>
     </li>
   )
