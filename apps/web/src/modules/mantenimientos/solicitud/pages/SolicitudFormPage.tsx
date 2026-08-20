@@ -11,6 +11,7 @@ import {
   ImageIcon,
   Layers,
   Loader2,
+  MapPin,
   Paperclip,
   Send,
   User,
@@ -26,6 +27,7 @@ import { tipoMantenimientoQueries } from "@/modules/mantenimientos/tipo-mantenim
 import { empleadoQueries } from "@/modules/organizacion/empleado/api/empleado.queries"
 import type { Empleado } from "@/modules/organizacion/empleado/api/empleado.service"
 import { isApiError } from "@/shared/api"
+import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
 import { PageShell } from "@/shared/components/page-shell"
 import { Badge } from "@/shared/components/ui/badge"
@@ -61,6 +63,7 @@ import type { SolicitudPayload } from "../api/solicitud.service"
 import {
   getEstadoBadgeVariant,
   getPrioridadDotColor,
+  getTipoMantenimientoBadgeClass,
 } from "../lib/solicitud.utils"
 import {
   defaultSolicitudValues,
@@ -195,11 +198,6 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     }
     return list
   }, [tiposMantenimiento, singleTipoMantenimientoQuery.data])
-
-  const tiposMantenimientoMap = useMemo(
-    () => new Map(tiposMantenimientoList.map((t) => [t.id, t])),
-    [tiposMantenimientoList],
-  )
 
   // Fetch Empleados (Solicitante)
   const empleadosQuery = useQuery(
@@ -491,74 +489,62 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 }}
               </form.Field>
 
-              {/* Tipo de Mantenimiento, Motivo y Prioridad */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Tipo de Mantenimiento */}
-                <form.Field name="tipoMantenimientoId">
-                  {(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    const selected = tiposMantenimientoMap.get(field.state.value)
+              {/* Tipo de Mantenimiento (Badges interactivos) */}
+              <form.Field name="tipoMantenimientoId">
+                {(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
 
-                    return (
-                      <Field data-invalid={isInvalid || undefined}>
-                        <RequiredFieldLabel htmlFor={field.name}>
-                          Tipo de Mantenimiento
-                        </RequiredFieldLabel>
-                        <Select
-                          value={field.state.value || null}
-                          onValueChange={(value) =>
-                            field.handleChange(value ?? "")
-                          }
-                          disabled={tiposMantenimientoQuery.isLoading}
-                        >
-                          <SelectTrigger
-                            id={field.name}
-                            aria-invalid={isInvalid}
-                            className="w-full h-10 shadow-2xs text-sm"
-                          >
-                            <SelectValue placeholder="Seleccionar Tipo">
-                              {selected ? (
-                                <div className="flex items-center gap-2 truncate">
-                                  <Wrench className="size-3.5 text-primary shrink-0" />
-                                  <span className="truncate font-medium text-foreground">
-                                    {selected.nombre}
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground font-mono">
-                                    ({selected.codigo})
-                                  </span>
-                                </div>
-                              ) : null}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60">
-                            {tiposMantenimientoList.map((tm) => (
-                              <SelectItem
+                  return (
+                    <Field data-invalid={isInvalid || undefined}>
+                      <RequiredFieldLabel htmlFor={field.name}>
+                        Tipo de Mantenimiento
+                      </RequiredFieldLabel>
+
+                      {tiposMantenimientoQuery.isLoading ? (
+                        <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+                          <Loader2 className="size-3.5 animate-spin" />
+                          <span>Cargando tipos de mantenimiento...</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2.5 pt-1">
+                          {tiposMantenimientoList.map((tm) => {
+                            const isSelected = field.state.value === tm.id
+
+                            return (
+                              <button
                                 key={tm.id}
-                                value={tm.id}
-                                className="text-xs cursor-pointer py-2"
+                                type="button"
+                                onClick={() => field.handleChange(tm.id)}
+                                className={cn(
+                                  "group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold border transition-all cursor-pointer shadow-2xs active:scale-95",
+                                  getTipoMantenimientoBadgeClass(tm.nombre, isSelected),
+                                )}
                               >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <Wrench className="size-3.5 text-muted-foreground shrink-0" />
-                                  <span className="truncate font-medium text-foreground">
-                                    {tm.nombre}
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground font-mono">
-                                    ({tm.codigo})
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
+                                <Wrench
+                                  className={cn(
+                                    "size-3.5 shrink-0 transition-transform duration-200 group-hover:rotate-12",
+                                    isSelected
+                                      ? "text-inherit"
+                                      : "opacity-80",
+                                  )}
+                                />
+                                <span className="capitalize tracking-tight">{tm.nombre}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              </form.Field>
 
+              {/* Motivo de Mantenimiento y Nivel de Prioridad */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Motivo de Mantenimiento */}
                 <form.Field name="motivoMantenimiento">
                   {(field) => {
@@ -597,7 +583,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                     const selected = prioridadesMap.get(field.state.value)
 
                     return (
-                      <Field data-invalid={isInvalid || undefined} className="sm:col-span-2 lg:col-span-1">
+                      <Field data-invalid={isInvalid || undefined}>
                         <RequiredFieldLabel htmlFor={field.name}>
                           Nivel de Prioridad
                         </RequiredFieldLabel>
@@ -794,7 +780,9 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         <Combobox
                           items={activosList}
                           itemToStringLabel={(item: Activo) =>
-                            item ? `${item.codigo} - ${item.nombre}` : ""
+                            item
+                              ? `${item.codigo} - ${item.nombre}${item.ubicacion?.nombre ? ` (${item.ubicacion.nombre})` : ""}`
+                              : ""
                           }
                           itemToStringValue={(item: Activo) => item?.id ?? ""}
                           value={selectedActivo}
@@ -808,13 +796,13 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                             placeholder={
                               activosQuery.isLoading
                                 ? "Cargando activos..."
-                                : "Ej., Sala de Calderas A, o Activo #892-B"
+                                : "Seleccionar activo o buscar por código/ubicación..."
                             }
                             showClear={Boolean(field.state.value)}
                             aria-invalid={isInvalid}
                             className="w-full h-10 text-sm shadow-2xs"
                           />
-                          <ComboboxContent className="z-50 max-h-64 min-w-[320px]">
+                          <ComboboxContent className="z-50 max-h-72 min-w-[340px] sm:min-w-[420px]">
                             <ComboboxEmpty>
                               {activosQuery.isLoading ? (
                                 <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
@@ -830,22 +818,91 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                                 <ComboboxItem
                                   key={item.id}
                                   value={item}
-                                  className="text-xs py-2"
+                                  className="text-xs py-2 px-2.5 cursor-pointer"
                                 >
-                                  <div className="flex items-center gap-2 truncate">
-                                    <Box className="size-3.5 text-muted-foreground shrink-0" />
-                                    <code className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
-                                      {item.codigo}
-                                    </code>
-                                    <span className="font-medium text-foreground truncate">
-                                      {item.nombre}
-                                    </span>
+                                  <div className="flex items-center gap-2.5 w-full min-w-0">
+                                    {/* Miniatura de la Foto */}
+                                    <div className="relative size-9 shrink-0 overflow-hidden rounded-md border border-border/70 bg-muted/50 flex items-center justify-center">
+                                      {item.urlImagen ? (
+                                        <AuthenticatedImage
+                                          src={item.urlImagen}
+                                          alt={item.nombre}
+                                          className="size-full object-cover"
+                                          fallback={
+                                            <Box className="size-4 text-muted-foreground/60" />
+                                          }
+                                        />
+                                      ) : (
+                                        <Box className="size-4 text-muted-foreground/60" />
+                                      )}
+                                    </div>
+
+                                    {/* Información del Activo */}
+                                    <div className="flex-1 min-w-0 space-y-0.5">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <code className="text-[10px] font-mono font-medium text-primary bg-primary/10 px-1 py-0.2 rounded shrink-0">
+                                          {item.codigo}
+                                        </code>
+                                        <span className="font-medium text-foreground truncate text-xs">
+                                          {item.nombre}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground truncate">
+                                        <MapPin className="size-3 text-muted-foreground/70 shrink-0" />
+                                        <span className="truncate">
+                                          {item.ubicacion?.nombre || "Sin ubicación"}
+                                        </span>
+                                        {item.tipoActivo?.nombre ? (
+                                          <>
+                                            <span className="text-muted-foreground/40">•</span>
+                                            <span className="truncate text-muted-foreground/80">
+                                              {item.tipoActivo.nombre}
+                                            </span>
+                                          </>
+                                        ) : null}
+                                      </div>
+                                    </div>
                                   </div>
                                 </ComboboxItem>
                               )}
                             </ComboboxList>
                           </ComboboxContent>
                         </Combobox>
+
+                        {/* Vista Previa del Activo Seleccionado */}
+                        {selectedActivo ? (
+                          <div className="flex items-center gap-2.5 rounded-lg border border-border/70 bg-muted/30 p-2 text-xs shadow-2xs mt-1.5 animate-in fade-in-50">
+                            <div className="relative size-8 shrink-0 overflow-hidden rounded-md border border-border/60 bg-background flex items-center justify-center">
+                              {selectedActivo.urlImagen ? (
+                                <AuthenticatedImage
+                                  src={selectedActivo.urlImagen}
+                                  alt={selectedActivo.nombre}
+                                  className="size-full object-cover"
+                                  fallback={
+                                    <Box className="size-4 text-muted-foreground/60" />
+                                  }
+                                />
+                              ) : (
+                                <Box className="size-4 text-muted-foreground/60" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                              <div className="truncate">
+                                <span className="font-semibold text-foreground truncate block">
+                                  {selectedActivo.nombre}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[11px] text-muted-foreground bg-background px-2 py-0.5 rounded border border-border/50 shrink-0">
+                                <MapPin className="size-3 text-primary shrink-0" />
+                                <span className="truncate max-w-[140px]">
+                                  {selectedActivo.ubicacion?.nombre || "Sin ubicación"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
                         )}

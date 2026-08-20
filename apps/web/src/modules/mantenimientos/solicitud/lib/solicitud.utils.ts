@@ -66,3 +66,38 @@ export function getEstadoBadgeVariant(estado: string) {
   }
   return "outline" as const
 }
+
+export function getTipoMantenimientoBadgeClass(nombre: string, isSelected: boolean) {
+  const norm = (nombre || "").toLowerCase().trim()
+
+  if (norm.includes("preventiv")) {
+    return isSelected
+      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-500/30 scale-[1.02]"
+      : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50"
+  }
+  if (norm.includes("correctiv")) {
+    return isSelected
+      ? "bg-rose-600 text-white border-rose-600 shadow-sm ring-2 ring-rose-500/30 scale-[1.02]"
+      : "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30 hover:bg-rose-500/20 hover:border-rose-500/50"
+  }
+  if (norm.includes("predictiv")) {
+    return isSelected
+      ? "bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-500/30 scale-[1.02]"
+      : "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30 hover:bg-blue-500/20 hover:border-blue-500/50"
+  }
+  if (norm.includes("calibrac") || norm.includes("inspecc") || norm.includes("revision")) {
+    return isSelected
+      ? "bg-amber-600 text-white border-amber-600 shadow-sm ring-2 ring-amber-500/30 scale-[1.02]"
+      : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20 hover:border-amber-500/50"
+  }
+  if (norm.includes("mejora") || norm.includes("adaptat")) {
+    return isSelected
+      ? "bg-purple-600 text-white border-purple-600 shadow-sm ring-2 ring-purple-500/30 scale-[1.02]"
+      : "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30 hover:bg-purple-500/20 hover:border-purple-500/50"
+  }
+
+  return isSelected
+    ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/30 scale-[1.02]"
+    : "bg-muted/80 text-foreground border-border/80 hover:bg-accent hover:border-primary/40 hover:text-accent-foreground"
+}
+
