@@ -10,6 +10,8 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.Priorid
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoAdjuntoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMantenimientoRepository;
+import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
+import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -61,6 +63,7 @@ public class SolicitudMantenimientoService {
     private final PrioridadRepository prioridadRepository;
     private final SolicitudMantenimientoAdjuntoRepository adjuntoRepository;
     private final DocumentStorageService documentStorageService;
+    private final CorrelativoService correlativoService;
 
     @Transactional
     public SolicitudMantenimientoResponse create(SolicitudMantenimientoRequest request) {
@@ -68,19 +71,18 @@ public class SolicitudMantenimientoService {
         requireTipoMantenimientoExists(request.tipoMantenimientoId());
         requirePrioridadExists(request.prioridadId());
 
-        String numero = requireNormalizedNumero(request.numero());
-        validateUniqueNumeroForCreate(numero);
+        String numero = correlativoService.generar(CorrelativoCodigo.SOLICITUD_MANTENIMIENTO);
 
         SolicitudMantenimiento domain = SolicitudMantenimiento.builder()
                         .numero(numero)
                         .activoId(request.activoId())
                         .tipoMantenimientoId(request.tipoMantenimientoId())
-                        .motivoMantenimientoId(request.motivoMantenimientoId())
+                        .motivoMantenimiento(request.motivoMantenimiento())
                         .prioridadId(request.prioridadId())
                         .solicitanteId(request.solicitanteId())
                         .titulo(requireNormalizedTitulo(request.titulo()))
                         .descripcion(requireNormalizedDescripcion(request.descripcion()))
-                        .estado(requireNormalizedEstado(request.estado()))
+                        .estado(requireNormalizedEstado("borrador"))
                         .fechaSolicitud(request.fechaSolicitud() != null
                                         ? request.fechaSolicitud()
                                         : LocalDateTime.now())
@@ -120,7 +122,7 @@ public class SolicitudMantenimientoService {
                     response.numero(),
                     response.activo(),
                     response.tipoMantenimiento(),
-                    response.motivoMantenimientoId(),
+                    response.motivoMantenimiento(),
                     response.prioridad(),
                     response.solicitante(),
                     response.titulo(),
@@ -155,17 +157,13 @@ public class SolicitudMantenimientoService {
         requireTipoMantenimientoExists(request.tipoMantenimientoId());
         requirePrioridadExists(request.prioridadId());
         SolicitudMantenimiento domain = findDomainById(id);
-        String numero = requireNormalizedNumero(request.numero());
-        validateUniqueNumeroForUpdate(numero, id);
-        domain.setNumero(numero);
         domain.setActivoId(request.activoId());
         domain.setTipoMantenimientoId(request.tipoMantenimientoId());
-        domain.setMotivoMantenimientoId(request.motivoMantenimientoId());
+        domain.setMotivoMantenimiento(request.motivoMantenimiento());
         domain.setPrioridadId(request.prioridadId());
         domain.setSolicitanteId(request.solicitanteId());
         domain.setTitulo(requireNormalizedTitulo(request.titulo()));
         domain.setDescripcion(requireNormalizedDescripcion(request.descripcion()));
-        domain.setEstado(requireNormalizedEstado(request.estado()));
 
         if (request.fechaSolicitud() != null) {
             domain.setFechaSolicitud(request.fechaSolicitud());
@@ -441,7 +439,7 @@ public class SolicitudMantenimientoService {
                 domain.getNumero(),
                 activoInfo,
                 tipoInfo,
-                domain.getMotivoMantenimientoId(),
+                domain.getMotivoMantenimiento(),
                 prioridadInfo,
                 null,
                 domain.getTitulo(),

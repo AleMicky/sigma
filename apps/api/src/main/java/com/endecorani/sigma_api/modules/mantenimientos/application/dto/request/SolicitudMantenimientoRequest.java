@@ -8,23 +8,9 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Schema(
-        name = "SolicitudMantenimientoRequest",
-        description = "Datos necesarios para registrar una solicitud de mantenimiento"
-)
+@Schema(name = "SolicitudMantenimientoRequest",
+        description = "Datos necesarios para registrar una solicitud de mantenimiento")
 public record SolicitudMantenimientoRequest(
-        @Schema(
-                description = "Número único de la solicitud",
-                example = "SOL-2026-001",
-                requiredMode = Schema.RequiredMode.REQUIRED
-        )
-        @NotBlank(message = "El número de solicitud es obligatorio")
-        @Size(
-                min = 1,
-                max = 30,
-                message = "El número debe tener entre 1 y 30 caracteres"
-        )
-        String numero,
 
         @Schema(
                 description = "Identificador del activo",
@@ -43,12 +29,14 @@ public record SolicitudMantenimientoRequest(
         UUID tipoMantenimientoId,
 
         @Schema(
-                description = "Identificador del motivo de mantenimiento",
-                example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8",
-                requiredMode = Schema.RequiredMode.REQUIRED
+                description = "Motivo del mantenimiento",
+                example = "Falla en el sistema hidráulico"
         )
-        @NotNull(message = "El motivo de mantenimiento es obligatorio")
-        UUID motivoMantenimientoId,
+        @Size(
+                max = 200,
+                message = "El motivo debe tener máximo 200 caracteres"
+        )
+        String motivoMantenimiento,
 
         @Schema(
                 description = "Identificador de la prioridad",
@@ -91,19 +79,6 @@ public record SolicitudMantenimientoRequest(
                 message = "La descripción debe tener entre 1 y 2000 caracteres"
         )
         String descripcion,
-
-        @Schema(
-                description = "Estado de la solicitud",
-                example = "PENDIENTE",
-                requiredMode = Schema.RequiredMode.REQUIRED
-        )
-        @NotBlank(message = "El estado es obligatorio")
-        @Size(
-                min = 1,
-                max = 50,
-                message = "El estado debe tener entre 1 y 50 caracteres"
-        )
-        String estado,
 
         @Schema(
                 description = "Fecha de la solicitud",

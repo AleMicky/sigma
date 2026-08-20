@@ -1,10 +1,10 @@
-package com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.organizacion.domain.enums.EstadoMigracion;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.RegistroMigracion;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.RegistroMigracionRepository;
-import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.RegistroMigracionEntity;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.mapper.RegistroMigracionPersistenceMapper;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringRegistroMigracionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

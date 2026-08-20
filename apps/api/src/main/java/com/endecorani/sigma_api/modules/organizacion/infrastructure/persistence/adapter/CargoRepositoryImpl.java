@@ -1,9 +1,10 @@
-package com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Cargo;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.CargoEntity;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.mapper.CargoPersistenceMapper;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringCargoRepository;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;

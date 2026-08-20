@@ -26,7 +26,8 @@ public class SolicitudMantenimiento extends AuditableModel {
 
     // Clasificación
     private UUID tipoMantenimientoId;
-    private UUID motivoMantenimientoId;
+    private String motivoMantenimiento;
+    
     private UUID prioridadId;
 
     // Solicitud
