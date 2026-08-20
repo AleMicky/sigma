@@ -53,99 +53,66 @@ public class SolicitudMantenimientoService {
             "updatedAt"
     );
 
-    private static final String ADJUNTO_FOLDER =
-            "solicitud_mantenimiento_adjuntos";
+    private static final String ADJUNTO_FOLDER = "solicitud_mantenimiento_adjuntos";
 
     private final SolicitudMantenimientoRepository repository;
     private final ActivoRepository activoRepository;
     private final TipoMantenimientoRepository tipoMantenimientoRepository;
     private final PrioridadRepository prioridadRepository;
-    private final SolicitudMantenimientoAdjuntoRepository
-            adjuntoRepository;
+    private final SolicitudMantenimientoAdjuntoRepository adjuntoRepository;
     private final DocumentStorageService documentStorageService;
 
     @Transactional
-    public SolicitudMantenimientoResponse create(
-            SolicitudMantenimientoRequest request
-    ) {
+    public SolicitudMantenimientoResponse create(SolicitudMantenimientoRequest request) {
         requireActivoExists(request.activoId());
-        requireTipoMantenimientoExists(
-                request.tipoMantenimientoId()
-        );
+        requireTipoMantenimientoExists(request.tipoMantenimientoId());
         requirePrioridadExists(request.prioridadId());
 
         String numero = requireNormalizedNumero(request.numero());
         validateUniqueNumeroForCreate(numero);
 
-        SolicitudMantenimiento domain =
-                SolicitudMantenimiento.builder()
+        SolicitudMantenimiento domain = SolicitudMantenimiento.builder()
                         .numero(numero)
                         .activoId(request.activoId())
-                        .tipoMantenimientoId(
-                                request.tipoMantenimientoId()
-                        )
-                        .motivoMantenimientoId(
-                                request.motivoMantenimientoId()
-                        )
+                        .tipoMantenimientoId(request.tipoMantenimientoId())
+                        .motivoMantenimientoId(request.motivoMantenimientoId())
                         .prioridadId(request.prioridadId())
                         .solicitanteId(request.solicitanteId())
-                        .titulo(requireNormalizedTitulo(
-                                request.titulo()
-                        ))
-                        .descripcion(requireNormalizedDescripcion(
-                                request.descripcion()
-                        ))
-                        .estado(requireNormalizedEstado(
-                                request.estado()
-                        ))
-                        .fechaSolicitud(
-                                request.fechaSolicitud() != null
+                        .titulo(requireNormalizedTitulo(request.titulo()))
+                        .descripcion(requireNormalizedDescripcion(request.descripcion()))
+                        .estado(requireNormalizedEstado(request.estado()))
+                        .fechaSolicitud(request.fechaSolicitud() != null
                                         ? request.fechaSolicitud()
-                                        : LocalDateTime.now()
-                        )
+                                        : LocalDateTime.now())
                         .build();
 
         return toResponse(repository.save(domain));
     }
 
     @Transactional
-    public SolicitudMantenimientoResponse createWithFiles(
-            SolicitudMantenimientoRequest request,
-            List<MultipartFile> files
-    ) {
+    public SolicitudMantenimientoResponse createWithFiles(SolicitudMantenimientoRequest request, List<MultipartFile> files) {
         SolicitudMantenimientoResponse response = create(request);
 
         if (files != null && !files.isEmpty()) {
-            List<SolicitudMantenimientoAdjuntoResponse> adjuntos =
-                    new ArrayList<>();
+            List<SolicitudMantenimientoAdjuntoResponse> adjuntos = new ArrayList<>();
 
             for (MultipartFile file : files) {
                 UUID fileId = UUID.randomUUID();
-                DocumentStorageService.StoredFile stored =
-                        documentStorageService.store(
+                DocumentStorageService.StoredFile stored = documentStorageService.store(
                                 ADJUNTO_FOLDER,
                                 fileId,
-                                file
-                        );
+                                file);
 
                 SolicitudMantenimientoAdjunto adjuntoDomain =
                         SolicitudMantenimientoAdjunto.builder()
-                                .solicitudMantenimientoId(
-                                        response.id()
-                                )
-                                .nombreArchivo(
-                                        stored.nombreOriginal()
-                                )
+                                .solicitudMantenimientoId(response.id())
+                                .nombreArchivo(stored.nombreOriginal())
                                 .tipoContenido(stored.mimeType())
                                 .size(stored.tamanoBytes())
                                 .url(stored.publicUrl())
                                 .build();
 
-                adjuntos.add(
-                        toAdjuntoResponse(
-                                adjuntoRepository.save(adjuntoDomain)
-                        )
-                );
+                adjuntos.add(toAdjuntoResponse(adjuntoRepository.save(adjuntoDomain)));
             }
 
             return new SolicitudMantenimientoResponse(
@@ -183,35 +150,21 @@ public class SolicitudMantenimientoService {
     }
 
     @Transactional
-    public SolicitudMantenimientoResponse update(
-            UUID id,
-            SolicitudMantenimientoRequest request
-    ) {
+    public SolicitudMantenimientoResponse update(UUID id, SolicitudMantenimientoRequest request) {
         requireActivoExists(request.activoId());
-        requireTipoMantenimientoExists(
-                request.tipoMantenimientoId()
-        );
+        requireTipoMantenimientoExists(request.tipoMantenimientoId());
         requirePrioridadExists(request.prioridadId());
-
         SolicitudMantenimiento domain = findDomainById(id);
-
         String numero = requireNormalizedNumero(request.numero());
         validateUniqueNumeroForUpdate(numero, id);
-
         domain.setNumero(numero);
         domain.setActivoId(request.activoId());
-        domain.setTipoMantenimientoId(
-                request.tipoMantenimientoId()
-        );
-        domain.setMotivoMantenimientoId(
-                request.motivoMantenimientoId()
-        );
+        domain.setTipoMantenimientoId(request.tipoMantenimientoId());
+        domain.setMotivoMantenimientoId(request.motivoMantenimientoId());
         domain.setPrioridadId(request.prioridadId());
         domain.setSolicitanteId(request.solicitanteId());
         domain.setTitulo(requireNormalizedTitulo(request.titulo()));
-        domain.setDescripcion(requireNormalizedDescripcion(
-                request.descripcion()
-        ));
+        domain.setDescripcion(requireNormalizedDescripcion(request.descripcion()));
         domain.setEstado(requireNormalizedEstado(request.estado()));
 
         if (request.fechaSolicitud() != null) {
@@ -241,18 +194,14 @@ public class SolicitudMantenimientoService {
             );
         }
 
-        return PageResponse.from(
-                repository.search(normalized, pageable),
+        return PageResponse.from(repository.search(normalized, pageable),
                 this::toResponse
         );
     }
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudMantenimientoResponse>
-    findByActivoId(
-            UUID activoId,
-            PageRequestDto pageRequest
-    ) {
+    findByActivoId(UUID activoId, PageRequestDto pageRequest) {
         requireActivoExists(activoId);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
@@ -264,10 +213,7 @@ public class SolicitudMantenimientoService {
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudMantenimientoResponse>
-    findByEstado(
-            String estado,
-            PageRequestDto pageRequest
-    ) {
+    findByEstado(String estado, PageRequestDto pageRequest) {
         String normalized = requireNormalizedEstado(estado);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
@@ -279,10 +225,7 @@ public class SolicitudMantenimientoService {
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudMantenimientoResponse>
-    findBySolicitanteId(
-            UUID solicitanteId,
-            PageRequestDto pageRequest
-    ) {
+    findBySolicitanteId(UUID solicitanteId, PageRequestDto pageRequest) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
         return PageResponse.from(
@@ -295,16 +238,10 @@ public class SolicitudMantenimientoService {
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudMantenimientoResponse>
-    findByResponsableId(
-            UUID responsableId,
-            PageRequestDto pageRequest
-    ) {
+    findByResponsableId(UUID responsableId, PageRequestDto pageRequest) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
-        return PageResponse.from(
-                repository.findByResponsableId(
-                        responsableId, pageable
-                ),
+        return PageResponse.from(repository.findByResponsableId(responsableId, pageable),
                 this::toResponse
         );
     }

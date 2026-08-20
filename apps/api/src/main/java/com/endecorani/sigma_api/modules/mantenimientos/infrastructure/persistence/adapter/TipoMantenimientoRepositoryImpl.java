@@ -1,10 +1,10 @@
-package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.TipoMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMantenimientoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.TipoMantenimientoEntity;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.mapper.TipoMantenimientoPersistenceMapper;
-import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.specification.SpringTipoMantenimientoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository.SpringTipoMantenimientoRepository;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;

@@ -1,10 +1,10 @@
-package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimientoAplicacion;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ActividadMantenimientoAplicacionRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.ActividadMantenimientoAplicacionEntity;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.mapper.ActividadMantenimientoAplicacionPersistenceMapper;
-import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.specification.SpringActividadMantenimientoAplicacionRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository.SpringActividadMantenimientoAplicacionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

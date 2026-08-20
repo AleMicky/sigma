@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.specification;
+package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository;
 
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.PrioridadEntity;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;

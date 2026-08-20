@@ -1,10 +1,10 @@
-package com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.inventarios.domain.model.Insumo;
 import com.endecorani.sigma_api.modules.inventarios.domain.repository.InsumoRepository;
 import com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.entity.InsumoEntity;
 import com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.mapper.InsumoPersistenceMapper;
-import com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.specification.SpringInsumoRepository;
+import com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.repository.SpringInsumoRepository;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;

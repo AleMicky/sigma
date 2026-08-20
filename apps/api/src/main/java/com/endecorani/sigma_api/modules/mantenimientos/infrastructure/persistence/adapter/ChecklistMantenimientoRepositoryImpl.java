@@ -1,10 +1,10 @@
-package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ChecklistMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ChecklistMantenimientoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.ChecklistMantenimientoEntity;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.mapper.ChecklistMantenimientoPersistenceMapper;
-import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.specification.SpringChecklistMantenimientoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository.SpringChecklistMantenimientoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.specification;
+package com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.repository;
 
 import com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.entity.InsumoAtributoValorEntity;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
