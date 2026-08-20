@@ -348,10 +348,10 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
   }
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none overflow-y-auto px-3 py-3 sm:px-6 md:px-8">
-      <div className="mx-auto max-w-4xl space-y-6 pb-12">
+    <PageShell className="h-full min-h-0 w-full max-w-none overflow-y-auto px-4 py-4 sm:px-6 md:px-8">
+      <div className="w-full space-y-6 pb-12">
         {/* Header Bar */}
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
+        <header className="flex items-center justify-between border-b pb-4">
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
@@ -387,37 +387,6 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 </p>
               </div>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              render={<Link to={routes.mantenimientos.solicitudes} />}
-              className="text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              size="sm"
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => form.handleSubmit()}
-              className="h-9 gap-1.5 px-4 text-xs font-semibold shadow-xs"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="size-3.5 animate-spin" />
-                  <span>Guardando...</span>
-                </>
-              ) : (
-                <>
-                  <Send className="size-3.5" />
-                  <span>{isEditing ? "Guardar Cambios" : "Enviar Solicitud"}</span>
-                </>
-              )}
-            </Button>
           </div>
         </header>
 
