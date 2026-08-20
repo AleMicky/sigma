@@ -93,6 +93,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
   const [formError, setFormError] = useState<string | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
+  const [isChangingActivo, setIsChangingActivo] = useState(false)
 
   const currentActivoId = solicitud?.activo?.id ?? ""
   const currentTipoMantenimientoId = solicitud?.tipoMantenimiento?.id ?? ""
@@ -746,131 +747,194 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         <RequiredFieldLabel htmlFor={field.name}>
                           Activo / Ubicación
                         </RequiredFieldLabel>
-                        <Combobox
-                          items={activosList}
-                          itemToStringLabel={(item: Activo) =>
-                            item
-                              ? `${item.codigo} - ${item.nombre}${item.ubicacion?.nombre ? ` (${item.ubicacion.nombre})` : ""}`
-                              : ""
-                          }
-                          itemToStringValue={(item: Activo) => item?.id ?? ""}
-                          value={selectedActivo}
-                          onValueChange={(val: Activo | null) =>
-                            field.handleChange(val?.id ?? "")
-                          }
-                          disabled={activosQuery.isLoading}
-                        >
-                          <ComboboxInput
-                            id={field.name}
-                            placeholder={
-                              activosQuery.isLoading
-                                ? "Cargando activos..."
-                                : "Seleccionar activo o buscar por código/ubicación..."
-                            }
-                            showClear={Boolean(field.state.value)}
-                            aria-invalid={isInvalid}
-                            className="w-full h-10 text-sm shadow-2xs"
-                          />
-                          <ComboboxContent className="z-50 max-h-72 min-w-[340px] sm:min-w-[420px]">
-                            <ComboboxEmpty>
-                              {activosQuery.isLoading ? (
-                                <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
-                                  <Loader2 className="size-3.5 animate-spin" />
-                                  <span>Cargando activos...</span>
+
+                        {selectedActivo && !isChangingActivo ? (
+                          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/20 p-2.5 shadow-2xs hover:border-primary/40 hover:bg-muted/30 transition-all">
+                            <div className="flex items-center gap-3 min-w-0">
+                              {/* Foto / Miniatura */}
+                              <div className="relative size-11 shrink-0 overflow-hidden rounded-lg border border-border bg-background flex items-center justify-center shadow-xs">
+                                {selectedActivo.urlImagen ? (
+                                  <AuthenticatedImage
+                                    src={selectedActivo.urlImagen}
+                                    alt={selectedActivo.nombre}
+                                    className="size-full object-cover"
+                                    fallback={
+                                      <Box className="size-5 text-muted-foreground/60" />
+                                    }
+                                  />
+                                ) : (
+                                  <Box className="size-5 text-muted-foreground/60" />
+                                )}
+                              </div>
+
+                              {/* Datos del Activo */}
+                              <div className="min-w-0 space-y-0.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                                    {selectedActivo.codigo}
+                                  </code>
+                                  <span className="font-semibold text-xs text-foreground truncate">
+                                    {selectedActivo.nombre}
+                                  </span>
                                 </div>
-                              ) : (
-                                "No se encontraron activos."
-                              )}
-                            </ComboboxEmpty>
-                            <ComboboxList>
-                              {(item: Activo) => (
-                                <ComboboxItem
-                                  key={item.id}
-                                  value={item}
-                                  className="text-xs py-2 px-2.5 cursor-pointer"
-                                >
-                                  <div className="flex items-center gap-2.5 w-full min-w-0">
-                                    {/* Miniatura de la Foto */}
-                                    <div className="relative size-9 shrink-0 overflow-hidden rounded-md border border-border/70 bg-muted/50 flex items-center justify-center">
-                                      {item.urlImagen ? (
-                                        <AuthenticatedImage
-                                          src={item.urlImagen}
-                                          alt={item.nombre}
-                                          className="size-full object-cover"
-                                          fallback={
-                                            <Box className="size-4 text-muted-foreground/60" />
-                                          }
-                                        />
-                                      ) : (
-                                        <Box className="size-4 text-muted-foreground/60" />
-                                      )}
-                                    </div>
 
-                                    {/* Información del Activo */}
-                                    <div className="flex-1 min-w-0 space-y-0.5">
-                                      <div className="flex items-center gap-1.5 min-w-0">
-                                        <code className="text-[10px] font-mono font-medium text-primary bg-primary/10 px-1 py-0.2 rounded shrink-0">
-                                          {item.codigo}
-                                        </code>
-                                        <span className="font-medium text-foreground truncate text-xs">
-                                          {item.nombre}
-                                        </span>
-                                      </div>
-
-                                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground truncate">
-                                        <MapPin className="size-3 text-muted-foreground/70 shrink-0" />
-                                        <span className="truncate">
-                                          {item.ubicacion?.nombre || "Sin ubicación"}
-                                        </span>
-                                        {item.tipoActivo?.nombre ? (
-                                          <>
-                                            <span className="text-muted-foreground/40">•</span>
-                                            <span className="truncate text-muted-foreground/80">
-                                              {item.tipoActivo.nombre}
-                                            </span>
-                                          </>
-                                        ) : null}
-                                      </div>
-                                    </div>
+                                <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
+                                  <div className="flex items-center gap-1 truncate">
+                                    <MapPin className="size-3 text-primary shrink-0" />
+                                    <span className="truncate font-medium">
+                                      {selectedActivo.ubicacion?.nombre || "Sin ubicación"}
+                                    </span>
                                   </div>
-                                </ComboboxItem>
-                              )}
-                            </ComboboxList>
-                          </ComboboxContent>
-                        </Combobox>
-
-                        {/* Vista Previa del Activo Seleccionado */}
-                        {selectedActivo ? (
-                          <div className="flex items-center gap-2.5 rounded-lg border border-border/70 bg-muted/30 p-2 text-xs shadow-2xs mt-1.5 animate-in fade-in-50">
-                            <div className="relative size-8 shrink-0 overflow-hidden rounded-md border border-border/60 bg-background flex items-center justify-center">
-                              {selectedActivo.urlImagen ? (
-                                <AuthenticatedImage
-                                  src={selectedActivo.urlImagen}
-                                  alt={selectedActivo.nombre}
-                                  className="size-full object-cover"
-                                  fallback={
-                                    <Box className="size-4 text-muted-foreground/60" />
-                                  }
-                                />
-                              ) : (
-                                <Box className="size-4 text-muted-foreground/60" />
-                              )}
+                                  {selectedActivo.tipoActivo?.nombre ? (
+                                    <>
+                                      <span className="text-muted-foreground/40">•</span>
+                                      <span className="text-[10px] bg-background border border-border/60 px-1.5 py-0.2 rounded shrink-0">
+                                        {selectedActivo.tipoActivo.nombre}
+                                      </span>
+                                    </>
+                                  ) : null}
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-                              <div className="truncate">
-                                <span className="font-semibold text-foreground truncate block">
-                                  {selectedActivo.nombre}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 text-[11px] text-muted-foreground bg-background px-2 py-0.5 rounded border border-border/50 shrink-0">
-                                <MapPin className="size-3 text-primary shrink-0" />
-                                <span className="truncate max-w-[140px]">
-                                  {selectedActivo.ubicacion?.nombre || "Sin ubicación"}
-                                </span>
-                              </div>
+
+                            {/* Acciones */}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsChangingActivo(true)}
+                                className="h-8 text-xs font-medium px-3"
+                              >
+                                Cambiar
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => {
+                                  field.handleChange("")
+                                  setIsChangingActivo(true)
+                                }}
+                                className="size-8 text-muted-foreground hover:text-destructive shrink-0"
+                              >
+                                <X className="size-3.5" />
+                                <span className="sr-only">Remover</span>
+                              </Button>
                             </div>
                           </div>
-                        ) : null}
+                        ) : (
+                          <div className="space-y-1.5">
+                            <Combobox
+                              items={activosList}
+                              itemToStringLabel={(item: Activo) =>
+                                item ? `${item.codigo} - ${item.nombre}` : ""
+                              }
+                              itemToStringValue={(item: Activo) => item?.id ?? ""}
+                              value={selectedActivo}
+                              onValueChange={(val: Activo | null) => {
+                                field.handleChange(val?.id ?? "")
+                                if (val) {
+                                  setIsChangingActivo(false)
+                                }
+                              }}
+                              disabled={activosQuery.isLoading}
+                            >
+                              <ComboboxInput
+                                id={field.name}
+                                placeholder={
+                                  activosQuery.isLoading
+                                    ? "Cargando activos..."
+                                    : "Buscar activo por código, nombre o ubicación..."
+                                }
+                                showClear={Boolean(field.state.value)}
+                                aria-invalid={isInvalid}
+                                className="w-full h-10 text-sm shadow-2xs"
+                                autoFocus={isChangingActivo}
+                              />
+                              <ComboboxContent className="z-50 max-h-72 min-w-[340px] sm:min-w-[440px]">
+                                <ComboboxEmpty>
+                                  {activosQuery.isLoading ? (
+                                    <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+                                      <Loader2 className="size-3.5 animate-spin" />
+                                      <span>Cargando activos...</span>
+                                    </div>
+                                  ) : (
+                                    "No se encontraron activos."
+                                  )}
+                                </ComboboxEmpty>
+                                <ComboboxList>
+                                  {(item: Activo) => (
+                                    <ComboboxItem
+                                      key={item.id}
+                                      value={item}
+                                      className="text-xs py-2.5 px-3 cursor-pointer"
+                                    >
+                                      <div className="flex items-center gap-3 w-full min-w-0">
+                                        {/* Miniatura de la Foto */}
+                                        <div className="relative size-10 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/50 flex items-center justify-center">
+                                          {item.urlImagen ? (
+                                            <AuthenticatedImage
+                                              src={item.urlImagen}
+                                              alt={item.nombre}
+                                              className="size-full object-cover"
+                                              fallback={
+                                                <Box className="size-5 text-muted-foreground/60" />
+                                              }
+                                            />
+                                          ) : (
+                                            <Box className="size-5 text-muted-foreground/60" />
+                                          )}
+                                        </div>
+
+                                        {/* Información del Activo */}
+                                        <div className="flex-1 min-w-0 space-y-0.5">
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                                              {item.codigo}
+                                            </code>
+                                            <span className="font-semibold text-foreground truncate text-xs">
+                                              {item.nombre}
+                                            </span>
+                                          </div>
+
+                                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
+                                            <MapPin className="size-3 text-primary/80 shrink-0" />
+                                            <span className="truncate">
+                                              {item.ubicacion?.nombre || "Sin ubicación"}
+                                            </span>
+                                            {item.tipoActivo?.nombre ? (
+                                              <>
+                                                <span className="text-muted-foreground/40">•</span>
+                                                <span className="truncate text-muted-foreground/80">
+                                                  {item.tipoActivo.nombre}
+                                                </span>
+                                              </>
+                                            ) : null}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </ComboboxItem>
+                                  )}
+                                </ComboboxList>
+                              </ComboboxContent>
+                            </Combobox>
+
+                            {isChangingActivo && selectedActivo && (
+                              <div className="flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="xs"
+                                  onClick={() => setIsChangingActivo(false)}
+                                  className="text-xs text-muted-foreground"
+                                >
+                                  Cancelar cambio
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
