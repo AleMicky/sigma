@@ -1,10 +1,11 @@
-package com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.parametros.domain.enums.TipoUbicacion;
 import com.endecorani.sigma_api.modules.parametros.domain.model.Ubicacion;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.entity.UbicacionEntity;
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.mapper.UbicacionPersistenceMapper;
+import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.repository.SpringUbicacionRepository;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;

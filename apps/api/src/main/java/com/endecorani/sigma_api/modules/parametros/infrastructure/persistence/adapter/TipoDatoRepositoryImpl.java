@@ -1,9 +1,10 @@
-package com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.parametros.domain.model.TipoDato;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.TipoDatoRepository;
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.entity.TipoDatoEntity;
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.mapper.TipoDatoPersistenceMapper;
+import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.repository.SpringTipoDatoRepository;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;

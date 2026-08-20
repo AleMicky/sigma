@@ -1,9 +1,10 @@
-package com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.parametros.domain.model.Catalogo;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.CatalogoRepository;
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.entity.CatalogoEntity;
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.mapper.CatalogoPersistenceMapper;
+import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.repository.SpringCatalogoRepository;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;
