@@ -1239,123 +1239,110 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 const totalAdjuntos = selectedFiles.length + (solicitud?.adjuntos?.length ?? 0)
 
                 return (
-                  <div className="p-5 sm:p-7 pt-2 space-y-4 animate-in fade-in-50 duration-300 slide-in-from-bottom-2">
+                  <div className="p-5 sm:p-7 pt-0 space-y-3 animate-in fade-in-50 duration-300 slide-in-from-bottom-2">
                     <div
                       className={cn(
-                        "rounded-2xl border p-4 sm:p-5 transition-all shadow-2xs space-y-3.5",
+                        "rounded-xl border p-3 sm:p-3.5 transition-all shadow-2xs space-y-2",
                         selectedPrioridad
                           ? cfg.alertClass
                           : "bg-muted/30 border-border/80 text-foreground",
                       )}
                     >
-                      {/* Header del Resumen */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-inherit/20 pb-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background/80 shadow-2xs">
-                            {selectedPrioridad && selectedPrioridad.nivel >= 4 ? (
-                              <AlertTriangle className="size-4 text-inherit" />
-                            ) : (
-                              <FileText className="size-4 text-inherit" />
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-xs sm:text-sm tracking-tight text-inherit">
-                              Resumen de la Solicitud
-                            </h3>
-                            <p className="text-[11px] opacity-80">
-                              Todos los campos requeridos han sido completados. Verifica la información antes de registrar.
-                            </p>
-                          </div>
+                      {/* Header Compacto */}
+                      <div className="flex items-center justify-between gap-2 border-b border-inherit/15 pb-2">
+                        <div className="flex items-center gap-2">
+                          {selectedPrioridad && selectedPrioridad.nivel >= 4 ? (
+                            <AlertTriangle className="size-3.5 text-inherit shrink-0" />
+                          ) : (
+                            <FileText className="size-3.5 text-inherit shrink-0" />
+                          )}
+                          <h3 className="font-bold text-xs tracking-tight text-inherit">
+                            Resumen de Solicitud
+                          </h3>
                         </div>
 
                         {selectedPrioridad && (
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={cn(
-                                "text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs",
-                                cfg.badgeClass,
-                              )}
-                            >
-                              Prioridad {selectedPrioridad.nombre} (Nivel {selectedPrioridad.nivel})
-                            </span>
-                          </div>
+                          <span
+                            className={cn(
+                              "text-[10px] font-bold px-2 py-0.2 rounded-full shadow-2xs",
+                              cfg.badgeClass,
+                            )}
+                          >
+                            Prioridad {selectedPrioridad.nombre} (Nivel {selectedPrioridad.nivel})
+                          </span>
                         )}
                       </div>
 
-                      {/* Resumen de Campos en Formato de Texto Limpio */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3.5 py-1 text-xs">
-                        {/* Título */}
-                        <div className="space-y-0.5 min-w-0">
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      {/* Resumen Compacto de Campos */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1.5 text-xs">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
                             Título:
                           </span>
-                          <p className="font-semibold text-foreground truncate">
-                            {values.titulo?.trim() || "Sin título especificado"}
-                          </p>
+                          <span className="font-medium text-foreground truncate">
+                            {values.titulo?.trim() || "—"}
+                          </span>
                         </div>
 
-                        {/* Tipo de Mantenimiento */}
-                        <div className="space-y-0.5 min-w-0">
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                            Tipo de Mantenimiento:
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
+                            Tipo:
                           </span>
-                          <p className="font-semibold text-foreground">
-                            {selectedTipo?.nombre || "No seleccionado"}
-                          </p>
+                          <span className="font-medium text-foreground truncate">
+                            {selectedTipo?.nombre || "—"}
+                          </span>
                         </div>
 
-                        {/* Activo / Ubicación */}
-                        <div className="space-y-0.5 min-w-0">
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                            Activo / Ubicación:
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
+                            Activo:
                           </span>
-                          <p className="font-semibold text-foreground truncate">
+                          <span className="font-medium text-foreground truncate">
                             {selectedActivo
-                              ? `${selectedActivo.nombre} (${selectedActivo.ubicacion?.nombre || "Sin ubicación"})`
-                              : "No seleccionado"}
-                          </p>
+                              ? `${selectedActivo.nombre} (${selectedActivo.codigo})`
+                              : "—"}
+                          </span>
                         </div>
 
-                        {/* Personal Solicitante */}
-                        <div className="space-y-0.5 min-w-0">
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                            Personal Solicitante:
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
+                            Solicitante:
                           </span>
-                          <p className="font-semibold text-foreground truncate">
+                          <span className="font-medium text-foreground truncate">
                             {selectedEmpleado
-                              ? `${selectedEmpleado.personaNombreCompleto || selectedEmpleado.codigo}${selectedEmpleado.cargoNombre ? ` (${selectedEmpleado.cargoNombre})` : ""}`
-                              : "No seleccionado"}
-                          </p>
-                        </div>
-
-                        {/* Fecha de Solicitud */}
-                        <div className="space-y-0.5 min-w-0">
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                            Fecha de Registro:
+                              ? selectedEmpleado.personaNombreCompleto ||
+                                selectedEmpleado.codigo
+                              : "—"}
                           </span>
-                          <p className="font-semibold text-foreground">
-                            {values.fechaSolicitud || "Hoy"}
-                          </p>
                         </div>
 
-                        {/* Archivos Adjuntos */}
-                        <div className="space-y-0.5 min-w-0">
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
+                            Fecha:
+                          </span>
+                          <span className="font-medium text-foreground truncate">
+                            {values.fechaSolicitud || "Hoy"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
                             Adjuntos:
                           </span>
-                          <p className="font-semibold text-foreground">
+                          <span className="font-medium text-foreground truncate">
                             {totalAdjuntos > 0
-                              ? `${totalAdjuntos} archivo(s) listo(s)`
-                              : "Ningún archivo adjunto"}
-                          </p>
+                              ? `${totalAdjuntos} archivo(s)`
+                              : "0"}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Nota de Prioridad / Descripción */}
+                      {/* Impacto */}
                       {selectedPrioridad && (
-                        <div className="pt-1 text-[11px] opacity-90 leading-relaxed border-t border-inherit/20">
-                          <span className="font-bold mr-1">Impacto & Nivel de Atención:</span>
-                          {selectedPrioridad.descripcion || cfg.defaultDescription}
+                        <div className="pt-1.5 text-[10.5px] opacity-85 leading-tight border-t border-inherit/15 truncate">
+                          <span className="font-bold mr-1">Impacto:</span>
+                          {selectedPrioridad.descripcion ||
+                            cfg.defaultDescription}
                         </div>
                       )}
                     </div>
