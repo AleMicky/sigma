@@ -1,13 +1,21 @@
 import { useMemo, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
-import { Box, Building2, Loader2, User, Wrench } from "lucide-react"
+import {
+  Box,
+  FileText,
+  Loader2,
+  Paperclip,
+  Upload,
+  User,
+  Wrench,
+  X,
+} from "lucide-react"
 
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
 import { prioridadQueries } from "@/modules/mantenimientos/prioridad/api/prioridad.queries"
 import { tipoMantenimientoQueries } from "@/modules/mantenimientos/tipo-mantenimiento/api/tipo-mantenimiento.queries"
-import { areaQueries } from "@/modules/organizacion/area/api/area.queries"
 import { empleadoQueries } from "@/modules/organizacion/empleado/api/empleado.queries"
 import type { Empleado } from "@/modules/organizacion/empleado/api/empleado.service"
 import { isApiError } from "@/shared/api"
@@ -17,6 +25,7 @@ import {
   FormDialogSubmit,
   RequiredFieldLabel,
 } from "@/shared/components/form-dialog"
+import { Button } from "@/shared/components/ui/button"
 import {
   Combobox,
   ComboboxContent,
@@ -38,9 +47,10 @@ import { Textarea } from "@/shared/components/ui/textarea"
 
 import {
   useCreateSolicitud,
+  useCreateSolicitudWithFiles,
   useUpdateSolicitud,
 } from "../api/solicitud.mutations"
-import type { SolicitudMantenimiento } from "../api/solicitud.service"
+import type { SolicitudMantenimiento, SolicitudPayload } from "../api/solicitud.service"
 import {
   defaultSolicitudValues,
   solicitudSchema,
@@ -76,8 +86,15 @@ export function SolicitudFormDialog({
 }: SolicitudFormDialogProps) {
   const isEditing = Boolean(solicitud)
   const createMutation = useCreateSolicitud()
+  const createWithFilesMutation = useCreateSolicitudWithFiles()
   const updateMutation = useUpdateSolicitud()
   const [formError, setFormError] = useState<string | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+
+  const currentActivoId = solicitud?.activo?.id ?? ""
+  const currentTipoMantenimientoId = solicitud?.tipoMantenimiento?.id ?? ""
+  const currentPrioridadId = solicitud?.prioridad?.id ?? ""
+  const currentSolicitanteId = solicitud?.solicitante?.id ?? ""
 
   // Fetch activos from /api/v1/activos
   const activosQuery = useQuery({
@@ -95,13 +112,12 @@ export function SolicitudFormDialog({
     [activos],
   )
 
-  // Ensure current solicitud.activoId is available even if not in first page
   const singleActivoQuery = useQuery({
-    ...activoQueries.detail(solicitud?.activoId ?? ""),
+    ...activoQueries.detail(currentActivoId),
     enabled:
       open &&
-      Boolean(solicitud?.activoId) &&
-      !activosById.has(solicitud?.activoId ?? ""),
+      Boolean(currentActivoId) &&
+      !activosById.has(currentActivoId),
   })
 
   const activosList = useMemo(() => {
@@ -137,11 +153,11 @@ export function SolicitudFormDialog({
   )
 
   const singlePrioridadQuery = useQuery({
-    ...prioridadQueries.detail(solicitud?.prioridadId ?? ""),
+    ...prioridadQueries.detail(currentPrioridadId),
     enabled:
       open &&
-      Boolean(solicitud?.prioridadId) &&
-      !prioridadesById.has(solicitud?.prioridadId ?? ""),
+      Boolean(currentPrioridadId) &&
+      !prioridadesById.has(currentPrioridadId),
   })
 
   const prioridadesList = useMemo(() => {
@@ -177,11 +193,11 @@ export function SolicitudFormDialog({
   )
 
   const singleTipoMantenimientoQuery = useQuery({
-    ...tipoMantenimientoQueries.detail(solicitud?.tipoMantenimientoId ?? ""),
+    ...tipoMantenimientoQueries.detail(currentTipoMantenimientoId),
     enabled:
       open &&
-      Boolean(solicitud?.tipoMantenimientoId) &&
-      !tiposMantenimientoById.has(solicitud?.tipoMantenimientoId ?? ""),
+      Boolean(currentTipoMantenimientoId) &&
+      !tiposMantenimientoById.has(currentTipoMantenimientoId),
   })
 
   const tiposMantenimientoList = useMemo(() => {
@@ -217,11 +233,11 @@ export function SolicitudFormDialog({
   )
 
   const singleEmpleadoQuery = useQuery({
-    ...empleadoQueries.detail(solicitud?.solicitanteId ?? ""),
+    ...empleadoQueries.detail(currentSolicitanteId),
     enabled:
       open &&
-      Boolean(solicitud?.solicitanteId) &&
-      !empleadosById.has(solicitud?.solicitanteId ?? ""),
+      Boolean(currentSolicitanteId) &&
+      !empleadosById.has(currentSolicitanteId),
   })
 
   const empleadosList = useMemo(() => {
@@ -240,57 +256,17 @@ export function SolicitudFormDialog({
     [empleadosList],
   )
 
-  // Fetch areas from /api/v1/areas
-  const areasQuery = useQuery({
-    ...areaQueries.list({ size: 100 }),
-    enabled: open,
-  })
-
-  const areas = useMemo(
-    () => areasQuery.data?.content ?? [],
-    [areasQuery.data?.content],
-  )
-
-  const areasById = useMemo(
-    () => new Map(areas.map((a) => [a.id, a])),
-    [areas],
-  )
-
-  const singleAreaQuery = useQuery({
-    ...areaQueries.detail(solicitud?.areaSolicitanteId ?? ""),
-    enabled:
-      open &&
-      Boolean(solicitud?.areaSolicitanteId) &&
-      !areasById.has(solicitud?.areaSolicitanteId ?? ""),
-  })
-
-  const areasList = useMemo(() => {
-    const list = [...areas]
-    if (
-      singleAreaQuery.data &&
-      !list.some((a) => a.id === singleAreaQuery.data.id)
-    ) {
-      list.unshift(singleAreaQuery.data)
-    }
-    return list
-  }, [areas, singleAreaQuery.data])
-
-  const areasMap = useMemo(
-    () => new Map(areasList.map((a) => [a.id, a])),
-    [areasList],
-  )
-
   const form = useForm({
     defaultValues: solicitud
       ? {
           titulo: solicitud.titulo,
           descripcion: solicitud.descripcion ?? "",
-          activoId: solicitud.activoId,
-          tipoMantenimientoId: solicitud.tipoMantenimientoId,
-          motivoMantenimientoId: solicitud.motivoMantenimientoId ?? "",
-          prioridadId: solicitud.prioridadId,
-          solicitanteId: solicitud.solicitanteId,
-          areaSolicitanteId: solicitud.areaSolicitanteId,
+          motivoMantenimiento: solicitud.motivoMantenimiento ?? "",
+          activoId: currentActivoId,
+          tipoMantenimientoId: currentTipoMantenimientoId,
+          prioridadId: currentPrioridadId,
+          solicitanteId: currentSolicitanteId,
+          fechaSolicitud: solicitud.fechaSolicitud ?? "",
         }
       : defaultSolicitudValues,
     validators: {
@@ -300,27 +276,37 @@ export function SolicitudFormDialog({
       setFormError(null)
 
       try {
-        const payload = {
+        const payload: SolicitudPayload = {
           titulo: value.titulo.trim(),
-          descripcion: (value.descripcion ?? "").trim() || null,
+          descripcion: value.descripcion.trim(),
+          motivoMantenimiento: (value.motivoMantenimiento ?? "").trim() || null,
           activoId: value.activoId.trim(),
           tipoMantenimientoId: value.tipoMantenimientoId.trim(),
-          motivoMantenimientoId: (value.motivoMantenimientoId ?? "").trim() || null,
           prioridadId: value.prioridadId.trim(),
           solicitanteId: value.solicitanteId.trim(),
-          areaSolicitanteId: value.areaSolicitanteId.trim(),
+          fechaSolicitud: value.fechaSolicitud ? value.fechaSolicitud : null,
         }
 
-        const saved =
-          isEditing && solicitud
-            ? await updateMutation.mutateAsync({
-                id: solicitud.id,
-                payload,
-              })
-            : await createMutation.mutateAsync(payload)
+        let saved: SolicitudMantenimiento
+        if (isEditing && solicitud) {
+          saved = await updateMutation.mutateAsync({
+            id: solicitud.id,
+            payload,
+          })
+        } else {
+          if (selectedFiles.length > 0) {
+            saved = await createWithFilesMutation.mutateAsync({
+              payload,
+              files: selectedFiles,
+            })
+          } else {
+            saved = await createMutation.mutateAsync(payload)
+          }
+        }
 
         onSuccess?.(saved)
         onOpenChange(false)
+        setSelectedFiles([])
         form.reset()
       } catch (error) {
         setFormError(
@@ -331,6 +317,17 @@ export function SolicitudFormDialog({
       }
     },
   })
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      const filesArr = Array.from(e.target.files)
+      setSelectedFiles((prev) => [...prev, ...filesArr])
+    }
+  }
+
+  function removeFile(index: number) {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+  }
 
   return (
     <FormDialog
@@ -345,13 +342,20 @@ export function SolicitudFormDialog({
       formError={formError}
       onCancel={() => {
         setFormError(null)
+        setSelectedFiles([])
         form.reset()
       }}
       onSubmit={() => form.handleSubmit()}
       footer={
         <form.Subscribe
           selector={(state) =>
-            [state.canSubmit, state.isSubmitting] as const
+            [
+              state.canSubmit,
+              state.isSubmitting ||
+                createMutation.isPending ||
+                createWithFilesMutation.isPending ||
+                updateMutation.isPending,
+            ] as const
           }
         >
           {([canSubmit, isSubmitting]) => (
@@ -382,31 +386,7 @@ export function SolicitudFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Ej. Falla en motor / Mantenimiento preventivo"
-              />
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          )
-        }}
-      </form.Field>
-
-      <form.Field name="descripcion">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
-
-          return (
-            <Field data-invalid={isInvalid || undefined}>
-              <FieldLabel htmlFor={field.name}>Descripción / Detalle</FieldLabel>
-              <Textarea
-                id={field.name}
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                aria-invalid={isInvalid}
-                placeholder="Describe el motivo, síntomas de falla o requerimientos..."
-                rows={3}
+                placeholder="Ej. Falla en motor principal / Mantenimiento preventivo"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -475,11 +455,6 @@ export function SolicitudFormDialog({
                             <span className="font-medium text-foreground truncate">
                               {item.nombre}
                             </span>
-                            {item.tipoActivo?.nombre ? (
-                              <span className="ml-auto text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded shrink-0">
-                                {item.tipoActivo.nombre}
-                              </span>
-                            ) : null}
                           </div>
                         </ComboboxItem>
                       )}
@@ -580,7 +555,7 @@ export function SolicitudFormDialog({
                     aria-invalid={isInvalid}
                     className="w-full"
                   >
-                    <SelectValue placeholder="Seleccionar tipo de mantenimiento">
+                    <SelectValue placeholder="Seleccionar tipo">
                       {selected ? (
                         <div className="flex items-center gap-2 truncate">
                           <Wrench className="size-3.5 text-primary shrink-0" />
@@ -642,9 +617,6 @@ export function SolicitudFormDialog({
                   value={selectedEmpleado}
                   onValueChange={(val: Empleado | null) => {
                     field.handleChange(val?.id ?? "")
-                    if (val?.areaId) {
-                      form.setFieldValue("areaSolicitanteId", val.areaId)
-                    }
                   }}
                   disabled={empleadosQuery.isLoading}
                 >
@@ -703,66 +675,119 @@ export function SolicitudFormDialog({
         </form.Field>
       </div>
 
-      <form.Field name="areaSolicitanteId">
+      <form.Field name="motivoMantenimiento">
         {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
-          const selected = areasMap.get(field.state.value)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
-              <RequiredFieldLabel htmlFor={field.name}>
-                Área Solicitante
-              </RequiredFieldLabel>
-              <Select
-                value={field.state.value || null}
-                onValueChange={(value) => field.handleChange(value ?? "")}
-                disabled={areasQuery.isLoading}
-              >
-                <SelectTrigger
-                  id={field.name}
-                  aria-invalid={isInvalid}
-                  className="w-full"
-                >
-                  <SelectValue placeholder="Seleccionar área">
-                    {selected ? (
-                      <div className="flex items-center gap-2 truncate">
-                        <Building2 className="size-3.5 text-primary shrink-0" />
-                        <span className="truncate font-medium text-foreground">
-                          {selected.nombre}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground font-mono">
-                          ({selected.codigo})
-                        </span>
-                      </div>
-                    ) : null}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {areasList.map((a) => (
-                    <SelectItem
-                      key={a.id}
-                      value={a.id}
-                      className="text-xs cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Building2 className="size-3 text-muted-foreground shrink-0" />
-                        <span className="truncate font-medium text-foreground">
-                          {a.nombre}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground font-mono">
-                          ({a.codigo})
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FieldLabel htmlFor={field.name}>
+                Motivo del Mantenimiento (Opcional)
+              </FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                aria-invalid={isInvalid}
+                placeholder="Ej. Falla en el sistema hidráulico / Ruidos anormales"
+                maxLength={200}
+              />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
         }}
       </form.Field>
+
+      <form.Field name="descripcion">
+        {(field) => {
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
+
+          return (
+            <Field data-invalid={isInvalid || undefined}>
+              <RequiredFieldLabel htmlFor={field.name}>
+                Descripción Detallada
+              </RequiredFieldLabel>
+              <Textarea
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                required
+                aria-required
+                aria-invalid={isInvalid}
+                placeholder="Describe los síntomas, fallas detectadas, antecedentes o requerimientos específicos..."
+                rows={3}
+                maxLength={2000}
+              />
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+            </Field>
+          )
+        }}
+      </form.Field>
+
+      {/* Adjuntos en creación */}
+      {!isEditing ? (
+        <div className="space-y-2 rounded-lg border border-border/80 bg-muted/20 p-3">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <Paperclip className="size-3.5" />
+              Adjuntar Archivos / Fotos (Opcional)
+            </label>
+            <label
+              htmlFor="solicitud-files-upload"
+              className="cursor-pointer inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+            >
+              <Upload className="size-3" />
+              <span>Seleccionar archivos</span>
+            </label>
+            <input
+              id="solicitud-files-upload"
+              type="file"
+              multiple
+              className="sr-only"
+              onChange={handleFileChange}
+            />
+          </div>
+
+          {selectedFiles.length > 0 ? (
+            <ul className="space-y-1.5 pt-1">
+              {selectedFiles.map((file, idx) => (
+                <li
+                  key={`${file.name}-${idx}`}
+                  className="flex items-center justify-between gap-2 rounded bg-card px-2.5 py-1.5 border border-border text-xs"
+                >
+                  <div className="flex items-center gap-2 truncate min-w-0">
+                    <FileText className="size-3.5 text-primary shrink-0" />
+                    <span className="truncate font-medium">{file.name}</span>
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      ({(file.size / 1024).toFixed(1)} KB)
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => removeFile(idx)}
+                    className="size-5 text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="size-3" />
+                    <span className="sr-only">Remover</span>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              Puedes adjuntar fotografías de la avería, informes o manuales en formato PDF, PNG, JPG.
+            </p>
+          )}
+        </div>
+      ) : null}
 
       {/* Audit info in edit mode */}
       {isEditing && solicitud ? (

@@ -1,15 +1,21 @@
-import { createCrudMutations } from "@/shared/api"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
+
+import { createCrudMutations, getErrorMessage } from "@/shared/api"
 
 import { solicitudKeys } from "./solicitud.keys"
 import {
+  createAdjunto,
   createSolicitud,
+  createSolicitudWithFiles,
+  deleteAdjunto,
   deleteSolicitud,
   updateSolicitud,
   type SolicitudMantenimiento,
   type SolicitudPayload,
 } from "./solicitud.service"
 
-const solicitudMutations = createCrudMutations<
+const solicitudCrudMutations = createCrudMutations<
   SolicitudMantenimiento,
   SolicitudPayload
 >({
@@ -26,6 +32,77 @@ const solicitudMutations = createCrudMutations<
   },
 })
 
-export const useCreateSolicitud = solicitudMutations.useCreate
-export const useUpdateSolicitud = solicitudMutations.useUpdate
-export const useDeleteSolicitud = solicitudMutations.useDelete
+export const useCreateSolicitud = solicitudCrudMutations.useCreate
+export const useUpdateSolicitud = solicitudCrudMutations.useUpdate
+export const useDeleteSolicitud = solicitudCrudMutations.useDelete
+
+export function useCreateSolicitudWithFiles() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      payload,
+      files,
+    }: {
+      payload: SolicitudPayload
+      files?: File[] | null
+    }) => createSolicitudWithFiles(payload, files),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      toast.success("Solicitud creada correctamente")
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
+    },
+  })
+}
+
+export function useCreateAdjunto() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      solicitudId,
+      file,
+      descripcion,
+    }: {
+      solicitudId: string
+      file: File
+      descripcion?: string
+    }) => createAdjunto(solicitudId, file, descripcion),
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      void queryClient.invalidateQueries({
+        queryKey: solicitudKeys.adjuntos(variables.solicitudId),
+      })
+      toast.success("Archivo adjuntado correctamente")
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
+    },
+  })
+}
+
+export function useDeleteAdjunto() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      solicitudId,
+      adjuntoId,
+    }: {
+      solicitudId: string
+      adjuntoId: string
+    }) => deleteAdjunto(solicitudId, adjuntoId),
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      void queryClient.invalidateQueries({
+        queryKey: solicitudKeys.adjuntos(variables.solicitudId),
+      })
+      toast.success("Adjunto eliminado correctamente")
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
+    },
+  })
+}

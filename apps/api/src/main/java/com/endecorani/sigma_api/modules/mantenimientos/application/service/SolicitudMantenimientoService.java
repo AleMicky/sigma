@@ -71,7 +71,14 @@ public class SolicitudMantenimientoService {
         requireTipoMantenimientoExists(request.tipoMantenimientoId());
         requirePrioridadExists(request.prioridadId());
 
-        String numero = correlativoService.generar(CorrelativoCodigo.SOLICITUD_MANTENIMIENTO);
+        LocalDateTime fecha = LocalDateTime.now();
+
+        Integer gestion = fecha.getYear();
+
+        String numero = correlativoService.generar(
+                CorrelativoCodigo.SOLICITUD_MANTENIMIENTO,
+                gestion
+        );
 
         SolicitudMantenimiento domain = SolicitudMantenimiento.builder()
                         .numero(numero)

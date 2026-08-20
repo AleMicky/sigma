@@ -3,10 +3,15 @@ import { queryOptions } from "@tanstack/react-query"
 import type { PageParams } from "@/shared/types/api.types"
 
 import { solicitudKeys } from "./solicitud.keys"
-import { getSolicitud, listSolicitudes } from "./solicitud.service"
+import {
+  getSolicitud,
+  listAdjuntos,
+  listSolicitudes,
+  type SolicitudListParams,
+} from "./solicitud.service"
 
 export const solicitudQueries = {
-  list: (filters?: PageParams) =>
+  list: (filters?: SolicitudListParams) =>
     queryOptions({
       queryKey: solicitudKeys.list(filters),
       queryFn: () => {
@@ -21,5 +26,12 @@ export const solicitudQueries = {
       queryKey: solicitudKeys.detail(id),
       queryFn: () => getSolicitud(id),
       enabled: Boolean(id),
+    }),
+
+  adjuntos: (solicitudId: string, params?: PageParams) =>
+    queryOptions({
+      queryKey: solicitudKeys.adjuntosList(solicitudId, params ?? {}),
+      queryFn: () => listAdjuntos(solicitudId, params),
+      enabled: Boolean(solicitudId),
     }),
 }
