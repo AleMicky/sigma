@@ -1,9 +1,10 @@
-package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.TipoActivoEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.mapper.TipoActivoPersistenceMapper;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringTipoActivoRepository;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;

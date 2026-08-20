@@ -1,10 +1,11 @@
-package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.activos.domain.model.ActivoAsignacion;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoAsignacionRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoAsignacionSearchCriteria;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoAsignacionEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.mapper.ActivoAsignacionPersistenceMapper;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAsignacionRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.specification.ActivoAsignacionSpecifications;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;

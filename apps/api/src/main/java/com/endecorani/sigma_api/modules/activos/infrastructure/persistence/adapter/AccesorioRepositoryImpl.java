@@ -1,9 +1,10 @@
-package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.activos.domain.model.Accesorio;
 import com.endecorani.sigma_api.modules.activos.domain.repository.AccesorioRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.AccesorioEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.mapper.AccesorioPersistenceMapper;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringAccesorioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

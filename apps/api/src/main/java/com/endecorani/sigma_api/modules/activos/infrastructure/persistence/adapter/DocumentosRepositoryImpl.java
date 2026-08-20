@@ -1,10 +1,11 @@
-package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository;
+package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.activos.domain.model.Documentos;
 import com.endecorani.sigma_api.modules.activos.domain.repository.DocumentosRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.DocumentosSearchCriteria;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.DocumentosEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.mapper.DocumentosPersistenceMapper;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringDocumentosRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.specification.DocumentosSpecifications;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
