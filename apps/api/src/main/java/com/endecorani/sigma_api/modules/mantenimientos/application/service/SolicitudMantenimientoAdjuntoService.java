@@ -8,6 +8,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.Solicit
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.application.storage.DocumentStorageService;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Set;
 import java.util.UUID;
@@ -23,9 +25,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SolicitudMantenimientoAdjuntoService {
 
-    private static final int NOMBRE_ARCHIVO_MAX_LENGTH = 255;
-    private static final int TIPO_CONTENIDO_MAX_LENGTH = 100;
-    private static final int URL_MAX_LENGTH = 1000;
+    private static final String ADJUNTO_FOLDER =
+            "solicitud_mantenimiento_adjuntos";
     private static final int DESCRIPCION_MAX_LENGTH = 500;
 
     private static final Set<String> SORT_FIELDS = Set.of(
@@ -40,37 +41,40 @@ public class SolicitudMantenimientoAdjuntoService {
     private final SolicitudMantenimientoAdjuntoRepository repository;
     private final SolicitudMantenimientoRepository
             solicitudMantenimientoRepository;
+    private final DocumentStorageService documentStorageService;
 
     @Transactional
-    public SolicitudMantenimientoAdjuntoResponse create(
-            SolicitudMantenimientoAdjuntoRequest request
+    public SolicitudMantenimientoAdjuntoResponse createWithFile(
+            UUID solicitudMantenimientoId,
+            SolicitudMantenimientoAdjuntoRequest request,
+            MultipartFile file
     ) {
         requireSolicitudMantenimientoExists(
-                request.solicitudMantenimientoId()
+                solicitudMantenimientoId
         );
 
-        String nombreArchivo =
-                requireNormalizedNombreArchivo(
-                        request.nombreArchivo()
+        UUID fileId = UUID.randomUUID();
+        DocumentStorageService.StoredFile stored =
+                documentStorageService.store(
+                        ADJUNTO_FOLDER,
+                        fileId,
+                        file
                 );
-        String tipoContenido =
-                requireNormalizedTipoContenido(
-                        request.tipoContenido()
-                );
-        String url = requireNormalizedUrl(request.url());
 
         SolicitudMantenimientoAdjunto domain =
                 SolicitudMantenimientoAdjunto.builder()
                         .solicitudMantenimientoId(
-                                request.solicitudMantenimientoId()
+                                solicitudMantenimientoId
                         )
-                        .nombreArchivo(nombreArchivo)
-                        .tipoContenido(tipoContenido)
-                        .size(request.size())
-                        .url(url)
+                        .nombreArchivo(stored.nombreOriginal())
+                        .tipoContenido(stored.mimeType())
+                        .size(stored.tamanoBytes())
+                        .url(stored.publicUrl())
                         .descripcion(
                                 StringUtils.normalize(
-                                        request.descripcion()
+                                        request != null
+                                                ? request.descripcion()
+                                                : null
                                 )
                         )
                         .build();
@@ -79,37 +83,28 @@ public class SolicitudMantenimientoAdjuntoService {
     }
 
     @Transactional
-    public SolicitudMantenimientoAdjuntoResponse update(
+    public SolicitudMantenimientoAdjuntoResponse replaceFile(
             UUID id,
-            SolicitudMantenimientoAdjuntoRequest request
+            MultipartFile file
     ) {
-        requireSolicitudMantenimientoExists(
-                request.solicitudMantenimientoId()
-        );
-
         SolicitudMantenimientoAdjunto domain =
                 findDomainById(id);
 
-        String nombreArchivo =
-                requireNormalizedNombreArchivo(
-                        request.nombreArchivo()
+        DocumentStorageService.StoredFile stored =
+                documentStorageService.store(
+                        ADJUNTO_FOLDER,
+                        domain.getId(),
+                        file
                 );
-        String tipoContenido =
-                requireNormalizedTipoContenido(
-                        request.tipoContenido()
-                );
-        String url = requireNormalizedUrl(request.url());
 
-        domain.setSolicitudMantenimientoId(
-                request.solicitudMantenimientoId()
-        );
-        domain.setNombreArchivo(nombreArchivo);
-        domain.setTipoContenido(tipoContenido);
-        domain.setSize(request.size());
-        domain.setUrl(url);
-        domain.setDescripcion(
-                StringUtils.normalize(request.descripcion())
-        );
+        if (domain.getUrl() != null) {
+            documentStorageService.delete(domain.getUrl());
+        }
+
+        domain.setNombreArchivo(stored.nombreOriginal());
+        domain.setTipoContenido(stored.mimeType());
+        domain.setSize(stored.tamanoBytes());
+        domain.setUrl(stored.publicUrl());
 
         return toResponse(repository.save(domain));
     }
@@ -144,7 +139,13 @@ public class SolicitudMantenimientoAdjuntoService {
 
     @Transactional
     public void delete(UUID id) {
-        findDomainById(id);
+        SolicitudMantenimientoAdjunto domain =
+                findDomainById(id);
+
+        if (domain.getUrl() != null) {
+            documentStorageService.delete(domain.getUrl());
+        }
+
         repository.deleteById(id);
     }
 
@@ -168,56 +169,6 @@ public class SolicitudMantenimientoAdjuntoService {
                     id
             );
         }
-    }
-
-    private String requireNormalizedNombreArchivo(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized == null
-                || normalized.length() < 1
-                || normalized.length()
-                > NOMBRE_ARCHIVO_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_ADJUNTO_NOMBRE_ARCHIVO",
-                    "El nombre del archivo debe tener entre 1 y %d caracteres"
-                            .formatted(NOMBRE_ARCHIVO_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private String requireNormalizedTipoContenido(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized == null
-                || normalized.length() < 1
-                || normalized.length()
-                > TIPO_CONTENIDO_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_ADJUNTO_TIPO_CONTENIDO",
-                    "El tipo de contenido debe tener entre 1 y %d caracteres"
-                            .formatted(TIPO_CONTENIDO_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
-    }
-
-    private String requireNormalizedUrl(String value) {
-        String normalized = StringUtils.normalize(value);
-
-        if (normalized == null
-                || normalized.length() < 1
-                || normalized.length() > URL_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_ADJUNTO_URL",
-                    "La URL debe tener entre 1 y %d caracteres"
-                            .formatted(URL_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
     }
 
     private SolicitudMantenimientoAdjuntoResponse toResponse(

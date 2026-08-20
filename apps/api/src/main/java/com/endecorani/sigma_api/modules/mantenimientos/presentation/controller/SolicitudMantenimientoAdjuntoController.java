@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,10 +22,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -46,77 +48,66 @@ public class SolicitudMantenimientoAdjuntoController {
 
     private final SolicitudMantenimientoAdjuntoService service;
 
-    @PostMapping
+    @PostMapping(
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     @Operation(
             summary =
-                    "Registrar un adjunto en una solicitud de mantenimiento"
+                    "Registrar un adjunto con su archivo en una solicitud de mantenimiento"
     )
     public ResponseEntity<
             ApiResponse<
                     SolicitudMantenimientoAdjuntoResponse
                     >
-            > create(
+            > createWithFile(
             @PathVariable UUID solicitudMantenimientoId,
-            @Valid @RequestBody
-            SolicitudMantenimientoAdjuntoRequest request
+            @RequestPart("file") MultipartFile file,
+            @RequestPart(
+                    value = "data",
+                    required = false
+            ) SolicitudMantenimientoAdjuntoRequest request
     ) {
-        SolicitudMantenimientoAdjuntoRequest alignedRequest =
-                new SolicitudMantenimientoAdjuntoRequest(
-                        solicitudMantenimientoId,
-                        request.nombreArchivo(),
-                        request.tipoContenido(),
-                        request.size(),
-                        request.url(),
-                        request.descripcion()
-                );
-
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(
                         ApiResponse.success(
                                 "Registro creado correctamente",
-                                service.create(alignedRequest)
+                                service.createWithFile(
+                                        solicitudMantenimientoId,
+                                        request,
+                                        file
+                                )
                         )
                 );
     }
 
-    @PutMapping("/{id}")
+    @PostMapping(
+            value = "/{id}/archivo",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     @Operation(
             summary =
-                    "Actualizar un adjunto de una solicitud de mantenimiento"
+                    "Reemplazar el archivo de un adjunto existente"
     )
     public ResponseEntity<
             ApiResponse<
                     SolicitudMantenimientoAdjuntoResponse
                     >
-            > update(
-            @PathVariable UUID solicitudMantenimientoId,
+            > replaceFile(
             @PathVariable UUID id,
-            @Valid @RequestBody
-            SolicitudMantenimientoAdjuntoRequest request
+            @RequestPart("file") MultipartFile file
     ) {
-        SolicitudMantenimientoAdjuntoRequest alignedRequest =
-                new SolicitudMantenimientoAdjuntoRequest(
-                        solicitudMantenimientoId,
-                        request.nombreArchivo(),
-                        request.tipoContenido(),
-                        request.size(),
-                        request.url(),
-                        request.descripcion()
-                );
-
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        "Registro actualizado correctamente",
-                        service.update(id, alignedRequest)
+                        "Archivo actualizado correctamente",
+                        service.replaceFile(id, file)
                 )
         );
     }
 
     @GetMapping("/{id}")
     @Operation(
-            summary =
-                    "Obtener un adjunto por id"
+            summary = "Obtener un adjunto por id"
     )
     public ResponseEntity<
             ApiResponse<
