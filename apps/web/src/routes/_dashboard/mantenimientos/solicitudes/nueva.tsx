@@ -5,9 +5,5 @@ import { SolicitudFormPage } from "@/modules/mantenimientos/solicitud/pages/Soli
 export const Route = createFileRoute(
   "/_dashboard/mantenimientos/solicitudes/nueva",
 )({
-  component: SolicitudNuevaRoute,
+  component: SolicitudFormPage,
 })
-
-function SolicitudNuevaRoute() {
-  return <SolicitudFormPage />
-}

@@ -53,7 +53,10 @@ export function SolicitudesPage() {
     }),
   )
 
-  const solicitudes = solicitudesQuery.data?.content ?? []
+  const solicitudes = useMemo(
+    () => solicitudesQuery.data?.content ?? [],
+    [solicitudesQuery.data?.content],
+  )
 
   const borradorCount = useMemo(
     () =>

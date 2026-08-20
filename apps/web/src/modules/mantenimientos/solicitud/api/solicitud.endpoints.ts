@@ -2,10 +2,6 @@ import { createResourceEndpoints } from "@/shared/api"
 
 export const solicitudEndpoints = {
   ...createResourceEndpoints("/solicitudes-mantenimiento"),
-  byActivo: "/solicitudes-mantenimiento",
-  byEstado: "/solicitudes-mantenimiento",
-  bySolicitante: "/solicitudes-mantenimiento",
-  byResponsable: "/solicitudes-mantenimiento",
   adjuntos: {
     list: (solicitudId: string) => `/solicitudes-mantenimiento/${solicitudId}/adjuntos`,
     create: (solicitudId: string) => `/solicitudes-mantenimiento/${solicitudId}/adjuntos`,

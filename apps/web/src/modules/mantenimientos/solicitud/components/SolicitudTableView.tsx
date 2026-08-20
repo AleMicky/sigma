@@ -22,7 +22,7 @@ import type { SolicitudMantenimiento } from "../api/solicitud.service"
 import {
   getEstadoBadgeStyles,
   getPrioridadBadgeStyles,
-} from "./SolicitudCard"
+} from "../lib/solicitud.utils"
 
 type SolicitudTableViewProps = {
   solicitudes: SolicitudMantenimiento[]

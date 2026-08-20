@@ -63,38 +63,13 @@ import {
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudPayload } from "../api/solicitud.service"
 import {
+  getEstadoBadgeVariant,
+  getPrioridadDotColor,
+} from "../lib/solicitud.utils"
+import {
   defaultSolicitudValues,
   solicitudSchema,
 } from "../schemas/solicitud.schema"
-
-function getPrioridadDotColor(nivel: number) {
-  switch (nivel) {
-    case 5:
-      return "bg-rose-500 text-rose-500"
-    case 4:
-      return "bg-amber-500 text-amber-500"
-    case 3:
-      return "bg-yellow-500 text-yellow-500"
-    case 2:
-      return "bg-blue-500 text-blue-500"
-    default:
-      return "bg-emerald-500 text-emerald-500"
-  }
-}
-
-function getEstadoBadgeVariant(estado: string) {
-  const est = (estado || "").toLowerCase()
-  if (est === "aprobado" || est === "completado" || est === "finalizado") {
-    return "default"
-  }
-  if (est === "en_proceso" || est === "en proceso") {
-    return "secondary"
-  }
-  if (est === "rechazado" || est === "cancelado") {
-    return "destructive"
-  }
-  return "outline"
-}
 
 type SolicitudFormPageProps = {
   solicitudId?: string
