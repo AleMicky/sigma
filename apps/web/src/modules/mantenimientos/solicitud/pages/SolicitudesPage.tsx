@@ -184,9 +184,9 @@ export function SolicitudesPage() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2">
         {solicitudesQuery.isLoading ? (
           <ListSkeleton
-            rows={6}
-            rowClassName="h-36 rounded-2xl"
-            className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3"
+            rows={8}
+            rowClassName="h-40 rounded-2xl"
+            className="grid grid-cols-1 gap-3.5 p-0.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
           />
         ) : solicitudesQuery.isError ? (
           <EmptyState
@@ -237,7 +237,7 @@ export function SolicitudesPage() {
                 solicitudesQuery.isFetching && "opacity-70",
               )}
             >
-              <ul className="grid grid-cols-1 content-start gap-3 p-0.5 sm:grid-cols-2 xl:grid-cols-3">
+              <ul className="grid grid-cols-1 content-start gap-3.5 p-0.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 {solicitudes.map((item) => (
                   <SolicitudCard
                     key={item.id}
