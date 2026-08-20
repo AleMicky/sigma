@@ -43,13 +43,73 @@ export function getPrioridadDotColor(nivel: number) {
     case 5:
       return "bg-rose-500 text-rose-500"
     case 4:
-      return "bg-amber-500 text-amber-500"
+      return "bg-orange-500 text-orange-500"
     case 3:
-      return "bg-yellow-500 text-yellow-500"
+      return "bg-amber-500 text-amber-500"
     case 2:
       return "bg-blue-500 text-blue-500"
     default:
       return "bg-emerald-500 text-emerald-500"
+  }
+}
+
+export type PrioridadColorConfig = {
+  dotClass: string
+  textClass: string
+  borderClass: string
+  alertClass: string
+  badgeClass: string
+  defaultDescription: string
+}
+
+export function getPrioridadColorConfig(nivel = 1): PrioridadColorConfig {
+  switch (nivel) {
+    case 5:
+      return {
+        dotClass: "bg-rose-500",
+        textClass: "text-rose-600 dark:text-rose-400",
+        borderClass: "border-rose-500/50 ring-1 ring-rose-500/20 bg-rose-500/5",
+        alertClass: "bg-rose-500/10 border-rose-500/30 text-rose-900 dark:text-rose-200",
+        badgeClass: "bg-rose-600 text-white",
+        defaultDescription: "Atención inmediata requerida. Riesgo inminente de parada operativa o afectación a la seguridad.",
+      }
+    case 4:
+      return {
+        dotClass: "bg-orange-500",
+        textClass: "text-orange-600 dark:text-orange-400",
+        borderClass: "border-orange-500/50 ring-1 ring-orange-500/20 bg-orange-500/5",
+        alertClass: "bg-orange-500/10 border-orange-500/30 text-orange-900 dark:text-orange-200",
+        badgeClass: "bg-orange-600 text-white",
+        defaultDescription: "Atención con alta celeridad. Afecta directamente la operatividad y debe resolverse a la brevedad.",
+      }
+    case 3:
+      return {
+        dotClass: "bg-amber-500",
+        textClass: "text-amber-600 dark:text-amber-400",
+        borderClass: "border-amber-500/50 ring-1 ring-amber-500/20 bg-amber-500/5",
+        alertClass: "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200",
+        badgeClass: "bg-amber-600 text-white",
+        defaultDescription: "Planificación prioritaria dentro del turno o jornada de trabajo regular.",
+      }
+    case 2:
+      return {
+        dotClass: "bg-blue-500",
+        textClass: "text-blue-600 dark:text-blue-400",
+        borderClass: "border-blue-500/50 ring-1 ring-blue-500/20 bg-blue-500/5",
+        alertClass: "bg-blue-500/10 border-blue-500/30 text-blue-900 dark:text-blue-200",
+        badgeClass: "bg-blue-600 text-white",
+        defaultDescription: "Atención estándar y programable según el flujo habitual de trabajo.",
+      }
+    case 1:
+    default:
+      return {
+        dotClass: "bg-emerald-500",
+        textClass: "text-emerald-600 dark:text-emerald-400",
+        borderClass: "border-emerald-500/50 ring-1 ring-emerald-500/20 bg-emerald-500/5",
+        alertClass: "bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200",
+        badgeClass: "bg-emerald-600 text-white",
+        defaultDescription: "Mantenimiento preventivo o de impacto menor sin riesgo operativo inmediato.",
+      }
   }
 }
 

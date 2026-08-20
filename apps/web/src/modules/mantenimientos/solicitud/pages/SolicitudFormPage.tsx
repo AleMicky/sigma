@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
 import {
+  AlertTriangle,
   ArrowLeft,
   Box,
   Briefcase,
@@ -64,7 +65,7 @@ import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudPayload } from "../api/solicitud.service"
 import {
   getEstadoBadgeVariant,
-  getPrioridadDotColor,
+  getPrioridadColorConfig,
   getTipoMantenimientoBadgeClass,
 } from "../lib/solicitud.utils"
 import {
@@ -200,6 +201,11 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     }
     return list
   }, [tiposMantenimiento, singleTipoMantenimientoQuery.data])
+
+  const tiposMantenimientoMap = useMemo(
+    () => new Map(tiposMantenimientoList.map((t) => [t.id, t])),
+    [tiposMantenimientoList],
+  )
 
   // Fetch Empleados (Solicitante)
   const empleadosQuery = useQuery(
@@ -561,6 +567,9 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
                     const selected = prioridadesMap.get(field.state.value)
+                    const cfg = selected
+                      ? getPrioridadColorConfig(selected.nivel)
+                      : null
 
                     return (
                       <Field data-invalid={isInvalid || undefined}>
@@ -577,44 +586,44 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           <SelectTrigger
                             id={field.name}
                             aria-invalid={isInvalid}
-                            className="w-full h-10 shadow-2xs text-sm"
+                            className={cn(
+                              "w-full h-10 shadow-2xs text-sm transition-all",
+                              cfg && cfg.borderClass,
+                            )}
                           >
                             <SelectValue placeholder="Seleccionar Prioridad">
-                              {selected ? (
+                              {selected && cfg ? (
                                 <div className="flex items-center gap-2 truncate">
                                   <span
-                                    className={`size-2.5 rounded-full inline-block shrink-0 ${getPrioridadDotColor(selected.nivel).split(" ")[0]}`}
+                                    className={`size-2.5 rounded-full inline-block shrink-0 ${cfg.dotClass}`}
                                   />
-                                  <span className="truncate font-medium text-foreground">
+                                  <span className="truncate font-semibold text-foreground text-xs">
                                     {selected.nombre}
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground">
-                                    ({selected.codigo})
                                   </span>
                                 </div>
                               ) : null}
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent className="max-h-60">
-                            {prioridadesList.map((p) => (
-                              <SelectItem
-                                key={p.id}
-                                value={p.id}
-                                className="text-xs cursor-pointer py-2"
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span
-                                    className={`size-2.5 rounded-full inline-block shrink-0 ${getPrioridadDotColor(p.nivel).split(" ")[0]}`}
-                                  />
-                                  <span className="truncate font-medium text-foreground">
-                                    {p.nombre}
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground font-mono">
-                                    ({p.codigo})
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
+                            {prioridadesList.map((p) => {
+                              const pCfg = getPrioridadColorConfig(p.nivel)
+                              return (
+                                <SelectItem
+                                  key={p.id}
+                                  value={p.id}
+                                  className="text-xs cursor-pointer py-2.5"
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span
+                                      className={`size-2.5 rounded-full inline-block shrink-0 ${pCfg.dotClass}`}
+                                    />
+                                    <span className="truncate font-medium text-foreground">
+                                      {p.nombre}
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              )
+                            })}
                           </SelectContent>
                         </Select>
                         {isInvalid && (
@@ -1194,6 +1203,166 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 ) : null}
               </div>
             </div>
+
+            {/* SECCIÓN 4: RESUMEN DE LA SOLICITUD (Visible solo cuando el formulario está completo) */}
+            <form.Subscribe
+              selector={(state) => ({
+                titulo: state.values.titulo,
+                tipoMantenimientoId: state.values.tipoMantenimientoId,
+                prioridadId: state.values.prioridadId,
+                solicitanteId: state.values.solicitanteId,
+                activoId: state.values.activoId,
+                fechaSolicitud: state.values.fechaSolicitud,
+                descripcion: state.values.descripcion,
+              })}
+            >
+              {(values) => {
+                const isFormComplete = Boolean(
+                  values.titulo?.trim() &&
+                  values.tipoMantenimientoId &&
+                  values.prioridadId &&
+                  values.solicitanteId &&
+                  values.activoId &&
+                  values.descripcion?.trim(),
+                )
+
+                if (!isFormComplete) return null
+
+                const selectedTipo = tiposMantenimientoMap.get(values.tipoMantenimientoId)
+                const selectedPrioridad = prioridadesMap.get(values.prioridadId)
+                const selectedEmpleado = empleadosMap.get(values.solicitanteId)
+                const selectedActivo = activosMap.get(values.activoId)
+                const cfg = selectedPrioridad
+                  ? getPrioridadColorConfig(selectedPrioridad.nivel)
+                  : getPrioridadColorConfig(1)
+
+                const totalAdjuntos = selectedFiles.length + (solicitud?.adjuntos?.length ?? 0)
+
+                return (
+                  <div className="p-5 sm:p-7 pt-2 space-y-4 animate-in fade-in-50 duration-300 slide-in-from-bottom-2">
+                    <div
+                      className={cn(
+                        "rounded-2xl border p-4 sm:p-5 transition-all shadow-2xs space-y-3.5",
+                        selectedPrioridad
+                          ? cfg.alertClass
+                          : "bg-muted/30 border-border/80 text-foreground",
+                      )}
+                    >
+                      {/* Header del Resumen */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-inherit/20 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background/80 shadow-2xs">
+                            {selectedPrioridad && selectedPrioridad.nivel >= 4 ? (
+                              <AlertTriangle className="size-4 text-inherit" />
+                            ) : (
+                              <FileText className="size-4 text-inherit" />
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-xs sm:text-sm tracking-tight text-inherit">
+                              Resumen de la Solicitud
+                            </h3>
+                            <p className="text-[11px] opacity-80">
+                              Todos los campos requeridos han sido completados. Verifica la información antes de registrar.
+                            </p>
+                          </div>
+                        </div>
+
+                        {selectedPrioridad && (
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={cn(
+                                "text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs",
+                                cfg.badgeClass,
+                              )}
+                            >
+                              Prioridad {selectedPrioridad.nombre} (Nivel {selectedPrioridad.nivel})
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Resumen de Campos en Formato de Texto Limpio */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3.5 py-1 text-xs">
+                        {/* Título */}
+                        <div className="space-y-0.5 min-w-0">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                            Título:
+                          </span>
+                          <p className="font-semibold text-foreground truncate">
+                            {values.titulo?.trim() || "Sin título especificado"}
+                          </p>
+                        </div>
+
+                        {/* Tipo de Mantenimiento */}
+                        <div className="space-y-0.5 min-w-0">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                            Tipo de Mantenimiento:
+                          </span>
+                          <p className="font-semibold text-foreground">
+                            {selectedTipo?.nombre || "No seleccionado"}
+                          </p>
+                        </div>
+
+                        {/* Activo / Ubicación */}
+                        <div className="space-y-0.5 min-w-0">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                            Activo / Ubicación:
+                          </span>
+                          <p className="font-semibold text-foreground truncate">
+                            {selectedActivo
+                              ? `${selectedActivo.nombre} (${selectedActivo.ubicacion?.nombre || "Sin ubicación"})`
+                              : "No seleccionado"}
+                          </p>
+                        </div>
+
+                        {/* Personal Solicitante */}
+                        <div className="space-y-0.5 min-w-0">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                            Personal Solicitante:
+                          </span>
+                          <p className="font-semibold text-foreground truncate">
+                            {selectedEmpleado
+                              ? `${selectedEmpleado.personaNombreCompleto || selectedEmpleado.codigo}${selectedEmpleado.cargoNombre ? ` (${selectedEmpleado.cargoNombre})` : ""}`
+                              : "No seleccionado"}
+                          </p>
+                        </div>
+
+                        {/* Fecha de Solicitud */}
+                        <div className="space-y-0.5 min-w-0">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                            Fecha de Registro:
+                          </span>
+                          <p className="font-semibold text-foreground">
+                            {values.fechaSolicitud || "Hoy"}
+                          </p>
+                        </div>
+
+                        {/* Archivos Adjuntos */}
+                        <div className="space-y-0.5 min-w-0">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                            Adjuntos:
+                          </span>
+                          <p className="font-semibold text-foreground">
+                            {totalAdjuntos > 0
+                              ? `${totalAdjuntos} archivo(s) listo(s)`
+                              : "Ningún archivo adjunto"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Nota de Prioridad / Descripción */}
+                      {selectedPrioridad && (
+                        <div className="pt-1 text-[11px] opacity-90 leading-relaxed border-t border-inherit/20">
+                          <span className="font-bold mr-1">Impacto & Nivel de Atención:</span>
+                          {selectedPrioridad.descripcion || cfg.defaultDescription}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              }}
+            </form.Subscribe>
 
             {/* FOOTER DE ACCIONES */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-muted/30 p-5 sm:px-7 rounded-b-2xl">
