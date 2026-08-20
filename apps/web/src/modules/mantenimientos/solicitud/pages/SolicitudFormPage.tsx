@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query"
 import {
   ArrowLeft,
   Box,
+  Briefcase,
+  Building2,
   Calendar,
   FileText,
   HelpCircle,
@@ -93,7 +95,6 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
   const [formError, setFormError] = useState<string | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
-  const [isChangingActivo, setIsChangingActivo] = useState(false)
 
   const currentActivoId = solicitud?.activo?.id ?? ""
   const currentTipoMantenimientoId = solicitud?.tipoMantenimiento?.id ?? ""
@@ -242,6 +243,15 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     const month = String(now.getMonth() + 1).padStart(2, "0")
     const day = String(now.getDate()).padStart(2, "0")
     return `${year}-${month}-${day}`
+  }
+
+  function getInitials(name?: string | null) {
+    if (!name) return "EM"
+    const parts = name.trim().split(" ").filter(Boolean)
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+    }
+    return name.substring(0, 2).toUpperCase()
   }
 
   const form = useForm({
@@ -625,15 +635,15 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-foreground tracking-tight">
-                    Información del Solicitante
+                    Personal Responsable
                   </h2>
                   <p className="text-xs text-muted-foreground">
-                    Identifica a la persona o departamento responsable de la solicitud.
+                    Persona o área encargada de reportar y gestionar la solicitud.
                   </p>
                 </div>
               </div>
 
-              {/* Solicitante Combobox */}
+              {/* Solicitante Selector */}
               <form.Field name="solicitanteId">
                 {(field) => {
                   const isInvalid =
@@ -644,70 +654,149 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                   return (
                     <Field data-invalid={isInvalid || undefined}>
                       <RequiredFieldLabel htmlFor={field.name}>
-                        Área / Nombre del Solicitante
+                        Personal Solicitante
                       </RequiredFieldLabel>
-                      <Combobox
-                        items={empleadosList}
-                        itemToStringLabel={(item: Empleado) =>
-                          item
-                            ? `${item.personaNombreCompleto || item.codigo}${item.cargoNombre ? ` (${item.cargoNombre})` : ""}`
-                            : ""
-                        }
-                        itemToStringValue={(item: Empleado) => item?.id ?? ""}
-                        value={selectedEmpleado}
-                        onValueChange={(val: Empleado | null) => {
-                          field.handleChange(val?.id ?? "")
-                        }}
-                        disabled={empleadosQuery.isLoading}
-                      >
-                        <ComboboxInput
-                          id={field.name}
-                          placeholder={
-                            empleadosQuery.isLoading
-                              ? "Cargando empleados..."
-                              : "Seleccionar Solicitante..."
-                          }
-                          showClear={Boolean(field.state.value)}
-                          aria-invalid={isInvalid}
-                          className="w-full h-10 text-sm shadow-2xs"
-                        />
-                        <ComboboxContent className="z-50 max-h-64 min-w-[320px]">
-                          <ComboboxEmpty>
-                            {empleadosQuery.isLoading ? (
-                              <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
-                                <Loader2 className="size-3.5 animate-spin" />
-                                <span>Cargando empleados...</span>
+
+                      {selectedEmpleado ? (
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/20 p-2.5 shadow-2xs hover:border-primary/40 hover:bg-muted/30 transition-all">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Avatar con iniciales */}
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-bold text-sm border border-primary/20 shadow-xs">
+                              {getInitials(selectedEmpleado.personaNombreCompleto || selectedEmpleado.codigo)}
+                            </div>
+
+                            {/* Datos del Solicitante */}
+                            <div className="min-w-0 space-y-0.5">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                                  {selectedEmpleado.codigo}
+                                </code>
+                                <span className="font-semibold text-xs text-foreground truncate">
+                                  {selectedEmpleado.personaNombreCompleto || selectedEmpleado.codigo}
+                                </span>
                               </div>
-                            ) : (
-                              "No se encontraron empleados."
-                            )}
-                          </ComboboxEmpty>
-                          <ComboboxList>
-                            {(item: Empleado) => (
-                              <ComboboxItem
-                                key={item.id}
-                                value={item}
-                                className="text-xs py-2"
-                              >
-                                <div className="flex items-center gap-2 truncate">
-                                  <User className="size-3.5 text-muted-foreground shrink-0" />
-                                  <code className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
-                                    {item.codigo}
-                                  </code>
-                                  <span className="font-medium text-foreground truncate">
-                                    {item.personaNombreCompleto || item.codigo}
-                                  </span>
-                                  {item.cargoNombre ? (
-                                    <span className="ml-auto text-[10px] text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded shrink-0">
-                                      {item.cargoNombre}
-                                    </span>
-                                  ) : null}
+
+                              <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
+                                {selectedEmpleado.cargoNombre && (
+                                  <div className="flex items-center gap-1 font-medium text-foreground/80 truncate">
+                                    <Briefcase className="size-3 text-primary shrink-0" />
+                                    <span className="truncate">{selectedEmpleado.cargoNombre}</span>
+                                  </div>
+                                )}
+                                {selectedEmpleado.areaNombre && (
+                                  <>
+                                    <span className="text-muted-foreground/40">•</span>
+                                    <div className="flex items-center gap-1 truncate text-muted-foreground">
+                                      <Building2 className="size-3 shrink-0" />
+                                      <span className="truncate">{selectedEmpleado.areaNombre}</span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Acciones */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => field.handleChange("")}
+                              className="size-8 text-muted-foreground hover:text-destructive shrink-0"
+                            >
+                              <X className="size-4" />
+                              <span className="sr-only">Remover</span>
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Combobox
+                          items={empleadosList}
+                          itemToStringLabel={(item: Empleado) =>
+                            item
+                              ? `${item.personaNombreCompleto || item.codigo}${item.cargoNombre ? ` - ${item.cargoNombre}` : ""}`
+                              : ""
+                          }
+                          itemToStringValue={(item: Empleado) => item?.id ?? ""}
+                          value={selectedEmpleado}
+                          onValueChange={(val: Empleado | null) => {
+                            field.handleChange(val?.id ?? "")
+                          }}
+                          disabled={empleadosQuery.isLoading}
+                        >
+                          <ComboboxInput
+                            id={field.name}
+                            placeholder={
+                              empleadosQuery.isLoading
+                                ? "Cargando personal..."
+                                : "Buscar solicitante por nombre, código o cargo..."
+                            }
+                            showClear={Boolean(field.state.value)}
+                            aria-invalid={isInvalid}
+                            className="w-full h-10 text-sm shadow-2xs"
+                          />
+                          <ComboboxContent className="z-50 max-h-72 min-w-[340px] sm:min-w-[440px]">
+                            <ComboboxEmpty>
+                              {empleadosQuery.isLoading ? (
+                                <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+                                  <Loader2 className="size-3.5 animate-spin" />
+                                  <span>Cargando personal...</span>
                                 </div>
-                              </ComboboxItem>
-                            )}
-                          </ComboboxList>
-                        </ComboboxContent>
-                      </Combobox>
+                              ) : (
+                                "No se encontraron resultados."
+                              )}
+                            </ComboboxEmpty>
+                            <ComboboxList>
+                              {(item: Empleado) => (
+                                <ComboboxItem
+                                  key={item.id}
+                                  value={item}
+                                  className="text-xs py-2.5 px-3 cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-3 w-full min-w-0">
+                                    {/* Avatar */}
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs border border-primary/15 shadow-2xs">
+                                      {getInitials(item.personaNombreCompleto || item.codigo)}
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0 space-y-0.5">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.2 rounded shrink-0">
+                                          {item.codigo}
+                                        </code>
+                                        <span className="font-semibold text-foreground truncate text-xs">
+                                          {item.personaNombreCompleto || item.codigo}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
+                                        {item.cargoNombre && (
+                                          <div className="flex items-center gap-1 font-medium text-foreground/75 truncate">
+                                            <Briefcase className="size-3 text-primary/80 shrink-0" />
+                                            <span className="truncate">{item.cargoNombre}</span>
+                                          </div>
+                                        )}
+                                        {item.areaNombre && (
+                                          <>
+                                            <span className="text-muted-foreground/40">•</span>
+                                            <div className="flex items-center gap-1 truncate text-muted-foreground">
+                                              <Building2 className="size-3 shrink-0" />
+                                              <span className="truncate">{item.areaNombre}</span>
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </ComboboxItem>
+                              )}
+                            </ComboboxList>
+                          </ComboboxContent>
+                        </Combobox>
+                      )}
+
                       {isInvalid && (
                         <FieldError errors={field.state.meta.errors} />
                       )}
@@ -748,7 +837,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           Activo / Ubicación
                         </RequiredFieldLabel>
 
-                        {selectedActivo && !isChangingActivo ? (
+                        {selectedActivo ? (
                           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/20 p-2.5 shadow-2xs hover:border-primary/40 hover:bg-muted/30 transition-all">
                             <div className="flex items-center gap-3 min-w-0">
                               {/* Foto / Miniatura */}
@@ -801,139 +890,107 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                             <div className="flex items-center gap-1.5 shrink-0">
                               <Button
                                 type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setIsChangingActivo(true)}
-                                className="h-8 text-xs font-medium px-3"
-                              >
-                                Cambiar
-                              </Button>
-                              <Button
-                                type="button"
                                 variant="ghost"
                                 size="icon-sm"
-                                onClick={() => {
-                                  field.handleChange("")
-                                  setIsChangingActivo(true)
-                                }}
+                                onClick={() => field.handleChange("")}
                                 className="size-8 text-muted-foreground hover:text-destructive shrink-0"
                               >
-                                <X className="size-3.5" />
+                                <X className="size-4" />
                                 <span className="sr-only">Remover</span>
                               </Button>
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-1.5">
-                            <Combobox
-                              items={activosList}
-                              itemToStringLabel={(item: Activo) =>
-                                item ? `${item.codigo} - ${item.nombre}` : ""
+                          <Combobox
+                            items={activosList}
+                            itemToStringLabel={(item: Activo) =>
+                              item ? `${item.codigo} - ${item.nombre}` : ""
+                            }
+                            itemToStringValue={(item: Activo) => item?.id ?? ""}
+                            value={selectedActivo}
+                            onValueChange={(val: Activo | null) => {
+                              field.handleChange(val?.id ?? "")
+                            }}
+                            disabled={activosQuery.isLoading}
+                          >
+                            <ComboboxInput
+                              id={field.name}
+                              placeholder={
+                                activosQuery.isLoading
+                                  ? "Cargando activos..."
+                                  : "Buscar activo por código, nombre o ubicación..."
                               }
-                              itemToStringValue={(item: Activo) => item?.id ?? ""}
-                              value={selectedActivo}
-                              onValueChange={(val: Activo | null) => {
-                                field.handleChange(val?.id ?? "")
-                                if (val) {
-                                  setIsChangingActivo(false)
-                                }
-                              }}
-                              disabled={activosQuery.isLoading}
-                            >
-                              <ComboboxInput
-                                id={field.name}
-                                placeholder={
-                                  activosQuery.isLoading
-                                    ? "Cargando activos..."
-                                    : "Buscar activo por código, nombre o ubicación..."
-                                }
-                                showClear={Boolean(field.state.value)}
-                                aria-invalid={isInvalid}
-                                className="w-full h-10 text-sm shadow-2xs"
-                                autoFocus={isChangingActivo}
-                              />
-                              <ComboboxContent className="z-50 max-h-72 min-w-[340px] sm:min-w-[440px]">
-                                <ComboboxEmpty>
-                                  {activosQuery.isLoading ? (
-                                    <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
-                                      <Loader2 className="size-3.5 animate-spin" />
-                                      <span>Cargando activos...</span>
-                                    </div>
-                                  ) : (
-                                    "No se encontraron activos."
-                                  )}
-                                </ComboboxEmpty>
-                                <ComboboxList>
-                                  {(item: Activo) => (
-                                    <ComboboxItem
-                                      key={item.id}
-                                      value={item}
-                                      className="text-xs py-2.5 px-3 cursor-pointer"
-                                    >
-                                      <div className="flex items-center gap-3 w-full min-w-0">
-                                        {/* Miniatura de la Foto */}
-                                        <div className="relative size-10 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/50 flex items-center justify-center">
-                                          {item.urlImagen ? (
-                                            <AuthenticatedImage
-                                              src={item.urlImagen}
-                                              alt={item.nombre}
-                                              className="size-full object-cover"
-                                              fallback={
-                                                <Box className="size-5 text-muted-foreground/60" />
-                                              }
-                                            />
-                                          ) : (
-                                            <Box className="size-5 text-muted-foreground/60" />
-                                          )}
+                              showClear={Boolean(field.state.value)}
+                              aria-invalid={isInvalid}
+                              className="w-full h-10 text-sm shadow-2xs"
+                            />
+                            <ComboboxContent className="z-50 max-h-72 min-w-[340px] sm:min-w-[440px]">
+                              <ComboboxEmpty>
+                                {activosQuery.isLoading ? (
+                                  <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+                                    <Loader2 className="size-3.5 animate-spin" />
+                                    <span>Cargando activos...</span>
+                                  </div>
+                                ) : (
+                                  "No se encontraron activos."
+                                )}
+                              </ComboboxEmpty>
+                              <ComboboxList>
+                                {(item: Activo) => (
+                                  <ComboboxItem
+                                    key={item.id}
+                                    value={item}
+                                    className="text-xs py-2.5 px-3 cursor-pointer"
+                                  >
+                                    <div className="flex items-center gap-3 w-full min-w-0">
+                                      {/* Miniatura de la Foto */}
+                                      <div className="relative size-10 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/50 flex items-center justify-center">
+                                        {item.urlImagen ? (
+                                          <AuthenticatedImage
+                                            src={item.urlImagen}
+                                            alt={item.nombre}
+                                            className="size-full object-cover"
+                                            fallback={
+                                              <Box className="size-5 text-muted-foreground/60" />
+                                            }
+                                          />
+                                        ) : (
+                                          <Box className="size-5 text-muted-foreground/60" />
+                                        )}
+                                      </div>
+
+                                      {/* Información del Activo */}
+                                      <div className="flex-1 min-w-0 space-y-0.5">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                                            {item.codigo}
+                                          </code>
+                                          <span className="font-semibold text-foreground truncate text-xs">
+                                            {item.nombre}
+                                          </span>
                                         </div>
 
-                                        {/* Información del Activo */}
-                                        <div className="flex-1 min-w-0 space-y-0.5">
-                                          <div className="flex items-center gap-2 min-w-0">
-                                            <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                                              {item.codigo}
-                                            </code>
-                                            <span className="font-semibold text-foreground truncate text-xs">
-                                              {item.nombre}
-                                            </span>
-                                          </div>
-
-                                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
-                                            <MapPin className="size-3 text-primary/80 shrink-0" />
-                                            <span className="truncate">
-                                              {item.ubicacion?.nombre || "Sin ubicación"}
-                                            </span>
-                                            {item.tipoActivo?.nombre ? (
-                                              <>
-                                                <span className="text-muted-foreground/40">•</span>
-                                                <span className="truncate text-muted-foreground/80">
-                                                  {item.tipoActivo.nombre}
-                                                </span>
-                                              </>
-                                            ) : null}
-                                          </div>
+                                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
+                                          <MapPin className="size-3 text-primary/80 shrink-0" />
+                                          <span className="truncate">
+                                            {item.ubicacion?.nombre || "Sin ubicación"}
+                                          </span>
+                                          {item.tipoActivo?.nombre ? (
+                                            <>
+                                              <span className="text-muted-foreground/40">•</span>
+                                              <span className="truncate text-muted-foreground/80">
+                                                {item.tipoActivo.nombre}
+                                              </span>
+                                            </>
+                                          ) : null}
                                         </div>
                                       </div>
-                                    </ComboboxItem>
-                                  )}
-                                </ComboboxList>
-                              </ComboboxContent>
-                            </Combobox>
-
-                            {isChangingActivo && selectedActivo && (
-                              <div className="flex justify-end">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="xs"
-                                  onClick={() => setIsChangingActivo(false)}
-                                  className="text-xs text-muted-foreground"
-                                >
-                                  Cancelar cambio
-                                </Button>
-                              </div>
-                            )}
-                          </div>
+                                    </div>
+                                  </ComboboxItem>
+                                )}
+                              </ComboboxList>
+                            </ComboboxContent>
+                          </Combobox>
                         )}
 
                         {isInvalid && (
