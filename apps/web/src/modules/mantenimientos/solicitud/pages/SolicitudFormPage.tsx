@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { CatalogoCombobox } from "@/shared/components/catalogo-combobox"
 import { cn } from "@/shared/lib/utils"
 
 import {
@@ -531,7 +532,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
 
               {/* Motivo de Mantenimiento y Nivel de Prioridad */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Motivo de Mantenimiento */}
+                {/* Motivo de Mantenimiento (Autocompletado desde Catálogo) */}
                 <form.Field name="motivoMantenimiento">
                   {(field) => {
                     const isInvalid =
@@ -542,16 +543,17 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         <FieldLabel htmlFor={field.name}>
                           Motivo de Mantenimiento
                         </FieldLabel>
-                        <Input
+                        <CatalogoCombobox
+                          codigo="MOTIVO_MANTENIMIENTO"
                           id={field.name}
                           name={field.name}
                           value={field.state.value}
                           onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
+                          onValueChange={(val) => field.handleChange(val)}
                           aria-invalid={isInvalid}
-                          placeholder="Describa el motivo..."
+                          placeholder="Seleccionar o describir motivo..."
                           maxLength={200}
-                          className="h-10 text-sm shadow-2xs"
+                          allowCustomValue={true}
                         />
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />

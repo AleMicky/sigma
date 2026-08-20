@@ -6,7 +6,11 @@ import {
   type CatalogoItemListFilters,
   catalogoItemKeys,
 } from "./catalogo-item.keys"
-import { getCatalogoItem, listCatalogoItems } from "./catalogo-item.service"
+import {
+  getCatalogoItem,
+  listCatalogoItems,
+  listCatalogoItemsByCodigo,
+} from "./catalogo-item.service"
 
 export const catalogoItemQueries = {
   list: (filters?: CatalogoItemListFilters) =>
@@ -30,6 +34,16 @@ export const catalogoItemQueries = {
         })
       },
       enabled: Boolean(catalogoId),
+    }),
+
+  byCodigo: (
+    codigo: string,
+    params?: PageParams & { q?: string },
+  ) =>
+    queryOptions({
+      queryKey: ["catalogo-items", "by-codigo", codigo, params] as const,
+      queryFn: () => listCatalogoItemsByCodigo(codigo, params),
+      enabled: Boolean(codigo),
     }),
 
   detail: (id: string) =>

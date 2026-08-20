@@ -1,6 +1,6 @@
-import { createCrudService } from "@/shared/api"
+import { createCrudService, http } from "@/shared/api"
 import type { AuditableEntity } from "@/shared/types/audit.types"
-import type { PageParams } from "@/shared/types/api.types"
+import type { PageParams, PageResponse } from "@/shared/types/api.types"
 
 import { catalogoItemEndpoints } from "./catalogo-item.endpoints"
 
@@ -34,3 +34,13 @@ export const getCatalogoItem = crud.get
 export const createCatalogoItem = crud.create
 export const updateCatalogoItem = crud.update
 export const deleteCatalogoItem = crud.remove
+
+export const listCatalogoItemsByCodigo = (
+  codigo: string,
+  params?: PageParams & { q?: string },
+): Promise<PageResponse<CatalogoItem>> => {
+  return http.get<PageResponse<CatalogoItem>>(
+    catalogoItemEndpoints.byCodigo(codigo),
+    { params },
+  )
+}
