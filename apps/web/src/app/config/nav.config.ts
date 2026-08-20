@@ -205,14 +205,19 @@ export const navItems: NavItem[] = [
         icon: CheckSquare,
       },
       {
-        title: "Tipos de Mantenimiento",
-        to: routes.mantenimientos.tiposMantenimiento,
-        icon: Tags,
-      },
-      {
-        title: "Prioridades",
-        to: routes.mantenimientos.prioridades,
-        icon: AlertCircle,
+        title: "Configuraciones",
+        items: [
+          {
+            title: "Tipos de Mantenimiento",
+            to: routes.mantenimientos.tiposMantenimiento,
+            icon: Tags,
+          },
+          {
+            title: "Prioridades",
+            to: routes.mantenimientos.prioridades,
+            icon: AlertCircle,
+          },
+        ],
       },
     ],
   },

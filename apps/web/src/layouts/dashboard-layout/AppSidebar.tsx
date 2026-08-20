@@ -96,6 +96,14 @@ const MODULE_THEMES: Record<
     activePill: "bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:bg-violet-500/15",
     indicatorColor: "bg-violet-500",
   },
+  Mantenimientos: {
+    iconColor: "text-orange-500 dark:text-orange-400",
+    activeIconColor: "text-orange-600 dark:text-orange-300",
+    iconBg: "bg-orange-500/10 group-hover:bg-orange-500/20",
+    activeIconBg: "bg-orange-500/20 shadow-xs",
+    activePill: "bg-orange-500/10 text-orange-700 dark:text-orange-300 hover:bg-orange-500/15",
+    indicatorColor: "bg-orange-500",
+  },
 }
 
 const DEFAULT_THEME = {
