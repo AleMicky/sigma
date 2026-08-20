@@ -70,6 +70,9 @@ export const routes = {
   mantenimientos: {
     root: "/mantenimientos",
     solicitudes: "/mantenimientos/solicitudes",
+    nuevaSolicitud: "/mantenimientos/solicitudes/nueva",
+    editarSolicitud: (solicitudId: string) =>
+      `/mantenimientos/solicitudes/${solicitudId}/editar`,
     actividades: "/mantenimientos/actividades",
     checklists: "/mantenimientos/checklists",
     tiposMantenimiento: "/mantenimientos/tipos-mantenimiento",

@@ -59,6 +59,7 @@ import { Route as DashboardMantenimientosActividadesIndexRouteImport } from './.
 import { Route as DashboardMantenimientosChecklistsIndexRouteImport } from './../../routes/_dashboard/mantenimientos/checklists/index'
 import { Route as DashboardMantenimientosPrioridadesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/prioridades/index'
 import { Route as DashboardMantenimientosSolicitudesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/index'
+import { Route as DashboardMantenimientosSolicitudesNuevaRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/nueva'
 import { Route as DashboardMantenimientosTiposMantenimientoIndexRouteImport } from './../../routes/_dashboard/mantenimientos/tipos-mantenimiento/index'
 import { Route as DashboardOrganizacionAreasIndexRouteImport } from './../../routes/_dashboard/organizacion/areas/index'
 import { Route as DashboardOrganizacionCargosIndexRouteImport } from './../../routes/_dashboard/organizacion/cargos/index'
@@ -70,6 +71,7 @@ import { Route as DashboardTiposActivoTipoActivoIdAtributosRouteImport } from '.
 import { Route as DashboardTiposActivoTipoActivoIdComponentesRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/componentes'
 import { Route as DashboardInventariosTiposInsumoTipoInsumoIdIndexRouteImport } from './../../routes/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/index'
 import { Route as DashboardInventariosTiposInsumoTipoInsumoIdAtributosRouteImport } from './../../routes/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/atributos'
+import { Route as DashboardMantenimientosSolicitudesSolicitudIdEditarRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/$solicitudId/editar'
 
 const DashboardRoute = DashboardRouteImport.update({
   id: '/_dashboard',
@@ -363,6 +365,12 @@ const DashboardMantenimientosSolicitudesIndexRoute =
     path: '/',
     getParentRoute: () => DashboardMantenimientosSolicitudesRouteRoute,
   } as any)
+const DashboardMantenimientosSolicitudesNuevaRoute =
+  DashboardMantenimientosSolicitudesNuevaRouteImport.update({
+    id: '/nueva',
+    path: '/nueva',
+    getParentRoute: () => DashboardMantenimientosSolicitudesRouteRoute,
+  } as any)
 const DashboardMantenimientosTiposMantenimientoIndexRoute =
   DashboardMantenimientosTiposMantenimientoIndexRouteImport.update({
     id: '/',
@@ -429,6 +437,12 @@ const DashboardInventariosTiposInsumoTipoInsumoIdAtributosRoute =
     path: '/atributos',
     getParentRoute: () => DashboardInventariosTiposInsumoTipoInsumoIdRouteRoute,
   } as any)
+const DashboardMantenimientosSolicitudesSolicitudIdEditarRoute =
+  DashboardMantenimientosSolicitudesSolicitudIdEditarRouteImport.update({
+    id: '/$solicitudId/editar',
+    path: '/$solicitudId/editar',
+    getParentRoute: () => DashboardMantenimientosSolicitudesRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof DashboardIndexRoute
@@ -472,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
+  '/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
   '/activos/$activoId/': typeof DashboardActivosActivoIdIndexRoute
@@ -490,6 +505,7 @@ export interface FileRoutesByFullPath {
   '/organizacion/personas/': typeof DashboardOrganizacionPersonasIndexRoute
   '/tipos-activo/$tipoActivoId/': typeof DashboardTiposActivoTipoActivoIdIndexRoute
   '/inventarios/tipos-insumo/$tipoInsumoId/atributos': typeof DashboardInventariosTiposInsumoTipoInsumoIdAtributosRoute
+  '/mantenimientos/solicitudes/$solicitudId/editar': typeof DashboardMantenimientosSolicitudesSolicitudIdEditarRoute
   '/inventarios/tipos-insumo/$tipoInsumoId/': typeof DashboardInventariosTiposInsumoTipoInsumoIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -517,6 +533,7 @@ export interface FileRoutesByTo {
   '/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
+  '/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
   '/activos/$activoId': typeof DashboardActivosActivoIdIndexRoute
@@ -535,6 +552,7 @@ export interface FileRoutesByTo {
   '/organizacion/personas': typeof DashboardOrganizacionPersonasIndexRoute
   '/tipos-activo/$tipoActivoId': typeof DashboardTiposActivoTipoActivoIdIndexRoute
   '/inventarios/tipos-insumo/$tipoInsumoId/atributos': typeof DashboardInventariosTiposInsumoTipoInsumoIdAtributosRoute
+  '/mantenimientos/solicitudes/$solicitudId/editar': typeof DashboardMantenimientosSolicitudesSolicitudIdEditarRoute
   '/inventarios/tipos-insumo/$tipoInsumoId': typeof DashboardInventariosTiposInsumoTipoInsumoIdIndexRoute
 }
 export interface FileRoutesById {
@@ -581,6 +599,7 @@ export interface FileRoutesById {
   '/_dashboard/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/_dashboard/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/_dashboard/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
+  '/_dashboard/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/_dashboard/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/_dashboard/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
   '/_dashboard/activos/$activoId/': typeof DashboardActivosActivoIdIndexRoute
@@ -599,6 +618,7 @@ export interface FileRoutesById {
   '/_dashboard/organizacion/personas/': typeof DashboardOrganizacionPersonasIndexRoute
   '/_dashboard/tipos-activo/$tipoActivoId/': typeof DashboardTiposActivoTipoActivoIdIndexRoute
   '/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/atributos': typeof DashboardInventariosTiposInsumoTipoInsumoIdAtributosRoute
+  '/_dashboard/mantenimientos/solicitudes/$solicitudId/editar': typeof DashboardMantenimientosSolicitudesSolicitudIdEditarRoute
   '/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/': typeof DashboardInventariosTiposInsumoTipoInsumoIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -645,6 +665,7 @@ export interface FileRouteTypes {
     | '/activos/$activoId/editar'
     | '/activos/catalogo/$activoId'
     | '/inventarios/$insumoId/editar'
+    | '/mantenimientos/solicitudes/nueva'
     | '/tipos-activo/$tipoActivoId/atributos'
     | '/tipos-activo/$tipoActivoId/componentes'
     | '/activos/$activoId/'
@@ -663,6 +684,7 @@ export interface FileRouteTypes {
     | '/organizacion/personas/'
     | '/tipos-activo/$tipoActivoId/'
     | '/inventarios/tipos-insumo/$tipoInsumoId/atributos'
+    | '/mantenimientos/solicitudes/$solicitudId/editar'
     | '/inventarios/tipos-insumo/$tipoInsumoId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -690,6 +712,7 @@ export interface FileRouteTypes {
     | '/activos/$activoId/editar'
     | '/activos/catalogo/$activoId'
     | '/inventarios/$insumoId/editar'
+    | '/mantenimientos/solicitudes/nueva'
     | '/tipos-activo/$tipoActivoId/atributos'
     | '/tipos-activo/$tipoActivoId/componentes'
     | '/activos/$activoId'
@@ -708,6 +731,7 @@ export interface FileRouteTypes {
     | '/organizacion/personas'
     | '/tipos-activo/$tipoActivoId'
     | '/inventarios/tipos-insumo/$tipoInsumoId/atributos'
+    | '/mantenimientos/solicitudes/$solicitudId/editar'
     | '/inventarios/tipos-insumo/$tipoInsumoId'
   id:
     | '__root__'
@@ -753,6 +777,7 @@ export interface FileRouteTypes {
     | '/_dashboard/activos/$activoId/editar'
     | '/_dashboard/activos/catalogo/$activoId'
     | '/_dashboard/inventarios/$insumoId/editar'
+    | '/_dashboard/mantenimientos/solicitudes/nueva'
     | '/_dashboard/tipos-activo/$tipoActivoId/atributos'
     | '/_dashboard/tipos-activo/$tipoActivoId/componentes'
     | '/_dashboard/activos/$activoId/'
@@ -771,6 +796,7 @@ export interface FileRouteTypes {
     | '/_dashboard/organizacion/personas/'
     | '/_dashboard/tipos-activo/$tipoActivoId/'
     | '/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/atributos'
+    | '/_dashboard/mantenimientos/solicitudes/$solicitudId/editar'
     | '/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/'
   fileRoutesById: FileRoutesById
 }
@@ -1131,6 +1157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMantenimientosSolicitudesIndexRouteImport
       parentRoute: typeof DashboardMantenimientosSolicitudesRouteRoute
     }
+    '/_dashboard/mantenimientos/solicitudes/nueva': {
+      id: '/_dashboard/mantenimientos/solicitudes/nueva'
+      path: '/nueva'
+      fullPath: '/mantenimientos/solicitudes/nueva'
+      preLoaderRoute: typeof DashboardMantenimientosSolicitudesNuevaRouteImport
+      parentRoute: typeof DashboardMantenimientosSolicitudesRouteRoute
+    }
     '/_dashboard/mantenimientos/tipos-mantenimiento/': {
       id: '/_dashboard/mantenimientos/tipos-mantenimiento/'
       path: '/'
@@ -1207,6 +1240,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/inventarios/tipos-insumo/$tipoInsumoId/atributos'
       preLoaderRoute: typeof DashboardInventariosTiposInsumoTipoInsumoIdAtributosRouteImport
       parentRoute: typeof DashboardInventariosTiposInsumoTipoInsumoIdRouteRoute
+    }
+    '/_dashboard/mantenimientos/solicitudes/$solicitudId/editar': {
+      id: '/_dashboard/mantenimientos/solicitudes/$solicitudId/editar'
+      path: '/$solicitudId/editar'
+      fullPath: '/mantenimientos/solicitudes/$solicitudId/editar'
+      preLoaderRoute: typeof DashboardMantenimientosSolicitudesSolicitudIdEditarRouteImport
+      parentRoute: typeof DashboardMantenimientosSolicitudesRouteRoute
     }
   }
 }
@@ -1387,13 +1427,19 @@ const DashboardMantenimientosPrioridadesRouteRouteWithChildren =
   )
 
 interface DashboardMantenimientosSolicitudesRouteRouteChildren {
+  DashboardMantenimientosSolicitudesNuevaRoute: typeof DashboardMantenimientosSolicitudesNuevaRoute
   DashboardMantenimientosSolicitudesIndexRoute: typeof DashboardMantenimientosSolicitudesIndexRoute
+  DashboardMantenimientosSolicitudesSolicitudIdEditarRoute: typeof DashboardMantenimientosSolicitudesSolicitudIdEditarRoute
 }
 
 const DashboardMantenimientosSolicitudesRouteRouteChildren: DashboardMantenimientosSolicitudesRouteRouteChildren =
   {
+    DashboardMantenimientosSolicitudesNuevaRoute:
+      DashboardMantenimientosSolicitudesNuevaRoute,
     DashboardMantenimientosSolicitudesIndexRoute:
       DashboardMantenimientosSolicitudesIndexRoute,
+    DashboardMantenimientosSolicitudesSolicitudIdEditarRoute:
+      DashboardMantenimientosSolicitudesSolicitudIdEditarRoute,
   }
 
 const DashboardMantenimientosSolicitudesRouteRouteWithChildren =

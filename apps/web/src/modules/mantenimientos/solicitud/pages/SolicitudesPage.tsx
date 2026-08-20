@@ -1,8 +1,10 @@
+import { Link, useNavigate } from "@tanstack/react-router"
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { AlertCircle, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
+import { routes } from "@/app/config/routes"
 import { getErrorMessage } from "@/shared/api"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { EmptyState } from "@/shared/components/empty-state"
@@ -24,7 +26,6 @@ import {
   SolicitudFilterToolbar,
   type ViewMode,
 } from "../components/SolicitudFilterToolbar"
-import { SolicitudFormDialog } from "../components/SolicitudFormDialog"
 import { SolicitudQuickViewSheet } from "../components/SolicitudQuickViewSheet"
 import { SolicitudStats } from "../components/SolicitudStats"
 import { SolicitudTableView } from "../components/SolicitudTableView"
@@ -32,10 +33,9 @@ import { SolicitudTableView } from "../components/SolicitudTableView"
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function SolicitudesPage() {
+  const navigate = useNavigate()
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const [statusFilter, setStatusFilter] = useState<string>("")
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editing, setEditing] = useState<SolicitudMantenimiento | null>(null)
   const [quickView, setQuickView] = useState<SolicitudMantenimiento | null>(null)
   const [deleting, setDeleting] = useState<SolicitudMantenimiento | null>(null)
 
@@ -94,13 +94,13 @@ export function SolicitudesPage() {
   )
 
   function openCreate() {
-    setEditing(null)
-    setDialogOpen(true)
+    navigate({ to: routes.mantenimientos.nuevaSolicitud })
   }
 
   function openEdit(solicitud: SolicitudMantenimiento) {
-    setEditing(solicitud)
-    setDialogOpen(true)
+    navigate({
+      to: routes.mantenimientos.editarSolicitud(solicitud.id),
+    })
   }
 
   const hasActiveFilters = Boolean(search.search.trim() || statusFilter)
@@ -133,7 +133,7 @@ export function SolicitudesPage() {
               <Button
                 size="sm"
                 type="button"
-                onClick={openCreate}
+                render={<Link to={routes.mantenimientos.nuevaSolicitud} />}
                 className="h-7 px-2 text-xs"
               >
                 <Plus className="size-3.5" />
@@ -150,8 +150,8 @@ export function SolicitudesPage() {
           <Button
             size="sm"
             type="button"
-            onClick={openCreate}
-            className="h-8 gap-1.5 px-3 text-xs"
+            render={<Link to={routes.mantenimientos.nuevaSolicitud} />}
+            className="h-8 gap-1.5 px-3 text-xs font-semibold shadow-xs"
           >
             <Plus className="size-3.5" />
             <span>Crear Solicitud</span>
@@ -278,18 +278,6 @@ export function SolicitudesPage() {
         )}
       </div>
 
-      {/* Form Dialog Modal */}
-      <SolicitudFormDialog
-        key={editing?.id ?? "new-solicitud"}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        solicitud={editing}
-        onSuccess={() => {
-          if (!editing) {
-            search.setPage(0)
-          }
-        }}
-      />
 
       {/* Quick View Sheet */}
       <SolicitudQuickViewSheet
