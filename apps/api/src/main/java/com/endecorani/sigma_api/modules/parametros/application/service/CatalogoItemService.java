@@ -5,13 +5,11 @@ import com.endecorani.sigma_api.modules.parametros.application.dto.response.Cata
 import com.endecorani.sigma_api.modules.parametros.domain.model.CatalogoItem;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.CatalogoItemRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.CatalogoRepository;
-import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
-import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,17 +20,14 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class CatalogoItemService extends AbstractCrudService<
-        CatalogoItem,
-        CatalogoItemRequest,
-        CatalogoItemResponse,
-        UUID
-        > {
+public class CatalogoItemService {
 
     private static final int NOMBRE_MIN_LENGTH = 2;
     private static final int NOMBRE_MAX_LENGTH = 100;
     private static final int VALOR_MIN_LENGTH = 1;
     private static final int VALOR_MAX_LENGTH = 50;
+
+    private static final String RESOURCE_NAME = "Ítem de catálogo";
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -46,14 +41,42 @@ public class CatalogoItemService extends AbstractCrudService<
     private final CatalogoItemRepository catalogoItemRepository;
     private final CatalogoRepository catalogoRepository;
 
-    @Override
-    protected CrudRepository<CatalogoItem, UUID> repository() {
-        return catalogoItemRepository;
+    @Transactional
+    public CatalogoItemResponse create(CatalogoItemRequest request) {
+        CatalogoItem domain = toDomain(request);
+        CatalogoItem saved = catalogoItemRepository.save(domain);
+        return toResponse(saved);
     }
 
-    @Override
-    protected Set<String> allowedSortFields() {
-        return SORT_FIELDS;
+    @Transactional
+    public CatalogoItemResponse update(UUID id, CatalogoItemRequest request) {
+        CatalogoItem domain = findDomainById(id);
+        updateDomain(domain, request);
+        CatalogoItem updated = catalogoItemRepository.save(domain);
+        return toResponse(updated);
+    }
+
+    @Transactional(readOnly = true)
+    public CatalogoItemResponse findById(UUID id) {
+        return toResponse(findDomainById(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CatalogoItemResponse> findAll(
+            PageRequestDto pageRequest
+    ) {
+        return PageResponse.from(
+                catalogoItemRepository.findAll(
+                        pageRequest.toPageable(SORT_FIELDS)
+                ),
+                this::toResponse
+        );
+    }
+
+    @Transactional
+    public void delete(UUID id) {
+        findDomainById(id);
+        catalogoItemRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
@@ -73,7 +96,7 @@ public class CatalogoItemService extends AbstractCrudService<
         requireCatalogoExists(catalogoId);
 
         String normalized = StringUtils.normalize(query);
-        var pageable = pageRequest.toPageable(allowedSortFields());
+        var pageable = pageRequest.toPageable(SORT_FIELDS);
 
         if (normalized == null) {
             return PageResponse.from(
@@ -95,8 +118,57 @@ public class CatalogoItemService extends AbstractCrudService<
         );
     }
 
-    @Override
-    protected CatalogoItem toDomain(CatalogoItemRequest request) {
+    @Transactional(readOnly = true)
+    public PageResponse<CatalogoItemResponse> findByCodigo(
+            String codigo,
+            PageRequestDto pageRequest
+    ) {
+        return findByCodigo(codigo, null, pageRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CatalogoItemResponse> findByCodigo(
+            String codigo,
+            String query,
+            PageRequestDto pageRequest
+    ) {
+        requireCatalogoExistsByCodigo(codigo);
+
+        String normalized = StringUtils.normalize(query);
+        var pageable = pageRequest.toPageable(SORT_FIELDS);
+
+        if (normalized == null) {
+            return PageResponse.from(
+                    catalogoItemRepository.findByCodigo(
+                            codigo,
+                            pageable
+                    ),
+                    this::toResponse
+            );
+        }
+
+        return PageResponse.from(
+                catalogoItemRepository.searchByCodigo(
+                        codigo,
+                        normalized,
+                        pageable
+                ),
+                this::toResponse
+        );
+    }
+
+    private CatalogoItem findDomainById(UUID id) {
+        return catalogoItemRepository
+                .findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                RESOURCE_NAME,
+                                id
+                        )
+                );
+    }
+
+    private CatalogoItem toDomain(CatalogoItemRequest request) {
         requireCatalogoExists(request.catalogoId());
 
         String valor = requireNormalizedValor(request.valor());
@@ -110,8 +182,7 @@ public class CatalogoItemService extends AbstractCrudService<
                 .build();
     }
 
-    @Override
-    protected void updateDomain(
+    private void updateDomain(
             CatalogoItem domain,
             CatalogoItemRequest request
     ) {
@@ -136,8 +207,7 @@ public class CatalogoItemService extends AbstractCrudService<
         domain.setOrden(orden);
     }
 
-    @Override
-    protected CatalogoItemResponse toResponse(CatalogoItem domain) {
+    private CatalogoItemResponse toResponse(CatalogoItem domain) {
         return new CatalogoItemResponse(
                 domain.getId(),
                 domain.getCatalogoId(),
@@ -151,14 +221,15 @@ public class CatalogoItemService extends AbstractCrudService<
         );
     }
 
-    @Override
-    protected String resourceName() {
-        return "Ítem de catálogo";
-    }
-
     private void requireCatalogoExists(UUID catalogoId) {
         if (!catalogoRepository.existsById(catalogoId)) {
             throw new ResourceNotFoundException("Catálogo", catalogoId);
+        }
+    }
+
+    private void requireCatalogoExistsByCodigo(String codigo) {
+        if (!catalogoRepository.existsByCodigoIgnoreCase(codigo)) {
+            throw new ResourceNotFoundException("Catálogo", codigo);
         }
     }
 

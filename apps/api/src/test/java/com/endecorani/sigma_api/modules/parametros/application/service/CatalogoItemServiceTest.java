@@ -36,7 +36,7 @@ class CatalogoItemServiceTest {
     @BeforeEach
     void setUp() {
         catalogoRepository = new InMemoryCatalogoRepository();
-        itemRepository = new InMemoryCatalogoItemRepository();
+        itemRepository = new InMemoryCatalogoItemRepository(catalogoRepository);
         service = new CatalogoItemService(itemRepository, catalogoRepository);
 
         Catalogo catalogo = Catalogo.builder()
@@ -276,7 +276,14 @@ class CatalogoItemServiceTest {
     private static final class InMemoryCatalogoItemRepository
             implements CatalogoItemRepository {
 
+        private final InMemoryCatalogoRepository catalogoRepository;
         private final List<CatalogoItem> items = new ArrayList<>();
+
+        InMemoryCatalogoItemRepository(
+                InMemoryCatalogoRepository catalogoRepository
+        ) {
+            this.catalogoRepository = catalogoRepository;
+        }
 
         @Override
         public CatalogoItem save(CatalogoItem entity) {
@@ -293,11 +300,6 @@ class CatalogoItemServiceTest {
             return items.stream()
                     .filter(item -> item.getId().equals(id))
                     .findFirst();
-        }
-
-        @Override
-        public List<CatalogoItem> findAll() {
-            return List.copyOf(items);
         }
 
         @Override
@@ -398,6 +400,50 @@ class CatalogoItemServiceTest {
                             && item.getCatalogoId().equals(catalogoId)
                             && item.getOrden().equals(orden)
             );
+        }
+
+        @Override
+        public Page<CatalogoItem> findByCodigo(
+                String codigo,
+                Pageable pageable
+        ) {
+            UUID resolvedId = catalogoIdByCodigo(codigo);
+            if (resolvedId == null) {
+                return new PageImpl<>(List.of(), pageable, 0);
+            }
+            List<CatalogoItem> filtered = items.stream()
+                    .filter(item -> item.getCatalogoId().equals(resolvedId))
+                    .toList();
+            return new PageImpl<>(filtered, pageable, filtered.size());
+        }
+
+        @Override
+        public Page<CatalogoItem> searchByCodigo(
+                String codigo,
+                String query,
+                Pageable pageable
+        ) {
+            UUID resolvedId = catalogoIdByCodigo(codigo);
+            if (resolvedId == null) {
+                return new PageImpl<>(List.of(), pageable, 0);
+            }
+            String normalized = query.toLowerCase();
+            List<CatalogoItem> filtered = items.stream()
+                    .filter(item -> item.getCatalogoId().equals(resolvedId))
+                    .filter(item ->
+                            item.getNombre().toLowerCase().contains(normalized)
+                                    || item.getValor().toLowerCase().contains(normalized)
+                    )
+                    .toList();
+            return new PageImpl<>(filtered, pageable, filtered.size());
+        }
+
+        private UUID catalogoIdByCodigo(String codigo) {
+            return catalogoRepository.items.stream()
+                    .filter(c -> c.getCodigo().equalsIgnoreCase(codigo))
+                    .map(Catalogo::getId)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 }

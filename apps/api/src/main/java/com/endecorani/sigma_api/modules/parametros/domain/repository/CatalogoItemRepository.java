@@ -1,13 +1,23 @@
 package com.endecorani.sigma_api.modules.parametros.domain.repository;
 
 import com.endecorani.sigma_api.modules.parametros.domain.model.CatalogoItem;
-import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Optional;
 import java.util.UUID;
 
-public interface CatalogoItemRepository extends CrudRepository<CatalogoItem, UUID> {
+public interface CatalogoItemRepository {
+
+    CatalogoItem save(CatalogoItem entity);
+
+    Optional<CatalogoItem> findById(UUID id);
+
+    Page<CatalogoItem> findAll(Pageable pageable);
+
+    boolean existsById(UUID id);
+
+    void deleteById(UUID id);
 
     Page<CatalogoItem> findByCatalogoId(
             UUID catalogoId,
@@ -42,5 +52,16 @@ public interface CatalogoItemRepository extends CrudRepository<CatalogoItem, UUI
             UUID catalogoId,
             Integer orden,
             UUID id
+    );
+
+    Page<CatalogoItem> findByCodigo(
+            String codigo,
+            Pageable pageable
+    );
+
+    Page<CatalogoItem> searchByCodigo(
+            String codigo,
+            String query,
+            Pageable pageable
     );
 }

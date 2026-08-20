@@ -4,24 +4,19 @@ import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.parametros.application.dto.request.CatalogoItemRequest;
 import com.endecorani.sigma_api.modules.parametros.application.dto.response.CatalogoItemResponse;
 import com.endecorani.sigma_api.modules.parametros.application.service.CatalogoItemService;
-import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
-import com.endecorani.sigma_api.shared.presentation.controller.AbstractCrudController;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -34,26 +29,77 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 @PreAuthorize("hasAnyRole('ADMIN')")
-public class CatalogoItemController
-        extends AbstractCrudController<
-        CatalogoItemRequest,
-        CatalogoItemResponse,
-        UUID
-        > {
+public class CatalogoItemController {
 
     private final CatalogoItemService catalogoItemService;
 
-    @Override
-    protected CrudService<
-            CatalogoItemRequest,
-            CatalogoItemResponse,
-            UUID
-            > service() {
-        return catalogoItemService;
+    @PostMapping
+    public ResponseEntity<ApiResponse<CatalogoItemResponse>> create(
+            @Valid @RequestBody CatalogoItemRequest request
+    ) {
+        CatalogoItemResponse response = catalogoItemService.create(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        ApiResponse.success(
+                                "Registro creado correctamente",
+                                response
+                        )
+                );
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<CatalogoItemResponse>> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody CatalogoItemRequest request
+    ) {
+        CatalogoItemResponse response = catalogoItemService.update(id, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Registro actualizado correctamente",
+                        response
+                )
+        );
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<CatalogoItemResponse>> findById(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        catalogoItemService.findById(id)
+                )
+        );
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<CatalogoItemResponse>>> findAll(
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        catalogoItemService.findAll(pageRequest)
+                )
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable UUID id
+    ) {
+        catalogoItemService.delete(id);
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Registro eliminado correctamente"
+                )
+        );
     }
 
     @GetMapping(params = "catalogoId")
-    @Operation(summary = "Listar ítems filtrados por catálogo")
+    @Operation(summary = "Listar ítems filtrados por catálogo (UUID)")
     public ResponseEntity<ApiResponse<PageResponse<CatalogoItemResponse>>> findByCatalogoId(
             @RequestParam UUID catalogoId,
             @RequestParam(required = false) String q,
@@ -63,6 +109,24 @@ public class CatalogoItemController
                 ApiResponse.success(
                         catalogoItemService.findByCatalogoId(
                                 catalogoId,
+                                q,
+                                pageRequest
+                        )
+                )
+        );
+    }
+
+    @GetMapping(params = "codigo")
+    @Operation(summary = "Listar ítems filtrados por código de catálogo")
+    public ResponseEntity<ApiResponse<PageResponse<CatalogoItemResponse>>> findByCodigo(
+            @RequestParam String codigo,
+            @RequestParam(required = false) String q,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        catalogoItemService.findByCodigo(
+                                codigo,
                                 q,
                                 pageRequest
                         )

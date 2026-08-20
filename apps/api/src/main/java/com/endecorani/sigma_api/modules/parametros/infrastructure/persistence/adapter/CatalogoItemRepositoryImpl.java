@@ -5,23 +5,17 @@ import com.endecorani.sigma_api.modules.parametros.domain.repository.CatalogoIte
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.entity.CatalogoItemEntity;
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.mapper.CatalogoItemPersistenceMapper;
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.repository.SpringCatalogoItemRepository;
-import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
-import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
 public class CatalogoItemRepositoryImpl
-        extends AbstractJpaRepositoryAdapter<
-        CatalogoItem,
-        CatalogoItemEntity,
-        UUID
-        >
         implements CatalogoItemRepository {
 
     private final SpringCatalogoItemRepository springRepository;
@@ -29,21 +23,34 @@ public class CatalogoItemRepositoryImpl
     private final CatalogoItemPersistenceMapper mapper;
 
     @Override
-    protected BaseJpaRepository<
-            CatalogoItemEntity,
-            UUID
-            > jpaRepository() {
-        return springRepository;
+    public CatalogoItem save(CatalogoItem domain) {
+        CatalogoItemEntity entity = mapper.toEntity(domain);
+        CatalogoItemEntity saved = springRepository.save(entity);
+        return mapper.toDomain(saved);
     }
 
     @Override
-    protected CatalogoItemEntity toEntity(CatalogoItem domain) {
-        return mapper.toEntity(domain);
+    public Optional<CatalogoItem> findById(UUID id) {
+        return springRepository
+                .findById(id)
+                .map(mapper::toDomain);
     }
 
     @Override
-    protected CatalogoItem toDomain(CatalogoItemEntity entity) {
-        return mapper.toDomain(entity);
+    public Page<CatalogoItem> findAll(Pageable pageable) {
+        return springRepository
+                .findAll(pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return springRepository.existsById(id);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springRepository.deleteById(id);
     }
 
     @Override
@@ -115,5 +122,26 @@ public class CatalogoItemRepositoryImpl
                 orden,
                 id
         );
+    }
+
+    @Override
+    public Page<CatalogoItem> findByCodigo(
+            String codigo,
+            Pageable pageable
+    ) {
+        return springRepository
+                .findByCatalogo_Codigo(codigo, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<CatalogoItem> searchByCodigo(
+            String codigo,
+            String query,
+            Pageable pageable
+    ) {
+        return springRepository
+                .searchByCodigo(codigo, query, pageable)
+                .map(mapper::toDomain);
     }
 }
