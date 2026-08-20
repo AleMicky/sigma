@@ -1,7 +1,7 @@
 package com.endecorani.sigma_api.modules.parametros.application.service;
 
-import com.endecorani.sigma_api.modules.parametros.application.dto.CatalogoItemRequest;
-import com.endecorani.sigma_api.modules.parametros.application.dto.CatalogoItemResponse;
+import com.endecorani.sigma_api.modules.parametros.application.dto.request.CatalogoItemRequest;
+import com.endecorani.sigma_api.modules.parametros.application.dto.response.CatalogoItemResponse;
 import com.endecorani.sigma_api.modules.parametros.domain.model.CatalogoItem;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.CatalogoItemRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.CatalogoRepository;

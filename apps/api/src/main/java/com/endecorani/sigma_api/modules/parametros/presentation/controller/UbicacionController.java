@@ -1,9 +1,9 @@
 package com.endecorani.sigma_api.modules.parametros.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.parametros.application.dto.UbicacionRequest;
-import com.endecorani.sigma_api.modules.parametros.application.dto.UbicacionResponse;
-import com.endecorani.sigma_api.modules.parametros.application.dto.UbicacionTreeNode;
+import com.endecorani.sigma_api.modules.parametros.application.dto.request.UbicacionRequest;
+import com.endecorani.sigma_api.modules.parametros.application.dto.response.UbicacionResponse;
+import com.endecorani.sigma_api.modules.parametros.application.dto.response.UbicacionTreeNode;
 import com.endecorani.sigma_api.modules.parametros.application.service.UbicacionService;
 import com.endecorani.sigma_api.modules.parametros.domain.enums.TipoUbicacion;
 import com.endecorani.sigma_api.shared.application.crud.CrudService;

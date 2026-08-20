@@ -1,7 +1,7 @@
 package com.endecorani.sigma_api.modules.parametros.application.service;
 
-import com.endecorani.sigma_api.modules.parametros.application.dto.CatalogoRequest;
-import com.endecorani.sigma_api.modules.parametros.application.dto.CatalogoResponse;
+import com.endecorani.sigma_api.modules.parametros.application.dto.request.CatalogoRequest;
+import com.endecorani.sigma_api.modules.parametros.application.dto.response.CatalogoResponse;
 import com.endecorani.sigma_api.modules.parametros.domain.model.Catalogo;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.CatalogoRepository;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;

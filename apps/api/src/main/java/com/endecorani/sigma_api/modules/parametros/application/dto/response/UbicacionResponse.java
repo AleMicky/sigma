@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.parametros.application.dto;
+package com.endecorani.sigma_api.modules.parametros.application.dto.response;
 
 import com.endecorani.sigma_api.modules.parametros.domain.enums.TipoUbicacion;
 import io.swagger.v3.oas.annotations.media.Schema;

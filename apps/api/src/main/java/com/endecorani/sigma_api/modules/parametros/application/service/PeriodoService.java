@@ -1,7 +1,7 @@
 package com.endecorani.sigma_api.modules.parametros.application.service;
 
-import com.endecorani.sigma_api.modules.parametros.application.dto.PeriodoRequest;
-import com.endecorani.sigma_api.modules.parametros.application.dto.PeriodoResponse;
+import com.endecorani.sigma_api.modules.parametros.application.dto.request.PeriodoRequest;
+import com.endecorani.sigma_api.modules.parametros.application.dto.response.PeriodoResponse;
 import com.endecorani.sigma_api.modules.parametros.domain.model.Periodo;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.GestionRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.PeriodoRepository;
