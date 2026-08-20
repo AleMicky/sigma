@@ -67,12 +67,6 @@ public record SolicitudMantenimientoRequest(
         UUID solicitanteId,
 
         @Schema(
-                description = "Identificador del área del solicitante",
-                example = "4e8236fc-6daa-4814-b7f7-a5d0d37383d8"
-        )
-        UUID areaSolicitanteId,
-
-        @Schema(
                 description = "Título de la solicitud",
                 example = "Falla en motor principal",
                 requiredMode = Schema.RequiredMode.REQUIRED

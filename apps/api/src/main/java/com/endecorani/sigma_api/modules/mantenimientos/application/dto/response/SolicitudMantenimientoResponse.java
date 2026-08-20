@@ -33,9 +33,6 @@ public record SolicitudMantenimientoResponse(
         @Schema(description = "Información del solicitante")
         UserInfo solicitante,
 
-        @Schema(description = "Información del área solicitante")
-        AreaInfo areaSolicitante,
-
         @Schema(description = "Título de la solicitud", example = "Falla en motor principal")
         String titulo,
 

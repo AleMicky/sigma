@@ -24,7 +24,6 @@ public class SolicitudMantenimientoPersistenceMapper {
         entity.setMotivoMantenimientoId(domain.getMotivoMantenimientoId());
         entity.setPrioridadId(domain.getPrioridadId());
         entity.setSolicitanteId(domain.getSolicitanteId());
-        entity.setAreaSolicitanteId(domain.getAreaSolicitanteId());
         entity.setTitulo(domain.getTitulo());
         entity.setDescripcion(domain.getDescripcion());
         entity.setFechaSolicitud(domain.getFechaSolicitud());
@@ -68,7 +67,6 @@ public class SolicitudMantenimientoPersistenceMapper {
                 )
                 .prioridadId(entity.getPrioridadId())
                 .solicitanteId(entity.getSolicitanteId())
-                .areaSolicitanteId(entity.getAreaSolicitanteId())
                 .titulo(entity.getTitulo())
                 .descripcion(entity.getDescripcion())
                 .fechaSolicitud(entity.getFechaSolicitud())

@@ -89,9 +89,6 @@ public class SolicitudMantenimientoService {
                         )
                         .prioridadId(request.prioridadId())
                         .solicitanteId(request.solicitanteId())
-                        .areaSolicitanteId(
-                                request.areaSolicitanteId()
-                        )
                         .titulo(requireNormalizedTitulo(
                                 request.titulo()
                         ))
@@ -159,7 +156,6 @@ public class SolicitudMantenimientoService {
                     response.motivoMantenimientoId(),
                     response.prioridad(),
                     response.solicitante(),
-                    response.areaSolicitante(),
                     response.titulo(),
                     response.descripcion(),
                     response.fechaSolicitud(),
@@ -212,7 +208,6 @@ public class SolicitudMantenimientoService {
         );
         domain.setPrioridadId(request.prioridadId());
         domain.setSolicitanteId(request.solicitanteId());
-        domain.setAreaSolicitanteId(request.areaSolicitanteId());
         domain.setTitulo(requireNormalizedTitulo(request.titulo()));
         domain.setDescripcion(requireNormalizedDescripcion(
                 request.descripcion()
@@ -511,7 +506,6 @@ public class SolicitudMantenimientoService {
                 tipoInfo,
                 domain.getMotivoMantenimientoId(),
                 prioridadInfo,
-                null,
                 null,
                 domain.getTitulo(),
                 domain.getDescripcion(),

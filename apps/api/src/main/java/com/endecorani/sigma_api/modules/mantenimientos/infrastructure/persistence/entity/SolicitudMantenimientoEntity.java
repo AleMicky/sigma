@@ -90,12 +90,6 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     private UUID solicitanteId;
 
     @Column(
-            name = "area_solicitante_id",
-            nullable = false
-    )
-    private UUID areaSolicitanteId;
-
-    @Column(
             name = "titulo",
             nullable = false,
             length = 150
