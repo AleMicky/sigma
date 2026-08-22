@@ -1,6 +1,5 @@
 package com.endecorani.sigma_api.modules.organizacion.domain.model;
 
-import com.endecorani.sigma_api.modules.organizacion.domain.enums.AlcanceAprobador;
 import com.endecorani.sigma_api.modules.organizacion.domain.enums.TipoAprobador;
 import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
 import lombok.AllArgsConstructor;
@@ -29,8 +28,6 @@ public class GrupoAprobadorDetalle extends AuditableModel {
     private UUID cargoId;
 
     private UUID responsabilidadId;
-
-    private AlcanceAprobador alcance;
 
     private Integer orden;
 

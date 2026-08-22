@@ -36,7 +36,6 @@ public class GrupoAprobadorDetalleService {
             "id",
             "orden",
             "tipoAprobador",
-            "alcance",
             "createdAt",
             "updatedAt"
     );
@@ -78,7 +77,6 @@ public class GrupoAprobadorDetalleService {
         detalle.setEmpleadoId(request.empleadoId());
         detalle.setCargoId(request.cargoId());
         detalle.setResponsabilidadId(request.responsabilidadId());
-        detalle.setAlcance(request.alcance());
         detalle.setOrden(request.orden());
         detalle.setRequiereAprobacion(request.requiereAprobacion());
 
@@ -162,7 +160,6 @@ public class GrupoAprobadorDetalleService {
                 .empleadoId(request.empleadoId())
                 .cargoId(request.cargoId())
                 .responsabilidadId(request.responsabilidadId())
-                .alcance(request.alcance())
                 .orden(request.orden())
                 .requiereAprobacion(request.requiereAprobacion())
                 .build();
@@ -178,7 +175,6 @@ public class GrupoAprobadorDetalleService {
                 buildEmpleadoInfo(domain.getEmpleadoId()),
                 buildCargoInfo(domain.getCargoId()),
                 buildResponsabilidadInfo(domain.getResponsabilidadId()),
-                domain.getAlcance(),
                 domain.getOrden(),
                 domain.getRequiereAprobacion(),
                 AuditoriaMapper.from(domain)

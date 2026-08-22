@@ -1,6 +1,5 @@
 package com.endecorani.sigma_api.modules.organizacion.application.dto.request;
 
-import com.endecorani.sigma_api.modules.organizacion.domain.enums.AlcanceAprobador;
 import com.endecorani.sigma_api.modules.organizacion.domain.enums.TipoAprobador;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
@@ -38,14 +37,6 @@ public record GrupoAprobadorDetalleRequest(
                 requiredMode = Schema.RequiredMode.AUTO
         )
         UUID responsabilidadId,
-
-        @Schema(
-                description = "Alcance en el que el aprobador participa",
-                example = "GLOBAL",
-                requiredMode = Schema.RequiredMode.REQUIRED
-        )
-        @NotNull(message = "El alcance es obligatorio")
-        AlcanceAprobador alcance,
 
         @Schema(
                 description = "Orden de aprobación dentro del grupo (mayor a 0)",

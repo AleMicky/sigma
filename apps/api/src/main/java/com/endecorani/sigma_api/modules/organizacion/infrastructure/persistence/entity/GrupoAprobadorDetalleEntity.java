@@ -1,6 +1,5 @@
 package com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity;
 
-import com.endecorani.sigma_api.modules.organizacion.domain.enums.AlcanceAprobador;
 import com.endecorani.sigma_api.modules.organizacion.domain.enums.TipoAprobador;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
@@ -33,10 +32,6 @@ public class GrupoAprobadorDetalleEntity extends BaseEntity {
 
     @Column(name = "responsabilidad_id")
     private UUID responsabilidadId;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "alcance", nullable = false, length = 40)
-    private AlcanceAprobador alcance;
 
     @Column(nullable = false)
     private Integer orden;
