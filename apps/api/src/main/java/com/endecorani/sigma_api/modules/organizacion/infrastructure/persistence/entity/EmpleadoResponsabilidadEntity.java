@@ -12,19 +12,7 @@ import java.util.UUID;
 
 
 @Entity
-@Table(schema = "organizacion",
-        name = "empleados_responsabilidades",
-        indexes = {
-                @Index(
-                        name = "idx_empleado_responsabilidad_empleado",
-                        columnList = "empleado_id"
-                ),
-                @Index(
-                        name = "idx_empleado_responsabilidad_responsabilidad",
-                        columnList = "responsabilidad_id"
-                )
-        }
-)
+@Table(schema = "organizacion", name = "empleados_responsabilidades", indexes = {@Index(name = "idx_empleado_responsabilidad_empleado", columnList = "empleado_id"), @Index(name = "idx_empleado_responsabilidad_responsabilidad", columnList = "responsabilidad_id")})
 @Getter
 @Setter
 @NoArgsConstructor
