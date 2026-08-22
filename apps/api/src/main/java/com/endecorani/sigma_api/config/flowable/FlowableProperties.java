@@ -1,4 +1,12 @@
 package com.endecorani.sigma_api.config.flowable;
 
-public record FlowableProperties() {
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "flowable")
+public record FlowableProperties(
+        String baseUrl,
+        String username,
+        String password
+) {
 }

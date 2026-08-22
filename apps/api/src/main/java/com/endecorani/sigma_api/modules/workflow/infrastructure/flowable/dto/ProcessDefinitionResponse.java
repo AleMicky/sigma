@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.workflow.application.dto.response;
+package com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto;
 
 public record ProcessDefinitionResponse(
         String id,

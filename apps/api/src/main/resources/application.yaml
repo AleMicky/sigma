@@ -79,3 +79,7 @@ app:
         - image/png
         - image/webp
         - image/gif
+flowable:
+  base-url: ${FLOWABLE_BASE_URL:http://157.173.99.216:8089/flowable-rest/service}
+  username: ${FLOWABLE_USERNAME:admin}
+  password: ${FLOWABLE_PASSWORD:admin}
