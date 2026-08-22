@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Plus, UserCheck } from "lucide-react"
+import { HelpCircle, Plus, UserCheck } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
+import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
@@ -19,20 +20,25 @@ import { cn } from "@/shared/lib/utils"
 
 import { areaQueries } from "../../area/api/area.queries"
 import { cargoQueries } from "../../cargo/api/cargo.queries"
+import { useDeleteEmpleado } from "../api/empleado.mutations"
 import { empleadoQueries } from "../api/empleado.queries"
 import type { Empleado } from "../api/empleado.service"
-import { EmpleadoCard } from "../components/EmpleadoCard"
 import { EmpleadoFormDialog } from "../components/EmpleadoFormDialog"
+import { EmpleadoHelpModal } from "../components/EmpleadoHelpModal"
+import { EmpleadoListItem } from "../components/EmpleadoListItem"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function EmpleadosPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [helpModalOpen, setHelpModalOpen] = useState(false)
   const [editing, setEditing] = useState<Empleado | null>(null)
+  const [deleting, setDeleting] = useState<Empleado | null>(null)
   const [selectedAreaId, setSelectedAreaId] = useState<string>("")
   const [selectedCargoId, setSelectedCargoId] = useState<string>("")
 
   const search = usePaginatedSearch()
+  const deleteMutation = useDeleteEmpleado()
 
   const areasQuery = useQuery(areaQueries.list({ size: 100 }))
   const cargosQuery = useQuery(cargoQueries.list({ size: 100 }))
@@ -70,50 +76,95 @@ export function EmpleadosPage() {
     setDialogOpen(true)
   }
 
+  async function handleDelete() {
+    if (!deleting) return
+    try {
+      await deleteMutation.mutateAsync(deleting.id)
+      setDeleting(null)
+    } catch {
+      // Handled by toast in mutation
+    }
+  }
+
+  const hasActiveFilters = Boolean(
+    search.search.trim() || selectedAreaId || selectedCargoId,
+  )
+
+  function resetFilters() {
+    search.setSearch("")
+    setSelectedAreaId("")
+    setSelectedCargoId("")
+  }
+
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
+      {/* Header */}
       <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:gap-4 sm:py-6 md:flex-row md:items-start md:justify-between md:py-8">
         <div className="min-w-0 flex flex-1 flex-col gap-1">
           <div className="flex items-start justify-between gap-3">
             <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
               Empleados
             </h1>
-            <div className="flex items-center gap-1.5 md:hidden">
+            <div className="flex items-center gap-1.5 shrink-0 md:hidden">
               <RefreshButton
+                size="sm"
                 queries={[empleadosQuery, areasQuery, cargosQuery]}
               />
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                onClick={() => setHelpModalOpen(true)}
+              >
+                <HelpCircle className="size-4 text-primary" />
+                <span className="sr-only sm:not-sr-only">Guía</span>
+              </Button>
               <Button
                 size="sm"
                 type="button"
                 onClick={openCreate}
                 className="shrink-0"
               >
-                <Plus />
+                <Plus className="size-4" />
                 <span className="sr-only sm:not-sr-only">Crear</span>
               </Button>
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Gestión y asignación de empleados a áreas y cargos.
+            Gestión y vinculación de empleados a áreas y cargos institucionales.
           </p>
         </div>
 
-        <div className="hidden shrink-0 items-center gap-2 self-start md:flex">
+        <div className="hidden shrink-0 self-start md:flex md:items-center md:gap-2">
           <RefreshButton
+            size="sm"
             queries={[empleadosQuery, areasQuery, cargosQuery]}
           />
+
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            onClick={() => setHelpModalOpen(true)}
+            className="gap-1.5 border-border/80 hover:bg-muted"
+          >
+            <HelpCircle className="size-4 text-primary" />
+            <span>Guía de Empleados</span>
+          </Button>
+
           <Button
             size="sm"
             type="button"
             onClick={openCreate}
-            className="shrink-0"
+            className="gap-1.5"
           >
-            <Plus />
-            Crear
+            <Plus className="size-4" />
+            <span>Crear Empleado</span>
           </Button>
         </div>
       </header>
 
+      {/* Buscador y filtros rápidos */}
       <div className="flex shrink-0 flex-col gap-2 py-3 sm:flex-row sm:items-center">
         <SearchField
           value={search.search}
@@ -156,12 +207,13 @@ export function EmpleadosPage() {
         </select>
       </div>
 
+      {/* Content Section - Compact List */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {empleadosQuery.isLoading ? (
           <ListSkeleton
-            rows={6}
-            rowClassName="h-28 rounded-xl"
-            className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+            rows={8}
+            rowClassName="h-12 rounded-lg"
+            className="flex flex-col gap-2"
           />
         ) : empleadosQuery.isError ? (
           <EmptyState
@@ -172,20 +224,22 @@ export function EmpleadosPage() {
           <EmptyState
             icon={<UserCheck className="size-4 text-muted-foreground" />}
             title={
-              search.search.trim() || selectedAreaId || selectedCargoId
-                ? "Sin resultados"
-                : "No hay empleados registrados"
+              hasActiveFilters ? "Sin resultados" : "No hay empleados registrados"
             }
             description={
-              search.search.trim() || selectedAreaId || selectedCargoId
+              hasActiveFilters
                 ? "Prueba cambiando los criterios de búsqueda o filtros."
                 : "Registra un empleado asignando una persona a un área y un cargo."
             }
             action={
-              search.search.trim() || selectedAreaId || selectedCargoId ? undefined : (
+              hasActiveFilters ? (
+                <Button size="sm" type="button" onClick={resetFilters}>
+                  Limpiar filtros
+                </Button>
+              ) : (
                 <Button size="sm" type="button" onClick={openCreate}>
                   <Plus />
-                  Crear
+                  Crear Empleado
                 </Button>
               )
             }
@@ -198,12 +252,13 @@ export function EmpleadosPage() {
                 empleadosQuery.isFetching && "opacity-70",
               )}
             >
-              <ul className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {empleados.map((emp) => (
-                  <EmpleadoCard
-                    key={emp.id}
-                    empleado={emp}
+              <ul className="divide-y divide-border/60 rounded-xl border border-border/80 bg-card overflow-hidden shadow-2xs">
+                {empleados.map((empleado) => (
+                  <EmpleadoListItem
+                    key={empleado.id}
+                    empleado={empleado}
                     onEdit={openEdit}
+                    onDelete={(e) => setDeleting(e)}
                   />
                 ))}
               </ul>
@@ -213,13 +268,14 @@ export function EmpleadosPage() {
               <Pagination
                 page={empleadosQuery.data}
                 onPageChange={search.setPage}
-                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10"
+                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 shrink-0"
               />
             ) : null}
           </>
         )}
       </div>
 
+      {/* Form Dialog Modal */}
       <EmpleadoFormDialog
         key={editing?.id ?? "new-empleado"}
         open={dialogOpen}
@@ -230,6 +286,22 @@ export function EmpleadosPage() {
             search.setPage(0)
           }
         }}
+      />
+
+      {/* Help Guide Modal */}
+      <EmpleadoHelpModal
+        open={helpModalOpen}
+        onOpenChange={setHelpModalOpen}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDeleteDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title={`¿Eliminar registro de empleado "${deleting?.codigo}"?`}
+        description="Esta acción no se puede deshacer. Se eliminará la vinculación de este empleado del sistema."
+        isPending={deleteMutation.isPending}
+        onConfirm={handleDelete}
       />
     </PageShell>
   )

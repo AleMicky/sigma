@@ -3,6 +3,7 @@ import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
 
 import { isApiError } from "@/shared/api"
+import { AuditInfo } from "@/shared/components/audit-info"
 import {
   FormDialog,
   FormDialogSubmit,
@@ -298,6 +299,12 @@ export function EmpleadoFormDialog({
           }}
         </form.Field>
       </div>
+
+      {isEditing && empleado ? (
+        <div className="pt-2 border-t">
+          <AuditInfo data={empleado} />
+        </div>
+      ) : null}
     </FormDialog>
   )
 }

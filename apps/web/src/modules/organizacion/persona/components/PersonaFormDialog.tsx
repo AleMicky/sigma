@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 
 import { isApiError } from "@/shared/api"
+import { AuditInfo } from "@/shared/components/audit-info"
 import {
   FormDialog,
   FormDialogSubmit,
@@ -329,6 +330,12 @@ export function PersonaFormDialog({
           }}
         </form.Field>
       </div>
+
+      {isEditing && persona ? (
+        <div className="pt-2 border-t">
+          <AuditInfo data={persona} />
+        </div>
+      ) : null}
     </FormDialog>
   )
 }
