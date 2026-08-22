@@ -13,8 +13,10 @@ public interface EmpleadoResponsabilidadRepository {
 
     Optional<EmpleadoResponsabilidad> findById(UUID id);
 
-    Page<EmpleadoResponsabilidad> findByEmpleadoId(
-            UUID empleadoId,
+    Page<EmpleadoResponsabilidad> findAll(Pageable pageable);
+
+    Page<EmpleadoResponsabilidad> findByResponsabilidadId(
+            UUID responsabilidadId,
             Pageable pageable
     );
 

@@ -24,12 +24,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
 @RestController
-@RequestMapping(ApiConstants.API_V1 + "/empleados/{empleadoId}/responsabilidades")
+@RequestMapping(ApiConstants.API_V1 + "/empleado-responsabilidades")
 @RequiredArgsConstructor
 @Tag(
         name = "Empleados Responsabilidades",
@@ -44,11 +45,10 @@ public class EmpleadoResponsabilidadController {
     @PostMapping
     @Operation(summary = "Registrar una responsabilidad asignada a un empleado")
     public ResponseEntity<ApiResponse<EmpleadoResponsabilidadResponse>> create(
-            @PathVariable UUID empleadoId,
             @Valid @RequestBody EmpleadoResponsabilidadRequest request
     ) {
         EmpleadoResponsabilidadResponse response =
-                empleadoResponsabilidadService.create(empleadoId, request);
+                empleadoResponsabilidadService.create(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -63,12 +63,11 @@ public class EmpleadoResponsabilidadController {
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar la responsabilidad asignada a un empleado")
     public ResponseEntity<ApiResponse<EmpleadoResponsabilidadResponse>> update(
-            @PathVariable UUID empleadoId,
             @PathVariable UUID id,
             @Valid @RequestBody EmpleadoResponsabilidadRequest request
     ) {
         EmpleadoResponsabilidadResponse response =
-                empleadoResponsabilidadService.update(empleadoId, id, request);
+                empleadoResponsabilidadService.update(id, request);
 
         return ResponseEntity.ok(
                 ApiResponse.success(
@@ -81,26 +80,25 @@ public class EmpleadoResponsabilidadController {
     @GetMapping("/{id}")
     @Operation(summary = "Obtener una responsabilidad asignada a un empleado por su identificador")
     public ResponseEntity<ApiResponse<EmpleadoResponsabilidadResponse>> findById(
-            @PathVariable UUID empleadoId,
             @PathVariable UUID id
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        empleadoResponsabilidadService.findById(empleadoId, id)
+                        empleadoResponsabilidadService.findById(id)
                 )
         );
     }
 
     @GetMapping
-    @Operation(summary = "Listar las responsabilidades asignadas a un empleado de forma paginada")
+    @Operation(summary = "Listar las responsabilidades asignadas a empleados de forma paginada, con filtro opcional por responsabilidad")
     public ResponseEntity<ApiResponse<PageResponse<EmpleadoResponsabilidadResponse>>> findAll(
-            @PathVariable UUID empleadoId,
+            @RequestParam(required = false) UUID responsabilidadId,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        empleadoResponsabilidadService.findAllByEmpleado(
-                                empleadoId,
+                        empleadoResponsabilidadService.findAll(
+                                responsabilidadId,
                                 pageRequest
                         )
                 )
@@ -110,10 +108,9 @@ public class EmpleadoResponsabilidadController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una responsabilidad asignada a un empleado")
     public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable UUID empleadoId,
             @PathVariable UUID id
     ) {
-        empleadoResponsabilidadService.delete(empleadoId, id);
+        empleadoResponsabilidadService.delete(id);
 
         return ResponseEntity.ok(
                 ApiResponse.success(

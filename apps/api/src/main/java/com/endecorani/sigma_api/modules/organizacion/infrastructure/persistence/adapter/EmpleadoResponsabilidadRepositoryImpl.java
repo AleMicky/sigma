@@ -35,12 +35,19 @@ public class EmpleadoResponsabilidadRepositoryImpl implements EmpleadoResponsabi
     }
 
     @Override
-    public Page<EmpleadoResponsabilidad> findByEmpleadoId(
-            UUID empleadoId,
+    public Page<EmpleadoResponsabilidad> findAll(Pageable pageable) {
+        return springRepository
+                .findAll(pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<EmpleadoResponsabilidad> findByResponsabilidadId(
+            UUID responsabilidadId,
             Pageable pageable
     ) {
         return springRepository
-                .findByEmpleadoId(empleadoId, pageable)
+                .findByResponsabilidadId(responsabilidadId, pageable)
                 .map(mapper::toDomain);
     }
 

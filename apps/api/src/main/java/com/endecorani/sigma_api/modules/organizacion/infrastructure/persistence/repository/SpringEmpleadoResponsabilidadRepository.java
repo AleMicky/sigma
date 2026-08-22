@@ -12,8 +12,8 @@ import java.util.UUID;
 public interface SpringEmpleadoResponsabilidadRepository
         extends JpaRepository<EmpleadoResponsabilidadEntity, UUID> {
 
-    Page<EmpleadoResponsabilidadEntity> findByEmpleadoId(
-            UUID empleadoId,
+    Page<EmpleadoResponsabilidadEntity> findByResponsabilidadId(
+            UUID responsabilidadId,
             Pageable pageable
     );
 }

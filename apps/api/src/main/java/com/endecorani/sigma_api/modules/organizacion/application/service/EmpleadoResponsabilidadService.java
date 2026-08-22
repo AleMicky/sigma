@@ -17,6 +17,7 @@ import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,25 +49,25 @@ public class EmpleadoResponsabilidadService {
 
     @Transactional
     public EmpleadoResponsabilidadResponse create(
-            UUID empleadoId,
             EmpleadoResponsabilidadRequest request
     ) {
-        requireEmpleadoExists(empleadoId);
+        requireEmpleadoExists(request.empleadoId());
         validateRequest(request);
 
-        EmpleadoResponsabilidad empleadoResponsabilidad = toDomain(empleadoId, request);
+        EmpleadoResponsabilidad empleadoResponsabilidad = toDomain(request.empleadoId(), request);
         return toResponse(empleadoResponsabilidadRepository.save(empleadoResponsabilidad));
     }
 
     @Transactional
     public EmpleadoResponsabilidadResponse update(
-            UUID empleadoId,
             UUID id,
             EmpleadoResponsabilidadRequest request
     ) {
-        EmpleadoResponsabilidad empleadoResponsabilidad = findResponsabilidadOfEmpleado(empleadoId, id);
+        EmpleadoResponsabilidad empleadoResponsabilidad = findEmpleadoResponsabilidadById(id);
+        requireEmpleadoExists(request.empleadoId());
         validateRequest(request);
 
+        empleadoResponsabilidad.setEmpleadoId(request.empleadoId());
         empleadoResponsabilidad.setResponsabilidadId(request.responsabilidadId());
         empleadoResponsabilidad.setFechaInicio(request.fechaInicio());
         empleadoResponsabilidad.setFechaFin(request.fechaFin());
@@ -75,44 +76,39 @@ public class EmpleadoResponsabilidadService {
     }
 
     @Transactional(readOnly = true)
-    public EmpleadoResponsabilidadResponse findById(UUID empleadoId, UUID id) {
-        return toResponse(findResponsabilidadOfEmpleado(empleadoId, id));
+    public EmpleadoResponsabilidadResponse findById(UUID id) {
+        return toResponse(findEmpleadoResponsabilidadById(id));
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<EmpleadoResponsabilidadResponse> findAllByEmpleado(
-            UUID empleadoId,
+    public PageResponse<EmpleadoResponsabilidadResponse> findAll(
+            UUID responsabilidadId,
             PageRequestDto pageRequest
     ) {
-        requireEmpleadoExists(empleadoId);
-
-        return PageResponse.from(
-                empleadoResponsabilidadRepository.findByEmpleadoId(
-                        empleadoId,
+        Page<EmpleadoResponsabilidad> page = (responsabilidadId != null)
+                ? empleadoResponsabilidadRepository.findByResponsabilidadId(
+                        responsabilidadId,
                         pageRequest.toPageable(SORT_FIELDS)
-                ),
-                this::toResponse
-        );
+                )
+                : empleadoResponsabilidadRepository.findAll(
+                        pageRequest.toPageable(SORT_FIELDS)
+                );
+
+        return PageResponse.from(page, this::toResponse);
     }
 
     @Transactional
-    public void delete(UUID empleadoId, UUID id) {
-        findResponsabilidadOfEmpleado(empleadoId, id);
+    public void delete(UUID id) {
+        findEmpleadoResponsabilidadById(id);
         empleadoResponsabilidadRepository.deleteById(id);
     }
 
-    private EmpleadoResponsabilidad findResponsabilidadOfEmpleado(UUID empleadoId, UUID id) {
-        EmpleadoResponsabilidad empleadoResponsabilidad = empleadoResponsabilidadRepository
+    private EmpleadoResponsabilidad findEmpleadoResponsabilidadById(UUID id) {
+        return empleadoResponsabilidadRepository
                 .findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("EmpleadoResponsabilidad", id)
                 );
-
-        if (!empleadoResponsabilidad.getEmpleadoId().equals(empleadoId)) {
-            throw new ResourceNotFoundException("EmpleadoResponsabilidad", id);
-        }
-
-        return empleadoResponsabilidad;
     }
 
     private void requireEmpleadoExists(UUID empleadoId) {
