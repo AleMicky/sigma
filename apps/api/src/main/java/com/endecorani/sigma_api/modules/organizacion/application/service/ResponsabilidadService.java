@@ -100,7 +100,7 @@ public class ResponsabilidadService extends AbstractCrudService<
     @Override
     protected ResponsabilidadResponse toResponse(Responsabilidad domain) {
 
-       
+
         return new ResponsabilidadResponse(
                 domain.getId(),
                 domain.getCodigo(),
