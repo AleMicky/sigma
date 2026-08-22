@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Award, Plus } from "lucide-react"
+import { Award, HelpCircle, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
@@ -25,12 +25,14 @@ import { useDeleteResponsabilidad } from "../api/responsabilidad.mutations"
 import { responsabilidadQueries } from "../api/responsabilidad.queries"
 import type { Responsabilidad } from "../api/responsabilidad.service"
 import { ResponsabilidadFormDialog } from "../components/ResponsabilidadFormDialog"
+import { ResponsabilidadHelpModal } from "../components/ResponsabilidadHelpModal"
 import { ResponsabilidadMasterItem } from "../components/ResponsabilidadMasterItem"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function ResponsabilidadesPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [editing, setEditing] = useState<Responsabilidad | null>(null)
   const [deleting, setDeleting] = useState<Responsabilidad | null>(null)
 
@@ -110,6 +112,15 @@ export function ResponsabilidadesPage() {
               />
               <Button
                 size="sm"
+                variant="outline"
+                type="button"
+                onClick={() => setHelpOpen(true)}
+              >
+                <HelpCircle className="size-4 text-primary" />
+                <span className="sr-only">Guía</span>
+              </Button>
+              <Button
+                size="sm"
                 type="button"
                 onClick={openCreate}
                 className="shrink-0"
@@ -131,9 +142,19 @@ export function ResponsabilidadesPage() {
           />
           <Button
             size="sm"
+            variant="outline"
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            className="gap-1.5 border-border/80 hover:bg-muted"
+          >
+            <HelpCircle className="size-4 text-primary" />
+            <span>Guía de Roles</span>
+          </Button>
+          <Button
+            size="sm"
             type="button"
             onClick={openCreate}
-            className="shrink-0 gap-1.5"
+            className="shrink-0 gap-1.5 shadow-2xs"
           >
             <Plus className="size-4" />
             Nueva Responsabilidad
@@ -257,6 +278,12 @@ export function ResponsabilidadesPage() {
             revealDetail(saved.id)
           }
         }}
+      />
+
+      {/* Modal de Guía de Responsabilidades */}
+      <ResponsabilidadHelpModal
+        open={helpOpen}
+        onOpenChange={setHelpOpen}
       />
 
       {/* Modal de Confirmación de Eliminación */}
