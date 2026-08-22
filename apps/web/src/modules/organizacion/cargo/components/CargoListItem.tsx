@@ -1,9 +1,7 @@
-import { useState } from "react"
-import { Briefcase, Check, Copy } from "lucide-react"
-import { toast } from "sonner"
+import { Briefcase } from "lucide-react"
 
+import { AuditInfo } from "@/shared/components/audit-info"
 import { RowActions } from "@/shared/components/row-actions"
-import { formatDateTime } from "@/shared/utils/date.utils"
 
 import { useDeleteCargo } from "../api/cargo.mutations"
 import type { Cargo } from "../api/cargo.service"
@@ -20,19 +18,6 @@ export function CargoListItem({
   onDelete,
 }: CargoListItemProps) {
   const deleteMutation = useDeleteCargo()
-  const [copied, setCopied] = useState(false)
-
-  const audit =
-    "auditoria" in cargo && cargo.auditoria ? cargo.auditoria : cargo
-  const createdAt = audit.createdAt ? formatDateTime(audit.createdAt) : null
-
-  function copyCode(e: React.MouseEvent) {
-    e.stopPropagation()
-    navigator.clipboard.writeText(cargo.codigo)
-    setCopied(true)
-    toast.success(`Código "${cargo.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   return (
     <li className="group flex items-center justify-between gap-3 px-3.5 py-2.5 transition-colors hover:bg-muted/40">
@@ -51,19 +36,9 @@ export function CargoListItem({
             >
               {cargo.nombre}
             </button>
-            <button
-              type="button"
-              onClick={copyCode}
-              title="Copiar código"
-              className="inline-flex shrink-0 items-center gap-1 rounded bg-muted/80 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              <span>{cargo.codigo}</span>
-              {copied ? (
-                <Check className="size-2.5 text-emerald-500" />
-              ) : (
-                <Copy className="size-2.5 opacity-50 group-hover:opacity-80" />
-              )}
-            </button>
+            <code className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              {cargo.codigo}
+            </code>
           </div>
 
           {cargo.descripcion ? (
@@ -78,13 +53,13 @@ export function CargoListItem({
         </div>
       </div>
 
-      {/* Acciones y Fecha */}
-      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-        {createdAt ? (
-          <span className="hidden text-[11px] text-muted-foreground xl:inline">
-            {createdAt}
-          </span>
-        ) : null}
+      {/* Auditoría y Acciones */}
+      <div className="flex shrink-0 items-center gap-3">
+        <AuditInfo
+          data={cargo}
+          compact
+          className="hidden sm:inline-block max-w-[200px] text-right"
+        />
 
         <RowActions
           className="shrink-0"

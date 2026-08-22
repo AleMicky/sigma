@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 
 import { isApiError } from "@/shared/api"
+import { AuditInfo } from "@/shared/components/audit-info"
 import {
   FormDialog,
   FormDialogSubmit,
@@ -181,6 +182,12 @@ export function CargoFormDialog({
           )
         }}
       </form.Field>
+
+      {isEditing && cargo ? (
+        <div className="pt-2 border-t">
+          <AuditInfo data={cargo} />
+        </div>
+      ) : null}
     </FormDialog>
   )
 }
