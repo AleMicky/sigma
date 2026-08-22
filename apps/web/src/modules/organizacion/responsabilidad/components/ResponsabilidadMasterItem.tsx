@@ -1,4 +1,4 @@
-import { Award, ChevronRight } from "lucide-react"
+import { Award, ChevronRight, Layers } from "lucide-react"
 
 import { RowActions } from "@/shared/components/row-actions"
 import { Badge } from "@/shared/components/ui/badge"
@@ -25,60 +25,66 @@ export function ResponsabilidadMasterItem({
     <li
       onClick={() => onSelect(responsabilidad)}
       className={cn(
-        "group relative flex cursor-pointer items-start justify-between gap-3 rounded-xl border p-3 sm:p-3.5 transition-all shadow-2xs",
+        "group relative flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-2.5 sm:p-3 transition-all shadow-2xs",
         isSelected
           ? "border-primary bg-primary/5 shadow-xs ring-1 ring-primary/20 dark:bg-primary/10"
           : "border-border/80 bg-card hover:border-primary/40 hover:bg-muted/30",
       )}
     >
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        <span
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {/* Avatar / Thumbnail con gradiente idéntico al estilo de referencia */}
+        <div
           className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors shadow-2xs mt-0.5",
+            "flex size-11 shrink-0 items-center justify-center rounded-xl font-bold text-sm border shadow-2xs transition-colors",
             isSelected
-              ? "bg-primary text-primary-foreground shadow-primary/20"
-              : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground",
+              ? "bg-primary text-primary-foreground border-primary shadow-primary/20"
+              : "bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 text-primary border-primary/20 group-hover:border-primary/40",
           )}
         >
-          <Award className="size-4" />
-        </span>
+          <Award className="size-5" />
+        </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Datos de la Responsabilidad */}
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <code
+              className={cn(
+                "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0",
+                isSelected
+                  ? "bg-primary/20 text-primary"
+                  : "bg-muted text-foreground",
+              )}
+            >
+              {responsabilidad.codigo}
+            </code>
             <span
               className={cn(
-                "truncate text-xs font-semibold sm:text-sm",
-                isSelected ? "text-primary font-bold" : "text-foreground",
+                "font-bold text-xs sm:text-sm truncate",
+                isSelected ? "text-primary" : "text-foreground",
               )}
             >
               {responsabilidad.nombre}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
+            <Layers className="size-3 text-primary shrink-0 opacity-80" />
+            <span className="truncate">
+              {responsabilidad.descripcion || "Responsabilidad organizacional"}
+            </span>
+            <span className="text-muted-foreground/40 font-bold">•</span>
             <Badge
               variant="outline"
-              className={cn(
-                "font-mono text-[10px] px-1.5 py-0 font-normal",
-                isSelected
-                  ? "border-primary/30 text-primary bg-primary/5"
-                  : "text-muted-foreground bg-muted/60",
-              )}
+              className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground bg-background/80 shrink-0"
             >
-              {responsabilidad.codigo}
+              Rol
             </Badge>
           </div>
-
-          {responsabilidad.descripcion ? (
-            <p className="line-clamp-1 text-[11px] text-muted-foreground mt-0.5">
-              {responsabilidad.descripcion}
-            </p>
-          ) : null}
         </div>
       </div>
 
       <div
-        className="flex items-center gap-1 shrink-0 pt-0.5"
+        className="flex items-center gap-1 shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
         <RowActions
