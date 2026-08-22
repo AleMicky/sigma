@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query"
 import {
   Award,
   Briefcase,
-  Building,
   CheckCircle2,
   ListOrdered,
   Pencil,
@@ -45,8 +44,6 @@ function getTipoIcon(tipo: TipoAprobador) {
       return <UserCheck className="size-3.5 text-blue-500" />
     case "CARGO":
       return <Briefcase className="size-3.5 text-purple-500" />
-    case "UNIDAD":
-      return <Building className="size-3.5 text-emerald-500" />
     case "RESPONSABILIDAD":
       return <Award className="size-3.5 text-amber-500" />
   }
@@ -58,8 +55,6 @@ function getTipoLabel(tipo: TipoAprobador) {
       return "Empleado"
     case "CARGO":
       return "Cargo"
-    case "UNIDAD":
-      return "Unidad"
     case "RESPONSABILIDAD":
       return "Responsabilidad"
   }
@@ -162,11 +157,8 @@ export function GrupoAprobadorDetallesDrawer({
                         `Empleado (${det.empleadoId})`
                       : det.tipoAprobador === "CARGO"
                         ? det.cargoInfo?.nombre || `Cargo (${det.cargoId})`
-                        : det.tipoAprobador === "UNIDAD"
-                          ? det.unidadInfo?.nombre ||
-                            `Unidad (${det.unidadId})`
-                          : det.responsabilidadInfo?.nombre ||
-                            `Responsabilidad (${det.responsabilidadId})`
+                        : det.responsabilidadInfo?.nombre ||
+                          `Responsabilidad (${det.responsabilidadId})`
 
                   return (
                     <li
@@ -218,18 +210,6 @@ export function GrupoAprobadorDetallesDrawer({
                           className="text-[10px] py-0 px-1.5 font-normal"
                         >
                           Tipo: {getTipoLabel(det.tipoAprobador)}
-                        </Badge>
-
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] py-0 px-1.5 font-normal text-muted-foreground"
-                        >
-                          Alcance:{" "}
-                          {det.alcance === "GLOBAL"
-                            ? "Global"
-                            : det.unidadInfo?.nombre
-                              ? `Unidad (${det.unidadInfo.nombre})`
-                              : "Unidad Específica"}
                         </Badge>
 
                         {det.requiereAprobacion ? (

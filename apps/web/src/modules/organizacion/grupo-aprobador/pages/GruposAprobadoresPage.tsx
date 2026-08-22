@@ -13,6 +13,9 @@ import {
   usePaginatedSearch,
 } from "@/shared/hooks/use-paginated-search"
 
+import { grupoAprobadorDependienteQueries } from "../../grupo-aprobador-dependiente/api/grupo-aprobador-dependiente.queries"
+import type { GrupoAprobadorDependiente } from "../../grupo-aprobador-dependiente/api/grupo-aprobador-dependiente.service"
+import { GrupoAprobadorDependienteFormDialog } from "../../grupo-aprobador-dependiente/components/GrupoAprobadorDependienteFormDialog"
 import { grupoAprobadorDetalleQueries } from "../../grupo-aprobador-detalle/api/grupo-aprobador-detalle.queries"
 import type { GrupoAprobadorDetalle } from "../../grupo-aprobador-detalle/api/grupo-aprobador-detalle.service"
 import { GrupoAprobadorDetalleFormDialog } from "../../grupo-aprobador-detalle/components/GrupoAprobadorDetalleFormDialog"
@@ -32,6 +35,9 @@ export function GruposAprobadoresPage() {
   const [detalleDialogOpen, setDetalleDialogOpen] = useState(false)
   const [editingDetalle, setEditingDetalle] =
     useState<GrupoAprobadorDetalle | null>(null)
+  const [dependienteDialogOpen, setDependienteDialogOpen] = useState(false)
+  const [editingDependiente, setEditingDependiente] =
+    useState<GrupoAprobadorDependiente | null>(null)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
 
   const grupoSearch = usePaginatedSearch()
@@ -70,6 +76,15 @@ export function GruposAprobadoresPage() {
     enabled: Boolean(masterDetail.selectedId),
   })
 
+  // Consulta de dependientes del grupo seleccionado para el banner de estadísticas
+  const selectedDependientesQuery = useQuery({
+    ...grupoAprobadorDependienteQueries.list(masterDetail.selectedId ?? "", {
+      page: 0,
+      size: 1,
+    }),
+    enabled: Boolean(masterDetail.selectedId),
+  })
+
   function openCreateGrupo() {
     setEditingGrupo(null)
     setGrupoDialogOpen(true)
@@ -88,6 +103,16 @@ export function GruposAprobadoresPage() {
   function openEditDetalle(detalle: GrupoAprobadorDetalle) {
     setEditingDetalle(detalle)
     setDetalleDialogOpen(true)
+  }
+
+  function openCreateDependiente() {
+    setEditingDependiente(null)
+    setDependienteDialogOpen(true)
+  }
+
+  function openEditDependiente(dependiente: GrupoAprobadorDependiente) {
+    setEditingDependiente(dependiente)
+    setDependienteDialogOpen(true)
   }
 
   return (
@@ -119,7 +144,11 @@ export function GruposAprobadoresPage() {
             <div className="flex items-center gap-1.5 sm:gap-2">
               <RefreshButton
                 size="sm"
-                queries={[gruposQuery, selectedDetallesQuery]}
+                queries={[
+                  gruposQuery,
+                  selectedDetallesQuery,
+                  selectedDependientesQuery,
+                ]}
               />
 
               <Button
@@ -144,17 +173,7 @@ export function GruposAprobadoresPage() {
                   <Plus className="size-3.5" />
                   <span>Crear Grupo</span>
                 </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  type="button"
-                  onClick={openCreateDetalle}
-                  className="shrink-0 gap-1 shadow-2xs"
-                >
-                  <Plus className="size-3.5" />
-                  <span>Agregar Aprobador</span>
-                </Button>
-              )}
+              ) : null}
             </div>
           }
           master={
@@ -190,6 +209,8 @@ export function GruposAprobadoresPage() {
               onPageChange={detalleSearch.setPage}
               onAddAprobador={openCreateDetalle}
               onEditAprobador={openEditDetalle}
+              onAddDependiente={openCreateDependiente}
+              onEditDependiente={openEditDependiente}
             />
           }
         >
@@ -221,6 +242,27 @@ export function GruposAprobadoresPage() {
                   detalleSearch.setPage(0)
                 }
                 selectedDetallesQuery.refetch()
+              }}
+            />
+          ) : null}
+
+          {/* Modal para Asociar / Editar Dependiente */}
+          {masterDetail.selected ? (
+            <GrupoAprobadorDependienteFormDialog
+              key={
+                editingDependiente?.id ??
+                `new-dependiente-${masterDetail.selected.id}`
+              }
+              grupoAprobadorId={masterDetail.selected.id}
+              grupoAprobadorNombre={masterDetail.selected.nombre}
+              open={dependienteDialogOpen}
+              onOpenChange={setDependienteDialogOpen}
+              dependiente={editingDependiente}
+              onSuccess={() => {
+                if (!editingDependiente) {
+                  detalleSearch.setPage(0)
+                }
+                selectedDependientesQuery.refetch()
               }}
             />
           ) : null}

@@ -6,10 +6,7 @@ import type {
   EmpleadoResumen,
 } from "@/shared/types/resumen.types"
 
-import type {
-  AlcanceAprobador,
-  TipoAprobador,
-} from "../schemas/grupo-aprobador-detalle.schema"
+import type { TipoAprobador } from "../schemas/grupo-aprobador-detalle.schema"
 import { grupoAprobadorDetalleEndpoints } from "./grupo-aprobador-detalle.endpoints"
 
 export type GrupoAprobadorDetalle = AuditableEntity & {
@@ -17,15 +14,12 @@ export type GrupoAprobadorDetalle = AuditableEntity & {
   tipoAprobador: TipoAprobador
   empleadoInfo?: EmpleadoResumen | null
   cargoInfo?: CatalogoResumen | null
-  unidadInfo?: CatalogoResumen | null
   responsabilidadInfo?: CatalogoResumen | null
-  alcance: AlcanceAprobador
   orden: number
   requiereAprobacion: boolean
   grupoAprobadorId?: string
   empleadoId?: string | null
   cargoId?: string | null
-  unidadId?: string | null
   responsabilidadId?: string | null
 }
 
@@ -33,9 +27,7 @@ export type GrupoAprobadorDetallePayload = {
   tipoAprobador: TipoAprobador
   empleadoId?: string | null
   cargoId?: string | null
-  unidadId?: string | null
   responsabilidadId?: string | null
-  alcance: AlcanceAprobador
   orden: number
   requiereAprobacion: boolean
 }
