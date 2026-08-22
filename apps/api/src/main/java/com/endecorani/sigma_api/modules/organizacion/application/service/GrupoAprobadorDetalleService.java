@@ -1,13 +1,20 @@
 package com.endecorani.sigma_api.modules.organizacion.application.service;
 
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.GrupoAprobadorDetalleRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResumenResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.GrupoAprobadorDetalleResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.enums.AlcanceAprobador;
 import com.endecorani.sigma_api.modules.organizacion.domain.enums.TipoAprobador;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.GrupoAprobadorDetalle;
+import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.GrupoAprobadorDetalleRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.GrupoAprobadorRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.ResponsabilidadRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.dto.response.CatalogoResumenResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -18,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +44,14 @@ public class GrupoAprobadorDetalleService {
     private final GrupoAprobadorDetalleRepository grupoAprobadorDetalleRepository;
 
     private final GrupoAprobadorRepository grupoAprobadorRepository;
+
+    private final EmpleadoRepository empleadoRepository;
+
+    private final PersonaRepository personaRepository;
+
+    private final CargoRepository cargoRepository;
+
+    private final ResponsabilidadRepository responsabilidadRepository;
 
     @Transactional
     public GrupoAprobadorDetalleResponse create(
@@ -174,16 +191,89 @@ public class GrupoAprobadorDetalleService {
 
         return new GrupoAprobadorDetalleResponse(
                 domain.getId(),
-                domain.getGrupoAprobadorId(),
+                buildGrupoAprobadorInfo(domain.getGrupoAprobadorId()),
                 domain.getTipoAprobador(),
-                domain.getEmpleadoId(),
-                domain.getCargoId(),
-                domain.getUnidadId(),
-                domain.getResponsabilidadId(),
+                buildEmpleadoInfo(domain.getEmpleadoId()),
+                buildCargoInfo(domain.getCargoId()),
+                null,
+                buildResponsabilidadInfo(domain.getResponsabilidadId()),
                 domain.getAlcance(),
                 domain.getOrden(),
                 domain.getRequiereAprobacion(),
                 auditoria
         );
+    }
+
+    private CatalogoResumenResponse buildGrupoAprobadorInfo(UUID grupoAprobadorId) {
+        if (grupoAprobadorId == null) {
+            return null;
+        }
+
+        return grupoAprobadorRepository.findById(grupoAprobadorId)
+                .map(grupo -> new CatalogoResumenResponse(
+                        grupo.getId(),
+                        grupo.getCodigo(),
+                        grupo.getNombre()
+                ))
+                .orElse(null);
+    }
+
+    private EmpleadoResumenResponse buildEmpleadoInfo(UUID empleadoId) {
+        if (empleadoId == null) {
+            return null;
+        }
+
+        return empleadoRepository.findById(empleadoId)
+                .map(empleado -> new EmpleadoResumenResponse(
+                        empleado.getId(),
+                        empleado.getCodigo(),
+                        buildNombreCompleto(empleado.getPersonaId())
+                ))
+                .orElse(null);
+    }
+
+    private String buildNombreCompleto(UUID personaId) {
+        if (personaId == null) {
+            return null;
+        }
+
+        return personaRepository.findById(personaId)
+                .map(this::buildNombreCompleto)
+                .orElse(null);
+    }
+
+    private String buildNombreCompleto(Persona persona) {
+        return Stream.of(
+                        persona.getNombres(),
+                        persona.getPrimerApellido(),
+                        persona.getSegundoApellido()
+                )
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .collect(Collectors.joining(" "));
+    }
+
+    private CatalogoResumenResponse buildCargoInfo(UUID cargoId) {
+        if (cargoId == null) {
+            return null;
+        }
+
+        return cargoRepository.findById(cargoId)
+                .map(cargo -> new CatalogoResumenResponse(cargo.getId(), cargo.getCodigo(), cargo.getNombre()))
+                .orElse(null);
+    }
+
+    private CatalogoResumenResponse buildResponsabilidadInfo(UUID responsabilidadId) {
+        if (responsabilidadId == null) {
+            return null;
+        }
+
+        return responsabilidadRepository.findById(responsabilidadId)
+                .map(responsabilidad -> new CatalogoResumenResponse(
+                        responsabilidad.getId(),
+                        responsabilidad.getCodigo(),
+                        responsabilidad.getNombre()
+                ))
+                .orElse(null);
     }
 }

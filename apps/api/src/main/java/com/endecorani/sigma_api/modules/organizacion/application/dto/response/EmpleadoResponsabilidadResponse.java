@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.organizacion.application.dto.response;
 
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.dto.response.CatalogoResumenResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -12,9 +13,9 @@ import java.util.UUID;
 )
 public record EmpleadoResponsabilidadResponse(
         UUID id,
-        UUID empleadoId,
-        UUID responsabilidadId,
-        UUID unidadId,
+        EmpleadoResumenResponse empleadoInfo,
+        CatalogoResumenResponse responsabilidadInfo,
+        CatalogoResumenResponse unidadInfo,
         LocalDate fechaInicio,
         LocalDate fechaFin,
         AuditoriaResponse auditoria

@@ -10,7 +10,6 @@ import java.util.UUID;
         description = "Información de una responsabilidad"
 )
 public record ResponsabilidadResponse(
-
         UUID id,
         String codigo,
         String nombre,

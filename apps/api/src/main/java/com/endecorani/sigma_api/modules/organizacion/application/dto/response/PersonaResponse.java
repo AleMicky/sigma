@@ -11,7 +11,6 @@ import java.util.UUID;
         description = "Información de una persona"
 )
 public record PersonaResponse(
-
         UUID id,
         String tipoDocumento,
         String numeroDocumento,
@@ -24,4 +23,6 @@ public record PersonaResponse(
         String correo,
         AuditoriaResponse auditoria
 ) {
+
 }
+

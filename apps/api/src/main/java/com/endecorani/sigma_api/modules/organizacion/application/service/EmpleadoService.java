@@ -2,7 +2,9 @@ package com.endecorani.sigma_api.modules.organizacion.application.service;
 
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.EmpleadoRequest;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResumenResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
+import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.AreaRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
@@ -10,6 +12,7 @@ import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoS
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.dto.response.CatalogoResumenResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -23,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -116,43 +121,6 @@ public class EmpleadoService extends AbstractCrudService<
 
     @Override
     protected EmpleadoResponse toResponse(Empleado domain) {
-        String personaNombre = null;
-        String personaDoc = null;
-        if (domain.getPersonaId() != null) {
-            var personaOpt = personaRepository.findById(domain.getPersonaId());
-            if (personaOpt.isPresent()) {
-                var p = personaOpt.get();
-                personaDoc = p.getNumeroDocumento();
-                StringBuilder sb = new StringBuilder();
-                if (p.getNombres() != null && !p.getNombres().isBlank()) {
-                    sb.append(p.getNombres().trim());
-                }
-                if (p.getPrimerApellido() != null && !p.getPrimerApellido().isBlank()) {
-                    if (!sb.isEmpty()) sb.append(" ");
-                    sb.append(p.getPrimerApellido().trim());
-                }
-                if (p.getSegundoApellido() != null && !p.getSegundoApellido().isBlank()) {
-                    if (!sb.isEmpty()) sb.append(" ");
-                    sb.append(p.getSegundoApellido().trim());
-                }
-                personaNombre = sb.toString();
-            }
-        }
-
-        String areaNombre = null;
-        if (domain.getAreaId() != null) {
-            areaNombre = areaRepository.findById(domain.getAreaId())
-                    .map(com.endecorani.sigma_api.modules.organizacion.domain.model.Area::getNombre)
-                    .orElse(null);
-        }
-
-        String cargoNombre = null;
-        if (domain.getCargoId() != null) {
-            cargoNombre = cargoRepository.findById(domain.getCargoId())
-                    .map(com.endecorani.sigma_api.modules.organizacion.domain.model.Cargo::getNombre)
-                    .orElse(null);
-        }
-
         AuditoriaResponse auditoria = new AuditoriaResponse(
                 domain.getCreatedAt(),
                 domain.getUpdatedAt(),
@@ -162,18 +130,60 @@ public class EmpleadoService extends AbstractCrudService<
 
         return new EmpleadoResponse(
                 domain.getId(),
-                domain.getPersonaId(),
-                personaNombre,
-                personaDoc,
-                domain.getAreaId(),
-                areaNombre,
-                domain.getCargoId(),
-                cargoNombre,
+                buildPersonaInfo(domain.getPersonaId()),
+                buildAreaInfo(domain.getAreaId()),
+                buildCargoInfo(domain.getCargoId()),
                 domain.getCodigo(),
                 domain.getFechaInicio(),
                 domain.getFechaFin(),
                 auditoria
         );
+    }
+
+    private PersonaResumenResponse buildPersonaInfo(UUID personaId) {
+        if (personaId == null) {
+            return null;
+        }
+
+        return personaRepository.findById(personaId)
+                .map(persona -> new PersonaResumenResponse(
+                        persona.getId(),
+                        buildNombreCompleto(persona),
+                        persona.getTipoDocumento(),
+                        persona.getNumeroDocumento()
+                ))
+                .orElse(null);
+    }
+
+    private CatalogoResumenResponse buildAreaInfo(UUID areaId) {
+        if (areaId == null) {
+            return null;
+        }
+
+        return areaRepository.findById(areaId)
+                .map(area -> new CatalogoResumenResponse(area.getId(), area.getCodigo(), area.getNombre()))
+                .orElse(null);
+    }
+
+    private CatalogoResumenResponse buildCargoInfo(UUID cargoId) {
+        if (cargoId == null) {
+            return null;
+        }
+
+        return cargoRepository.findById(cargoId)
+                .map(cargo -> new CatalogoResumenResponse(cargo.getId(), cargo.getCodigo(), cargo.getNombre()))
+                .orElse(null);
+    }
+
+    private String buildNombreCompleto(Persona persona) {
+        return Stream.of(
+                        persona.getNombres(),
+                        persona.getPrimerApellido(),
+                        persona.getSegundoApellido()
+                )
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .collect(Collectors.joining(" "));
     }
 
     @Override
