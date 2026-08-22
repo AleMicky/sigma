@@ -6,6 +6,7 @@ import com.endecorani.sigma_api.modules.organizacion.domain.model.Responsabilida
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.ResponsabilidadRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -99,19 +100,13 @@ public class ResponsabilidadService extends AbstractCrudService<
     @Override
     protected ResponsabilidadResponse toResponse(Responsabilidad domain) {
 
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
-
+       
         return new ResponsabilidadResponse(
                 domain.getId(),
                 domain.getCodigo(),
                 domain.getNombre(),
                 domain.getDescripcion(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 

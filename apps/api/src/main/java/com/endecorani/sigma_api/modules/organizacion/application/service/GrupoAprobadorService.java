@@ -6,6 +6,7 @@ import com.endecorani.sigma_api.modules.organizacion.domain.model.GrupoAprobador
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.GrupoAprobadorRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -100,19 +101,13 @@ public class GrupoAprobadorService extends AbstractCrudService<
     protected GrupoAprobadorResponse toResponse(GrupoAprobador domain) {
 
 
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
 
         return new GrupoAprobadorResponse(
                 domain.getId(),
                 domain.getCodigo(),
                 domain.getNombre(),
                 domain.getDescripcion(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 

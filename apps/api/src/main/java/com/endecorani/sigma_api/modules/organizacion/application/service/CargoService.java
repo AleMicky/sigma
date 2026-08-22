@@ -6,6 +6,7 @@ import com.endecorani.sigma_api.modules.organizacion.domain.model.Cargo;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -99,19 +100,12 @@ public class CargoService extends AbstractCrudService<
     @Override
     protected CargoResponse toResponse(Cargo domain) {
 
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
-
         return new CargoResponse(
                 domain.getId(),
                 domain.getCodigo(),
                 domain.getNombre(),
                 domain.getDescripcion(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 

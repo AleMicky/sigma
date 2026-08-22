@@ -15,6 +15,7 @@ import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRe
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.ResponsabilidadRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.dto.response.CatalogoResumenResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -182,12 +183,7 @@ public class GrupoAprobadorDetalleService {
     }
 
     private GrupoAprobadorDetalleResponse toResponse(GrupoAprobadorDetalle domain) {
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
+
 
         return new GrupoAprobadorDetalleResponse(
                 domain.getId(),
@@ -200,7 +196,7 @@ public class GrupoAprobadorDetalleService {
                 domain.getAlcance(),
                 domain.getOrden(),
                 domain.getRequiereAprobacion(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 

@@ -13,6 +13,7 @@ import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRe
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.dto.response.CatalogoResumenResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -121,13 +122,6 @@ public class EmpleadoService extends AbstractCrudService<
 
     @Override
     protected EmpleadoResponse toResponse(Empleado domain) {
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
-
         return new EmpleadoResponse(
                 domain.getId(),
                 buildPersonaInfo(domain.getPersonaId()),
@@ -136,7 +130,7 @@ public class EmpleadoService extends AbstractCrudService<
                 domain.getCodigo(),
                 domain.getFechaInicio(),
                 domain.getFechaFin(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 
