@@ -121,16 +121,64 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0 0 0 / 18%) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: oklch(1 0 0 / 18%) transparent;
+  }
+
+  /* WebKit and Chromium browsers */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0 0 0 / 15%);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0 0 0 / 30%);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(1 0 0 / 16%);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(1 0 0 / 32%);
+  }
+
   body {
     @apply bg-background text-foreground;
-    }
+  }
+
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
-    }
+  }
+
   html {
     @apply font-sans;
-    }
+  }
+}
+
+/* Utilities for scroll handling */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
 }
 
 .leaflet-control-attribution {
