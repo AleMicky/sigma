@@ -1,11 +1,14 @@
 import {
   CheckCircle2,
+  FileCheck2,
   FileText,
-  HelpCircle,
   Mail,
+  ShieldCheck,
   User,
+  Users,
 } from "lucide-react"
 
+import { Badge } from "@/shared/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -25,50 +28,69 @@ export function PersonaHelpModal({
 }: PersonaHelpModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md sm:max-w-lg">
+      <DialogContent className="max-w-md sm:max-w-xl">
         <DialogHeader>
           <div className="flex items-center gap-2 text-primary">
-            <HelpCircle className="size-5" />
-            <DialogTitle className="font-heading text-xl">
-              Guía del Registro de Personas
-            </DialogTitle>
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <User className="size-4.5" />
+            </div>
+            <div>
+              <DialogTitle className="font-heading text-xl">
+                Guía del Registro de Personas
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Catálogo maestro de personas naturales registradas en el sistema.
+              </DialogDescription>
+            </div>
           </div>
-          <DialogDescription>
-            Información sobre el catálogo maestro de personas naturales en el sistema.
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2 text-sm">
           {/* Concepto Principal */}
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2">
-            <div className="flex items-center gap-2 text-primary font-semibold">
-              <User className="size-4" />
-              <h4>¿Qué es el Registro de Persona?</h4>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-primary font-semibold text-xs">
+                <User className="size-4" />
+                <span>¿Qué es el Registro de Persona Natural?</span>
+              </div>
+              <Badge variant="secondary" className="text-[10px] h-4.5 px-2">
+                Catálogo Maestro
+              </Badge>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Es el catálogo maestro de personas naturales. Contiene información biográfica, documentos de identidad (CI, Pasaporte) y canales de contacto. Es la entidad base para vincular colaboradores a la nómina de empleados o usuarios del sistema.
+              Es el padrón centralizado de personas naturales. Almacena la identidad biográfica, documento de identidad (CI, DNI, Pasaporte) y vías de contacto. Es la entidad base para vincular colaboradores como <strong>Empleados</strong> o asignar responsabilidades de bienes.
             </p>
           </div>
 
-          {/* Relaciones en el Sistema */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="rounded-xl border border-border/80 bg-card p-3.5 space-y-1.5 shadow-2xs">
-              <div className="flex items-center gap-2 text-foreground font-medium text-xs">
-                <FileText className="size-3.5 text-primary" />
-                <span>Identidad Única</span>
+          {/* Componentes Clave */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="rounded-xl border border-border/80 bg-card p-3 space-y-1.5 shadow-2xs">
+              <div className="flex items-center gap-1.5 text-foreground font-medium text-xs">
+                <FileText className="size-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Documento</span>
               </div>
-              <p className="text-[11px] text-muted-foreground leading-normal">
-                El tipo y número de documento garantizan la unicidad del registro en el sistema.
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Tipo, número y complemento que garantizan la unicidad de la persona.
               </p>
             </div>
 
-            <div className="rounded-xl border border-border/80 bg-card p-3.5 space-y-1.5 shadow-2xs">
-              <div className="flex items-center gap-2 text-foreground font-medium text-xs">
-                <Mail className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Canales de Contacto</span>
+            <div className="rounded-xl border border-border/80 bg-card p-3 space-y-1.5 shadow-2xs">
+              <div className="flex items-center gap-1.5 text-foreground font-medium text-xs">
+                <Mail className="size-3.5 text-purple-600 dark:text-purple-400" />
+                <span>Contacto</span>
               </div>
-              <p className="text-[11px] text-muted-foreground leading-normal">
-                Permite registrar correos y teléfonos para notificaciones de mantenimiento y asignaciones.
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Correo electrónico y teléfono para notificaciones y trazabilidad.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border/80 bg-card p-3 space-y-1.5 shadow-2xs">
+              <div className="flex items-center gap-1.5 text-foreground font-medium text-xs">
+                <ShieldCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Vinculación</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Permite la asignación directa a puestos de trabajo y nómina.
               </p>
             </div>
           </div>
@@ -77,21 +99,27 @@ export function PersonaHelpModal({
           <div className="space-y-2 pt-1">
             <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <CheckCircle2 className="size-3.5 text-primary" />
-              Buenas prácticas
+              Recomendaciones de captura
             </h4>
-            <ul className="space-y-1.5 text-xs text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">•</span>
-                <span>Verifica que el número de documento y complemento coincidan con el documento oficial.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">•</span>
-                <span>Registra nombres y apellidos con mayúsculas iniciales y ortografía correcta.</span>
-              </li>
-            </ul>
+            <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
+              <div className="flex items-start gap-2.5 rounded-lg border border-border/50 bg-muted/20 p-2.5">
+                <FileCheck2 className="size-4 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-foreground font-medium">1. Verificación del Documento:</strong> Asegúrate de incluir el complemento si el documento lo requiere (ej. duplicados o extensiones).
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5 rounded-lg border border-border/50 bg-muted/20 p-2.5">
+                <Users className="size-4 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-foreground font-medium">2. Nombres Completos:</strong> Registra nombres y apellidos tal como figuran en el documento de identidad oficial.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </DialogContent>
     </Dialog>
   )
 }
+

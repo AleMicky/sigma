@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
+import { Calendar, FileText, Mail, Phone, User } from "lucide-react"
 
 import { isApiError } from "@/shared/api"
 import { AuditInfo } from "@/shared/components/audit-info"
@@ -55,7 +56,7 @@ export function PersonaFormDialog({
 
       try {
         const payload = {
-          tipoDocumento: value.tipoDocumento.trim(),
+          tipoDocumento: value.tipoDocumento.trim().toUpperCase(),
           numeroDocumento: value.numeroDocumento.trim(),
           complemento: value.complemento?.trim() || null,
           nombres: value.nombres.trim(),
@@ -89,11 +90,11 @@ export function PersonaFormDialog({
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={isEditing ? "Editar persona" : "Nueva persona"}
+      title={isEditing ? "Editar persona" : "Nueva persona natural"}
       description={
         isEditing
-          ? "Actualiza la información del registro de persona."
-          : "Registra una nueva persona en la base de datos."
+          ? "Actualiza los datos biográficos, documento o contacto de la persona."
+          : "Registra una nueva persona natural en el catálogo maestro."
       }
       formError={formError}
       onCancel={() => {
@@ -114,107 +115,98 @@ export function PersonaFormDialog({
         </form.Subscribe>
       }
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <form.Field name="tipoDocumento">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+      {/* Sección 1: Documento de Identidad */}
+      <div className="space-y-3 rounded-xl border border-border/80 bg-muted/20 p-3.5 sm:p-4">
+        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+          <FileText className="size-4 text-primary" />
+          <span>Documento de Identidad</span>
+        </div>
 
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <RequiredFieldLabel htmlFor={field.name}>
-                  Tipo Doc.
-                </RequiredFieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  required
-                  placeholder="CI"
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <form.Field name="tipoDocumento">
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
 
-        <form.Field name="numeroDocumento">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <RequiredFieldLabel htmlFor={field.name}>
+                    Tipo Documento
+                  </RequiredFieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
+                    required
+                    placeholder="Ej. CI, DNI, PAS"
+                    className="uppercase"
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
 
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <RequiredFieldLabel htmlFor={field.name}>
-                  Nro. Documento
-                </RequiredFieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  required
-                  placeholder="12345678"
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
+          <form.Field name="numeroDocumento">
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
 
-        <form.Field name="complemento">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <RequiredFieldLabel htmlFor={field.name}>
+                    Nro. Documento
+                  </RequiredFieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    required
+                    placeholder="Ej. 12345678"
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
 
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor={field.name}>Compl.</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value ?? ""}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="1A"
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
+          <form.Field name="complemento">
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor={field.name}>Complemento</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value ?? ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
+                    placeholder="Ej. 1A (Opcional)"
+                    className="uppercase"
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
+        </div>
       </div>
 
-      <form.Field name="nombres">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+      {/* Sección 2: Nombres y Apellidos */}
+      <div className="space-y-3 rounded-xl border border-border/80 bg-muted/20 p-3.5 sm:p-4">
+        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+          <User className="size-4 text-primary" />
+          <span>Datos Personales</span>
+        </div>
 
-          return (
-            <Field data-invalid={isInvalid || undefined}>
-              <RequiredFieldLabel htmlFor={field.name}>
-                Nombres
-              </RequiredFieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                required
-                placeholder="Juan Carlos"
-              />
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          )
-        }}
-      </form.Field>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <form.Field name="primerApellido">
+        <form.Field name="nombres">
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
@@ -222,7 +214,7 @@ export function PersonaFormDialog({
             return (
               <Field data-invalid={isInvalid || undefined}>
                 <RequiredFieldLabel htmlFor={field.name}>
-                  Primer Apellido
+                  Nombres
                 </RequiredFieldLabel>
                 <Input
                   id={field.name}
@@ -231,7 +223,7 @@ export function PersonaFormDialog({
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   required
-                  placeholder="Pérez"
+                  placeholder="Ej. Juan Carlos"
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
@@ -239,96 +231,140 @@ export function PersonaFormDialog({
           }}
         </form.Field>
 
-        <form.Field name="segundoApellido">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <form.Field name="primerApellido">
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
 
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor={field.name}>Segundo Apellido</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value ?? ""}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Gómez"
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <RequiredFieldLabel htmlFor={field.name}>
+                    Primer Apellido
+                  </RequiredFieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    required
+                    placeholder="Ej. Pérez"
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
+
+          <form.Field name="segundoApellido">
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor={field.name}>Segundo Apellido</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value ?? ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Ej. Gómez (Opcional)"
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <form.Field name="fechaNacimiento">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+      {/* Sección 3: Contacto y Nacimiento */}
+      <div className="space-y-3 rounded-xl border border-border/80 bg-muted/20 p-3.5 sm:p-4">
+        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+          <Phone className="size-4 text-primary" />
+          <span>Contacto y Fecha de Nacimiento</span>
+        </div>
 
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor={field.name}>F. Nacimiento</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="date"
-                  value={field.state.value ?? ""}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <form.Field name="fechaNacimiento">
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
 
-        <form.Field name="telefono">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor={field.name} className="gap-1.5">
+                    <Calendar className="size-3.5 text-muted-foreground" />
+                    <span>F. Nacimiento</span>
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="date"
+                    value={field.state.value ?? ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
 
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor={field.name}>Teléfono</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value ?? ""}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="+591 77712345"
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
+          <form.Field name="telefono">
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
 
-        <form.Field name="correo">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor={field.name} className="gap-1.5">
+                    <Phone className="size-3.5 text-muted-foreground" />
+                    <span>Teléfono</span>
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value ?? ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="+591 77712345"
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
 
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor={field.name}>Correo</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="email"
-                  value={field.state.value ?? ""}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="juan@ejemplo.com"
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
+          <form.Field name="correo">
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor={field.name} className="gap-1.5">
+                    <Mail className="size-3.5 text-muted-foreground" />
+                    <span>Correo</span>
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="email"
+                    value={field.state.value ?? ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="juan@ejemplo.com"
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
+        </div>
       </div>
 
       {isEditing && persona ? (
@@ -339,3 +375,4 @@ export function PersonaFormDialog({
     </FormDialog>
   )
 }
+
