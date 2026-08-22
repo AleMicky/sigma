@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  Award,
   BookOpen,
   Boxes,
   Briefcase,
@@ -18,6 +19,7 @@ import {
   Ruler,
   ScrollText,
   Settings2,
+  ShieldCheck,
   SlidersHorizontal,
   Tags,
   Type,
@@ -60,6 +62,16 @@ export const navItems: NavItem[] = [
         title: "Personas",
         to: routes.organizacion.personas,
         icon: Users,
+      },
+      {
+        title: "Responsabilidades",
+        to: routes.organizacion.responsabilidades,
+        icon: Award,
+      },
+      {
+        title: "Grupos Aprobadores",
+        to: routes.organizacion.gruposAprobadores,
+        icon: ShieldCheck,
       },
       {
         title: "Mantenimiento",
