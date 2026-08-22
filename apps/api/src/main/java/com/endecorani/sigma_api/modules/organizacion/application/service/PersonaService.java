@@ -1,10 +1,11 @@
 package com.endecorani.sigma_api.modules.organizacion.application.service;
 
-import com.endecorani.sigma_api.modules.organizacion.application.dto.PersonaRequest;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.PersonaResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.request.PersonaRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
+import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -127,6 +128,14 @@ public class PersonaService extends AbstractCrudService<
 
     @Override
     protected PersonaResponse toResponse(Persona domain) {
+
+        AuditoriaResponse auditoria = new AuditoriaResponse(
+                domain.getCreatedAt(),
+                domain.getUpdatedAt(),
+                domain.getCreatedBy(),
+                domain.getUpdatedBy()
+        );
+
         return new PersonaResponse(
                 domain.getId(),
                 domain.getTipoDocumento(),
@@ -138,10 +147,7 @@ public class PersonaService extends AbstractCrudService<
                 domain.getFechaNacimiento(),
                 domain.getTelefono(),
                 domain.getCorreo(),
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
+                auditoria
         );
     }
 

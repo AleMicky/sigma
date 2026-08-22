@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.organizacion.application.dto;
+package com.endecorani.sigma_api.modules.organizacion.application.dto.response;
 
 import com.endecorani.sigma_api.modules.organizacion.domain.enums.EstadoMigracion;
 import io.swagger.v3.oas.annotations.media.Schema;

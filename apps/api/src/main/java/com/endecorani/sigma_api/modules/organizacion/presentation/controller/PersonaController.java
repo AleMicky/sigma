@@ -1,8 +1,8 @@
 package com.endecorani.sigma_api.modules.organizacion.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.PersonaRequest;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.PersonaResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.request.PersonaRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.service.PersonaService;
 import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;

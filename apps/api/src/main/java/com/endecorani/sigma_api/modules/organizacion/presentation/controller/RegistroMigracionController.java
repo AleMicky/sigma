@@ -1,7 +1,7 @@
 package com.endecorani.sigma_api.modules.organizacion.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.RegistroMigracionResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.RegistroMigracionResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.service.RegistroMigracionService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;

@@ -1,9 +1,9 @@
 package com.endecorani.sigma_api.modules.organizacion.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.request.AreaRequest;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.response.AreaResponse;
-import com.endecorani.sigma_api.modules.organizacion.application.service.AreaService;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.request.GrupoAprobadorRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.GrupoAprobadorResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.service.GrupoAprobadorService;
 import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -26,41 +26,41 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(ApiConstants.API_V1 + "/areas")
+@RequestMapping(ApiConstants.API_V1 + "/grupos-aprobadores")
 @RequiredArgsConstructor
 @Tag(
-        name = "Áreas",
-        description = "Administración del catálogo de áreas de la organización"
+        name = "Grupos Aprobadores",
+        description = "Administración del catálogo de grupos aprobadores de la organización"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 @PreAuthorize("hasAnyRole('ADMIN')")
-public class AreaController
+public class GrupoAprobadorController
         extends AbstractCrudController<
-        AreaRequest,
-        AreaResponse,
+        GrupoAprobadorRequest,
+        GrupoAprobadorResponse,
         UUID
         > {
 
-    private final AreaService areaService;
+    private final GrupoAprobadorService grupoAprobadorService;
 
     @Override
     protected CrudService<
-            AreaRequest,
-            AreaResponse,
+            GrupoAprobadorRequest,
+            GrupoAprobadorResponse,
             UUID
             > service() {
-        return areaService;
+        return grupoAprobadorService;
     }
 
     @GetMapping(params = "q")
-    @Operation(summary = "Buscar áreas por código o nombre")
-    public ResponseEntity<ApiResponse<PageResponse<AreaResponse>>> search(
+    @Operation(summary = "Buscar grupos aprobadores por código o nombre")
+    public ResponseEntity<ApiResponse<PageResponse<GrupoAprobadorResponse>>> search(
             @RequestParam String q,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        areaService.search(q, pageRequest)
+                        grupoAprobadorService.search(q, pageRequest)
                 )
         );
     }

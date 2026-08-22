@@ -7,19 +7,14 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Schema(
-        name = "EmpleadoResponse",
-        description = "Información de un empleado con datos enriquecidos de persona, área y cargo"
+        name = "EmpleadoResponsabilidadResponse",
+        description = "Información de la asignación de una responsabilidad a un empleado"
 )
-public record EmpleadoResponse(
+public record EmpleadoResponsabilidadResponse(
         UUID id,
-        UUID personaId,
-        String personaNombreCompleto,
-        String personaDocumento,
-        UUID areaId,
-        String areaNombre,
-        UUID cargoId,
-        String cargoNombre,
-        String codigo,
+        UUID empleadoId,
+        UUID responsabilidadId,
+        UUID unidadId,
         LocalDate fechaInicio,
         LocalDate fechaFin,
         AuditoriaResponse auditoria

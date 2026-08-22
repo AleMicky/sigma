@@ -1,9 +1,9 @@
 package com.endecorani.sigma_api.modules.organizacion.application.service;
 
-import com.endecorani.sigma_api.modules.organizacion.application.dto.request.CargoRequest;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.response.CargoResponse;
-import com.endecorani.sigma_api.modules.organizacion.domain.model.Cargo;
-import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepository;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.request.ResponsabilidadRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.ResponsabilidadResponse;
+import com.endecorani.sigma_api.modules.organizacion.domain.model.Responsabilidad;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.ResponsabilidadRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -21,18 +21,18 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class CargoService extends AbstractCrudService<
-        Cargo,
-        CargoRequest,
-        CargoResponse,
+public class ResponsabilidadService extends AbstractCrudService<
+        Responsabilidad,
+        ResponsabilidadRequest,
+        ResponsabilidadResponse,
         UUID
         > {
 
     private static final int CODIGO_MIN_LENGTH = 2;
-    private static final int CODIGO_MAX_LENGTH = 50;
+    private static final int CODIGO_MAX_LENGTH = 30;
     private static final int NOMBRE_MIN_LENGTH = 2;
     private static final int NOMBRE_MAX_LENGTH = 100;
-    private static final int DESCRIPCION_MAX_LENGTH = 255;
+    private static final int DESCRIPCION_MAX_LENGTH = 250;
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -42,11 +42,11 @@ public class CargoService extends AbstractCrudService<
             "updatedAt"
     );
 
-    private final CargoRepository cargoRepository;
+    private final ResponsabilidadRepository responsabilidadRepository;
 
     @Override
-    protected CrudRepository<Cargo, UUID> repository() {
-        return cargoRepository;
+    protected CrudRepository<Responsabilidad, UUID> repository() {
+        return responsabilidadRepository;
     }
 
     @Override
@@ -55,7 +55,7 @@ public class CargoService extends AbstractCrudService<
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<CargoResponse> search(
+    public PageResponse<ResponsabilidadResponse> search(
             String query,
             PageRequestDto pageRequest
     ) {
@@ -66,7 +66,7 @@ public class CargoService extends AbstractCrudService<
         }
 
         return PageResponse.from(
-                cargoRepository.search(
+                responsabilidadRepository.search(
                         normalized,
                         pageRequest.toPageable(allowedSortFields())
                 ),
@@ -75,11 +75,11 @@ public class CargoService extends AbstractCrudService<
     }
 
     @Override
-    protected Cargo toDomain(CargoRequest request) {
+    protected Responsabilidad toDomain(ResponsabilidadRequest request) {
         String codigo = requireNormalizedCodigo(request.codigo());
         validateUniqueCodigoForCreate(codigo);
 
-        return Cargo.builder()
+        return Responsabilidad.builder()
                 .codigo(codigo)
                 .nombre(requireNormalizedNombre(request.nombre()))
                 .descripcion(normalizeDescripcion(request.descripcion()))
@@ -87,7 +87,7 @@ public class CargoService extends AbstractCrudService<
     }
 
     @Override
-    protected void updateDomain(Cargo domain, CargoRequest request) {
+    protected void updateDomain(Responsabilidad domain, ResponsabilidadRequest request) {
         String codigo = requireNormalizedCodigo(request.codigo());
         validateUniqueCodigoForUpdate(codigo, domain.getId());
 
@@ -97,7 +97,7 @@ public class CargoService extends AbstractCrudService<
     }
 
     @Override
-    protected CargoResponse toResponse(Cargo domain) {
+    protected ResponsabilidadResponse toResponse(Responsabilidad domain) {
 
         AuditoriaResponse auditoria = new AuditoriaResponse(
                 domain.getCreatedAt(),
@@ -106,7 +106,7 @@ public class CargoService extends AbstractCrudService<
                 domain.getUpdatedBy()
         );
 
-        return new CargoResponse(
+        return new ResponsabilidadResponse(
                 domain.getId(),
                 domain.getCodigo(),
                 domain.getNombre(),
@@ -117,14 +117,14 @@ public class CargoService extends AbstractCrudService<
 
     @Override
     protected String resourceName() {
-        return "Cargo";
+        return "Responsabilidad";
     }
 
     private void validateUniqueCodigoForCreate(String codigo) {
-        if (cargoRepository.existsByCodigoIgnoreCase(codigo)) {
+        if (responsabilidadRepository.existsByCodigoIgnoreCase(codigo)) {
             throw new ConflictException(
-                    "CARGO_ALREADY_EXISTS",
-                    "Ya existe un cargo con el código '%s'"
+                    "RESPONSABILIDAD_ALREADY_EXISTS",
+                    "Ya existe una responsabilidad con el código '%s'"
                             .formatted(codigo)
             );
         }
@@ -134,13 +134,13 @@ public class CargoService extends AbstractCrudService<
             String codigo,
             UUID currentId
     ) {
-        if (cargoRepository.existsByCodigoIgnoreCaseAndIdNot(
+        if (responsabilidadRepository.existsByCodigoIgnoreCaseAndIdNot(
                 codigo,
                 currentId
         )) {
             throw new ConflictException(
-                    "CARGO_ALREADY_EXISTS",
-                    "Ya existe otro cargo con el código '%s'"
+                    "RESPONSABILIDAD_ALREADY_EXISTS",
+                    "Ya existe otra responsabilidad con el código '%s'"
                             .formatted(codigo)
             );
         }
@@ -153,7 +153,7 @@ public class CargoService extends AbstractCrudService<
                 || normalized.length() < CODIGO_MIN_LENGTH
                 || normalized.length() > CODIGO_MAX_LENGTH) {
             throw new BusinessException(
-                    "INVALID_CARGO_CODIGO",
+                    "INVALID_RESPONSABILIDAD_CODIGO",
                     "El código debe tener entre %d y %d caracteres"
                             .formatted(CODIGO_MIN_LENGTH, CODIGO_MAX_LENGTH)
             );
@@ -169,7 +169,7 @@ public class CargoService extends AbstractCrudService<
                 || normalized.length() < NOMBRE_MIN_LENGTH
                 || normalized.length() > NOMBRE_MAX_LENGTH) {
             throw new BusinessException(
-                    "INVALID_CARGO_NOMBRE",
+                    "INVALID_RESPONSABILIDAD_NOMBRE",
                     "El nombre debe tener entre %d y %d caracteres"
                             .formatted(NOMBRE_MIN_LENGTH, NOMBRE_MAX_LENGTH)
             );
@@ -184,7 +184,7 @@ public class CargoService extends AbstractCrudService<
         if (normalized != null
                 && normalized.length() > DESCRIPCION_MAX_LENGTH) {
             throw new BusinessException(
-                    "INVALID_CARGO_DESCRIPCION",
+                    "INVALID_RESPONSABILIDAD_DESCRIPCION",
                     "La descripción no puede superar los %d caracteres"
                             .formatted(DESCRIPCION_MAX_LENGTH)
             );

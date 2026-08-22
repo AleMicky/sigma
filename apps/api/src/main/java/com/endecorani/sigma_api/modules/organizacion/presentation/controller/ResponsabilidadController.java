@@ -1,9 +1,9 @@
 package com.endecorani.sigma_api.modules.organizacion.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.request.AreaRequest;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.response.AreaResponse;
-import com.endecorani.sigma_api.modules.organizacion.application.service.AreaService;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.request.ResponsabilidadRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.ResponsabilidadResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.service.ResponsabilidadService;
 import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -26,41 +26,41 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(ApiConstants.API_V1 + "/areas")
+@RequestMapping(ApiConstants.API_V1 + "/responsabilidades")
 @RequiredArgsConstructor
 @Tag(
-        name = "Áreas",
-        description = "Administración del catálogo de áreas de la organización"
+        name = "Responsabilidades",
+        description = "Administración del catálogo de responsabilidades de la organización"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 @PreAuthorize("hasAnyRole('ADMIN')")
-public class AreaController
+public class ResponsabilidadController
         extends AbstractCrudController<
-        AreaRequest,
-        AreaResponse,
+        ResponsabilidadRequest,
+        ResponsabilidadResponse,
         UUID
         > {
 
-    private final AreaService areaService;
+    private final ResponsabilidadService responsabilidadService;
 
     @Override
     protected CrudService<
-            AreaRequest,
-            AreaResponse,
+            ResponsabilidadRequest,
+            ResponsabilidadResponse,
             UUID
             > service() {
-        return areaService;
+        return responsabilidadService;
     }
 
     @GetMapping(params = "q")
-    @Operation(summary = "Buscar áreas por código o nombre")
-    public ResponseEntity<ApiResponse<PageResponse<AreaResponse>>> search(
+    @Operation(summary = "Buscar responsabilidades por código o nombre")
+    public ResponseEntity<ApiResponse<PageResponse<ResponsabilidadResponse>>> search(
             @RequestParam String q,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        areaService.search(q, pageRequest)
+                        responsabilidadService.search(q, pageRequest)
                 )
         );
     }

@@ -1,7 +1,7 @@
 package com.endecorani.sigma_api.modules.organizacion.application.service;
 
-import com.endecorani.sigma_api.modules.organizacion.application.dto.EmpleadoRequest;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.EmpleadoResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.request.EmpleadoRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.AreaRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepository;
@@ -9,6 +9,7 @@ import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoR
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoSearchCriteria;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
+import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -152,6 +153,13 @@ public class EmpleadoService extends AbstractCrudService<
                     .orElse(null);
         }
 
+        AuditoriaResponse auditoria = new AuditoriaResponse(
+                domain.getCreatedAt(),
+                domain.getUpdatedAt(),
+                domain.getCreatedBy(),
+                domain.getUpdatedBy()
+        );
+
         return new EmpleadoResponse(
                 domain.getId(),
                 domain.getPersonaId(),
@@ -164,10 +172,7 @@ public class EmpleadoService extends AbstractCrudService<
                 domain.getCodigo(),
                 domain.getFechaInicio(),
                 domain.getFechaFin(),
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
+                auditoria
         );
     }
 

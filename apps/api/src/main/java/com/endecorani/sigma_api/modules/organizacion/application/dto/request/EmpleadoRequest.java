@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.organizacion.application.dto;
+package com.endecorani.sigma_api.modules.organizacion.application.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

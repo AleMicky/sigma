@@ -6,10 +6,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
 
 @Schema(
-        name = "AreaResponse",
-        description = "Información de un área"
+        name = "ResponsabilidadResponse",
+        description = "Información de una responsabilidad"
 )
-public record AreaResponse(
+public record ResponsabilidadResponse(
+
         UUID id,
         String codigo,
         String nombre,

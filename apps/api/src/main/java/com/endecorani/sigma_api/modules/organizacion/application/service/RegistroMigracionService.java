@@ -1,6 +1,6 @@
 package com.endecorani.sigma_api.modules.organizacion.application.service;
 
-import com.endecorani.sigma_api.modules.organizacion.application.dto.RegistroMigracionResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.RegistroMigracionResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.RegistroMigracion;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.RegistroMigracionRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
