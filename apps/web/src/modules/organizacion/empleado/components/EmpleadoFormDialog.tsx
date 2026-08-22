@@ -41,9 +41,9 @@ export function EmpleadoFormDialog({
   const updateMutation = useUpdateEmpleado()
   const [formError, setFormError] = useState<string | null>(null)
 
-  const personasQuery = useQuery(personaQueries.list({ size: 200, sortBy: "nombres", direction: "ASC" }))
-  const areasQuery = useQuery(areaQueries.list({ size: 200, sortBy: "nombre", direction: "ASC" }))
-  const cargosQuery = useQuery(cargoQueries.list({ size: 200, sortBy: "nombre", direction: "ASC" }))
+  const personasQuery = useQuery(personaQueries.list({ size: 100, sortBy: "nombres", direction: "ASC" }))
+  const areasQuery = useQuery(areaQueries.list({ size: 100, sortBy: "nombre", direction: "ASC" }))
+  const cargosQuery = useQuery(cargoQueries.list({ size: 100, sortBy: "nombre", direction: "ASC" }))
 
   const personas = personasQuery.data?.content ?? []
   const areas = areasQuery.data?.content ?? []

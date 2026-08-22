@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { useQuery } from "@tanstack/react-query"
 import { Calendar, UserCheck } from "lucide-react"
 
 import { isApiError } from "@/shared/api"
@@ -13,7 +12,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 
-import { empleadoQueries } from "../../empleado/api/empleado.queries"
+import { EmpleadoCombobox } from "../../empleado/components/EmpleadoCombobox"
 import {
   useCreateEmpleadoResponsabilidad,
   useUpdateEmpleadoResponsabilidad,
@@ -45,11 +44,6 @@ export function EmpleadoResponsabilidadFormDialog({
   const createMutation = useCreateEmpleadoResponsabilidad()
   const updateMutation = useUpdateEmpleadoResponsabilidad()
   const [formError, setFormError] = useState<string | null>(null)
-
-  const empleadosQuery = useQuery(
-    empleadoQueries.list({ size: 200, sortBy: "codigo", direction: "ASC" }),
-  )
-  const empleados = empleadosQuery.data?.content ?? []
 
   const form = useForm({
     defaultValues: asignacion
@@ -103,9 +97,6 @@ export function EmpleadoResponsabilidadFormDialog({
     },
   })
 
-  const selectClassName =
-    "flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
-
   return (
     <FormDialog
       open={open}
@@ -118,7 +109,7 @@ export function EmpleadoResponsabilidadFormDialog({
       description={
         isEditing
           ? `Actualiza el empleado o período de vigencia para "${responsabilidadNombre ?? "la responsabilidad"}".`
-          : `Selecciona el empleado y el período de asignación para "${responsabilidadNombre ?? "la responsabilidad"}".`
+          : `Busca y selecciona el empleado y define el período de asignación para "${responsabilidadNombre ?? "la responsabilidad"}".`
       }
       formError={formError}
       onCancel={() => {
@@ -153,31 +144,19 @@ export function EmpleadoResponsabilidadFormDialog({
             return (
               <Field data-invalid={isInvalid || undefined}>
                 <RequiredFieldLabel htmlFor={field.name}>
-                  Seleccionar Empleado
+                  Seleccionar Empleado (Autocomplete)
                 </RequiredFieldLabel>
-                <select
+
+                <EmpleadoCombobox
                   id={field.name}
                   name={field.name}
                   value={field.state.value}
+                  onValueChange={(val) => field.handleChange(val)}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  required
-                  className={selectClassName}
-                >
-                  <option value="">-- Seleccionar Empleado --</option>
-                  {empleados.map((emp) => {
-                    const nombre =
-                      emp.personaInfo?.nombreCompleto ||
-                      emp.personaNombreCompleto ||
-                      `Empleado (${emp.codigo})`
-                    return (
-                      <option key={emp.id} value={emp.id}>
-                        {nombre} [{emp.codigo}]
-                        {emp.cargoInfo?.nombre ? ` - ${emp.cargoInfo.nombre}` : ""}
-                      </option>
-                    )
-                  })}
-                </select>
+                  aria-invalid={isInvalid}
+                  placeholder="Escribe el nombre o código del empleado…"
+                />
+
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
