@@ -261,6 +261,21 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     return name.substring(0, 2).toUpperCase()
   }
 
+  function getEmpleadoNombre(emp?: Empleado | null): string {
+    if (!emp) return ""
+    return emp.personaInfo?.nombreCompleto || emp.personaNombreCompleto || emp.codigo
+  }
+
+  function getEmpleadoCargo(emp?: Empleado | null): string | null {
+    if (!emp) return null
+    return emp.cargoInfo?.nombre || emp.cargoNombre || null
+  }
+
+  function getEmpleadoArea(emp?: Empleado | null): string | null {
+    if (!emp) return null
+    return emp.areaInfo?.nombre || emp.areaNombre || null
+  }
+
   const form = useForm({
     defaultValues: (solicitud
       ? {
@@ -673,7 +688,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           <div className="flex items-center gap-3 min-w-0">
                             {/* Avatar con iniciales */}
                             <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-bold text-sm border border-primary/20 shadow-xs">
-                              {getInitials(selectedEmpleado.personaNombreCompleto || selectedEmpleado.codigo)}
+                              {getInitials(getEmpleadoNombre(selectedEmpleado))}
                             </div>
 
                             {/* Datos del Solicitante */}
@@ -683,23 +698,23 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                                   {selectedEmpleado.codigo}
                                 </code>
                                 <span className="font-semibold text-xs text-foreground truncate">
-                                  {selectedEmpleado.personaNombreCompleto || selectedEmpleado.codigo}
+                                  {getEmpleadoNombre(selectedEmpleado)}
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
-                                {selectedEmpleado.cargoNombre && (
+                                {getEmpleadoCargo(selectedEmpleado) && (
                                   <div className="flex items-center gap-1 font-medium text-foreground/80 truncate">
                                     <Briefcase className="size-3 text-primary shrink-0" />
-                                    <span className="truncate">{selectedEmpleado.cargoNombre}</span>
+                                    <span className="truncate">{getEmpleadoCargo(selectedEmpleado)}</span>
                                   </div>
                                 )}
-                                {selectedEmpleado.areaNombre && (
+                                {getEmpleadoArea(selectedEmpleado) && (
                                   <>
                                     <span className="text-muted-foreground/40">•</span>
                                     <div className="flex items-center gap-1 truncate text-muted-foreground">
                                       <Building2 className="size-3 shrink-0" />
-                                      <span className="truncate">{selectedEmpleado.areaNombre}</span>
+                                      <span className="truncate">{getEmpleadoArea(selectedEmpleado)}</span>
                                     </div>
                                   </>
                                 )}
@@ -724,11 +739,10 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                       ) : (
                         <Combobox
                           items={empleadosList}
-                          itemToStringLabel={(item: Empleado) =>
-                            item
-                              ? `${item.personaNombreCompleto || item.codigo}${item.cargoNombre ? ` - ${item.cargoNombre}` : ""}`
-                              : ""
-                          }
+                          itemToStringLabel={(item: Empleado) => {
+                            const cargo = getEmpleadoCargo(item)
+                            return item ? `${getEmpleadoNombre(item)}${cargo ? ` - ${cargo}` : ""}` : ""
+                          }}
                           itemToStringValue={(item: Empleado) => item?.id ?? ""}
                           value={selectedEmpleado}
                           onValueChange={(val: Empleado | null) => {
@@ -759,50 +773,54 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                               )}
                             </ComboboxEmpty>
                             <ComboboxList>
-                              {(item: Empleado) => (
-                                <ComboboxItem
-                                  key={item.id}
-                                  value={item}
-                                  className="text-xs py-2.5 px-3 cursor-pointer"
-                                >
-                                  <div className="flex items-center gap-3 w-full min-w-0">
-                                    {/* Avatar */}
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs border border-primary/15 shadow-2xs">
-                                      {getInitials(item.personaNombreCompleto || item.codigo)}
-                                    </div>
-
-                                    {/* Info */}
-                                    <div className="flex-1 min-w-0 space-y-0.5">
-                                      <div className="flex items-center gap-2 min-w-0">
-                                        <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.2 rounded shrink-0">
-                                          {item.codigo}
-                                        </code>
-                                        <span className="font-semibold text-foreground truncate text-xs">
-                                          {item.personaNombreCompleto || item.codigo}
-                                        </span>
+                              {(item: Empleado) => {
+                                const cargo = getEmpleadoCargo(item)
+                                const area = getEmpleadoArea(item)
+                                return (
+                                  <ComboboxItem
+                                    key={item.id}
+                                    value={item}
+                                    className="text-xs py-2.5 px-3 cursor-pointer"
+                                  >
+                                    <div className="flex items-center gap-3 w-full min-w-0">
+                                      {/* Avatar */}
+                                      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs border border-primary/15 shadow-2xs">
+                                        {getInitials(getEmpleadoNombre(item))}
                                       </div>
 
-                                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
-                                        {item.cargoNombre && (
-                                          <div className="flex items-center gap-1 font-medium text-foreground/75 truncate">
-                                            <Briefcase className="size-3 text-primary/80 shrink-0" />
-                                            <span className="truncate">{item.cargoNombre}</span>
-                                          </div>
-                                        )}
-                                        {item.areaNombre && (
-                                          <>
-                                            <span className="text-muted-foreground/40">•</span>
-                                            <div className="flex items-center gap-1 truncate text-muted-foreground">
-                                              <Building2 className="size-3 shrink-0" />
-                                              <span className="truncate">{item.areaNombre}</span>
+                                      {/* Info */}
+                                      <div className="flex-1 min-w-0 space-y-0.5">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.2 rounded shrink-0">
+                                            {item.codigo}
+                                          </code>
+                                          <span className="font-semibold text-foreground truncate text-xs">
+                                            {getEmpleadoNombre(item)}
+                                          </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
+                                          {cargo && (
+                                            <div className="flex items-center gap-1 font-medium text-foreground/75 truncate">
+                                              <Briefcase className="size-3 text-primary/80 shrink-0" />
+                                              <span className="truncate">{cargo}</span>
                                             </div>
-                                          </>
-                                        )}
+                                          )}
+                                          {area && (
+                                            <>
+                                              <span className="text-muted-foreground/40">•</span>
+                                              <div className="flex items-center gap-1 truncate text-muted-foreground">
+                                                <Building2 className="size-3 shrink-0" />
+                                                <span className="truncate">{area}</span>
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                </ComboboxItem>
-                              )}
+                                  </ComboboxItem>
+                                )
+                              }}
                             </ComboboxList>
                           </ComboboxContent>
                         </Combobox>
@@ -1312,8 +1330,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           </span>
                           <span className="font-medium text-foreground truncate">
                             {selectedEmpleado
-                              ? selectedEmpleado.personaNombreCompleto ||
-                                selectedEmpleado.codigo
+                              ? getEmpleadoNombre(selectedEmpleado)
                               : "—"}
                           </span>
                         </div>

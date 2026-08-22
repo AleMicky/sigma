@@ -5,6 +5,9 @@ export type AuditableFields = {
   updatedBy: string | null
 }
 
+export type AuditoriaResponse = AuditableFields
+
 export type AuditableEntity = {
   id: string
-} & AuditableFields
+  auditoria?: AuditableFields
+} & Partial<AuditableFields>

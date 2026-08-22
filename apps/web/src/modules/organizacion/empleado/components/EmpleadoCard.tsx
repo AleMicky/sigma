@@ -20,19 +20,36 @@ export function EmpleadoCard({ empleado, onEdit }: EmpleadoCardProps) {
   const deleteMutation = useDeleteEmpleado()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
-  const personaQuery = useQuery(personaQueries.detail(empleado.personaId))
-  const areaQuery = useQuery(areaQueries.detail(empleado.areaId))
-  const cargoQuery = useQuery(cargoQueries.detail(empleado.cargoId))
+  const personaQuery = useQuery({
+    ...personaQueries.detail(empleado.personaId ?? ""),
+    enabled: !empleado.personaInfo && Boolean(empleado.personaId),
+  })
+  const areaQuery = useQuery({
+    ...areaQueries.detail(empleado.areaId ?? ""),
+    enabled: !empleado.areaInfo && Boolean(empleado.areaId),
+  })
+  const cargoQuery = useQuery({
+    ...cargoQueries.detail(empleado.cargoId ?? ""),
+    enabled: !empleado.cargoInfo && Boolean(empleado.cargoId),
+  })
 
   const persona = personaQuery.data
   const area = areaQuery.data
   const cargo = cargoQuery.data
 
-  const nombrePersona = persona
-    ? [persona.nombres, persona.primerApellido, persona.segundoApellido]
-        .filter(Boolean)
-        .join(" ")
-    : "Cargando persona..."
+  const nombrePersona =
+    empleado.personaInfo?.nombreCompleto ||
+    (persona
+      ? [persona.nombres, persona.primerApellido, persona.segundoApellido]
+          .filter(Boolean)
+          .join(" ")
+      : empleado.personaNombreCompleto || "Cargando persona...")
+
+  const nombreArea =
+    empleado.areaInfo?.nombre || area?.nombre || empleado.areaNombre || "Área no asignada"
+
+  const nombreCargo =
+    empleado.cargoInfo?.nombre || cargo?.nombre || empleado.cargoNombre || "Cargo no asignado"
 
   return (
     <li className="group flex min-w-0 gap-2.5 rounded-xl border border-border bg-card p-3 sm:gap-3 sm:p-4">
@@ -64,16 +81,12 @@ export function EmpleadoCard({ empleado, onEdit }: EmpleadoCardProps) {
         <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground sm:grid-cols-2">
           <div className="flex items-center gap-1.5 truncate">
             <Building className="size-3 shrink-0 text-muted-foreground" />
-            <span className="truncate">
-              {area?.nombre ?? "Área no asignada"}
-            </span>
+            <span className="truncate">{nombreArea}</span>
           </div>
 
           <div className="flex items-center gap-1.5 truncate">
             <Briefcase className="size-3 shrink-0 text-muted-foreground" />
-            <span className="truncate">
-              {cargo?.nombre ?? "Cargo no asignado"}
-            </span>
+            <span className="truncate">{nombreCargo}</span>
           </div>
         </div>
 

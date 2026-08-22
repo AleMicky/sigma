@@ -50,9 +50,9 @@ export function EmpleadoFormDialog({
   const form = useForm({
     defaultValues: empleado
       ? {
-          personaId: empleado.personaId,
-          areaId: empleado.areaId,
-          cargoId: empleado.cargoId,
+          personaId: empleado.personaInfo?.id ?? empleado.personaId ?? "",
+          areaId: empleado.areaInfo?.id ?? empleado.areaId ?? "",
+          cargoId: empleado.cargoInfo?.id ?? empleado.cargoId ?? "",
           codigo: empleado.codigo,
           fechaInicio: empleado.fechaInicio ?? "",
           fechaFin: empleado.fechaFin ?? "",

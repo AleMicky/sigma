@@ -269,8 +269,11 @@ export function ActivoAsignacionModal({
               </option>
               {empleadosDeArea.map((emp) => {
                 const fullName =
-                  emp.personaNombreCompleto || `Empleado (${emp.codigo})`
-                const cargoText = emp.cargoNombre ? ` · ${emp.cargoNombre}` : ""
+                  emp.personaInfo?.nombreCompleto ||
+                  emp.personaNombreCompleto ||
+                  `Empleado (${emp.codigo})`
+                const cargoName = emp.cargoInfo?.nombre || emp.cargoNombre
+                const cargoText = cargoName ? ` · ${cargoName}` : ""
 
                 return (
                   <option key={emp.id} value={emp.id}>

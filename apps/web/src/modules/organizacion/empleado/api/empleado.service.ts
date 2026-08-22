@@ -2,16 +2,21 @@ import { createCrudService, http } from "@/shared/api"
 import type { PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
+import type { CatalogoResumen, PersonaResumen } from "@/shared/types/resumen.types"
+
 import { empleadoEndpoints } from "./empleado.endpoints"
 import type { EmpleadoListFilters } from "./empleado.keys"
 
 export type Empleado = AuditableEntity & {
-  personaId: string
+  personaInfo?: PersonaResumen | null
+  areaInfo?: CatalogoResumen | null
+  cargoInfo?: CatalogoResumen | null
+  personaId?: string
   personaNombreCompleto?: string | null
   personaDocumento?: string | null
-  areaId: string
+  areaId?: string
   areaNombre?: string | null
-  cargoId: string
+  cargoId?: string
   cargoNombre?: string | null
   codigo: string
   fechaInicio: string | null

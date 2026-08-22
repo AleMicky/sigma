@@ -3,7 +3,7 @@ import { cn } from "@/shared/lib/utils"
 import type { AuditableFields } from "@/shared/types/audit.types"
 
 type AuditInfoProps = {
-  data: AuditableFields
+  data: AuditableFields | { auditoria?: AuditableFields | null; createdAt?: string; updatedAt?: string | null; createdBy?: string | null; updatedBy?: string | null }
   className?: string
   compact?: boolean
 }
@@ -13,15 +13,19 @@ export function AuditInfo({
   className,
   compact = false,
 }: AuditInfoProps) {
+  const audit = "auditoria" in data && data.auditoria ? data.auditoria : (data as AuditableFields)
+  const createdAt = audit.createdAt ?? ""
+  const updatedAt = audit.updatedAt ?? audit.createdAt ?? ""
+  const createdBy = audit.createdBy ?? null
+  const updatedBy = audit.updatedBy ?? audit.createdBy ?? null
+
   const createdLabel = [
-    formatDateTime(data.createdAt),
-    data.createdBy ? `por ${data.createdBy}` : null,
+    formatDateTime(createdAt),
+    createdBy ? `por ${createdBy}` : null,
   ]
     .filter(Boolean)
     .join(" ")
 
-  const updatedAt = data.updatedAt ?? data.createdAt
-  const updatedBy = data.updatedBy ?? data.createdBy
   const updatedLabel = [
     formatDateTime(updatedAt),
     updatedBy ? `por ${updatedBy}` : null,
