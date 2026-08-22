@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Briefcase, HelpCircle, Plus } from "lucide-react"
 
@@ -10,6 +10,7 @@ import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
 import { RefreshButton } from "@/shared/components/refresh-button"
+import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
 import {
   useClampPage,
@@ -20,10 +21,6 @@ import { cn } from "@/shared/lib/utils"
 import { useDeleteCargo } from "../api/cargo.mutations"
 import { cargoQueries } from "../api/cargo.queries"
 import type { Cargo } from "../api/cargo.service"
-import {
-  CargoFilterToolbar,
-  type DescriptionFilterMode,
-} from "../components/CargoFilterToolbar"
 import { CargoFormDialog } from "../components/CargoFormDialog"
 import { CargoHelpModal } from "../components/CargoHelpModal"
 import { CargoListItem } from "../components/CargoListItem"
@@ -35,8 +32,6 @@ export function CargosPage() {
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const [editing, setEditing] = useState<Cargo | null>(null)
   const [deleting, setDeleting] = useState<Cargo | null>(null)
-  const [descriptionFilter, setDescriptionFilter] =
-    useState<DescriptionFilterMode>("all")
 
   const search = usePaginatedSearch()
   const deleteMutation = useDeleteCargo()
@@ -51,18 +46,7 @@ export function CargosPage() {
     }),
   )
 
-  const rawCargos = cargosQuery.data?.content ?? []
-
-  // Client-side filtering by description presence
-  const filteredCargos = useMemo(() => {
-    if (descriptionFilter === "with_desc") {
-      return rawCargos.filter((c) => Boolean(c.descripcion?.trim()))
-    }
-    if (descriptionFilter === "without_desc") {
-      return rawCargos.filter((c) => !c.descripcion?.trim())
-    }
-    return rawCargos
-  }, [rawCargos, descriptionFilter])
+  const cargos = cargosQuery.data?.content ?? []
 
   useClampPage(
     search.page,
@@ -78,15 +62,6 @@ export function CargosPage() {
   function openEdit(cargo: Cargo) {
     setEditing(cargo)
     setDialogOpen(true)
-  }
-
-  const hasActiveFilters = Boolean(
-    search.search.trim() || descriptionFilter !== "all",
-  )
-
-  function resetFilters() {
-    search.setSearch("")
-    setDescriptionFilter("all")
   }
 
   async function handleDelete() {
@@ -169,18 +144,19 @@ export function CargosPage() {
         </div>
       </header>
 
-      {/* Filter Toolbar */}
-      <CargoFilterToolbar
-        searchValue={search.search}
-        onSearchChange={search.setSearch}
-        descriptionFilter={descriptionFilter}
-        onDescriptionFilterChange={setDescriptionFilter}
-        hasActiveFilters={hasActiveFilters}
-        onResetFilters={resetFilters}
-      />
+      {/* Buscador de ancho completo */}
+      <div className="flex shrink-0 py-3">
+        <SearchField
+          value={search.search}
+          onChange={search.setSearch}
+          placeholder="Buscar por código o nombre…"
+          aria-label="Buscar cargos"
+          className="w-full min-w-0"
+        />
+      </div>
 
       {/* Content Section - Compact List */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {cargosQuery.isLoading ? (
           <ListSkeleton
             rows={8}
@@ -192,23 +168,19 @@ export function CargosPage() {
             title={getErrorMessage(cargosQuery.error)}
             className="text-destructive"
           />
-        ) : filteredCargos.length === 0 ? (
+        ) : cargos.length === 0 ? (
           <EmptyState
             icon={<Briefcase className="size-4 text-muted-foreground" />}
             title={
-              hasActiveFilters ? "Sin resultados" : "No hay cargos registrados"
+              search.search.trim() ? "Sin resultados" : "No hay cargos registrados"
             }
             description={
-              hasActiveFilters
-                ? "Prueba con otra búsqueda o limpia los filtros."
+              search.search.trim()
+                ? "Prueba con otro código o nombre."
                 : "Crea el primer cargo para definir la estructura laboral de la organización."
             }
             action={
-              hasActiveFilters ? (
-                <Button size="sm" type="button" onClick={resetFilters}>
-                  Limpiar filtros
-                </Button>
-              ) : (
+              search.search.trim() ? undefined : (
                 <Button size="sm" type="button" onClick={openCreate}>
                   <Plus />
                   Crear Cargo
@@ -225,7 +197,7 @@ export function CargosPage() {
               )}
             >
               <ul className="divide-y divide-border/60 rounded-xl border border-border/80 bg-card overflow-hidden shadow-2xs">
-                {filteredCargos.map((cargo) => (
+                {cargos.map((cargo) => (
                   <CargoListItem
                     key={cargo.id}
                     cargo={cargo}
