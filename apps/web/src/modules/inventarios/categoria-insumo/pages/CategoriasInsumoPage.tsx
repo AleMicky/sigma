@@ -9,6 +9,7 @@ import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
+import { RefreshButton } from "@/shared/components/refresh-button"
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -103,30 +104,40 @@ export function CategoriasInsumoPage() {
                 {categoriasQuery.data.totalElements}
               </span>
             )}
-            <Button
-              size="sm"
-              type="button"
-              onClick={openCreate}
-              className="shrink-0 md:hidden ml-auto"
-            >
-              <Plus className="size-4" />
-              <span className="sr-only sm:not-sr-only">Crear</span>
-            </Button>
+            <div className="flex items-center gap-1.5 md:hidden ml-auto">
+              <RefreshButton
+                queries={[categoriasQuery, tiposInsumoQuery]}
+              />
+              <Button
+                size="sm"
+                type="button"
+                onClick={openCreate}
+                className="shrink-0"
+              >
+                <Plus className="size-4" />
+                <span className="sr-only sm:not-sr-only">Crear</span>
+              </Button>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
             Clasifica los insumos en grupos funcionales por tipo de insumo (ej. Lubricantes, Repuestos, Químicos).
           </p>
         </div>
 
-        <Button
-          size="sm"
-          type="button"
-          onClick={openCreate}
-          className="hidden shrink-0 self-start md:inline-flex shadow-xs"
-        >
-          <Plus className="size-4" />
-          Nueva Categoría
-        </Button>
+        <div className="hidden shrink-0 items-center gap-2 self-start md:flex">
+          <RefreshButton
+            queries={[categoriasQuery, tiposInsumoQuery]}
+          />
+          <Button
+            size="sm"
+            type="button"
+            onClick={openCreate}
+            className="shadow-xs"
+          >
+            <Plus className="size-4" />
+            Nueva Categoría
+          </Button>
+        </div>
       </header>
 
       <div className="flex shrink-0 flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">

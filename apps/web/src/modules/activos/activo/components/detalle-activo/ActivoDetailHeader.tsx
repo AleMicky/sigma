@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router"
 import { ArrowLeft, Edit2, Printer, X } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
+import { RefreshButton, type QueryLike } from "@/shared/components/refresh-button"
 import { Button } from "@/shared/components/ui/button"
 
 type ActivoDetailHeaderProps = {
@@ -10,6 +11,9 @@ type ActivoDetailHeaderProps = {
   isEditing?: boolean
   onToggleEdit?: (editing: boolean) => void
   onPrint: () => void
+  onRefresh?: () => void
+  isRefreshing?: boolean
+  queries?: QueryLike | QueryLike[]
 }
 
 export function ActivoDetailHeader({
@@ -18,6 +22,9 @@ export function ActivoDetailHeader({
   isEditing = false,
   onToggleEdit,
   onPrint,
+  onRefresh,
+  isRefreshing,
+  queries,
 }: ActivoDetailHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
@@ -47,6 +54,13 @@ export function ActivoDetailHeader({
       </div>
 
       <div className="flex items-center gap-2 self-start sm:self-auto">
+        <RefreshButton
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
+          queries={queries}
+          className="h-8"
+        />
+
         <Button
           size="sm"
           variant="outline"

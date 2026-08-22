@@ -10,6 +10,7 @@ import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
+import { RefreshButton } from "@/shared/components/refresh-button"
 import { Button } from "@/shared/components/ui/button"
 import {
   useClampPage,
@@ -126,6 +127,11 @@ export function AccesoriosPage() {
               Accesorios de Activos
             </h1>
             <div className="flex items-center gap-1 shrink-0 md:hidden">
+              <RefreshButton
+                size="sm"
+                className="h-7 px-2"
+                queries={[accesoriosQuery, categoriasQuery]}
+              />
               <Button
                 size="sm"
                 variant="outline"
@@ -148,6 +154,12 @@ export function AccesoriosPage() {
         </div>
 
         <div className="hidden shrink-0 md:flex md:items-center md:gap-1.5">
+          <RefreshButton
+            size="sm"
+            className="h-8 gap-1.5 px-2.5 text-xs"
+            queries={[accesoriosQuery, categoriasQuery]}
+          />
+
           <Button
             size="sm"
             variant="outline"

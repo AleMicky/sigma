@@ -156,6 +156,7 @@ export function InsumosPage() {
         totalCategorias={categorias.length}
         insumos={rawInsumos}
         onCreate={goCreate}
+        queries={[insumosQuery, tiposQuery, categoriasQuery, unidadesMedidaQuery]}
       />
 
       {/* Filter and View Mode Toolbar */}

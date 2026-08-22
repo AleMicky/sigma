@@ -11,6 +11,7 @@ import {
   PaginatedList,
 } from "@/shared/components/master-detail"
 import { RowActions } from "@/shared/components/row-actions"
+import { RefreshButton } from "@/shared/components/refresh-button"
 import { SearchField } from "@/shared/components/search-field"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -82,15 +83,21 @@ export function TipoActivoComponentesPage({
           aria-label="Buscar componentes"
           className="w-full max-w-full sm:max-w-sm"
         />
-        <Button
-          size="sm"
-          type="button"
-          onClick={openCreate}
-          className="shrink-0 self-start"
-        >
-          <Plus />
-          Crear componente
-        </Button>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <RefreshButton
+            onRefresh={() => componentesQuery.refetch()}
+            isRefreshing={componentesQuery.isFetching}
+          />
+          <Button
+            size="sm"
+            type="button"
+            onClick={openCreate}
+            className="shrink-0"
+          >
+            <Plus />
+            Crear componente
+          </Button>
+        </div>
       </div>
 
       <PaginatedList

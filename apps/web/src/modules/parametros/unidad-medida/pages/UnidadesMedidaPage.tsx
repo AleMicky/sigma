@@ -9,6 +9,7 @@ import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
+import { RefreshButton } from "@/shared/components/refresh-button"
 import { Button } from "@/shared/components/ui/button"
 import {
   useClampPage,
@@ -123,6 +124,11 @@ export function UnidadesMedidaPage() {
               Unidades de Medida
             </h1>
             <div className="flex items-center gap-1.5 shrink-0 md:hidden">
+              <RefreshButton
+                size="sm"
+                onRefresh={() => unidadesQuery.refetch()}
+                isRefreshing={unidadesQuery.isFetching}
+              />
               <Button
                 size="sm"
                 variant="outline"
@@ -144,6 +150,12 @@ export function UnidadesMedidaPage() {
         </div>
 
         <div className="hidden shrink-0 self-start md:flex md:items-center md:gap-2">
+          <RefreshButton
+            size="sm"
+            onRefresh={() => unidadesQuery.refetch()}
+            isRefreshing={unidadesQuery.isFetching}
+          />
+
           <Button
             size="sm"
             variant="outline"

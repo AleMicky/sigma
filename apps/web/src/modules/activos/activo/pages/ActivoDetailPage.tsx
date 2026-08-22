@@ -254,6 +254,18 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
           isEditing={isEditing}
           onToggleEdit={handleToggleEdit}
           onPrint={handlePrint}
+          queries={[
+            activoQuery,
+            tipoActivoQuery,
+            categoriaQuery,
+            ubicacionQuery,
+            ubicacionesQuery,
+            tiposDatoQuery,
+            atributosDefQuery,
+            valoresQuery,
+            documentosQuery,
+            accesoriosQuery,
+          ]}
         />
 
         {/* Hero Card */}

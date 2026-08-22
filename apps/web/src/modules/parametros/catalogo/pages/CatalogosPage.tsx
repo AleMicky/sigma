@@ -5,6 +5,7 @@ import { Eye, HelpCircle, Plus } from "lucide-react"
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
 import { MasterDetailLayout } from "@/shared/components/master-detail"
+import { RefreshButton } from "@/shared/components/refresh-button"
 import { Button } from "@/shared/components/ui/button"
 import { useMasterDetail } from "@/shared/hooks/use-master-detail"
 import {
@@ -114,6 +115,11 @@ export function CatalogosPage() {
           onBack={masterDetail.backToMaster}
           headerAction={
             <div className="flex items-center gap-1.5 sm:gap-2">
+              <RefreshButton
+                size="sm"
+                queries={[catalogosQuery, selectedItemsQuery]}
+              />
+
               <Button
                 size="sm"
                 variant="outline"

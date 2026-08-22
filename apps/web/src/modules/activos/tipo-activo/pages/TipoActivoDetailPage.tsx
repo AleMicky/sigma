@@ -10,6 +10,7 @@ import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { PageTabs } from "@/shared/components/page-tabs"
+import { RefreshButton } from "@/shared/components/refresh-button"
 import { Button } from "@/shared/components/ui/button"
 
 import { tipoActivoQueries } from "../api/tipo-activo.queries"
@@ -124,15 +125,21 @@ export function TipoActivoDetailPage({
               </div>
             </div>
 
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setEditDialogOpen(true)}
-              className="h-8 px-2.5 shrink-0 self-start sm:self-auto bg-background/80 hover:bg-background shadow-2xs text-xs font-medium"
-            >
-              <Edit2 className="size-3.5" />
-              Editar Tipo
-            </Button>
+            <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+              <RefreshButton
+                queries={[tipoQuery, categoriaQuery]}
+                className="h-8 bg-background/80 hover:bg-background"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setEditDialogOpen(true)}
+                className="h-8 px-2.5 bg-background/80 hover:bg-background shadow-2xs text-xs font-medium"
+              >
+                <Edit2 className="size-3.5" />
+                Editar Tipo
+              </Button>
+            </div>
           </div>
         ) : null}
 

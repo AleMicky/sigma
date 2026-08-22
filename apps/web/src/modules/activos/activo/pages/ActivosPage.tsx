@@ -123,6 +123,7 @@ export function ActivosPage() {
         totalTipos={tipos.length}
         activos={rawActivos}
         onCreate={goCreate}
+        queries={[activosQuery, tiposQuery, ubicacionesQuery]}
       />
 
       {/* Extracted Filter & View Toolbar Component */}

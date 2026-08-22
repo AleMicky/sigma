@@ -20,6 +20,7 @@ import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
+import { RefreshButton } from "@/shared/components/refresh-button"
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -110,7 +111,11 @@ export function ActivoConsultaDocumentosPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <RefreshButton
+              queries={[activosQuery, tiposDocQuery]}
+              className="h-8.5 text-xs shadow-2xs"
+            />
             <Button
               size="sm"
               variant="outline"

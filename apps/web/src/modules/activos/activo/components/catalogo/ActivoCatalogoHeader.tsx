@@ -1,13 +1,21 @@
 import { LayoutGrid, Package } from "lucide-react"
 
+import { RefreshButton, type QueryLike } from "@/shared/components/refresh-button"
+
 interface ActivoCatalogoHeaderProps {
   totalActivos?: number
   totalTipos?: number
+  onRefresh?: () => void
+  isRefreshing?: boolean
+  queries?: QueryLike | QueryLike[]
 }
 
 export function ActivoCatalogoHeader({
   totalActivos,
   totalTipos,
+  onRefresh,
+  isRefreshing,
+  queries,
 }: ActivoCatalogoHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
@@ -26,6 +34,11 @@ export function ActivoCatalogoHeader({
       </div>
 
       <div className="flex items-center gap-2 self-start sm:self-auto">
+        <RefreshButton
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
+          queries={queries}
+        />
         {typeof totalActivos === "number" && (
           <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-2.5 py-1 text-xs font-semibold text-foreground">
             <Package className="size-3.5 text-primary" />

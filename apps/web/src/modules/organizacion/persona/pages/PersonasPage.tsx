@@ -8,6 +8,7 @@ import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
+import { RefreshButton } from "@/shared/components/refresh-button"
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -64,30 +65,42 @@ export function PersonasPage() {
             <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
               Personas
             </h1>
-            <Button
-              size="sm"
-              type="button"
-              onClick={openCreate}
-              className="shrink-0 md:hidden"
-            >
-              <Plus />
-              <span className="sr-only sm:not-sr-only">Crear</span>
-            </Button>
+            <div className="flex items-center gap-1.5 md:hidden">
+              <RefreshButton
+                onRefresh={() => personasQuery.refetch()}
+                isRefreshing={personasQuery.isFetching}
+              />
+              <Button
+                size="sm"
+                type="button"
+                onClick={openCreate}
+                className="shrink-0"
+              >
+                <Plus />
+                <span className="sr-only sm:not-sr-only">Crear</span>
+              </Button>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
             Catálogo de personas vinculadas a la institución.
           </p>
         </div>
 
-        <Button
-          size="sm"
-          type="button"
-          onClick={openCreate}
-          className="hidden shrink-0 self-start md:inline-flex"
-        >
-          <Plus />
-          Crear
-        </Button>
+        <div className="hidden shrink-0 items-center gap-2 self-start md:flex">
+          <RefreshButton
+            onRefresh={() => personasQuery.refetch()}
+            isRefreshing={personasQuery.isFetching}
+          />
+          <Button
+            size="sm"
+            type="button"
+            onClick={openCreate}
+            className="hidden shrink-0 self-start md:inline-flex"
+          >
+            <Plus />
+            Crear
+          </Button>
+        </div>
       </header>
 
       <div className="flex shrink-0 py-3">

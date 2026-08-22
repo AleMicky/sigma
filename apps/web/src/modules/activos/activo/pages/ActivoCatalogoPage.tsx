@@ -110,6 +110,7 @@ export function ActivoCatalogoPage() {
         <ActivoCatalogoHeader
           totalActivos={activosQuery.data?.totalElements ?? rawActivos.length}
           totalTipos={rawTipos.length}
+          queries={[activosQuery, tiposQuery, ubicacionesQuery]}
         />
 
         <ActivoCatalogoToolbar

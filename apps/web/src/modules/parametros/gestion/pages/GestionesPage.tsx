@@ -5,6 +5,7 @@ import { Plus } from "lucide-react"
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
 import { MasterDetailLayout } from "@/shared/components/master-detail"
+import { RefreshButton } from "@/shared/components/refresh-button"
 import { Button } from "@/shared/components/ui/button"
 import { useMasterDetail } from "@/shared/hooks/use-master-detail"
 import {
@@ -77,17 +78,24 @@ export function GestionesPage() {
       backLabel="Volver a gestiones"
       onBack={masterDetail.backToMaster}
       headerAction={
-        masterDetail.showMaster ? (
-          <Button
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <RefreshButton
             size="sm"
-            type="button"
-            onClick={openCreateGestion}
-            className="shrink-0"
-          >
-            <Plus />
-            Crear
-          </Button>
-        ) : null
+            onRefresh={() => gestionesQuery.refetch()}
+            isRefreshing={gestionesQuery.isFetching}
+          />
+          {masterDetail.showMaster ? (
+            <Button
+              size="sm"
+              type="button"
+              onClick={openCreateGestion}
+              className="shrink-0"
+            >
+              <Plus />
+              Crear
+            </Button>
+          ) : null}
+        </div>
       }
       master={
         <GestionMasterPanel

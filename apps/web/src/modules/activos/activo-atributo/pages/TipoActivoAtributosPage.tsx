@@ -11,6 +11,7 @@ import {
   PaginatedList,
 } from "@/shared/components/master-detail"
 import { RowActions } from "@/shared/components/row-actions"
+import { RefreshButton } from "@/shared/components/refresh-button"
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -86,15 +87,20 @@ export function TipoActivoAtributosPage({
           aria-label="Buscar atributos"
           className="w-full max-w-full sm:max-w-sm"
         />
-        <Button
-          size="sm"
-          type="button"
-          onClick={openCreate}
-          className="shrink-0 self-start"
-        >
-          <Plus />
-          Crear atributo
-        </Button>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <RefreshButton
+            queries={[atributosQuery, tiposDatoQuery]}
+          />
+          <Button
+            size="sm"
+            type="button"
+            onClick={openCreate}
+            className="shrink-0"
+          >
+            <Plus />
+            Crear atributo
+          </Button>
+        </div>
       </div>
 
       <PaginatedList

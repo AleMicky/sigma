@@ -1,5 +1,6 @@
 import { Package, Plus, Tags, FolderTree } from "lucide-react"
 
+import { RefreshButton, type QueryLike } from "@/shared/components/refresh-button"
 import { Button } from "@/shared/components/ui/button"
 
 import type { Insumo } from "../api/insumo.service"
@@ -10,6 +11,9 @@ type InsumoHeaderProps = {
   totalCategorias: number
   insumos: Insumo[]
   onCreate: () => void
+  onRefresh?: () => void
+  isRefreshing?: boolean
+  queries?: QueryLike | QueryLike[]
 }
 
 export function InsumoHeader({
@@ -17,6 +21,9 @@ export function InsumoHeader({
   totalTipos,
   totalCategorias,
   onCreate,
+  onRefresh,
+  isRefreshing,
+  queries,
 }: InsumoHeaderProps) {
   return (
     <header className="flex shrink-0 flex-col gap-4 border-b py-4 sm:gap-6 sm:py-6 md:py-8">
@@ -36,15 +43,22 @@ export function InsumoHeader({
               Catálogo de Insumos
             </h1>
 
-            <Button
-              size="sm"
-              type="button"
-              onClick={onCreate}
-              className="shrink-0 gap-1.5 rounded-xl shadow-sm md:hidden"
-            >
-              <Plus className="size-4" />
-              <span>Nuevo</span>
-            </Button>
+            <div className="flex items-center gap-1.5 md:hidden">
+              <RefreshButton
+                onRefresh={onRefresh}
+                isRefreshing={isRefreshing}
+                queries={queries}
+              />
+              <Button
+                size="sm"
+                type="button"
+                onClick={onCreate}
+                className="shrink-0 gap-1.5 rounded-xl shadow-sm"
+              >
+                <Plus className="size-4" />
+                <span>Nuevo</span>
+              </Button>
+            </div>
           </div>
 
           <p className="text-sm text-muted-foreground leading-relaxed">
@@ -52,15 +66,22 @@ export function InsumoHeader({
           </p>
         </div>
 
-        <Button
-          size="default"
-          type="button"
-          onClick={onCreate}
-          className="hidden shrink-0 items-center gap-2 rounded-xl px-5 shadow-sm transition-all hover:shadow-md md:inline-flex"
-        >
-          <Plus className="size-4" />
-          <span>Nuevo Insumo</span>
-        </Button>
+        <div className="hidden shrink-0 items-center gap-2 md:inline-flex">
+          <RefreshButton
+            onRefresh={onRefresh}
+            isRefreshing={isRefreshing}
+            queries={queries}
+          />
+          <Button
+            size="default"
+            type="button"
+            onClick={onCreate}
+            className="items-center gap-2 rounded-xl px-5 shadow-sm transition-all hover:shadow-md"
+          >
+            <Plus className="size-4" />
+            <span>Nuevo Insumo</span>
+          </Button>
+        </div>
       </div>
 
       {/* Metrics Banner */}

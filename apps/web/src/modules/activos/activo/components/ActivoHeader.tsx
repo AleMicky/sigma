@@ -1,5 +1,6 @@
 import { Package, Plus } from "lucide-react"
 
+import { RefreshButton, type QueryLike } from "@/shared/components/refresh-button"
 import { Button } from "@/shared/components/ui/button"
 
 import type { Activo } from "../api/activo.service"
@@ -10,6 +11,9 @@ type ActivoHeaderProps = {
   totalTipos: number
   activos: Activo[]
   onCreate: () => void
+  onRefresh?: () => void
+  isRefreshing?: boolean
+  queries?: QueryLike | QueryLike[]
 }
 
 export function ActivoHeader({
@@ -17,6 +21,9 @@ export function ActivoHeader({
   totalTipos,
   activos,
   onCreate,
+  onRefresh,
+  isRefreshing,
+  queries,
 }: ActivoHeaderProps) {
   return (
     <header className="flex shrink-0 flex-col gap-3 border-b py-3 sm:py-4">
@@ -35,15 +42,22 @@ export function ActivoHeader({
           </div>
         </div>
 
-        <Button
-          size="sm"
-          type="button"
-          onClick={onCreate}
-          className="shrink-0 self-start sm:self-auto shadow-xs font-medium"
-        >
-          <Plus className="size-3.5" />
-          Nuevo Activo
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <RefreshButton
+            onRefresh={onRefresh}
+            isRefreshing={isRefreshing}
+            queries={queries}
+          />
+          <Button
+            size="sm"
+            type="button"
+            onClick={onCreate}
+            className="shrink-0 shadow-xs font-medium"
+          >
+            <Plus className="size-3.5" />
+            Nuevo Activo
+          </Button>
+        </div>
       </div>
 
       {/* Hero Metrics Row */}
