@@ -18,7 +18,6 @@ public class GrupoAprobadorDetallePersistenceMapper {
         entity.setTipoAprobador(domain.getTipoAprobador());
         entity.setEmpleadoId(domain.getEmpleadoId());
         entity.setCargoId(domain.getCargoId());
-        entity.setUnidadId(domain.getUnidadId());
         entity.setResponsabilidadId(domain.getResponsabilidadId());
         entity.setAlcance(domain.getAlcance());
         entity.setOrden(domain.getOrden());
@@ -37,7 +36,6 @@ public class GrupoAprobadorDetallePersistenceMapper {
                 .tipoAprobador(entity.getTipoAprobador())
                 .empleadoId(entity.getEmpleadoId())
                 .cargoId(entity.getCargoId())
-                .unidadId(entity.getUnidadId())
                 .responsabilidadId(entity.getResponsabilidadId())
                 .alcance(entity.getAlcance())
                 .orden(entity.getOrden())

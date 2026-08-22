@@ -3,7 +3,6 @@ package com.endecorani.sigma_api.modules.organizacion.application.service;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.GrupoAprobadorDetalleRequest;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResumenResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.GrupoAprobadorDetalleResponse;
-import com.endecorani.sigma_api.modules.organizacion.domain.enums.AlcanceAprobador;
 import com.endecorani.sigma_api.modules.organizacion.domain.enums.TipoAprobador;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.GrupoAprobadorDetalle;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
@@ -78,7 +77,6 @@ public class GrupoAprobadorDetalleService {
         detalle.setTipoAprobador(request.tipoAprobador());
         detalle.setEmpleadoId(request.empleadoId());
         detalle.setCargoId(request.cargoId());
-        detalle.setUnidadId(request.unidadId());
         detalle.setResponsabilidadId(request.responsabilidadId());
         detalle.setAlcance(request.alcance());
         detalle.setOrden(request.orden());
@@ -136,7 +134,6 @@ public class GrupoAprobadorDetalleService {
 
     private void validateRequest(GrupoAprobadorDetalleRequest request) {
         validateReferenciaPorTipo(request.tipoAprobador(), request);
-        validateAlcance(request.alcance(), request.unidadId());
     }
 
     private void validateReferenciaPorTipo(
@@ -146,7 +143,6 @@ public class GrupoAprobadorDetalleService {
         boolean referenciaPresente = switch (tipoAprobador) {
             case EMPLEADO -> request.empleadoId() != null;
             case CARGO -> request.cargoId() != null;
-            case UNIDAD -> request.unidadId() != null;
             case RESPONSABILIDAD -> request.responsabilidadId() != null;
         };
 
@@ -159,22 +155,12 @@ public class GrupoAprobadorDetalleService {
         }
     }
 
-    private void validateAlcance(AlcanceAprobador alcance, UUID unidadId) {
-        if (alcance == AlcanceAprobador.UNIDAD_ESPECIFICA && unidadId == null) {
-            throw new BusinessException(
-                    "INVALID_GRUPO_APROBADOR_DETALLE_ALCANCE",
-                    "El campo unidadId es obligatorio cuando el alcance es UNIDAD_ESPECIFICA"
-            );
-        }
-    }
-
     private GrupoAprobadorDetalle toDomain(UUID grupoAprobadorId, GrupoAprobadorDetalleRequest request) {
         return GrupoAprobadorDetalle.builder()
                 .grupoAprobadorId(grupoAprobadorId)
                 .tipoAprobador(request.tipoAprobador())
                 .empleadoId(request.empleadoId())
                 .cargoId(request.cargoId())
-                .unidadId(request.unidadId())
                 .responsabilidadId(request.responsabilidadId())
                 .alcance(request.alcance())
                 .orden(request.orden())
@@ -191,7 +177,6 @@ public class GrupoAprobadorDetalleService {
                 domain.getTipoAprobador(),
                 buildEmpleadoInfo(domain.getEmpleadoId()),
                 buildCargoInfo(domain.getCargoId()),
-                null,
                 buildResponsabilidadInfo(domain.getResponsabilidadId()),
                 domain.getAlcance(),
                 domain.getOrden(),

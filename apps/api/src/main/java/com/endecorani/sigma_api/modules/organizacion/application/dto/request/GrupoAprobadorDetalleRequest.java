@@ -34,12 +34,6 @@ public record GrupoAprobadorDetalleRequest(
         UUID cargoId,
 
         @Schema(
-                description = "Identificador de la unidad cuando el tipo de aprobador es UNIDAD o el alcance es UNIDAD_ESPECIFICA",
-                requiredMode = Schema.RequiredMode.AUTO
-        )
-        UUID unidadId,
-
-        @Schema(
                 description = "Identificador de la responsabilidad cuando el tipo de aprobador es RESPONSABILIDAD",
                 requiredMode = Schema.RequiredMode.AUTO
         )

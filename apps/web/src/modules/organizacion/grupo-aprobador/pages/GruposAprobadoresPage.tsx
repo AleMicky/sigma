@@ -1,204 +1,237 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Plus, ShieldCheck } from "lucide-react"
+import { HelpCircle, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
-import { EmptyState } from "@/shared/components/empty-state"
-import { ListSkeleton } from "@/shared/components/list-skeleton"
-import { PageShell } from "@/shared/components/page-shell"
-import { Pagination } from "@/shared/components/pagination"
+import { MasterDetailLayout } from "@/shared/components/master-detail"
 import { RefreshButton } from "@/shared/components/refresh-button"
-import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
+import { useMasterDetail } from "@/shared/hooks/use-master-detail"
 import {
   useClampPage,
   usePaginatedSearch,
 } from "@/shared/hooks/use-paginated-search"
-import { cn } from "@/shared/lib/utils"
 
+import { grupoAprobadorDetalleQueries } from "../../grupo-aprobador-detalle/api/grupo-aprobador-detalle.queries"
+import type { GrupoAprobadorDetalle } from "../../grupo-aprobador-detalle/api/grupo-aprobador-detalle.service"
+import { GrupoAprobadorDetalleFormDialog } from "../../grupo-aprobador-detalle/components/GrupoAprobadorDetalleFormDialog"
+import { GrupoAprobadorDetailPanel } from "../../grupo-aprobador-detalle/components/GrupoAprobadorDetailPanel"
 import { grupoAprobadorQueries } from "../api/grupo-aprobador.queries"
 import type { GrupoAprobador } from "../api/grupo-aprobador.service"
-import { GrupoAprobadorCard } from "../components/GrupoAprobadorCard"
 import { GrupoAprobadorFormDialog } from "../components/GrupoAprobadorFormDialog"
-import { GrupoAprobadorDetallesDrawer } from "../../grupo-aprobador-detalle/components/GrupoAprobadorDetallesDrawer"
+import { GrupoAprobadorHelpModal } from "../components/GrupoAprobadorHelpModal"
+import { GrupoAprobadorMasterPanel } from "../components/GrupoAprobadorMasterPanel"
+import { GrupoAprobadorStats } from "../components/GrupoAprobadorStats"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function GruposAprobadoresPage() {
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editing, setEditing] = useState<GrupoAprobador | null>(null)
-  const [managingDetallesGrupo, setManagingDetallesGrupo] =
-    useState<GrupoAprobador | null>(null)
+  const [grupoDialogOpen, setGrupoDialogOpen] = useState(false)
+  const [editingGrupo, setEditingGrupo] = useState<GrupoAprobador | null>(null)
+  const [detalleDialogOpen, setDetalleDialogOpen] = useState(false)
+  const [editingDetalle, setEditingDetalle] =
+    useState<GrupoAprobadorDetalle | null>(null)
+  const [helpModalOpen, setHelpModalOpen] = useState(false)
 
-  const search = usePaginatedSearch()
+  const grupoSearch = usePaginatedSearch()
 
   const gruposQuery = useQuery(
     grupoAprobadorQueries.list({
-      page: search.page,
+      page: grupoSearch.page,
       size: PAGE_SIZE,
       sortBy: "nombre",
       direction: "ASC",
-      ...(search.query ? { q: search.query } : {}),
+      ...(grupoSearch.query ? { q: grupoSearch.query } : {}),
     }),
   )
 
   const grupos = gruposQuery.data?.content ?? []
+  const totalGrupos =
+    gruposQuery.data?.totalElements ?? grupos.length
 
   useClampPage(
-    search.page,
-    search.setPage,
+    grupoSearch.page,
+    grupoSearch.setPage,
     gruposQuery.data?.totalPages,
   )
 
-  function openCreate() {
-    setEditing(null)
-    setDialogOpen(true)
+  const masterDetail = useMasterDetail(grupos)
+  const detalleSearch = usePaginatedSearch({
+    resetKey: masterDetail.selectedId,
+  })
+
+  // Consulta de aprobadores del grupo seleccionado para el banner de estadísticas
+  const selectedDetallesQuery = useQuery({
+    ...grupoAprobadorDetalleQueries.list(masterDetail.selectedId ?? "", {
+      page: 0,
+      size: 1,
+    }),
+    enabled: Boolean(masterDetail.selectedId),
+  })
+
+  function openCreateGrupo() {
+    setEditingGrupo(null)
+    setGrupoDialogOpen(true)
   }
 
-  function openEdit(grupo: GrupoAprobador) {
-    setEditing(grupo)
-    setDialogOpen(true)
+  function openEditGrupo(grupo: GrupoAprobador) {
+    setEditingGrupo(grupo)
+    setGrupoDialogOpen(true)
+  }
+
+  function openCreateDetalle() {
+    setEditingDetalle(null)
+    setDetalleDialogOpen(true)
+  }
+
+  function openEditDetalle(detalle: GrupoAprobadorDetalle) {
+    setEditingDetalle(detalle)
+    setDetalleDialogOpen(true)
   }
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
-      <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:gap-4 sm:py-6 md:flex-row md:items-start md:justify-between md:py-8">
-        <div className="min-w-0 flex flex-1 flex-col gap-1">
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-              Grupos Aprobadores
-            </h1>
-            <div className="flex items-center gap-1.5 md:hidden">
+    <div className="flex h-full flex-col min-h-0">
+      {/* Banner Superior de Estadísticas Compacto */}
+      <GrupoAprobadorStats
+        totalGrupos={totalGrupos}
+        totalPasosSelected={
+          selectedDetallesQuery.data?.totalElements
+        }
+        selectedGrupoNombre={masterDetail.selected?.nombre}
+      />
+
+      <div className="flex-1 min-h-0">
+        <MasterDetailLayout
+          title={
+            masterDetail.isMobile &&
+            masterDetail.mobileShowDetail &&
+            masterDetail.selected
+              ? masterDetail.selected.nombre
+              : "Grupos Aprobadores"
+          }
+          showMaster={masterDetail.showMaster}
+          showDetail={masterDetail.showDetail}
+          showBack={masterDetail.isMobile && masterDetail.mobileShowDetail}
+          backLabel="Volver a grupos"
+          onBack={masterDetail.backToMaster}
+          headerAction={
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <RefreshButton
-                onRefresh={() => gruposQuery.refetch()}
-                isRefreshing={gruposQuery.isFetching}
+                size="sm"
+                queries={[gruposQuery, selectedDetallesQuery]}
               />
+
               <Button
                 size="sm"
+                variant="outline"
                 type="button"
-                onClick={openCreate}
-                className="shrink-0"
+                onClick={() => setHelpModalOpen(true)}
+                className="shrink-0 gap-1.5 text-xs"
+                title="Guía de grupos aprobadores y flujos"
               >
-                <Plus />
-                <span className="sr-only sm:not-sr-only">Crear</span>
+                <HelpCircle className="size-3.5 text-primary" />
+                <span className="hidden sm:inline">Guía</span>
               </Button>
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Administra los grupos y secuencias de aprobación para solicitudes y procesos organizacionales.
-          </p>
-        </div>
 
-        <div className="hidden shrink-0 items-center gap-2 self-start md:flex">
-          <RefreshButton
-            onRefresh={() => gruposQuery.refetch()}
-            isRefreshing={gruposQuery.isFetching}
-          />
-          <Button
-            size="sm"
-            type="button"
-            onClick={openCreate}
-            className="shrink-0"
-          >
-            <Plus />
-            Crear Grupo
-          </Button>
-        </div>
-      </header>
-
-      <div className="flex shrink-0 py-3">
-        <SearchField
-          value={search.search}
-          onChange={search.setSearch}
-          placeholder="Buscar por código o nombre…"
-          aria-label="Buscar grupos aprobadores"
-          className="w-full min-w-0"
-        />
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {gruposQuery.isLoading ? (
-          <ListSkeleton
-            rows={6}
-            rowClassName="h-28 rounded-xl"
-            className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
-          />
-        ) : gruposQuery.isError ? (
-          <EmptyState
-            title={getErrorMessage(gruposQuery.error)}
-            className="text-destructive"
-          />
-        ) : grupos.length === 0 ? (
-          <EmptyState
-            icon={<ShieldCheck className="size-4 text-muted-foreground" />}
-            title={
-              search.search.trim() ? "Sin resultados" : "No hay grupos aprobadores"
-            }
-            description={
-              search.search.trim()
-                ? "Prueba con otro código o nombre."
-                : "Crea un nuevo grupo aprobador."
-            }
-            action={
-              search.search.trim() ? undefined : (
-                <Button size="sm" type="button" onClick={openCreate}>
-                  <Plus />
-                  Crear Grupo
+              {masterDetail.showMaster ? (
+                <Button
+                  size="sm"
+                  type="button"
+                  onClick={openCreateGrupo}
+                  className="shrink-0 gap-1 shadow-2xs"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Crear Grupo</span>
                 </Button>
-              )
-            }
-          />
-        ) : (
-          <>
-            <div
-              className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3",
-                gruposQuery.isFetching && "opacity-70",
+              ) : (
+                <Button
+                  size="sm"
+                  type="button"
+                  onClick={openCreateDetalle}
+                  className="shrink-0 gap-1 shadow-2xs"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Agregar Aprobador</span>
+                </Button>
               )}
-            >
-              <ul className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {grupos.map((grupo) => (
-                  <GrupoAprobadorCard
-                    key={grupo.id}
-                    grupo={grupo}
-                    onEdit={openEdit}
-                    onManageDetalles={(g) => setManagingDetallesGrupo(g)}
-                  />
-                ))}
-              </ul>
             </div>
-
-            {gruposQuery.data ? (
-              <Pagination
-                page={gruposQuery.data}
-                onPageChange={search.setPage}
-                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10"
-              />
-            ) : null}
-          </>
-        )}
-      </div>
-
-      <GrupoAprobadorFormDialog
-        key={editing?.id ?? "new-grupo"}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        grupo={editing}
-        onSuccess={() => {
-          if (!editing) {
-            search.setPage(0)
           }
-        }}
-      />
+          master={
+            <GrupoAprobadorMasterPanel
+              grupos={grupos}
+              page={gruposQuery.data}
+              selectedId={masterDetail.selectedId}
+              search={grupoSearch.search}
+              isLoading={gruposQuery.isLoading}
+              isFetching={gruposQuery.isFetching}
+              errorMessage={
+                gruposQuery.isError
+                  ? getErrorMessage(gruposQuery.error)
+                  : null
+              }
+              onSearchChange={grupoSearch.setSearch}
+              onSelect={masterDetail.select}
+              onCreate={openCreateGrupo}
+              onEdit={openEditGrupo}
+              onPageChange={grupoSearch.setPage}
+            />
+          }
+          detail={
+            <GrupoAprobadorDetailPanel
+              grupo={masterDetail.selected}
+              itemPage={detalleSearch.page}
+              search={detalleSearch.search}
+              searchQuery={detalleSearch.debouncedSearch}
+              hidePrimaryAction={
+                masterDetail.isMobile && masterDetail.mobileShowDetail
+              }
+              onSearchChange={detalleSearch.setSearch}
+              onPageChange={detalleSearch.setPage}
+              onAddAprobador={openCreateDetalle}
+              onEditAprobador={openEditDetalle}
+            />
+          }
+        >
+          {/* Modal para Crear / Editar Grupo Aprobador */}
+          <GrupoAprobadorFormDialog
+            key={editingGrupo?.id ?? "new-grupo"}
+            open={grupoDialogOpen}
+            onOpenChange={setGrupoDialogOpen}
+            grupo={editingGrupo}
+            onSuccess={(saved) => {
+              masterDetail.revealDetail(saved.id)
+              grupoSearch.setPage(0)
+            }}
+          />
 
-      <GrupoAprobadorDetallesDrawer
-        grupo={managingDetallesGrupo}
-        open={Boolean(managingDetallesGrupo)}
-        onOpenChange={(open) => {
-          if (!open) setManagingDetallesGrupo(null)
-        }}
-      />
-    </PageShell>
+          {/* Modal para Agregar / Editar Aprobador */}
+          {masterDetail.selected ? (
+            <GrupoAprobadorDetalleFormDialog
+              key={
+                editingDetalle?.id ??
+                `new-detalle-${masterDetail.selected.id}`
+              }
+              grupoAprobadorId={masterDetail.selected.id}
+              open={detalleDialogOpen}
+              onOpenChange={setDetalleDialogOpen}
+              detalle={editingDetalle}
+              onSuccess={() => {
+                if (!editingDetalle) {
+                  detalleSearch.setPage(0)
+                }
+                selectedDetallesQuery.refetch()
+              }}
+            />
+          ) : null}
+
+          {/* Modal de Ayuda */}
+          <GrupoAprobadorHelpModal
+            open={helpModalOpen}
+            onOpenChange={setHelpModalOpen}
+          />
+        </MasterDetailLayout>
+      </div>
+    </div>
   )
 }

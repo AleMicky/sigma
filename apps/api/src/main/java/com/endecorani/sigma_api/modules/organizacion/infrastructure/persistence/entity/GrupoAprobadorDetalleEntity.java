@@ -31,9 +31,6 @@ public class GrupoAprobadorDetalleEntity extends BaseEntity {
     @Column(name = "cargo_id")
     private UUID cargoId;
 
-    @Column(name = "unidad_id")
-    private UUID unidadId;
-
     @Column(name = "responsabilidad_id")
     private UUID responsabilidadId;
 

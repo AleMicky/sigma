@@ -18,7 +18,6 @@ public record GrupoAprobadorDetalleResponse(
         TipoAprobador tipoAprobador,
         EmpleadoResumenResponse empleadoInfo,
         CatalogoResumenResponse cargoInfo,
-        CatalogoResumenResponse unidadInfo,
         CatalogoResumenResponse responsabilidadInfo,
         AlcanceAprobador alcance,
         Integer orden,

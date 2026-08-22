@@ -28,8 +28,6 @@ public class GrupoAprobadorDetalle extends AuditableModel {
 
     private UUID cargoId;
 
-    private UUID unidadId;
-
     private UUID responsabilidadId;
 
     private AlcanceAprobador alcance;
