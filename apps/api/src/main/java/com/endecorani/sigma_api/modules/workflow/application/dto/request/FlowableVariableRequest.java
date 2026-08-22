@@ -1,4 +1,7 @@
 package com.endecorani.sigma_api.modules.workflow.application.dto.request;
 
-public record FlowableVariableRequest() {
+public record FlowableVariableRequest(
+        String name,
+        Object value
+) {
 }
