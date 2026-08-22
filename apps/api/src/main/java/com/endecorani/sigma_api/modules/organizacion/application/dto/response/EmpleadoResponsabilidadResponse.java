@@ -15,7 +15,6 @@ public record EmpleadoResponsabilidadResponse(
         UUID id,
         EmpleadoResumenResponse empleadoInfo,
         CatalogoResumenResponse responsabilidadInfo,
-        CatalogoResumenResponse unidadInfo,
         LocalDate fechaInicio,
         LocalDate fechaFin,
         AuditoriaResponse auditoria

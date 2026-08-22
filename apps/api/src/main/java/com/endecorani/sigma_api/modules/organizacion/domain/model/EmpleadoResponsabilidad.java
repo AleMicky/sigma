@@ -23,8 +23,6 @@ public class EmpleadoResponsabilidad extends AuditableModel {
 
     private UUID responsabilidadId;
 
-    private UUID unidadId;
-
     private LocalDate fechaInicio;
 
     private LocalDate fechaFin;

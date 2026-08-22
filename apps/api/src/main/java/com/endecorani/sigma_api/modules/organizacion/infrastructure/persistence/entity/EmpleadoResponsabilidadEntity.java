@@ -25,9 +25,6 @@ public class EmpleadoResponsabilidadEntity extends BaseEntity {
     @Column(name = "responsabilidad_id", nullable = false)
     private UUID responsabilidadId;
 
-    @Column(name = "unidad_id")
-    private UUID unidadId;
-
     @Column(name = "fecha_inicio", nullable = false)
     private LocalDate fechaInicio;
 

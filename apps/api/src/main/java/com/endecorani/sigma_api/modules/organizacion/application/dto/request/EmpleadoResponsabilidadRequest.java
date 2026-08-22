@@ -28,12 +28,6 @@ public record EmpleadoResponsabilidadRequest(
         UUID responsabilidadId,
 
         @Schema(
-                description = "Identificador de la unidad (opcional)",
-                example = "a1b2c3d4-e5f6-4789-9abc-def012345678"
-        )
-        UUID unidadId,
-
-        @Schema(
                 description = "Fecha de inicio de la asignación",
                 example = "2026-01-01",
                 requiredMode = Schema.RequiredMode.REQUIRED
