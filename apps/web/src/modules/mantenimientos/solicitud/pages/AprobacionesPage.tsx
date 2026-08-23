@@ -47,6 +47,7 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function AprobacionesPage() {
   const navigate = useNavigate()
+  const [selectedEstado, setSelectedEstado] = useState<string>("all")
   const [selectedPrioridad, setSelectedPrioridad] = useState<string>("all")
   const [quickView, setQuickView] = useState<SolicitudMantenimiento | null>(null)
   const [workflowActionTarget, setWorkflowActionTarget] = useState<{
@@ -58,14 +59,14 @@ export function AprobacionesPage() {
 
   const search = usePaginatedSearch()
 
-  // Solicitudes en estado 'solicitado' (pendientes de aprobación)
+  // Solicitudes con filtro de estado (solicitado, asignado, o all)
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
       page: search.page,
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC",
-      estado: "solicitado",
+      ...(selectedEstado !== "all" ? { estado: selectedEstado } : {}),
       ...(search.query ? { q: search.query } : {}),
     }),
   )
@@ -85,7 +86,23 @@ export function AprobacionesPage() {
   }, [solicitudes, selectedPrioridad])
 
   // KPIs de la bandeja de aprobaciones
-  const totalPendientes = solicitudesQuery.data?.totalElements ?? solicitudes.length
+  const totalElements = solicitudesQuery.data?.totalElements ?? solicitudes.length
+
+  const porAprobarCount = useMemo(
+    () =>
+      solicitudes.filter(
+        (s) => (s.estado ?? "").toLowerCase() === "solicitado",
+      ).length,
+    [solicitudes],
+  )
+
+  const asignadasCount = useMemo(
+    () =>
+      solicitudes.filter(
+        (s) => (s.estado ?? "").toLowerCase() === "asignado",
+      ).length,
+    [solicitudes],
+  )
 
   const criticasCount = useMemo(
     () => solicitudes.filter((s) => (s.prioridad?.nivel ?? 1) >= 4).length,
@@ -140,12 +157,14 @@ export function AprobacionesPage() {
 
   const hasActiveFilters = Boolean(
     search.search.trim() ||
-      (selectedPrioridad && selectedPrioridad !== "all"),
+      (selectedPrioridad && selectedPrioridad !== "all") ||
+      (selectedEstado && selectedEstado !== "all"),
   )
 
   function resetFilters() {
     search.setSearch("")
     setSelectedPrioridad("all")
+    setSelectedEstado("all")
   }
 
   return (
@@ -159,11 +178,11 @@ export function AprobacionesPage() {
                 <ShieldCheck className="size-4.5" />
               </div>
               <h1 className="font-heading text-lg font-semibold tracking-tight sm:text-xl md:text-2xl">
-                Bandeja de Aprobaciones
+                Bandeja de Aprobaciones y Asignaciones
               </h1>
-              {totalPendientes > 0 && (
+              {totalElements > 0 && (
                 <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                  {totalPendientes} pendientes
+                  {totalElements} registros
                 </span>
               )}
             </div>
@@ -177,7 +196,7 @@ export function AprobacionesPage() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-1">
-            Supervisa, analiza y gestiona las solicitudes de mantenimiento pendientes de validación y aprobación.
+            Supervisa, evalúa y gestiona las solicitudes de mantenimiento en proceso de aprobación y asignación técnica.
           </p>
         </div>
 
@@ -191,11 +210,23 @@ export function AprobacionesPage() {
         </div>
       </header>
 
-      {/* KPI Stats Section for Approvers */}
+      {/* KPI Stats Section for Approvers and Coordinators */}
       <div className="shrink-0 pt-2.5 pb-1">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {/* Total Pendientes */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 p-2.5 sm:p-3 shadow-2xs">
+          {/* Por Aprobar (Solicitado) */}
+          <div
+            onClick={() =>
+              setSelectedEstado((prev) =>
+                prev === "solicitado" ? "all" : "solicitado",
+              )
+            }
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border p-2.5 sm:p-3 shadow-2xs cursor-pointer transition-all hover:scale-[1.01]",
+              selectedEstado === "solicitado"
+                ? "border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/30"
+                : "border-amber-500/40 bg-amber-500/10",
+            )}
+          >
             <div className="relative flex size-8.5 sm:size-9 shrink-0 items-center justify-center rounded-xl bg-amber-600 text-white shadow-xs">
               <UserCheck className="size-4" />
               <span className="absolute -top-1 -right-1 flex size-2">
@@ -208,7 +239,38 @@ export function AprobacionesPage() {
                 Por Aprobar
               </p>
               <p className="font-heading text-base font-bold tracking-tight text-amber-700 dark:text-amber-300">
-                {totalPendientes}
+                {selectedEstado === "solicitado"
+                  ? totalElements
+                  : porAprobarCount}
+              </p>
+            </div>
+          </div>
+
+          {/* Asignadas (Para Asignar / En Asignación) */}
+          <div
+            onClick={() =>
+              setSelectedEstado((prev) =>
+                prev === "asignado" ? "all" : "asignado",
+              )
+            }
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border p-2.5 sm:p-3 shadow-2xs cursor-pointer transition-all hover:scale-[1.01]",
+              selectedEstado === "asignado"
+                ? "border-sky-500 bg-sky-500/15 ring-2 ring-sky-500/30"
+                : "border-sky-500/30 bg-sky-500/5",
+            )}
+          >
+            <div className="flex size-8.5 sm:size-9 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs">
+              <Wrench className="size-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-sky-800 dark:text-sky-300 truncate">
+                Asignadas
+              </p>
+              <p className="font-heading text-base font-bold tracking-tight text-sky-600 dark:text-sky-400">
+                {selectedEstado === "asignado"
+                  ? totalElements
+                  : asignadasCount}
               </p>
             </div>
           </div>
@@ -228,32 +290,17 @@ export function AprobacionesPage() {
             </div>
           </div>
 
-          {/* Preventivas */}
+          {/* Preventivas / Correctivas */}
           <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-2.5 sm:p-3 shadow-2xs">
             <div className="flex size-8.5 sm:size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs">
               <ShieldCheck className="size-4" />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                Preventivas
+                Prev: {preventivasCount} | Corr: {correctivasCount}
               </p>
               <p className="font-heading text-base font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                {preventivasCount}
-              </p>
-            </div>
-          </div>
-
-          {/* Correctivas */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-blue-500/30 bg-blue-500/5 p-2.5 sm:p-3 shadow-2xs">
-            <div className="flex size-8.5 sm:size-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 shadow-2xs">
-              <Wrench className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                Correctivas
-              </p>
-              <p className="font-heading text-base font-bold tracking-tight text-blue-600 dark:text-blue-400">
-                {correctivasCount}
+                {totalElements}
               </p>
             </div>
           </div>
@@ -263,7 +310,7 @@ export function AprobacionesPage() {
       {/* Filter Toolbar */}
       <div className="flex flex-col gap-2.5 pt-2 pb-1 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="w-full sm:w-80">
+          <div className="w-full sm:w-72">
             <SearchField
               placeholder="Buscar por título, número, activo o solicitante..."
               value={search.search}
@@ -272,7 +319,34 @@ export function AprobacionesPage() {
             />
           </div>
 
+          {/* Estado Filter Selector */}
           <div className="w-48">
+            <Select
+              value={selectedEstado}
+              onValueChange={(val) => setSelectedEstado(val ?? "all")}
+            >
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs font-medium">
+                  📋 Todos los pendientes
+                </SelectItem>
+                <SelectItem value="solicitado" className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                  🟡 Por Aprobar (Solicitado)
+                </SelectItem>
+                <SelectItem value="asignado" className="text-xs text-sky-600 dark:text-sky-400 font-semibold">
+                  🔵 Asignado (Para Asignar)
+                </SelectItem>
+                <SelectItem value="aprobado" className="text-xs text-emerald-600 dark:text-emerald-400">
+                  🟢 Aprobado
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Prioridad Filter */}
+          <div className="w-44">
             <Select
               value={selectedPrioridad}
               onValueChange={(val) => setSelectedPrioridad(val ?? "all")}
@@ -317,6 +391,7 @@ export function AprobacionesPage() {
           ) : null}
         </div>
       </div>
+
 
       {/* Content Section */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2">

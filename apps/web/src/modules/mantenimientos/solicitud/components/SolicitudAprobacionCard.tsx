@@ -10,6 +10,7 @@ import {
   Loader2,
   Paperclip,
   User,
+  UserCheck,
   Wrench,
 } from "lucide-react"
 
@@ -24,6 +25,7 @@ import type {
   WorkflowField,
 } from "../api/solicitud.service"
 import {
+  getEstadoBadgeStyles,
   getPrioridadBadgeStyles,
   getTipoMantenimientoBadgeClass,
 } from "../lib/solicitud.utils"
@@ -49,6 +51,9 @@ export function SolicitudAprobacionCard({
   )
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
   const isCritica = (solicitud.prioridad?.nivel ?? 1) >= 4
+  const isAsignado = solicitud.estado?.toLowerCase() === "asignado"
+  const isSolicitado =
+    !solicitud.estado || solicitud.estado.toLowerCase() === "solicitado"
 
   // Fetch workflow actions if processInstanceId exists
   const actionsQuery = useQuery(
@@ -66,7 +71,9 @@ export function SolicitudAprobacionCard({
         "group relative flex flex-col justify-between rounded-2xl border bg-card p-4 text-card-foreground shadow-2xs transition-all cursor-pointer overflow-hidden hover:shadow-md",
         isCritica
           ? "border-rose-500/40 hover:border-rose-500/80 bg-rose-500/[0.02]"
-          : "border-amber-500/40 hover:border-amber-500/80 bg-amber-500/[0.02]",
+          : isAsignado
+            ? "border-sky-500/40 hover:border-sky-500/80 bg-sky-500/[0.02]"
+            : "border-amber-500/40 hover:border-amber-500/80 bg-amber-500/[0.02]",
       )}
     >
       {/* Top Section */}
@@ -78,10 +85,28 @@ export function SolicitudAprobacionCard({
                 {solicitud.numero}
               </code>
             ) : null}
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">
-              <Clock className="size-2.5" />
-              Por Aprobar
-            </span>
+
+            {isSolicitado ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">
+                <Clock className="size-2.5" />
+                Por Aprobar
+              </span>
+            ) : isAsignado ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-300">
+                <UserCheck className="size-2.5" />
+                Asignado
+              </span>
+            ) : (
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize",
+                  getEstadoBadgeStyles(solicitud.estado),
+                )}
+              >
+                {solicitud.estado}
+              </span>
+            )}
+
             {solicitud.prioridad ? (
               <span
                 className={cn(
@@ -111,7 +136,12 @@ export function SolicitudAprobacionCard({
         {/* Task name indicator if available */}
         {taskName && (
           <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-md border border-border/50 truncate">
-            <span className="size-1.5 rounded-full bg-amber-500 shrink-0" />
+            <span
+              className={cn(
+                "size-1.5 rounded-full shrink-0",
+                isAsignado ? "bg-sky-500" : "bg-amber-500",
+              )}
+            />
             <span className="truncate">{taskName}</span>
           </div>
         )}
@@ -134,6 +164,16 @@ export function SolicitudAprobacionCard({
           </p>
         </div>
 
+        {/* Responsable Info if present */}
+        {solicitud.responsable ? (
+          <div className="flex items-center gap-1.5 rounded-lg bg-sky-500/10 text-sky-800 dark:text-sky-300 border border-sky-500/20 px-2 py-1 text-xs">
+            <UserCheck className="size-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+            <span className="truncate text-[11px]">
+              Responsable: <strong className="font-semibold">{solicitud.responsable.nombre}</strong>
+            </span>
+          </div>
+        ) : null}
+
         {/* Activo Card Strip */}
         {solicitud.activo ? (
           <div className="flex items-center gap-2 rounded-xl bg-muted/40 p-2 border border-border/60 text-xs">
@@ -151,6 +191,7 @@ export function SolicitudAprobacionCard({
           </div>
         ) : null}
       </div>
+
 
       {/* Footer Info Row & Dynamic Actions */}
       <div className="mt-4 pt-2.5 border-t border-border/60 space-y-2.5">

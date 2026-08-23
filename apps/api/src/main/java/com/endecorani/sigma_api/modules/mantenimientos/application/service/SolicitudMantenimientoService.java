@@ -113,8 +113,7 @@ public class SolicitudMantenimientoService {
     @Transactional
     public SolicitudMantenimientoResponse enviar(UUID id) {
 
-        SolicitudMantenimiento solicitud =
-                findDomainById(id);
+        SolicitudMantenimiento solicitud = findDomainById(id);
 
         if (!ESTADO_BORRADOR.equalsIgnoreCase(
                 solicitud.getEstado()
@@ -129,11 +128,15 @@ public class SolicitudMantenimientoService {
             throw new ConflictException(
                     "SOLICITUD_WORKFLOW_ALREADY_STARTED",
                     "La solicitud ya tiene un workflow iniciado"
+
             );
         }
 
-        Map<String, Object> variables = Map.of("solicitudId", solicitud.getId().toString(),
-                "solicitanteId", solicitud.getSolicitanteId().toString()
+        Map<String, Object> variables = Map.of(
+                "solicitudId", solicitud.getId().toString(),
+                "solicitanteId", solicitud.getSolicitanteId().toString(),
+                "aprobadorId", solicitud.getAprobadoPorId().toString()
+
         );
 
         String processInstanceId =

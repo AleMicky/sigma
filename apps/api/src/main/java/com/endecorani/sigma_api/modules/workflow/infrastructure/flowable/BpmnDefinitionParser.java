@@ -85,57 +85,84 @@ public class BpmnDefinitionParser {
         }
     }
 
-    public List<WorkflowFieldResponse> obtenerCampos(String bpmnXml, String taskDefinitionKey) {
-        try {
+    public List<WorkflowFieldResponse> obtenerCampos(
+            String bpmnXml,
+            String taskDefinitionKey
+    ) {
 
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        try {
+            DocumentBuilderFactory factory =
+                    DocumentBuilderFactory.newInstance();
+
             factory.setNamespaceAware(true);
 
-            Document document = factory.newDocumentBuilder().parse(
+            Document document =
+                    factory.newDocumentBuilder()
+                            .parse(
                                     new ByteArrayInputStream(
-                                            bpmnXml.getBytes(StandardCharsets.UTF_8))
+                                            bpmnXml.getBytes(
+                                                    StandardCharsets.UTF_8
+                                            )
+                                    )
                             );
-            Element task = buscarElementoPorId(document, taskDefinitionKey);
+
+            document.getDocumentElement().normalize();
+
+            Element task =
+                    buscarElementoPorId(
+                            document,
+                            taskDefinitionKey
+                    );
 
             if (task == null) {
                 return List.of();
             }
 
-            List<WorkflowFieldResponse> fields = new ArrayList<>();
-            NodeList formProperties = task.getElementsByTagNameNS(
-                            "*",
+            NodeList formProperties =
+                    task.getElementsByTagNameNS(
+                            "http://flowable.org/bpmn",
                             "formProperty"
                     );
 
+            List<WorkflowFieldResponse> fields =
+                    new ArrayList<>();
+
             for (int i = 0; i < formProperties.getLength(); i++) {
 
-                Element formProperty = (Element) formProperties.item(i);
-                String id = formProperty.getAttribute("id");
-                String name = formProperty.getAttribute("name");
-                String type = formProperty.getAttribute("type");
+                Element formProperty =
+                        (Element) formProperties.item(i);
 
-                boolean required = Boolean.parseBoolean(formProperty.getAttribute(
-                                        "required"
-                                )
+                String id =
+                        formProperty.getAttribute("id");
+
+                String name =
+                        formProperty.getAttribute("name");
+
+                String type =
+                        formProperty.getAttribute("type");
+
+                boolean required =
+                        Boolean.parseBoolean(
+                                formProperty.getAttribute("required")
                         );
 
-                boolean readable = !"false".equalsIgnoreCase(
-                                formProperty.getAttribute(
-                                        "readable"
-                                )
+                boolean readable =
+                        !"false".equalsIgnoreCase(
+                                formProperty.getAttribute("readable")
                         );
 
-                boolean writable = !"false".equalsIgnoreCase(
-                                formProperty.getAttribute(
-                                        "writable"
-                                )
+                boolean writable =
+                        !"false".equalsIgnoreCase(
+                                formProperty.getAttribute("writable")
                         );
 
-                List<WorkflowFieldOptionResponse> options = obtenerOpciones(
+                List<WorkflowFieldOptionResponse> options =
+                        obtenerOpciones(
                                 formProperty
                         );
 
-                fields.add(new WorkflowFieldResponse(
+                fields.add(
+                        new WorkflowFieldResponse(
                                 id,
                                 name,
                                 type,
@@ -158,21 +185,29 @@ public class BpmnDefinitionParser {
     }
 
 
-    private List<WorkflowFieldOptionResponse> obtenerOpciones(Element formProperty) {
+    private List<WorkflowFieldOptionResponse> obtenerOpciones(
+            Element formProperty
+    ) {
 
-        NodeList values = formProperty.getElementsByTagNameNS(
-                        "*",
+        NodeList values =
+                formProperty.getElementsByTagNameNS(
+                        "http://flowable.org/bpmn",
                         "value"
                 );
 
-        List<WorkflowFieldOptionResponse> options = new ArrayList<>();
+        List<WorkflowFieldOptionResponse> options =
+                new ArrayList<>();
 
         for (int i = 0; i < values.getLength(); i++) {
 
-            Element value = (Element) values.item(i);
-            options.add(new WorkflowFieldOptionResponse(
+            Element value =
+                    (Element) values.item(i);
+
+            options.add(
+                    new WorkflowFieldOptionResponse(
                             value.getAttribute("id"),
-                            value.getAttribute("name"))
+                            value.getAttribute("name")
+                    )
             );
         }
 
