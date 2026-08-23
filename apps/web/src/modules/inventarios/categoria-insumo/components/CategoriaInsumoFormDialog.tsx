@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { useQuery } from "@tanstack/react-query"
+import { Tags } from "lucide-react"
 
-import { tipoInsumoQueries } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.queries"
+import { TipoInsumoCombobox } from "@/modules/inventarios/tipo-insumo/components/TipoInsumoCombobox"
 import { isApiError } from "@/shared/api"
 import {
   FormDialog,
@@ -11,13 +11,6 @@ import {
 } from "@/shared/components/form-dialog"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 
 import {
@@ -49,17 +42,6 @@ export function CategoriaInsumoFormDialog({
   const createMutation = useCreateCategoriaInsumo()
   const updateMutation = useUpdateCategoriaInsumo()
   const [formError, setFormError] = useState<string | null>(null)
-
-  const tiposInsumoQuery = useQuery(
-    tipoInsumoQueries.list({
-      page: 0,
-      size: 100,
-      sortBy: "nombre",
-      direction: "ASC",
-    }),
-  )
-
-  const tiposInsumo = tiposInsumoQuery.data?.content ?? []
 
   const form = useForm({
     defaultValues: categoria
@@ -118,8 +100,8 @@ export function CategoriaInsumoFormDialog({
       title={isEditing ? "Editar categoría de insumo" : "Nueva categoría de insumo"}
       description={
         isEditing
-          ? "Actualiza el tipo de insumo, código, nombre o descripción de la categoría de insumo."
-          : "Crea una categoría para clasificar insumos (ej. Materiales Eléctricos, Lubricantes)."
+          ? "Actualiza el tipo de insumo, código, nombre o descripción de la categoría."
+          : "Define una categoría para clasificar insumos bajo un tipo específico."
       }
       formError={formError}
       onCancel={() => {
@@ -142,94 +124,94 @@ export function CategoriaInsumoFormDialog({
         </form.Subscribe>
       }
     >
-      <form.Field name="tipoInsumoId">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
-          const selectedTipo = tiposInsumo.find((t) => t.id === field.state.value)
+      {/* Sección Tipo de Insumo con Autocomplete */}
+      <div className="space-y-3 rounded-xl border border-border/80 bg-muted/20 p-3.5 sm:p-4">
+        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+          <Tags className="size-4 text-primary" />
+          <span>Clasificación Principal</span>
+        </div>
 
-          return (
-            <Field data-invalid={isInvalid || undefined}>
-              <RequiredFieldLabel htmlFor={field.name}>
-                Tipo de insumo
-              </RequiredFieldLabel>
-              <Select
-                value={field.state.value}
-                onValueChange={(val) => field.handleChange(val ?? "")}
-              >
-                <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                  <SelectValue placeholder="Selecciona un tipo de insumo…">
-                    {selectedTipo
-                      ? `${selectedTipo.nombre} (${selectedTipo.codigo})`
-                      : categoria?.tipoInsumo?.nombre}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {tiposInsumo.map((tipo) => (
-                    <SelectItem key={tipo.id} value={tipo.id}>
-                      {tipo.nombre} ({tipo.codigo})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          )
-        }}
-      </form.Field>
+        <form.Field name="tipoInsumoId">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
 
-      <form.Field name="codigo">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid || undefined}>
+                <RequiredFieldLabel htmlFor={field.name}>
+                  Tipo de insumo
+                </RequiredFieldLabel>
+                <TipoInsumoCombobox
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onValueChange={(val) => field.handleChange(val)}
+                  onBlur={field.handleBlur}
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+      </div>
 
-          return (
-            <Field data-invalid={isInvalid || undefined}>
-              <RequiredFieldLabel htmlFor={field.name}>
-                Código
-              </RequiredFieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                required
-                aria-required
-                aria-invalid={isInvalid}
-              />
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          )
-        }}
-      </form.Field>
+      {/* Código y Nombre */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <form.Field name="codigo">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
 
-      <form.Field name="nombre">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid || undefined}>
+                <RequiredFieldLabel htmlFor={field.name}>
+                  Código
+                </RequiredFieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  required
+                  aria-required
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
 
-          return (
-            <Field data-invalid={isInvalid || undefined}>
-              <RequiredFieldLabel htmlFor={field.name}>
-                Nombre
-              </RequiredFieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                required
-                aria-required
-                aria-invalid={isInvalid}
-              />
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          )
-        }}
-      </form.Field>
+        <form.Field name="nombre">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
 
+            return (
+              <Field data-invalid={isInvalid || undefined}>
+                <RequiredFieldLabel htmlFor={field.name}>
+                  Nombre
+                </RequiredFieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  required
+                  aria-required
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+      </div>
+
+      {/* Descripción */}
       <form.Field name="descripcion">
         {(field) => {
           const isInvalid =
