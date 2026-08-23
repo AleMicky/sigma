@@ -7,6 +7,7 @@ public record WorkflowTaskActionsResponse(
         String taskName,
         String taskDefinitionKey,
         String processInstanceId,
+        List<WorkflowFieldResponse> fields,
         List<WorkflowActionResponse> actions
 ) {
 }

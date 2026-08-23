@@ -3,15 +3,12 @@ package com.endecorani.sigma_api.modules.workflow.infrastructure.flowable;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.FlowableVariableRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.StartProcessRequest;
-import com.endecorani.sigma_api.modules.workflow.application.dto.response.ProcessInstanceResponse;
-import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowActionResponse;
-import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.*;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowEngineService;
 
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.FlowablePageResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.ProcessDefinitionResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.TaskResponse;
-import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -75,9 +72,13 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
     }
 
     @Override
-    public WorkflowTaskActionsResponse obtenerAccionesDisponibles(String processInstanceId) {
+    public WorkflowTaskActionsResponse obtenerAccionesDisponibles(
+            String processInstanceId
+    ) {
 
-        WorkflowTaskResponse task = obtenerTareaActual(processInstanceId);
+        // 1. Obtener tarea actual
+        WorkflowTaskResponse task =
+                obtenerTareaActual(processInstanceId);
 
         if (task == null) {
             return new WorkflowTaskActionsResponse(
@@ -85,11 +86,16 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                     null,
                     null,
                     processInstanceId,
+                    List.of(),
                     List.of()
             );
         }
 
-        ProcessDefinitionResponse processDefinition = flowableClient.obtenerProcessDefinition(task.processDefinitionId());
+        // 2. Obtener definición del proceso
+        ProcessDefinitionResponse processDefinition =
+                flowableClient.obtenerProcessDefinition(
+                        task.processDefinitionId()
+                );
 
         if (processDefinition == null) {
             throw new IllegalStateException(
@@ -97,25 +103,38 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
             );
         }
 
-        String bpmnXml = flowableClient.obtenerBpmn(
+        // 3. Obtener BPMN XML
+        String bpmnXml =
+                flowableClient.obtenerBpmn(
                         processDefinition.deploymentId(),
                         processDefinition.resource()
                 );
 
+        // 4. Obtener campos dinámicos de la tarea
+        List<WorkflowFieldResponse> fields =
+                bpmnDefinitionParser.obtenerCampos(
+                        bpmnXml,
+                        task.taskDefinitionKey()
+                );
+
+        // 5. AQUÍ VA lo que preguntas
         List<WorkflowActionResponse> actions =
                 bpmnDefinitionParser.obtenerAcciones(
                         bpmnXml,
                         task.taskDefinitionKey()
                 );
 
+        // 6. Devolver tarea + campos + acciones
         return new WorkflowTaskActionsResponse(
                 task.id(),
                 task.name(),
                 task.taskDefinitionKey(),
                 task.processInstanceId(),
+                fields,
                 actions
         );
     }
+
     @Override
     public void completarTarea(
             String taskId,

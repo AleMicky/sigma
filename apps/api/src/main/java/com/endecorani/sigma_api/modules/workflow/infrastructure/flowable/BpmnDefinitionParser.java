@@ -1,6 +1,8 @@
 package com.endecorani.sigma_api.modules.workflow.infrastructure.flowable;
 
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowActionResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowFieldOptionResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowFieldResponse;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.*;
 
@@ -50,6 +52,100 @@ public class BpmnDefinitionParser {
                     ex
             );
         }
+    }
+
+    public List<WorkflowFieldResponse> obtenerCampos(String bpmnXml, String taskDefinitionKey) {
+        try {
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+
+            Document document = factory.newDocumentBuilder().parse(
+                                    new ByteArrayInputStream(
+                                            bpmnXml.getBytes(StandardCharsets.UTF_8))
+                            );
+            Element task = buscarElementoPorId(document, taskDefinitionKey);
+
+            if (task == null) {
+                return List.of();
+            }
+
+            List<WorkflowFieldResponse> fields = new ArrayList<>();
+            NodeList formProperties = task.getElementsByTagNameNS(
+                            "*",
+                            "formProperty"
+                    );
+
+            for (int i = 0; i < formProperties.getLength(); i++) {
+
+                Element formProperty = (Element) formProperties.item(i);
+                String id = formProperty.getAttribute("id");
+                String name = formProperty.getAttribute("name");
+                String type = formProperty.getAttribute("type");
+
+                boolean required = Boolean.parseBoolean(formProperty.getAttribute(
+                                        "required"
+                                )
+                        );
+
+                boolean readable = !"false".equalsIgnoreCase(
+                                formProperty.getAttribute(
+                                        "readable"
+                                )
+                        );
+
+                boolean writable = !"false".equalsIgnoreCase(
+                                formProperty.getAttribute(
+                                        "writable"
+                                )
+                        );
+
+                List<WorkflowFieldOptionResponse> options = obtenerOpciones(
+                                formProperty
+                        );
+
+                fields.add(new WorkflowFieldResponse(
+                                id,
+                                name,
+                                type,
+                                required,
+                                readable,
+                                writable,
+                                options
+                        )
+                );
+            }
+
+            return fields;
+
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "No se pudieron obtener los campos BPMN",
+                    ex
+            );
+        }
+    }
+
+
+    private List<WorkflowFieldOptionResponse> obtenerOpciones(Element formProperty) {
+
+        NodeList values = formProperty.getElementsByTagNameNS(
+                        "*",
+                        "value"
+                );
+
+        List<WorkflowFieldOptionResponse> options = new ArrayList<>();
+
+        for (int i = 0; i < values.getLength(); i++) {
+
+            Element value = (Element) values.item(i);
+            options.add(new WorkflowFieldOptionResponse(
+                            value.getAttribute("id"),
+                            value.getAttribute("name"))
+            );
+        }
+
+        return options;
     }
 
     private String obtenerTargetDirecto(Document document, String sourceRef) {

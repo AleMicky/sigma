@@ -1,9 +1,9 @@
 package com.endecorani.sigma_api.modules.workflow.presentation;
 
-import com.endecorani.sigma_api.modules.workflow.application.dto.request.ExecuteWorkflowActionRequest;
+import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
-import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
+import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -20,32 +20,24 @@ public class WorkflowRuntimeController {
             @PathVariable String processInstanceId
     ) {
         return workflowApplicationService
-                .obtenerTareaActual(
-                        processInstanceId
-                );
+                .obtenerTareaActual(processInstanceId);
     }
 
-    @GetMapping(
-            "/instances/{processInstanceId}/actions"
-    )
+    @GetMapping("/instances/{processInstanceId}/actions")
     public WorkflowTaskActionsResponse obtenerAcciones(
             @PathVariable String processInstanceId
     ) {
         return workflowApplicationService
-                .obtenerAccionesDisponibles(
-                        processInstanceId
-                );
+                .obtenerAccionesDisponibles(processInstanceId);
     }
 
-    @PostMapping(
-            "/instances/{processInstanceId}/actions"
-    )
-    public WorkflowTaskActionsResponse ejecutarAccion(
+    @PostMapping("/instances/{processInstanceId}/complete")
+    public WorkflowTaskActionsResponse completarTarea(
             @PathVariable String processInstanceId,
-            @RequestBody ExecuteWorkflowActionRequest request
+            @RequestBody CompleteWorkflowTaskRequest request
     ) {
         return workflowApplicationService
-                .ejecutarAccion(
+                .completarTarea(
                         processInstanceId,
                         request
                 );
