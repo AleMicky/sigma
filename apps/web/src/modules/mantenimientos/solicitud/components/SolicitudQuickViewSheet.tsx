@@ -14,6 +14,7 @@ import {
   Loader2,
   Paperclip,
   Pencil,
+  SendHorizontal,
   User,
   UserCheck,
   Wrench,
@@ -50,6 +51,7 @@ type SolicitudQuickViewSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onEdit: (solicitud: SolicitudMantenimiento) => void
+  onEnviar?: (solicitud: SolicitudMantenimiento) => void
 }
 
 function formatFileSize(bytes?: number): string {
@@ -92,6 +94,7 @@ export function SolicitudQuickViewSheet({
   open,
   onOpenChange,
   onEdit,
+  onEnviar,
 }: SolicitudQuickViewSheetProps) {
   const [selectedPreviewImage, setSelectedPreviewImage] = useState<{
     url: string
@@ -526,7 +529,7 @@ export function SolicitudQuickViewSheet({
         )}
 
         {/* Footer Actions */}
-        <div className="pt-3 border-t flex justify-end gap-2 shrink-0">
+        <div className="pt-3 border-t flex items-center justify-end gap-2 shrink-0">
           <Button
             size="sm"
             variant="outline"
@@ -537,6 +540,7 @@ export function SolicitudQuickViewSheet({
           </Button>
           <Button
             size="sm"
+            variant="secondary"
             onClick={() => {
               onOpenChange(false)
               onEdit(solicitud)
@@ -546,6 +550,19 @@ export function SolicitudQuickViewSheet({
             <Pencil className="size-3.5" />
             <span>Editar Solicitud</span>
           </Button>
+          {solicitud.estado?.toLowerCase() === "borrador" && onEnviar ? (
+            <Button
+              size="sm"
+              onClick={() => {
+                onOpenChange(false)
+                onEnviar(solicitud)
+              }}
+              className="gap-1.5 text-xs h-8 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs"
+            >
+              <SendHorizontal className="size-3.5" />
+              <span>Enviar Solicitud</span>
+            </Button>
+          ) : null}
         </div>
       </SheetContent>
     </Sheet>

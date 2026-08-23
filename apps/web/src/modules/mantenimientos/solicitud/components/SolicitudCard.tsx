@@ -5,6 +5,7 @@ import {
   MoreVertical,
   Paperclip,
   Pencil,
+  SendHorizontal,
   Trash2,
   User,
   Wrench,
@@ -33,6 +34,7 @@ type SolicitudCardProps = {
   onEdit: (solicitud: SolicitudMantenimiento) => void
   onQuickView: (solicitud: SolicitudMantenimiento) => void
   onDelete: (solicitud: SolicitudMantenimiento) => void
+  onEnviar?: (solicitud: SolicitudMantenimiento) => void
 }
 
 export function SolicitudCard({
@@ -40,6 +42,7 @@ export function SolicitudCard({
   onEdit,
   onQuickView,
   onDelete,
+  onEnviar,
 }: SolicitudCardProps) {
   const estadoStyle = getEstadoBadgeStyles(solicitud.estado)
   const prioridadStyle = getPrioridadBadgeStyles(solicitud.prioridad?.nivel ?? 1)
@@ -110,6 +113,15 @@ export function SolicitudCard({
                   <Pencil className="size-3.5 mr-2 text-muted-foreground" />
                   Editar Solicitud
                 </DropdownMenuItem>
+                {solicitud.estado?.toLowerCase() === "borrador" && onEnviar ? (
+                  <DropdownMenuItem
+                    onClick={() => onEnviar(solicitud)}
+                    className="text-xs text-primary focus:text-primary cursor-pointer py-2 font-medium"
+                  >
+                    <SendHorizontal className="size-3.5 mr-2" />
+                    Enviar Solicitud
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-xs text-destructive focus:text-destructive cursor-pointer py-2"

@@ -19,9 +19,10 @@ import {
 } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
-import { useDeleteSolicitud } from "../api/solicitud.mutations"
+import { useDeleteSolicitud, useEnviarSolicitud } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
+import { ConfirmEnviarDialog } from "../components/ConfirmEnviarDialog"
 import { SolicitudCard } from "../components/SolicitudCard"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudQuickViewSheet } from "../components/SolicitudQuickViewSheet"
@@ -34,9 +35,11 @@ export function SolicitudesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("")
   const [quickView, setQuickView] = useState<SolicitudMantenimiento | null>(null)
   const [deleting, setDeleting] = useState<SolicitudMantenimiento | null>(null)
+  const [enviando, setEnviando] = useState<SolicitudMantenimiento | null>(null)
 
   const search = usePaginatedSearch()
   const deleteMutation = useDeleteSolicitud()
+  const enviarMutation = useEnviarSolicitud()
 
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
@@ -114,6 +117,16 @@ export function SolicitudesPage() {
     try {
       await deleteMutation.mutateAsync(deleting.id)
       setDeleting(null)
+    } catch {
+      // Handled by mutation toast
+    }
+  }
+
+  async function handleEnviar() {
+    if (!enviando) return
+    try {
+      await enviarMutation.mutateAsync(enviando.id)
+      setEnviando(null)
     } catch {
       // Handled by mutation toast
     }
@@ -259,6 +272,7 @@ export function SolicitudesPage() {
                     onEdit={openEdit}
                     onQuickView={(s) => setQuickView(s)}
                     onDelete={(s) => setDeleting(s)}
+                    onEnviar={(s) => setEnviando(s)}
                   />
                 ))}
               </ul>
@@ -282,6 +296,7 @@ export function SolicitudesPage() {
         open={Boolean(quickView)}
         onOpenChange={(open) => !open && setQuickView(null)}
         onEdit={openEdit}
+        onEnviar={(s) => setEnviando(s)}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -292,6 +307,15 @@ export function SolicitudesPage() {
         description="Esta acción no se puede deshacer. Se eliminará la solicitud y sus adjuntos del sistema."
         isPending={deleteMutation.isPending}
         onConfirm={handleDelete}
+      />
+
+      {/* Enviar Solicitud Confirmation Dialog */}
+      <ConfirmEnviarDialog
+        open={Boolean(enviando)}
+        onOpenChange={(open) => !open && setEnviando(null)}
+        solicitud={enviando}
+        isPending={enviarMutation.isPending}
+        onConfirm={handleEnviar}
       />
     </PageShell>
   )

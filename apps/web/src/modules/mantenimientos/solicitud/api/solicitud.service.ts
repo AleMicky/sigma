@@ -150,3 +150,9 @@ export async function deleteAdjunto(
 ): Promise<void> {
   await http.delete<void>(solicitudEndpoints.adjuntos.byId(solicitudId, adjuntoId))
 }
+
+export async function enviarSolicitud(
+  id: string,
+): Promise<SolicitudMantenimiento> {
+  return http.post<SolicitudMantenimiento>(solicitudEndpoints.enviar(id))
+}

@@ -10,6 +10,7 @@ import {
   createSolicitudWithFiles,
   deleteAdjunto,
   deleteSolicitud,
+  enviarSolicitud,
   updateSolicitud,
   type SolicitudMantenimiento,
   type SolicitudPayload,
@@ -100,6 +101,21 @@ export function useDeleteAdjunto() {
         queryKey: solicitudKeys.adjuntos(variables.solicitudId),
       })
       toast.success("Adjunto eliminado correctamente")
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
+    },
+  })
+}
+
+export function useEnviarSolicitud() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => enviarSolicitud(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      toast.success("Solicitud enviada correctamente e iniciado el flujo de trabajo")
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
