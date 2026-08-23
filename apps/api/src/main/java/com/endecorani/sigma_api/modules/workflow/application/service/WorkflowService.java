@@ -1,0 +1,4 @@
+package com.endecorani.sigma_api.modules.workflow.application.service;
+
+public interface WorkflowService {
+}
