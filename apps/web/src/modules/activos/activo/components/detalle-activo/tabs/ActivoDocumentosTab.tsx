@@ -6,6 +6,7 @@ import {
   FileSearch,
   FileText,
   Loader2,
+  Pencil,
   Plus,
   Search,
   Trash2,
@@ -84,6 +85,7 @@ type ActivoDocumentosTabProps = {
   docFilter: string
   onFilterChange: (value: string) => void
   onOpenAddDocument: () => void
+  onEditDocumento?: (doc: ActivoDocumento) => void
 }
 
 export function ActivoDocumentosTab({
@@ -93,6 +95,7 @@ export function ActivoDocumentosTab({
   docFilter,
   onFilterChange,
   onOpenAddDocument,
+  onEditDocumento,
 }: ActivoDocumentosTabProps) {
   const [docToDelete, setDocToDelete] = useState<ActivoDocumento | null>(null)
   const [loadingDocId, setLoadingDocId] = useState<string | null>(null)
@@ -365,6 +368,17 @@ export function ActivoDocumentosTab({
                     >
                       <Download className="size-3.5" />
                     </Button>
+                    {onEditDocumento && (
+                      <Button
+                        size="icon-xs"
+                        variant="ghost"
+                        onClick={() => onEditDocumento(doc)}
+                        className="text-muted-foreground hover:text-foreground"
+                        title="Editar documento"
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                    )}
                     <Button
                       size="icon-xs"
                       variant="ghost"

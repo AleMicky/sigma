@@ -10,6 +10,7 @@ import type { ActivoAccesorio } from "@/modules/activos/activo-accesorio/api/act
 import { activoAtributoQueries } from "@/modules/activos/activo-atributo/api/activo-atributo.queries"
 import { activoAtributoValorQueries } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.queries"
 import { activoDocumentoQueries } from "@/modules/activos/activo-documento/api/activo-documento.queries"
+import type { ActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.service"
 import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.queries"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
@@ -51,6 +52,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
   const [docFilter, setDocFilter] = useState<string>("todos")
   const [docSearch, setDocSearch] = useState<string>("")
   const [isAddDocOpen, setIsAddDocOpen] = useState(false)
+  const [editingDocumento, setEditingDocumento] = useState<ActivoDocumento | null>(null)
   const [isAddAccesorioOpen, setIsAddAccesorioOpen] = useState(false)
   const [editingAccesorio, setEditingAccesorio] = useState<ActivoAccesorio | null>(null)
   const [isMantenimientoOpen, setIsMantenimientoOpen] = useState(false)
@@ -204,6 +206,16 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
     setMantenimientos((prev) => [newMaint, ...prev])
   }
 
+  function handleOpenAddDocument() {
+    setEditingDocumento(null)
+    setIsAddDocOpen(true)
+  }
+
+  function handleEditDocumento(doc: ActivoDocumento) {
+    setEditingDocumento(doc)
+    setIsAddDocOpen(true)
+  }
+
   function handleOpenAddAccesorio() {
     setEditingAccesorio(null)
     setIsAddAccesorioOpen(true)
@@ -281,7 +293,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
           onOpenMantenimiento={() => setIsMantenimientoOpen(true)}
           onOpenAddDocument={() => {
             setActiveTab("documentacion")
-            setIsAddDocOpen(true)
+            handleOpenAddDocument()
           }}
         />
 
@@ -313,7 +325,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
             documentos={documentos}
             isEditing={isEditing}
             onToggleEdit={handleToggleEdit}
-            onOpenAddDocument={() => setIsAddDocOpen(true)}
+            onOpenAddDocument={handleOpenAddDocument}
           />
         )}
 
@@ -324,7 +336,8 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
             onSearchChange={setDocSearch}
             docFilter={docFilter}
             onFilterChange={setDocFilter}
-            onOpenAddDocument={() => setIsAddDocOpen(true)}
+            onOpenAddDocument={handleOpenAddDocument}
+            onEditDocumento={handleEditDocumento}
           />
         )}
 
@@ -365,9 +378,13 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
 
       <ActivoAddDocumentModal
         open={isAddDocOpen}
-        onOpenChange={setIsAddDocOpen}
+        onOpenChange={(open) => {
+          setIsAddDocOpen(open)
+          if (!open) setEditingDocumento(null)
+        }}
         activoId={activo.id}
         activoCodigo={activo.codigo}
+        itemToEdit={editingDocumento}
       />
 
       <ActivoAccesorioFormModal

@@ -1,9 +1,22 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { FilePlus, FileText, Upload, X } from "lucide-react"
+import {
+  FilePlus,
+  FileText,
+  Loader2,
+  Pencil,
+  RefreshCw,
+  Upload,
+  X,
+} from "lucide-react"
 import { toast } from "sonner"
 
-import { useCreateActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.mutations"
+import {
+  useCreateActivoDocumento,
+  useReplaceActivoDocumentoFile,
+  useUpdateActivoDocumento,
+} from "@/modules/activos/activo-documento/api/activo-documento.mutations"
+import type { ActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.service"
 import { tipoDocumentoQueries } from "@/modules/activos/tipo-documento/api/tipo-documento.queries"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -25,11 +38,14 @@ import {
 } from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 
+import { formatFileSize } from "../tabs/ActivoDocumentosTab"
+
 type ActivoAddDocumentModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   activoId: string
   activoCodigo: string
+  itemToEdit?: ActivoDocumento | null
 }
 
 export function ActivoAddDocumentModal({
@@ -37,9 +53,14 @@ export function ActivoAddDocumentModal({
   onOpenChange,
   activoId,
   activoCodigo,
+  itemToEdit,
 }: ActivoAddDocumentModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const isEditing = Boolean(itemToEdit)
+
   const createMutation = useCreateActivoDocumento()
+  const updateMutation = useUpdateActivoDocumento()
+  const replaceFileMutation = useReplaceActivoDocumentoFile()
 
   const tiposDocumentoQuery = useQuery(
     tipoDocumentoQueries.list({
@@ -75,11 +96,32 @@ export function ActivoAddDocumentModal({
     }
   }
 
-  function handleClose(isOpen: boolean) {
-    if (!isOpen) {
-      resetForm()
+  useEffect(() => {
+    if (open) {
+      if (itemToEdit) {
+        setTipoDocumentoId(itemToEdit.tipoDocumentoId || "")
+        setNombre(itemToEdit.nombre || "")
+        setNumeroDocumento(itemToEdit.numeroDocumento ?? "")
+        setDescripcion(itemToEdit.descripcion ?? "")
+        setFechaEmision(itemToEdit.fechaEmision ?? "")
+        setFechaVencimiento(itemToEdit.fechaVencimiento ?? "")
+        setSelectedFile(null)
+      } else {
+        resetForm()
+      }
     }
-    onOpenChange(isOpen)
+  }, [open, itemToEdit])
+
+  const isPending =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    replaceFileMutation.isPending
+
+  function handleClose(isOpen: boolean) {
+    if (!isOpen && !isPending) {
+      resetForm()
+      onOpenChange(false)
+    }
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -91,7 +133,7 @@ export function ActivoAddDocumentModal({
         return
       }
       setSelectedFile(file)
-      if (!nombre.trim()) {
+      if (!nombre.trim() && !isEditing) {
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "")
         setNombre(nameWithoutExt)
       }
@@ -118,26 +160,52 @@ export function ActivoAddDocumentModal({
       return
     }
 
-    if (!selectedFile) {
+    if (!isEditing && !selectedFile) {
       toast.error("Debes adjuntar un archivo (PDF, JPG, PNG, etc.)")
       return
     }
 
     try {
-      await createMutation.mutateAsync({
-        payload: {
-          activoId,
-          tipoDocumentoId,
-          nombre: nombre.trim(),
-          numeroDocumento: numeroDocumento.trim() || null,
-          descripcion: descripcion.trim() || null,
-          fechaEmision: fechaEmision || null,
-          fechaVencimiento: fechaVencimiento || null,
-        },
-        file: selectedFile,
-      })
+      if (isEditing && itemToEdit) {
+        // 1. Update metadata
+        await updateMutation.mutateAsync({
+          id: itemToEdit.id,
+          payload: {
+            activoId,
+            tipoDocumentoId,
+            nombre: nombre.trim(),
+            numeroDocumento: numeroDocumento.trim() || null,
+            descripcion: descripcion.trim() || null,
+            fechaEmision: fechaEmision || null,
+            fechaVencimiento: fechaVencimiento || null,
+          },
+        })
 
-      handleClose(false)
+        // 2. Replace file if user chose a new one
+        if (selectedFile) {
+          await replaceFileMutation.mutateAsync({
+            id: itemToEdit.id,
+            file: selectedFile,
+          })
+        }
+
+        handleClose(false)
+      } else if (selectedFile) {
+        await createMutation.mutateAsync({
+          payload: {
+            activoId,
+            tipoDocumentoId,
+            nombre: nombre.trim(),
+            numeroDocumento: numeroDocumento.trim() || null,
+            descripcion: descripcion.trim() || null,
+            fechaEmision: fechaEmision || null,
+            fechaVencimiento: fechaVencimiento || null,
+          },
+          file: selectedFile,
+        })
+
+        handleClose(false)
+      }
     } catch {
       // Error handled in mutation
     }
@@ -148,15 +216,31 @@ export function ActivoAddDocumentModal({
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FilePlus className="size-4.5 text-primary" />
-            Adjuntar Documento
+            {isEditing ? (
+              <Pencil className="size-4.5 text-primary" />
+            ) : (
+              <FilePlus className="size-4.5 text-primary" />
+            )}
+            {isEditing ? "Editar Documento" : "Adjuntar Documento"}
           </DialogTitle>
           <DialogDescription>
-            Asocia una póliza, certificación, acta o comprobante técnico al activo{" "}
-            <span className="font-mono font-semibold text-foreground">
-              {activoCodigo}
-            </span>
-            .
+            {isEditing ? (
+              <span>
+                Actualiza los datos del documento o sustituye el archivo para el activo{" "}
+                <span className="font-mono font-semibold text-foreground">
+                  {activoCodigo}
+                </span>
+                .
+              </span>
+            ) : (
+              <span>
+                Asocia una póliza, certificación, acta o comprobante técnico al activo{" "}
+                <span className="font-mono font-semibold text-foreground">
+                  {activoCodigo}
+                </span>
+                .
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -171,6 +255,7 @@ export function ActivoAddDocumentModal({
               onValueChange={(val) => {
                 if (val) setTipoDocumentoId(val)
               }}
+              disabled={isPending}
             >
               <SelectTrigger className="h-8.5 text-xs">
                 <SelectValue placeholder="Selecciona un tipo de documento..." />
@@ -202,6 +287,7 @@ export function ActivoAddDocumentModal({
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Ej. SOAT 2026 - Renovación Anual"
               className="h-8.5 text-xs"
+              disabled={isPending}
               required
             />
           </div>
@@ -217,6 +303,7 @@ export function ActivoAddDocumentModal({
                 onChange={(e) => setNumeroDocumento(e.target.value)}
                 placeholder="Ej. POL-9921-A"
                 className="h-8.5 text-xs"
+                disabled={isPending}
               />
             </div>
 
@@ -227,6 +314,7 @@ export function ActivoAddDocumentModal({
                 value={fechaEmision}
                 onChange={(e) => setFechaEmision(e.target.value)}
                 className="h-8.5 text-xs font-mono"
+                disabled={isPending}
               />
             </div>
           </div>
@@ -251,6 +339,7 @@ export function ActivoAddDocumentModal({
               onChange={(e) => setFechaVencimiento(e.target.value)}
               className="h-8.5 text-xs font-mono"
               required={requiereVencimiento}
+              disabled={isPending}
             />
           </div>
 
@@ -263,13 +352,14 @@ export function ActivoAddDocumentModal({
               placeholder="Detalles sobre cobertura, aseguradora o alcance..."
               rows={2}
               className="text-xs resize-none min-h-[50px]"
+              disabled={isPending}
             />
           </div>
 
           {/* Archivo Adjunto */}
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs font-semibold">
-              Archivo Adjunto <span className="text-destructive">*</span>
+              {isEditing ? "Archivo Adjunto" : "Archivo Adjunto *"}
             </Label>
             <input
               type="file"
@@ -277,9 +367,74 @@ export function ActivoAddDocumentModal({
               onChange={handleFileChange}
               className="hidden"
               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+              disabled={isPending}
             />
 
-            {!selectedFile ? (
+            {/* If a new file is chosen */}
+            {selectedFile ? (
+              <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-primary/30 bg-primary/5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="size-4 text-primary shrink-0" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-medium text-foreground truncate">
+                      {selectedFile.name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB{" "}
+                      {isEditing && (
+                        <span className="font-semibold text-primary">
+                          (Nuevo archivo seleccionado)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  size="icon-xs"
+                  variant="ghost"
+                  disabled={isPending}
+                  onClick={() => {
+                    setSelectedFile(null)
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = ""
+                    }
+                  }}
+                  className="text-muted-foreground hover:text-destructive shrink-0"
+                >
+                  <X className="size-3.5" />
+                </Button>
+              </div>
+            ) : isEditing && itemToEdit ? (
+              /* If editing and keeping current file */
+              <div className="flex flex-col gap-2 p-3 rounded-xl border border-border/80 bg-muted/20">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="size-4 text-muted-foreground shrink-0" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-medium text-foreground truncate">
+                        {itemToEdit.nombreArchivo || "Archivo adjunto existente"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatFileSize(itemToEdit.size)} • Archivo actual
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-7 text-[11px] gap-1 shrink-0"
+                  >
+                    <RefreshCw className="size-3" />
+                    Reemplazar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Create mode - dropzone upload */
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className="p-4 border-2 border-dashed border-border/80 rounded-xl bg-muted/20 flex flex-col items-center justify-center gap-1.5 hover:bg-muted/40 hover:border-primary/40 transition-colors cursor-pointer text-center"
@@ -292,34 +447,6 @@ export function ActivoAddDocumentModal({
                   PDF, JPG, PNG, DOCX (Máx 20 MB)
                 </span>
               </div>
-            ) : (
-              <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-primary/30 bg-primary/5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <FileText className="size-4 text-primary shrink-0" />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-medium text-foreground truncate">
-                      {selectedFile.name}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                    </span>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  size="icon-xs"
-                  variant="ghost"
-                  onClick={() => {
-                    setSelectedFile(null)
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = ""
-                    }
-                  }}
-                  className="text-muted-foreground hover:text-destructive shrink-0"
-                >
-                  <X className="size-3.5" />
-                </Button>
-              </div>
             )}
           </div>
 
@@ -328,7 +455,7 @@ export function ActivoAddDocumentModal({
               type="button"
               variant="outline"
               size="sm"
-              disabled={createMutation.isPending}
+              disabled={isPending}
               onClick={() => handleClose(false)}
             >
               Cancelar
@@ -336,10 +463,15 @@ export function ActivoAddDocumentModal({
             <Button
               type="submit"
               size="sm"
-              disabled={createMutation.isPending}
-              className="font-semibold shadow-xs"
+              disabled={isPending}
+              className="font-semibold shadow-xs gap-1.5"
             >
-              {createMutation.isPending ? "Guardando..." : "Guardar Documento"}
+              {isPending && <Loader2 className="size-3.5 animate-spin" />}
+              {isPending
+                ? "Guardando..."
+                : isEditing
+                ? "Guardar Cambios"
+                : "Guardar Documento"}
             </Button>
           </DialogFooter>
         </form>
@@ -347,3 +479,4 @@ export function ActivoAddDocumentModal({
     </Dialog>
   )
 }
+
