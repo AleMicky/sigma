@@ -21,4 +21,9 @@ public interface WorkflowEngineService {
     WorkflowTaskActionsResponse obtenerAccionesDisponibles(
             String processInstanceId
     );
+
+    void completarTarea(
+            String taskId,
+            Map<String, Object> variables
+    );
 }

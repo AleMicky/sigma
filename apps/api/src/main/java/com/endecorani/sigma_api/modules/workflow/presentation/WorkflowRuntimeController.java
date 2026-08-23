@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.workflow.presentation;
 
+import com.endecorani.sigma_api.modules.workflow.application.dto.request.ExecuteWorkflowActionRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
@@ -33,6 +34,20 @@ public class WorkflowRuntimeController {
         return workflowApplicationService
                 .obtenerAccionesDisponibles(
                         processInstanceId
+                );
+    }
+
+    @PostMapping(
+            "/instances/{processInstanceId}/actions"
+    )
+    public WorkflowTaskActionsResponse ejecutarAccion(
+            @PathVariable String processInstanceId,
+            @RequestBody ExecuteWorkflowActionRequest request
+    ) {
+        return workflowApplicationService
+                .ejecutarAccion(
+                        processInstanceId,
+                        request
                 );
     }
 }

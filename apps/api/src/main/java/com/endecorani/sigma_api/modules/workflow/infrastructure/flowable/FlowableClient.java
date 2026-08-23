@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.workflow.infrastructure.flowable;
 
+import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.StartProcessRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.ProcessInstanceResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.FlowablePageResponse;
@@ -82,9 +83,28 @@ public class FlowableClient {
         );
     }
 
+    public void completarTarea(String taskId, CompleteTaskRequest request) {
+        executeVoid(
+                () -> restClient.post()
+                        .uri("/runtime/tasks/{taskId}", taskId)
+                        .body(request)
+                        .retrieve()
+                        .toBodilessEntity(),
+                "Error completando la tarea %s en Flowable".formatted(taskId)
+        );
+    }
+
     private <T> T execute(Supplier<T> action, String errorMessage) {
         try {
             return action.get();
+        } catch (RestClientException ex) {
+            throw new FlowableIntegrationException(errorMessage, ex);
+        }
+    }
+
+    private void executeVoid(Runnable action, String errorMessage) {
+        try {
+            action.run();
         } catch (RestClientException ex) {
             throw new FlowableIntegrationException(errorMessage, ex);
         }

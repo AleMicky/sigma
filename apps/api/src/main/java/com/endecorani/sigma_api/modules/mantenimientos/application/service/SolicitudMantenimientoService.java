@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,10 +47,10 @@ public class SolicitudMantenimientoService {
     private static final String WORKFLOW_CODIGO = "SOLICITUD_MANTENIMIENTO";
     private static final String ADJUNTO_FOLDER = "solicitud_mantenimiento_adjuntos";
 
-    private static final Set<String> SORT_FIELDS = Set.of(
+    private static final Set<String> SORT_FIELDS = Set.copyOf(Arrays.asList(
             "id", "numero", "activoId", "tipoMantenimientoId", "prioridadId",
             "solicitanteId", "estado", "fechaSolicitud", "createdAt", "updatedAt"
-    );
+    ));
 
     private final SolicitudMantenimientoRepository repository;
     private final ActivoRepository activoRepository;

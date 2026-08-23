@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.workflow.infrastructure.flowable;
 
+import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.FlowableVariableRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.StartProcessRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.ProcessInstanceResponse;
@@ -113,6 +114,34 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                 task.taskDefinitionKey(),
                 task.processInstanceId(),
                 actions
+        );
+    }
+    @Override
+    public void completarTarea(
+            String taskId,
+            Map<String, Object> variables
+    ) {
+
+        var flowableVariables =
+                variables.entrySet()
+                        .stream()
+                        .map(entry ->
+                                new FlowableVariableRequest(
+                                        entry.getKey(),
+                                        entry.getValue()
+                                )
+                        )
+                        .toList();
+
+        CompleteTaskRequest request =
+                new CompleteTaskRequest(
+                        "complete",
+                        flowableVariables
+                );
+
+        flowableClient.completarTarea(
+                taskId,
+                request
         );
     }
 }
