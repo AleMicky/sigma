@@ -13,8 +13,6 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMan
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
-import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowConfigService;
-import com.endecorani.sigma_api.modules.workflow.domain.model.Workflow;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -60,7 +58,6 @@ public class SolicitudMantenimientoService {
     private final SolicitudMantenimientoAdjuntoRepository adjuntoRepository;
     private final DocumentStorageService documentStorageService;
     private final CorrelativoService correlativoService;
-    private final WorkflowConfigService workflowConfigService;
     private final WorkflowApplicationService workflowApplicationService;
 
     @Transactional

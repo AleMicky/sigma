@@ -5,6 +5,9 @@ import com.endecorani.sigma_api.modules.workflow.application.dto.request.StartPr
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.ProcessInstanceResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowEngineService;
 
+import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.FlowablePageResponse;
+import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.TaskResponse;
+import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.WorkflowTaskResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -42,5 +45,28 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
         }
 
         return response.id();
+    }
+
+    @Override
+    public WorkflowTaskResponse obtenerTareaActual(String processInstanceId) {
+
+        FlowablePageResponse<TaskResponse> response = flowableClient.obtenerTareasPorProceso(processInstanceId);
+
+        if (response == null
+                || response.data() == null
+                || response.data().isEmpty()) {
+            return null;
+        }
+
+        TaskResponse task = response.data().getFirst();
+
+        return new WorkflowTaskResponse(
+                task.id(),
+                task.name(),
+                task.taskDefinitionKey(),
+                task.assignee(),
+                task.processInstanceId(),
+                task.processDefinitionId()
+        );
     }
 }
