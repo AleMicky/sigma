@@ -12,6 +12,8 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.Solicit
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMantenimientoRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
+import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -164,6 +166,39 @@ public class SolicitudMantenimientoService {
         }
 
         return toResponse(repository.save(domain));
+    }
+
+    @Transactional
+    public SolicitudMantenimientoResponse completarWorkflow(
+            UUID solicitudId,
+            CompleteWorkflowTaskRequest request
+    ) {
+
+        SolicitudMantenimiento solicitud =
+                findDomainById(solicitudId);
+
+        if (solicitud.getProcessInstanceId() == null) {
+            throw new ConflictException(
+                    "SOLICITUD_SIN_WORKFLOW",
+                    "La solicitud no tiene workflow iniciado"
+            );
+        }
+
+        WorkflowTaskActionsResponse resultado =
+                workflowApplicationService.completarTarea(
+                        solicitud.getProcessInstanceId(),
+                        request
+                );
+
+        if (resultado.status() != null) {
+            solicitud.setEstado(
+                    resultado.status().toLowerCase()
+            );
+        }
+
+        return toResponse(
+                repository.save(solicitud)
+        );
     }
 
     @Transactional(readOnly = true)

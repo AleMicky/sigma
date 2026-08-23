@@ -2,15 +2,9 @@ import { useMemo, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
-  Box,
-  Calendar,
-  Clock,
-  Eye,
   FileCheck2,
   Flame,
-  Paperclip,
   ShieldCheck,
-  User,
   UserCheck,
   Wrench,
   X,
@@ -37,16 +31,17 @@ import {
   useClampPage,
   usePaginatedSearch,
 } from "@/shared/hooks/use-paginated-search"
-import { formatDate } from "@/shared/utils/date.utils"
 import { cn } from "@/shared/lib/utils"
 
 import { solicitudQueries } from "../api/solicitud.queries"
-import type { SolicitudMantenimiento } from "../api/solicitud.service"
+import type {
+  SolicitudMantenimiento,
+  WorkflowAction,
+  WorkflowField,
+} from "../api/solicitud.service"
+import { SolicitudAprobacionCard } from "../components/SolicitudAprobacionCard"
 import { SolicitudQuickViewSheet } from "../components/SolicitudQuickViewSheet"
-import {
-  getPrioridadBadgeStyles,
-  getTipoMantenimientoBadgeClass,
-} from "../lib/solicitud.utils"
+import { WorkflowActionDialog } from "../components/WorkflowActionDialog"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
@@ -54,6 +49,12 @@ export function AprobacionesPage() {
   const navigate = useNavigate()
   const [selectedPrioridad, setSelectedPrioridad] = useState<string>("all")
   const [quickView, setQuickView] = useState<SolicitudMantenimiento | null>(null)
+  const [workflowActionTarget, setWorkflowActionTarget] = useState<{
+    solicitud: SolicitudMantenimiento
+    action: WorkflowAction
+    taskName?: string
+    fields?: WorkflowField[]
+  } | null>(null)
 
   const search = usePaginatedSearch()
 
@@ -120,6 +121,20 @@ export function AprobacionesPage() {
   function openEdit(solicitud: SolicitudMantenimiento) {
     navigate({
       to: routes.mantenimientos.editarSolicitud(solicitud.id),
+    })
+  }
+
+  function handleActionSelect(
+    solicitud: SolicitudMantenimiento,
+    action: WorkflowAction,
+    taskName?: string,
+    fields?: WorkflowField[],
+  ) {
+    setWorkflowActionTarget({
+      solicitud,
+      action,
+      taskName,
+      fields,
     })
   }
 
@@ -308,7 +323,7 @@ export function AprobacionesPage() {
         {solicitudesQuery.isLoading ? (
           <ListSkeleton
             rows={8}
-            rowClassName="h-44 rounded-2xl"
+            rowClassName="h-48 rounded-2xl"
             className="grid grid-cols-1 gap-3.5 p-0.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
           />
         ) : solicitudesQuery.isError ? (
@@ -367,164 +382,14 @@ export function AprobacionesPage() {
               )}
             >
               <ul className="grid grid-cols-1 content-start gap-3.5 p-0.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                {filteredSolicitudes.map((item) => {
-                  const prioridadStyle = getPrioridadBadgeStyles(
-                    item.prioridad?.nivel ?? 1,
-                  )
-                  const adjuntosCount = item.adjuntos?.length ?? 0
-                  const isCritica = (item.prioridad?.nivel ?? 1) >= 4
-
-                  return (
-                    <li
-                      key={item.id}
-                      onClick={() => setQuickView(item)}
-                      className={cn(
-                        "group relative flex flex-col justify-between rounded-2xl border bg-card p-4 text-card-foreground shadow-2xs transition-all cursor-pointer overflow-hidden hover:shadow-md",
-                        isCritica
-                          ? "border-rose-500/40 hover:border-rose-500/80 bg-rose-500/[0.02]"
-                          : "border-amber-500/40 hover:border-amber-500/80 bg-amber-500/[0.02]",
-                      )}
-                    >
-                      {/* Top Section */}
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                            {item.numero ? (
-                              <code className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-bold text-primary border border-primary/20">
-                                {item.numero}
-                              </code>
-                            ) : null}
-                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">
-                              <Clock className="size-2.5" />
-                              Por Aprobar
-                            </span>
-                            {item.prioridad ? (
-                              <span
-                                className={cn(
-                                  "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold",
-                                  prioridadStyle,
-                                )}
-                              >
-                                {item.prioridad.nombre}
-                              </span>
-                            ) : null}
-                          </div>
-
-                          <Button
-                            size="icon-xs"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setQuickView(item)
-                            }}
-                            className="size-7 text-primary hover:bg-primary/10 rounded-lg shrink-0"
-                            title="Revisar Solicitud"
-                          >
-                            <Eye className="size-4" />
-                          </Button>
-                        </div>
-
-                        {/* Title and Motivo */}
-                        <div className="space-y-1">
-                          <h3 className="line-clamp-1 font-heading text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                            {item.titulo}
-                          </h3>
-                          {item.motivoMantenimiento ? (
-                            <p className="line-clamp-1 text-xs font-medium text-muted-foreground">
-                              <span className="text-foreground/80 font-semibold">
-                                Motivo:
-                              </span>{" "}
-                              {item.motivoMantenimiento}
-                            </p>
-                          ) : null}
-                          <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
-                            {item.descripcion}
-                          </p>
-                        </div>
-
-                        {/* Activo Card Strip */}
-                        {item.activo ? (
-                          <div className="flex items-center gap-2 rounded-xl bg-muted/40 p-2 border border-border/60 text-xs">
-                            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background border shadow-2xs text-primary">
-                              <Box className="size-3.5" />
-                            </div>
-                            <div className="min-w-0 flex-1 truncate">
-                              <p className="font-semibold text-foreground truncate text-xs">
-                                <span className="font-mono text-primary font-bold mr-1 text-[11px]">
-                                  {item.activo.codigo}
-                                </span>
-                                {item.activo.nombre}
-                              </p>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-
-                      {/* Footer Info Row & Review Action */}
-                      <div className="mt-4 pt-2.5 border-t border-border/60 space-y-2.5">
-                        <div className="flex items-center justify-between gap-2 text-xs">
-                          {/* Tipo Mantenimiento */}
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            {item.tipoMantenimiento ? (
-                              <span
-                                className={cn(
-                                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border truncate",
-                                  getTipoMantenimientoBadgeClass(
-                                    item.tipoMantenimiento.nombre,
-                                    false,
-                                  ),
-                                )}
-                              >
-                                <Wrench className="size-3 shrink-0" />
-                                <span className="truncate">
-                                  {item.tipoMantenimiento.nombre}
-                                </span>
-                              </span>
-                            ) : null}
-
-                            {adjuntosCount > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">
-                                <Paperclip className="size-3" />
-                                <span>{adjuntosCount}</span>
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Solicitante & Fecha */}
-                          <div className="flex items-center gap-2 shrink-0 text-[10.5px] text-muted-foreground">
-                            {item.solicitante && (
-                              <div className="hidden sm:flex items-center gap-1">
-                                <User className="size-3" />
-                                <span className="truncate max-w-[90px]">
-                                  {item.solicitante.nombre}
-                                </span>
-                              </div>
-                            )}
-                            {item.fechaSolicitud && (
-                              <div className="flex items-center gap-1">
-                                <Calendar className="size-3" />
-                                <span>{formatDate(item.fechaSolicitud)}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Direct Review CTA Button */}
-                        <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setQuickView(item)
-                          }}
-                          className="w-full h-7.5 gap-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white shadow-2xs"
-                        >
-                          <FileCheck2 className="size-3.5" />
-                          <span>Revisar y Evaluar Expediente</span>
-                        </Button>
-                      </div>
-                    </li>
-                  )
-                })}
+                {filteredSolicitudes.map((item) => (
+                  <SolicitudAprobacionCard
+                    key={item.id}
+                    solicitud={item}
+                    onQuickView={(s) => setQuickView(s)}
+                    onActionSelect={handleActionSelect}
+                  />
+                ))}
               </ul>
             </div>
 
@@ -545,7 +410,24 @@ export function AprobacionesPage() {
         open={Boolean(quickView)}
         onOpenChange={(open) => !open && setQuickView(null)}
         onEdit={openEdit}
+        onWorkflowAction={handleActionSelect}
+      />
+
+      {/* Workflow Action Dialog */}
+      <WorkflowActionDialog
+        open={Boolean(workflowActionTarget)}
+        onOpenChange={(open) => !open && setWorkflowActionTarget(null)}
+        solicitud={workflowActionTarget?.solicitud ?? null}
+        action={workflowActionTarget?.action ?? null}
+        taskName={workflowActionTarget?.taskName}
+        fields={workflowActionTarget?.fields}
+        onSuccess={() => {
+          if (quickView && workflowActionTarget?.solicitud.id === quickView.id) {
+            setQuickView(null)
+          }
+        }}
       />
     </PageShell>
   )
 }
+

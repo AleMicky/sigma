@@ -3,6 +3,10 @@ import { createResourceEndpoints } from "@/shared/api"
 export const solicitudEndpoints = {
   ...createResourceEndpoints("/solicitudes-mantenimiento"),
   enviar: (id: string) => `/solicitudes-mantenimiento/${id}/enviar`,
+  workflow: {
+    actions: (processInstanceId: string) => `/workflow/instances/${processInstanceId}/actions`,
+    complete: (solicitudId: string) => `/solicitudes-mantenimiento/${solicitudId}/workflow/complete`,
+  },
   adjuntos: {
     list: (solicitudId: string) => `/solicitudes-mantenimiento/${solicitudId}/adjuntos`,
     create: (solicitudId: string) => `/solicitudes-mantenimiento/${solicitudId}/adjuntos`,
@@ -12,4 +16,5 @@ export const solicitudEndpoints = {
       `/solicitudes-mantenimiento/${solicitudId}/adjuntos/${adjuntoId}/archivo`,
   },
 }
+
 

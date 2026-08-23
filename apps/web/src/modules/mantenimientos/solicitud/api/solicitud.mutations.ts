@@ -5,6 +5,7 @@ import { createCrudMutations, getErrorMessage } from "@/shared/api"
 
 import { solicitudKeys } from "./solicitud.keys"
 import {
+  completeWorkflowTask,
   createAdjunto,
   createSolicitud,
   createSolicitudWithFiles,
@@ -12,6 +13,7 @@ import {
   deleteSolicitud,
   enviarSolicitud,
   updateSolicitud,
+  type CompleteWorkflowTaskPayload,
   type SolicitudMantenimiento,
   type SolicitudPayload,
 } from "./solicitud.service"
@@ -122,3 +124,28 @@ export function useEnviarSolicitud() {
     },
   })
 }
+
+export function useCompleteWorkflowTask() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      solicitudId,
+      payload,
+    }: {
+      solicitudId: string
+      payload: CompleteWorkflowTaskPayload
+    }) => completeWorkflowTask(solicitudId, payload),
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      void queryClient.invalidateQueries({
+        queryKey: solicitudKeys.detail(variables.solicitudId),
+      })
+      toast.success("Acción de flujo de trabajo completada con éxito")
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
+    },
+  })
+}
+

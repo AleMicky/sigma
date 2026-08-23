@@ -8,4 +8,7 @@ export const solicitudKeys = {
   adjuntos: (id: string) => [...solicitudKeys.detail(id), "adjuntos"] as const,
   adjuntosList: (id: string, filters: Record<string, unknown> = {}) =>
     [...solicitudKeys.adjuntos(id), filters] as const,
+  workflowActions: (processInstanceId: string) =>
+    [...solicitudKeys.all, "workflow", processInstanceId] as const,
 }
+

@@ -156,3 +156,57 @@ export async function enviarSolicitud(
 ): Promise<SolicitudMantenimiento> {
   return http.post<SolicitudMantenimiento>(solicitudEndpoints.enviar(id))
 }
+
+export type WorkflowAction = {
+  name: string
+  variable: string
+  value: string
+}
+
+export type WorkflowFieldOption = {
+  value: string
+  label: string
+}
+
+export type WorkflowField = {
+  id: string
+  name: string
+  type: string
+  required: boolean
+  readable: boolean
+  writable: boolean
+  options?: WorkflowFieldOption[]
+}
+
+export type WorkflowTaskActionsResponse = {
+  taskId: string
+  taskName: string
+  taskDefinitionKey: string
+  processInstanceId: string
+  status?: string
+  fields?: WorkflowField[]
+  actions: WorkflowAction[]
+}
+
+export type CompleteWorkflowTaskPayload = {
+  variables: Record<string, unknown>
+}
+
+export async function getWorkflowActions(
+  processInstanceId: string,
+): Promise<WorkflowTaskActionsResponse> {
+  return http.get<WorkflowTaskActionsResponse>(
+    solicitudEndpoints.workflow.actions(processInstanceId),
+  )
+}
+
+export async function completeWorkflowTask(
+  solicitudId: string,
+  payload: CompleteWorkflowTaskPayload,
+): Promise<SolicitudMantenimiento> {
+  return http.post<SolicitudMantenimiento, CompleteWorkflowTaskPayload>(
+    solicitudEndpoints.workflow.complete(solicitudId),
+    payload,
+  )
+}
+

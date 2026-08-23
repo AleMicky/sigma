@@ -17,34 +17,65 @@ import java.util.regex.Pattern;
 @Component
 public class BpmnDefinitionParser {
 
-    private static final Pattern CONDITION_PATTERN = Pattern.compile("\\$\\{\\s*(\\w+)\\s*==\\s*['\"]([^'\"]+)['\"]\\s*}");
+    private static final Pattern CONDITION_PATTERN =
+            Pattern.compile(
+                    "\\$\\{\\s*([a-zA-Z0-9_]+)\\s*==\\s*['\"]([^'\"]+)['\"]\\s*}"
+            );
+    public List<WorkflowActionResponse> obtenerAcciones(
+            String bpmnXml,
+            String taskDefinitionKey
+    ) {
 
-    public List<WorkflowActionResponse> obtenerAcciones(String bpmnXml, String taskDefinitionKey) {
         try {
-            Document document = DocumentBuilderFactory
-                            .newInstance()
-                            .newDocumentBuilder()
-                            .parse(new ByteArrayInputStream(bpmnXml.getBytes(StandardCharsets.UTF_8)));
+
+            DocumentBuilderFactory factory =
+                    DocumentBuilderFactory.newInstance();
+
+            factory.setNamespaceAware(true);
+
+            Document document =
+                    factory.newDocumentBuilder()
+                            .parse(
+                                    new ByteArrayInputStream(
+                                            bpmnXml.getBytes(
+                                                    StandardCharsets.UTF_8
+                                            )
+                                    )
+                            );
 
             document.getDocumentElement().normalize();
-            String nextElementId = obtenerTargetDirecto(document, taskDefinitionKey);
+
+            String nextElementId =
+                    obtenerTargetDirecto(
+                            document,
+                            taskDefinitionKey
+                    );
+
             if (nextElementId == null) {
                 return List.of();
             }
 
-            Element nextElement = buscarElementoPorId(document, nextElementId);
+            Element nextElement =
+                    buscarElementoPorId(
+                            document,
+                            nextElementId
+                    );
 
             if (nextElement == null) {
                 return List.of();
             }
 
-            String tagName = nextElement.getTagName();
+            String localName =
+                    nextElement.getLocalName();
 
-            if (!tagName.endsWith("exclusiveGateway")) {
+            if (!"exclusiveGateway".equals(localName)) {
                 return List.of();
             }
 
-            return obtenerAccionesGateway(document, nextElementId);
+            return obtenerAccionesGateway(
+                    document,
+                    nextElementId
+            );
 
         } catch (Exception ex) {
             throw new IllegalStateException(

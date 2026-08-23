@@ -76,10 +76,15 @@ public class FlowableClient {
     public String obtenerBpmn(String deploymentId, String resourceName) {
         return execute(
                 () -> restClient.get()
-                        .uri("/repository/deployments/{deploymentId}/resources/{resourceName}", deploymentId, resourceName)
+                        .uri(
+                                "/repository/deployments/{deploymentId}/resourcedata/{resourceName}",
+                                deploymentId,
+                                resourceName
+                        )
                         .retrieve()
                         .body(String.class),
-                "Error obteniendo recurso BPMN '%s' del deployment %s en Flowable".formatted(resourceName, deploymentId)
+                "Error obteniendo recurso BPMN '%s' del deployment %s en Flowable"
+                        .formatted(resourceName, deploymentId)
         );
     }
 

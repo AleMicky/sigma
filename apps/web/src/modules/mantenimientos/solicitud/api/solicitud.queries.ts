@@ -5,6 +5,7 @@ import type { PageParams } from "@/shared/types/api.types"
 import { solicitudKeys } from "./solicitud.keys"
 import {
   getSolicitud,
+  getWorkflowActions,
   listAdjuntos,
   listSolicitudes,
   type SolicitudListParams,
@@ -34,4 +35,13 @@ export const solicitudQueries = {
       queryFn: () => listAdjuntos(solicitudId, params),
       enabled: Boolean(solicitudId),
     }),
+
+  workflowActions: (processInstanceId?: string | null) =>
+    queryOptions({
+      queryKey: solicitudKeys.workflowActions(processInstanceId ?? ""),
+      queryFn: () => getWorkflowActions(processInstanceId!),
+      enabled: Boolean(processInstanceId),
+      staleTime: 1000 * 30,
+    }),
 }
+

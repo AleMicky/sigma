@@ -21,21 +21,22 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
 
     private final FlowableClient flowableClient;
     private final BpmnDefinitionParser bpmnDefinitionParser;
+
     @Override
     public String iniciarProceso(String processDefinitionKey, String businessKey, Map<String, Object> variables) {
 
         List<FlowableVariableRequest> flowableVariables = variables.entrySet()
-                        .stream()
-                        .map(entry -> new FlowableVariableRequest(
-                                        entry.getKey(),
-                                        entry.getValue()))
-                        .toList();
+                .stream()
+                .map(entry -> new FlowableVariableRequest(
+                        entry.getKey(),
+                        entry.getValue()))
+                .toList();
 
         StartProcessRequest request = new StartProcessRequest(
-                        processDefinitionKey,
-                        businessKey,
-                        flowableVariables
-                );
+                processDefinitionKey,
+                businessKey,
+                flowableVariables
+        );
 
         ProcessInstanceResponse response = flowableClient.iniciarProceso(request);
 
@@ -76,7 +77,6 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
             String processInstanceId
     ) {
 
-        // 1. Obtener tarea actual
         WorkflowTaskResponse task =
                 obtenerTareaActual(processInstanceId);
 
@@ -86,12 +86,12 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                     null,
                     null,
                     processInstanceId,
+                    null,
                     List.of(),
                     List.of()
             );
         }
 
-        // 2. Obtener definición del proceso
         ProcessDefinitionResponse processDefinition =
                 flowableClient.obtenerProcessDefinition(
                         task.processDefinitionId()
@@ -103,33 +103,38 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
             );
         }
 
-        // 3. Obtener BPMN XML
-        String bpmnXml =
-                flowableClient.obtenerBpmn(
-                        processDefinition.deploymentId(),
+        String resourceName =
+                obtenerNombreRecurso(
                         processDefinition.resource()
                 );
 
-        // 4. Obtener campos dinámicos de la tarea
+        String bpmnXml =
+                flowableClient.obtenerBpmn(
+                        processDefinition.deploymentId(),
+                        resourceName
+                );
+
         List<WorkflowFieldResponse> fields =
                 bpmnDefinitionParser.obtenerCampos(
                         bpmnXml,
                         task.taskDefinitionKey()
                 );
 
-        // 5. AQUÍ VA lo que preguntas
         List<WorkflowActionResponse> actions =
                 bpmnDefinitionParser.obtenerAcciones(
                         bpmnXml,
                         task.taskDefinitionKey()
                 );
 
-        // 6. Devolver tarea + campos + acciones
+        String status =
+                obtenerEstado(task.name());
+
         return new WorkflowTaskActionsResponse(
                 task.id(),
                 task.name(),
                 task.taskDefinitionKey(),
                 task.processInstanceId(),
+                status,
                 fields,
                 actions
         );
@@ -162,5 +167,44 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                 taskId,
                 request
         );
+    }
+
+    private String obtenerNombreRecurso(
+            String resource
+    ) {
+
+        if (resource == null || resource.isBlank()) {
+            throw new IllegalStateException(
+                    "Flowable no devolvió el recurso BPMN"
+            );
+        }
+
+        int lastSlash =
+                resource.lastIndexOf('/');
+
+        return lastSlash >= 0
+                ? resource.substring(lastSlash + 1)
+                : resource;
+    }
+
+    private String obtenerEstado(String taskName) {
+
+        if (taskName == null || taskName.isBlank()) {
+            return null;
+        }
+
+        int separator =
+                taskName.indexOf(" - ");
+
+        if (separator < 0) {
+            return taskName
+                    .trim()
+                    .toUpperCase();
+        }
+
+        return taskName
+                .substring(0, separator)
+                .trim()
+                .toUpperCase();
     }
 }

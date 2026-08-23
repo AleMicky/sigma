@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
+  AlertCircle,
   Box,
   CheckCircle2,
   Clock,
   Download,
   ExternalLink,
   Eye,
+  FileCheck2,
   FileCode,
   FileSpreadsheet,
   FileText,
@@ -20,6 +22,7 @@ import {
   Wrench,
   X,
 } from "lucide-react"
+
 
 import { AuditInfo } from "@/shared/components/audit-info"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
@@ -39,6 +42,8 @@ import { solicitudQueries } from "../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
   SolicitudMantenimientoAdjunto,
+  WorkflowAction,
+  WorkflowField,
 } from "../api/solicitud.service"
 import {
   getEstadoBadgeStyles,
@@ -52,7 +57,14 @@ type SolicitudQuickViewSheetProps = {
   onOpenChange: (open: boolean) => void
   onEdit: (solicitud: SolicitudMantenimiento) => void
   onEnviar?: (solicitud: SolicitudMantenimiento) => void
+  onWorkflowAction?: (
+    solicitud: SolicitudMantenimiento,
+    action: WorkflowAction,
+    taskName?: string,
+    fields?: WorkflowField[],
+  ) => void
 }
+
 
 function formatFileSize(bytes?: number): string {
   if (!bytes || bytes <= 0) return "0 B"
@@ -95,6 +107,7 @@ export function SolicitudQuickViewSheet({
   onOpenChange,
   onEdit,
   onEnviar,
+  onWorkflowAction,
 }: SolicitudQuickViewSheetProps) {
   const [selectedPreviewImage, setSelectedPreviewImage] = useState<{
     url: string
@@ -117,8 +130,18 @@ export function SolicitudQuickViewSheet({
 
   const solicitud = detailQuery.data ?? initialSolicitud
 
+  const workflowActionsQuery = useQuery({
+    ...solicitudQueries.workflowActions(solicitud?.processInstanceId),
+    enabled: open && Boolean(solicitud?.processInstanceId),
+  })
+
+  const workflowActions = workflowActionsQuery.data?.actions ?? []
+  const workflowTaskName = workflowActionsQuery.data?.taskName
+  const workflowFields = workflowActionsQuery.data?.fields ?? []
+
   const adjuntos = useMemo(() => {
     if (adjuntosQuery.data?.content && adjuntosQuery.data.content.length > 0) {
+
       return adjuntosQuery.data.content
     }
     if (detailQuery.data?.adjuntos && detailQuery.data.adjuntos.length > 0) {
@@ -543,42 +566,88 @@ export function SolicitudQuickViewSheet({
         )}
 
         {/* Footer Actions */}
-        <div className="pt-3 border-t flex items-center justify-end gap-2 shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="text-xs h-8"
-          >
-            Cerrar
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              onOpenChange(false)
-              onEdit(solicitud)
-            }}
-            className="gap-1.5 text-xs h-8 font-semibold shadow-2xs"
-          >
-            <Pencil className="size-3.5" />
-            <span>Editar Solicitud</span>
-          </Button>
-          {solicitud.estado?.toLowerCase() === "borrador" && onEnviar ? (
+        <div className="pt-3 border-t flex flex-wrap items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-1.5">
+            {workflowActions.map((act) => {
+              const isAprobar =
+                act.value?.toUpperCase().includes("APROB") ||
+                act.name?.toLowerCase().includes("aprobar")
+              const isObservar =
+                act.value?.toUpperCase().includes("OBSERV") ||
+                act.name?.toLowerCase().includes("observar")
+
+              return (
+                <Button
+                  key={`${act.variable}-${act.value}`}
+                  size="sm"
+                  onClick={() =>
+                    onWorkflowAction?.(
+                      solicitud,
+                      act,
+                      workflowTaskName,
+                      workflowFields,
+                    )
+                  }
+                  className={cn(
+                    "gap-1.5 text-xs h-8 font-semibold shadow-2xs",
+                    isAprobar
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : isObservar
+                        ? "bg-amber-600 hover:bg-amber-700 text-white"
+                        : "bg-primary hover:bg-primary/90 text-primary-foreground",
+                  )}
+                >
+                  {isAprobar ? (
+                    <CheckCircle2 className="size-3.5" />
+                  ) : isObservar ? (
+                    <AlertCircle className="size-3.5" />
+                  ) : (
+                    <FileCheck2 className="size-3.5" />
+                  )}
+                  <span>{act.name}</span>
+                </Button>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="text-xs h-8"
+            >
+              Cerrar
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
               onClick={() => {
                 onOpenChange(false)
-                onEnviar(solicitud)
+                onEdit(solicitud)
               }}
-              className="gap-1.5 text-xs h-8 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs"
+              className="gap-1.5 text-xs h-8 font-semibold shadow-2xs"
             >
-              <SendHorizontal className="size-3.5" />
-              <span>Enviar Solicitud</span>
+              <Pencil className="size-3.5" />
+              <span>Editar</span>
             </Button>
-          ) : null}
+            {solicitud.estado?.toLowerCase() === "borrador" && onEnviar ? (
+              <Button
+                size="sm"
+                onClick={() => {
+                  onOpenChange(false)
+                  onEnviar(solicitud)
+                }}
+                className="gap-1.5 text-xs h-8 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs"
+              >
+                <SendHorizontal className="size-3.5" />
+                <span>Enviar Solicitud</span>
+              </Button>
+            ) : null}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
   )
 }
+

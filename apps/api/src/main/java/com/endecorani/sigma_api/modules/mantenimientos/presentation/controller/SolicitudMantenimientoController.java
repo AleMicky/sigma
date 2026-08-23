@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.SolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.SolicitudMantenimientoService;
+import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
@@ -58,6 +59,17 @@ public class SolicitudMantenimientoController {
     @Operation(summary = "Enviar solicitud e iniciar flujo de trabajo")
     public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> enviar(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success("Solicitud enviada correctamente", service.enviar(id)));
+    }
+
+    @PostMapping("/{id}/workflow/complete")
+    public SolicitudMantenimientoResponse completarWorkflow(
+            @PathVariable UUID id,
+            @RequestBody CompleteWorkflowTaskRequest request
+    ) {
+        return service.completarWorkflow(
+                id,
+                request
+        );
     }
 
     @PutMapping("/{id}")
