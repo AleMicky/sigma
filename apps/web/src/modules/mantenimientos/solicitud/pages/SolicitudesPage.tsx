@@ -57,11 +57,20 @@ export function SolicitudesPage() {
     [solicitudesQuery.data?.content],
   )
 
+  const enviadasCount = useMemo(
+    () =>
+      solicitudes.filter((s) => {
+        const est = (s.estado ?? "").toLowerCase()
+        return est === "solicitado"
+      }).length,
+    [solicitudes],
+  )
+
   const borradorCount = useMemo(
     () =>
       solicitudes.filter((s) => {
         const est = (s.estado ?? "").toLowerCase()
-        return est === "borrador" || est === "solicitado" || est === "pendiente"
+        return est === "borrador"
       }).length,
     [solicitudes],
   )
@@ -189,6 +198,7 @@ export function SolicitudesPage() {
         <SolicitudStats
           totalCount={solicitudesQuery.data?.totalElements}
           borradorCount={borradorCount}
+          enviadasCount={enviadasCount}
           enProcesoCount={enProcesoCount}
           finalizadoCount={finalizadoCount}
           isLoading={solicitudesQuery.isLoading}
@@ -205,6 +215,7 @@ export function SolicitudesPage() {
         onStatusChange={setStatusFilter}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={resetFilters}
+        borradorCount={borradorCount}
       />
 
       {/* Content Section */}

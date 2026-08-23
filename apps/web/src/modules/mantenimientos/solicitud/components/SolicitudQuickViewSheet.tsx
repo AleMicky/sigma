@@ -212,6 +212,20 @@ export function SolicitudQuickViewSheet({
 
         {/* Cuerpo Compacto con Scroll */}
         <div className="flex-1 space-y-3 py-3 text-xs overflow-y-auto pr-0.5">
+          {solicitud.estado?.toLowerCase() === "solicitado" && (
+            <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-amber-900 dark:text-amber-200">
+              <UserCheck className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div className="min-w-0 flex-1 text-[11px] leading-tight">
+                <p className="font-semibold text-amber-800 dark:text-amber-300">
+                  Pendiente de Aprobación
+                </p>
+                <p className="text-amber-700/90 dark:text-amber-300/80 text-[10.5px]">
+                  La solicitud está a la espera de revisión y aprobación por parte de los responsables correspondientes.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Activo & Tipo Compact Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 space-y-0.5">

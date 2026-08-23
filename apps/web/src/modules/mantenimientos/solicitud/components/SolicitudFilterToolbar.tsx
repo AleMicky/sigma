@@ -1,4 +1,4 @@
-import { X } from "lucide-react"
+import { FileEdit, X } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -18,16 +18,17 @@ type SolicitudFilterToolbarProps = {
   onStatusChange: (status: string) => void
   hasActiveFilters: boolean
   onResetFilters: () => void
+  borradorCount?: number
 }
 
 const ESTADOS = [
   { value: "all", label: "Todos los estados", dot: "bg-muted-foreground/50" },
   { value: "borrador", label: "Borrador", dot: "bg-zinc-400" },
-  { value: "solicitado", label: "Solicitado", dot: "bg-amber-500" },
-  { value: "aprobado", label: "Aprobado", dot: "bg-sky-500" },
+  { value: "solicitado", label: "Enviada (En Revisión)", dot: "bg-amber-500" },
+  { value: "aprobado", label: "Aprobada", dot: "bg-sky-500" },
   { value: "en_proceso", label: "En Proceso", dot: "bg-blue-500" },
-  { value: "finalizado", label: "Finalizado", dot: "bg-emerald-500" },
-  { value: "rechazado", label: "Rechazado", dot: "bg-rose-500" },
+  { value: "finalizado", label: "Finalizada", dot: "bg-emerald-500" },
+  { value: "rechazado", label: "Rechazada", dot: "bg-rose-500" },
 ]
 
 export function SolicitudFilterToolbar({
@@ -37,10 +38,13 @@ export function SolicitudFilterToolbar({
   onStatusChange,
   hasActiveFilters,
   onResetFilters,
+  borradorCount = 0,
 }: SolicitudFilterToolbarProps) {
   const currentStatusObj = ESTADOS.find(
     (e) => e.value === (statusValue || "all"),
   )
+
+  const isBorradorSelected = statusValue === "borrador"
 
   return (
     <div className="flex flex-col gap-2.5 pt-2 pb-1 sm:flex-row sm:items-center sm:justify-between">
@@ -55,7 +59,38 @@ export function SolicitudFilterToolbar({
           />
         </div>
 
-        <div className="w-44">
+        {/* Quick Filter Pill for Drafts */}
+        <Button
+          size="sm"
+          type="button"
+          variant={isBorradorSelected ? "default" : "outline"}
+          onClick={() =>
+            onStatusChange(isBorradorSelected ? "" : "borrador")
+          }
+          className={cn(
+            "h-9 gap-1.5 px-3 text-xs font-semibold shadow-2xs transition-all",
+            isBorradorSelected
+              ? "bg-zinc-800 hover:bg-zinc-900 text-white dark:bg-zinc-200 dark:text-zinc-900 shadow-xs"
+              : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
+          )}
+        >
+          <FileEdit className="size-3.5 shrink-0" />
+          <span>Borradores</span>
+          {borradorCount > 0 ? (
+            <span
+              className={cn(
+                "ml-0.5 rounded-full px-1.5 py-0.2 text-[10px] font-bold",
+                isBorradorSelected
+                  ? "bg-white/20 text-white dark:text-zinc-900"
+                  : "bg-muted text-muted-foreground",
+              )}
+            >
+              {borradorCount}
+            </span>
+          ) : null}
+        </Button>
+
+        <div className="w-48">
           <Select
             value={statusValue || "all"}
             onValueChange={(val) =>

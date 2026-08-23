@@ -44,6 +44,8 @@ export function SolicitudCard({
   onDelete,
   onEnviar,
 }: SolicitudCardProps) {
+  const estadoNorm = (solicitud.estado ?? "").toLowerCase()
+  const isSolicitado = estadoNorm === "solicitado"
   const estadoStyle = getEstadoBadgeStyles(solicitud.estado)
   const prioridadStyle = getPrioridadBadgeStyles(solicitud.prioridad?.nivel ?? 1)
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
@@ -51,7 +53,12 @@ export function SolicitudCard({
   return (
     <li
       onClick={() => onQuickView(solicitud)}
-      className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-4 text-card-foreground shadow-2xs transition-all hover:border-primary/50 hover:shadow-md cursor-pointer overflow-hidden"
+      className={cn(
+        "group relative flex flex-col justify-between rounded-2xl border bg-card p-4 text-card-foreground shadow-2xs transition-all cursor-pointer overflow-hidden",
+        isSolicitado
+          ? "border-amber-500/40 hover:border-amber-500/80 hover:shadow-md bg-amber-500/[0.02]"
+          : "border-border/80 hover:border-primary/50 hover:shadow-md",
+      )}
     >
       {/* Top Section */}
       <div className="space-y-3">
@@ -69,7 +76,7 @@ export function SolicitudCard({
                 estadoStyle,
               )}
             >
-              {solicitud.estado}
+              {isSolicitado ? "En Revisión" : solicitud.estado}
             </span>
             {solicitud.prioridad ? (
               <span
