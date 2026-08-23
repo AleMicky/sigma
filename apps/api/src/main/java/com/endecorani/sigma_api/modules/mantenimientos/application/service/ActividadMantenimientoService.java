@@ -5,7 +5,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ActividadMantenimientoRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -124,13 +124,6 @@ public class ActividadMantenimientoService extends AbstractCrudService<
     @Override
     protected ActividadMantenimientoResponse toResponse(ActividadMantenimiento domain) {
 
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
-
         return new ActividadMantenimientoResponse(
                 domain.getId(),
                 domain.getCodigo(),
@@ -138,7 +131,7 @@ public class ActividadMantenimientoService extends AbstractCrudService<
                 domain.getDescripcion(),
                 domain.getAplicaTodosTiposActivo(),
                 domain.getRequiereChecklist(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 

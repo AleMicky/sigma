@@ -7,7 +7,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimientoAplicacion;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ActividadMantenimientoAplicacionRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ActividadMantenimientoRepository;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -283,19 +283,14 @@ public class ActividadMantenimientoAplicacionService {
                     .orElse(null);
         }
 
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
+
 
         return new ActividadMantenimientoAplicacionResponse(
                 domain.getId(),
                 actividadInfo,
                 tipoActivoInfo,
                 componenteInfo,
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 }

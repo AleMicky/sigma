@@ -5,11 +5,10 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoAdjunto;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoAdjuntoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.storage.DocumentStorageService;
-import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -174,12 +173,7 @@ public class SolicitudMantenimientoAdjuntoService {
     private SolicitudMantenimientoAdjuntoResponse toResponse(
             SolicitudMantenimientoAdjunto domain
     ) {
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
+       ;
 
         return new SolicitudMantenimientoAdjuntoResponse(
                 domain.getId(),
@@ -189,7 +183,7 @@ public class SolicitudMantenimientoAdjuntoService {
                 domain.getSize(),
                 domain.getUrl(),
                 domain.getDescripcion(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 }

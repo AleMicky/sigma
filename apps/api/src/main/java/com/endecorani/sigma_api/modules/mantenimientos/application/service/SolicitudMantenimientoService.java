@@ -12,7 +12,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.Solicit
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMantenimientoRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.storage.DocumentStorageService;
@@ -434,12 +434,6 @@ public class SolicitudMantenimientoService {
                     .orElse(null);
         }
 
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
 
         return new SolicitudMantenimientoResponse(
                 domain.getId(),
@@ -468,19 +462,14 @@ public class SolicitudMantenimientoService {
                 domain.getEstado(),
                 domain.getProcessInstanceId(),
                 List.of(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 
     private SolicitudMantenimientoAdjuntoResponse toAdjuntoResponse(
             SolicitudMantenimientoAdjunto domain
     ) {
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
+
 
         return new SolicitudMantenimientoAdjuntoResponse(
                 domain.getId(),
@@ -490,7 +479,7 @@ public class SolicitudMantenimientoService {
                 domain.getSize(),
                 domain.getUrl(),
                 domain.getDescripcion(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 }

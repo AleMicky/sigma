@@ -6,7 +6,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ChecklistIte
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ChecklistItemRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ChecklistMantenimientoRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.TipoDatoRepository;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -314,12 +314,6 @@ public class ChecklistItemService {
                     .orElse(null);
         }
 
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
 
         return new ChecklistItemResponse(
                 domain.getId(),
@@ -331,7 +325,7 @@ public class ChecklistItemService {
                 domain.getOrden(),
                 domain.getObligatorio(),
                 domain.getOpciones(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 }
