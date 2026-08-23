@@ -12,8 +12,8 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.Solicit
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMantenimientoRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
+import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowConfigService;
-import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowService;
 import com.endecorani.sigma_api.modules.workflow.domain.model.Workflow;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -61,7 +61,7 @@ public class SolicitudMantenimientoService {
     private final DocumentStorageService documentStorageService;
     private final CorrelativoService correlativoService;
     private final WorkflowConfigService workflowConfigService;
-    private final WorkflowService workflowService;
+    private final WorkflowApplicationService workflowApplicationService;
 
     @Transactional
     public SolicitudMantenimientoResponse create(SolicitudMantenimientoRequest request) {
@@ -112,25 +112,39 @@ public class SolicitudMantenimientoService {
 
     @Transactional
     public SolicitudMantenimientoResponse enviar(UUID id) {
-        SolicitudMantenimiento solicitud = findDomainById(id);
 
-        if (!ESTADO_BORRADOR.equalsIgnoreCase(solicitud.getEstado())) {
-            throw new ConflictException("SOLICITUD_ESTADO_INVALIDO", "Solo se puede enviar una solicitud en estado BORRADOR");
+        SolicitudMantenimiento solicitud =
+                findDomainById(id);
+
+        if (!ESTADO_BORRADOR.equalsIgnoreCase(
+                solicitud.getEstado()
+        )) {
+            throw new ConflictException(
+                    "SOLICITUD_ESTADO_INVALIDO",
+                    "Solo se puede enviar una solicitud en estado BORRADOR"
+            );
         }
+
         if (solicitud.getProcessInstanceId() != null) {
-            throw new ConflictException("SOLICITUD_WORKFLOW_ALREADY_STARTED", "La solicitud ya tiene un workflow iniciado");
+            throw new ConflictException(
+                    "SOLICITUD_WORKFLOW_ALREADY_STARTED",
+                    "La solicitud ya tiene un workflow iniciado"
+            );
         }
 
-        Workflow workflow = workflowConfigService.findDomainByCodigo(WORKFLOW_CODIGO);
-        Map<String, Object> variables = Map.of(
-                "solicitudId", solicitud.getId().toString(),
+        Map<String, Object> variables = Map.of("solicitudId", solicitud.getId().toString(),
                 "solicitanteId", solicitud.getSolicitanteId().toString()
         );
 
-        String processInstanceId = workflowService.iniciarProceso(workflow.getProcessDefinitionKey(), solicitud.getId().toString(), variables);
+        String processInstanceId =
+                workflowApplicationService.iniciar(
+                        WORKFLOW_CODIGO,
+                        solicitud.getId().toString(),
+                        variables
+                );
+
         solicitud.setProcessInstanceId(processInstanceId);
         solicitud.setEstado(ESTADO_SOLICITADO);
-
         return toResponse(repository.save(solicitud));
     }
 

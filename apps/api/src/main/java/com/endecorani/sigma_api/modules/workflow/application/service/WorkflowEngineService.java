@@ -3,7 +3,7 @@ package com.endecorani.sigma_api.modules.workflow.application.service;
 
 import java.util.Map;
 
-public interface WorkflowService {
+public interface WorkflowEngineService {
 
     String iniciarProceso(
             String processDefinitionKey,

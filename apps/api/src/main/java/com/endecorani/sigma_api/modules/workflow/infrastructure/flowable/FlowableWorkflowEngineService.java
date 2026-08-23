@@ -13,24 +13,18 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class FlowableWorkflowService implements WorkflowEngineService {
+public class FlowableWorkflowEngineService implements WorkflowEngineService {
 
     private final FlowableClient flowableClient;
 
     @Override
-    public String iniciarProceso(
-            String processDefinitionKey,
-            String businessKey,
-            Map<String, Object> variables
-    ) {
+    public String iniciarProceso(String processDefinitionKey, String businessKey, Map<String, Object> variables) {
 
         List<FlowableVariableRequest> flowableVariables = variables.entrySet()
                         .stream()
                         .map(entry -> new FlowableVariableRequest(
                                         entry.getKey(),
-                                        entry.getValue()
-                                )
-                        )
+                                        entry.getValue()))
                         .toList();
 
         StartProcessRequest request = new StartProcessRequest(
