@@ -1,7 +1,8 @@
 package com.endecorani.sigma_api.modules.workflow.application.service;
 
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.domain.model.Workflow;
-import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.WorkflowTaskResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +36,15 @@ public class WorkflowApplicationService {
 
         return workflowEngineService
                 .obtenerTareaActual(
+                        processInstanceId
+                );
+    }
+
+    public WorkflowTaskActionsResponse obtenerAccionesDisponibles(
+            String processInstanceId
+    ) {
+        return workflowEngineService
+                .obtenerAccionesDisponibles(
                         processInstanceId
                 );
     }

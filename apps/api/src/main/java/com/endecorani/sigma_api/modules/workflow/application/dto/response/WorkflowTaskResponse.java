@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto;
+package com.endecorani.sigma_api.modules.workflow.application.dto.response;
 
 public record WorkflowTaskResponse(
         String id,

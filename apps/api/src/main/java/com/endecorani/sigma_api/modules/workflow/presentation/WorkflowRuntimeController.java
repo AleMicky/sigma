@@ -1,7 +1,8 @@
 package com.endecorani.sigma_api.modules.workflow.presentation;
 
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
-import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.WorkflowTaskResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,18 @@ public class WorkflowRuntimeController {
     ) {
         return workflowApplicationService
                 .obtenerTareaActual(
+                        processInstanceId
+                );
+    }
+
+    @GetMapping(
+            "/instances/{processInstanceId}/actions"
+    )
+    public WorkflowTaskActionsResponse obtenerAcciones(
+            @PathVariable String processInstanceId
+    ) {
+        return workflowApplicationService
+                .obtenerAccionesDisponibles(
                         processInstanceId
                 );
     }

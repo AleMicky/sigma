@@ -1,7 +1,8 @@
 package com.endecorani.sigma_api.modules.workflow.application.service;
 
 
-import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.WorkflowTaskResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 
 import java.util.Map;
 
@@ -14,6 +15,10 @@ public interface WorkflowEngineService {
     );
 
     WorkflowTaskResponse obtenerTareaActual(
+            String processInstanceId
+    );
+
+    WorkflowTaskActionsResponse obtenerAccionesDisponibles(
             String processInstanceId
     );
 }
