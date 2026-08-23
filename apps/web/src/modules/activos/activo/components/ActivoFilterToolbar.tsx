@@ -58,24 +58,98 @@ export function ActivoFilterToolbar({
 
   return (
     <div className="flex shrink-0 flex-col gap-3 py-3 sm:py-4 border-b">
-      {/* Top row: Search, Type filter, Status tabs & Actions */}
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-1 flex-wrap items-center gap-2.5">
-          {/* Search Field */}
-          <SearchField
-            value={searchValue}
-            onChange={onSearchChange}
-            placeholder="Buscar por código o nombre del activo…"
-            aria-label="Buscar activos"
-            className="w-full sm:flex-1 sm:min-w-[260px] lg:max-w-md"
-          />
+      {/* Fila 1: Pestañas de Estado (Izquierda) y Exportar a Excel (Derecha) */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+        <div className="inline-flex items-center rounded-lg border border-border/80 bg-muted/40 p-1 self-start">
+          <button
+            type="button"
+            onClick={() => onStatusFilterChange("all")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer",
+              statusFilter === "all"
+                ? "bg-background text-foreground shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+            )}
+          >
+            <span>Todos</span>
+            {statusCounts !== undefined && (
+              <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                {statusCounts.all}
+              </span>
+            )}
+          </button>
 
-          {/* Tipo de Activo Select */}
+          <button
+            type="button"
+            onClick={() => onStatusFilterChange("active")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer",
+              statusFilter === "active"
+                ? "bg-background text-emerald-700 dark:text-emerald-400 shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+            )}
+          >
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            <span>De alta</span>
+            {statusCounts !== undefined && (
+              <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
+                {statusCounts.active}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onStatusFilterChange("inactive")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer",
+              statusFilter === "inactive"
+                ? "bg-background text-amber-700 dark:text-amber-400 shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+            )}
+          >
+            <span className="size-1.5 rounded-full bg-amber-500" />
+            <span>De baja</span>
+            {statusCounts !== undefined && (
+              <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] text-amber-600 dark:text-amber-400">
+                {statusCounts.inactive}
+              </span>
+            )}
+          </button>
+        </div>
+
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={handleExportExcel}
+          className="h-8 px-2.5 text-xs font-medium gap-1.5 self-start sm:self-auto shrink-0 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
+          title="Exportar a Excel"
+        >
+          <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>Exportar Excel</span>
+        </Button>
+      </div>
+
+      {/* Fila 2: Buscador completo + Selector de tipo + Limpiar */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+        <SearchField
+          value={searchValue}
+          onChange={onSearchChange}
+          placeholder="Buscar por código o nombre del activo…"
+          aria-label="Buscar activos"
+          className="w-full flex-1 min-w-0"
+        />
+
+        <div className="flex items-center gap-2 shrink-0">
           <Select
             value={tipoActivoId}
             onValueChange={(val) => onTipoActivoChange(val ?? ALL_TIPOS)}
           >
-            <SelectTrigger className="w-full sm:w-[200px]" aria-label="Filtrar por tipo">
+            <SelectTrigger
+              className="w-full sm:w-[220px] h-9 text-xs"
+              aria-label="Filtrar por tipo"
+            >
               <div className="flex items-center gap-2 truncate">
                 <Filter className="size-3.5 text-muted-foreground shrink-0" />
                 <SelectValue placeholder="Todos los tipos">
@@ -91,7 +165,9 @@ export function ActivoFilterToolbar({
                             DEFAULT_TIPO_ACTIVO_COLOR,
                         }}
                       />
-                      <span className="truncate">{tiposById.get(tipoActivoId)?.nombre}</span>
+                      <span className="truncate">
+                        {tiposById.get(tipoActivoId)?.nombre}
+                      </span>
                     </div>
                   )}
                 </SelectValue>
@@ -115,92 +191,18 @@ export function ActivoFilterToolbar({
             </SelectContent>
           </Select>
 
-          {/* Status Tabs (Todos / De alta / De baja) */}
-          <div className="flex w-full sm:w-auto items-center rounded-lg border border-border/70 bg-muted/40 p-0.5">
-            <button
-              type="button"
-              onClick={() => onStatusFilterChange("all")}
-              className={cn(
-                "flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer",
-                statusFilter === "all"
-                  ? "bg-background text-foreground shadow-2xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
-              )}
-            >
-              <span>Todos</span>
-              {statusCounts !== undefined && (
-                <span className="rounded-full bg-muted px-1.5 py-0.2 font-mono text-[10px] text-muted-foreground">
-                  {statusCounts.all}
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onStatusFilterChange("active")}
-              className={cn(
-                "flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer",
-                statusFilter === "active"
-                  ? "bg-background text-emerald-700 dark:text-emerald-400 shadow-2xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
-              )}
-            >
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-              <span>De alta</span>
-              {statusCounts !== undefined && (
-                <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.2 font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
-                  {statusCounts.active}
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onStatusFilterChange("inactive")}
-              className={cn(
-                "flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer",
-                statusFilter === "inactive"
-                  ? "bg-background text-amber-700 dark:text-amber-400 shadow-2xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
-              )}
-            >
-              <span className="size-1.5 rounded-full bg-amber-500" />
-              <span>De baja</span>
-              {statusCounts !== undefined && (
-                <span className="rounded-full bg-amber-500/10 px-1.5 py-0.2 font-mono text-[10px] text-amber-600 dark:text-amber-400">
-                  {statusCounts.inactive}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Reset Filters */}
           {hasActiveFilters ? (
             <Button
               variant="ghost"
               size="sm"
               onClick={onResetFilters}
-              className="text-xs text-muted-foreground hover:text-foreground shrink-0 h-8 px-2.5 gap-1.5 transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground shrink-0 h-9 px-2.5 gap-1.5 transition-colors cursor-pointer"
+              title="Limpiar filtros"
             >
               <RotateCcw className="size-3.5 text-muted-foreground" />
-              Limpiar filtros
+              <span>Limpiar</span>
             </Button>
           ) : null}
-        </div>
-
-        {/* Right side: Export button */}
-        <div className="flex items-center gap-2 self-end lg:self-auto shrink-0">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={handleExportExcel}
-            className="h-8 px-2.5 text-xs font-medium gap-1.5 shrink-0 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
-            title="Exportar a Excel"
-          >
-            <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="hidden sm:inline">Exportar Excel</span>
-          </Button>
         </div>
       </div>
     </div>
