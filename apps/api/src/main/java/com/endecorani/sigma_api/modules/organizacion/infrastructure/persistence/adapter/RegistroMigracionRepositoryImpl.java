@@ -16,8 +16,7 @@ import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
-public class RegistroMigracionRepositoryImpl
-        implements RegistroMigracionRepository {
+public class RegistroMigracionRepositoryImpl implements RegistroMigracionRepository {
 
     private final SpringRegistroMigracionRepository springRepository;
 

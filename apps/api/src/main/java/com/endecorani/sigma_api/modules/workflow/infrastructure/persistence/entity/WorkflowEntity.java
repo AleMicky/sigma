@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.workflow.infrastructure.persistence;
+package com.endecorani.sigma_api.modules.workflow.infrastructure.persistence.entity;
 
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.Column;
