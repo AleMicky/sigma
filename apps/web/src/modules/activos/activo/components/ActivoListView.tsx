@@ -116,14 +116,14 @@ export function ActivoListView({
                 {/* Imagen del activo con encuadre proporcionado */}
                 <Link
                   to={routes.activos.detail(activo.id)}
-                  className="group/img relative size-16 sm:size-20 md:size-24 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-gradient-to-b from-muted/20 to-muted/40 p-1.5 flex items-center justify-center transition-all hover:border-primary/40 hover:bg-muted/50 shadow-2xs"
+                  className="group/img relative w-28 sm:w-36 md:w-44 h-20 sm:h-24 md:h-28 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-gradient-to-b from-muted/10 to-muted/30 p-1 flex items-center justify-center transition-all hover:border-primary/40 hover:bg-muted/40 shadow-2xs"
                   title={`Ver detalles de ${activo.nombre}`}
                 >
                   <AuthenticatedImage
                     src={activo.urlImagen}
                     alt={activo.nombre}
                     className={cn(
-                      "size-full object-contain transition-transform duration-300 group-hover/img:scale-105 drop-shadow-2xs",
+                      "size-full object-contain transition-transform duration-300 group-hover/img:scale-105 drop-shadow-xs",
                       !isActivo && "grayscale-[0.4] opacity-80",
                     )}
                     fallbackClassName="size-full flex items-center justify-center"
@@ -135,7 +135,7 @@ export function ActivoListView({
                           color: tipoColor,
                         }}
                       >
-                        <TipoIcon className="size-7 sm:size-8 shrink-0 opacity-80" />
+                        <TipoIcon className="size-8 sm:size-9 shrink-0 opacity-80" />
                       </div>
                     }
                   />
