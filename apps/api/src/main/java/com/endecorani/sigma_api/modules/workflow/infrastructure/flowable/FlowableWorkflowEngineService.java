@@ -3,7 +3,7 @@ package com.endecorani.sigma_api.modules.workflow.infrastructure.flowable;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.FlowableVariableRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.StartProcessRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.ProcessInstanceResponse;
-import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowService;
+import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowEngineService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,7 +13,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class FlowableWorkflowService implements WorkflowService {
+public class FlowableWorkflowService implements WorkflowEngineService {
 
     private final FlowableClient flowableClient;
 
