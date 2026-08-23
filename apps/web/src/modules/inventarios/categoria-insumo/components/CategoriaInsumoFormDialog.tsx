@@ -177,6 +177,7 @@ export function CategoriaInsumoFormDialog({
           )
         }}
       </form.Field>
+
       <form.Field name="codigo">
         {(field) => {
           const isInvalid =
@@ -196,7 +197,6 @@ export function CategoriaInsumoFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="LUBRICANTES"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -223,7 +223,6 @@ export function CategoriaInsumoFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Aceites y Lubricantes"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -246,7 +245,6 @@ export function CategoriaInsumoFormDialog({
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
                 aria-invalid={isInvalid}
-                placeholder="Insumos utilizados para lubricación y mantenimiento"
                 rows={3}
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}

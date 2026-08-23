@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { FolderTree, Plus, Filter } from "lucide-react"
+import { Filter, FolderTree, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { tipoInsumoQueries } from "@/modules/inventarios/tipo-insumo/api/tipo-insumo.queries"
@@ -27,8 +27,8 @@ import { cn } from "@/shared/lib/utils"
 
 import { categoriaInsumoQueries } from "../api/categoria-insumo.queries"
 import type { CategoriaInsumo } from "../api/categoria-insumo.service"
-import { CategoriaInsumoCard } from "../components/CategoriaInsumoCard"
 import { CategoriaInsumoFormDialog } from "../components/CategoriaInsumoFormDialog"
+import { CategoriaInsumoListView } from "../components/CategoriaInsumoListView"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
@@ -183,8 +183,8 @@ export function CategoriasInsumoPage() {
         {categoriasQuery.isLoading ? (
           <ListSkeleton
             rows={6}
-            rowClassName="h-28 rounded-2xl"
-            className="grid grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+            rowClassName="h-16 rounded-xl"
+            className="space-y-2.5"
           />
         ) : categoriasQuery.isError ? (
           <EmptyState
@@ -230,23 +230,15 @@ export function CategoriasInsumoPage() {
           <>
             <div
               className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4 pt-1 pr-1",
+                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4 pr-1",
                 categoriasQuery.isFetching && "opacity-70",
               )}
             >
-              <ul className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                {categorias.map((categoria) => (
-                  <CategoriaInsumoCard
-                    key={categoria.id}
-                    categoria={categoria}
-                    tipoInsumoNombre={
-                      categoria.tipoInsumo?.nombre ??
-                      (categoria.tipoInsumoId ? tiposInsumoMap.get(categoria.tipoInsumoId)?.nombre : undefined)
-                    }
-                    onEdit={openEdit}
-                  />
-                ))}
-              </ul>
+              <CategoriaInsumoListView
+                categorias={categorias}
+                tiposInsumoMap={tiposInsumoMap}
+                onEdit={openEdit}
+              />
             </div>
 
             {categoriasQuery.data ? (
