@@ -20,7 +20,7 @@ import { cn } from "@/shared/lib/utils"
 
 import { activoQueries } from "../api/activo.queries"
 import type { Activo } from "../api/activo.service"
-import { ActivoFilterToolbar } from "../components/ActivoFilterToolbar"
+import { ActivoFilterToolbar, type StatusFilter } from "../components/ActivoFilterToolbar"
 import { ActivoHeader } from "../components/ActivoHeader"
 import { ActivoListView } from "../components/ActivoListView"
 
@@ -30,8 +30,9 @@ const ALL_TIPOS = "__all__"
 export function ActivosPage() {
   const navigate = useNavigate()
   const [tipoActivoId, setTipoActivoId] = useState<string>(ALL_TIPOS)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
 
-  const search = usePaginatedSearch({ resetKey: tipoActivoId })
+  const search = usePaginatedSearch({ resetKey: `${tipoActivoId}-${statusFilter}` })
 
   const tiposQuery = useQuery(
     tipoActivoQueries.list({
@@ -78,10 +79,30 @@ export function ActivosPage() {
 
   const rawActivos = activosQuery.data?.content ?? []
 
-  const activos = useMemo(() => {
-    if (tipoActivoId === ALL_TIPOS) return rawActivos
-    return rawActivos.filter((item) => item.tipoActivoId === tipoActivoId)
+  const statusCounts = useMemo(() => {
+    const list =
+      tipoActivoId === ALL_TIPOS
+        ? rawActivos
+        : rawActivos.filter((item) => item.tipoActivoId === tipoActivoId)
+    return {
+      all: list.length,
+      active: list.filter((item) => item.activo !== false).length,
+      inactive: list.filter((item) => item.activo === false).length,
+    }
   }, [rawActivos, tipoActivoId])
+
+  const activos = useMemo(() => {
+    let list = rawActivos
+    if (tipoActivoId !== ALL_TIPOS) {
+      list = list.filter((item) => item.tipoActivoId === tipoActivoId)
+    }
+    if (statusFilter === "active") {
+      list = list.filter((item) => item.activo !== false)
+    } else if (statusFilter === "inactive") {
+      list = list.filter((item) => item.activo === false)
+    }
+    return list
+  }, [rawActivos, tipoActivoId, statusFilter])
 
   useClampPage(search.page, search.setPage, activosQuery.data?.totalPages)
 
@@ -107,11 +128,14 @@ export function ActivosPage() {
   function resetFilters() {
     search.setSearch("")
     setTipoActivoId(ALL_TIPOS)
+    setStatusFilter("all")
     search.setPage(0)
   }
 
   const hasActiveFilters =
-    search.search.trim().length > 0 || tipoActivoId !== ALL_TIPOS
+    search.search.trim().length > 0 ||
+    tipoActivoId !== ALL_TIPOS ||
+    statusFilter !== "all"
 
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
@@ -122,7 +146,7 @@ export function ActivosPage() {
         queries={[activosQuery, tiposQuery, ubicacionesQuery]}
       />
 
-      {/* Filter Toolbar */}
+      {/* Filter Toolbar with Status Tabs */}
       <ActivoFilterToolbar
         searchValue={search.search}
         onSearchChange={search.setSearch}
@@ -131,6 +155,12 @@ export function ActivosPage() {
           setTipoActivoId(val)
           search.setPage(0)
         }}
+        statusFilter={statusFilter}
+        onStatusFilterChange={(st) => {
+          setStatusFilter(st)
+          search.setPage(0)
+        }}
+        statusCounts={statusCounts}
         tipos={tipos}
         tiposById={tiposById}
         hasActiveFilters={hasActiveFilters}
@@ -138,7 +168,7 @@ export function ActivosPage() {
       />
 
       {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
         {activosQuery.isLoading ? (
           <ListSkeleton
             rows={6}
@@ -160,7 +190,7 @@ export function ActivosPage() {
             }
             description={
               hasActiveFilters
-                ? "Prueba a modificar los términos de búsqueda o cambiar el tipo de activo seleccionado."
+                ? "Prueba a modificar los filtros seleccionados o el estado (Alta / Baja)."
                 : "Comienza a registrar tu inventario creando el primer activo."
             }
             action={
