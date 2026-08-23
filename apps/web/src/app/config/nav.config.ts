@@ -151,7 +151,7 @@ export const navItems: NavItem[] = [
             icon: Tags,
           },
           {
-            title: "Categorías",
+            title: "Categorías Insumo",
             to: routes.inventarios.categorias.root,
             icon: FolderTree,
           },

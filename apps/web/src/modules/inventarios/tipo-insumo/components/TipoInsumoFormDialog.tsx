@@ -133,7 +133,6 @@ export function TipoInsumoFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="REPUESTO_MECANICO"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -160,7 +159,6 @@ export function TipoInsumoFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Repuesto Mecánico"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -183,7 +181,6 @@ export function TipoInsumoFormDialog({
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
                 aria-invalid={isInvalid}
-                placeholder="Piezas y repuestos para maquinaria mecánica e hidráulica"
                 rows={3}
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}

@@ -1,15 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router"
-
-import { TipoInsumoAtributosList } from "@/modules/inventarios/tipo-insumo-atributo/components/TipoInsumoAtributosList"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
 export const Route = createFileRoute(
   "/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/atributos",
 )({
-  component: TipoInsumoAtributosRoute,
+  beforeLoad: () => {
+    throw redirect({
+      to: "/inventarios/tipos-insumo",
+    })
+  },
 })
-
-function TipoInsumoAtributosRoute() {
-  const { tipoInsumoId } = Route.useParams()
-
-  return <TipoInsumoAtributosList tipoInsumoId={tipoInsumoId} />
-}

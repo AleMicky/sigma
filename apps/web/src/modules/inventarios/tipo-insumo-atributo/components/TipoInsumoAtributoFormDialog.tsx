@@ -225,7 +225,6 @@ export function TipoInsumoAtributoFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="VISCOSIDAD"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -252,7 +251,6 @@ export function TipoInsumoAtributoFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Grado de Viscosidad"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
