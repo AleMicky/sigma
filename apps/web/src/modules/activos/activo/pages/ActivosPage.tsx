@@ -20,10 +20,9 @@ import { cn } from "@/shared/lib/utils"
 
 import { activoQueries } from "../api/activo.queries"
 import type { Activo } from "../api/activo.service"
-import { ActivoCard } from "../components/ActivoCard"
 import { ActivoFilterToolbar } from "../components/ActivoFilterToolbar"
 import { ActivoHeader } from "../components/ActivoHeader"
-import { ActivoTableView } from "../components/ActivoTableView"
+import { ActivoListView } from "../components/ActivoListView"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 const ALL_TIPOS = "__all__"
@@ -31,7 +30,6 @@ const ALL_TIPOS = "__all__"
 export function ActivosPage() {
   const navigate = useNavigate()
   const [tipoActivoId, setTipoActivoId] = useState<string>(ALL_TIPOS)
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid")
 
   const search = usePaginatedSearch({ resetKey: tipoActivoId })
 
@@ -116,17 +114,15 @@ export function ActivosPage() {
     search.search.trim().length > 0 || tipoActivoId !== ALL_TIPOS
 
   return (
-    <PageShell size="xl" layout="fill" padding="compact">
-      {/* Extracted Header Component */}
+    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
+      {/* Header */}
       <ActivoHeader
-        totalActivos={activosQuery.data?.totalElements ?? rawActivos.length}
-        totalTipos={tipos.length}
-        activos={rawActivos}
+        totalActivos={activosQuery.data?.totalElements}
         onCreate={goCreate}
         queries={[activosQuery, tiposQuery, ubicacionesQuery]}
       />
 
-      {/* Extracted Filter & View Toolbar Component */}
+      {/* Filter Toolbar */}
       <ActivoFilterToolbar
         searchValue={search.search}
         onSearchChange={search.setSearch}
@@ -139,17 +135,15 @@ export function ActivosPage() {
         tiposById={tiposById}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={resetFilters}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
       />
 
       {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {activosQuery.isLoading ? (
           <ListSkeleton
-            rows={8}
-            rowClassName="h-28 rounded-xl"
-            className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            rows={6}
+            rowClassName="h-28 rounded-2xl"
+            className="p-0 space-y-3"
           />
         ) : activosQuery.isError ? (
           <EmptyState
@@ -192,38 +186,19 @@ export function ActivosPage() {
                 activosQuery.isFetching && "opacity-75 transition-opacity",
               )}
             >
-              {viewMode === "grid" ? (
-                <ul className="grid grid-cols-1 content-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {activos.map((activo) => (
-                    <ActivoCard
-                      key={activo.id}
-                      activo={activo}
-                      tipoActivo={activo.tipoActivo ?? (activo.tipoActivoId ? tiposById.get(activo.tipoActivoId) : undefined)}
-                      ubicacion={
-                        activo.ubicacion ??
-                        (activo.ubicacionId
-                          ? ubicacionesById.get(activo.ubicacionId)
-                          : undefined)
-                      }
-                      onEdit={goEdit}
-                    />
-                  ))}
-                </ul>
-              ) : (
-                <ActivoTableView
-                  activos={activos}
-                  tiposById={tiposById}
-                  ubicacionesById={ubicacionesById}
-                  onEdit={goEdit}
-                />
-              )}
+              <ActivoListView
+                activos={activos}
+                tiposById={tiposById}
+                ubicacionesById={ubicacionesById}
+                onEdit={goEdit}
+              />
             </div>
 
             {activosQuery.data ? (
               <Pagination
                 page={activosQuery.data}
                 onPageChange={search.setPage}
-                className="border-t border-border/50 py-2 bg-transparent"
+                className="border-t border-border/50 py-2 bg-transparent shrink-0"
               />
             ) : null}
           </>
