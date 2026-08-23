@@ -1,16 +1,18 @@
 package com.endecorani.sigma_api.modules.workflow.application.service;
 
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
-import com.endecorani.sigma_api.modules.workflow.application.dto.request.ExecuteWorkflowActionRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowActionResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowFieldResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
-import com.endecorani.sigma_api.modules.workflow.domain.model.Workflow;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
+import com.endecorani.sigma_api.modules.workflow.domain.model.Workflow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,83 +27,35 @@ public class WorkflowApplicationService {
             Map<String, Object> variables
     ) {
 
-        Workflow workflow = workflowConfigService.findDomainByCodigo(workflowCodigo);
+        Workflow workflow =
+                workflowConfigService.findDomainByCodigo(
+                        workflowCodigo
+                );
+
+        Map<String, Object> safeVariables =
+                variables != null
+                        ? variables
+                        : Collections.emptyMap();
 
         return workflowEngineService.iniciarProceso(
                 workflow.getProcessDefinitionKey(),
                 businessKey,
-                variables
+                safeVariables
         );
     }
 
     public WorkflowTaskResponse obtenerTareaActual(
             String processInstanceId
     ) {
-
         return workflowEngineService
-                .obtenerTareaActual(
-                        processInstanceId
-                );
+                .obtenerTareaActual(processInstanceId);
     }
 
     public WorkflowTaskActionsResponse obtenerAccionesDisponibles(
             String processInstanceId
     ) {
         return workflowEngineService
-                .obtenerAccionesDisponibles(
-                        processInstanceId
-                );
-    }
-
-    public WorkflowTaskActionsResponse ejecutarAccion(
-            String processInstanceId,
-            ExecuteWorkflowActionRequest request
-    ) {
-
-        // 1. Consultar tarea + acciones válidas directamente del BPMN
-        WorkflowTaskActionsResponse current =
-                workflowEngineService
-                        .obtenerAccionesDisponibles(
-                                processInstanceId
-                        );
-
-        if (current.taskId() == null) {
-            throw new IllegalStateException(
-                    "El proceso no tiene una tarea activa"
-            );
-        }
-
-        // 2. Verificar que variable + valor realmente existan en el BPMN actual
-        WorkflowActionResponse action =
-                current.actions()
-                        .stream()
-                        .filter(a ->
-                                a.variable().equals(request.variable())
-                                        &&
-                                        a.value().equals(request.value())
-                        )
-                        .findFirst()
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "La acción no es válida para la tarea actual"
-                                )
-                        );
-
-        // 3. Completar la tarea
-        workflowEngineService.completarTarea(
-                current.taskId(),
-                Map.of(
-                        action.variable(),
-                        action.value()
-                )
-        );
-
-        // 4. Flowable ya decidió el camino.
-        // Consultamos nuevamente la tarea resultante.
-        return workflowEngineService
-                .obtenerAccionesDisponibles(
-                        processInstanceId
-                );
+                .obtenerAccionesDisponibles(processInstanceId);
     }
 
     public WorkflowTaskActionsResponse completarTarea(
@@ -109,29 +63,26 @@ public class WorkflowApplicationService {
             CompleteWorkflowTaskRequest request
     ) {
 
-        WorkflowTaskActionsResponse actual =
-                workflowEngineService.obtenerAccionesDisponibles(
-                        processInstanceId
-                );
+        WorkflowTaskActionsResponse tareaActual =
+                workflowEngineService
+                        .obtenerAccionesDisponibles(
+                                processInstanceId
+                        );
 
-        if (actual.taskId() == null) {
-            throw new IllegalStateException(
-                    "El proceso no tiene una tarea activa"
-            );
-        }
+        validarTareaActiva(tareaActual);
 
         Map<String, Object> variables =
-                request.variables() != null
+                request != null && request.variables() != null
                         ? request.variables()
-                        : Map.of();
+                        : Collections.emptyMap();
 
         validarVariables(
                 variables,
-                actual
+                tareaActual
         );
 
         workflowEngineService.completarTarea(
-                actual.taskId(),
+                tareaActual.taskId(),
                 variables
         );
 
@@ -141,49 +92,148 @@ public class WorkflowApplicationService {
                 );
     }
 
-    private void validarVariables(
-            Map<String, Object> variables,
-            WorkflowTaskActionsResponse task
+    private void validarTareaActiva(
+            WorkflowTaskActionsResponse tarea
     ) {
 
-        // Validar campos requeridos del formProperty
-        for (WorkflowFieldResponse field : task.fields()) {
+        if (tarea == null || tarea.taskId() == null) {
+            throw new IllegalStateException(
+                    "El proceso no tiene una tarea activa"
+            );
+        }
+    }
 
-            if (field.required()
-                    && !variables.containsKey(field.id())) {
+    private void validarVariables(
+            Map<String, Object> variables,
+            WorkflowTaskActionsResponse tarea
+    ) {
+
+        validarCamposRequeridos(
+                variables,
+                tarea
+        );
+
+        validarVariablesPermitidas(
+                variables,
+                tarea
+        );
+
+        validarAccion(
+                variables,
+                tarea
+        );
+    }
+
+    private void validarCamposRequeridos(
+            Map<String, Object> variables,
+            WorkflowTaskActionsResponse tarea
+    ) {
+
+        if (tarea.fields() == null) {
+            return;
+        }
+
+        for (WorkflowFieldResponse field : tarea.fields()) {
+
+            if (!field.required()) {
+                continue;
+            }
+
+            Object value =
+                    variables.get(field.id());
+
+            if (value == null
+                    || value.toString().isBlank()) {
 
                 throw new IllegalArgumentException(
-                        "La variable '%s' es obligatoria"
-                                .formatted(field.id())
+                        "El campo '%s' es obligatorio"
+                                .formatted(field.name())
                 );
             }
         }
+    }
 
-        // Validar acciones provenientes del gateway
-        if (!task.actions().isEmpty()) {
+    private void validarVariablesPermitidas(
+            Map<String, Object> variables,
+            WorkflowTaskActionsResponse tarea
+    ) {
 
-            boolean accionValida =
-                    task.actions()
-                            .stream()
-                            .anyMatch(action -> {
+        if (variables.isEmpty()) {
+            return;
+        }
 
-                                Object value =
-                                        variables.get(
-                                                action.variable()
-                                        );
+        Set<String> variablesPermitidas =
+                construirVariablesPermitidas(tarea);
 
-                                return value != null
-                                        && action.value()
-                                        .equals(
-                                                value.toString()
-                                        );
-                            });
+        for (String variable : variables.keySet()) {
 
-            if (!accionValida) {
+            if (!variablesPermitidas.contains(variable)) {
+
                 throw new IllegalArgumentException(
-                        "La acción enviada no es válida para la tarea actual"
+                        "La variable '%s' no está permitida para la tarea actual"
+                                .formatted(variable)
                 );
             }
+        }
+    }
+
+    private Set<String> construirVariablesPermitidas(
+            WorkflowTaskActionsResponse tarea
+    ) {
+
+        Set<String> variables =
+                tarea.fields() == null
+                        ? new java.util.HashSet<>()
+                        : tarea.fields()
+                        .stream()
+                        .filter(WorkflowFieldResponse::writable)
+                        .map(WorkflowFieldResponse::id)
+                        .collect(Collectors.toSet());
+
+        if (tarea.actions() != null) {
+            tarea.actions()
+                    .stream()
+                    .map(WorkflowActionResponse::variable)
+                    .forEach(variables::add);
+        }
+
+        return variables;
+    }
+
+    private void validarAccion(
+            Map<String, Object> variables,
+            WorkflowTaskActionsResponse tarea
+    ) {
+
+        if (tarea.actions() == null
+                || tarea.actions().isEmpty()) {
+            return;
+        }
+
+        boolean accionValida =
+                tarea.actions()
+                        .stream()
+                        .anyMatch(action -> {
+
+                            Object value =
+                                    variables.get(
+                                            action.variable()
+                                    );
+
+                            if (value == null) {
+                                return false;
+                            }
+
+                            return action.value()
+                                    .equals(
+                                            value.toString()
+                                    );
+                        });
+
+        if (!accionValida) {
+            throw new IllegalArgumentException(
+                    "La acción enviada no es válida para la tarea actual"
+            );
         }
     }
 }
