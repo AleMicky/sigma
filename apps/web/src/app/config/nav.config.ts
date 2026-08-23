@@ -109,7 +109,7 @@ export const navItems: NavItem[] = [
         title: "Configuraciones",
         items: [
           {
-            title: "Categorías",
+            title: "Categorías de activo",
             to: routes.categorias.root,
             icon: FolderTree,
           },
