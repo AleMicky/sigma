@@ -1,15 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router"
-
-import { InsumoFormPage } from "@/modules/inventarios/insumo/pages/InsumoFormPage"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
 export const Route = createFileRoute(
   "/_dashboard/inventarios/$insumoId/editar",
 )({
-  component: InsumoEditarRoute,
+  beforeLoad: () => {
+    throw redirect({
+      to: "/inventarios",
+    })
+  },
 })
-
-function InsumoEditarRoute() {
-  const { insumoId } = Route.useParams()
-
-  return <InsumoFormPage insumoId={insumoId} />
-}
