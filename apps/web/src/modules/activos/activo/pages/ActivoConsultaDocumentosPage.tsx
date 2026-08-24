@@ -102,18 +102,30 @@ function formatDateString(dateStr?: string | null): string {
   return dateStr
 }
 
-function getFileIcon(nombreArchivo: string, mimeType?: string | null) {
+function getFileStyle(nombreArchivo: string, mimeType?: string | null) {
   const ext = nombreArchivo.split(".").pop()?.toLowerCase() ?? ""
   if (ext === "pdf" || mimeType?.includes("pdf")) {
-    return <FileText className="size-4 text-rose-500 shrink-0" />
+    return {
+      icon: FileText,
+      containerClass: "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400",
+    }
   }
   if (["jpg", "jpeg", "png", "webp"].includes(ext) || mimeType?.includes("image")) {
-    return <ImageIcon className="size-4 text-blue-500 shrink-0" />
+    return {
+      icon: ImageIcon,
+      containerClass: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400",
+    }
   }
   if (["xls", "xlsx", "csv"].includes(ext) || mimeType?.includes("sheet") || mimeType?.includes("excel")) {
-    return <FileSpreadsheet className="size-4 text-emerald-500 shrink-0" />
+    return {
+      icon: FileSpreadsheet,
+      containerClass: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+    }
   }
-  return <FileCheck className="size-4 text-muted-foreground shrink-0" />
+  return {
+    icon: FileCheck,
+    containerClass: "bg-primary/10 border-primary/20 text-primary",
+  }
 }
 
 type ActivoDetailReportProps = {
@@ -359,10 +371,10 @@ function ActivoDetailReport({
         </div>
       </div>
 
-      {/* Detail Table Container */}
-      <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs flex flex-col gap-3.5">
-        {/* Inner Filter Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 border-b border-border/60 pb-3">
+      {/* Detail Document List Section */}
+      <div className="flex flex-col gap-3.5">
+        {/* Filter Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-2 flex-1 flex-wrap">
             <SearchField
               value={docSearch}
@@ -374,7 +386,11 @@ function ActivoDetailReport({
             <Select value={tipoDocFilter} onValueChange={(v) => setTipoDocFilter(v ?? ALL_FILTER)}>
               <SelectTrigger className="w-full sm:w-44 h-8.5 text-xs bg-background">
                 <FileCheck className="size-3.5 text-muted-foreground mr-1.5" />
-                <SelectValue placeholder="Tipo de Doc." />
+                <SelectValue placeholder="Tipo de Doc.">
+                  {tipoDocFilter === ALL_FILTER
+                    ? "Todos los tipos"
+                    : tiposDocumentoMap.get(tipoDocFilter)?.nombre ?? "Tipo de Doc."}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="max-h-64">
                 <SelectItem value={ALL_FILTER}>Todos los tipos</SelectItem>
@@ -389,7 +405,17 @@ function ActivoDetailReport({
             <Select value={estadoFilter} onValueChange={(v) => setEstadoFilter(v ?? ALL_FILTER)}>
               <SelectTrigger className="w-full sm:w-38 h-8.5 text-xs bg-background">
                 <Filter className="size-3.5 text-muted-foreground mr-1.5" />
-                <SelectValue placeholder="Vigencia" />
+                <SelectValue placeholder="Vigencia">
+                  {estadoFilter === ALL_FILTER
+                    ? "Todas las vigencias"
+                    : estadoFilter === "vigente"
+                    ? "Vigente"
+                    : estadoFilter === "por_vencer"
+                    ? "Por vencer (30d)"
+                    : estadoFilter === "vencido"
+                    ? "Vencido"
+                    : "Permanente"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_FILTER}>Todas las vigencias</SelectItem>
@@ -418,12 +444,12 @@ function ActivoDetailReport({
           )}
         </div>
 
-        {/* Content Table / States */}
+        {/* Content List / States */}
         {query.isLoading ? (
           <ListSkeleton
             rows={3}
-            rowClassName="h-14 rounded-xl"
-            className="flex flex-col gap-2 p-0"
+            rowClassName="h-20 rounded-xl"
+            className="flex flex-col gap-2.5 p-0"
           />
         ) : query.isError ? (
           <EmptyState
@@ -446,170 +472,156 @@ function ActivoDetailReport({
             className="py-6"
           />
         ) : (
-          <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-2xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  <tr>
-                    <th scope="col" className="py-2.5 px-3.5">
-                      Documento / Referencia
-                    </th>
-                    <th scope="col" className="py-2.5 px-3.5">
-                      Tipo
-                    </th>
-                    <th scope="col" className="py-2.5 px-3.5">
-                      Emisión
-                    </th>
-                    <th scope="col" className="py-2.5 px-3.5">
-                      Vencimiento / Estado
-                    </th>
-                    <th scope="col" className="py-2.5 px-3.5">
-                      Archivo Adjunto
-                    </th>
-                    <th scope="col" className="py-2.5 px-3.5 text-right">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {filteredDocumentos.map((doc) => {
-                    const tipoInfo = tiposDocumentoMap.get(doc.tipoDocumentoId)
-                    const estado = getDocumentoEstado(doc.fechaVencimiento)
-                    const isLoading = loadingDocId === doc.id
+          <div className="flex flex-col gap-2.5">
+            {filteredDocumentos.map((doc) => {
+              const tipoInfo = tiposDocumentoMap.get(doc.tipoDocumentoId)
+              const estado = getDocumentoEstado(doc.fechaVencimiento)
+              const isLoading = loadingDocId === doc.id
+              const fileStyle = getFileStyle(doc.nombreArchivo, doc.mimeType)
 
-                    return (
-                      <tr key={doc.id} className="hover:bg-muted/20 transition-colors">
-                        {/* Nombre y Número */}
-                        <td className="py-2.5 px-3.5">
-                          <div className="flex flex-col min-w-0 max-w-xs">
-                            <span className="font-semibold text-foreground truncate">
-                              {doc.nombre}
-                            </span>
-                            {doc.numeroDocumento ? (
-                              <span className="font-mono text-[10px] text-muted-foreground">
-                                Ref: {doc.numeroDocumento}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground/60 italic">
-                                Sin N° de referencia
-                              </span>
-                            )}
-                            {doc.descripcion && (
-                              <span className="text-[10px] text-muted-foreground truncate line-clamp-1 pt-0.5">
-                                {doc.descripcion}
-                              </span>
-                            )}
-                          </div>
-                        </td>
+              return (
+                <div
+                  key={doc.id}
+                  className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-xl border border-border/80 bg-card hover:border-primary/40 hover:bg-muted/10 hover:shadow-xs transition-all"
+                >
+                  {/* Left file icon & document details */}
+                  <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                    <div
+                      className={cn(
+                        "flex size-10 sm:size-11 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105",
+                        fileStyle.containerClass,
+                      )}
+                    >
+                      <fileStyle.icon className="size-5" />
+                    </div>
 
-                        {/* Tipo de Documento */}
-                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                    <div className="flex flex-col min-w-0 flex-1 gap-1">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <h4
+                          className="font-heading text-xs sm:text-sm font-bold text-foreground truncate"
+                          title={doc.nombre}
+                        >
+                          {doc.nombre}
+                        </h4>
+
+                        {doc.numeroDocumento && (
+                          <span className="font-mono text-[10px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border/60">
+                            Ref: {doc.numeroDocumento}
+                          </span>
+                        )}
+
+                        <Badge
+                          variant="outline"
+                          className="bg-primary/5 text-primary border-primary/20 text-[10px] font-medium gap-1 px-1.5 py-0.5"
+                        >
+                          <Tag className="size-2.5" />
+                          <span>{tipoInfo?.nombre ?? "Documento"}</span>
+                        </Badge>
+
+                        {estado === "vencido" ? (
                           <Badge
                             variant="outline"
-                            className="bg-primary/5 text-primary border-primary/20 text-[10px] font-semibold gap-1 px-1.5 py-0.2"
+                            className="bg-destructive/10 text-destructive border-destructive/25 text-[10px] font-bold px-1.5 py-0.5"
                           >
-                            <Tag className="size-2.5" />
-                            <span>{tipoInfo?.nombre ?? "Documento"}</span>
+                            <ShieldAlert className="size-2.5 mr-1" />
+                            Vencido
                           </Badge>
-                        </td>
+                        ) : estado === "por_vencer" ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25 text-[10px] font-bold px-1.5 py-0.5"
+                          >
+                            <Clock className="size-2.5 mr-1" />
+                            Por vencer
+                          </Badge>
+                        ) : estado === "vigente" ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25 text-[10px] font-bold px-1.5 py-0.5"
+                          >
+                            <CheckCircle2 className="size-2.5 mr-1" />
+                            Vigente
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-muted text-muted-foreground border-border/80 text-[10px] font-medium px-1.5 py-0.5"
+                          >
+                            Permanente
+                          </Badge>
+                        )}
+                      </div>
 
-                        {/* Emisión */}
-                        <td className="py-2.5 px-3.5 whitespace-nowrap text-muted-foreground text-[11px]">
-                          {formatDateString(doc.fechaEmision)}
-                        </td>
+                      {doc.descripcion && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {doc.descripcion}
+                        </p>
+                      )}
 
-                        {/* Vencimiento & Estado */}
-                        <td className="py-2.5 px-3.5 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            {estado === "vencido" ? (
-                              <Badge
-                                variant="outline"
-                                className="bg-destructive/10 text-destructive border-destructive/25 text-[10px] font-bold px-1.5 py-0.2"
-                              >
-                                <ShieldAlert className="size-2.5 mr-1" />
-                                Vencido ({formatDateString(doc.fechaVencimiento)})
-                              </Badge>
-                            ) : estado === "por_vencer" ? (
-                              <Badge
-                                variant="outline"
-                                className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25 text-[10px] font-bold px-1.5 py-0.2"
-                              >
-                                <Clock className="size-2.5 mr-1" />
-                                Por vencer ({formatDateString(doc.fechaVencimiento)})
-                              </Badge>
-                            ) : estado === "vigente" ? (
-                              <Badge
-                                variant="outline"
-                                className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25 text-[10px] font-bold px-1.5 py-0.2"
-                              >
-                                <CheckCircle2 className="size-2.5 mr-1" />
-                                Vigente ({formatDateString(doc.fechaVencimiento)})
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="bg-muted text-muted-foreground border-border/80 text-[10px] font-medium px-1.5 py-0.2"
-                              >
-                                Permanente
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
+                      {/* Metadata Footer info */}
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap pt-0.5">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="size-3 text-muted-foreground/80 shrink-0" />
+                          <span>Emisión: {formatDateString(doc.fechaEmision)}</span>
+                        </span>
 
-                        {/* Archivo */}
-                        <td className="py-2.5 px-3.5 whitespace-nowrap">
-                          <div className="flex items-center gap-2 min-w-0 max-w-[190px]">
-                            {getFileIcon(doc.nombreArchivo, doc.mimeType)}
-                            <div className="flex flex-col min-w-0">
-                              <span className="truncate text-[11px] text-foreground font-mono" title={doc.nombreArchivo}>
-                                {doc.nombreArchivo}
-                              </span>
-                              <span className="text-[9px] text-muted-foreground">
-                                {formatFileSize(doc.size)}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
+                        {doc.fechaVencimiento && (
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="size-3 text-muted-foreground/80 shrink-0" />
+                              <span>Vence: {formatDateString(doc.fechaVencimiento)}</span>
+                            </span>
+                          </>
+                        )}
 
-                        {/* Acciones de Reporte (Lectura) */}
-                        <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewFile(doc)}
-                              disabled={isLoading}
-                              className="h-7 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                              title="Visualizar documento"
-                            >
-                              {isLoading ? (
-                                <Loader2 className="size-3 animate-spin" />
-                              ) : (
-                                <Eye className="size-3 text-primary" />
-                              )}
-                              <span>Ver</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDownloadFile(doc)}
-                              disabled={isLoading}
-                              className="h-7 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                              title="Descargar archivo"
-                            >
-                              <Download className="size-3" />
-                              <span>Descargar</span>
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        <span>•</span>
+                        <span
+                          className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground/90 truncate max-w-[220px]"
+                          title={doc.nombreArchivo}
+                        >
+                          <FileText className="size-3 text-muted-foreground/80 shrink-0" />
+                          <span className="truncate">{doc.nombreArchivo}</span>
+                          <span>({formatFileSize(doc.size)})</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Action buttons */}
+                  <div className="flex items-center gap-1.5 sm:self-center shrink-0 self-end sm:border-l sm:border-border/60 sm:pl-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewFile(doc)}
+                      disabled={isLoading}
+                      className="h-8 px-2.5 text-xs gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer shadow-2xs"
+                      title="Visualizar documento"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Eye className="size-3.5 text-primary" />
+                      )}
+                      <span>Ver</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadFile(doc)}
+                      disabled={isLoading}
+                      className="h-8 px-2.5 text-xs gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer shadow-2xs"
+                      title="Descargar archivo"
+                    >
+                      <Download className="size-3.5" />
+                      <span>Descargar</span>
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
@@ -733,7 +745,12 @@ export function ActivoConsultaDocumentosPage() {
               >
                 <SelectTrigger className="w-full h-8 text-xs bg-background">
                   <Layers className="size-3.5 text-muted-foreground mr-1.5 shrink-0" />
-                  <SelectValue placeholder="Tipo de Activo" />
+                  <SelectValue placeholder="Tipo de Activo">
+                    {tipoActivoId === ALL_FILTER
+                      ? "Todos los tipos de activo"
+                      : tiposActivo.find((t) => t.id === tipoActivoId)?.nombre ??
+                        "Tipo de Activo"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
                   <SelectItem value={ALL_FILTER}>Todos los tipos de activo</SelectItem>
