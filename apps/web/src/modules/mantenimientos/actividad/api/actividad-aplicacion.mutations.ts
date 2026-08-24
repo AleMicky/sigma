@@ -24,6 +24,7 @@ const actividadAplicacionMutations = createCrudMutations<
     updated: "Aplicación actualizada correctamente",
     deleted: "Aplicación eliminada correctamente",
   },
+  invalidateKeys: [actividadAplicacionKeys.all],
 })
 
 export const useCreateActividadAplicacion =

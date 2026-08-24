@@ -66,8 +66,8 @@ export function ActividadesPage() {
       <MasterDetailLayout
         title={
           masterDetail.isMobile &&
-          masterDetail.mobileShowDetail &&
-          masterDetail.selected
+            masterDetail.mobileShowDetail &&
+            masterDetail.selected
             ? masterDetail.selected.nombre
             : "Actividades de Mantenimiento"
         }
@@ -117,8 +117,14 @@ export function ActividadesPage() {
         detail={
           <ActividadDetailPanel
             actividad={masterDetail.selected}
+            page={aplicacionSearch.page}
             search={aplicacionSearch.search}
+            searchQuery={aplicacionSearch.debouncedSearch}
+            hidePrimaryAction={
+              masterDetail.isMobile && masterDetail.mobileShowDetail
+            }
             onSearchChange={aplicacionSearch.setSearch}
+            onPageChange={aplicacionSearch.setPage}
           />
         }
       />

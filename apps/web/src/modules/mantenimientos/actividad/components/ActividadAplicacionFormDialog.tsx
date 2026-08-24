@@ -33,6 +33,8 @@ type ActividadAplicacionFormDialogProps = {
   onSuccess?: () => void
 }
 
+const NONE_COMPONENTE = "NONE"
+
 export function ActividadAplicacionFormDialog({
   actividad,
   open,
@@ -40,7 +42,7 @@ export function ActividadAplicacionFormDialog({
   onSuccess,
 }: ActividadAplicacionFormDialogProps) {
   const [tipoActivoId, setTipoActivoId] = useState<string>("")
-  const [componenteId, setComponenteId] = useState<string>("")
+  const [componenteId, setComponenteId] = useState<string>(NONE_COMPONENTE)
   const [formError, setFormError] = useState<string | null>(null)
 
   const createMutation = useCreateActividadAplicacion()
@@ -77,7 +79,7 @@ export function ActividadAplicacionFormDialog({
 
   function resetForm() {
     setTipoActivoId("")
-    setComponenteId("")
+    setComponenteId(NONE_COMPONENTE)
     setFormError(null)
   }
 
@@ -90,7 +92,10 @@ export function ActividadAplicacionFormDialog({
       await createMutation.mutateAsync({
         actividadMantenimientoId: actividad.id,
         tipoActivoId,
-        componenteId: componenteId || null,
+        componenteId:
+          componenteId && componenteId !== NONE_COMPONENTE
+            ? componenteId
+            : null,
       })
       resetForm()
       onOpenChange(false)
@@ -149,7 +154,7 @@ export function ActividadAplicacionFormDialog({
                 value={tipoActivoId}
                 onValueChange={(val) => {
                   setTipoActivoId(val ?? "")
-                  setComponenteId("")
+                  setComponenteId(NONE_COMPONENTE)
                 }}
               >
                 <SelectTrigger id="tipoActivoId" className="w-full">
@@ -176,22 +181,22 @@ export function ActividadAplicacionFormDialog({
               </FieldLabel>
               <Select
                 value={componenteId}
-                onValueChange={(val) => setComponenteId(val ?? "")}
+                onValueChange={(val) => setComponenteId(val ?? NONE_COMPONENTE)}
                 disabled={!tipoActivoId || componentes.length === 0}
               >
                 <SelectTrigger id="componenteId" className="w-full">
                   <SelectValue>
-                    {componenteId
+                    {componenteId && componenteId !== NONE_COMPONENTE
                       ? (selectedComponente?.nombre ?? "Componente seleccionado")
                       : !tipoActivoId
                         ? "Primero selecciona un tipo de activo"
                         : componentes.length === 0
                           ? "Sin componentes registrados para este tipo"
-                          : "Aplica a todos los componentes"}
+                          : "Aplica a todos los componentes (toda la unidad)"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
-                  <SelectItem value="">
+                  <SelectItem value={NONE_COMPONENTE}>
                     Aplica a toda la unidad (sin componente específico)
                   </SelectItem>
                   {componentes.map((comp) => (

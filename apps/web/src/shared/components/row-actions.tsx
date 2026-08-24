@@ -4,7 +4,7 @@ import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 
 type RowActionsProps = {
-  onEdit: () => void
+  onEdit?: () => void
   onDelete?: () => void
   editLabel?: string
   deleteLabel?: string
@@ -27,19 +27,21 @@ export function RowActions({
         className,
       )}
     >
-      <Button
-        type="button"
-        variant="default"
-        size="icon-sm"
-        aria-label={editLabel}
-        onClick={(event) => {
-          event.stopPropagation()
-          event.preventDefault()
-          onEdit()
-        }}
-      >
-        <Pencil />
-      </Button>
+      {onEdit ? (
+        <Button
+          type="button"
+          variant="default"
+          size="icon-sm"
+          aria-label={editLabel}
+          onClick={(event) => {
+            event.stopPropagation()
+            event.preventDefault()
+            onEdit()
+          }}
+        >
+          <Pencil />
+        </Button>
+      ) : null}
       {onDelete ? (
         <Button
           type="button"

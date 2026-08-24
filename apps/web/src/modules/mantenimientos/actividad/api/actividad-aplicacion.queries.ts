@@ -12,13 +12,13 @@ import {
 export const actividadAplicacionQueries = {
   list: (filters?: PageParams) =>
     queryOptions({
-      queryKey: actividadAplicacionKeys.list(filters),
+      queryKey: actividadAplicacionKeys.list(filters ?? {}),
       queryFn: () => listActividadAplicaciones(filters),
     }),
 
   byActividad: (actividadId: string, filters?: PageParams) =>
     queryOptions({
-      queryKey: actividadAplicacionKeys.byActividad(actividadId),
+      queryKey: actividadAplicacionKeys.byActividad(actividadId, filters ?? {}),
       queryFn: () => listAplicacionesByActividad(actividadId, filters),
       enabled: Boolean(actividadId),
     }),
@@ -30,3 +30,4 @@ export const actividadAplicacionQueries = {
       enabled: Boolean(id),
     }),
 }
+
