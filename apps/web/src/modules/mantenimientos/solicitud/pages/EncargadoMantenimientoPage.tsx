@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
 import {
   AlertTriangle,
   FileCheck2,
@@ -19,7 +20,6 @@ import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-s
 import { cn } from "@/shared/lib/utils"
 
 import { OrdenTrabajoDetailModal } from "@/modules/mantenimientos/orden-trabajo/components/OrdenTrabajoDetailModal"
-import { OrdenTrabajoFormDialog } from "@/modules/mantenimientos/orden-trabajo/components/OrdenTrabajoFormDialog"
 import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type {
@@ -34,16 +34,11 @@ import { WorkflowActionDialog } from "../components/WorkflowActionDialog"
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function EncargadoMantenimientoPage() {
+  const navigate = useNavigate()
   const [modalSolicitud, setModalSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
 
-  // OT Creation from Solicitud
-  const [otFormModal, setOtFormModal] = useState<{
-    open: boolean
-    initialSolicitudId?: string
-    initialActivoId?: string
-  }>({ open: false })
   const [selectedOT, setSelectedOT] = useState<OrdenTrabajo | null>(null)
 
   const [workflowActionTarget, setWorkflowActionTarget] = useState<{
@@ -127,10 +122,12 @@ export function EncargadoMantenimientoPage() {
   }
 
   function handleCreateOT(solicitud: SolicitudMantenimiento) {
-    setOtFormModal({
-      open: true,
-      initialSolicitudId: solicitud.id,
-      initialActivoId: solicitud.activo?.id,
+    navigate({
+      to: "/mantenimientos/ordenes-trabajo/nuevo",
+      search: {
+        solicitudId: solicitud.id,
+        activoId: solicitud.activo?.id,
+      },
     })
   }
 
@@ -314,6 +311,7 @@ export function EncargadoMantenimientoPage() {
                   onQuickView={handleOpenModal}
                   onActionSelect={handleActionSelect}
                   onCreateOT={handleCreateOT}
+                  showControlActivo
                 />
               </div>
 
@@ -348,19 +346,6 @@ export function EncargadoMantenimientoPage() {
         onSuccess={() => {
           solicitudesQuery.refetch()
           setModalSolicitud(null)
-        }}
-      />
-
-      {/* Modal Formulario Crear Orden de Trabajo */}
-      <OrdenTrabajoFormDialog
-        open={otFormModal.open}
-        onOpenChange={(open) =>
-          setOtFormModal((prev) => ({ ...prev, open }))
-        }
-        initialSolicitudId={otFormModal.initialSolicitudId}
-        initialActivoId={otFormModal.initialActivoId}
-        onSuccess={(savedOT) => {
-          setSelectedOT(savedOT)
         }}
       />
 

@@ -47,6 +47,7 @@ type SolicitudAprobacionListItemProps = {
     fields?: WorkflowField[],
   ) => void
   onCreateOT?: (solicitud: SolicitudMantenimiento) => void
+  showControlActivo?: boolean
 }
 
 function getInitials(name?: string | null): string {
@@ -116,6 +117,7 @@ export function SolicitudAprobacionListItem({
   onQuickView,
   onActionSelect,
   onCreateOT,
+  showControlActivo,
 }: SolicitudAprobacionListItemProps) {
   const [copied, setCopied] = useState(false)
 
@@ -324,22 +326,24 @@ export function SolicitudAprobacionListItem({
         )}
 
         {/* Control de Activo (Entrega / Devolución) */}
-        <Link
-          to="/mantenimientos/controles-activos/nuevo"
-          search={{ solicitudId: solicitud.id }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1.5 text-xs font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20 hover:border-sky-500/50 rounded-lg shadow-2xs cursor-pointer"
-            title="Registrar o verificar acta de entrega/devolución de activo y accesorios"
+        {showControlActivo && (
+          <Link
+            to="/mantenimientos/controles-activos/nuevo"
+            search={{ solicitudId: solicitud.id }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <ClipboardCheck className="size-3.5 text-sky-600 dark:text-sky-400" />
-            <span className="hidden sm:inline">Control Activo</span>
-          </Button>
-        </Link>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5 text-xs font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20 hover:border-sky-500/50 rounded-lg shadow-2xs cursor-pointer"
+              title="Registrar o verificar acta de entrega/devolución de activo y accesorios"
+            >
+              <ClipboardCheck className="size-3.5 text-sky-600 dark:text-sky-400" />
+              <span className="hidden sm:inline">Control Activo</span>
+            </Button>
+          </Link>
+        )}
 
         {/* Crear / Gestionar Orden de Trabajo */}
         {onCreateOT && (

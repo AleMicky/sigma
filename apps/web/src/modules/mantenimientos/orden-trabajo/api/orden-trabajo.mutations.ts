@@ -308,3 +308,47 @@ export function useDeleteOrdenTrabajoActividadEvidencia() {
     },
   })
 }
+
+// ----------------------------------------------------
+// 5. Composite Master-Detail Mutation
+// ----------------------------------------------------
+
+export type CreateOrdenTrabajoWithActividadesInput = {
+  maestro: OrdenTrabajoPayload
+  actividades: Array<Omit<OrdenTrabajoActividadPayload, "ordenTrabajoId">>
+}
+
+export function useCreateOrdenTrabajoWithActividades() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      maestro,
+      actividades,
+    }: CreateOrdenTrabajoWithActividadesInput) => {
+      const ot = await createOrdenTrabajo(maestro)
+
+      if (actividades.length > 0) {
+        for (const act of actividades) {
+          try {
+            await createOrdenTrabajoActividad({
+              ...act,
+              ordenTrabajoId: ot.id,
+            })
+          } catch (e) {
+            console.error("Error al registrar actividad de la OT:", e)
+          }
+        }
+      }
+
+      return ot
+    },
+    onSuccess: (ot) => {
+      queryClient.invalidateQueries({ queryKey: ordenTrabajoKeys.all })
+      toast.success(`Orden de Trabajo ${ot.numero ?? ""} creada exitosamente`)
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err) || "Error al crear la orden de trabajo")
+    },
+  })
+}
+

@@ -15,6 +15,7 @@ type SolicitudAprobacionListViewProps = {
     fields?: WorkflowField[],
   ) => void
   onCreateOT?: (solicitud: SolicitudMantenimiento) => void
+  showControlActivo?: boolean
 }
 
 export function SolicitudAprobacionListView({
@@ -22,6 +23,7 @@ export function SolicitudAprobacionListView({
   onQuickView,
   onActionSelect,
   onCreateOT,
+  showControlActivo,
 }: SolicitudAprobacionListViewProps) {
   return (
     <div className="w-full rounded-2xl border border-border/80 bg-card overflow-hidden shadow-2xs">
@@ -33,6 +35,7 @@ export function SolicitudAprobacionListView({
             onQuickView={onQuickView}
             onActionSelect={onActionSelect}
             onCreateOT={onCreateOT}
+            showControlActivo={showControlActivo}
           />
         ))}
       </ul>

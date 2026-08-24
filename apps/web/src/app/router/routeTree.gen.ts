@@ -62,6 +62,7 @@ import { Route as DashboardMantenimientosControlesActivosIndexRouteImport } from
 import { Route as DashboardMantenimientosControlesActivosNuevoRouteImport } from './../../routes/_dashboard/mantenimientos/controles-activos/nuevo'
 import { Route as DashboardMantenimientosEncargadoIndexRouteImport } from './../../routes/_dashboard/mantenimientos/encargado/index'
 import { Route as DashboardMantenimientosOrdenesTrabajoIndexRouteImport } from './../../routes/_dashboard/mantenimientos/ordenes-trabajo/index'
+import { Route as DashboardMantenimientosOrdenesTrabajoNuevoRouteImport } from './../../routes/_dashboard/mantenimientos/ordenes-trabajo/nuevo'
 import { Route as DashboardMantenimientosPrioridadesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/prioridades/index'
 import { Route as DashboardMantenimientosSolicitudesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/index'
 import { Route as DashboardMantenimientosSolicitudesNuevaRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/nueva'
@@ -390,6 +391,12 @@ const DashboardMantenimientosOrdenesTrabajoIndexRoute =
     path: '/ordenes-trabajo/',
     getParentRoute: () => DashboardMantenimientosRouteRoute,
   } as any)
+const DashboardMantenimientosOrdenesTrabajoNuevoRoute =
+  DashboardMantenimientosOrdenesTrabajoNuevoRouteImport.update({
+    id: '/ordenes-trabajo/nuevo',
+    path: '/ordenes-trabajo/nuevo',
+    getParentRoute: () => DashboardMantenimientosRouteRoute,
+  } as any)
 const DashboardMantenimientosPrioridadesIndexRoute =
   DashboardMantenimientosPrioridadesIndexRouteImport.update({
     id: '/',
@@ -536,6 +543,7 @@ export interface FileRoutesByFullPath {
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
   '/mantenimientos/controles-activos/nuevo': typeof DashboardMantenimientosControlesActivosNuevoRoute
+  '/mantenimientos/ordenes-trabajo/nuevo': typeof DashboardMantenimientosOrdenesTrabajoNuevoRoute
   '/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
@@ -590,6 +598,7 @@ export interface FileRoutesByTo {
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
   '/mantenimientos/controles-activos/nuevo': typeof DashboardMantenimientosControlesActivosNuevoRoute
+  '/mantenimientos/ordenes-trabajo/nuevo': typeof DashboardMantenimientosOrdenesTrabajoNuevoRoute
   '/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
@@ -663,6 +672,7 @@ export interface FileRoutesById {
   '/_dashboard/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/_dashboard/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
   '/_dashboard/mantenimientos/controles-activos/nuevo': typeof DashboardMantenimientosControlesActivosNuevoRoute
+  '/_dashboard/mantenimientos/ordenes-trabajo/nuevo': typeof DashboardMantenimientosOrdenesTrabajoNuevoRoute
   '/_dashboard/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/_dashboard/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/_dashboard/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
@@ -736,6 +746,7 @@ export interface FileRouteTypes {
     | '/activos/catalogo/$activoId'
     | '/inventarios/$insumoId/editar'
     | '/mantenimientos/controles-activos/nuevo'
+    | '/mantenimientos/ordenes-trabajo/nuevo'
     | '/mantenimientos/solicitudes/nueva'
     | '/tipos-activo/$tipoActivoId/atributos'
     | '/tipos-activo/$tipoActivoId/componentes'
@@ -790,6 +801,7 @@ export interface FileRouteTypes {
     | '/activos/catalogo/$activoId'
     | '/inventarios/$insumoId/editar'
     | '/mantenimientos/controles-activos/nuevo'
+    | '/mantenimientos/ordenes-trabajo/nuevo'
     | '/mantenimientos/solicitudes/nueva'
     | '/tipos-activo/$tipoActivoId/atributos'
     | '/tipos-activo/$tipoActivoId/componentes'
@@ -862,6 +874,7 @@ export interface FileRouteTypes {
     | '/_dashboard/activos/catalogo/$activoId'
     | '/_dashboard/inventarios/$insumoId/editar'
     | '/_dashboard/mantenimientos/controles-activos/nuevo'
+    | '/_dashboard/mantenimientos/ordenes-trabajo/nuevo'
     | '/_dashboard/mantenimientos/solicitudes/nueva'
     | '/_dashboard/tipos-activo/$tipoActivoId/atributos'
     | '/_dashboard/tipos-activo/$tipoActivoId/componentes'
@@ -1269,6 +1282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMantenimientosOrdenesTrabajoIndexRouteImport
       parentRoute: typeof DashboardMantenimientosRouteRoute
     }
+    '/_dashboard/mantenimientos/ordenes-trabajo/nuevo': {
+      id: '/_dashboard/mantenimientos/ordenes-trabajo/nuevo'
+      path: '/ordenes-trabajo/nuevo'
+      fullPath: '/mantenimientos/ordenes-trabajo/nuevo'
+      preLoaderRoute: typeof DashboardMantenimientosOrdenesTrabajoNuevoRouteImport
+      parentRoute: typeof DashboardMantenimientosRouteRoute
+    }
     '/_dashboard/mantenimientos/prioridades/': {
       id: '/_dashboard/mantenimientos/prioridades/'
       path: '/'
@@ -1610,6 +1630,7 @@ interface DashboardMantenimientosRouteRouteChildren {
   DashboardMantenimientosTiposMantenimientoRouteRoute: typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
   DashboardMantenimientosIndexRoute: typeof DashboardMantenimientosIndexRoute
   DashboardMantenimientosControlesActivosNuevoRoute: typeof DashboardMantenimientosControlesActivosNuevoRoute
+  DashboardMantenimientosOrdenesTrabajoNuevoRoute: typeof DashboardMantenimientosOrdenesTrabajoNuevoRoute
   DashboardMantenimientosAprobacionesIndexRoute: typeof DashboardMantenimientosAprobacionesIndexRoute
   DashboardMantenimientosControlesActivosIndexRoute: typeof DashboardMantenimientosControlesActivosIndexRoute
   DashboardMantenimientosEncargadoIndexRoute: typeof DashboardMantenimientosEncargadoIndexRoute
@@ -1631,6 +1652,8 @@ const DashboardMantenimientosRouteRouteChildren: DashboardMantenimientosRouteRou
     DashboardMantenimientosIndexRoute: DashboardMantenimientosIndexRoute,
     DashboardMantenimientosControlesActivosNuevoRoute:
       DashboardMantenimientosControlesActivosNuevoRoute,
+    DashboardMantenimientosOrdenesTrabajoNuevoRoute:
+      DashboardMantenimientosOrdenesTrabajoNuevoRoute,
     DashboardMantenimientosAprobacionesIndexRoute:
       DashboardMantenimientosAprobacionesIndexRoute,
     DashboardMantenimientosControlesActivosIndexRoute:

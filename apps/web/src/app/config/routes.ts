@@ -85,7 +85,10 @@ export const routes = {
       root: "/mantenimientos/controles-activos",
       nuevo: "/mantenimientos/controles-activos/nuevo",
     },
-    ordenesTrabajo: "/mantenimientos/ordenes-trabajo",
+    ordenesTrabajo: {
+      root: "/mantenimientos/ordenes-trabajo",
+      nuevo: "/mantenimientos/ordenes-trabajo/nuevo",
+    },
   },
 } as const
 

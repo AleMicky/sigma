@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
 import {
   Plus,
   Search,
@@ -82,14 +83,15 @@ export function OrdenesTrabajoPage() {
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0 md:hidden">
-              <Button
-                size="sm"
-                onClick={() => setFormModal({ open: true, ordenTrabajo: null })}
-                className="h-7 px-2 text-xs font-semibold gap-1 bg-sky-600 hover:bg-sky-700 text-white"
-              >
-                <Plus className="size-3.5" />
-                <span>Nueva</span>
-              </Button>
+              <Link to="/mantenimientos/ordenes-trabajo/nuevo">
+                <Button
+                  size="sm"
+                  className="h-7 px-2 text-xs font-semibold gap-1 bg-sky-600 hover:bg-sky-700 text-white cursor-pointer"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Nueva</span>
+                </Button>
+              </Link>
               <RefreshButton
                 size="sm"
                 className="h-7 px-2"
@@ -104,14 +106,15 @@ export function OrdenesTrabajoPage() {
         </div>
 
         <div className="hidden shrink-0 md:flex md:items-center md:gap-2">
-          <Button
-            size="sm"
-            onClick={() => setFormModal({ open: true, ordenTrabajo: null })}
-            className="h-8 gap-1.5 px-3 text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white shadow-xs cursor-pointer"
-          >
-            <Plus className="size-3.5" />
-            <span>Nueva Orden de Trabajo</span>
-          </Button>
+          <Link to="/mantenimientos/ordenes-trabajo/nuevo">
+            <Button
+              size="sm"
+              className="h-8 gap-1.5 px-3 text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white shadow-xs cursor-pointer"
+            >
+              <Plus className="size-3.5" />
+              <span>Nueva Orden de Trabajo</span>
+            </Button>
+          </Link>
 
           <RefreshButton
             size="sm"
@@ -161,14 +164,15 @@ export function OrdenesTrabajoPage() {
                 : "Crea una nueva orden de trabajo para iniciar las actividades técnicas de mantenimiento."
             }
             action={
-              <Button
-                size="sm"
-                onClick={() => setFormModal({ open: true, ordenTrabajo: null })}
-                className="text-xs font-semibold gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
-              >
-                <Plus className="size-3.5" />
-                <span>Crear Primera Orden</span>
-              </Button>
+              <Link to="/mantenimientos/ordenes-trabajo/nuevo">
+                <Button
+                  size="sm"
+                  className="text-xs font-semibold gap-1.5 bg-sky-600 hover:bg-sky-700 text-white cursor-pointer"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Crear Primera Orden</span>
+                </Button>
+              </Link>
             }
           />
         ) : (
