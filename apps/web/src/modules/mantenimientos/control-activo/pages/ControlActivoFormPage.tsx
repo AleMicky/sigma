@@ -5,8 +5,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Box,
-  Building2,
-  Check,
+  Calendar,
   CheckCircle2,
   ClipboardCheck,
   FileCheck2,
@@ -22,7 +21,6 @@ import {
   Send,
   Trash2,
   UserCheck,
-  Wrench,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -67,7 +65,6 @@ export function ControlActivoFormPage({
 }: ControlActivoFormPageProps) {
   const navigate = useNavigate()
 
-  // Leer search params si no vienen por props
   let searchParams: { solicitudId?: string; tipo?: TipoControlActivo } = {}
   try {
     searchParams = useSearch({ strict: false }) as {
@@ -75,7 +72,7 @@ export function ControlActivoFormPage({
       tipo?: TipoControlActivo
     }
   } catch {
-    // En caso de que se renderice sin router context directo
+    // Sin context directo
   }
 
   const solicitudId = propSolicitudId || searchParams.solicitudId || ""
@@ -92,7 +89,7 @@ export function ControlActivoFormPage({
   const solicitud = solicitudQuery.data
   const activoId = solicitud?.activo?.id
 
-  // Consulta de detalle completo del activo (para ubicación, tipo, etc.)
+  // Consulta de detalle completo del activo
   const activoDetailQuery = useQuery({
     ...activoQueries.detail(activoId ?? ""),
     enabled: Boolean(activoId),
@@ -129,7 +126,6 @@ export function ControlActivoFormPage({
   useEffect(() => {
     if (solicitud) {
       if (tipo === "ENTREGA") {
-        // En entrega: entrega el solicitante/custodio, recibe el responsable/técnico
         if (!entregadoPorId && solicitud.solicitante?.id) {
           setEntregadoPorId(solicitud.solicitante.id)
         }
@@ -137,7 +133,6 @@ export function ControlActivoFormPage({
           setRecibidoPorId(solicitud.responsable.id)
         }
       } else {
-        // En devolución: entrega el responsable/técnico, recibe el solicitante/custodio
         if (!entregadoPorId && solicitud.responsable?.id) {
           setEntregadoPorId(solicitud.responsable.id)
         }
@@ -213,7 +208,6 @@ export function ControlActivoFormPage({
     () => items.filter((i) => i.conforme).length,
     [items],
   )
-  const itemsInconformes = totalItems - itemsConformes
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -233,7 +227,6 @@ export function ControlActivoFormPage({
       return
     }
 
-    // Validar items
     for (const item of items) {
       if (item.cantidadEsperada < 0 || item.cantidadEncontrada < 0) {
         toast.error("Las cantidades de los accesorios deben ser mayores o iguales a 0")
@@ -262,383 +255,303 @@ export function ControlActivoFormPage({
         })),
       })
 
-      // Redirigir a encargado
       navigate({ to: routes.mantenimientos.encargado })
     } catch {
-      // Manejado por onError de la mutación
+      // Manejado por mutation
     }
   }
 
   if (solicitudQuery.isLoading) {
     return (
-      <PageShell className="p-6">
-        <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
-          <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-sm font-medium">Cargando datos de la solicitud y activo...</p>
+      <PageShell className="p-4">
+        <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin text-primary" />
+          <p className="text-xs font-medium">Cargando datos...</p>
         </div>
       </PageShell>
     )
   }
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-y-auto px-3 py-3 sm:px-6 md:px-8 pb-20">
-      {/* Top Header & Breadcrumb */}
-      <header className="flex shrink-0 flex-col gap-3 border-b pb-4 pt-1 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
+    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-y-auto px-3 py-2 sm:px-5 md:px-6 pb-20">
+      {/* Top Header Compacto */}
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b pb-2 pt-0.5">
+        <div className="flex items-center gap-2 min-w-0">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="size-9 shrink-0 rounded-xl hover:bg-muted"
+            className="size-7 shrink-0 rounded-lg hover:bg-muted"
             onClick={() => navigate({ to: routes.mantenimientos.encargado })}
           >
-            <ArrowLeft className="size-4" />
+            <ArrowLeft className="size-3.5" />
           </Button>
 
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                <ClipboardCheck className="size-4" />
-              </div>
-              <h1 className="font-heading text-lg sm:text-xl font-bold tracking-tight">
-                Control de Activo
-              </h1>
-              {solicitud?.numero && (
-                <span className="font-mono text-xs font-bold bg-muted px-2.5 py-0.5 rounded-full border border-border">
-                  Folio: {solicitud.numero}
-                </span>
-              )}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <ClipboardCheck className="size-3.5" />
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Registro formal de acta de entrega o recepción de activos y verificación de accesorios.
-            </p>
+            <h1 className="font-heading text-sm sm:text-base font-bold tracking-tight truncate">
+              Control de Activo
+            </h1>
+            {solicitud?.numero && (
+              <span className="font-mono text-xs font-bold bg-muted px-2 py-0.5 rounded border border-border shrink-0">
+                Folio: {solicitud.numero}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Header Actions */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           {solicitudId && (
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setHistorialOpen(true)}
-              className="h-8 gap-1.5 text-xs font-semibold"
+              className="h-7 gap-1 px-2.5 text-xs font-semibold"
             >
-              <History className="size-3.5 text-muted-foreground" />
-              <span>Ver Historial de Actas</span>
+              <History className="size-3 text-muted-foreground" />
+              <span className="hidden sm:inline">Historial</span>
             </Button>
           )}
         </div>
       </header>
 
       {/* Main Form Body */}
-      <form onSubmit={handleSubmit} className="mt-5 space-y-5 max-w-6xl mx-auto">
-        {/* Selector de Tipo de Control (Segmented Hero Card) */}
-        <Card className="p-4 sm:p-5 border bg-gradient-to-r from-card to-muted/30 shadow-2xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Tipo de Control / Operación
-              </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Defina si está entregando el activo para intervención o devolviéndolo tras concluir los trabajos.
-              </p>
+      <form onSubmit={handleSubmit} className="mt-3 space-y-3 max-w-5xl mx-auto">
+        {/* Banner Superior: Tipo + Activo + Solicitud */}
+        <Card className="p-3 border bg-card shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Activo & Solicitud Resumen */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+                <Box className="size-4.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  {solicitud?.activo?.codigo && (
+                    <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                      {solicitud.activo.codigo}
+                    </span>
+                  )}
+                  <span className="font-heading text-sm font-bold text-foreground truncate">
+                    {solicitud?.activo?.nombre || activoDetail?.nombre || "Activo no especificado"}
+                  </span>
+                  {solicitud?.prioridad && (
+                    <span
+                      className={cn(
+                        "px-2 py-0.5 text-xs font-semibold rounded border",
+                        getPrioridadBadgeStyles(solicitud.prioridad.nivel ?? 1),
+                      )}
+                    >
+                      {solicitud.prioridad.nombre}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
+                  {activoDetail?.ubicacion && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="size-3 opacity-70" />
+                      {activoDetail.ubicacion.nombre}
+                    </span>
+                  )}
+                  {solicitud?.solicitante && (
+                    <span className="truncate">
+                      Solicitante: <strong className="text-foreground font-medium">{solicitud.solicitante.nombre}</strong>
+                    </span>
+                  )}
+                  {solicitud?.tipoMantenimiento && (
+                    <span className="hidden md:inline truncate">
+                      Tipo: <strong className="text-foreground font-medium">{solicitud.tipoMantenimiento.nombre}</strong>
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="inline-flex rounded-xl bg-muted p-1 border shadow-inner shrink-0">
+            {/* Selector de Tipo (Pills) */}
+            <div className="inline-flex rounded-xl bg-muted p-1 border shadow-inner shrink-0 self-start sm:self-center">
               <button
                 type="button"
                 onClick={() => setTipo("ENTREGA")}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
                   tipo === "ENTREGA"
                     ? "bg-sky-600 text-white shadow-xs"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 <Send className="size-3.5" />
-                <span>Acta de Entrega</span>
+                <span>Acta Entrega</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setTipo("DEVOLUCION")}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
                   tipo === "DEVOLUCION"
                     ? "bg-emerald-600 text-white shadow-xs"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 <RotateCcw className="size-3.5" />
-                <span>Acta de Devolución</span>
+                <span>Acta Devolución</span>
               </button>
             </div>
           </div>
         </Card>
 
-        {/* Resumen del Activo y Solicitud Vinculada */}
-        {solicitud && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Activo Card */}
-            <Card className="p-4 border-l-4 border-l-primary shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Box className="size-4 text-primary" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Activo a Intervenir
-                  </span>
-                </div>
-                {solicitud.activo?.codigo && (
-                  <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                    {solicitud.activo.codigo}
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <h3 className="font-heading font-bold text-sm text-foreground">
-                  {solicitud.activo?.nombre || activoDetail?.nombre || "Activo no especificado"}
-                </h3>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1.5">
-                  {activoDetail?.ubicacion && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="size-3 text-muted-foreground/70" />
-                      {activoDetail.ubicacion.nombre}
-                    </span>
-                  )}
-                  {activoDetail?.tipoActivo && (
-                    <span className="flex items-center gap-1">
-                      <Building2 className="size-3 text-muted-foreground/70" />
-                      {activoDetail.tipoActivo.nombre}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </Card>
-
-            {/* Solicitud Card */}
-            <Card className="p-4 border-l-4 border-l-sky-500 shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Wrench className="size-4 text-sky-600 dark:text-sky-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Solicitud de Mantenimiento
-                  </span>
-                </div>
-                {solicitud.prioridad && (
-                  <span
-                    className={cn(
-                      "px-2 py-0.5 text-xs font-semibold rounded border",
-                      getPrioridadBadgeStyles(solicitud.prioridad.nivel ?? 1),
-                    )}
-                  >
-                    {solicitud.prioridad.nombre}
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <h3 className="font-heading font-semibold text-sm text-foreground line-clamp-1">
-                  {solicitud.titulo}
-                </h3>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1.5">
-                  {solicitud.solicitante && (
-                    <span>
-                      Solicitante: <strong className="text-foreground">{solicitud.solicitante.nombre}</strong>
-                    </span>
-                  )}
-                  {solicitud.tipoMantenimiento && (
-                    <span>
-                      Tipo: <strong className="text-foreground">{solicitud.tipoMantenimiento.nombre}</strong>
-                    </span>
-                  )}
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* Sección: Datos Generales y Responsables */}
-        <Card className="p-4 sm:p-5 shadow-2xs space-y-4">
-          <div className="flex items-center gap-2 border-b pb-2.5">
+        {/* Responsables y Fecha (3 Columnas con espaciado limpio) */}
+        <Card className="p-3.5 shadow-2xs space-y-3">
+          <div className="flex items-center gap-2 border-b pb-2">
             <UserCheck className="size-4 text-primary" />
-            <h2 className="font-heading text-sm sm:text-base font-bold text-foreground">
+            <h2 className="font-heading text-xs sm:text-sm font-bold text-foreground">
               Responsables y Fecha de Control
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-start">
             {/* Fecha y Hora */}
             <div className="space-y-1.5">
-              <Label htmlFor="fechaControl" className="text-xs font-semibold">
-                Fecha y Hora <span className="text-destructive">*</span>
+              <Label htmlFor="fechaControl" className="text-xs font-semibold text-foreground flex items-center gap-1">
+                <Calendar className="size-3.5 text-muted-foreground" />
+                <span>Fecha / Hora</span>
+                <span className="text-destructive">*</span>
               </Label>
-              <div className="relative">
-                <Input
-                  id="fechaControl"
-                  type="datetime-local"
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                  className="h-9 text-xs"
-                  required
-                />
-              </div>
+              <Input
+                id="fechaControl"
+                type="datetime-local"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                className="h-10 text-xs font-medium"
+                required
+              />
             </div>
 
             {/* Entregado Por */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                {tipo === "ENTREGA" ? "Entregado por (Solicitante/Custodio)" : "Entregado por (Técnico/Encargado)"}
+              <Label className="text-xs font-semibold text-foreground">
+                {tipo === "ENTREGA" ? "Entrega (Solicitante)" : "Entrega (Técnico)"}
               </Label>
               <EmpleadoCombobox
                 value={entregadoPorId}
                 onValueChange={(val) => setEntregadoPorId(val)}
-                placeholder="Seleccione persona que entrega..."
-                className="h-9 text-xs"
+                placeholder="Seleccione persona..."
               />
             </div>
 
             {/* Recibido Por */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                {tipo === "ENTREGA" ? "Recibido por (Técnico/Encargado)" : "Recibido por (Solicitante/Custodio)"}
+              <Label className="text-xs font-semibold text-foreground">
+                {tipo === "ENTREGA" ? "Recibe (Técnico)" : "Recibe (Solicitante)"}
               </Label>
               <EmpleadoCombobox
                 value={recibidoPorId}
                 onValueChange={(val) => setRecibidoPorId(val)}
-                placeholder="Seleccione persona que recibe..."
-                className="h-9 text-xs"
+                placeholder="Seleccione persona..."
               />
             </div>
           </div>
         </Card>
 
-        {/* Sección: Verificación de Accesorios y Elementos (Checklist) */}
-        <Card className="p-4 sm:p-5 shadow-2xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
+        {/* Verificación de Accesorios (Tabla Estructurada Limpia) */}
+        <Card className="p-3.5 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between gap-2 border-b pb-2">
             <div className="flex items-center gap-2">
               <Package className="size-4 text-primary" />
-              <div>
-                <h2 className="font-heading text-sm sm:text-base font-bold text-foreground">
-                  Verificación de Accesorios y Componentes
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Compruebe la cantidad esperada vs encontrada y el estado de cada accesorio
-                </p>
-              </div>
+              <h2 className="font-heading text-xs sm:text-sm font-bold text-foreground">
+                Verificación de Accesorios
+              </h2>
+              <span className="text-xs text-muted-foreground font-medium">
+                ({itemsConformes}/{totalItems} conformes)
+              </span>
             </div>
 
             <div className="flex items-center gap-2">
+              {totalItems > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setItems((prev) => prev.map((i) => ({ ...i, conforme: true })))}
+                  className="text-xs text-primary hover:underline font-semibold cursor-pointer"
+                >
+                  Marcar todos conformes
+                </button>
+              )}
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 onClick={() => setSelectAccesorioOpen(true)}
-                className="h-8 gap-1.5 text-xs font-semibold rounded-lg"
+                className="h-7 gap-1 px-2.5 text-xs font-semibold rounded-lg"
               >
                 <Plus className="size-3.5" />
-                <span>Agregar Accesorio</span>
+                <span>Agregar</span>
               </Button>
             </div>
           </div>
 
-          {/* Banner de Estado de Accesorios */}
-          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-muted/40 border text-xs">
-            <div className="flex items-center gap-3">
-              <span>
-                Total registrados: <strong className="text-foreground">{totalItems}</strong>
-              </span>
-              <span className="text-emerald-700 dark:text-emerald-300">
-                Conformes: <strong>{itemsConformes}</strong>
-              </span>
-              {itemsInconformes > 0 && (
-                <span className="text-amber-700 dark:text-amber-300 font-bold">
-                  Con observaciones: {itemsInconformes}
-                </span>
-              )}
-            </div>
-
-            {totalItems > 0 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  setItems((prev) => prev.map((i) => ({ ...i, conforme: true })))
-                }}
-              >
-                <Check className="size-3 mr-1 text-emerald-500" />
-                Marcar todos conformes
-              </Button>
-            )}
-          </div>
-
-          {/* Lista / Grid de Accesorios */}
+          {/* Lista de Accesorios */}
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed rounded-xl bg-muted/10 p-4">
-              <Package className="size-8 text-muted-foreground/60 mb-2" />
-              <p className="font-semibold text-xs text-foreground">
-                No hay accesorios en la lista
+            <div className="py-8 text-center text-xs text-muted-foreground border border-dashed rounded-xl bg-muted/10 p-4">
+              <p className="font-semibold text-foreground">No hay accesorios en la lista</p>
+              <p className="text-muted-foreground mt-0.5">
+                Puede añadir accesorios del catálogo usando el botón "+ Agregar".
               </p>
-              <p className="text-xs text-muted-foreground max-w-sm mt-0.5">
-                El activo no cuenta con accesorios pre-registrados. Puede añadir accesorios manualmente usando el botón "Agregar Accesorio".
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setSelectAccesorioOpen(true)}
-                className="mt-3 h-7 text-xs font-semibold gap-1"
-              >
-                <Plus className="size-3" />
-                Agregar primer accesorio
-              </Button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
+              {/* Encabezado de Columnas en Pantallas Medianas / Grandes */}
+              <div className="hidden md:flex items-center justify-between gap-3 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b bg-muted/20 rounded-md">
+                <div className="w-52 shrink-0">Accesorio</div>
+                <div className="flex-1 min-w-0">Observación / Estado</div>
+                <div className="w-16 text-center shrink-0">Esperada</div>
+                <div className="w-24 text-center shrink-0">Encontrada</div>
+                <div className="w-28 text-center shrink-0">Conformidad</div>
+                <div className="w-8 shrink-0"></div>
+              </div>
+
+              {/* Filas */}
               {items.map((item, idx) => (
                 <div
                   key={`${item.accesorioId}-${idx}`}
                   className={cn(
-                    "p-3.5 rounded-xl border transition-all text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs",
+                    "p-2.5 sm:px-3 rounded-xl border transition-all text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs",
                     item.conforme
-                      ? "bg-card border-border/70"
-                      : "bg-amber-500/[0.03] border-amber-500/30 ring-1 ring-amber-500/20",
+                      ? "bg-card border-border/80 hover:border-primary/30"
+                      : "bg-amber-500/[0.04] border-amber-500/40 ring-1 ring-amber-500/20",
                   )}
                 >
                   {/* Nombre y Código */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                        {item.codigo}
-                      </span>
-                      <span className="font-semibold text-foreground truncate">
-                        {item.nombre}
-                      </span>
-                    </div>
+                  <div className="w-full md:w-52 shrink-0 flex items-center gap-2">
+                    <span className="font-mono text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                      {item.codigo}
+                    </span>
+                    <span className="font-bold text-foreground text-xs truncate">
+                      {item.nombre}
+                    </span>
+                  </div>
 
-                    {/* Observación inline */}
-                    <div className="mt-2">
-                      <Input
-                        placeholder="Observación o nota del accesorio (opcional)..."
-                        value={item.observacion}
-                        onChange={(e) =>
-                          handleUpdateItem(idx, { observacion: e.target.value })
-                        }
-                        className="h-7 text-[11px] bg-background/80"
-                      />
-                    </div>
+                  {/* Input de Observación inline */}
+                  <div className="w-full md:flex-1 min-w-0">
+                    <Input
+                      placeholder="Nota o detalle del estado (opcional)..."
+                      value={item.observacion}
+                      onChange={(e) =>
+                        handleUpdateItem(idx, { observacion: e.target.value })
+                      }
+                      className="h-8 text-xs bg-background"
+                    />
                   </div>
 
                   {/* Controles de Cantidad y Conformidad */}
-                  <div className="flex flex-wrap items-center gap-3 shrink-0 self-end md:self-center">
+                  <div className="flex items-center justify-between md:justify-end gap-3 shrink-0 pt-1 md:pt-0 border-t md:border-t-0">
                     {/* Cantidad Esperada */}
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                        Esperada
+                    <div className="flex md:flex-col items-center gap-1">
+                      <span className="md:hidden text-[11px] font-semibold text-muted-foreground">
+                        Esp:
                       </span>
                       <Input
                         type="number"
@@ -654,16 +567,14 @@ export function ControlActivoFormPage({
                     </div>
 
                     {/* Cantidad Encontrada con Stepper */}
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                        Encontrada
+                    <div className="flex md:flex-col items-center gap-1">
+                      <span className="md:hidden text-[11px] font-semibold text-muted-foreground">
+                        Enc:
                       </span>
-                      <div className="flex items-center border rounded-md bg-background">
-                        <Button
+                      <div className="flex items-center border rounded-lg bg-background h-8">
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-7 text-muted-foreground hover:text-foreground"
+                          className="size-7 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
                           onClick={() =>
                             handleUpdateItem(idx, {
                               cantidadEncontrada: Math.max(
@@ -674,15 +585,13 @@ export function ControlActivoFormPage({
                           }
                         >
                           <Minus className="size-3" />
-                        </Button>
-                        <span className="w-8 text-center text-xs font-bold">
+                        </button>
+                        <span className="w-7 text-center text-xs font-bold">
                           {item.cantidadEncontrada}
                         </span>
-                        <Button
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-7 text-muted-foreground hover:text-foreground"
+                          className="size-7 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
                           onClick={() =>
                             handleUpdateItem(idx, {
                               cantidadEncontrada: item.cantidadEncontrada + 1,
@@ -690,44 +599,39 @@ export function ControlActivoFormPage({
                           }
                         >
                           <Plus className="size-3" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
 
                     {/* Toggle Conforme */}
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                        Conformidad
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleUpdateItem(idx, { conforme: !item.conforme })
-                        }
-                        className={cn(
-                          "flex items-center gap-1.5 h-8 px-2.5 rounded-lg font-bold text-xs border transition-all cursor-pointer",
-                          item.conforme
-                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20"
-                            : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20",
-                        )}
-                      >
-                        {item.conforme ? (
-                          <CheckCircle2 className="size-3.5" />
-                        ) : (
-                          <AlertTriangle className="size-3.5" />
-                        )}
-                        <span>{item.conforme ? "Conforme" : "Observado"}</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleUpdateItem(idx, { conforme: !item.conforme })
+                      }
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 h-8 w-26 rounded-lg font-bold text-xs border transition-all cursor-pointer",
+                        item.conforme
+                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
+                          : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/25",
+                      )}
+                    >
+                      {item.conforme ? (
+                        <CheckCircle2 className="size-3.5" />
+                      ) : (
+                        <AlertTriangle className="size-3.5" />
+                      )}
+                      <span>{item.conforme ? "Conforme" : "Observado"}</span>
+                    </button>
 
                     {/* Eliminar accesorio */}
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="size-8 text-muted-foreground hover:text-destructive mt-3 md:mt-0"
+                      className="size-8 text-muted-foreground hover:text-destructive shrink-0 cursor-pointer"
                       onClick={() => handleRemoveAccesorio(idx)}
-                      title="Quitar accesorio de la lista"
+                      title="Quitar accesorio"
                     >
                       <Trash2 className="size-4" />
                     </Button>
@@ -738,95 +642,63 @@ export function ControlActivoFormPage({
           )}
         </Card>
 
-        {/* Sección: Dictamen Global y Observaciones */}
-        <Card className="p-4 sm:p-5 shadow-2xs space-y-4">
-          <div className="flex items-center gap-2 border-b pb-2.5">
+        {/* Dictamen y Observaciones Generales */}
+        <Card className="p-3.5 shadow-2xs space-y-3">
+          <div className="flex items-center gap-2 border-b pb-2">
             <FileCheck2 className="size-4 text-primary" />
-            <h2 className="font-heading text-sm sm:text-base font-bold text-foreground">
+            <h2 className="font-heading text-xs sm:text-sm font-bold text-foreground">
               Dictamen Final y Observaciones Generales
             </h2>
           </div>
 
-          <div className="space-y-4">
-            {/* Dictamen General (Cards) */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                Resultado General del Control <span className="text-destructive">*</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {/* Dictamen (1 Columna) */}
+            <div className="space-y-1.5 md:col-span-1">
+              <Label className="text-xs font-semibold text-foreground">
+                Resultado Dictamen <span className="text-destructive">*</span>
               </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
                 <div
                   onClick={() => setConformeGeneral(true)}
                   className={cn(
-                    "flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
+                    "flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-bold",
                     conformeGeneral
-                      ? "bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/20"
-                      : "bg-card hover:bg-muted/40 border-border/70",
+                      ? "bg-emerald-500/15 border-emerald-500 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500/30 shadow-xs"
+                      : "bg-card hover:bg-muted/40 border-border/80 text-muted-foreground",
                   )}
                 >
-                  <div
-                    className={cn(
-                      "flex size-8 shrink-0 items-center justify-center rounded-lg shadow-xs",
-                      conformeGeneral
-                        ? "bg-emerald-600 text-white"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    <CheckCircle2 className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">
-                      Conforme (Aceptado sin objeción)
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      El activo y sus accesorios se encuentran completos y en el estado esperado.
-                    </p>
-                  </div>
+                  <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Conforme (Aceptado)</span>
                 </div>
 
                 <div
                   onClick={() => setConformeGeneral(false)}
                   className={cn(
-                    "flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
+                    "flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-bold",
                     !conformeGeneral
-                      ? "bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/20"
-                      : "bg-card hover:bg-muted/40 border-border/70",
+                      ? "bg-amber-500/15 border-amber-500 text-amber-800 dark:text-amber-200 ring-2 ring-amber-500/30 shadow-xs"
+                      : "bg-card hover:bg-muted/40 border-border/80 text-muted-foreground",
                   )}
                 >
-                  <div
-                    className={cn(
-                      "flex size-8 shrink-0 items-center justify-center rounded-lg shadow-xs",
-                      !conformeGeneral
-                        ? "bg-amber-600 text-white"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    <AlertTriangle className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">
-                      Con Observaciones / Faltantes
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Se detectaron discrepancias en cantidades, faltantes o daños en accesorios.
-                    </p>
-                  </div>
+                  <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Con Observaciones / Faltantes</span>
                 </div>
               </div>
             </div>
 
-            {/* Observación General */}
-            <div className="space-y-1.5">
-              <Label htmlFor="obsGeneral" className="text-xs font-semibold">
+            {/* Observaciones (2 Columnas) */}
+            <div className="space-y-1.5 md:col-span-2">
+              <Label htmlFor="obsGeneral" className="text-xs font-semibold text-foreground">
                 Observaciones Generales del Acta
               </Label>
               <Textarea
                 id="obsGeneral"
                 rows={3}
                 maxLength={500}
-                placeholder="Detalle cualquier condición especial, golpes, rayones o compromisos de entrega acordados..."
+                placeholder="Detalle cualquier condición especial, rayones o compromisos de entrega acordados..."
                 value={observacionGeneral}
                 onChange={(e) => setObservacionGeneral(e.target.value)}
-                className="text-xs"
+                className="text-xs resize-none"
               />
               <div className="flex justify-end text-[10px] text-muted-foreground">
                 {observacionGeneral.length}/500 caracteres
@@ -836,11 +708,11 @@ export function ControlActivoFormPage({
         </Card>
 
         {/* Sticky Action Footer */}
-        <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl border bg-background/95 backdrop-blur-md shadow-lg">
+        <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 p-3 rounded-xl border bg-background/95 backdrop-blur-md shadow-lg">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Info className="size-4 text-primary shrink-0 hidden sm:block" />
             <span>
-              Acta de <strong>{tipo === "ENTREGA" ? "Entrega" : "Devolución"}</strong> • {itemsConformes}/{totalItems} accesorios conformes
+              Acta de <strong>{tipo === "ENTREGA" ? "Entrega" : "Devolución"}</strong> • {itemsConformes}/{totalItems} accesorios OK
             </span>
           </div>
 
@@ -851,7 +723,7 @@ export function ControlActivoFormPage({
               size="sm"
               onClick={() => navigate({ to: routes.mantenimientos.encargado })}
               disabled={createMutation.isPending}
-              className="h-9 px-4 text-xs font-semibold"
+              className="h-8 px-4 text-xs font-semibold"
             >
               Cancelar
             </Button>
@@ -860,17 +732,17 @@ export function ControlActivoFormPage({
               type="submit"
               size="sm"
               disabled={createMutation.isPending}
-              className="h-9 gap-2 px-5 text-xs font-bold shadow-sm"
+              className="h-8 gap-2 px-5 text-xs font-bold shadow-xs cursor-pointer"
             >
               {createMutation.isPending ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
-                  <span>Guardando Acta...</span>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Guardando...</span>
                 </>
               ) : (
                 <>
-                  <Save className="size-4" />
-                  <span>Guardar Acta de Control</span>
+                  <Save className="size-3.5" />
+                  <span>Guardar Acta</span>
                 </>
               )}
             </Button>
