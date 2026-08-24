@@ -81,6 +81,10 @@ export const routes = {
     checklists: "/mantenimientos/checklists",
     tiposMantenimiento: "/mantenimientos/tipos-mantenimiento",
     prioridades: "/mantenimientos/prioridades",
+    controlesActivos: {
+      root: "/mantenimientos/controles-activos",
+      nuevo: "/mantenimientos/controles-activos/nuevo",
+    },
   },
 } as const
 

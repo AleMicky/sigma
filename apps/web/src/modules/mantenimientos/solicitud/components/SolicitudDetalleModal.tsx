@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react"
+import { Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
   Box,
   Calendar,
   Check,
+  ClipboardCheck,
   Copy,
   Download,
   ExternalLink,
@@ -242,17 +244,36 @@ export function SolicitudDetalleModal({
                 ) : null}
               </div>
 
-              {/* Botón de Trazabilidad */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTrazabilidad(true)}
-                className="h-7 gap-1 px-2.5 text-[11px] font-medium hover:bg-primary/10 hover:text-primary hover:border-primary/40 rounded-lg shrink-0"
-              >
-                <History className="size-3 text-primary" />
-                <span>Historial / Trazabilidad</span>
-              </Button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Botón Control de Activo */}
+                <Link
+                  to="/mantenimientos/controles-activos/nuevo"
+                  search={{ solicitudId: solicitud.id }}
+                  onClick={() => onOpenChange(false)}
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 px-2.5 text-[11px] font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20 hover:border-sky-500/50 rounded-lg shrink-0 cursor-pointer shadow-2xs"
+                  >
+                    <ClipboardCheck className="size-3 text-sky-600 dark:text-sky-400" />
+                    <span>Control de Activo</span>
+                  </Button>
+                </Link>
+
+                {/* Botón de Trazabilidad */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTrazabilidad(true)}
+                  className="h-7 gap-1 px-2.5 text-[11px] font-medium hover:bg-primary/10 hover:text-primary hover:border-primary/40 rounded-lg shrink-0"
+                >
+                  <History className="size-3 text-primary" />
+                  <span>Historial</span>
+                </Button>
+              </div>
             </div>
 
             <DialogTitle className="text-base font-heading font-bold text-foreground leading-snug pt-0.5">

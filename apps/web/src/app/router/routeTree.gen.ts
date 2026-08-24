@@ -58,6 +58,7 @@ import { Route as DashboardInventariosTiposInsumoTipoInsumoIdRouteRouteImport } 
 import { Route as DashboardMantenimientosActividadesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/actividades/index'
 import { Route as DashboardMantenimientosAprobacionesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/aprobaciones/index'
 import { Route as DashboardMantenimientosChecklistsIndexRouteImport } from './../../routes/_dashboard/mantenimientos/checklists/index'
+import { Route as DashboardMantenimientosControlesActivosNuevoRouteImport } from './../../routes/_dashboard/mantenimientos/controles-activos/nuevo'
 import { Route as DashboardMantenimientosEncargadoIndexRouteImport } from './../../routes/_dashboard/mantenimientos/encargado/index'
 import { Route as DashboardMantenimientosPrioridadesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/prioridades/index'
 import { Route as DashboardMantenimientosSolicitudesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/index'
@@ -363,6 +364,12 @@ const DashboardMantenimientosChecklistsIndexRoute =
     path: '/',
     getParentRoute: () => DashboardMantenimientosChecklistsRouteRoute,
   } as any)
+const DashboardMantenimientosControlesActivosNuevoRoute =
+  DashboardMantenimientosControlesActivosNuevoRouteImport.update({
+    id: '/controles-activos/nuevo',
+    path: '/controles-activos/nuevo',
+    getParentRoute: () => DashboardMantenimientosRouteRoute,
+  } as any)
 const DashboardMantenimientosEncargadoIndexRoute =
   DashboardMantenimientosEncargadoIndexRouteImport.update({
     id: '/encargado/',
@@ -514,6 +521,7 @@ export interface FileRoutesByFullPath {
   '/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
+  '/mantenimientos/controles-activos/nuevo': typeof DashboardMantenimientosControlesActivosNuevoRoute
   '/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
@@ -565,6 +573,7 @@ export interface FileRoutesByTo {
   '/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
+  '/mantenimientos/controles-activos/nuevo': typeof DashboardMantenimientosControlesActivosNuevoRoute
   '/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
@@ -635,6 +644,7 @@ export interface FileRoutesById {
   '/_dashboard/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/_dashboard/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/_dashboard/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
+  '/_dashboard/mantenimientos/controles-activos/nuevo': typeof DashboardMantenimientosControlesActivosNuevoRoute
   '/_dashboard/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/_dashboard/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/_dashboard/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
@@ -705,6 +715,7 @@ export interface FileRouteTypes {
     | '/activos/$activoId/editar'
     | '/activos/catalogo/$activoId'
     | '/inventarios/$insumoId/editar'
+    | '/mantenimientos/controles-activos/nuevo'
     | '/mantenimientos/solicitudes/nueva'
     | '/tipos-activo/$tipoActivoId/atributos'
     | '/tipos-activo/$tipoActivoId/componentes'
@@ -756,6 +767,7 @@ export interface FileRouteTypes {
     | '/activos/$activoId/editar'
     | '/activos/catalogo/$activoId'
     | '/inventarios/$insumoId/editar'
+    | '/mantenimientos/controles-activos/nuevo'
     | '/mantenimientos/solicitudes/nueva'
     | '/tipos-activo/$tipoActivoId/atributos'
     | '/tipos-activo/$tipoActivoId/componentes'
@@ -825,6 +837,7 @@ export interface FileRouteTypes {
     | '/_dashboard/activos/$activoId/editar'
     | '/_dashboard/activos/catalogo/$activoId'
     | '/_dashboard/inventarios/$insumoId/editar'
+    | '/_dashboard/mantenimientos/controles-activos/nuevo'
     | '/_dashboard/mantenimientos/solicitudes/nueva'
     | '/_dashboard/tipos-activo/$tipoActivoId/atributos'
     | '/_dashboard/tipos-activo/$tipoActivoId/componentes'
@@ -1202,6 +1215,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMantenimientosChecklistsIndexRouteImport
       parentRoute: typeof DashboardMantenimientosChecklistsRouteRoute
     }
+    '/_dashboard/mantenimientos/controles-activos/nuevo': {
+      id: '/_dashboard/mantenimientos/controles-activos/nuevo'
+      path: '/controles-activos/nuevo'
+      fullPath: '/mantenimientos/controles-activos/nuevo'
+      preLoaderRoute: typeof DashboardMantenimientosControlesActivosNuevoRouteImport
+      parentRoute: typeof DashboardMantenimientosRouteRoute
+    }
     '/_dashboard/mantenimientos/encargado/': {
       id: '/_dashboard/mantenimientos/encargado/'
       path: '/encargado'
@@ -1549,6 +1569,7 @@ interface DashboardMantenimientosRouteRouteChildren {
   DashboardMantenimientosSolicitudesRouteRoute: typeof DashboardMantenimientosSolicitudesRouteRouteWithChildren
   DashboardMantenimientosTiposMantenimientoRouteRoute: typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
   DashboardMantenimientosIndexRoute: typeof DashboardMantenimientosIndexRoute
+  DashboardMantenimientosControlesActivosNuevoRoute: typeof DashboardMantenimientosControlesActivosNuevoRoute
   DashboardMantenimientosAprobacionesIndexRoute: typeof DashboardMantenimientosAprobacionesIndexRoute
   DashboardMantenimientosEncargadoIndexRoute: typeof DashboardMantenimientosEncargadoIndexRoute
 }
@@ -1566,6 +1587,8 @@ const DashboardMantenimientosRouteRouteChildren: DashboardMantenimientosRouteRou
     DashboardMantenimientosTiposMantenimientoRouteRoute:
       DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren,
     DashboardMantenimientosIndexRoute: DashboardMantenimientosIndexRoute,
+    DashboardMantenimientosControlesActivosNuevoRoute:
+      DashboardMantenimientosControlesActivosNuevoRoute,
     DashboardMantenimientosAprobacionesIndexRoute:
       DashboardMantenimientosAprobacionesIndexRoute,
     DashboardMantenimientosEncargadoIndexRoute:

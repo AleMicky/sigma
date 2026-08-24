@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
 import {
   AlertCircle,
   AlertOctagon,
@@ -6,6 +7,7 @@ import {
   Calendar,
   Check,
   CheckCircle2,
+  ClipboardCheck,
   Clock,
   Copy,
   Eye,
@@ -319,13 +321,31 @@ export function SolicitudAprobacionListItem({
           })
         )}
 
+        {/* Control de Activo (Entrega / Devolución) */}
+        <Link
+          to="/mantenimientos/controles-activos/nuevo"
+          search={{ solicitudId: solicitud.id }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5 text-xs font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20 hover:border-sky-500/50 rounded-lg shadow-2xs cursor-pointer"
+            title="Registrar o verificar acta de entrega/devolución de activo y accesorios"
+          >
+            <ClipboardCheck className="size-3.5 text-sky-600 dark:text-sky-400" />
+            <span className="hidden sm:inline">Control Activo</span>
+          </Button>
+        </Link>
+
         {/* Revisar Expediente (Opens Modal) */}
         <Button
           type="button"
           size="sm"
           variant="outline"
           onClick={() => onQuickView(solicitud)}
-          className="h-8 gap-1.5 text-xs font-semibold hover:bg-primary/10 hover:text-primary hover:border-primary/40 rounded-lg shadow-2xs"
+          className="h-8 gap-1.5 text-xs font-semibold hover:bg-primary/10 hover:text-primary hover:border-primary/40 rounded-lg shadow-2xs cursor-pointer"
         >
           <Eye className="size-3.5 text-muted-foreground" />
           <span>Ver Expediente</span>
