@@ -174,6 +174,16 @@ export function SolicitudAprobacionCard({
           </div>
         ) : null}
 
+        {/* Fecha Estimada OT if present */}
+        {solicitud.fechaEstimadaOt ? (
+          <div className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 px-2 py-1 text-xs">
+            <Calendar className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="truncate text-[11px]">
+              Est. OT: <strong className="font-semibold">{formatDate(solicitud.fechaEstimadaOt)}</strong>
+            </span>
+          </div>
+        ) : null}
+
         {/* Activo Card Strip */}
         {solicitud.activo ? (
           <div className="flex items-center gap-2 rounded-xl bg-muted/40 p-2 border border-border/60 text-xs">

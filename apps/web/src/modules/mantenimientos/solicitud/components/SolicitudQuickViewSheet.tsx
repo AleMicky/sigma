@@ -302,6 +302,14 @@ export function SolicitudQuickViewSheet({
                 </span>
               </div>
             )}
+            {solicitud.fechaEstimadaOt && (
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40">
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Fecha Est. OT:</span>
+                <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                  {formatDate(solicitud.fechaEstimadaOt)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

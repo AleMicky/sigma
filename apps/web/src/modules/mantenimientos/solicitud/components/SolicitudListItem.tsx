@@ -226,6 +226,13 @@ export function SolicitudListItem({
                 </span>
               ) : null}
 
+              {solicitud.fechaEstimadaOt ? (
+                <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 px-1.5 py-0.2 text-[10.5px] font-medium">
+                  <Calendar className="size-2.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Est. OT: <strong>{formatDate(solicitud.fechaEstimadaOt)}</strong></span>
+                </span>
+              ) : null}
+
               {adjuntosCount > 0 && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">
                   <Paperclip className="size-3" />

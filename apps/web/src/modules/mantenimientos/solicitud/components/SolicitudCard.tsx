@@ -225,6 +225,12 @@ export function SolicitudCard({
               <span>{formatDate(solicitud.fechaSolicitud)}</span>
             </div>
           )}
+          {solicitud.fechaEstimadaOt && (
+            <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-medium">
+              <Calendar className="size-3 text-emerald-600 dark:text-emerald-400" />
+              <span>OT: {formatDate(solicitud.fechaEstimadaOt)}</span>
+            </div>
+          )}
         </div>
       </div>
     </li>

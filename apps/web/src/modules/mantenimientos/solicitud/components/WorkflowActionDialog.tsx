@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
   AlertOctagon,
+  Calendar,
   CheckCircle2,
   CheckCheck,
   FileCheck2,
@@ -71,6 +72,7 @@ export function WorkflowActionDialog({
   const [formValues, setFormValues] = useState<Record<string, string>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [responsableId, setResponsableId] = useState<string>("")
+  const [fechaEstimadaOt, setFechaEstimadaOt] = useState<string>("")
   const [useAllEmployeesSearch, setUseAllEmployeesSearch] = useState<boolean>(false)
 
   // Aprobador ID from the request if already approved
@@ -89,6 +91,13 @@ export function WorkflowActionDialog({
   useEffect(() => {
     if (open && solicitud) {
       setResponsableId(solicitud.responsable?.id ?? "")
+      setFechaEstimadaOt(
+        solicitud.fechaEstimadaOt
+          ? (solicitud.fechaEstimadaOt.includes("T")
+              ? solicitud.fechaEstimadaOt.substring(0, 10)
+              : solicitud.fechaEstimadaOt)
+          : "",
+      )
       setFormValues({})
       setFormErrors({})
       setUseAllEmployeesSearch(false)
@@ -199,6 +208,12 @@ export function WorkflowActionDialog({
         "Debe seleccionar el técnico o responsable asignado."
     }
 
+    // Check fechaEstimadaOt requirement when approving
+    if (isAprobar && !fechaEstimadaOt?.trim()) {
+      errors.fechaEstimadaOt =
+        "La fecha estimada de la orden de trabajo (OT) es obligatoria al aprobar."
+    }
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors)
       return
@@ -211,6 +226,12 @@ export function WorkflowActionDialog({
 
     if (isAssignmentRelevant && responsableId) {
       variables.responsableId = responsableId
+    }
+
+    if (fechaEstimadaOt?.trim()) {
+      variables.fechaEstimadaOt = fechaEstimadaOt.includes("T")
+        ? fechaEstimadaOt.trim()
+        : `${fechaEstimadaOt.trim()}T00:00:00`
     }
 
     try {
@@ -406,6 +427,42 @@ export function WorkflowActionDialog({
                 <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
                   <AlertCircle className="size-3" />
                   <span>{formErrors.responsableId}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Fecha Estimada de OT (Al Aprobar) */}
+          {isAprobar && (
+            <div className="space-y-1.5 rounded-xl bg-muted/30 border border-border/70 p-3">
+              <Label
+                htmlFor="modalFechaEstimadaOt"
+                className="text-xs font-semibold text-foreground flex items-center gap-1.5"
+              >
+                <Calendar className="size-3.5 text-primary" />
+                <span>Fecha Estimada de OT</span>
+                <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="modalFechaEstimadaOt"
+                type="date"
+                value={fechaEstimadaOt}
+                onChange={(e) => {
+                  setFechaEstimadaOt(e.target.value)
+                  if (formErrors.fechaEstimadaOt) {
+                    setFormErrors((prev) => {
+                      const next = { ...prev }
+                      delete next.fechaEstimadaOt
+                      return next
+                    })
+                  }
+                }}
+                className="h-9 text-xs bg-background"
+              />
+              {formErrors.fechaEstimadaOt && (
+                <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
+                  <AlertCircle className="size-3" />
+                  <span>{formErrors.fechaEstimadaOt}</span>
                 </p>
               )}
             </div>

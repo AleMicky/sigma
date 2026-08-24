@@ -51,6 +51,7 @@ export type SolicitudMantenimiento = AuditableEntity & {
   fechaSolicitud?: string | null
   aprobadoPor?: UserInfo | null
   fechaAprobacion?: string | null
+  fechaEstimadaOt?: string | null
   observacionAprobacion?: string | null
   responsable?: UserInfo | null
   fechaAsignacion?: string | null
@@ -76,6 +77,7 @@ export type SolicitudPayload = {
   titulo: string
   descripcion: string
   fechaSolicitud?: string | null
+  fechaEstimadaOt?: string | null
 }
 
 export type SolicitudListParams = PageParams & {

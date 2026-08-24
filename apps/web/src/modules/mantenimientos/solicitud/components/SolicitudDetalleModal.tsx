@@ -314,6 +314,19 @@ export function SolicitudDetalleModal({
                 {solicitud.fechaSolicitud ? formatDate(solicitud.fechaSolicitud) : "—"}
               </p>
             </div>
+
+            {/* Fecha Estimada OT */}
+            {solicitud.fechaEstimadaOt && (
+              <div className="space-y-0.5 min-w-0 sm:border-l sm:pl-2.5 sm:border-border/50">
+                <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+                  <Calendar className="size-3 text-emerald-600 dark:text-emerald-400" />
+                  <span>Fecha Est. OT</span>
+                </div>
+                <p className="font-semibold text-emerald-700 dark:text-emerald-300 text-[11.5px]">
+                  {formatDate(solicitud.fechaEstimadaOt)}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Problem Description */}

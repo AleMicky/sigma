@@ -263,6 +263,13 @@ export function SolicitudAprobacionListItem({
             </div>
           )}
 
+          {solicitud.fechaEstimadaOt && (
+            <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md text-[11px] font-medium shrink-0">
+              <Calendar className="size-3 text-emerald-600 dark:text-emerald-400" />
+              <span>Est. OT: <strong>{formatDate(solicitud.fechaEstimadaOt)}</strong></span>
+            </div>
+          )}
+
           {adjuntosCount > 0 && (
             <div className="inline-flex items-center gap-1 font-bold text-primary">
               <Paperclip className="size-3" />
