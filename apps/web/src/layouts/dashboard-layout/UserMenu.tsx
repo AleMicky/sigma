@@ -1,5 +1,6 @@
-import { ChevronsUpDown, LogOut, UserRound } from "lucide-react"
+import { ChevronsUpDown, LogOut, Monitor, Moon, Sun, UserRound } from "lucide-react"
 import { useNavigate } from "@tanstack/react-router"
+import { useTheme } from "next-themes"
 
 import { routes } from "@/app/config"
 import { useAuthStore } from "@/app/store/auth.store"
@@ -23,6 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/shared/components/ui/sidebar"
+import { cn } from "@/shared/lib/utils"
 
 function getInitials(name: string) {
   return name
@@ -36,6 +38,7 @@ function getInitials(name: string) {
 export function UserMenu() {
   const navigate = useNavigate()
   const { isMobile } = useSidebar()
+  const { theme, setTheme } = useTheme()
   const user = useAuthStore((state) => state.user)
   const logoutMutation = useLogout()
 
@@ -68,7 +71,7 @@ export function UserMenu() {
           >
             <div className="relative shrink-0">
               <Avatar className="size-9 rounded-xl border border-primary/20 shadow-xs transition-transform duration-200 group-hover:scale-105">
-                <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-xs font-bold text-white shadow-inner">
+                <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-600 text-xs font-bold text-white shadow-inner">
                   {initials || "U"}
                 </AvatarFallback>
               </Avatar>
@@ -97,7 +100,7 @@ export function UserMenu() {
               <DropdownMenuLabel className="font-normal p-2.5">
                 <div className="flex items-center gap-3">
                   <Avatar className="size-10 rounded-xl border border-primary/20 shadow-xs">
-                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-xs font-bold text-white">
+                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-600 text-xs font-bold text-white">
                       {initials || "U"}
                     </AvatarFallback>
                   </Avatar>
@@ -116,6 +119,56 @@ export function UserMenu() {
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator className="my-1.5" />
+            
+            {/* Quick Theme Switcher Inside Dropdown */}
+            <div className="px-2 py-1.5">
+              <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/80 mb-1.5 px-0.5">
+                Tema de Apariencia
+              </div>
+              <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted/50 p-1 border border-border/40">
+                <button
+                  type="button"
+                  onClick={() => setTheme("light")}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10.5px] font-medium transition-all",
+                    theme === "light"
+                      ? "bg-background text-foreground shadow-xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Sun className="size-3.5 text-amber-500" />
+                  <span>Claro</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme("dark")}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10.5px] font-medium transition-all",
+                    theme === "dark"
+                      ? "bg-background text-foreground shadow-xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Moon className="size-3.5 text-sky-400" />
+                  <span>Oscuro</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme("system")}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10.5px] font-medium transition-all",
+                    theme === "system"
+                      ? "bg-background text-foreground shadow-xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Monitor className="size-3.5 text-muted-foreground" />
+                  <span>Auto</span>
+                </button>
+              </div>
+            </div>
+
             <DropdownMenuSeparator className="my-1.5" />
             <DropdownMenuGroup className="gap-1">
               <DropdownMenuItem
@@ -140,3 +193,4 @@ export function UserMenu() {
     </SidebarMenu>
   )
 }
+
