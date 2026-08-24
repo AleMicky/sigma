@@ -1,3 +1,4 @@
+import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
 import type {
   SolicitudMantenimiento,
   WorkflowAction,
@@ -16,6 +17,8 @@ type SolicitudAprobacionListViewProps = {
   ) => void
   onCreateOT?: (solicitud: SolicitudMantenimiento) => void
   showControlActivo?: boolean
+  onViewControlActivo?: (solicitud: SolicitudMantenimiento) => void
+  onViewOT?: (solicitud: SolicitudMantenimiento, ot?: OrdenTrabajo | null) => void
 }
 
 export function SolicitudAprobacionListView({
@@ -24,6 +27,8 @@ export function SolicitudAprobacionListView({
   onActionSelect,
   onCreateOT,
   showControlActivo,
+  onViewControlActivo,
+  onViewOT,
 }: SolicitudAprobacionListViewProps) {
   return (
     <div className="w-full rounded-2xl border border-border/80 bg-card overflow-hidden shadow-2xs">
@@ -36,6 +41,8 @@ export function SolicitudAprobacionListView({
             onActionSelect={onActionSelect}
             onCreateOT={onCreateOT}
             showControlActivo={showControlActivo}
+            onViewControlActivo={onViewControlActivo}
+            onViewOT={onViewOT}
           />
         ))}
       </ul>

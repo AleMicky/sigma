@@ -76,7 +76,6 @@ export function OrdenTrabajoFormPage({
   const [fechaInicio, setFechaInicio] = useState<string>("")
   const [fechaFin, setFechaFin] = useState<string>("")
   const [diagnostico, setDiagnostico] = useState<string>("")
-  const [trabajoRealizado, setTrabajoRealizado] = useState<string>("")
   const [observacion, setObservacion] = useState<string>("")
 
   // Form State - Detalle (Actividades)
@@ -171,14 +170,13 @@ export function OrdenTrabajoFormPage({
       fechaInicio: fechaInicio ? `${fechaInicio}:00` : null,
       fechaFin: fechaFin ? `${fechaFin}:00` : null,
       diagnostico: diagnostico.trim() || null,
-      trabajoRealizado: trabajoRealizado.trim() || null,
       observacion: observacion.trim() || null,
     }
 
     const actPayloads = actividades.map((a) => ({
       actividadMantenimientoId: a.actividadMantenimientoId || null,
       descripcion: a.descripcion.trim(),
-      realizado: a.realizado,
+      realizado: false,
       observacion: a.observacion?.trim() || null,
     }))
 
@@ -449,21 +447,7 @@ export function OrdenTrabajoFormPage({
                   value={diagnostico}
                   onChange={(e) => setDiagnostico(e.target.value)}
                   placeholder="Describe la evaluación preliminar del problema o falla..."
-                  rows={2}
-                  className="text-xs resize-none"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="trabajoRealizado" className="text-xs font-medium">
-                  Alcance / Trabajo a Realizar
-                </Label>
-                <Textarea
-                  id="trabajoRealizado"
-                  value={trabajoRealizado}
-                  onChange={(e) => setTrabajoRealizado(e.target.value)}
-                  placeholder="Detalle o resumen del trabajo técnico proyectado..."
-                  rows={2}
+                  rows={3}
                   className="text-xs resize-none"
                 />
               </div>
@@ -477,7 +461,7 @@ export function OrdenTrabajoFormPage({
                   value={observacion}
                   onChange={(e) => setObservacion(e.target.value)}
                   placeholder="Notas adicionales, requerimientos especiales o precauciones..."
-                  rows={2}
+                  rows={3}
                   className="text-xs resize-none"
                 />
               </div>
@@ -496,10 +480,10 @@ export function OrdenTrabajoFormPage({
                   </div>
                   <div>
                     <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                      Detalle de Actividades Planificadas
+                      Tareas / Actividades a Realizar
                     </h2>
                     <p className="text-[11px] text-muted-foreground">
-                      Define las actividades, tareas y procedimientos a ejecutar en esta OT.
+                      Planifica las actividades técnicas que se ejecutarán durante el mantenimiento.
                     </p>
                   </div>
                 </div>
@@ -507,7 +491,7 @@ export function OrdenTrabajoFormPage({
                 <div className="flex items-center gap-2">
                   {actividades.length > 0 && (
                     <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                      {actividades.length} {actividades.length === 1 ? "actividad" : "actividades"}
+                      {actividades.length} {actividades.length === 1 ? "tarea" : "tareas"}
                     </span>
                   )}
                   <Button
@@ -560,36 +544,20 @@ export function OrdenTrabajoFormPage({
                             {index + 1}
                           </span>
                           <span className="text-xs font-semibold text-foreground">
-                            Actividad #{index + 1}
+                            Tarea #{index + 1}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
-                          <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              checked={act.realizado}
-                              onChange={(e) =>
-                                handleUpdateActividad(act.id, {
-                                  realizado: e.target.checked,
-                                })
-                              }
-                              className="size-3.5 rounded border-input text-emerald-600 focus:ring-emerald-500"
-                            />
-                            <span>Completada</span>
-                          </label>
-
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            onClick={() => handleRemoveActividad(act.id)}
-                            className="size-6 text-destructive hover:bg-destructive/10 rounded-md cursor-pointer ml-1"
-                            title="Eliminar actividad"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => handleRemoveActividad(act.id)}
+                          className="size-6 text-destructive hover:bg-destructive/10 rounded-md cursor-pointer"
+                          title="Eliminar tarea"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
                       </div>
 
                       {/* Selección del Catálogo (Opcional) */}

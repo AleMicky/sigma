@@ -2,11 +2,11 @@ import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import {
+  Activity,
   AlertTriangle,
   FileCheck2,
-  Paperclip,
+  Layers,
   UserCheck,
-  Wrench,
 } from "lucide-react"
 
 import { appConfig } from "@/app/config"
@@ -19,6 +19,7 @@ import { RefreshButton } from "@/shared/components/refresh-button"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
+import { ControlActivoHistorialModal } from "@/modules/mantenimientos/control-activo/components/ControlActivoHistorialModal"
 import { OrdenTrabajoDetailModal } from "@/modules/mantenimientos/orden-trabajo/components/OrdenTrabajoDetailModal"
 import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
 import { solicitudQueries } from "../api/solicitud.queries"
@@ -38,7 +39,12 @@ export function EncargadoMantenimientoPage() {
   const [modalSolicitud, setModalSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
+  const [estadoFilter, setEstadoFilter] = useState<
+    "ALL" | "ASIGNADO" | "EN_MANTENIMIENTO"
+  >("ALL")
 
+  const [controlActivoTarget, setControlActivoTarget] =
+    useState<SolicitudMantenimiento | null>(null)
   const [selectedOT, setSelectedOT] = useState<OrdenTrabajo | null>(null)
 
   const [workflowActionTarget, setWorkflowActionTarget] = useState<{
@@ -50,44 +56,59 @@ export function EncargadoMantenimientoPage() {
 
   const search = usePaginatedSearch()
 
-  // Consulta exclusiva para solicitudes en estado ASIGNADO
+  // Consulta para solicitudes en gestión del encargado (ASIGNADO y EN_MANTENIMIENTO)
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
       page: search.page,
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC",
-      estado: "ASIGNADO",
+      estado: estadoFilter === "ALL" ? undefined : estadoFilter,
     }),
   )
 
-  const rawSolicitudes = useMemo(
-    () =>
-      (solicitudesQuery.data?.content ?? []).filter(
-        (s) => (s.estado ?? "").toUpperCase() === "ASIGNADO",
-      ),
+  const allItems = useMemo(
+    () => solicitudesQuery.data?.content ?? [],
     [solicitudesQuery.data?.content],
   )
 
-  // Métricas rápidas para el encargado
+  const rawSolicitudes = useMemo(() => {
+    if (estadoFilter === "ASIGNADO") {
+      return allItems.filter((s) => (s.estado ?? "").toUpperCase() === "ASIGNADO")
+    }
+    if (estadoFilter === "EN_MANTENIMIENTO") {
+      return allItems.filter(
+        (s) => (s.estado ?? "").toUpperCase() === "EN_MANTENIMIENTO",
+      )
+    }
+    // "ALL" -> filtrar solo solicitudes pertenecientes a la gestión del encargado
+    return allItems.filter((s) => {
+      const st = (s.estado ?? "").toUpperCase()
+      return st === "ASIGNADO" || st === "EN_MANTENIMIENTO"
+    })
+  }, [allItems, estadoFilter])
+
+  // Conteos por estado en la lista cargada
+  const asignadasCount = useMemo(
+    () =>
+      allItems.filter((s) => (s.estado ?? "").toUpperCase() === "ASIGNADO")
+        .length,
+    [allItems],
+  )
+
+  const enMantenimientoCount = useMemo(
+    () =>
+      allItems.filter(
+        (s) => (s.estado ?? "").toUpperCase() === "EN_MANTENIMIENTO",
+      ).length,
+    [allItems],
+  )
+
   const totalCount =
     solicitudesQuery.data?.totalElements ?? rawSolicitudes.length
 
   const urgentesCount = useMemo(
     () => rawSolicitudes.filter((s) => (s.prioridad?.nivel ?? 1) >= 4).length,
-    [rawSolicitudes],
-  )
-
-  const correctivosCount = useMemo(
-    () =>
-      rawSolicitudes.filter((s) =>
-        (s.tipoMantenimiento?.nombre ?? "").toLowerCase().includes("correctiv"),
-      ).length,
-    [rawSolicitudes],
-  )
-
-  const conAdjuntosCount = useMemo(
-    () => rawSolicitudes.filter((s) => (s.adjuntos?.length ?? 0) > 0).length,
     [rawSolicitudes],
   )
 
@@ -146,7 +167,7 @@ export function EncargadoMantenimientoPage() {
               </h1>
               {totalCount > 0 && (
                 <span className="inline-flex items-center rounded-full bg-sky-500/15 px-2.5 py-0.5 text-xs font-bold text-sky-700 dark:text-sky-300 border border-sky-500/30">
-                  {totalCount} asignadas
+                  {totalCount} en gestión
                 </span>
               )}
             </div>
@@ -160,7 +181,7 @@ export function EncargadoMantenimientoPage() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-1">
-            Supervisa, gestiona y avanza en el flujo de trabajo las solicitudes de mantenimiento asignadas.
+            Supervisa, planifica y ejecuta las solicitudes en estado Asignado y En Mantenimiento.
           </p>
         </div>
 
@@ -177,13 +198,42 @@ export function EncargadoMantenimientoPage() {
       {/* Mini Dashboard de Métricas Rápidas */}
       <div className="shrink-0 pt-2.5 pb-1">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {/* Total Asignadas */}
+          {/* Todas en Gestión */}
           <div
-            onClick={() => setFilterUrgentesOnly(false)}
+            onClick={() => {
+              setEstadoFilter("ALL")
+              setFilterUrgentesOnly(false)
+            }}
             className={cn(
               "flex items-center gap-2.5 rounded-xl border p-2.5 shadow-2xs transition-all cursor-pointer",
-              !filterUrgentesOnly
-                ? "bg-sky-500/10 border-sky-500/40 ring-1 ring-sky-500/30"
+              estadoFilter === "ALL" && !filterUrgentesOnly
+                ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
+                : "bg-card/60 border-border/70 hover:bg-muted/40",
+            )}
+          >
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+              <Layers className="size-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+                En Gestión
+              </p>
+              <p className="font-heading text-sm sm:text-base font-bold text-foreground">
+                {totalCount}
+              </p>
+            </div>
+          </div>
+
+          {/* Asignadas (Planificación) */}
+          <div
+            onClick={() => {
+              setEstadoFilter("ASIGNADO")
+              setFilterUrgentesOnly(false)
+            }}
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border p-2.5 shadow-2xs transition-all cursor-pointer",
+              estadoFilter === "ASIGNADO" && !filterUrgentesOnly
+                ? "bg-sky-500/15 border-sky-500 ring-2 ring-sky-500/30 scale-[1.01]"
                 : "bg-card/60 border-border/70 hover:bg-muted/40",
             )}
           >
@@ -191,11 +241,37 @@ export function EncargadoMantenimientoPage() {
               <UserCheck className="size-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-400 truncate">
                 Asignadas
               </p>
               <p className="font-heading text-sm sm:text-base font-bold text-foreground">
-                {totalCount}
+                {asignadasCount}
+              </p>
+            </div>
+          </div>
+
+          {/* En Mantenimiento (En Ejecución) */}
+          <div
+            onClick={() => {
+              setEstadoFilter("EN_MANTENIMIENTO")
+              setFilterUrgentesOnly(false)
+            }}
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border p-2.5 shadow-2xs transition-all cursor-pointer",
+              estadoFilter === "EN_MANTENIMIENTO" && !filterUrgentesOnly
+                ? "bg-emerald-500/15 border-emerald-500 ring-2 ring-emerald-500/30 scale-[1.01]"
+                : "bg-card/60 border-border/70 hover:bg-muted/40",
+            )}
+          >
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
+              <Activity className="size-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 truncate">
+                En Ejecución
+              </p>
+              <p className="font-heading text-sm sm:text-base font-bold text-foreground">
+                {enMantenimientoCount}
               </p>
             </div>
           </div>
@@ -230,41 +306,64 @@ export function EncargadoMantenimientoPage() {
               </p>
             </div>
           </div>
-
-          {/* Correctivos */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/60 p-2.5 shadow-2xs">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400">
-              <Wrench className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                Correctivos
-              </p>
-              <p className="font-heading text-sm sm:text-base font-bold text-foreground">
-                {correctivosCount}
-              </p>
-            </div>
-          </div>
-
-          {/* Con Documentos / Adjuntos */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/60 p-2.5 shadow-2xs">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-              <Paperclip className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                Con Adjuntos
-              </p>
-              <p className="font-heading text-sm sm:text-base font-bold text-foreground">
-                {conAdjuntosCount}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2 gap-2.5">
+        {/* Selector de Estados / Pestañas */}
+        <div className="flex items-center justify-between gap-2 border-b pb-2 shrink-0">
+          <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setEstadoFilter("ALL")
+                setFilterUrgentesOnly(false)
+              }}
+              className={cn(
+                "px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer",
+                estadoFilter === "ALL"
+                  ? "bg-background text-foreground shadow-2xs"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Todas ({allItems.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEstadoFilter("ASIGNADO")
+                setFilterUrgentesOnly(false)
+              }}
+              className={cn(
+                "px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1.5",
+                estadoFilter === "ASIGNADO"
+                  ? "bg-background text-sky-700 dark:text-sky-300 shadow-2xs font-bold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <span className="size-1.5 rounded-full bg-sky-500" />
+              <span>Asignadas ({asignadasCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEstadoFilter("EN_MANTENIMIENTO")
+                setFilterUrgentesOnly(false)
+              }}
+              className={cn(
+                "px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1.5",
+                estadoFilter === "EN_MANTENIMIENTO"
+                  ? "bg-background text-emerald-700 dark:text-emerald-300 shadow-2xs font-bold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span>En Mantenimiento ({enMantenimientoCount})</span>
+            </button>
+          </div>
+        </div>
+
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {solicitudesQuery.isLoading ? (
             <ListSkeleton
@@ -283,17 +382,21 @@ export function EncargadoMantenimientoPage() {
               title="¡Todo al día!"
               description={
                 filterUrgentesOnly
-                  ? "No hay solicitudes asignadas de alta prioridad pendientes."
-                  : "No hay solicitudes de mantenimiento en estado Asignado en este momento."
+                  ? "No hay solicitudes de alta prioridad pendientes en este filtro."
+                  : estadoFilter === "ASIGNADO"
+                    ? "No hay solicitudes en estado Asignado."
+                    : estadoFilter === "EN_MANTENIMIENTO"
+                      ? "No hay solicitudes en estado En Mantenimiento."
+                      : "No hay solicitudes de mantenimiento en gestión en este momento."
               }
               action={
                 filterUrgentesOnly ? (
                   <button
                     type="button"
                     onClick={() => setFilterUrgentesOnly(false)}
-                    className="text-xs text-primary underline"
+                    className="text-xs text-primary underline cursor-pointer"
                   >
-                    Ver todas las asignadas
+                    Ver todas las solicitudes
                   </button>
                 ) : null
               }
@@ -312,6 +415,8 @@ export function EncargadoMantenimientoPage() {
                   onActionSelect={handleActionSelect}
                   onCreateOT={handleCreateOT}
                   showControlActivo
+                  onViewControlActivo={(sol) => setControlActivoTarget(sol)}
+                  onViewOT={(_sol, ot) => setSelectedOT(ot ?? null)}
                 />
               </div>
 
@@ -347,6 +452,14 @@ export function EncargadoMantenimientoPage() {
           solicitudesQuery.refetch()
           setModalSolicitud(null)
         }}
+      />
+
+      {/* Modal Historial de Control de Activo */}
+      <ControlActivoHistorialModal
+        solicitudId={controlActivoTarget?.id ?? null}
+        solicitudNumero={controlActivoTarget?.numero ?? null}
+        open={Boolean(controlActivoTarget)}
+        onOpenChange={(open) => !open && setControlActivoTarget(null)}
       />
 
       {/* Modal Workbench Detalle de Orden de Trabajo */}

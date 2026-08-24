@@ -33,6 +33,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import { cn } from "@/shared/lib/utils"
 
+import { solicitudQueries } from "@/modules/mantenimientos/solicitud/api/solicitud.queries"
 import {
   useDeleteOrdenTrabajoActividad,
   useDeleteOrdenTrabajoActividadEvidencia,
@@ -106,6 +107,18 @@ export function OrdenTrabajoDetailModal({
   })
   const adjuntos = adjuntosQuery.data?.content ?? []
 
+  // Check solicitud estado to determine if OT is in planning phase (ASIGNADO)
+  const solicitudQuery = useQuery({
+    ...solicitudQueries.detail(currentOT?.solicitudMantenimientoId ?? ""),
+    enabled: Boolean(currentOT?.solicitudMantenimientoId && open),
+  })
+  const solicitud = solicitudQuery.data
+  const estadoSolicitudNorm = (solicitud?.estado ?? "").toUpperCase().trim()
+  const isEnPlanificacion =
+    estadoSolicitudNorm === "ASIGNADO" ||
+    estadoSolicitudNorm === "SOLICITADO" ||
+    !estadoSolicitudNorm
+
   // Mutations
   const toggleActividadMutation = useToggleOrdenTrabajoActividadRealizado()
   const deleteActividadMutation = useDeleteOrdenTrabajoActividad()
@@ -122,6 +135,7 @@ export function OrdenTrabajoDetailModal({
       : 0
 
   function handleToggleRealizado(act: OrdenTrabajoActividad) {
+    if (isEnPlanificacion) return
     toggleActividadMutation.mutate({
       id: act.id,
       payload: {
@@ -261,6 +275,20 @@ export function OrdenTrabajoDetailModal({
               value="actividades"
               className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 m-0"
             >
+              {isEnPlanificacion && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2.5 shadow-2xs">
+                  <AlertCircle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-xs text-amber-900 dark:text-amber-200">
+                      Modo Planificación (Solicitud Asignada)
+                    </p>
+                    <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                      Puedes crear, editar o eliminar las tareas planificadas. Para comenzar a marcar actividades realizadas o subir evidencias fotográficas, primero debes hacer clic en <strong>"Iniciar mantenimiento"</strong> en la solicitud.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between gap-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Tareas de la Orden ({completadasCount}/{totalActividades})
@@ -305,6 +333,7 @@ export function OrdenTrabajoDetailModal({
                     <ActividadItemCard
                       key={act.id}
                       actividad={act}
+                      isEnPlanificacion={isEnPlanificacion}
                       onToggleRealizado={() => handleToggleRealizado(act)}
                       onEdit={() =>
                         setActividadModal({ open: true, actividad: act })
@@ -429,6 +458,20 @@ export function OrdenTrabajoDetailModal({
               value="adjuntos"
               className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 m-0"
             >
+              {isEnPlanificacion && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2.5 shadow-2xs">
+                  <AlertCircle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-xs text-amber-900 dark:text-amber-200">
+                      Modo Planificación (Solicitud Asignada)
+                    </p>
+                    <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                      La carga de archivos de ejecución y evidencias técnicas estará disponible cuando la solicitud pase a <strong>"En Mantenimiento"</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between gap-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Documentos y Archivos de la OT ({adjuntos.length})
@@ -436,10 +479,19 @@ export function OrdenTrabajoDetailModal({
                 <Button
                   size="sm"
                   variant="outline"
+                  disabled={isEnPlanificacion}
                   onClick={() =>
                     setAdjuntoModal({ open: true, adjuntoToReplace: null })
                   }
-                  className="h-7 text-xs font-semibold gap-1 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20"
+                  className={cn(
+                    "h-7 text-xs font-semibold gap-1 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20",
+                    isEnPlanificacion && "opacity-50 cursor-not-allowed",
+                  )}
+                  title={
+                    isEnPlanificacion
+                      ? "Solo se pueden subir adjuntos de ejecución cuando la orden esté en mantenimiento"
+                      : "Subir archivo adjunto"
+                  }
                 >
                   <Plus className="size-3.5" />
                   <span>Subir Adjunto</span>
@@ -453,19 +505,21 @@ export function OrdenTrabajoDetailModal({
                     Sin adjuntos registrados
                   </p>
                   <p className="text-[11px] text-muted-foreground max-w-xs mt-0.5">
-                    Puedes adjuntar manuales, informes o garantías en PDF, Word o imágenes.
+                    Puedes adjuntar manuales, informes o garantías en PDF, Word o imágenes una vez iniciado el mantenimiento.
                   </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      setAdjuntoModal({ open: true, adjuntoToReplace: null })
-                    }
-                    className="mt-3 h-7 text-xs font-semibold gap-1"
-                  >
-                    <Plus className="size-3" />
-                    <span>Subir Primer Adjunto</span>
-                  </Button>
+                  {!isEnPlanificacion && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setAdjuntoModal({ open: true, adjuntoToReplace: null })
+                      }
+                      className="mt-3 h-7 text-xs font-semibold gap-1"
+                    >
+                      <Plus className="size-3" />
+                      <span>Subir Primer Adjunto</span>
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -590,6 +644,7 @@ export function OrdenTrabajoDetailModal({
 // Sub-component for each Actividad item with embedded Evidencias query
 function ActividadItemCard({
   actividad,
+  isEnPlanificacion,
   onToggleRealizado,
   onEdit,
   onDelete,
@@ -598,6 +653,7 @@ function ActividadItemCard({
   onDeleteEvidencia,
 }: {
   actividad: OrdenTrabajoActividad
+  isEnPlanificacion?: boolean
   onToggleRealizado: () => void
   onEdit: () => void
   onDelete: () => void
@@ -624,9 +680,21 @@ function ActividadItemCard({
           <input
             type="checkbox"
             checked={actividad.realizado}
+            disabled={isEnPlanificacion}
             onChange={onToggleRealizado}
-            className="size-4 mt-0.5 rounded border-border text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
-            title={actividad.realizado ? "Marcar como pendiente" : "Marcar como realizada"}
+            className={cn(
+              "size-4 mt-0.5 rounded border-border text-emerald-600 focus:ring-emerald-500 shrink-0",
+              isEnPlanificacion
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer",
+            )}
+            title={
+              isEnPlanificacion
+                ? "Primero debes iniciar el mantenimiento en la solicitud para marcar tareas como realizadas"
+                : actividad.realizado
+                  ? "Marcar como pendiente"
+                  : "Marcar como realizada"
+            }
           />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -667,9 +735,17 @@ function ActividadItemCard({
             type="button"
             variant="ghost"
             size="icon-xs"
+            disabled={isEnPlanificacion}
             onClick={onAddEvidencia}
-            className="size-6 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-md"
-            title="Adjuntar evidencia fotográfica"
+            className={cn(
+              "size-6 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-md",
+              isEnPlanificacion && "opacity-40 cursor-not-allowed",
+            )}
+            title={
+              isEnPlanificacion
+                ? "Solo puedes subir evidencias cuando la orden esté en ejecución (En Mantenimiento)"
+                : "Adjuntar evidencia fotográfica"
+            }
           >
             <Camera className="size-3.5" />
           </Button>

@@ -25,6 +25,9 @@ import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 import { formatDate } from "@/shared/utils/date.utils"
 
+import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
+import { controlActivoQueries } from "@/modules/mantenimientos/control-activo/api/control-activo.queries"
+import { ordenTrabajoQueries } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.queries"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
@@ -48,6 +51,8 @@ type SolicitudAprobacionListItemProps = {
   ) => void
   onCreateOT?: (solicitud: SolicitudMantenimiento) => void
   showControlActivo?: boolean
+  onViewControlActivo?: (solicitud: SolicitudMantenimiento) => void
+  onViewOT?: (solicitud: SolicitudMantenimiento, ot?: OrdenTrabajo | null) => void
 }
 
 function getInitials(name?: string | null): string {
@@ -118,6 +123,8 @@ export function SolicitudAprobacionListItem({
   onActionSelect,
   onCreateOT,
   showControlActivo,
+  onViewControlActivo,
+  onViewOT,
 }: SolicitudAprobacionListItemProps) {
   const [copied, setCopied] = useState(false)
 
@@ -138,6 +145,42 @@ export function SolicitudAprobacionListItem({
 
   const actions = actionsQuery.data?.actions ?? []
   const taskName = actionsQuery.data?.taskName
+
+  // Flow step verification for Encargado:
+  // Step 1: Control Activo must exist
+  const controlesQuery = useQuery({
+    ...controlActivoQueries.list({ size: 100 }),
+    enabled: Boolean(showControlActivo),
+  })
+
+  // Step 2: Orden de Trabajo must exist
+  const ordenesQuery = useQuery({
+    ...ordenTrabajoQueries.list({ size: 100 }),
+    enabled: Boolean(showControlActivo),
+  })
+
+  const hasControlActivo =
+    !showControlActivo ||
+    Boolean(
+      controlesQuery.data?.content?.some(
+        (c) => c.solicitudMantenimientoId === solicitud.id,
+      ),
+    )
+
+  const hasOrdenTrabajo =
+    !showControlActivo ||
+    Boolean(
+      ordenesQuery.data?.content?.some(
+        (ot) => ot.solicitudMantenimientoId === solicitud.id,
+      ),
+    )
+
+  const matchingOT = ordenesQuery.data?.content?.find(
+    (ot) => ot.solicitudMantenimientoId === solicitud.id,
+  )
+
+  // Step 3: Only when both Control Activo & OT exist can the workflow state advance
+  const canAdvanceWorkflow = !showControlActivo || (hasControlActivo && hasOrdenTrabajo)
 
   function copyNumero(e: React.MouseEvent) {
     e.stopPropagation()
@@ -295,7 +338,99 @@ export function SolicitudAprobacionListItem({
         onClick={(e) => e.stopPropagation()}
         className="flex items-center gap-2 shrink-0 self-end md:self-center"
       >
-        {/* Dynamic Workflow Actions */}
+        {/* 1. Control de Activo (Entrega / Devolución) */}
+        {showControlActivo && (
+          hasControlActivo ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onViewControlActivo?.(solicitud)
+              }}
+              className="h-8 gap-1.5 text-xs font-semibold rounded-lg shadow-2xs cursor-pointer transition-all bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50"
+              title="Control de Activo registrado (clic para ver el acta y detalle)"
+            >
+              <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="hidden sm:inline">Control Activo (Listo)</span>
+            </Button>
+          ) : (
+            <Link
+              to="/mantenimientos/controles-activos/nuevo"
+              search={{ solicitudId: solicitud.id }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 text-xs font-semibold rounded-lg shadow-2xs cursor-pointer transition-all bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/40 hover:bg-sky-500/25 ring-1 ring-sky-500/30"
+                title="Paso 1: Registrar acta de entrega/control de activo (Requerido)"
+              >
+                <ClipboardCheck className="size-3.5 text-sky-600 dark:text-sky-400" />
+                <span className="hidden sm:inline">Control Activo</span>
+              </Button>
+            </Link>
+          )
+        )}
+
+        {/* 2. Crear / Gestionar Orden de Trabajo */}
+        {onCreateOT && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!hasControlActivo}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (!hasControlActivo) {
+                toast.warning(
+                  "Paso 1 requerido: Primero debes registrar el Control de Activo.",
+                )
+                return
+              }
+              if (hasOrdenTrabajo) {
+                onViewOT?.(solicitud, matchingOT)
+              } else {
+                onCreateOT(solicitud)
+              }
+            }}
+            className={cn(
+              "h-8 gap-1.5 text-xs font-semibold rounded-lg shadow-2xs transition-all",
+              !hasControlActivo
+                ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground border-border/60"
+                : hasOrdenTrabajo
+                  ? "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20 hover:border-indigo-500/50 cursor-pointer"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700 border-indigo-600 shadow-xs cursor-pointer ring-1 ring-indigo-500/30",
+            )}
+            title={
+              !hasControlActivo
+                ? "Paso 2 bloqueado: Primero registra el Control de Activo"
+                : hasOrdenTrabajo
+                  ? "Orden de Trabajo registrada (clic para ver actividades y detalle)"
+                  : "Paso 2: Crear Orden de Trabajo para esta solicitud"
+            }
+          >
+            {hasOrdenTrabajo ? (
+              <Check className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+            ) : (
+              <Wrench
+                className={cn(
+                  "size-3.5",
+                  hasControlActivo && !hasOrdenTrabajo
+                    ? "text-white"
+                    : "text-indigo-600 dark:text-indigo-400",
+                )}
+              />
+            )}
+            <span className="hidden sm:inline">
+              {hasOrdenTrabajo ? "OT Creada" : "Crear OT"}
+            </span>
+          </Button>
+        )}
+
+        {/* 3. Dynamic Workflow Actions (Habilitado solo tras Control Activo + OT) */}
         {actionsQuery.isLoading ? (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2">
             <span className="size-2 rounded-full bg-primary animate-pulse" />
@@ -310,13 +445,41 @@ export function SolicitudAprobacionListItem({
                 key={`${act.variable}-${act.value}`}
                 type="button"
                 size="sm"
-                onClick={() =>
-                  onActionSelect(solicitud, act, taskName, actionsQuery.data?.fields)
-                }
+                disabled={!canAdvanceWorkflow}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (!canAdvanceWorkflow) {
+                    if (!hasControlActivo) {
+                      toast.warning(
+                        "Para avanzar el estado, primero debes registrar el Control de Activo.",
+                      )
+                    } else if (!hasOrdenTrabajo) {
+                      toast.warning(
+                        "Para avanzar el estado, primero debes crear la Orden de Trabajo.",
+                      )
+                    }
+                    return
+                  }
+                  onActionSelect(
+                    solicitud,
+                    act,
+                    taskName,
+                    actionsQuery.data?.fields,
+                  )
+                }}
                 className={cn(
-                  "h-8 gap-1.5 px-3 text-xs font-bold transition-all rounded-lg cursor-pointer shadow-2xs hover:scale-[1.02]",
-                  style.btnClass,
+                  "h-8 gap-1.5 px-3 text-xs font-bold transition-all rounded-lg shadow-2xs",
+                  !canAdvanceWorkflow
+                    ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:scale-100 ring-0"
+                    : cn("cursor-pointer hover:scale-[1.02]", style.btnClass),
                 )}
+                title={
+                  !canAdvanceWorkflow
+                    ? !hasControlActivo
+                      ? "Bloqueado: Primero registra el Control de Activo y crea la OT"
+                      : "Bloqueado: Primero crea la Orden de Trabajo"
+                    : `Avanzar workflow: ${act.name}`
+                }
               >
                 <IconComp className="size-3.5 shrink-0" />
                 <span>{act.name}</span>
@@ -325,42 +488,7 @@ export function SolicitudAprobacionListItem({
           })
         )}
 
-        {/* Control de Activo (Entrega / Devolución) */}
-        {showControlActivo && (
-          <Link
-            to="/mantenimientos/controles-activos/nuevo"
-            search={{ solicitudId: solicitud.id }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-8 gap-1.5 text-xs font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20 hover:border-sky-500/50 rounded-lg shadow-2xs cursor-pointer"
-              title="Registrar o verificar acta de entrega/devolución de activo y accesorios"
-            >
-              <ClipboardCheck className="size-3.5 text-sky-600 dark:text-sky-400" />
-              <span className="hidden sm:inline">Control Activo</span>
-            </Button>
-          </Link>
-        )}
-
-        {/* Crear / Gestionar Orden de Trabajo */}
-        {onCreateOT && (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => onCreateOT(solicitud)}
-            className="h-8 gap-1.5 text-xs font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20 hover:border-indigo-500/50 rounded-lg shadow-2xs cursor-pointer"
-            title="Crear o gestionar Orden de Trabajo para esta solicitud"
-          >
-            <Wrench className="size-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span className="hidden sm:inline">Crear OT</span>
-          </Button>
-        )}
-
-        {/* Revisar Expediente (Opens Modal) */}
+        {/* 4. Revisar Expediente (Opens Modal) */}
         <Button
           type="button"
           size="sm"
