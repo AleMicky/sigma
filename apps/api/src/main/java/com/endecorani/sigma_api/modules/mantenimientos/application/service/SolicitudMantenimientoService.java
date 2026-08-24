@@ -165,9 +165,10 @@ public class SolicitudMantenimientoService {
         variables.put("solicitudId", solicitud.getId().toString());
         variables.put("solicitanteId", solicitud.getSolicitanteId().toString());
         variables.put("aprobadorId", solicitud.getAprobadoPorId().toString());
-        if (solicitud.getSupervisorId() != null) {
-            variables.put("supervisorId", solicitud.getSupervisorId().toString());
-        }
+        String supervisor = solicitud.getSupervisorId() != null
+                ? solicitud.getSupervisorId().toString()
+                : aprobadorId.toString();
+        variables.put("supervisorId", supervisor);
 
         // 3. Iniciar workflow
         String processInstanceId =
@@ -227,10 +228,30 @@ public class SolicitudMantenimientoService {
             );
         }
 
+        Map<String, Object> effectiveVariables = new HashMap<>();
+        if (request != null && request.variables() != null) {
+            effectiveVariables.putAll(request.variables());
+        }
+
+        if (!effectiveVariables.containsKey("supervisorId")) {
+            if (solicitud.getSupervisorId() != null) {
+                effectiveVariables.put("supervisorId", solicitud.getSupervisorId().toString());
+            } else if (solicitud.getAprobadoPorId() != null) {
+                effectiveVariables.put("supervisorId", solicitud.getAprobadoPorId().toString());
+            }
+        }
+
+        if (!effectiveVariables.containsKey("responsableId") && solicitud.getResponsableId() != null) {
+            effectiveVariables.put("responsableId", solicitud.getResponsableId().toString());
+        }
+
+        CompleteWorkflowTaskRequest effectiveRequest =
+                new CompleteWorkflowTaskRequest(effectiveVariables);
+
         WorkflowTaskActionsResponse resultado =
                 workflowApplicationService.completarTarea(
                         solicitud.getProcessInstanceId(),
-                        request
+                        effectiveRequest
                 );
 
         if (resultado.status() != null) {

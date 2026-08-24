@@ -199,6 +199,7 @@ public class WorkflowApplicationService {
 
         // Permitir variables de dominio estándar para notas, auditoría y asignaciones
         variables.add("responsableId");
+        variables.add("supervisorId");
         variables.add("observacion");
         variables.add("observacionAprobacion");
         variables.add("observacionValidacion");
