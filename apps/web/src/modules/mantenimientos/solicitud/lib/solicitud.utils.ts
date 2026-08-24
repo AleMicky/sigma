@@ -55,21 +55,6 @@ export function getPrioridadBadgeStyles(nivel = 1) {
   }
 }
 
-export function getPrioridadDotColor(nivel: number) {
-  switch (nivel) {
-    case 5:
-      return "bg-rose-500 text-rose-500"
-    case 4:
-      return "bg-orange-500 text-orange-500"
-    case 3:
-      return "bg-amber-500 text-amber-500"
-    case 2:
-      return "bg-blue-500 text-blue-500"
-    default:
-      return "bg-emerald-500 text-emerald-500"
-  }
-}
-
 export type PrioridadColorConfig = {
   dotClass: string
   textClass: string
