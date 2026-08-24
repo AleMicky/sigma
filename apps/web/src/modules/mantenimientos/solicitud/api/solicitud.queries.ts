@@ -6,6 +6,7 @@ import { solicitudKeys } from "./solicitud.keys"
 import {
   getSolicitud,
   getWorkflowActions,
+  getWorkflowHistory,
   listAdjuntos,
   listSolicitudes,
   type SolicitudListParams,
@@ -40,6 +41,14 @@ export const solicitudQueries = {
     queryOptions({
       queryKey: solicitudKeys.workflowActions(processInstanceId ?? ""),
       queryFn: () => getWorkflowActions(processInstanceId!),
+      enabled: Boolean(processInstanceId),
+      staleTime: 0,
+    }),
+
+  workflowHistory: (processInstanceId?: string | null) =>
+    queryOptions({
+      queryKey: solicitudKeys.workflowHistory(processInstanceId ?? ""),
+      queryFn: () => getWorkflowHistory(processInstanceId!),
       enabled: Boolean(processInstanceId),
       staleTime: 0,
     }),

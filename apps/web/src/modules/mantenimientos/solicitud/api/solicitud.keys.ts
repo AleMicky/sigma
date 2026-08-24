@@ -10,5 +10,7 @@ export const solicitudKeys = {
     [...solicitudKeys.adjuntos(id), filters] as const,
   workflowActions: (processInstanceId: string) =>
     [...solicitudKeys.all, "workflow", processInstanceId] as const,
+  workflowHistory: (processInstanceId: string) =>
+    [...solicitudKeys.all, "workflow-history", processInstanceId] as const,
 }
 

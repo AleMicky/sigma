@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.workflow.application.service;
 
 
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowHistoryResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 
@@ -19,6 +20,10 @@ public interface WorkflowEngineService {
     );
 
     WorkflowTaskActionsResponse obtenerAccionesDisponibles(
+            String processInstanceId
+    );
+
+    WorkflowHistoryResponse obtenerHistorial(
             String processInstanceId
     );
 

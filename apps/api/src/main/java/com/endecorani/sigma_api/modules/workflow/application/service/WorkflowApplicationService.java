@@ -3,6 +3,7 @@ package com.endecorani.sigma_api.modules.workflow.application.service;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowActionResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowFieldResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowHistoryResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 import com.endecorani.sigma_api.modules.workflow.domain.model.Workflow;
@@ -56,6 +57,15 @@ public class WorkflowApplicationService {
     ) {
         return workflowEngineService
                 .obtenerAccionesDisponibles(processInstanceId);
+    }
+
+    public WorkflowHistoryResponse obtenerHistorial(
+            String processInstanceId
+    ) {
+        return workflowEngineService
+                .obtenerHistorial(
+                        processInstanceId
+                );
     }
 
     public WorkflowTaskActionsResponse completarTarea(

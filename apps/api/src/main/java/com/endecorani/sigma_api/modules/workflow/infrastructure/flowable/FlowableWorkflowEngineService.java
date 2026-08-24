@@ -7,6 +7,7 @@ import com.endecorani.sigma_api.modules.workflow.application.dto.response.*;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowEngineService;
 
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.FlowablePageResponse;
+import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.HistoricTaskResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.ProcessDefinitionResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.TaskResponse;
 import lombok.RequiredArgsConstructor;
@@ -137,6 +138,47 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                 status,
                 fields,
                 actions
+        );
+    }
+
+    @Override
+    public WorkflowHistoryResponse obtenerHistorial(
+            String processInstanceId
+    ) {
+
+        FlowablePageResponse<HistoricTaskResponse> response =
+                flowableClient.obtenerHistorialTareas(
+                        processInstanceId
+                );
+
+        if (response == null || response.data() == null) {
+            return new WorkflowHistoryResponse(
+                    processInstanceId,
+                    List.of()
+            );
+        }
+
+        List<WorkflowHistoryItemResponse> items =
+                response.data()
+                        .stream()
+                        .map(task ->
+                                new WorkflowHistoryItemResponse(
+                                        task.id(),
+                                        task.taskDefinitionKey(),
+                                        task.name(),
+                                        task.assignee(),
+                                        task.startTime(),
+                                        task.endTime(),
+                                        task.endTime() != null
+                                                ? "COMPLETADA"
+                                                : "ACTIVA"
+                                )
+                        )
+                        .toList();
+
+        return new WorkflowHistoryResponse(
+                processInstanceId,
+                items
         );
     }
 

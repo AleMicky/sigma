@@ -5,6 +5,7 @@ export const solicitudEndpoints = {
   enviar: (id: string) => `/solicitudes-mantenimiento/${id}/enviar`,
   workflow: {
     actions: (processInstanceId: string) => `/workflow/instances/${processInstanceId}/actions`,
+    history: (processInstanceId: string) => `/workflow/instances/${processInstanceId}/history`,
     complete: (solicitudId: string) => `/solicitudes-mantenimiento/${solicitudId}/workflow/complete`,
   },
   adjuntos: {

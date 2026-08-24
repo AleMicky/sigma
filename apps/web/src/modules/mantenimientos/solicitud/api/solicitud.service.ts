@@ -220,3 +220,26 @@ export async function completeWorkflowTask(
   )
 }
 
+export type WorkflowHistoryItem = {
+  taskId: string
+  taskDefinitionKey: string
+  taskName: string
+  assignee?: string | null
+  startTime?: string | null
+  endTime?: string | null
+  status: "COMPLETADA" | "ACTIVA" | string
+}
+
+export type WorkflowHistoryResponse = {
+  processInstanceId: string
+  items: WorkflowHistoryItem[]
+}
+
+export async function getWorkflowHistory(
+  processInstanceId: string,
+): Promise<WorkflowHistoryResponse> {
+  return http.get<WorkflowHistoryResponse>(
+    solicitudEndpoints.workflow.history(processInstanceId),
+  )
+}
+

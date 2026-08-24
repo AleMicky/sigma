@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.workflow.application.dto.request.StartPr
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.ProcessInstanceResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.FlowablePageResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.ProcessDefinitionResponse;
+import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.HistoricTaskResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.TaskResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.exception.FlowableIntegrationException;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,6 +22,8 @@ public class FlowableClient {
     private static final ParameterizedTypeReference<FlowablePageResponse<ProcessDefinitionResponse>> PROCESS_DEF_PAGE_TYPE =
             new ParameterizedTypeReference<>() {};
     private static final ParameterizedTypeReference<FlowablePageResponse<TaskResponse>> TASK_PAGE_TYPE =
+            new ParameterizedTypeReference<>() {};
+    private static final ParameterizedTypeReference<FlowablePageResponse<HistoricTaskResponse>> HISTORIC_TASK_PAGE_TYPE =
             new ParameterizedTypeReference<>() {};
 
     private final RestClient restClient;
@@ -60,6 +63,31 @@ public class FlowableClient {
                         .retrieve()
                         .body(TASK_PAGE_TYPE),
                 "Error consultando tareas del proceso %s en Flowable".formatted(processInstanceId)
+        );
+    }
+
+    public FlowablePageResponse<HistoricTaskResponse> obtenerHistorialTareas(
+            String processInstanceId
+    ) {
+        return execute(
+                () -> restClient
+                        .get()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/history/historic-task-instances")
+                                .queryParam(
+                                        "processInstanceId",
+                                        processInstanceId
+                                )
+                                .queryParam(
+                                        "order",
+                                        "asc"
+                                )
+                                .build()
+                        )
+                        .retrieve()
+                        .body(HISTORIC_TASK_PAGE_TYPE),
+                "Error obteniendo historial del proceso %s"
+                        .formatted(processInstanceId)
         );
     }
 

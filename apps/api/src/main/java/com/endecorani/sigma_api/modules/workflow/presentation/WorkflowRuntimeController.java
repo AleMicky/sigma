@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.workflow.presentation;
 
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowHistoryResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
@@ -29,6 +30,16 @@ public class WorkflowRuntimeController {
     ) {
         return workflowApplicationService
                 .obtenerAccionesDisponibles(processInstanceId);
+    }
+
+    @GetMapping("/instances/{processInstanceId}/history")
+    public WorkflowHistoryResponse obtenerHistorial(
+            @PathVariable String processInstanceId
+    ) {
+        return workflowApplicationService
+                .obtenerHistorial(
+                        processInstanceId
+                );
     }
 
     @PostMapping("/instances/{processInstanceId}/complete")
