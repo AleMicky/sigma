@@ -1,9 +1,15 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
+import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
+import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.ControlActivoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.ControlActivoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ControlActivo;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ControlActivoRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
+import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -15,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +38,9 @@ public class ControlActivoService {
     );
 
     private final ControlActivoRepository controlActivoRepository;
+    private final ActivoRepository activoRepository;
+    private final EmpleadoRepository empleadoRepository;
+    private final PersonaRepository personaRepository;
 
     @Transactional
     public ControlActivoResponse create(ControlActivoRequest request) {
@@ -108,14 +119,27 @@ public class ControlActivoService {
     }
 
     private ControlActivoResponse toResponse(ControlActivo domain) {
+        var activoInfo = domain.getActivoId() != null
+                ? activoRepository.findById(domain.getActivoId())
+                .map(a -> new ControlActivoResponse.ActivoInfo(
+                        a.getId(),
+                        a.getCodigo(),
+                        a.getNombre()
+                ))
+                .orElse(null)
+                : null;
+
+        var entregadoPorInfo = buildUserInfo(domain.getEntregadoPorId());
+        var recibidoPorInfo = buildUserInfo(domain.getRecibidoPorId());
+
         return new ControlActivoResponse(
                 domain.getId(),
                 domain.getSolicitudMantenimientoId(),
                 domain.getOrdenTrabajoId(),
-                domain.getActivoId(),
+                activoInfo,
                 domain.getTipo(),
-                domain.getEntregadoPorId(),
-                domain.getRecibidoPorId(),
+                entregadoPorInfo,
+                recibidoPorInfo,
                 domain.getFecha(),
                 domain.isConforme(),
                 domain.getObservacion(),
@@ -126,5 +150,45 @@ public class ControlActivoService {
                         domain.getUpdatedBy()
                 )
         );
+    }
+
+    private ControlActivoResponse.UserInfo buildUserInfo(UUID empleadoId) {
+        if (empleadoId == null) {
+            return null;
+        }
+
+        return empleadoRepository.findById(empleadoId)
+                .map(empleado -> {
+                    String nombre = buildNombreCompleto(empleado.getPersonaId());
+                    if (nombre == null || nombre.isBlank()) {
+                        nombre = empleado.getCodigo();
+                    }
+                    return new ControlActivoResponse.UserInfo(
+                            empleado.getId(),
+                            nombre
+                    );
+                })
+                .orElse(null);
+    }
+
+    private String buildNombreCompleto(UUID personaId) {
+        if (personaId == null) {
+            return null;
+        }
+
+        return personaRepository.findById(personaId)
+                .map(this::buildNombreCompleto)
+                .orElse(null);
+    }
+
+    private String buildNombreCompleto(Persona persona) {
+        return Stream.of(
+                        persona.getNombres(),
+                        persona.getPrimerApellido(),
+                        persona.getSegundoApellido()
+                )
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .collect(Collectors.joining(" "));
     }
 }

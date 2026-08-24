@@ -15,13 +15,25 @@ public record ControlActivoResponse(
         UUID id,
         UUID solicitudMantenimientoId,
         UUID ordenTrabajoId,
-        UUID activoId,
+        ActivoInfo activo,
         TipoControlActivo tipo,
-        UUID entregadoPorId,
-        UUID recibidoPorId,
+        UserInfo entregadoPor,
+        UserInfo recibidoPor,
         LocalDateTime fecha,
         boolean conforme,
         String observacion,
         AuditoriaResponse auditoria
 ) {
+    public record ActivoInfo(
+            UUID id,
+            String codigo,
+            String nombre
+    ) {
+    }
+
+    public record UserInfo(
+            UUID id,
+            String nombre
+    ) {
+    }
 }

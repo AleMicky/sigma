@@ -5,7 +5,6 @@ import { Badge } from "@/shared/components/ui/badge"
 import { RowActions } from "@/shared/components/row-actions"
 import { formatDate } from "@/shared/lib/format-date"
 
-import { useDeleteEmpleado } from "../api/empleado.mutations"
 import type { Empleado } from "../api/empleado.service"
 
 type EmpleadoListItemProps = {
@@ -27,8 +26,6 @@ export function EmpleadoListItem({
   onEdit,
   onDelete,
 }: EmpleadoListItemProps) {
-  const deleteMutation = useDeleteEmpleado()
-
   const nombrePersona =
     empleado.personaInfo?.nombreCompleto ||
     empleado.personaNombreCompleto ||
@@ -155,7 +152,6 @@ export function EmpleadoListItem({
           className="shrink-0"
           editLabel="Editar empleado"
           deleteLabel="Eliminar empleado"
-          deleteDisabled={deleteMutation.isPending}
           onEdit={() => onEdit(empleado)}
           onDelete={() => onDelete(empleado)}
         />

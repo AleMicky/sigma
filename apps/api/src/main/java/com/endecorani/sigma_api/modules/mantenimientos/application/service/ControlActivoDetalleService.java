@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
+import com.endecorani.sigma_api.modules.activos.domain.repository.AccesorioRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.ControlActivoDetalleRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.ControlActivoDetalleResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ControlActivoDetalle;
@@ -31,6 +32,7 @@ public class ControlActivoDetalleService {
     );
 
     private final ControlActivoDetalleRepository controlActivoDetalleRepository;
+    private final AccesorioRepository accesorioRepository;
 
     @Transactional
     public ControlActivoDetalleResponse create(ControlActivoDetalleRequest request) {
@@ -160,10 +162,20 @@ public class ControlActivoDetalleService {
     }
 
     private ControlActivoDetalleResponse toResponse(ControlActivoDetalle domain) {
+        var accesorioInfo = domain.getAccesorioId() != null
+                ? accesorioRepository.findById(domain.getAccesorioId())
+                .map(a -> new ControlActivoDetalleResponse.AccesorioInfo(
+                        a.getId(),
+                        a.getCodigo(),
+                        a.getNombre()
+                ))
+                .orElse(null)
+                : null;
+
         return new ControlActivoDetalleResponse(
                 domain.getId(),
                 domain.getControlActivoId(),
-                domain.getAccesorioId(),
+                accesorioInfo,
                 domain.getCantidadEsperada(),
                 domain.getCantidadEncontrada(),
                 domain.isConforme(),
