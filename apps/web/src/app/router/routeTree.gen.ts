@@ -66,6 +66,7 @@ import { Route as DashboardMantenimientosOrdenesTrabajoNuevoRouteImport } from '
 import { Route as DashboardMantenimientosPrioridadesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/prioridades/index'
 import { Route as DashboardMantenimientosSolicitudesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/index'
 import { Route as DashboardMantenimientosSolicitudesNuevaRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/nueva'
+import { Route as DashboardMantenimientosSupervisorIndexRouteImport } from './../../routes/_dashboard/mantenimientos/supervisor/index'
 import { Route as DashboardMantenimientosTiposMantenimientoIndexRouteImport } from './../../routes/_dashboard/mantenimientos/tipos-mantenimiento/index'
 import { Route as DashboardOrganizacionAreasIndexRouteImport } from './../../routes/_dashboard/organizacion/areas/index'
 import { Route as DashboardOrganizacionCargosIndexRouteImport } from './../../routes/_dashboard/organizacion/cargos/index'
@@ -415,6 +416,12 @@ const DashboardMantenimientosSolicitudesNuevaRoute =
     path: '/nueva',
     getParentRoute: () => DashboardMantenimientosSolicitudesRouteRoute,
   } as any)
+const DashboardMantenimientosSupervisorIndexRoute =
+  DashboardMantenimientosSupervisorIndexRouteImport.update({
+    id: '/supervisor/',
+    path: '/supervisor/',
+    getParentRoute: () => DashboardMantenimientosRouteRoute,
+  } as any)
 const DashboardMantenimientosTiposMantenimientoIndexRoute =
   DashboardMantenimientosTiposMantenimientoIndexRouteImport.update({
     id: '/',
@@ -559,6 +566,7 @@ export interface FileRoutesByFullPath {
   '/mantenimientos/ordenes-trabajo/': typeof DashboardMantenimientosOrdenesTrabajoIndexRoute
   '/mantenimientos/prioridades/': typeof DashboardMantenimientosPrioridadesIndexRoute
   '/mantenimientos/solicitudes/': typeof DashboardMantenimientosSolicitudesIndexRoute
+  '/mantenimientos/supervisor/': typeof DashboardMantenimientosSupervisorIndexRoute
   '/mantenimientos/tipos-mantenimiento/': typeof DashboardMantenimientosTiposMantenimientoIndexRoute
   '/organizacion/areas/': typeof DashboardOrganizacionAreasIndexRoute
   '/organizacion/cargos/': typeof DashboardOrganizacionCargosIndexRoute
@@ -614,6 +622,7 @@ export interface FileRoutesByTo {
   '/mantenimientos/ordenes-trabajo': typeof DashboardMantenimientosOrdenesTrabajoIndexRoute
   '/mantenimientos/prioridades': typeof DashboardMantenimientosPrioridadesIndexRoute
   '/mantenimientos/solicitudes': typeof DashboardMantenimientosSolicitudesIndexRoute
+  '/mantenimientos/supervisor': typeof DashboardMantenimientosSupervisorIndexRoute
   '/mantenimientos/tipos-mantenimiento': typeof DashboardMantenimientosTiposMantenimientoIndexRoute
   '/organizacion/areas': typeof DashboardOrganizacionAreasIndexRoute
   '/organizacion/cargos': typeof DashboardOrganizacionCargosIndexRoute
@@ -688,6 +697,7 @@ export interface FileRoutesById {
   '/_dashboard/mantenimientos/ordenes-trabajo/': typeof DashboardMantenimientosOrdenesTrabajoIndexRoute
   '/_dashboard/mantenimientos/prioridades/': typeof DashboardMantenimientosPrioridadesIndexRoute
   '/_dashboard/mantenimientos/solicitudes/': typeof DashboardMantenimientosSolicitudesIndexRoute
+  '/_dashboard/mantenimientos/supervisor/': typeof DashboardMantenimientosSupervisorIndexRoute
   '/_dashboard/mantenimientos/tipos-mantenimiento/': typeof DashboardMantenimientosTiposMantenimientoIndexRoute
   '/_dashboard/organizacion/areas/': typeof DashboardOrganizacionAreasIndexRoute
   '/_dashboard/organizacion/cargos/': typeof DashboardOrganizacionCargosIndexRoute
@@ -762,6 +772,7 @@ export interface FileRouteTypes {
     | '/mantenimientos/ordenes-trabajo/'
     | '/mantenimientos/prioridades/'
     | '/mantenimientos/solicitudes/'
+    | '/mantenimientos/supervisor/'
     | '/mantenimientos/tipos-mantenimiento/'
     | '/organizacion/areas/'
     | '/organizacion/cargos/'
@@ -817,6 +828,7 @@ export interface FileRouteTypes {
     | '/mantenimientos/ordenes-trabajo'
     | '/mantenimientos/prioridades'
     | '/mantenimientos/solicitudes'
+    | '/mantenimientos/supervisor'
     | '/mantenimientos/tipos-mantenimiento'
     | '/organizacion/areas'
     | '/organizacion/cargos'
@@ -890,6 +902,7 @@ export interface FileRouteTypes {
     | '/_dashboard/mantenimientos/ordenes-trabajo/'
     | '/_dashboard/mantenimientos/prioridades/'
     | '/_dashboard/mantenimientos/solicitudes/'
+    | '/_dashboard/mantenimientos/supervisor/'
     | '/_dashboard/mantenimientos/tipos-mantenimiento/'
     | '/_dashboard/organizacion/areas/'
     | '/_dashboard/organizacion/cargos/'
@@ -1310,6 +1323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMantenimientosSolicitudesNuevaRouteImport
       parentRoute: typeof DashboardMantenimientosSolicitudesRouteRoute
     }
+    '/_dashboard/mantenimientos/supervisor/': {
+      id: '/_dashboard/mantenimientos/supervisor/'
+      path: '/supervisor'
+      fullPath: '/mantenimientos/supervisor/'
+      preLoaderRoute: typeof DashboardMantenimientosSupervisorIndexRouteImport
+      parentRoute: typeof DashboardMantenimientosRouteRoute
+    }
     '/_dashboard/mantenimientos/tipos-mantenimiento/': {
       id: '/_dashboard/mantenimientos/tipos-mantenimiento/'
       path: '/'
@@ -1635,6 +1655,7 @@ interface DashboardMantenimientosRouteRouteChildren {
   DashboardMantenimientosControlesActivosIndexRoute: typeof DashboardMantenimientosControlesActivosIndexRoute
   DashboardMantenimientosEncargadoIndexRoute: typeof DashboardMantenimientosEncargadoIndexRoute
   DashboardMantenimientosOrdenesTrabajoIndexRoute: typeof DashboardMantenimientosOrdenesTrabajoIndexRoute
+  DashboardMantenimientosSupervisorIndexRoute: typeof DashboardMantenimientosSupervisorIndexRoute
 }
 
 const DashboardMantenimientosRouteRouteChildren: DashboardMantenimientosRouteRouteChildren =
@@ -1662,6 +1683,8 @@ const DashboardMantenimientosRouteRouteChildren: DashboardMantenimientosRouteRou
       DashboardMantenimientosEncargadoIndexRoute,
     DashboardMantenimientosOrdenesTrabajoIndexRoute:
       DashboardMantenimientosOrdenesTrabajoIndexRoute,
+    DashboardMantenimientosSupervisorIndexRoute:
+      DashboardMantenimientosSupervisorIndexRoute,
   }
 
 const DashboardMantenimientosRouteRouteWithChildren =

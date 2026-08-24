@@ -74,6 +74,7 @@ export const routes = {
     solicitudes: "/mantenimientos/solicitudes",
     aprobaciones: "/mantenimientos/aprobaciones",
     encargado: "/mantenimientos/encargado",
+    supervisor: "/mantenimientos/supervisor",
     nuevaSolicitud: "/mantenimientos/solicitudes/nueva",
     editarSolicitud: (solicitudId: string) =>
       `/mantenimientos/solicitudes/${solicitudId}/editar`,

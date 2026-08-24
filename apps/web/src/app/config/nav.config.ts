@@ -19,6 +19,7 @@ import {
   Ruler,
   ScrollText,
   Settings2,
+  ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
   Tags,
@@ -215,6 +216,11 @@ export const navItems: NavItem[] = [
         title: "Encargado Mantenimiento",
         to: routes.mantenimientos.encargado,
         icon: UserCheck,
+      },
+      {
+        title: "Supervisor Mantenimiento",
+        to: routes.mantenimientos.supervisor,
+        icon: ShieldAlert,
       },
       {
         title: "Actividades",
