@@ -23,9 +23,13 @@ services:
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
       KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-sigma-api}
+      FLOWABLE_BASE_URL: ${FLOWABLE_BASE_URL:-http://157.173.99.216:8089/flowable-rest/service}
+      FLOWABLE_USERNAME: ${FLOWABLE_USERNAME:-admin}
+      FLOWABLE_PASSWORD: ${FLOWABLE_PASSWORD}
+
       JAVA_OPTS: "-Xms256m -Xmx512m"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/v3/api-docs || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/v3/api-docs || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3

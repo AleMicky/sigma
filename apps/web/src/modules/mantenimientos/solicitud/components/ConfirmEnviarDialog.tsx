@@ -14,17 +14,15 @@ import {
 } from "lucide-react"
 
 import { grupoAprobadorDependienteQueries } from "@/modules/organizacion/grupo-aprobador-dependiente/api/grupo-aprobador-dependiente.queries"
+import { Button } from "@/shared/components/ui/button"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/shared/components/ui/alert-dialog"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog"
 import { Badge } from "@/shared/components/ui/badge"
 import { cn } from "@/shared/lib/utils"
 
@@ -107,74 +105,84 @@ export function ConfirmEnviarDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent size="default" className="sm:max-w-[520px] p-6">
-        <AlertDialogHeader className="pb-1">
-          <div className="flex items-center gap-3">
-            <AlertDialogMedia className="bg-primary/10 text-primary shrink-0">
-              <SendHorizontal className="size-5" />
-            </AlertDialogMedia>
-            <div className="flex flex-col text-left">
-              <AlertDialogTitle className="text-base font-semibold">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[calc(100%-1.5rem)] max-w-lg sm:max-w-[500px] p-4 sm:p-5 gap-3.5 sm:gap-4 overflow-hidden">
+        <DialogHeader className="gap-1 sm:gap-1.5 pr-6 text-left">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="size-9 sm:size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <SendHorizontal className="size-4.5 sm:size-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="text-sm sm:text-base font-semibold leading-tight text-foreground">
                 Enviar Solicitud de Mantenimiento
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-xs text-muted-foreground">
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5 leading-normal">
                 Inicia el flujo de trabajo y asigna el responsable de aprobación.
-              </AlertDialogDescription>
+              </DialogDescription>
             </div>
           </div>
-        </AlertDialogHeader>
+        </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-3 sm:space-y-3.5">
           {/* Solicitud Summary Card */}
-          <div className="rounded-xl border bg-muted/30 p-3.5 space-y-2.5">
-            <div className="flex items-start justify-between gap-2">
-              <div className="space-y-0.5 min-w-0">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                  <FileText className="size-3.5 text-primary shrink-0" />
-                  <span className="font-mono text-primary">
-                    {solicitud.numero || "Sin correlativo"}
-                  </span>
-                </div>
-                <p className="text-xs font-medium text-foreground truncate">
-                  {solicitud.titulo}
-                </p>
+          <div className="rounded-xl border border-border/70 bg-muted/30 p-3 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0 text-xs font-semibold">
+                <FileText className="size-3.5 text-primary shrink-0" />
+                <span className="font-mono text-primary truncate">
+                  {solicitud.numero || "Sin correlativo"}
+                </span>
               </div>
 
               {/* Status Transition Badges */}
               <div className="flex items-center gap-1 shrink-0 text-[10px]">
-                <Badge variant="outline" className="h-5 px-1.5 font-normal uppercase text-muted-foreground">
+                <Badge
+                  variant="outline"
+                  className="h-5 px-1.5 font-normal uppercase text-muted-foreground text-[10px]"
+                >
                   Borrador
                 </Badge>
                 <ArrowRight className="size-3 text-muted-foreground" />
-                <Badge variant="default" className="h-5 px-1.5 font-medium uppercase bg-primary text-primary-foreground">
+                <Badge
+                  variant="default"
+                  className="h-5 px-1.5 font-medium uppercase bg-primary text-primary-foreground text-[10px]"
+                >
                   Solicitado
                 </Badge>
               </div>
             </div>
 
+            {/* Title */}
+            <p className="text-xs sm:text-sm font-medium text-foreground leading-snug line-clamp-2">
+              {solicitud.titulo}
+            </p>
+
             {/* Solicitante Row */}
-            <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs">
-              <span className="text-muted-foreground">Solicitado por:</span>
-              <div className="flex items-center gap-1.5 font-medium text-foreground">
-                <div className="size-4.5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+            <div className="flex flex-wrap items-center justify-between gap-1.5 pt-2 border-t border-border/50 text-xs">
+              <span className="text-muted-foreground text-[11px] sm:text-xs">
+                Solicitado por:
+              </span>
+              <div className="flex items-center gap-1.5 font-medium text-foreground max-w-[220px] sm:max-w-xs min-w-0">
+                <div className="size-4.5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
                   <User className="size-3 text-primary" />
                 </div>
-                <span>{solicitud.solicitante?.nombre || "No especificado"}</span>
+                <span className="truncate text-[11px] sm:text-xs">
+                  {solicitud.solicitante?.nombre || "No especificado"}
+                </span>
               </div>
             </div>
           </div>
 
           {/* Approver Selection Section */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <ShieldCheck className="size-4 text-primary" />
+                <ShieldCheck className="size-4 text-primary shrink-0" />
                 <span>Asignar Aprobador Responsable</span>
                 <span className="text-destructive">*</span>
               </label>
               {hasAprobadores && (
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground shrink-0">
                   {aprobadores.length}{" "}
                   {aprobadores.length === 1 ? "disponible" : "disponibles"}
                 </span>
@@ -182,12 +190,12 @@ export function ConfirmEnviarDialog({
             </div>
 
             {isLoadingAprobadores ? (
-              <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-xs text-muted-foreground bg-muted/20">
+              <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-5 text-xs text-muted-foreground bg-muted/20">
                 <Loader2 className="size-5 animate-spin text-primary" />
-                <span>Consultando aprobadores asignados al solicitante…</span>
+                <span>Consultando aprobadores asignados…</span>
               </div>
             ) : !solicitanteId ? (
-              <div className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-3.5 text-xs text-destructive">
+              <div className="flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
                 <ShieldAlert className="size-4 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold">Sin solicitante registrado</p>
@@ -197,12 +205,12 @@ export function ConfirmEnviarDialog({
                 </div>
               </div>
             ) : !hasAprobadores ? (
-              <div className="flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3.5 text-xs text-amber-800 dark:text-amber-300">
+              <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
                 <AlertCircle className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
                 <div>
                   <p className="font-semibold">Sin aprobadores asignados</p>
                   <p className="text-[11px] opacity-90 mt-0.5">
-                    El solicitante <span className="font-medium">({solicitud.solicitante?.nombre})</span> no tiene aprobadores asignados en su grupo de aprobación organizacional.
+                    El solicitante <span className="font-medium">({solicitud.solicitante?.nombre})</span> no tiene aprobadores asignados en su grupo de aprobación.
                   </p>
                 </div>
               </div>
@@ -223,7 +231,7 @@ export function ConfirmEnviarDialog({
                 )}
 
                 {/* Approvers Selection Cards */}
-                <div className="max-h-56 overflow-y-auto space-y-1.5 pr-0.5 overscroll-contain">
+                <div className="max-h-48 sm:max-h-56 overflow-y-auto space-y-1.5 pr-0.5 overscroll-contain">
                   {filteredAprobadores.length === 0 ? (
                     <div className="text-center py-4 text-xs text-muted-foreground">
                       No se encontraron aprobadores que coincidan con la búsqueda.
@@ -259,7 +267,7 @@ export function ConfirmEnviarDialog({
                             </div>
 
                             {/* Name & Role */}
-                            <div className="flex flex-col min-w-0">
+                            <div className="flex flex-col min-w-0 flex-1">
                               <span
                                 className={cn(
                                   "text-xs font-medium truncate",
@@ -314,17 +322,23 @@ export function ConfirmEnviarDialog({
           </div>
         </div>
 
-        <AlertDialogFooter className="gap-2 sm:gap-2 pt-3 border-t border-border/40">
-          <AlertDialogCancel disabled={isPending} className="h-8.5 text-xs">
+        <DialogFooter className="gap-2 sm:gap-2 pt-2 border-t border-border/40 flex-col-reverse sm:flex-row">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPending}
+            onClick={() => onOpenChange(false)}
+            className="h-8.5 text-xs w-full sm:w-auto"
+          >
             Cancelar
-          </AlertDialogCancel>
-          <AlertDialogAction
+          </Button>
+          <Button
+            type="button"
             disabled={!canSubmit}
-            onClick={(e) => {
-              e.preventDefault()
+            onClick={() => {
               void handleSubmit()
             }}
-            className="h-8.5 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold px-4"
+            className="h-8.5 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold px-4 w-full sm:w-auto"
           >
             {isPending ? (
               <Loader2 className="size-3.5 animate-spin" />
@@ -332,11 +346,9 @@ export function ConfirmEnviarDialog({
               <SendHorizontal className="size-3.5" />
             )}
             <span>{isPending ? "Enviando…" : "Enviar Solicitud"}</span>
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
-
-
