@@ -16,14 +16,3 @@ export interface DocumentoItem {
   tamano: string
   archivoUrl?: string
 }
-
-export interface MantenimientoItem {
-  id: string
-  tipo: "preventivo" | "correctivo" | "inspeccion"
-  titulo: string
-  fecha: string
-  kilometraje?: string
-  responsable: string
-  costo?: string
-  observaciones: string
-}

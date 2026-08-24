@@ -33,7 +33,6 @@ import {
   ActivoHistorialTab,
   ActivoImagePreviewModal,
   ActivoInfoTab,
-  type MantenimientoItem,
   type TabType,
 } from "../components/detalle-activo"
 
@@ -104,42 +103,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
     }),
   )
   const accesorios = accesoriosQuery.data?.content ?? []
-
-  // Mock list of maintenance history
-  const [mantenimientos] = useState<MantenimientoItem[]>([
-    {
-      id: "maint-1",
-      tipo: "preventivo",
-      titulo: "Mantenimiento Preventivo 40,000 km",
-      fecha: "10/01/2026",
-      kilometraje: "40,150 km",
-      responsable: "Taller Central ENDE",
-      costo: "Bs. 1,450",
-      observaciones:
-        "Cambio de aceite sintético, filtros de aire y combustible, alineación y balanceo.",
-    },
-    {
-      id: "maint-2",
-      tipo: "inspeccion",
-      titulo: "Inspección de Seguridad Semestral",
-      fecha: "15/11/2025",
-      kilometraje: "36,800 km",
-      responsable: "Dpto. de Seguridad Industrial",
-      observaciones:
-        "Verificación de luces, frenos, botiquín, extintor y equipo de emergencia. Aprobado sin observaciones.",
-    },
-    {
-      id: "maint-3",
-      tipo: "preventivo",
-      titulo: "Mantenimiento Preventivo 30,000 km",
-      fecha: "05/06/2025",
-      kilometraje: "30,200 km",
-      responsable: "Servicio Autorizado Toyosa",
-      costo: "Bs. 1,820",
-      observaciones:
-        "Reemplazo de pastillas de frenos y revisión de suspensión.",
-    },
-  ])
 
   function copyCode() {
     if (!activo?.codigo) return
@@ -253,7 +216,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
           }}
           documentosCount={documentos.length}
           accesoriosCount={accesorios.length}
-          mantenimientosCount={mantenimientos.length}
         />
       </header>
 
@@ -300,7 +262,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
           <ActivoHistorialTab
             activo={activo}
             tipoActivo={tipoActivo}
-            mantenimientos={mantenimientos}
           />
         )}
       </main>

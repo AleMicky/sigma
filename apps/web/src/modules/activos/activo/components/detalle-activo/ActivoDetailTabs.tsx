@@ -15,7 +15,6 @@ type ActivoDetailTabsProps = {
   onTabChange: (tab: TabType) => void
   documentosCount: number
   accesoriosCount: number
-  mantenimientosCount: number
 }
 
 export function ActivoDetailTabs({
@@ -23,7 +22,6 @@ export function ActivoDetailTabs({
   onTabChange,
   documentosCount,
   accesoriosCount,
-  mantenimientosCount,
 }: ActivoDetailTabsProps) {
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border/70 pt-1 pb-1 no-scrollbar">
@@ -101,9 +99,6 @@ export function ActivoDetailTabs({
       >
         <History className="size-3.5" />
         <span>Historial</span>
-        <span className="size-5 rounded-full bg-muted text-muted-foreground text-[10px] inline-flex items-center justify-center font-bold">
-          {mantenimientosCount}
-        </span>
       </button>
     </div>
   )
