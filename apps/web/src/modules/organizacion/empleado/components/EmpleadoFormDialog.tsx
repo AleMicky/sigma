@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { useQuery } from "@tanstack/react-query"
-import { Building, Calendar, Hash, Info, Users } from "lucide-react"
+import { Building, Calendar, Hash, UserCheck } from "lucide-react"
 
 import { isApiError } from "@/shared/api"
 import { AuditInfo } from "@/shared/components/audit-info"
@@ -13,9 +12,9 @@ import {
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 
-import { areaQueries } from "../../area/api/area.queries"
-import { cargoQueries } from "../../cargo/api/cargo.queries"
-import { personaQueries } from "../../persona/api/persona.queries"
+import { AreaCombobox } from "../../area/components/AreaCombobox"
+import { CargoCombobox } from "../../cargo/components/CargoCombobox"
+import { PersonaCombobox } from "../../persona/components/PersonaCombobox"
 import { useCreateEmpleado, useUpdateEmpleado } from "../api/empleado.mutations"
 import type { Empleado } from "../api/empleado.service"
 import {
@@ -40,14 +39,6 @@ export function EmpleadoFormDialog({
   const createMutation = useCreateEmpleado()
   const updateMutation = useUpdateEmpleado()
   const [formError, setFormError] = useState<string | null>(null)
-
-  const personasQuery = useQuery(personaQueries.list({ size: 100, sortBy: "nombres", direction: "ASC" }))
-  const areasQuery = useQuery(areaQueries.list({ size: 100, sortBy: "nombre", direction: "ASC" }))
-  const cargosQuery = useQuery(cargoQueries.list({ size: 100, sortBy: "nombre", direction: "ASC" }))
-
-  const personas = personasQuery.data?.content ?? []
-  const areas = areasQuery.data?.content ?? []
-  const cargos = cargosQuery.data?.content ?? []
 
   const form = useForm({
     defaultValues: empleado
@@ -95,9 +86,6 @@ export function EmpleadoFormDialog({
     },
   })
 
-  const selectClassName =
-    "flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
-
   return (
     <FormDialog
       open={open}
@@ -127,13 +115,8 @@ export function EmpleadoFormDialog({
         </form.Subscribe>
       }
     >
-      {/* Sección 1: Persona Natural */}
-      <div className="space-y-3 rounded-xl border border-border/80 bg-muted/20 p-3.5 sm:p-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-          <Users className="size-4 text-primary" />
-          <span>Persona Natural</span>
-        </div>
-
+      <div className="flex flex-col gap-3 py-0.5">
+        {/* 1. Persona Natural */}
         <form.Field name="personaId">
           {(field) => {
             const isInvalid =
@@ -141,52 +124,27 @@ export function EmpleadoFormDialog({
 
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <RequiredFieldLabel htmlFor={field.name}>
-                  Seleccionar Persona
+                <RequiredFieldLabel htmlFor={field.name} className="gap-1.5 text-xs font-semibold">
+                  <UserCheck className="size-3.5 text-primary" />
+                  <span>Persona Natural</span>
                 </RequiredFieldLabel>
-                <select
+                <PersonaCombobox
                   id={field.name}
                   name={field.name}
                   value={field.state.value}
+                  onValueChange={(val) => field.handleChange(val)}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  required
-                  className={selectClassName}
-                >
-                  <option value="">-- Seleccionar Persona Registrada --</option>
-                  {personas.map((p) => {
-                    const nombre = [p.nombres, p.primerApellido, p.segundoApellido]
-                      .filter(Boolean)
-                      .join(" ")
-                    return (
-                      <option key={p.id} value={p.id}>
-                        {nombre} — ({p.tipoDocumento}: {p.numeroDocumento}{p.complemento ? `-${p.complemento}` : ""})
-                      </option>
-                    )
-                  })}
-                </select>
+                  aria-invalid={isInvalid}
+                  placeholder="Buscar persona por nombre o documento..."
+                />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
         </form.Field>
 
-        {personas.length === 0 && !personasQuery.isLoading ? (
-          <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-0.5">
-            <Info className="size-3.5 shrink-0" />
-            <span>No se encontraron personas registradas. Primero debes registrar una persona en el catálogo maestro.</span>
-          </p>
-        ) : null}
-      </div>
-
-      {/* Sección 2: Ubicación Organizacional */}
-      <div className="space-y-3 rounded-xl border border-border/80 bg-muted/20 p-3.5 sm:p-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-          <Building className="size-4 text-primary" />
-          <span>Ubicación en la Organización</span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {/* 2. Área y Cargo en 2 Columnas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <form.Field name="areaId">
             {(field) => {
               const isInvalid =
@@ -194,25 +152,19 @@ export function EmpleadoFormDialog({
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
-                  <RequiredFieldLabel htmlFor={field.name}>
-                    Área / Departamento
+                  <RequiredFieldLabel htmlFor={field.name} className="gap-1.5 text-xs font-semibold">
+                    <Building className="size-3.5 text-primary" />
+                    <span>Área / Departamento</span>
                   </RequiredFieldLabel>
-                  <select
+                  <AreaCombobox
                     id={field.name}
                     name={field.name}
                     value={field.state.value}
+                    onValueChange={(val) => field.handleChange(val)}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    required
-                    className={selectClassName}
-                  >
-                    <option value="">-- Seleccionar Área --</option>
-                    {areas.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.nombre} ({a.codigo})
-                      </option>
-                    ))}
-                  </select>
+                    aria-invalid={isInvalid}
+                    placeholder="Seleccionar área..."
+                  />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
@@ -226,67 +178,55 @@ export function EmpleadoFormDialog({
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
-                  <RequiredFieldLabel htmlFor={field.name}>
-                    Cargo / Puesto
+                  <RequiredFieldLabel htmlFor={field.name} className="gap-1.5 text-xs font-semibold">
+                    <Building className="size-3.5 text-primary" />
+                    <span>Cargo / Puesto</span>
                   </RequiredFieldLabel>
-                  <select
+                  <CargoCombobox
                     id={field.name}
                     name={field.name}
                     value={field.state.value}
+                    onValueChange={(val) => field.handleChange(val)}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    required
-                    className={selectClassName}
-                  >
-                    <option value="">-- Seleccionar Cargo --</option>
-                    {cargos.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre} ({c.codigo})
-                      </option>
-                    ))}
-                  </select>
+                    aria-invalid={isInvalid}
+                    placeholder="Seleccionar cargo..."
+                  />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
           </form.Field>
         </div>
-      </div>
 
-      {/* Sección 3: Identificación y Periodo */}
-      <div className="space-y-3 rounded-xl border border-border/80 bg-muted/20 p-3.5 sm:p-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-          <Hash className="size-4 text-primary" />
-          <span>Datos del Empleado y Vigencia</span>
-        </div>
+        {/* 3. Código, Fecha Inicio y Fecha Fin en 3 Columnas compactas */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <form.Field name="codigo">
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
 
-        <form.Field name="codigo">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <RequiredFieldLabel htmlFor={field.name} className="gap-1.5 text-xs font-semibold">
+                    <Hash className="size-3.5 text-primary" />
+                    <span>Código Empleado</span>
+                  </RequiredFieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
+                    required
+                    placeholder="EMP-001"
+                    className="font-mono uppercase h-9 text-xs"
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
 
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <RequiredFieldLabel htmlFor={field.name}>
-                  Código de Empleado
-                </RequiredFieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
-                  required
-                  placeholder="Ej. EMP-001"
-                  className="font-mono uppercase"
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <form.Field name="fechaInicio">
             {(field) => {
               const isInvalid =
@@ -294,7 +234,7 @@ export function EmpleadoFormDialog({
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor={field.name} className="gap-1.5">
+                  <FieldLabel htmlFor={field.name} className="gap-1.5 text-xs font-semibold">
                     <Calendar className="size-3.5 text-muted-foreground" />
                     <span>Fecha Inicio</span>
                   </FieldLabel>
@@ -305,6 +245,7 @@ export function EmpleadoFormDialog({
                     value={field.state.value ?? ""}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
+                    className="h-9 text-xs"
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
@@ -319,9 +260,9 @@ export function EmpleadoFormDialog({
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor={field.name} className="gap-1.5">
+                  <FieldLabel htmlFor={field.name} className="gap-1.5 text-xs font-semibold">
                     <Calendar className="size-3.5 text-muted-foreground" />
-                    <span>Fecha Fin (Opcional)</span>
+                    <span>Fecha Fin</span>
                   </FieldLabel>
                   <Input
                     id={field.name}
@@ -330,6 +271,7 @@ export function EmpleadoFormDialog({
                     value={field.state.value ?? ""}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
+                    className="h-9 text-xs"
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
@@ -337,14 +279,13 @@ export function EmpleadoFormDialog({
             }}
           </form.Field>
         </div>
-      </div>
 
-      {isEditing && empleado ? (
-        <div className="pt-2 border-t">
-          <AuditInfo data={empleado} />
-        </div>
-      ) : null}
+        {isEditing && empleado ? (
+          <div className="pt-2 border-t mt-1">
+            <AuditInfo data={empleado} />
+          </div>
+        ) : null}
+      </div>
     </FormDialog>
   )
 }
-
