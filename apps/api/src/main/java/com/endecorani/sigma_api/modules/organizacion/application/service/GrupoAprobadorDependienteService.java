@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.organizacion.application.service;
 
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.GrupoAprobadorDependienteRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.AprobadorSelectResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResumenResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.GrupoAprobadorDependienteResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.GrupoAprobadorDependiente;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -94,7 +96,13 @@ public class GrupoAprobadorDependienteService {
         dependienteRepository.deleteById(id);
     }
 
-    // --- Métodos Privados de Soporte y Validación ---
+    @Transactional(readOnly = true)
+    public List<AprobadorSelectResponse> findAprobadoresSelectByEmpleadoId(UUID empleadoId) {
+        requireEmpleadoExists(empleadoId);
+        return dependienteRepository.findAprobadoresSelectByEmpleadoId(empleadoId);
+    }
+
+    // --- Métodos Privados de Validación ---
 
     private GrupoAprobadorDependiente findDependiente(UUID grupoAprobadorId, UUID id) {
         return dependienteRepository.findByIdAndGrupoAprobadorId(id, grupoAprobadorId)

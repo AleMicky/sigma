@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.organizacion.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.GrupoAprobadorDependienteRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.AprobadorSelectResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.GrupoAprobadorDependienteResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.service.GrupoAprobadorDependienteService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -16,20 +17,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(ApiConstants.API_V1 + "/grupos-aprobadores/{grupoAprobadorId}/dependientes")
+@RequestMapping(ApiConstants.API_V1 + "/grupos-aprobadores")
 @RequiredArgsConstructor
 @Tag(
         name = "Grupos Aprobadores Dependientes",
@@ -41,7 +35,7 @@ public class GrupoAprobadorDependienteController {
 
     private final GrupoAprobadorDependienteService grupoAprobadorDependienteService;
 
-    @PostMapping
+    @PostMapping("/{grupoAprobadorId}/dependientes")
     @Operation(summary = "Registrar un dependiente dentro de un grupo aprobador")
     public ResponseEntity<ApiResponse<GrupoAprobadorDependienteResponse>> create(
             @PathVariable UUID grupoAprobadorId,
@@ -60,7 +54,7 @@ public class GrupoAprobadorDependienteController {
                 );
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{grupoAprobadorId}/dependientes/{id}")
     @Operation(summary = "Actualizar un dependiente de un grupo aprobador")
     public ResponseEntity<ApiResponse<GrupoAprobadorDependienteResponse>> update(
             @PathVariable UUID grupoAprobadorId,
@@ -78,7 +72,7 @@ public class GrupoAprobadorDependienteController {
         );
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{grupoAprobadorId}/dependientes/{id}")
     @Operation(summary = "Obtener un dependiente de un grupo aprobador por su identificador")
     public ResponseEntity<ApiResponse<GrupoAprobadorDependienteResponse>> findById(
             @PathVariable UUID grupoAprobadorId,
@@ -91,7 +85,7 @@ public class GrupoAprobadorDependienteController {
         );
     }
 
-    @GetMapping
+    @GetMapping("/{grupoAprobadorId}/dependientes")
     @Operation(summary = "Listar los dependientes de un grupo aprobador de forma paginada")
     public ResponseEntity<ApiResponse<PageResponse<GrupoAprobadorDependienteResponse>>> findAll(
             @PathVariable UUID grupoAprobadorId,
@@ -107,7 +101,7 @@ public class GrupoAprobadorDependienteController {
         );
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{grupoAprobadorId}/dependientes/{id}")
     @Operation(summary = "Eliminar un dependiente de un grupo aprobador")
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID grupoAprobadorId,
@@ -118,6 +112,22 @@ public class GrupoAprobadorDependienteController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Registro eliminado correctamente"
+                )
+        );
+    }
+
+    @GetMapping("/empleados/{empleadoId}/aprobadores/select")
+    @Operation(summary = "Listar los aprobadores asignados a un empleado para dropdown/select")
+    public ResponseEntity<ApiResponse<List<AprobadorSelectResponse>>> findAprobadoresSelectByEmpleadoId(
+            @PathVariable UUID empleadoId
+    ) {
+        List<AprobadorSelectResponse> response =
+                grupoAprobadorDependienteService.findAprobadoresSelectByEmpleadoId(empleadoId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Aprobadores obtenidos correctamente",
+                        response
                 )
         );
     }

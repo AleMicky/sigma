@@ -1,4 +1,9 @@
 package com.endecorani.sigma_api.modules.organizacion.application.dto.response;
 
-public record AprobadorSelectResponse() {
-}
+import java.util.UUID;
+
+public record AprobadorSelectResponse(
+        UUID id,
+        String nombreCompleto,
+        String cargo
+) {}

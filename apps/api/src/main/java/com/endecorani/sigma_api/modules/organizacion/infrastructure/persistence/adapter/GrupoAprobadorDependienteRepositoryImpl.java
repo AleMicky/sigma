@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.adapter;
 
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.AprobadorSelectResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.GrupoAprobadorDependiente;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.GrupoAprobadorDependienteRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.GrupoAprobadorDependienteEntity;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -60,5 +62,10 @@ public class GrupoAprobadorDependienteRepositoryImpl implements GrupoAprobadorDe
     @Override
     public void deleteById(UUID id) {
         springRepository.deleteById(id);
+    }
+
+    @Override
+    public List<AprobadorSelectResponse> findAprobadoresSelectByEmpleadoId(UUID empleadoId) {
+        return springRepository.findAprobadoresSelectByEmpleadoId(empleadoId);
     }
 }
