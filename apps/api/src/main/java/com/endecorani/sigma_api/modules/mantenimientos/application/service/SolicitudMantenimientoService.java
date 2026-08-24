@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.EnviarSolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.SolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoAdjuntoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResponse;
@@ -111,13 +112,11 @@ public class SolicitudMantenimientoService {
     }
 
     @Transactional
-    public SolicitudMantenimientoResponse enviar(UUID id) {
+    public SolicitudMantenimientoResponse enviar(UUID id, EnviarSolicitudMantenimientoRequest request) {
 
         SolicitudMantenimiento solicitud = findDomainById(id);
 
-        if (!ESTADO_BORRADOR.equalsIgnoreCase(
-                solicitud.getEstado()
-        )) {
+        if (!ESTADO_BORRADOR.equalsIgnoreCase(solicitud.getEstado())) {
             throw new ConflictException(
                     "SOLICITUD_ESTADO_INVALIDO",
                     "Solo se puede enviar una solicitud en estado BORRADOR"
@@ -128,19 +127,20 @@ public class SolicitudMantenimientoService {
             throw new ConflictException(
                     "SOLICITUD_WORKFLOW_ALREADY_STARTED",
                     "La solicitud ya tiene un workflow iniciado"
-
             );
         }
 
         Map<String, Object> variables = Map.of(
                 "solicitudId", solicitud.getId().toString(),
-                "solicitanteId", solicitud.getSolicitanteId().toString(),
-                "aprobadorId", solicitud.getAprobadoPorId().toString()
 
+                "solicitanteId", solicitud.getSolicitanteId().toString(),
+
+                "aprobadorId", request.aprobadorId().toString(),
+
+                "supervisorId", request.supervisorId().toString()
         );
 
-        String processInstanceId =
-                workflowApplicationService.iniciar(
+        String processInstanceId = workflowApplicationService.iniciar(
                         WORKFLOW_CODIGO,
                         solicitud.getId().toString(),
                         variables
@@ -148,7 +148,13 @@ public class SolicitudMantenimientoService {
 
         solicitud.setProcessInstanceId(processInstanceId);
         solicitud.setEstado(ESTADO_SOLICITADO);
-        return toResponse(repository.save(solicitud));
+
+        solicitud.setAprobadoPorId(request.aprobadorId());
+
+        solicitud.setSupervisorId(request.supervisorId());
+
+        return toResponse(repository.save(solicitud)
+        );
     }
 
     @Transactional
