@@ -39,7 +39,7 @@ import type {
   WorkflowAction,
   WorkflowField,
 } from "../api/solicitud.service"
-import { SolicitudAprobacionCard } from "../components/SolicitudAprobacionCard"
+import { SolicitudAprobacionListView } from "../components/SolicitudAprobacionListView"
 import { SolicitudQuickViewSheet } from "../components/SolicitudQuickViewSheet"
 import { WorkflowActionDialog } from "../components/WorkflowActionDialog"
 
@@ -397,9 +397,9 @@ export function AprobacionesPage() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2">
         {solicitudesQuery.isLoading ? (
           <ListSkeleton
-            rows={8}
-            rowClassName="h-48 rounded-2xl"
-            className="grid grid-cols-1 gap-3.5 p-0.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+            rows={6}
+            rowClassName="h-28 rounded-2xl"
+            className="space-y-3"
           />
         ) : solicitudesQuery.isError ? (
           <EmptyState
@@ -456,16 +456,12 @@ export function AprobacionesPage() {
                 solicitudesQuery.isFetching && "opacity-70",
               )}
             >
-              <ul className="grid grid-cols-1 content-start gap-3.5 p-0.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                {filteredSolicitudes.map((item) => (
-                  <SolicitudAprobacionCard
-                    key={item.id}
-                    solicitud={item}
-                    onQuickView={(s) => setQuickView(s)}
-                    onActionSelect={handleActionSelect}
-                  />
-                ))}
-              </ul>
+              <SolicitudAprobacionListView
+                solicitudes={filteredSolicitudes}
+                onQuickView={(s) => setQuickView(s)}
+                onActionSelect={handleActionSelect}
+                onEdit={openEdit}
+              />
             </div>
 
             {solicitudesQuery.data ? (
