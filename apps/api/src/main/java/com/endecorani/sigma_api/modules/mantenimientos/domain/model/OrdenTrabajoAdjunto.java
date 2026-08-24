@@ -1,4 +1,31 @@
 package com.endecorani.sigma_api.modules.mantenimientos.domain.model;
+import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
-public class OrdenTrabajoAdjunto {
+import java.util.UUID;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+public class OrdenTrabajoAdjunto extends AuditableModel {
+
+    private UUID id;
+
+    private UUID ordenTrabajoId;
+
+    private String nombreArchivo;
+
+    private String tipoMime;
+
+    private Long tamanio;
+
+    private String url;
+
+    private String descripcion;
 }
