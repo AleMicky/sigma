@@ -1,4 +1,5 @@
 import { useState, useId, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
   AlertOctagon,
@@ -12,9 +13,11 @@ import {
   Send,
   ShieldCheck,
   UserCheck,
+  Users,
 } from "lucide-react"
 
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
+import { grupoAprobadorDependienteQueries } from "@/modules/organizacion/grupo-aprobador-dependiente/api/grupo-aprobador-dependiente.queries"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -68,6 +71,19 @@ export function WorkflowActionDialog({
   const [formValues, setFormValues] = useState<Record<string, string>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [responsableId, setResponsableId] = useState<string>("")
+  const [useAllEmployeesSearch, setUseAllEmployeesSearch] = useState<boolean>(false)
+
+  // Aprobador ID from the request if already approved
+  const aprobadorId = solicitud?.aprobadoPor?.id
+
+  // Query dependientes of the approver via /v1/grupos-aprobadores/aprobadores/{aprobadorId}/dependientes/select
+  const dependientesQuery = useQuery({
+    ...grupoAprobadorDependienteQueries.dependientesSelect(aprobadorId),
+    enabled: open && Boolean(aprobadorId),
+  })
+
+  const dependientes = dependientesQuery.data ?? []
+  const hasDependientes = dependientes.length > 0
 
   // Reset form when opened with a new action or solicitud
   useEffect(() => {
@@ -75,6 +91,7 @@ export function WorkflowActionDialog({
       setResponsableId(solicitud.responsable?.id ?? "")
       setFormValues({})
       setFormErrors({})
+      setUseAllEmployeesSearch(false)
     }
   }, [open, solicitud, action])
 
@@ -287,40 +304,106 @@ export function WorkflowActionDialog({
             </p>
           </div>
 
-          {/* Selector de Responsable (if assignment or approval) */}
+          {/* Selector de Responsable (con soporte para dependientes del aprobador) */}
           {isAssignmentRelevant && (
-            <div className="space-y-1.5 rounded-xl bg-muted/30 border border-border/70 p-3">
-              <Label
-                htmlFor="modalResponsableSelect"
-                className="text-xs font-semibold text-foreground flex items-center justify-between"
-              >
-                <div className="flex items-center gap-1.5">
+            <div className="space-y-2 rounded-xl bg-muted/30 border border-border/70 p-3">
+              <div className="flex items-center justify-between">
+                <Label
+                  htmlFor="modalResponsableSelect"
+                  className="text-xs font-semibold text-foreground flex items-center gap-1.5"
+                >
                   <UserCheck className="size-3.5 text-primary" />
                   <span>Asignar Técnico / Responsable</span>
                   <span className="text-destructive">*</span>
-                </div>
-              </Label>
+                </Label>
 
-              <EmpleadoCombobox
-                id="modalResponsableSelect"
-                value={responsableId}
-                onValueChange={(val) => {
-                  setResponsableId(val)
-                  if (formErrors.responsableId) {
-                    setFormErrors((prev) => {
-                      const next = { ...prev }
-                      delete next.responsableId
-                      return next
-                    })
-                  }
-                }}
-                placeholder="Buscar y seleccionar técnico responsable..."
-                aria-invalid={Boolean(formErrors.responsableId)}
-                className="w-full"
-              />
+                {hasDependientes && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setUseAllEmployeesSearch((prev) => !prev)}
+                    className="h-6 px-1.5 text-[10.5px] text-muted-foreground hover:text-primary font-normal"
+                  >
+                    {useAllEmployeesSearch ? "Ver dependientes" : "Buscar en todos"}
+                  </Button>
+                )}
+              </div>
+
+              {/* Si el aprobador tiene dependientes asignados, usamos el selector de dependientes */}
+              {hasDependientes && !useAllEmployeesSearch ? (
+                <div className="space-y-1.5 w-full">
+                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground bg-primary/5 border border-primary/15 rounded-lg px-2.5 py-1">
+                    <Users className="size-3.5 text-primary shrink-0" />
+                    <span>
+                      Técnicos a cargo de: <strong className="text-foreground">{solicitud.aprobadoPor?.nombre}</strong>
+                    </span>
+                  </div>
+
+                  <Select
+                    value={responsableId}
+                    onValueChange={(val) => {
+                      setResponsableId(val ?? "")
+                      if (formErrors.responsableId) {
+                        setFormErrors((prev) => {
+                          const next = { ...prev }
+                          delete next.responsableId
+                          return next
+                        })
+                      }
+                    }}
+                  >
+                    <SelectTrigger
+                      id="modalResponsableSelect"
+                      className="h-9 w-full text-xs bg-background shadow-2xs"
+                    >
+                      <SelectValue placeholder="Seleccionar técnico responsable...">
+                        {dependientes.find((d) => d.id === responsableId)
+                          ? (() => {
+                              const dep = dependientes.find((d) => d.id === responsableId)!
+                              return `${dep.nombreCompleto}${dep.cargo ? ` — ${dep.cargo}` : ""}`
+                            })()
+                          : undefined}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {dependientes.map((dep) => (
+                        <SelectItem key={dep.id} value={dep.id} className="text-xs py-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground">{dep.nombreCompleto}</span>
+                            {dep.cargo && (
+                              <span className="text-[11px] text-muted-foreground">
+                                • {dep.cargo}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <EmpleadoCombobox
+                  id="modalResponsableSelect"
+                  value={responsableId}
+                  onValueChange={(val) => {
+                    setResponsableId(val)
+                    if (formErrors.responsableId) {
+                      setFormErrors((prev) => {
+                        const next = { ...prev }
+                        delete next.responsableId
+                        return next
+                      })
+                    }
+                  }}
+                  placeholder="Buscar y seleccionar técnico responsable..."
+                  aria-invalid={Boolean(formErrors.responsableId)}
+                  className="w-full bg-background h-9 text-xs"
+                />
+              )}
 
               {formErrors.responsableId && (
-                <p className="text-[11px] font-medium text-destructive mt-1 flex items-center gap-1">
+                <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
                   <AlertCircle className="size-3" />
                   <span>{formErrors.responsableId}</span>
                 </p>

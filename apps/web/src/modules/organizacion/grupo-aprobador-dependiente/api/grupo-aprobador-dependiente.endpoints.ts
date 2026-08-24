@@ -5,5 +5,6 @@ export const grupoAprobadorDependienteEndpoints = {
     `/grupos-aprobadores/${grupoAprobadorId}/dependientes/${id}`,
   aprobadoresSelect: (empleadoId: string) =>
     `/grupos-aprobadores/empleados/${empleadoId}/aprobadores/select`,
+  dependientesSelect: (aprobadorId: string) =>
+    `/grupos-aprobadores/aprobadores/${aprobadorId}/dependientes/select`,
 }
-

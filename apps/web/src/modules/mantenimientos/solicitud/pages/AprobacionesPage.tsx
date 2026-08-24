@@ -38,7 +38,7 @@ import type {
   WorkflowField,
 } from "../api/solicitud.service"
 import { SolicitudAprobacionListView } from "../components/SolicitudAprobacionListView"
-import { SolicitudQuickViewSheet } from "../components/SolicitudQuickViewSheet"
+import { SolicitudDetalleModal } from "../components/SolicitudDetalleModal"
 import { WorkflowActionDialog } from "../components/WorkflowActionDialog"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
@@ -46,7 +46,7 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 export function AprobacionesPage() {
   const [selectedEstado, setSelectedEstado] = useState<string>("all")
   const [selectedPrioridad, setSelectedPrioridad] = useState<string>("all")
-  const [sheetSolicitud, setSheetSolicitud] =
+  const [modalSolicitud, setModalSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
 
   const [workflowActionTarget, setWorkflowActionTarget] = useState<{
@@ -130,8 +130,8 @@ export function AprobacionesPage() {
     solicitudesQuery.data?.totalPages,
   )
 
-  function handleOpenSheet(solicitud: SolicitudMantenimiento) {
-    setSheetSolicitud(solicitud)
+  function handleOpenModal(solicitud: SolicitudMantenimiento) {
+    setModalSolicitud(solicitud)
   }
 
   function handleActionSelect(
@@ -440,7 +440,7 @@ export function AprobacionesPage() {
               >
                 <SolicitudAprobacionListView
                   solicitudes={filteredSolicitudes}
-                  onQuickView={handleOpenSheet}
+                  onQuickView={handleOpenModal}
                   onActionSelect={handleActionSelect}
                 />
               </div>
@@ -457,11 +457,11 @@ export function AprobacionesPage() {
         </div>
       </div>
 
-      {/* Detalle de Solicitud + WorkflowPanel Slide-over Sheet */}
-      <SolicitudQuickViewSheet
-        solicitud={sheetSolicitud}
-        open={Boolean(sheetSolicitud)}
-        onOpenChange={(open) => !open && setSheetSolicitud(null)}
+      {/* Detalle de Solicitud + WorkflowPanel Modal Dialog */}
+      <SolicitudDetalleModal
+        solicitud={modalSolicitud}
+        open={Boolean(modalSolicitud)}
+        onOpenChange={(open) => !open && setModalSolicitud(null)}
         onWorkflowAction={handleActionSelect}
       />
 
@@ -475,9 +475,10 @@ export function AprobacionesPage() {
         fields={workflowActionTarget?.fields}
         onSuccess={() => {
           solicitudesQuery.refetch()
-          setSheetSolicitud(null)
+          setModalSolicitud(null)
         }}
       />
     </PageShell>
   )
 }
+

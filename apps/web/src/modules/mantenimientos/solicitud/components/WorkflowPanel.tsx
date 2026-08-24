@@ -44,7 +44,7 @@ function getActionVisuals(action: WorkflowAction) {
       variant: "emerald",
       icon: CheckCircle2,
       btnClass:
-        "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow-md ring-1 ring-emerald-600/30",
+        "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs ring-1 ring-emerald-600/30",
     }
   }
   if (val.includes("OBSERV") || name.includes("observar")) {
@@ -52,7 +52,7 @@ function getActionVisuals(action: WorkflowAction) {
       variant: "amber",
       icon: AlertCircle,
       btnClass:
-        "bg-amber-600 hover:bg-amber-700 text-white shadow-sm hover:shadow-md ring-1 ring-amber-600/30",
+        "bg-amber-600 hover:bg-amber-700 text-white shadow-xs ring-1 ring-amber-600/30",
     }
   }
   if (val.includes("INIC") || name.includes("iniciar")) {
@@ -60,7 +60,7 @@ function getActionVisuals(action: WorkflowAction) {
       variant: "sky",
       icon: Play,
       btnClass:
-        "bg-sky-600 hover:bg-sky-700 text-white shadow-sm hover:shadow-md ring-1 ring-sky-600/30",
+        "bg-sky-600 hover:bg-sky-700 text-white shadow-xs ring-1 ring-sky-600/30",
     }
   }
   if (
@@ -72,7 +72,7 @@ function getActionVisuals(action: WorkflowAction) {
       variant: "indigo",
       icon: Send,
       btnClass:
-        "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow-md ring-1 ring-indigo-600/30",
+        "bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs ring-1 ring-indigo-600/30",
     }
   }
   if (val.includes("VALID") || name.includes("validar")) {
@@ -80,7 +80,7 @@ function getActionVisuals(action: WorkflowAction) {
       variant: "teal",
       icon: ShieldCheck,
       btnClass:
-        "bg-teal-600 hover:bg-teal-700 text-white shadow-sm hover:shadow-md ring-1 ring-teal-600/30",
+        "bg-teal-600 hover:bg-teal-700 text-white shadow-xs ring-1 ring-teal-600/30",
     }
   }
   if (val.includes("CORREG") || name.includes("corregir")) {
@@ -88,7 +88,7 @@ function getActionVisuals(action: WorkflowAction) {
       variant: "orange",
       icon: RotateCcw,
       btnClass:
-        "bg-orange-600 hover:bg-orange-700 text-white shadow-sm hover:shadow-md ring-1 ring-orange-600/30",
+        "bg-orange-600 hover:bg-orange-700 text-white shadow-xs ring-1 ring-orange-600/30",
     }
   }
   if (
@@ -101,7 +101,7 @@ function getActionVisuals(action: WorkflowAction) {
       variant: "green",
       icon: CheckCheck,
       btnClass:
-        "bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm hover:shadow-md ring-1 ring-emerald-700/30",
+        "bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs ring-1 ring-emerald-700/30",
     }
   }
   if (
@@ -114,14 +114,14 @@ function getActionVisuals(action: WorkflowAction) {
       variant: "rose",
       icon: AlertOctagon,
       btnClass:
-        "bg-rose-600 hover:bg-rose-700 text-white shadow-sm hover:shadow-md ring-1 ring-rose-600/30",
+        "bg-rose-600 hover:bg-rose-700 text-white shadow-xs ring-1 ring-rose-600/30",
     }
   }
 
   return {
     variant: "primary",
     icon: FileCheck2,
-    btnClass: "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm",
+    btnClass: "bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs",
   }
 }
 
@@ -146,12 +146,12 @@ export function WorkflowPanel({
     return (
       <div
         className={cn(
-          "rounded-2xl border border-dashed border-border/80 bg-muted/20 p-4 flex items-center justify-between gap-3",
+          "rounded-2xl border border-dashed border-border/80 bg-muted/20 p-3.5 flex items-center justify-between gap-3",
           className,
         )}
       >
         <div className="flex items-center gap-3 text-muted-foreground">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+          <div className="flex size-7.5 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
             <Clock className="size-4" />
           </div>
           <div>
@@ -159,7 +159,7 @@ export function WorkflowPanel({
               Flujo no iniciado (Borrador)
             </h4>
             <p className="text-[11px] text-muted-foreground">
-              Esta solicitud está en borrador y debe ser enviada para iniciar las tareas de aprobación.
+              Esta solicitud está en borrador y debe ser enviada para activar el flujo de trabajo.
             </p>
           </div>
         </div>
@@ -170,23 +170,23 @@ export function WorkflowPanel({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-primary/25 bg-card p-4 shadow-2xs space-y-3.5 transition-all",
+        "rounded-2xl border border-primary/25 bg-card p-3.5 sm:p-4 shadow-2xs space-y-3 transition-all",
         className,
       )}
     >
-      {/* Header: Current Task Name & Status Pill */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs">
-            <ShieldCheck className="size-5" />
-            <span className="absolute -top-0.5 -right-0.5 flex size-2.5">
+      {/* Header: Current Task & Responsable Badge - Responsive Flow */}
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs mt-0.5">
+            <ShieldCheck className="size-4.5" />
+            <span className="absolute -top-0.5 -right-0.5 flex size-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex rounded-full size-2.5 bg-primary" />
+              <span className="relative inline-flex rounded-full size-2 bg-primary" />
             </span>
           </div>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 Tarea Actual del Flujo
               </span>
@@ -196,36 +196,36 @@ export function WorkflowPanel({
                 </span>
               )}
             </div>
-            <h3 className="font-heading text-sm sm:text-base font-bold text-foreground truncate">
+            <h3 className="font-heading text-xs sm:text-sm md:text-base font-bold text-foreground leading-snug">
               {taskName || "En Proceso de Evaluación"}
             </h3>
           </div>
         </div>
 
-        {/* Responsable status pill */}
-        {solicitud.responsable ? (
-          <div className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500/10 text-sky-800 dark:text-sky-300 border border-sky-500/20 px-2.5 py-1 text-xs shrink-0 self-start sm:self-center">
+        {/* Responsable status pill - Dedicated row with clean margins */}
+        {solicitud.responsable && (
+          <div className="inline-flex items-center gap-2 rounded-xl bg-sky-500/10 text-sky-800 dark:text-sky-300 border border-sky-500/20 px-3 py-1.5 text-xs w-fit">
             <UserCheck className="size-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-            <span className="text-[11px] truncate">
-              Responsable: <strong>{solicitud.responsable.nombre}</strong>
+            <span className="text-[11.5px]">
+              Técnico Responsable: <strong className="text-foreground">{solicitud.responsable.nombre}</strong>
             </span>
           </div>
-        ) : null}
+        )}
       </div>
 
       {/* Action Buttons Toolbar */}
-      <div className="pt-2.5 border-t border-border/50">
+      <div className="pt-2 border-t border-border/50">
         {actionsQuery.isLoading ? (
           <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
-            <Loader2 className="size-4 animate-spin text-primary" />
+            <Loader2 className="size-3.5 animate-spin text-primary" />
             <span>Consultando decisiones disponibles...</span>
           </div>
         ) : actions.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic py-1">
+          <p className="text-xs text-muted-foreground italic py-0.5">
             No hay acciones manuales pendientes en esta etapa.
           </p>
         ) : (
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             {actions.map((act) => {
               const visual = getActionVisuals(act)
               const IconComponent = visual.icon
@@ -239,11 +239,11 @@ export function WorkflowPanel({
                     onActionSelect(solicitud, act, taskName, fields)
                   }
                   className={cn(
-                    "h-9 gap-1.5 px-4 text-xs font-bold transition-all cursor-pointer rounded-xl",
+                    "h-8.5 gap-1.5 px-3.5 text-xs font-bold transition-all cursor-pointer rounded-xl",
                     visual.btnClass,
                   )}
                 >
-                  <IconComponent className="size-4 shrink-0" />
+                  <IconComponent className="size-3.5 shrink-0" />
                   <span>{act.name}</span>
                 </Button>
               )

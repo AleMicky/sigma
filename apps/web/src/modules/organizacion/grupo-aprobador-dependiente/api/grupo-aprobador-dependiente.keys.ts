@@ -10,5 +10,6 @@ export const grupoAprobadorDependienteKeys = {
     [...grupoAprobadorDependienteKeys.details(), grupoAprobadorId, id] as const,
   aprobadoresSelect: (empleadoId: string) =>
     [...grupoAprobadorDependienteKeys.all, "aprobadores-select", empleadoId] as const,
+  dependientesSelect: (aprobadorId: string) =>
+    [...grupoAprobadorDependienteKeys.all, "dependientes-select", aprobadorId] as const,
 }
-

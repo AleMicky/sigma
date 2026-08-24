@@ -82,3 +82,16 @@ export async function getAprobadoresSelectByEmpleado(
   )
 }
 
+export type DependienteSelect = {
+  id: string
+  nombreCompleto: string
+  cargo?: string | null
+}
+
+export async function getDependientesSelectByAprobador(
+  aprobadorId: string,
+): Promise<DependienteSelect[]> {
+  return http.get<DependienteSelect[]>(
+    grupoAprobadorDependienteEndpoints.dependientesSelect(aprobadorId),
+  )
+}
