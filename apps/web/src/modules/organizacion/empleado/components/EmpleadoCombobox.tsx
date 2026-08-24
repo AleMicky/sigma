@@ -76,34 +76,40 @@ export function EmpleadoCombobox({
     const area = selectedEmpleado.areaInfo?.nombre || selectedEmpleado.areaNombre
     const initials = getInitials(nombre)
 
+    // Remove any fixed height classes (like h-9) so the card expands naturally
+    const cardCustomClass = className
+      ?.split(" ")
+      .filter((c) => !c.startsWith("h-") && !c.startsWith("max-h-"))
+      .join(" ")
+
     return (
       <div
         className={cn(
-          "flex items-center justify-between gap-3 rounded-2xl border border-border/80 bg-muted/20 p-2.5 sm:p-3 shadow-2xs hover:border-primary/40 transition-all",
+          "flex items-center justify-between gap-2.5 rounded-xl border border-border/80 bg-background/90 p-2 sm:p-2.5 shadow-2xs hover:border-primary/40 transition-all",
           ariaInvalid && "border-destructive ring-1 ring-destructive/20",
-          className,
+          cardCustomClass,
         )}
       >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
           {/* Avatar con iniciales */}
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 text-primary font-bold text-sm border border-primary/20 shadow-2xs">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 text-primary font-bold text-xs border border-primary/20 shadow-2xs">
             {initials}
           </div>
 
           {/* Información del Empleado */}
           <div className="min-w-0 flex-1 space-y-0.5">
-            <div className="flex items-center gap-2 min-w-0">
-              <code className="text-[11px] font-mono font-bold text-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <code className="text-[10.5px] font-mono font-bold text-foreground bg-muted/80 border border-border/60 px-1.5 py-0.2 rounded shrink-0">
                 {selectedEmpleado.codigo}
               </code>
-              <span className="font-bold text-xs sm:text-sm text-foreground truncate">
+              <span className="font-semibold text-xs text-foreground truncate">
                 {nombre}
               </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground truncate">
               {cargo ? (
-                <div className="flex items-center gap-1 text-muted-foreground truncate">
+                <div className="flex items-center gap-1 text-muted-foreground truncate text-[11px]">
                   <Briefcase className="size-3 text-primary shrink-0" />
                   <span className="truncate">{cargo}</span>
                 </div>
@@ -116,7 +122,7 @@ export function EmpleadoCombobox({
               {area ? (
                 <Badge
                   variant="outline"
-                  className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground bg-background/80 shrink-0"
+                  className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground bg-muted/40 shrink-0"
                 >
                   <Building className="size-2.5 mr-1 text-muted-foreground/70" />
                   <span className="truncate">{area}</span>
@@ -133,10 +139,10 @@ export function EmpleadoCombobox({
             variant="ghost"
             size="icon-xs"
             onClick={() => onValueChange?.("", null)}
-            className="size-7 text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 rounded-lg shrink-0 cursor-pointer"
+            className="size-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg shrink-0 cursor-pointer"
             title="Cambiar empleado seleccionado"
           >
-            <X className="size-4" />
+            <X className="size-3.5" />
             <span className="sr-only">Remover selección</span>
           </Button>
         )}

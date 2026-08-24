@@ -57,6 +57,23 @@ type WorkflowActionDialogProps = {
   onSuccess?: () => void
 }
 
+function fixEncoding(str?: string | null): string {
+  if (!str) return ""
+  return str
+    .replace(/Ã¡/g, "á")
+    .replace(/Ã©/g, "é")
+    .replace(/Ã­/g, "í")
+    .replace(/Ã³/g, "ó")
+    .replace(/Ãº/g, "ú")
+    .replace(/Ã±/g, "ñ")
+    .replace(/Ã/g, "Á")
+    .replace(/Ã‰/g, "É")
+    .replace(/Ã/g, "Í")
+    .replace(/Ã“/g, "Ó")
+    .replace(/Ãš/g, "Ú")
+    .replace(/Ã‘/g, "Ñ")
+}
+
 export function WorkflowActionDialog({
   open,
   onOpenChange,
@@ -72,6 +89,7 @@ export function WorkflowActionDialog({
   const [formValues, setFormValues] = useState<Record<string, string>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [responsableId, setResponsableId] = useState<string>("")
+  const [supervisorId, setSupervisorId] = useState<string>("")
   const [fechaEstimadaOt, setFechaEstimadaOt] = useState<string>("")
   const [useAllEmployeesSearch, setUseAllEmployeesSearch] = useState<boolean>(false)
 
@@ -91,6 +109,7 @@ export function WorkflowActionDialog({
   useEffect(() => {
     if (open && solicitud) {
       setResponsableId(solicitud.responsable?.id ?? "")
+      setSupervisorId("")
       setFechaEstimadaOt(
         solicitud.fechaEstimadaOt
           ? (solicitud.fechaEstimadaOt.includes("T")
@@ -106,7 +125,10 @@ export function WorkflowActionDialog({
 
   if (!solicitud || !action) return null
 
-  const actionName = (action.name ?? "").toLowerCase()
+  const cleanActionName = fixEncoding(action.name)
+  const cleanTaskName = fixEncoding(taskName)
+
+  const actionName = (cleanActionName ?? "").toLowerCase()
   const actionVal = (action.value ?? "").toUpperCase()
 
   const isAprobar =
@@ -118,7 +140,10 @@ export function WorkflowActionDialog({
   const isIniciar =
     actionVal.includes("INIC") || actionName.includes("iniciar")
   const isRevision =
-    actionVal.includes("REVIS") || actionName.includes("revisión") || actionName.includes("revision")
+    actionVal.includes("REVIS") ||
+    actionName.includes("revisión") ||
+    actionName.includes("revision") ||
+    actionName.includes("revis")
   const isValidar =
     actionVal.includes("VALID") || actionName.includes("validar")
   const isCerrar =
@@ -126,7 +151,7 @@ export function WorkflowActionDialog({
   const isRechazar =
     actionVal.includes("RECHAZ") || actionVal.includes("CANCEL") || actionName.includes("rechazar")
 
-  // Check if this action or current task involves assigning/selecting a responsible
+  // Check if this action involves assigning a responsible
   const hasResponsableFieldInBpmn = fields.some(
     (f) =>
       f.id.toLowerCase() === "responsableid" ||
@@ -142,6 +167,23 @@ export function WorkflowActionDialog({
     (isAprobar && !solicitud.responsable) ||
     taskName?.toLowerCase().includes("asign") ||
     taskName?.toLowerCase().includes("responsable")
+
+  // Check if this action involves assigning a supervisor (sending to review from maintenance)
+  const hasSupervisorFieldInBpmn = fields.some(
+    (f) =>
+      f.id.toLowerCase() === "supervisorid" ||
+      f.name.toLowerCase().includes("supervisor"),
+  )
+
+  const isSupervisorRelevant =
+    hasSupervisorFieldInBpmn ||
+    isRevision ||
+    actionVal.includes("REVIS") ||
+    actionName.includes("revis") ||
+    actionName.includes("completar") ||
+    actionName.includes("finalizar") ||
+    taskName?.toLowerCase().includes("mantenimiento") ||
+    taskName?.toLowerCase().includes("enviar")
 
   const actionColorClass = isAprobar
     ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
@@ -162,7 +204,10 @@ export function WorkflowActionDialog({
                   : "bg-primary hover:bg-primary/90 text-primary-foreground"
 
   const writableFields = fields.filter(
-    (f) => f.writable !== false && f.id.toLowerCase() !== "responsableid",
+    (f) =>
+      f.writable !== false &&
+      f.id.toLowerCase() !== "responsableid" &&
+      f.id.toLowerCase() !== "supervisorid",
   )
 
   function handleFieldChange(fieldId: string, val: string) {
@@ -208,6 +253,12 @@ export function WorkflowActionDialog({
         "Debe seleccionar el técnico o responsable asignado."
     }
 
+    // Check supervisor requirement when sending to review or completing execution
+    if (isSupervisorRelevant && !supervisorId) {
+      errors.supervisorId =
+        "Debe seleccionar el supervisor que validará el mantenimiento."
+    }
+
     // Check fechaEstimadaOt requirement when approving
     if (isAprobar && !fechaEstimadaOt?.trim()) {
       errors.fechaEstimadaOt =
@@ -226,6 +277,10 @@ export function WorkflowActionDialog({
 
     if (isAssignmentRelevant && responsableId) {
       variables.responsableId = responsableId
+    }
+
+    if (isSupervisorRelevant && supervisorId) {
+      variables.supervisorId = supervisorId
     }
 
     if (fechaEstimadaOt?.trim()) {
@@ -295,17 +350,17 @@ export function WorkflowActionDialog({
             </div>
             <div>
               <DialogTitle className="text-base font-heading font-bold">
-                {action.name} Solicitud
+                {cleanActionName} Solicitud
               </DialogTitle>
-              {taskName && (
+              {cleanTaskName && (
                 <p className="text-[11px] text-muted-foreground font-mono">
-                  {taskName}
+                  {cleanTaskName}
                 </p>
               )}
             </div>
           </div>
           <DialogDescription className="text-xs text-muted-foreground">
-            Vas a registrar la decisión <strong className="text-foreground">{action.name}</strong> en el flujo de trabajo.
+            Vas a registrar la decisión <strong className="text-foreground">{cleanActionName}</strong> en el flujo de trabajo.
           </DialogDescription>
         </DialogHeader>
 
@@ -317,7 +372,7 @@ export function WorkflowActionDialog({
                 {solicitud.numero}
               </span>
               <span className="px-2 py-0.5 rounded-full font-bold text-[10px] uppercase bg-primary/10 text-primary border border-primary/20">
-                Acción: {action.name}
+                Acción: {cleanActionName}
               </span>
             </div>
             <p className="font-medium text-foreground truncate">
@@ -419,7 +474,7 @@ export function WorkflowActionDialog({
                   }}
                   placeholder="Buscar y seleccionar técnico responsable..."
                   aria-invalid={Boolean(formErrors.responsableId)}
-                  className="w-full bg-background h-9 text-xs"
+                  className="w-full bg-background text-xs"
                 />
               )}
 
@@ -427,6 +482,52 @@ export function WorkflowActionDialog({
                 <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
                   <AlertCircle className="size-3" />
                   <span>{formErrors.responsableId}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Selector de Supervisor para Validación (Requerido al enviar a revisión) */}
+          {isSupervisorRelevant && (
+            <div className="space-y-2.5 rounded-xl bg-indigo-500/5 border border-indigo-500/30 p-3.5 shadow-2xs">
+              <div className="space-y-0.5">
+                <Label
+                  htmlFor="modalSupervisorSelect"
+                  className="text-xs font-semibold text-foreground flex items-center gap-1.5"
+                >
+                  <ShieldCheck className="size-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Asignar Supervisor para Validación</span>
+                  <span className="text-destructive font-bold">*</span>
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Selecciona el supervisor responsable de validar los trabajos realizados y evidencias técnicas.
+                </p>
+              </div>
+
+              <div className="pt-0.5">
+                <EmpleadoCombobox
+                  id="modalSupervisorSelect"
+                  value={supervisorId}
+                  onValueChange={(val) => {
+                    setSupervisorId(val)
+                    if (formErrors.supervisorId) {
+                      setFormErrors((prev) => {
+                        const next = { ...prev }
+                        delete next.supervisorId
+                        return next
+                      })
+                    }
+                  }}
+                  placeholder="Buscar y seleccionar supervisor..."
+                  aria-invalid={Boolean(formErrors.supervisorId)}
+                  className="w-full bg-background text-xs"
+                />
+              </div>
+
+              {formErrors.supervisorId && (
+                <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
+                  <AlertCircle className="size-3" />
+                  <span>{formErrors.supervisorId}</span>
                 </p>
               )}
             </div>
@@ -603,13 +704,14 @@ export function WorkflowActionDialog({
 
           {/* Simple Confirmation notice if no inputs needed */}
           {!isAssignmentRelevant &&
+            !isSupervisorRelevant &&
             !isObservar &&
             !isCorregir &&
             writableFields.length === 0 && (
               <div className="rounded-lg bg-muted/40 p-2.5 flex items-start gap-2 text-muted-foreground text-xs">
                 <HelpCircle className="size-4 text-muted-foreground shrink-0 mt-0.5" />
                 <p className="text-[11.5px] leading-relaxed">
-                  Esta acción registrará <strong className="text-foreground">{action.name}</strong> y avanzará la solicitud a la siguiente etapa automáticamente.
+                  Esta acción registrará <strong className="text-foreground">{cleanActionName}</strong> y avanzará la solicitud a la siguiente etapa automáticamente.
                 </p>
               </div>
             )}
@@ -622,7 +724,7 @@ export function WorkflowActionDialog({
             size="sm"
             onClick={() => onOpenChange(false)}
             disabled={completeMutation.isPending}
-            className="text-xs h-8"
+            className="text-xs h-8 cursor-pointer"
           >
             Cancelar
           </Button>
@@ -631,7 +733,7 @@ export function WorkflowActionDialog({
             form={formId}
             size="sm"
             disabled={completeMutation.isPending}
-            className={cn("text-xs h-8 font-semibold gap-1.5 shadow-sm", actionColorClass)}
+            className={cn("text-xs h-8 font-semibold gap-1.5 shadow-sm cursor-pointer", actionColorClass)}
           >
             {completeMutation.isPending ? (
               <>
@@ -659,7 +761,7 @@ export function WorkflowActionDialog({
                 ) : (
                   <CheckCircle2 className="size-3.5" />
                 )}
-                <span>Confirmar {action.name}</span>
+                <span>Confirmar {cleanActionName}</span>
               </>
             )}
           </Button>
