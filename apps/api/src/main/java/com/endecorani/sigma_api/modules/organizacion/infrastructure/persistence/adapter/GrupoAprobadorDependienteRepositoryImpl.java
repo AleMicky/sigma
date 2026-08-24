@@ -18,30 +18,33 @@ import java.util.UUID;
 public class GrupoAprobadorDependienteRepositoryImpl implements GrupoAprobadorDependienteRepository {
 
     private final SpringGrupoAprobadorDependienteRepository springRepository;
-
     private final GrupoAprobadorDependientePersistenceMapper mapper;
 
     @Override
     public GrupoAprobadorDependiente save(GrupoAprobadorDependiente dependiente) {
-        GrupoAprobadorDependienteEntity saved = springRepository.save(mapper.toEntity(dependiente));
+        GrupoAprobadorDependienteEntity entity = mapper.toEntity(dependiente);
+        GrupoAprobadorDependienteEntity saved = springRepository.save(entity);
         return mapper.toDomain(saved);
     }
 
     @Override
     public Optional<GrupoAprobadorDependiente> findById(UUID id) {
-        return springRepository
-                .findById(id)
-                .map(mapper::toDomain);
+        return springRepository.findById(id).map(mapper::toDomain);
     }
 
     @Override
-    public Page<GrupoAprobadorDependiente> findByGrupoAprobadorId(
-            UUID grupoAprobadorId,
-            Pageable pageable
-    ) {
-        return springRepository
-                .findByGrupoAprobadorId(grupoAprobadorId, pageable)
-                .map(mapper::toDomain);
+    public Optional<GrupoAprobadorDependiente> findByIdAndGrupoAprobadorId(UUID id, UUID grupoAprobadorId) {
+        return springRepository.findByIdAndGrupoAprobadorId(id, grupoAprobadorId).map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<GrupoAprobadorDependiente> findByGrupoAprobadorId(UUID grupoAprobadorId, Pageable pageable) {
+        return springRepository.findByGrupoAprobadorId(grupoAprobadorId, pageable).map(mapper::toDomain);
+    }
+
+    @Override
+    public boolean existsByIdAndGrupoAprobadorId(UUID id, UUID grupoAprobadorId) {
+        return springRepository.existsByIdAndGrupoAprobadorId(id, grupoAprobadorId);
     }
 
     @Override
@@ -50,16 +53,8 @@ public class GrupoAprobadorDependienteRepositoryImpl implements GrupoAprobadorDe
     }
 
     @Override
-    public boolean existsByGrupoAprobadorIdAndEmpleadoIdAndIdNot(
-            UUID grupoAprobadorId,
-            UUID empleadoId,
-            UUID id
-    ) {
-        return springRepository.existsByGrupoAprobadorIdAndEmpleadoIdAndIdNot(
-                grupoAprobadorId,
-                empleadoId,
-                id
-        );
+    public boolean existsByGrupoAprobadorIdAndEmpleadoIdAndIdNot(UUID grupoAprobadorId, UUID empleadoId, UUID id) {
+        return springRepository.existsByGrupoAprobadorIdAndEmpleadoIdAndIdNot(grupoAprobadorId, empleadoId, id);
     }
 
     @Override

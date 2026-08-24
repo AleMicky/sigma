@@ -13,18 +13,16 @@ public interface GrupoAprobadorDependienteRepository {
 
     Optional<GrupoAprobadorDependiente> findById(UUID id);
 
-    Page<GrupoAprobadorDependiente> findByGrupoAprobadorId(
-            UUID grupoAprobadorId,
-            Pageable pageable
-    );
+    // Búsqueda directa acotada al grupo aprobador
+    Optional<GrupoAprobadorDependiente> findByIdAndGrupoAprobadorId(UUID id, UUID grupoAprobadorId);
+
+    Page<GrupoAprobadorDependiente> findByGrupoAprobadorId(UUID grupoAprobadorId, Pageable pageable);
+
+    boolean existsByIdAndGrupoAprobadorId(UUID id, UUID grupoAprobadorId);
 
     boolean existsByGrupoAprobadorIdAndEmpleadoId(UUID grupoAprobadorId, UUID empleadoId);
 
-    boolean existsByGrupoAprobadorIdAndEmpleadoIdAndIdNot(
-            UUID grupoAprobadorId,
-            UUID empleadoId,
-            UUID id
-    );
+    boolean existsByGrupoAprobadorIdAndEmpleadoIdAndIdNot(UUID grupoAprobadorId, UUID empleadoId, UUID id);
 
     void deleteById(UUID id);
 }

@@ -23,8 +23,8 @@ import { useDeleteSolicitud, useEnviarSolicitud } from "../api/solicitud.mutatio
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
 import { ConfirmEnviarDialog } from "../components/ConfirmEnviarDialog"
-import { SolicitudCard } from "../components/SolicitudCard"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
+import { SolicitudListView } from "../components/SolicitudListView"
 import { SolicitudQuickViewSheet } from "../components/SolicitudQuickViewSheet"
 import { SolicitudStats } from "../components/SolicitudStats"
 
@@ -222,9 +222,9 @@ export function SolicitudesPage() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2">
         {solicitudesQuery.isLoading ? (
           <ListSkeleton
-            rows={8}
-            rowClassName="h-40 rounded-2xl"
-            className="grid grid-cols-1 gap-3.5 p-0.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+            rows={6}
+            rowClassName="h-28 rounded-2xl"
+            className="space-y-3"
           />
         ) : solicitudesQuery.isError ? (
           <EmptyState
@@ -275,18 +275,13 @@ export function SolicitudesPage() {
                 solicitudesQuery.isFetching && "opacity-70",
               )}
             >
-              <ul className="grid grid-cols-1 content-start gap-3.5 p-0.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                {solicitudes.map((item) => (
-                  <SolicitudCard
-                    key={item.id}
-                    solicitud={item}
-                    onEdit={openEdit}
-                    onQuickView={(s) => setQuickView(s)}
-                    onDelete={(s) => setDeleting(s)}
-                    onEnviar={(s) => setEnviando(s)}
-                  />
-                ))}
-              </ul>
+              <SolicitudListView
+                solicitudes={solicitudes}
+                onEdit={openEdit}
+                onQuickView={(s) => setQuickView(s)}
+                onDelete={(s) => setDeleting(s)}
+                onEnviar={(s) => setEnviando(s)}
+              />
             </div>
 
             {solicitudesQuery.data ? (

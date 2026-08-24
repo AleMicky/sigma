@@ -9,6 +9,7 @@ import {
   Briefcase,
   Building2,
   Calendar,
+  Check,
   FileText,
   HelpCircle,
   ImageIcon,
@@ -16,7 +17,7 @@ import {
   Loader2,
   MapPin,
   Paperclip,
-  Send,
+  Plus,
   User,
   Wrench,
   X,
@@ -1398,8 +1399,12 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                     </>
                   ) : (
                     <>
-                      <Send className="size-3.5" />
-                      <span>{isEditing ? "Guardar Cambios" : "Enviar Solicitud"}</span>
+                      {isEditing ? (
+                        <Check className="size-3.5" />
+                      ) : (
+                        <Plus className="size-3.5" />
+                      )}
+                      <span>{isEditing ? "Guardar Cambios" : "Crear Solicitud"}</span>
                     </>
                   )}
                 </Button>

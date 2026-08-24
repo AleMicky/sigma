@@ -2,7 +2,7 @@ package com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence
 
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
-import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoSearchCriteria;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.EmpleadoSearchCriteria;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.EmpleadoEntity;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.mapper.EmpleadoPersistenceMapper;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringEmpleadoRepository;

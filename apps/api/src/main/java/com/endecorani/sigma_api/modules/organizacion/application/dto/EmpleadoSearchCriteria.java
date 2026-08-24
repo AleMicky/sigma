@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.organizacion.domain.repository;
+package com.endecorani.sigma_api.modules.organizacion.application.dto;
 
 import java.util.UUID;
 

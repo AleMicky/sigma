@@ -9,7 +9,6 @@ import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoR
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.GrupoAprobadorDependienteRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.GrupoAprobadorRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.dto.response.CatalogoResumenResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -20,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,54 +29,45 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class GrupoAprobadorDependienteService {
 
-    private static final Set<String> SORT_FIELDS = Set.of(
-            "id",
-            "createdAt",
-            "updatedAt"
-    );
+    private static final String RESOURCE_NAME = "GrupoAprobadorDependiente";
+    private static final String DUPLICATE_ERROR_CODE = "GRUPO_APROBADOR_DEPENDIENTE_DUPLICADO";
+    private static final Set<String> SORT_FIELDS = Set.of("id", "createdAt", "updatedAt");
 
-    private final GrupoAprobadorDependienteRepository grupoAprobadorDependienteRepository;
-
+    private final GrupoAprobadorDependienteRepository dependienteRepository;
     private final GrupoAprobadorRepository grupoAprobadorRepository;
-
     private final EmpleadoRepository empleadoRepository;
-
     private final PersonaRepository personaRepository;
 
     @Transactional
-    public GrupoAprobadorDependienteResponse create(
-            UUID grupoAprobadorId,
-            GrupoAprobadorDependienteRequest request
-    ) {
+    public GrupoAprobadorDependienteResponse create(UUID grupoAprobadorId, GrupoAprobadorDependienteRequest request) {
         requireGrupoAprobadorExists(grupoAprobadorId);
         requireEmpleadoExists(request.empleadoId());
-        requireNotDuplicated(grupoAprobadorId, request.empleadoId());
+        validateNotDuplicated(grupoAprobadorId, request.empleadoId(), null);
 
-        GrupoAprobadorDependiente dependiente = toDomain(grupoAprobadorId, request);
-        return toResponse(grupoAprobadorDependienteRepository.save(dependiente));
+        GrupoAprobadorDependiente dependiente = GrupoAprobadorDependiente.builder()
+                .grupoAprobadorId(grupoAprobadorId)
+                .empleadoId(request.empleadoId())
+                .build();
+
+        return toResponse(dependienteRepository.save(dependiente));
     }
 
     @Transactional
-    public GrupoAprobadorDependienteResponse update(
-            UUID grupoAprobadorId,
-            UUID id,
-            GrupoAprobadorDependienteRequest request
-    ) {
-        GrupoAprobadorDependiente dependiente = findDependienteOfGrupo(grupoAprobadorId, id);
-        requireEmpleadoExists(request.empleadoId());
+    public GrupoAprobadorDependienteResponse update(UUID grupoAprobadorId, UUID id, GrupoAprobadorDependienteRequest request) {
+        GrupoAprobadorDependiente dependiente = findDependiente(grupoAprobadorId, id);
 
-        if (!dependiente.getEmpleadoId().equals(request.empleadoId())) {
-            requireNotDuplicatedOnUpdate(grupoAprobadorId, request.empleadoId(), id);
+        if (!Objects.equals(dependiente.getEmpleadoId(), request.empleadoId())) {
+            requireEmpleadoExists(request.empleadoId());
+            validateNotDuplicated(grupoAprobadorId, request.empleadoId(), id);
+            dependiente.setEmpleadoId(request.empleadoId());
         }
 
-        dependiente.setEmpleadoId(request.empleadoId());
-
-        return toResponse(grupoAprobadorDependienteRepository.save(dependiente));
+        return toResponse(dependienteRepository.save(dependiente));
     }
 
     @Transactional(readOnly = true)
     public GrupoAprobadorDependienteResponse findById(UUID grupoAprobadorId, UUID id) {
-        return toResponse(findDependienteOfGrupo(grupoAprobadorId, id));
+        return toResponse(findDependiente(grupoAprobadorId, id));
     }
 
     @Transactional(readOnly = true)
@@ -87,7 +78,7 @@ public class GrupoAprobadorDependienteService {
         requireGrupoAprobadorExists(grupoAprobadorId);
 
         return PageResponse.from(
-                grupoAprobadorDependienteRepository.findByGrupoAprobadorId(
+                dependienteRepository.findByGrupoAprobadorId(
                         grupoAprobadorId,
                         pageRequest.toPageable(SORT_FIELDS)
                 ),
@@ -97,22 +88,17 @@ public class GrupoAprobadorDependienteService {
 
     @Transactional
     public void delete(UUID grupoAprobadorId, UUID id) {
-        findDependienteOfGrupo(grupoAprobadorId, id);
-        grupoAprobadorDependienteRepository.deleteById(id);
+        if (!dependienteRepository.existsByIdAndGrupoAprobadorId(id, grupoAprobadorId)) {
+            throw new ResourceNotFoundException(RESOURCE_NAME, id);
+        }
+        dependienteRepository.deleteById(id);
     }
 
-    private GrupoAprobadorDependiente findDependienteOfGrupo(UUID grupoAprobadorId, UUID id) {
-        GrupoAprobadorDependiente dependiente = grupoAprobadorDependienteRepository
-                .findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("GrupoAprobadorDependiente", id)
-                );
+    // --- Métodos Privados de Soporte y Validación ---
 
-        if (!dependiente.getGrupoAprobadorId().equals(grupoAprobadorId)) {
-            throw new ResourceNotFoundException("GrupoAprobadorDependiente", id);
-        }
-
-        return dependiente;
+    private GrupoAprobadorDependiente findDependiente(UUID grupoAprobadorId, UUID id) {
+        return dependienteRepository.findByIdAndGrupoAprobadorId(id, grupoAprobadorId)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_NAME, id));
     }
 
     private void requireGrupoAprobadorExists(UUID grupoAprobadorId) {
@@ -127,34 +113,20 @@ public class GrupoAprobadorDependienteService {
         }
     }
 
-    private void requireNotDuplicated(UUID grupoAprobadorId, UUID empleadoId) {
-        if (grupoAprobadorDependienteRepository
-                .existsByGrupoAprobadorIdAndEmpleadoId(grupoAprobadorId, empleadoId)) {
+    private void validateNotDuplicated(UUID grupoAprobadorId, UUID empleadoId, UUID currentId) {
+        boolean isDuplicated = (currentId == null)
+                ? dependienteRepository.existsByGrupoAprobadorIdAndEmpleadoId(grupoAprobadorId, empleadoId)
+                : dependienteRepository.existsByGrupoAprobadorIdAndEmpleadoIdAndIdNot(grupoAprobadorId, empleadoId, currentId);
+
+        if (isDuplicated) {
             throw new BusinessException(
-                    "GRUPO_APROBADOR_DEPENDIENTE_DUPLICADO",
-                    "El empleado %s ya pertenece al grupo aprobador %s"
-                            .formatted(empleadoId, grupoAprobadorId)
+                    DUPLICATE_ERROR_CODE,
+                    "El empleado %s ya pertenece al grupo aprobador %s".formatted(empleadoId, grupoAprobadorId)
             );
         }
     }
 
-    private void requireNotDuplicatedOnUpdate(UUID grupoAprobadorId, UUID empleadoId, UUID id) {
-        if (grupoAprobadorDependienteRepository
-                .existsByGrupoAprobadorIdAndEmpleadoIdAndIdNot(grupoAprobadorId, empleadoId, id)) {
-            throw new BusinessException(
-                    "GRUPO_APROBADOR_DEPENDIENTE_DUPLICADO",
-                    "El empleado %s ya pertenece al grupo aprobador %s"
-                            .formatted(empleadoId, grupoAprobadorId)
-            );
-        }
-    }
-
-    private GrupoAprobadorDependiente toDomain(UUID grupoAprobadorId, GrupoAprobadorDependienteRequest request) {
-        return GrupoAprobadorDependiente.builder()
-                .grupoAprobadorId(grupoAprobadorId)
-                .empleadoId(request.empleadoId())
-                .build();
-    }
+    // --- Mapeos a Response ---
 
     private GrupoAprobadorDependienteResponse toResponse(GrupoAprobadorDependiente domain) {
         return new GrupoAprobadorDependienteResponse(
@@ -166,50 +138,36 @@ public class GrupoAprobadorDependienteService {
     }
 
     private CatalogoResumenResponse buildGrupoAprobadorInfo(UUID grupoAprobadorId) {
-        if (grupoAprobadorId == null) {
-            return null;
-        }
+        if (grupoAprobadorId == null) return null;
 
         return grupoAprobadorRepository.findById(grupoAprobadorId)
-                .map(grupo -> new CatalogoResumenResponse(
-                        grupo.getId(),
-                        grupo.getCodigo(),
-                        grupo.getNombre()
-                ))
+                .map(g -> new CatalogoResumenResponse(g.getId(), g.getCodigo(), g.getNombre()))
                 .orElse(null);
     }
 
     private EmpleadoResumenResponse buildEmpleadoInfo(UUID empleadoId) {
-        if (empleadoId == null) {
-            return null;
-        }
+        if (empleadoId == null) return null;
 
         return empleadoRepository.findById(empleadoId)
-                .map(empleado -> new EmpleadoResumenResponse(
-                        empleado.getId(),
-                        empleado.getCodigo(),
-                        buildNombreCompleto(empleado.getPersonaId())
+                .map(emp -> new EmpleadoResumenResponse(
+                        emp.getId(),
+                        emp.getCodigo(),
+                        buildNombreCompleto(emp.getPersonaId())
                 ))
                 .orElse(null);
     }
 
     private String buildNombreCompleto(UUID personaId) {
-        if (personaId == null) {
-            return null;
-        }
+        if (personaId == null) return null;
 
         return personaRepository.findById(personaId)
-                .map(this::buildNombreCompleto)
+                .map(this::formatNombreCompleto)
                 .orElse(null);
     }
 
-    private String buildNombreCompleto(Persona persona) {
-        return Stream.of(
-                        persona.getNombres(),
-                        persona.getPrimerApellido(),
-                        persona.getSegundoApellido()
-                )
-                .filter(value -> value != null && !value.isBlank())
+    private String formatNombreCompleto(Persona persona) {
+        return Stream.of(persona.getNombres(), persona.getPrimerApellido(), persona.getSegundoApellido())
+                .filter(s -> s != null && !s.isBlank())
                 .map(String::trim)
                 .collect(Collectors.joining(" "));
     }
