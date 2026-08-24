@@ -27,7 +27,6 @@ import {
   ActivoAddDocumentModal,
   ActivoAddMantenimientoModal,
   ActivoAsignacionTab,
-  ActivoAuditoriaTab,
   ActivoDetailHeader,
   ActivoDetailHero,
   ActivoDetailTabs,
@@ -312,8 +311,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
             onOpenMantenimiento={() => setIsMantenimientoOpen(true)}
           />
         )}
-
-        {activeTab === "auditoria" && <ActivoAuditoriaTab activo={activo} />}
       </main>
 
       {/* Modals */}

@@ -2,12 +2,9 @@ import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   Calendar,
-  CheckCircle2,
   Copy,
   Hash,
   Layers,
-  LayoutGrid,
-  List,
   MoreVertical,
   Pencil,
   Plus,
@@ -58,7 +55,6 @@ export function ActivoAccesoriosTab({
   onEditAccesorio,
 }: ActivoAccesoriosTabProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid")
   const [itemToDelete, setItemToDelete] = useState<ActivoAccesorio | null>(null)
 
   const deleteMutation = useDeleteActivoAccesorio()
@@ -87,17 +83,6 @@ export function ActivoAccesoriosTab({
     )
   }, [items, searchTerm])
 
-  // Stats calculation
-  const totalAccesoriosAsignados = items.length
-  const totalUnidades = useMemo(
-    () => items.reduce((acc, curr) => acc + (curr.cantidad || 0), 0),
-    [items],
-  )
-  const conNumeroSerie = useMemo(
-    () => items.filter((i) => Boolean(i.numeroSerie?.trim())).length,
-    [items],
-  )
-
   function copySerial(serial?: string | null) {
     if (!serial) return
     void navigator.clipboard.writeText(serial)
@@ -119,60 +104,6 @@ export function ActivoAccesoriosTab({
 
   return (
     <div className="flex flex-col gap-3.5">
-      {/* Top Stats Banner */}
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-        <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card/60 p-3 shadow-2xs backdrop-blur-xs">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Layers className="size-4.5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Accesorios Asignados
-            </span>
-            <span className="font-heading text-lg font-bold text-foreground">
-              {totalAccesoriosAsignados}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                tipos
-              </span>
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card/60 p-3 shadow-2xs backdrop-blur-xs">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            <Hash className="size-4.5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Unidades Físicas Totales
-            </span>
-            <span className="font-heading text-lg font-bold text-foreground">
-              {totalUnidades}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                unidades
-              </span>
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card/60 p-3 shadow-2xs backdrop-blur-xs">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="size-4.5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Con Número de Serie
-            </span>
-            <span className="font-heading text-lg font-bold text-foreground">
-              {conNumeroSerie}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                identificados
-              </span>
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* Filter and Actions Bar */}
       <div className="flex flex-col gap-2 rounded-xl border border-border/70 bg-muted/20 p-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 sm:max-w-xs">
@@ -186,30 +117,6 @@ export function ActivoAccesoriosTab({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* View mode toggle */}
-          <div className="flex items-center rounded-lg border border-border/70 bg-background p-0.5">
-            <Button
-              type="button"
-              variant={viewMode === "grid" ? "secondary" : "ghost"}
-              size="icon"
-              className="size-7 rounded-md"
-              onClick={() => setViewMode("grid")}
-              title="Vista de cuadrícula"
-            >
-              <LayoutGrid className="size-3.5" />
-            </Button>
-            <Button
-              type="button"
-              variant={viewMode === "table" ? "secondary" : "ghost"}
-              size="icon"
-              className="size-7 rounded-md"
-              onClick={() => setViewMode("table")}
-              title="Vista de tabla"
-            >
-              <List className="size-3.5" />
-            </Button>
-          </div>
-
           {/* Add Accessory Button */}
           <Button
             type="button"
@@ -223,11 +130,11 @@ export function ActivoAccesoriosTab({
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Area: Cards Grid */}
       {query.isLoading ? (
         <ListSkeleton
           rows={4}
-          rowClassName="h-24 rounded-xl"
+          rowClassName="h-28 rounded-xl"
           className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
         />
       ) : query.isError ? (
@@ -271,8 +178,8 @@ export function ActivoAccesoriosTab({
           }
           className="py-8"
         />
-      ) : viewMode === "grid" ? (
-        /* GRID VIEW */
+      ) : (
+        /* CARDS GRID */
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredItems.map((item) => (
             <div
@@ -283,7 +190,7 @@ export function ActivoAccesoriosTab({
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
                       <Tag className="size-4.5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -399,116 +306,6 @@ export function ActivoAccesoriosTab({
             </div>
           ))}
         </div>
-      ) : (
-        /* TABLE VIEW */
-        <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-2xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b bg-muted/50 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th scope="col" className="w-12 text-center py-2.5 px-3">
-                    #
-                  </th>
-                  <th scope="col" className="py-2.5 px-3">
-                    Accesorio
-                  </th>
-                  <th scope="col" className="w-28 text-center py-2.5 px-3">
-                    Cantidad
-                  </th>
-                  <th scope="col" className="py-2.5 px-3">
-                    Número de Serie
-                  </th>
-                  <th scope="col" className="py-2.5 px-3">
-                    Observaciones
-                  </th>
-                  <th scope="col" className="w-28 text-right py-2.5 px-3">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {filteredItems.map((item, idx) => (
-                  <tr
-                    key={item.id}
-                    className="group transition-colors hover:bg-muted/40"
-                  >
-                    <td className="text-center font-mono text-xs text-muted-foreground py-2 px-3">
-                      {idx + 1}
-                    </td>
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                          <Tag className="size-3.5" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-heading text-xs font-semibold text-foreground">
-                            {item.accesorio?.nombre ?? "Accesorio"}
-                          </span>
-                          <span className="font-mono text-[10px] text-muted-foreground uppercase">
-                            {item.accesorio?.codigo}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="text-center py-2 px-3">
-                      <Badge
-                        variant="outline"
-                        className="bg-primary/5 text-primary border-primary/20 font-bold text-xs"
-                      >
-                        {item.cantidad} un.
-                      </Badge>
-                    </td>
-                    <td className="py-2 px-3">
-                      {item.numeroSerie ? (
-                        <button
-                          type="button"
-                          onClick={() => copySerial(item.numeroSerie)}
-                          title="Clic para copiar serie"
-                          className="inline-flex items-center gap-1 font-mono text-xs text-foreground hover:underline"
-                        >
-                          <Hash className="size-3 text-muted-foreground" />
-                          <span>{item.numeroSerie}</span>
-                          <Copy className="size-2.5 text-muted-foreground" />
-                        </button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">
-                          —
-                        </span>
-                      )}
-                    </td>
-                    <td className="max-w-xs truncate text-xs text-muted-foreground py-2 px-3">
-                      {item.observacion || "—"}
-                    </td>
-                    <td className="text-right py-2 px-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-7 text-muted-foreground hover:text-foreground"
-                          onClick={() => onEditAccesorio(item)}
-                          title="Editar"
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => setItemToDelete(item)}
-                          title="Desvincular"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
       )}
 
       {/* Delete Confirmation Alert Dialog */}
@@ -552,3 +349,4 @@ export function ActivoAccesoriosTab({
     </div>
   )
 }
+
