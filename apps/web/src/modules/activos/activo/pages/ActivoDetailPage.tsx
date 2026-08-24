@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft } from "lucide-react"
@@ -7,15 +7,12 @@ import { toast } from "sonner"
 import { routes } from "@/app/config/routes"
 import { activoAccesorioQueries } from "@/modules/activos/activo-accesorio/api/activo-accesorio.queries"
 import type { ActivoAccesorio } from "@/modules/activos/activo-accesorio/api/activo-accesorio.service"
-import { activoAtributoQueries } from "@/modules/activos/activo-atributo/api/activo-atributo.queries"
-import { activoAtributoValorQueries } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.queries"
 import { activoDocumentoQueries } from "@/modules/activos/activo-documento/api/activo-documento.queries"
 import type { ActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.service"
 import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.queries"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
-import { tipoDatoQueries } from "@/modules/parametros/tipo-dato/api/tipo-dato.queries"
 import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
@@ -87,41 +84,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
     }),
   )
   const ubicaciones = ubicacionesQuery.data?.content ?? []
-
-  const tiposDatoQuery = useQuery(
-    tipoDatoQueries.list({
-      page: 0,
-      size: 100,
-      sortBy: "nombre",
-      direction: "ASC",
-    }),
-  )
-  const tiposDatoById = useMemo(
-    () =>
-      new Map(
-        (tiposDatoQuery.data?.content ?? []).map((tipo) => [tipo.id, tipo]),
-      ),
-    [tiposDatoQuery.data?.content],
-  )
-
-  const atributosDefQuery = useQuery({
-    ...activoAtributoQueries.byTipoActivo(activo?.tipoActivoId ?? ""),
-    enabled: Boolean(activo?.tipoActivoId),
-  })
-  const atributosDef = atributosDefQuery.data?.content ?? []
-
-  const valoresQuery = useQuery(activoAtributoValorQueries.byActivo(activoId))
-  const rawValores = valoresQuery.data?.content ?? []
-
-  const valoresByAtributoId = useMemo(() => {
-    const map = new Map<string, string>()
-    rawValores.forEach((v) => {
-      if (v.activoAtributoId && v.valor) {
-        map.set(v.activoAtributoId, v.valor)
-      }
-    })
-    return map
-  }, [rawValores])
 
   const color = tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
   const Icon = getTipoActivoIcon(tipoActivo?.icono)
@@ -269,9 +231,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
             categoriaQuery,
             ubicacionQuery,
             ubicacionesQuery,
-            tiposDatoQuery,
-            atributosDefQuery,
-            valoresQuery,
             documentosQuery,
             accesoriosQuery,
           ]}
@@ -315,10 +274,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
             categoria={categoria}
             ubicacion={ubicacion}
             ubicaciones={ubicaciones}
-            atributosDef={atributosDef}
-            valoresByAtributoId={valoresByAtributoId}
-            rawValores={rawValores}
-            tiposDatoById={tiposDatoById}
             documentos={documentos}
             isEditing={isEditing}
             onToggleEdit={handleToggleEdit}

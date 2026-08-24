@@ -10,31 +10,20 @@ import {
   FileText,
   FolderTree,
   Info,
-  Layers,
   MapPin,
   Plus,
-  Route,
   Save,
   ShieldCheck,
   Tag,
-  Wrench,
   X,
 } from "lucide-react"
 import { toast } from "sonner"
 
-import type { ActivoAtributo } from "@/modules/activos/activo-atributo/api/activo-atributo.service"
-import { activoAtributoValorKeys } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.keys"
-import type { ActivoAtributoValor } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.service"
 import { activoKeys } from "@/modules/activos/activo/api/activo.keys"
 import { useUpdateActivo } from "@/modules/activos/activo/api/activo.mutations"
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
-import {
-  syncAtributoValores,
-  validateAtributos,
-} from "@/modules/activos/activo/lib/activo-form.utils"
 import type { Categoria } from "@/modules/activos/categoria/api/categoria.service"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
-import type { TipoDato } from "@/modules/parametros/tipo-dato/api/tipo-dato.service"
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 import { isApiError } from "@/shared/api"
 import { AuditInfo } from "@/shared/components/audit-info"
@@ -58,13 +47,6 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
 
@@ -80,10 +62,6 @@ type ActivoInfoTabProps = {
   categoria?: Categoria | null
   ubicacion?: Ubicacion | null
   ubicaciones?: Ubicacion[]
-  atributosDef: ActivoAtributo[]
-  valoresByAtributoId: Map<string, string>
-  rawValores?: ActivoAtributoValor[]
-  tiposDatoById?: Map<string, TipoDato>
   documentos: ActivoDocumento[]
   isEditing?: boolean
   onToggleEdit?: (editing: boolean) => void
@@ -96,10 +74,6 @@ export function ActivoInfoTab({
   categoria,
   ubicacion,
   ubicaciones = [],
-  atributosDef,
-  valoresByAtributoId,
-  rawValores = [],
-  tiposDatoById = new Map(),
   documentos,
   isEditing = false,
   onToggleEdit,
@@ -118,8 +92,6 @@ export function ActivoInfoTab({
     activo: activo.activo,
   })
 
-  const [formValores, setFormValores] = useState<Record<string, string>>({})
-  const [atributoErrors, setAtributoErrors] = useState<Record<string, string>>({})
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -145,35 +117,7 @@ export function ActivoInfoTab({
       fechaAdquisicion: activo.fechaAdquisicion ?? "",
       activo: activo.activo,
     })
-
-    const initialMap: Record<string, string> = {}
-    valoresByAtributoId.forEach((val, key) => {
-      initialMap[key] = val
-    })
-    setFormValores(initialMap)
-    setAtributoErrors({})
-  }, [activo, valoresByAtributoId, isEditing])
-
-  const existingValoresMap = useMemo(() => {
-    const map = new Map<string, ActivoAtributoValor>()
-    rawValores.forEach((v) => {
-      if (v.activoAtributoId) {
-        map.set(v.activoAtributoId, v)
-      }
-    })
-    return map
-  }, [rawValores])
-
-  function handleAtributoChange(atributoId: string, value: string) {
-    setFormValores((prev) => ({ ...prev, [atributoId]: value }))
-    if (atributoErrors[atributoId]) {
-      setAtributoErrors((prev) => {
-        const next = { ...prev }
-        delete next[atributoId]
-        return next
-      })
-    }
-  }
+  }, [activo, isEditing])
 
   function handleCancel() {
     setFormData({
@@ -184,12 +128,6 @@ export function ActivoInfoTab({
       fechaAdquisicion: activo.fechaAdquisicion ?? "",
       activo: activo.activo,
     })
-    const initialMap: Record<string, string> = {}
-    valoresByAtributoId.forEach((val, key) => {
-      initialMap[key] = val
-    })
-    setFormValores(initialMap)
-    setAtributoErrors({})
     setIsConfirmSaveOpen(false)
     onToggleEdit?.(false)
   }
@@ -203,14 +141,6 @@ export function ActivoInfoTab({
     }
     if (!formData.nombre.trim()) {
       toast.error("El nombre del activo es obligatorio")
-      return
-    }
-
-    // Validate dynamic attributes
-    const errors = validateAtributos(atributosDef, formValores)
-    if (Object.keys(errors).length > 0) {
-      setAtributoErrors(errors)
-      toast.error("Por favor completa los atributos obligatorios requeridos")
       return
     }
 
@@ -235,20 +165,9 @@ export function ActivoInfoTab({
         },
       })
 
-      // 2. Sync dynamic attribute values
-      await syncAtributoValores({
-        activoId: activo.id,
-        atributos: atributosDef,
-        valores: formValores,
-        existentes: existingValoresMap,
-      })
-
-      // 3. Invalidate queries
+      // 2. Invalidate queries
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: activoKeys.detail(activo.id) }),
-        queryClient.invalidateQueries({
-          queryKey: activoAtributoValorKeys.all,
-        }),
         queryClient.invalidateQueries({ queryKey: activoKeys.lists() }),
       ])
 
@@ -671,213 +590,6 @@ export function ActivoInfoTab({
             )}
           </div>
 
-          {/* 2. ATRIBUTOS TÉCNICOS PARAMETRIZADOS (VIEW OR EDIT MODE) */}
-          <div
-            className={cn(
-              "rounded-2xl border bg-card p-4 sm:p-5 shadow-xs flex flex-col gap-3.5 transition-all",
-              isEditing
-                ? "border-indigo-500/40 ring-1 ring-indigo-500/20 bg-card"
-                : "border-border/80",
-            )}
-          >
-            <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2.5">
-              <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                  <Layers className="size-3.5" />
-                </div>
-                <div>
-                  <h3 className="font-heading text-sm font-bold text-foreground">
-                    Especificaciones Técnicas Parametrizadas
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground">
-                    Atributos definidos para el tipo{" "}
-                    <strong>{tipoActivo?.nombre || "de activo"}</strong>
-                  </p>
-                </div>
-              </div>
-
-              <Badge variant="outline" className="font-mono text-xs">
-                {atributosDef.length} atributos
-              </Badge>
-            </div>
-
-            {atributosDef.length === 0 ? (
-              <div className="p-4 text-center text-xs text-muted-foreground border border-dashed rounded-xl bg-muted/10">
-                No hay atributos técnicos adicionales configurados para este tipo de activo.
-              </div>
-            ) : isEditing ? (
-              /* Inline Compact Editor for Attributes */
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
-                {atributosDef.map((attr) => {
-                  const tipoDato = tiposDatoById.get(attr.tipoDatoId)
-                  const codigo = (tipoDato?.codigo ?? "TEXT").toUpperCase()
-                  const value = formValores[attr.id] ?? ""
-                  const error = atributoErrors[attr.id]
-                  const disabled = !attr.editable || isSubmitting
-                  const isWide = codigo === "TEXTAREA" || codigo === "MULTISELECT"
-
-                  return (
-                    <div
-                      key={attr.id}
-                      className={cn(
-                        "flex flex-col justify-between gap-1.5 p-2.5 rounded-xl border bg-muted/15 transition-all",
-                        error
-                          ? "border-destructive/60 bg-destructive/5 ring-1 ring-destructive/20"
-                          : "border-border/60 hover:border-primary/40",
-                        isWide && "sm:col-span-2 md:col-span-3",
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-[11px] font-semibold text-foreground truncate">
-                          {attr.etiqueta}{" "}
-                          {attr.requerido && <span className="text-destructive font-bold">*</span>}
-                        </span>
-                        {attr.requerido && (
-                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1 py-0.2 rounded">
-                            REQ
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Compact Input Renderers */}
-                      <div className="w-full">
-                        {codigo === "TEXTAREA" ? (
-                          <Textarea
-                            value={value}
-                            disabled={disabled}
-                            rows={2}
-                            onChange={(e) => handleAtributoChange(attr.id, e.target.value)}
-                            placeholder={`Ingresa ${attr.etiqueta.toLowerCase()}...`}
-                            className="text-xs resize-none"
-                          />
-                        ) : codigo === "NUMBER" || codigo === "DECIMAL" ? (
-                          <Input
-                            type="number"
-                            step={codigo === "DECIMAL" ? "any" : "1"}
-                            value={value}
-                            disabled={disabled}
-                            onChange={(e) => handleAtributoChange(attr.id, e.target.value)}
-                            placeholder="0"
-                            className="h-8 text-xs font-mono"
-                          />
-                        ) : codigo === "DATE" ? (
-                          <Input
-                            type="date"
-                            value={value}
-                            disabled={disabled}
-                            onChange={(e) => handleAtributoChange(attr.id, e.target.value)}
-                            className="h-8 text-xs font-mono"
-                          />
-                        ) : codigo === "BOOLEAN" ? (
-                          <div className="flex rounded-md border border-input p-0.5 bg-muted/40 h-8">
-                            <button
-                              type="button"
-                              disabled={disabled}
-                              onClick={() => handleAtributoChange(attr.id, "true")}
-                              className={cn(
-                                "flex-1 flex items-center justify-center text-[11px] font-semibold rounded transition-all cursor-pointer",
-                                value === "true"
-                                  ? "bg-card text-primary shadow-2xs font-bold"
-                                  : "text-muted-foreground hover:text-foreground",
-                              )}
-                            >
-                              Sí
-                            </button>
-                            <button
-                              type="button"
-                              disabled={disabled}
-                              onClick={() => handleAtributoChange(attr.id, "false")}
-                              className={cn(
-                                "flex-1 flex items-center justify-center text-[11px] font-semibold rounded transition-all cursor-pointer",
-                                value === "false"
-                                  ? "bg-card text-foreground shadow-2xs font-bold"
-                                  : "text-muted-foreground hover:text-foreground",
-                              )}
-                            >
-                              No
-                            </button>
-                          </div>
-                        ) : codigo === "SELECT" ? (
-                          <Select
-                            value={value || null}
-                            disabled={disabled}
-                            onValueChange={(next) => handleAtributoChange(attr.id, next ?? "")}
-                          >
-                            <SelectTrigger className="h-8 text-xs w-full">
-                              <SelectValue placeholder="Seleccionar..." />
-                            </SelectTrigger>
-                            <SelectContent className="z-50 max-h-56">
-                              {(attr.opciones ?? []).map((opcion) => (
-                                <SelectItem key={opcion.value} value={opcion.value}>
-                                  {opcion.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            value={value}
-                            disabled={disabled}
-                            onChange={(e) => handleAtributoChange(attr.id, e.target.value)}
-                            placeholder={`Ej. ${attr.etiqueta}`}
-                            className="h-8 text-xs font-medium"
-                          />
-                        )}
-                      </div>
-
-                      {error && (
-                        <span className="text-[10px] font-medium text-destructive">
-                          {error}
-                        </span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              /* View mode for dynamic attributes */
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
-                {atributosDef.map((attr) => {
-                  const valor = valoresByAtributoId.get(attr.id)
-                  const hasValue = Boolean(valor)
-
-                  return (
-                    <div
-                      key={attr.id}
-                      className={cn(
-                        "flex flex-col justify-between gap-1 p-2.5 rounded-xl border transition-colors",
-                        hasValue
-                          ? "border-border/60 bg-muted/15 hover:bg-muted/30"
-                          : "border-border/40 bg-muted/5 opacity-80",
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate">
-                          {attr.etiqueta}
-                        </span>
-                        {attr.requerido && (
-                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1 py-0.2 rounded">
-                            REQ
-                          </span>
-                        )}
-                      </div>
-                      <span
-                        className={cn(
-                          "text-xs font-semibold truncate",
-                          hasValue
-                            ? "text-foreground font-mono"
-                            : "text-muted-foreground/60 italic text-xs font-normal",
-                        )}
-                      >
-                        {valor || "Sin registrar"}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
           {/* BOTTOM SAVE BAR IN EDIT MODE */}
           {isEditing && (
             <div className="sticky bottom-4 z-10 flex items-center justify-between gap-3 p-3 rounded-2xl border border-primary/40 bg-background/95 backdrop-blur-md shadow-lg">
@@ -909,50 +621,7 @@ export function ActivoInfoTab({
             </div>
           )}
 
-          {/* 3. DOS TARJETAS DE ESTADO DESTACADAS */}
-          {!isEditing && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Highlight 1: Próximo Servicio */}
-              <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 shadow-2xs">
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                    Próximo Mantenimiento
-                  </span>
-                  <span className="text-lg font-heading font-black text-foreground">
-                    50,000 km
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    En aprox. 4,800 km o 45 días
-                  </span>
-                </div>
-
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">
-                  <Wrench className="size-4.5" />
-                </div>
-              </div>
-
-              {/* Highlight 2: Bitácora Activa */}
-              <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 shadow-2xs">
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    Bitácora Activa / Custodia
-                  </span>
-                  <span className="text-sm font-heading font-bold text-foreground truncate">
-                    Operación Sede Central
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    Custodio: Ing. Carlos Mendoza
-                  </span>
-                </div>
-
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                  <Route className="size-4.5" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 4. AUDITORÍA INTEGRADA */}
+          {/* 3. AUDITORÍA INTEGRADA */}
           {!isEditing && (
             <div className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 shadow-xs flex flex-col gap-2.5">
               <div className="flex items-center gap-2 border-b border-border/60 pb-2">
