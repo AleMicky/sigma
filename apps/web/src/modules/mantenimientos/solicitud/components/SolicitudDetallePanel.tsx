@@ -237,10 +237,10 @@ export function SolicitudDetallePanel({
           {solicitud.titulo}
         </h2>
 
-        {solicitud.motivoMantenimiento ? (
+        {solicitud.tipoFallas ? (
           <p className="text-xs text-muted-foreground">
-            <strong className="text-foreground">Motivo:</strong>{" "}
-            {solicitud.motivoMantenimiento}
+            <strong className="text-foreground">Falla:</strong>{" "}
+            {solicitud.tipoFallas}
           </p>
         ) : null}
       </div>

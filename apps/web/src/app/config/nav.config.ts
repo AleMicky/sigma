@@ -207,7 +207,7 @@ export const navItems: NavItem[] = [
         icon: FileText,
       },
       {
-        title: "Bandeja de Aprobaciones",
+        title: "Aprobar Solicitudes",
         to: routes.mantenimientos.aprobaciones,
         icon: ShieldCheck,
       },

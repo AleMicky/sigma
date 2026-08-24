@@ -18,29 +18,24 @@ import java.util.UUID;
 public class SolicitudMantenimiento extends AuditableModel {
 
     private UUID id;
-
     private String numero;
-
-    // Activo
     private UUID activoId;
 
     // Clasificación
     private UUID tipoMantenimientoId;
-    private String motivoMantenimiento;
-    
+    private String tipoFallas;
     private UUID prioridadId;
 
     // Solicitud
     private UUID solicitanteId;
-
     private String titulo;
     private String descripcion;
-
     private LocalDateTime fechaSolicitud;
 
     // Aprobación
     private UUID aprobadoPorId;
     private LocalDateTime fechaAprobacion;
+    private LocalDateTime fechaEstimadaOt;
     private String observacionAprobacion;
 
     // Asignación

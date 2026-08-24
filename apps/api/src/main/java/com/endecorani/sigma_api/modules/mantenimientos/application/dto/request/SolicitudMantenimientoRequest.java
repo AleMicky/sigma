@@ -29,14 +29,14 @@ public record SolicitudMantenimientoRequest(
         UUID tipoMantenimientoId,
 
         @Schema(
-                description = "Motivo del mantenimiento",
+                description = "Tipo de falla",
                 example = "Falla en el sistema hidráulico"
         )
         @Size(
                 max = 200,
-                message = "El motivo debe tener máximo 200 caracteres"
+                message = "El tipo de falla debe tener máximo 200 caracteres"
         )
-        String motivoMantenimiento,
+        String tipoFallas,
 
         @Schema(
                 description = "Identificador de la prioridad",

@@ -83,7 +83,7 @@ public class SolicitudMantenimientoService {
                 .numero(numero)
                 .activoId(request.activoId())
                 .tipoMantenimientoId(request.tipoMantenimientoId())
-                .motivoMantenimiento(request.motivoMantenimiento())
+                .tipoFallas(request.tipoFallas())
                 .prioridadId(request.prioridadId())
                 .solicitanteId(request.solicitanteId())
                 .titulo(requireNormalizedTitulo(request.titulo()))
@@ -199,7 +199,7 @@ public class SolicitudMantenimientoService {
         SolicitudMantenimiento domain = findDomainById(id);
         domain.setActivoId(request.activoId());
         domain.setTipoMantenimientoId(request.tipoMantenimientoId());
-        domain.setMotivoMantenimiento(request.motivoMantenimiento());
+        domain.setTipoFallas(request.tipoFallas());
         domain.setPrioridadId(request.prioridadId());
         domain.setSolicitanteId(request.solicitanteId());
         domain.setTitulo(requireNormalizedTitulo(request.titulo()));
@@ -437,7 +437,7 @@ public class SolicitudMantenimientoService {
 
         return new SolicitudMantenimientoResponse(
                 domain.getId(), domain.getNumero(), activoInfo, tipoInfo,
-                domain.getMotivoMantenimiento(), prioridadInfo, solicitanteInfo, domain.getTitulo(),
+                domain.getTipoFallas(), prioridadInfo, solicitanteInfo, domain.getTitulo(),
                 domain.getDescripcion(), domain.getFechaSolicitud(), aprobadoPorInfo, domain.getFechaAprobacion(),
                 domain.getObservacionAprobacion(), responsableInfo, domain.getFechaAsignacion(),
                 domain.getFechaInicioMantenimiento(), domain.getFechaFinMantenimiento(), supervisorInfo,

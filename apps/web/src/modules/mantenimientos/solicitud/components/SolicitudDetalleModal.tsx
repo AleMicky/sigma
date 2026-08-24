@@ -259,10 +259,10 @@ export function SolicitudDetalleModal({
               {solicitud.titulo}
             </DialogTitle>
 
-            {solicitud.motivoMantenimiento ? (
+            {solicitud.tipoFallas ? (
               <DialogDescription className="text-xs text-foreground/80 font-medium">
-                <strong className="text-muted-foreground font-semibold">Motivo:</strong>{" "}
-                {solicitud.motivoMantenimiento}
+                <strong className="text-muted-foreground font-semibold">Falla:</strong>{" "}
+                {solicitud.tipoFallas}
               </DialogDescription>
             ) : null}
           </DialogHeader>

@@ -72,10 +72,10 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     private UUID tipoMantenimientoId;
 
     @Column(
-            name = "motivo_mantenimiento",
+            name = "tipo_fallas",
             length = 200
     )
-    private String motivoMantenimiento;
+    private String tipoFallas;
 
     @Column(
             name = "prioridad_id",

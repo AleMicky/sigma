@@ -196,10 +196,10 @@ export function SolicitudListItem({
                 </div>
               ) : null}
 
-              {solicitud.motivoMantenimiento ? (
+              {solicitud.tipoFallas ? (
                 <span className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground/80">Motivo:</span>{" "}
-                  {solicitud.motivoMantenimiento}
+                  <span className="font-medium text-foreground/80">Falla:</span>{" "}
+                  {solicitud.tipoFallas}
                 </span>
               ) : null}
 

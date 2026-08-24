@@ -43,7 +43,7 @@ export type SolicitudMantenimiento = AuditableEntity & {
   numero: string
   activo: ActivoInfo | null
   tipoMantenimiento: TipoMantenimientoInfo | null
-  motivoMantenimiento?: string | null
+  tipoFallas?: string | null
   prioridad: PrioridadInfo | null
   solicitante?: UserInfo | null
   titulo: string
@@ -70,7 +70,7 @@ export type SolicitudMantenimiento = AuditableEntity & {
 export type SolicitudPayload = {
   activoId: string
   tipoMantenimientoId: string
-  motivoMantenimiento?: string | null
+  tipoFallas?: string | null
   prioridadId: string
   solicitanteId: string
   titulo: string

@@ -147,10 +147,10 @@ export function SolicitudCard({
           <h3 className="line-clamp-1 font-heading text-sm font-bold text-foreground group-hover:text-primary transition-colors">
             {solicitud.titulo}
           </h3>
-          {solicitud.motivoMantenimiento ? (
+          {solicitud.tipoFallas ? (
             <p className="line-clamp-1 text-xs font-medium text-muted-foreground">
-              <span className="text-foreground/80 font-semibold">Motivo:</span>{" "}
-              {solicitud.motivoMantenimiento}
+              <span className="text-foreground/80 font-semibold">Falla:</span>{" "}
+              {solicitud.tipoFallas}
             </p>
           ) : null}
           <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed">

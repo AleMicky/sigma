@@ -282,7 +282,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
       ? {
         titulo: solicitud.titulo,
         descripcion: solicitud.descripcion ?? "",
-        motivoMantenimiento: solicitud.motivoMantenimiento ?? "",
+        tipoFallas: solicitud.tipoFallas ?? "",
         activoId: currentActivoId,
         tipoMantenimientoId: currentTipoMantenimientoId,
         prioridadId: currentPrioridadId,
@@ -305,7 +305,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
         const payload: SolicitudPayload = {
           titulo: value.titulo.trim(),
           descripcion: value.descripcion.trim(),
-          motivoMantenimiento: (value.motivoMantenimiento ?? "").trim() || null,
+          tipoFallas: (value.tipoFallas ?? "").trim() || null,
           activoId: value.activoId.trim(),
           tipoMantenimientoId: value.tipoMantenimientoId.trim(),
           prioridadId: value.prioridadId.trim(),
@@ -546,10 +546,10 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 }}
               </form.Field>
 
-              {/* Motivo de Mantenimiento y Nivel de Prioridad */}
+              {/* Tipo de Falla y Nivel de Prioridad */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Motivo de Mantenimiento (Autocompletado desde Catálogo) */}
-                <form.Field name="motivoMantenimiento">
+                {/* Tipo de Fallas (Autocompletado desde Catálogo) */}
+                <form.Field name="tipoFallas">
                   {(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
@@ -557,17 +557,17 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                     return (
                       <Field data-invalid={isInvalid || undefined}>
                         <FieldLabel htmlFor={field.name}>
-                          Motivo de Mantenimiento
+                          Tipo de Falla
                         </FieldLabel>
                         <CatalogoCombobox
-                          codigo="MOTIVO_MANTENIMIENTO"
+                          codigo="TIPO_FALLAS"
                           id={field.name}
                           name={field.name}
                           value={field.state.value}
                           onBlur={field.handleBlur}
                           onValueChange={(val) => field.handleChange(val)}
                           aria-invalid={isInvalid}
-                          placeholder="Seleccionar o describir motivo..."
+                          placeholder="Seleccionar o describir falla..."
                           maxLength={200}
                           allowCustomValue={true}
                         />

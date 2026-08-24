@@ -244,10 +244,10 @@ export function SolicitudQuickViewSheet({
             {solicitud.titulo}
           </SheetTitle>
 
-          {solicitud.motivoMantenimiento ? (
+          {solicitud.tipoFallas ? (
             <SheetDescription className="text-xs text-foreground/80 font-medium text-left">
-              <strong className="text-muted-foreground font-semibold">Motivo:</strong>{" "}
-              {solicitud.motivoMantenimiento}
+              <strong className="text-muted-foreground font-semibold">Falla:</strong>{" "}
+              {solicitud.tipoFallas}
             </SheetDescription>
           ) : null}
         </SheetHeader>

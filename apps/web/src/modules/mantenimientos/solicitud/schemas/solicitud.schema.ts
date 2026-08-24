@@ -9,9 +9,9 @@ export const solicitudSchema = z.object({
     .string()
     .min(1, "La descripción es obligatoria")
     .max(2000, "La descripción no puede superar los 2000 caracteres"),
-  motivoMantenimiento: z
+  tipoFallas: z
     .string()
-    .max(200, "El motivo no puede superar los 200 caracteres")
+    .max(200, "El tipo de falla no puede superar los 200 caracteres")
     .optional()
     .or(z.literal("")),
   activoId: z.string().min(1, "Debe seleccionar un activo"),
@@ -26,7 +26,7 @@ export type SolicitudFormValues = z.infer<typeof solicitudSchema>
 export const defaultSolicitudValues: SolicitudFormValues = {
   titulo: "",
   descripcion: "",
-  motivoMantenimiento: "",
+  tipoFallas: "",
   activoId: "",
   tipoMantenimientoId: "",
   prioridadId: "",
