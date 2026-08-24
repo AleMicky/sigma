@@ -29,7 +29,7 @@ public interface SpringSolicitudMantenimientoRepository
             Pageable pageable
     );
 
-    Page<SolicitudMantenimientoEntity> findByEstado(
+    Page<SolicitudMantenimientoEntity> findByEstadoIgnoreCase(
             String estado,
             Pageable pageable
     );

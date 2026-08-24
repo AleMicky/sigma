@@ -4,7 +4,7 @@ import {
   AlertTriangle,
   FileCheck2,
   Paperclip,
-  ShieldCheck,
+  UserCheck,
   Wrench,
 } from "lucide-react"
 
@@ -30,7 +30,7 @@ import { WorkflowActionDialog } from "../components/WorkflowActionDialog"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
-export function AprobacionesPage() {
+export function EncargadoMantenimientoPage() {
   const [modalSolicitud, setModalSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
@@ -44,26 +44,26 @@ export function AprobacionesPage() {
 
   const search = usePaginatedSearch()
 
-  // Consulta exclusiva para solicitudes pendientes de aprobación (SOLICITADO)
+  // Consulta exclusiva para solicitudes en estado ASIGNADO
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
       page: search.page,
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC",
-      estado: "SOLICITADO",
+      estado: "ASIGNADO",
     }),
   )
 
   const rawSolicitudes = useMemo(
     () =>
       (solicitudesQuery.data?.content ?? []).filter(
-        (s) => (s.estado ?? "").toUpperCase() === "SOLICITADO",
+        (s) => (s.estado ?? "").toUpperCase() === "ASIGNADO",
       ),
     [solicitudesQuery.data?.content],
   )
 
-  // Métricas rápidas para el aprobador
+  // Métricas rápidas para el encargado
   const totalCount = solicitudesQuery.data?.totalElements ?? rawSolicitudes.length
 
   const urgentesCount = useMemo(
@@ -121,15 +121,15 @@ export function AprobacionesPage() {
         <div className="min-w-0 flex flex-1 flex-col gap-0.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="flex size-8.5 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shadow-2xs">
-                <ShieldCheck className="size-5" />
+              <div className="flex size-8.5 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/25 shadow-2xs">
+                <UserCheck className="size-5" />
               </div>
               <h1 className="font-heading text-lg font-bold tracking-tight sm:text-xl md:text-2xl">
-                Bandeja de Aprobaciones
+                Encargado Mantenimiento
               </h1>
               {totalCount > 0 && (
-                <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                  {totalCount} pendientes
+                <span className="inline-flex items-center rounded-full bg-sky-500/15 px-2.5 py-0.5 text-xs font-bold text-sky-700 dark:text-sky-300 border border-sky-500/30">
+                  {totalCount} asignadas
                 </span>
               )}
             </div>
@@ -143,7 +143,7 @@ export function AprobacionesPage() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-1">
-            Revisa y toma decisiones de aprobación sobre las solicitudes de mantenimiento pendientes de decisión.
+            Supervisa, gestiona y avanza en el flujo de trabajo las solicitudes de mantenimiento asignadas.
           </p>
         </div>
 
@@ -157,25 +157,25 @@ export function AprobacionesPage() {
         </div>
       </header>
 
-      {/* Mini Dashboard de Métricas Rápidas del Aprobador */}
+      {/* Mini Dashboard de Métricas Rápidas */}
       <div className="shrink-0 pt-2.5 pb-1">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {/* Total Pendientes */}
+          {/* Total Asignadas */}
           <div
             onClick={() => setFilterUrgentesOnly(false)}
             className={cn(
               "flex items-center gap-2.5 rounded-xl border p-2.5 shadow-2xs transition-all cursor-pointer",
               !filterUrgentesOnly
-                ? "bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30"
+                ? "bg-sky-500/10 border-sky-500/40 ring-1 ring-sky-500/30"
                 : "bg-card/60 border-border/70 hover:bg-muted/40",
             )}
           >
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-600 text-white shadow-xs">
-              <ShieldCheck className="size-4" />
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-600 text-white shadow-xs">
+              <UserCheck className="size-4" />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                Por Evaluar
+                Asignadas
               </p>
               <p className="font-heading text-sm sm:text-base font-bold text-foreground">
                 {totalCount}
@@ -183,7 +183,7 @@ export function AprobacionesPage() {
             </div>
           </div>
 
-          {/* Críticas / Alta Prioridad (Clickable Quick Filter) */}
+          {/* Críticas / Alta Prioridad */}
           <div
             onClick={() => setFilterUrgentesOnly((prev) => !prev)}
             className={cn(
@@ -246,9 +246,8 @@ export function AprobacionesPage() {
         </div>
       </div>
 
-      {/* Main Full-Width Content */}
+      {/* Main Content */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2 gap-2.5">
-        {/* Requests List */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {solicitudesQuery.isLoading ? (
             <ListSkeleton
@@ -263,12 +262,12 @@ export function AprobacionesPage() {
             />
           ) : solicitudes.length === 0 ? (
             <EmptyState
-              icon={<FileCheck2 className="size-9 text-amber-500" />}
-              title="¡Bandeja al día!"
+              icon={<FileCheck2 className="size-9 text-sky-500" />}
+              title="¡Todo al día!"
               description={
                 filterUrgentesOnly
-                  ? "No hay solicitudes de alta prioridad pendientes."
-                  : "No hay solicitudes de mantenimiento pendientes de aprobación en este momento."
+                  ? "No hay solicitudes asignadas de alta prioridad pendientes."
+                  : "No hay solicitudes de mantenimiento en estado Asignado en este momento."
               }
               action={
                 filterUrgentesOnly ? (
@@ -277,7 +276,7 @@ export function AprobacionesPage() {
                     onClick={() => setFilterUrgentesOnly(false)}
                     className="text-xs text-primary underline"
                   >
-                    Ver todas las pendientes
+                    Ver todas las asignadas
                   </button>
                 ) : null
               }

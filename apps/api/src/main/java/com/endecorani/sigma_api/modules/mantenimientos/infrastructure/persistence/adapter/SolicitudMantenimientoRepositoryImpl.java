@@ -91,7 +91,7 @@ public class SolicitudMantenimientoRepositoryImpl
             Pageable pageable
     ) {
         return springRepository
-                .findByEstado(estado, pageable)
+                .findByEstadoIgnoreCase(estado, pageable)
                 .map(mapper::toDomain);
     }
 

@@ -212,6 +212,11 @@ export const navItems: NavItem[] = [
         icon: ShieldCheck,
       },
       {
+        title: "Encargado Mantenimiento",
+        to: routes.mantenimientos.encargado,
+        icon: UserCheck,
+      },
+      {
         title: "Actividades",
         to: routes.mantenimientos.actividades,
         icon: ListTodo,
