@@ -21,61 +21,41 @@ public class BpmnDefinitionParser {
             Pattern.compile(
                     "\\$\\{\\s*([a-zA-Z0-9_]+)\\s*==\\s*['\"]([^'\"]+)['\"]\\s*}"
             );
+
     public List<WorkflowActionResponse> obtenerAcciones(
             String bpmnXml,
             String taskDefinitionKey
     ) {
 
         try {
+            if (bpmnXml == null || bpmnXml.isBlank() || taskDefinitionKey == null || taskDefinitionKey.isBlank()) {
+                return List.of();
+            }
 
-            DocumentBuilderFactory factory =
-                    DocumentBuilderFactory.newInstance();
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(false);
 
-            factory.setNamespaceAware(true);
-
-            Document document =
-                    factory.newDocumentBuilder()
-                            .parse(
-                                    new ByteArrayInputStream(
-                                            bpmnXml.getBytes(
-                                                    StandardCharsets.UTF_8
-                                            )
-                                    )
-                            );
+            Document document = factory.newDocumentBuilder()
+                    .parse(new ByteArrayInputStream(bpmnXml.getBytes(StandardCharsets.UTF_8)));
 
             document.getDocumentElement().normalize();
 
-            String nextElementId =
-                    obtenerTargetDirecto(
-                            document,
-                            taskDefinitionKey
-                    );
-
+            String nextElementId = obtenerTargetDirecto(document, taskDefinitionKey);
             if (nextElementId == null) {
                 return List.of();
             }
 
-            Element nextElement =
-                    buscarElementoPorId(
-                            document,
-                            nextElementId
-                    );
-
+            Element nextElement = buscarElementoPorId(document, nextElementId);
             if (nextElement == null) {
-                return List.of();
+                return obtenerAccionesDirectas(document, taskDefinitionKey);
             }
 
-            String localName =
-                    nextElement.getLocalName();
-
-            if (!"exclusiveGateway".equals(localName)) {
-                return List.of();
+            String nodeName = nextElement.getNodeName();
+            if (nodeName != null && (nodeName.endsWith("exclusiveGateway") || nodeName.endsWith("Gateway"))) {
+                return obtenerAccionesGateway(document, nextElementId);
             }
 
-            return obtenerAccionesGateway(
-                    document,
-                    nextElementId
-            );
+            return obtenerAccionesDirectas(document, taskDefinitionKey);
 
         } catch (Exception ex) {
             throw new IllegalStateException(
@@ -91,87 +71,52 @@ public class BpmnDefinitionParser {
     ) {
 
         try {
-            DocumentBuilderFactory factory =
-                    DocumentBuilderFactory.newInstance();
+            if (bpmnXml == null || bpmnXml.isBlank() || taskDefinitionKey == null || taskDefinitionKey.isBlank()) {
+                return List.of();
+            }
 
-            factory.setNamespaceAware(true);
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(false);
 
-            Document document =
-                    factory.newDocumentBuilder()
-                            .parse(
-                                    new ByteArrayInputStream(
-                                            bpmnXml.getBytes(
-                                                    StandardCharsets.UTF_8
-                                            )
-                                    )
-                            );
+            Document document = factory.newDocumentBuilder()
+                    .parse(new ByteArrayInputStream(bpmnXml.getBytes(StandardCharsets.UTF_8)));
 
             document.getDocumentElement().normalize();
 
-            Element task =
-                    buscarElementoPorId(
-                            document,
-                            taskDefinitionKey
-                    );
-
+            Element task = buscarElementoPorId(document, taskDefinitionKey);
             if (task == null) {
                 return List.of();
             }
 
-            NodeList formProperties =
-                    task.getElementsByTagNameNS(
-                            "http://flowable.org/bpmn",
-                            "formProperty"
-                    );
+            NodeList formProperties = task.getElementsByTagName("flowable:formProperty");
+            if (formProperties.getLength() == 0) {
+                formProperties = task.getElementsByTagName("formProperty");
+            }
 
-            List<WorkflowFieldResponse> fields =
-                    new ArrayList<>();
+            List<WorkflowFieldResponse> fields = new ArrayList<>();
 
             for (int i = 0; i < formProperties.getLength(); i++) {
+                Element formProperty = (Element) formProperties.item(i);
 
-                Element formProperty =
-                        (Element) formProperties.item(i);
+                String id = formProperty.getAttribute("id");
+                String name = formProperty.getAttribute("name");
+                String type = formProperty.getAttribute("type");
 
-                String id =
-                        formProperty.getAttribute("id");
+                boolean required = Boolean.parseBoolean(formProperty.getAttribute("required"));
+                boolean readable = !"false".equalsIgnoreCase(formProperty.getAttribute("readable"));
+                boolean writable = !"false".equalsIgnoreCase(formProperty.getAttribute("writable"));
 
-                String name =
-                        formProperty.getAttribute("name");
+                List<WorkflowFieldOptionResponse> options = obtenerOpciones(formProperty);
 
-                String type =
-                        formProperty.getAttribute("type");
-
-                boolean required =
-                        Boolean.parseBoolean(
-                                formProperty.getAttribute("required")
-                        );
-
-                boolean readable =
-                        !"false".equalsIgnoreCase(
-                                formProperty.getAttribute("readable")
-                        );
-
-                boolean writable =
-                        !"false".equalsIgnoreCase(
-                                formProperty.getAttribute("writable")
-                        );
-
-                List<WorkflowFieldOptionResponse> options =
-                        obtenerOpciones(
-                                formProperty
-                        );
-
-                fields.add(
-                        new WorkflowFieldResponse(
-                                id,
-                                name,
-                                type,
-                                required,
-                                readable,
-                                writable,
-                                options
-                        )
-                );
+                fields.add(new WorkflowFieldResponse(
+                        id,
+                        name != null && !name.isBlank() ? name : id,
+                        type != null && !type.isBlank() ? type : "string",
+                        required,
+                        readable,
+                        writable,
+                        options
+                ));
             }
 
             return fields;
@@ -184,50 +129,30 @@ public class BpmnDefinitionParser {
         }
     }
 
+    private List<WorkflowFieldOptionResponse> obtenerOpciones(Element formProperty) {
+        NodeList values = formProperty.getElementsByTagName("flowable:value");
+        if (values.getLength() == 0) {
+            values = formProperty.getElementsByTagName("value");
+        }
 
-    private List<WorkflowFieldOptionResponse> obtenerOpciones(
-            Element formProperty
-    ) {
-
-        NodeList values =
-                formProperty.getElementsByTagNameNS(
-                        "http://flowable.org/bpmn",
-                        "value"
-                );
-
-        List<WorkflowFieldOptionResponse> options =
-                new ArrayList<>();
-
+        List<WorkflowFieldOptionResponse> options = new ArrayList<>();
         for (int i = 0; i < values.getLength(); i++) {
-
-            Element value =
-                    (Element) values.item(i);
-
-            options.add(
-                    new WorkflowFieldOptionResponse(
-                            value.getAttribute("id"),
-                            value.getAttribute("name")
-                    )
-            );
+            Element value = (Element) values.item(i);
+            options.add(new WorkflowFieldOptionResponse(
+                    value.getAttribute("id"),
+                    value.getAttribute("name")
+            ));
         }
 
         return options;
     }
 
     private String obtenerTargetDirecto(Document document, String sourceRef) {
-
-        NodeList flows = document.getElementsByTagNameNS(
-                        "*",
-                        "sequenceFlow"
-                );
+        NodeList flows = document.getElementsByTagName("sequenceFlow");
 
         for (int i = 0; i < flows.getLength(); i++) {
-
             Element flow = (Element) flows.item(i);
-
-            if (sourceRef.equals(
-                    flow.getAttribute("sourceRef")
-            )) {
+            if (sourceRef.equals(flow.getAttribute("sourceRef"))) {
                 return flow.getAttribute("targetRef");
             }
         }
@@ -241,16 +166,11 @@ public class BpmnDefinitionParser {
     ) {
 
         List<WorkflowActionResponse> actions = new ArrayList<>();
-        NodeList flows = document.getElementsByTagNameNS(
-                        "*",
-                        "sequenceFlow");
+        NodeList flows = document.getElementsByTagName("sequenceFlow");
 
         for (int i = 0; i < flows.getLength(); i++) {
-
             Element flow = (Element) flows.item(i);
-            if (!gatewayId.equals(
-                    flow.getAttribute("sourceRef")
-            )) {
+            if (!gatewayId.equals(flow.getAttribute("sourceRef"))) {
                 continue;
             }
 
@@ -262,7 +182,6 @@ public class BpmnDefinitionParser {
             }
 
             Matcher matcher = CONDITION_PATTERN.matcher(expression.trim());
-
             if (!matcher.find()) {
                 continue;
             }
@@ -270,33 +189,59 @@ public class BpmnDefinitionParser {
             String variable = matcher.group(1);
             String value = matcher.group(2);
             actions.add(new WorkflowActionResponse(
-                            name,
-                            variable,
-                            value)
-            );
+                    name != null && !name.isBlank() ? name : value,
+                    variable,
+                    value
+            ));
+        }
+
+        return actions;
+    }
+
+    private List<WorkflowActionResponse> obtenerAccionesDirectas(
+            Document document,
+            String taskDefinitionKey
+    ) {
+
+        List<WorkflowActionResponse> actions = new ArrayList<>();
+        NodeList flows = document.getElementsByTagName("sequenceFlow");
+
+        for (int i = 0; i < flows.getLength(); i++) {
+            Element flow = (Element) flows.item(i);
+            if (!taskDefinitionKey.equals(flow.getAttribute("sourceRef"))) {
+                continue;
+            }
+
+            String name = flow.getAttribute("name");
+            if (name == null || name.isBlank()) {
+                name = "Completar";
+            }
+
+            String variable = "action";
+            String value = name.trim().toUpperCase().replaceAll("[^A-Z0-9]+", "_");
+
+            actions.add(new WorkflowActionResponse(
+                    name,
+                    variable,
+                    value
+            ));
         }
 
         return actions;
     }
 
     private String obtenerConditionExpression(Element sequenceFlow) {
-
         NodeList children = sequenceFlow.getChildNodes();
 
         for (int i = 0; i < children.getLength(); i++) {
-
             Node node = children.item(i);
-
             if (node.getNodeType() != Node.ELEMENT_NODE) {
                 continue;
             }
 
             Element element = (Element) node;
-
-            if (element
-                    .getLocalName()
-                    .equals("conditionExpression")) {
-
+            String nodeName = element.getNodeName();
+            if (nodeName != null && (nodeName.endsWith("conditionExpression") || nodeName.equals("conditionExpression"))) {
                 return element.getTextContent();
             }
         }
@@ -304,17 +249,11 @@ public class BpmnDefinitionParser {
         return null;
     }
 
-    private Element buscarElementoPorId(
-            Document document,
-            String id
-    ) {
-
+    private Element buscarElementoPorId(Document document, String id) {
         NodeList nodes = document.getElementsByTagName("*");
 
         for (int i = 0; i < nodes.getLength(); i++) {
-
             Node node = nodes.item(i);
-
             if (!(node instanceof Element element)) {
                 continue;
             }

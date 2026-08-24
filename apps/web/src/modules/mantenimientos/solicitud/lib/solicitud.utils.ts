@@ -4,13 +4,30 @@ export function getEstadoBadgeStyles(estado?: string) {
     case "finalizado":
     case "completado":
       return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+    case "trabajo_realizado":
+    case "trabajo realizado":
+      return "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20"
+    case "validado":
+      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+    case "en_revision":
+    case "en revision":
+    case "en revisión":
+      return "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20"
+    case "en_mantenimiento":
+    case "en mantenimiento":
     case "en_proceso":
     case "en proceso":
     case "en_ejecucion":
       return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
-    case "aprobado":
     case "asignado":
       return "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20"
+    case "aprobado":
+      return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+    case "observado_mantenimiento":
+    case "observado mantenimiento":
+      return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+    case "observado":
+      return "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20"
     case "solicitado":
     case "pendiente":
       return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
@@ -115,13 +132,13 @@ export function getPrioridadColorConfig(nivel = 1): PrioridadColorConfig {
 
 export function getEstadoBadgeVariant(estado: string) {
   const est = (estado || "").toLowerCase()
-  if (est === "aprobado" || est === "completado" || est === "finalizado") {
+  if (est === "aprobado" || est === "completado" || est === "finalizado" || est === "validado" || est === "trabajo_realizado") {
     return "default" as const
   }
-  if (est === "en_proceso" || est === "en proceso") {
+  if (est === "en_mantenimiento" || est === "en_revision" || est === "en_proceso" || est === "en proceso") {
     return "secondary" as const
   }
-  if (est === "rechazado" || est === "cancelado") {
+  if (est === "rechazado" || est === "cancelado" || est === "observado" || est === "observado_mantenimiento") {
     return "destructive" as const
   }
   return "outline" as const
@@ -160,4 +177,3 @@ export function getTipoMantenimientoBadgeClass(nombre: string, isSelected: boole
     ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/30 scale-[1.02]"
     : "bg-muted/80 text-foreground border-border/80 hover:bg-accent hover:border-primary/40 hover:text-accent-foreground"
 }
-

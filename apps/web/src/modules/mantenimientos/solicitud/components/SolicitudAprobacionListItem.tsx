@@ -278,29 +278,35 @@ export function SolicitudAprobacionListItem({
         className="flex items-center gap-2 shrink-0 self-end md:self-center"
       >
         {/* Dynamic Workflow Actions */}
-        {actions.map((act) => {
-          const style = getActionStyle(act)
-          const IconComp = style.icon
-          return (
-            <Button
-              key={`${act.variable}-${act.value}`}
-              type="button"
-              size="sm"
-              onClick={() =>
-                onActionSelect(solicitud, act, taskName, actionsQuery.data?.fields)
-              }
-              className={cn(
-                "h-8 gap-1.5 px-3 text-xs font-bold transition-all rounded-lg cursor-pointer",
-                style.btnClass,
-              )}
-            >
-              <IconComp className="size-3.5 shrink-0" />
-              <span>{act.name}</span>
-            </Button>
-          )
-        })}
+        {actionsQuery.isLoading ? (
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground px-2">
+            <span className="size-2 rounded-full bg-primary/60 animate-pulse" />
+          </div>
+        ) : (
+          actions.map((act) => {
+            const style = getActionStyle(act)
+            const IconComp = style.icon
+            return (
+              <Button
+                key={`${act.variable}-${act.value}`}
+                type="button"
+                size="sm"
+                onClick={() =>
+                  onActionSelect(solicitud, act, taskName, actionsQuery.data?.fields)
+                }
+                className={cn(
+                  "h-8 gap-1.5 px-3 text-xs font-bold transition-all rounded-lg cursor-pointer",
+                  style.btnClass,
+                )}
+              >
+                <IconComp className="size-3.5 shrink-0" />
+                <span>{act.name}</span>
+              </Button>
+            )
+          })
+        )}
 
-        {/* Revisar Expediente (Opens Sheet) */}
+        {/* Revisar Expediente (Opens Modal) */}
         <Button
           type="button"
           size="sm"

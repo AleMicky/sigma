@@ -59,13 +59,14 @@ export function AprobacionesPage() {
   const search = usePaginatedSearch()
 
   // Solicitudes list query
+  const isGroupFilter = selectedEstado.startsWith("GROUP_")
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
       page: search.page,
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC",
-      ...(selectedEstado !== "all" ? { estado: selectedEstado } : {}),
+      ...(!isGroupFilter && selectedEstado !== "all" ? { estado: selectedEstado } : {}),
       ...(search.query ? { q: search.query } : {}),
     }),
   )
@@ -75,52 +76,98 @@ export function AprobacionesPage() {
     [solicitudesQuery.data?.content],
   )
 
-  // Filtrado local por prioridad si se selecciona
+  // Filtrado compuesto (Grupos de flujo BPMN + Prioridad)
   const filteredSolicitudes = useMemo(() => {
-    if (!selectedPrioridad || selectedPrioridad === "all") {
-      return solicitudes
-    }
-    const nivel = parseInt(selectedPrioridad, 10)
-    return solicitudes.filter((s) => (s.prioridad?.nivel ?? 1) === nivel)
-  }, [solicitudes, selectedPrioridad])
+    let list = solicitudes
 
-  // KPIs de la bandeja de aprobaciones
+    if (selectedEstado && selectedEstado !== "all") {
+      if (selectedEstado === "SOLICITADO" || selectedEstado === "GROUP_SOLICITADO") {
+        list = list.filter(
+          (s) => (s.estado ?? "").toUpperCase() === "SOLICITADO",
+        )
+      } else if (selectedEstado === "GROUP_MANTENIMIENTO") {
+        list = list.filter((s) => {
+          const est = (s.estado ?? "").toUpperCase()
+          return est === "ASIGNADO" || est === "EN_MANTENIMIENTO"
+        })
+      } else if (selectedEstado === "GROUP_REVISION") {
+        list = list.filter((s) => {
+          const est = (s.estado ?? "").toUpperCase()
+          return (
+            est === "EN_REVISION" ||
+            est === "VALIDADO" ||
+            est === "TRABAJO_REALIZADO"
+          )
+        })
+      } else if (selectedEstado === "GROUP_OBSERVADAS") {
+        list = list.filter((s) => {
+          const est = (s.estado ?? "").toUpperCase()
+          return (
+            est === "OBSERVADO" ||
+            est === "OBSERVADO_MANTENIMIENTO" ||
+            est.includes("OBSERVAD")
+          )
+        })
+      } else {
+        list = list.filter(
+          (s) =>
+            (s.estado ?? "").toUpperCase() === selectedEstado.toUpperCase(),
+        )
+      }
+    }
+
+    if (selectedPrioridad && selectedPrioridad !== "all") {
+      const nivel = parseInt(selectedPrioridad, 10)
+      list = list.filter((s) => (s.prioridad?.nivel ?? 1) === nivel)
+    }
+
+    return list
+  }, [solicitudes, selectedEstado, selectedPrioridad])
+
+  // KPIs de la bandeja según el BPMN
   const totalElements =
     solicitudesQuery.data?.totalElements ?? solicitudes.length
 
   const porAprobarCount = useMemo(
     () =>
       solicitudes.filter(
-        (s) => (s.estado ?? "").toLowerCase() === "solicitado",
+        (s) => (s.estado ?? "").toUpperCase() === "SOLICITADO",
       ).length,
     [solicitudes],
   )
 
-  const asignadasCount = useMemo(
+  const enMantenimientoCount = useMemo(
     () =>
-      solicitudes.filter((s) => (s.estado ?? "").toLowerCase() === "asignado")
-        .length,
+      solicitudes.filter((s) => {
+        const est = (s.estado ?? "").toUpperCase()
+        return est === "ASIGNADO" || est === "EN_MANTENIMIENTO"
+      }).length,
     [solicitudes],
   )
 
-  const criticasCount = useMemo(
-    () => solicitudes.filter((s) => (s.prioridad?.nivel ?? 1) >= 4).length,
+  const enRevisionCount = useMemo(
+    () =>
+      solicitudes.filter((s) => {
+        const est = (s.estado ?? "").toUpperCase()
+        return (
+          est === "EN_REVISION" ||
+          est === "VALIDADO" ||
+          est === "TRABAJO_REALIZADO"
+        )
+      }).length,
     [solicitudes],
   )
 
-  const preventivasCount = useMemo(
+  const observadasCount = useMemo(
     () =>
-      solicitudes.filter((s) =>
-        (s.tipoMantenimiento?.nombre ?? "").toLowerCase().includes("preventiv"),
-      ).length,
-    [solicitudes],
-  )
-
-  const correctivasCount = useMemo(
-    () =>
-      solicitudes.filter((s) =>
-        (s.tipoMantenimiento?.nombre ?? "").toLowerCase().includes("correctiv"),
-      ).length,
+      solicitudes.filter((s) => {
+        const est = (s.estado ?? "").toUpperCase()
+        return (
+          est === "OBSERVADO" ||
+          est === "OBSERVADO_MANTENIMIENTO" ||
+          est.includes("OBSERVAD")
+        )
+      }).length,
     [solicitudes],
   )
 
@@ -171,7 +218,7 @@ export function AprobacionesPage() {
                 <ShieldCheck className="size-4.5" />
               </div>
               <h1 className="font-heading text-lg font-semibold tracking-tight sm:text-xl md:text-2xl">
-                Bandeja de Aprobaciones y Asignaciones
+                Bandeja de Aprobaciones y Flujo
               </h1>
               {totalElements > 0 && (
                 <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300 border border-amber-500/30">
@@ -189,7 +236,7 @@ export function AprobacionesPage() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-1">
-            Supervisa, evalúa y toma decisiones en el flujo de trabajo con asignación directa de técnicos.
+            Supervisa, evalúa y toma decisiones en el flujo de trabajo de mantenimiento.
           </p>
         </div>
 
@@ -203,19 +250,19 @@ export function AprobacionesPage() {
         </div>
       </header>
 
-      {/* KPI Stats Section */}
+      {/* KPI Stats Section - Filtros interactivos por grupo de flujo */}
       <div className="shrink-0 pt-3 pb-1">
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          {/* Por Aprobar (Solicitado) */}
+          {/* 1. Por Aprobar (SOLICITADO) */}
           <div
             onClick={() =>
               setSelectedEstado((prev) =>
-                prev === "solicitado" ? "all" : "solicitado",
+                prev === "SOLICITADO" ? "all" : "SOLICITADO",
               )
             }
             className={cn(
               "flex items-center gap-2.5 rounded-xl border p-3 shadow-2xs cursor-pointer transition-all hover:scale-[1.01]",
-              selectedEstado === "solicitado"
+              selectedEstado === "SOLICITADO"
                 ? "border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/30"
                 : "border-amber-500/40 bg-amber-500/10",
             )}
@@ -232,68 +279,96 @@ export function AprobacionesPage() {
                 Por Aprobar
               </p>
               <p className="font-heading text-base font-bold tracking-tight text-amber-700 dark:text-amber-300">
-                {selectedEstado === "solicitado"
-                  ? totalElements
+                {selectedEstado === "SOLICITADO"
+                  ? filteredSolicitudes.length
                   : porAprobarCount}
               </p>
             </div>
           </div>
 
-          {/* Asignadas */}
+          {/* 2. En Mantenimiento (ASIGNADO + EN_MANTENIMIENTO) */}
           <div
             onClick={() =>
               setSelectedEstado((prev) =>
-                prev === "asignado" ? "all" : "asignado",
+                prev === "GROUP_MANTENIMIENTO" ? "all" : "GROUP_MANTENIMIENTO",
               )
             }
             className={cn(
               "flex items-center gap-2.5 rounded-xl border p-3 shadow-2xs cursor-pointer transition-all hover:scale-[1.01]",
-              selectedEstado === "asignado"
-                ? "border-sky-500 bg-sky-500/15 ring-2 ring-sky-500/30"
-                : "border-sky-500/30 bg-sky-500/5",
+              selectedEstado === "GROUP_MANTENIMIENTO"
+                ? "border-blue-500 bg-blue-500/15 ring-2 ring-blue-500/30"
+                : "border-blue-500/30 bg-blue-500/5",
             )}
           >
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 shadow-2xs">
               <Wrench className="size-4.5" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-sky-800 dark:text-sky-300 truncate">
-                Asignadas
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-800 dark:text-blue-300 truncate">
+                En Mantenimiento
               </p>
-              <p className="font-heading text-base font-bold tracking-tight text-sky-600 dark:text-sky-400">
-                {selectedEstado === "asignado"
-                  ? totalElements
-                  : asignadasCount}
-              </p>
-            </div>
-          </div>
-
-          {/* Críticas / Urgentes */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/5 p-3 shadow-2xs">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 shadow-2xs">
-              <Flame className="size-4.5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                Alta / Crítica
-              </p>
-              <p className="font-heading text-base font-bold tracking-tight text-rose-600 dark:text-rose-400">
-                {criticasCount}
+              <p className="font-heading text-base font-bold tracking-tight text-blue-600 dark:text-blue-400">
+                {selectedEstado === "GROUP_MANTENIMIENTO"
+                  ? filteredSolicitudes.length
+                  : enMantenimientoCount}
               </p>
             </div>
           </div>
 
-          {/* Totales */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 shadow-2xs">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs">
+          {/* 3. En Revisión (EN_REVISION + VALIDADO + TRABAJO_REALIZADO) */}
+          <div
+            onClick={() =>
+              setSelectedEstado((prev) =>
+                prev === "GROUP_REVISION" ? "all" : "GROUP_REVISION",
+              )
+            }
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border p-3 shadow-2xs cursor-pointer transition-all hover:scale-[1.01]",
+              selectedEstado === "GROUP_REVISION"
+                ? "border-indigo-500 bg-indigo-500/15 ring-2 ring-indigo-500/30"
+                : "border-indigo-500/30 bg-indigo-500/5",
+            )}
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 shadow-2xs">
               <ShieldCheck className="size-4.5" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                Prev: {preventivasCount} | Corr: {correctivasCount}
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-800 dark:text-indigo-300 truncate">
+                En Revisión
               </p>
-              <p className="font-heading text-base font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                {totalElements}
+              <p className="font-heading text-base font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
+                {selectedEstado === "GROUP_REVISION"
+                  ? filteredSolicitudes.length
+                  : enRevisionCount}
+              </p>
+            </div>
+          </div>
+
+          {/* 4. Observadas (OBSERVADO + OBSERVADO_MANTENIMIENTO) */}
+          <div
+            onClick={() =>
+              setSelectedEstado((prev) =>
+                prev === "GROUP_OBSERVADAS" ? "all" : "GROUP_OBSERVADAS",
+              )
+            }
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border p-3 shadow-2xs cursor-pointer transition-all hover:scale-[1.01]",
+              selectedEstado === "GROUP_OBSERVADAS"
+                ? "border-orange-500 bg-orange-500/15 ring-2 ring-orange-500/30"
+                : "border-orange-500/30 bg-orange-500/5",
+            )}
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 text-orange-600 dark:text-orange-400 shadow-2xs">
+              <Flame className="size-4.5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-800 dark:text-orange-300 truncate">
+                Observadas
+              </p>
+              <p className="font-heading text-base font-bold tracking-tight text-orange-600 dark:text-orange-400">
+                {selectedEstado === "GROUP_OBSERVADAS"
+                  ? filteredSolicitudes.length
+                  : observadasCount}
               </p>
             </div>
           </div>
@@ -318,30 +393,46 @@ export function AprobacionesPage() {
               value={selectedEstado}
               onValueChange={(val) => setSelectedEstado(val ?? "all")}
             >
-              <SelectTrigger className="h-9 text-xs w-[160px]">
-                <SelectValue placeholder="Estado" />
+              <SelectTrigger className="h-9 text-xs w-[210px]">
+                <SelectValue placeholder="Estado de flujo" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-72">
                 <SelectItem value="all" className="text-xs font-medium">
-                  📋 Todos los estados
+                  📋 Todos los registros
                 </SelectItem>
+                
+                {/* Grupos de Trabajo BPMN */}
                 <SelectItem
-                  value="solicitado"
+                  value="SOLICITADO"
                   className="text-xs text-amber-600 dark:text-amber-400 font-semibold"
                 >
-                  🟡 Por Aprobar
+                  🟡 Por Aprobar (SOLICITADO)
                 </SelectItem>
                 <SelectItem
-                  value="asignado"
-                  className="text-xs text-sky-600 dark:text-sky-400 font-semibold"
+                  value="GROUP_MANTENIMIENTO"
+                  className="text-xs text-blue-600 dark:text-blue-400 font-semibold"
                 >
-                  🔵 Asignado
+                  🔵 En Mantenimiento (ASIGNADO / EJECUCIÓN)
                 </SelectItem>
                 <SelectItem
-                  value="aprobado"
-                  className="text-xs text-emerald-600 dark:text-emerald-400"
+                  value="GROUP_REVISION"
+                  className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold"
                 >
-                  🟢 Aprobado
+                  🟣 En Revisión (SUPERVISIÓN / VALIDADO)
+                </SelectItem>
+                <SelectItem
+                  value="GROUP_OBSERVADAS"
+                  className="text-xs text-orange-600 dark:text-orange-400 font-semibold"
+                >
+                  🟠 Observadas (CORRECCIÓN / OBS)
+                </SelectItem>
+
+                {/* Estados Específicos */}
+                <SelectItem
+                  value="FINALIZADO"
+                  className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold"
+                >
+                  🏁 FINALIZADO (Cerrado)
                 </SelectItem>
               </SelectContent>
             </Select>

@@ -209,7 +209,7 @@ export function WorkflowActionDialog({
       ...formValues,
     }
 
-    if (responsableId) {
+    if (isAssignmentRelevant && responsableId) {
       variables.responsableId = responsableId
     }
 

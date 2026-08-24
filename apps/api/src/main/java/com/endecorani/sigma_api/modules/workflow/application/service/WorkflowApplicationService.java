@@ -197,6 +197,15 @@ public class WorkflowApplicationService {
                     .forEach(variables::add);
         }
 
+        // Permitir variables de dominio estándar para notas, auditoría y asignaciones
+        variables.add("responsableId");
+        variables.add("observacion");
+        variables.add("observacionAprobacion");
+        variables.add("observacionValidacion");
+        variables.add("observacionCierre");
+        variables.add("motivo");
+        variables.add("action");
+
         return variables;
     }
 

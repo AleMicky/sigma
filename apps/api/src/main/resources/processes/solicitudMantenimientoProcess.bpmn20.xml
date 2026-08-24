@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://endecorani.com/sigma/mantenimiento" exporter="Flowable Open Source Modeler" exporterVersion="6.8.0">
+  <process id="solicitudMantenimientoProcess" name="Solicitud de Mantenimiento" isExecutable="true">
+    <startEvent id="startEvent" name="Inicio" flowable:formFieldValidation="true"></startEvent>
+    <userTask id="revisarSolicitud" name="SOLICITADO - Revisar solicitud" flowable:assignee="${aprobadorId}" flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="responsableId" name="Responsable de mantenimiento" type="string" required="false" writable="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="gatewayDecisionCoordinador" name="Decisión del coordinador"></exclusiveGateway>
+    <userTask id="corregirSolicitud" name="OBSERVADO - Corregir y reenviar solicitud" flowable:assignee="${solicitanteId}" flowable:formFieldValidation="true"></userTask>
+    <userTask id="iniciarMantenimiento" name="ASIGNADO - Iniciar mantenimiento" flowable:assignee="${responsableId}" flowable:formFieldValidation="true">
+      <extensionElements>
+        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
+      </extensionElements>
+    </userTask>
+    <userTask id="ejecutarMantenimiento" name="EN_MANTENIMIENTO - Ejecutar mantenimiento" flowable:assignee="${responsableId}" flowable:formFieldValidation="true">
+      <extensionElements>
+        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
+      </extensionElements>
+    </userTask>
+    <userTask id="enviarRevision" name="EN_MANTENIMIENTO - Enviar a revisión" flowable:assignee="${responsableId}" flowable:formFieldValidation="true">
+      <extensionElements>
+        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
+      </extensionElements>
+    </userTask>
+    <userTask id="revisarMantenimiento" name="EN_REVISION - Revisar mantenimiento" flowable:assignee="${supervisorId}" flowable:formFieldValidation="true"></userTask>
+    <exclusiveGateway id="gatewayDecisionSupervisor" name="Decisión del supervisor"></exclusiveGateway>
+    <userTask id="corregirMantenimiento" name="OBSERVADO_MANTENIMIENTO - Corregir mantenimiento" flowable:assignee="${responsableId}" flowable:formFieldValidation="true">
+      <extensionElements>
+        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
+      </extensionElements>
+    </userTask>
+    <userTask id="registrarTrabajo" name="VALIDADO - Registrar trabajo realizado" flowable:assignee="${responsableId}" flowable:formFieldValidation="true">
+      <extensionElements>
+        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
+      </extensionElements>
+    </userTask>
+    <userTask id="recibirActivo" name="TRABAJO_REALIZADO - Recibir y verificar activo" flowable:assignee="${solicitanteId}" flowable:formFieldValidation="true">
+      <extensionElements>
+        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
+      </extensionElements>
+    </userTask>
+    <endEvent id="endEvent" name="FINALIZADO"></endEvent>
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="revisarSolicitud"></sequenceFlow>
+    <sequenceFlow id="flow2" sourceRef="revisarSolicitud" targetRef="gatewayDecisionCoordinador"></sequenceFlow>
+    <sequenceFlow id="flow3" name="Observar" sourceRef="gatewayDecisionCoordinador" targetRef="corregirSolicitud">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${decisionCoordinador == 'OBSERVAR'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow4" name="Aprobar" sourceRef="gatewayDecisionCoordinador" targetRef="iniciarMantenimiento">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${decisionCoordinador == 'APROBAR'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow5" name="Reenviar" sourceRef="corregirSolicitud" targetRef="revisarSolicitud"></sequenceFlow>
+    <sequenceFlow id="flow7" name="Iniciar mantenimiento" sourceRef="iniciarMantenimiento" targetRef="ejecutarMantenimiento"></sequenceFlow>
+    <sequenceFlow id="flow8" sourceRef="ejecutarMantenimiento" targetRef="enviarRevision"></sequenceFlow>
+    <sequenceFlow id="flow9" name="Enviar a revisión" sourceRef="enviarRevision" targetRef="revisarMantenimiento"></sequenceFlow>
+    <sequenceFlow id="flow10" sourceRef="revisarMantenimiento" targetRef="gatewayDecisionSupervisor"></sequenceFlow>
+    <sequenceFlow id="flow11" name="Observar" sourceRef="gatewayDecisionSupervisor" targetRef="corregirMantenimiento">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${decisionSupervisor == 'OBSERVAR'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow12" name="Validar" sourceRef="gatewayDecisionSupervisor" targetRef="registrarTrabajo">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${decisionSupervisor == 'VALIDAR'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow13" name="Corregir" sourceRef="corregirMantenimiento" targetRef="revisarMantenimiento"></sequenceFlow>
+    <sequenceFlow id="flow14" name="Registrar trabajo" sourceRef="registrarTrabajo" targetRef="recibirActivo"></sequenceFlow>
+    <sequenceFlow id="flow15" name="Recibir y cerrar" sourceRef="recibirActivo" targetRef="endEvent"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_solicitudMantenimientoProcess">
+    <bpmndi:BPMNPlane bpmnElement="solicitudMantenimientoProcess" id="BPMNPlane_solicitudMantenimientoProcess">
+      <bpmndi:BPMNShape bpmnElement="startEvent" id="BPMNShape_startEvent">
+        <omgdc:Bounds height="30.0" width="30.0" x="80.0" y="162.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="revisarSolicitud" id="BPMNShape_revisarSolicitud">
+        <omgdc:Bounds height="80.0" width="160.0" x="160.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="gatewayDecisionCoordinador" id="BPMNShape_gatewayDecisionCoordinador">
+        <omgdc:Bounds height="40.0" width="40.0" x="380.0" y="155.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="corregirSolicitud" id="BPMNShape_corregirSolicitud">
+        <omgdc:Bounds height="80.0" width="160.0" x="330.0" y="300.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="iniciarMantenimiento" id="BPMNShape_iniciarMantenimiento">
+        <omgdc:Bounds height="80.0" width="160.0" x="700.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ejecutarMantenimiento" id="BPMNShape_ejecutarMantenimiento">
+        <omgdc:Bounds height="80.0" width="170.0" x="920.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="enviarRevision" id="BPMNShape_enviarRevision">
+        <omgdc:Bounds height="80.0" width="160.0" x="1150.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="revisarMantenimiento" id="BPMNShape_revisarMantenimiento">
+        <omgdc:Bounds height="80.0" width="180.0" x="1370.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="gatewayDecisionSupervisor" id="BPMNShape_gatewayDecisionSupervisor">
+        <omgdc:Bounds height="40.0" width="40.0" x="1610.0" y="155.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="corregirMantenimiento" id="BPMNShape_corregirMantenimiento">
+        <omgdc:Bounds height="80.0" width="190.0" x="1560.0" y="300.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="registrarTrabajo" id="BPMNShape_registrarTrabajo">
+        <omgdc:Bounds height="80.0" width="190.0" x="1710.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="recibirActivo" id="BPMNShape_recibirActivo">
+        <omgdc:Bounds height="80.0" width="190.0" x="1960.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endEvent" id="BPMNShape_endEvent">
+        <omgdc:Bounds height="28.0" width="28.0" x="2210.0" y="162.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow13" id="BPMNEdge_flow13" flowable:sourceDockerX="95.0" flowable:sourceDockerY="40.0" flowable:targetDockerX="90.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="1560.0" y="340.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1460.0" y="340.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1460.0" y="219.95000000000002"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow14" id="BPMNEdge_flow14" flowable:sourceDockerX="95.0" flowable:sourceDockerY="40.0" flowable:targetDockerX="95.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="1899.949999999917" y="180.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1960.0" y="180.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow15" id="BPMNEdge_flow15" flowable:sourceDockerX="95.0" flowable:sourceDockerY="40.0" flowable:targetDockerX="14.0" flowable:targetDockerY="14.0">
+        <omgdi:waypoint x="2149.95" y="177.75147928994082"></omgdi:waypoint>
+        <omgdi:waypoint x="2210.0038399300392" y="176.3300871195725"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1" flowable:sourceDockerX="15.0" flowable:sourceDockerY="15.0" flowable:targetDockerX="80.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="109.94676196350395" y="177.30924573047707"></omgdi:waypoint>
+        <omgdi:waypoint x="159.99999999999966" y="178.3448275862069"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2" flowable:sourceDockerX="80.0" flowable:sourceDockerY="40.0" flowable:targetDockerX="20.0" flowable:targetDockerY="20.0">
+        <omgdi:waypoint x="319.9499999999989" y="177.5"></omgdi:waypoint>
+        <omgdi:waypoint x="380.6060606060606" y="175.60454545454547"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3" flowable:sourceDockerX="20.0" flowable:sourceDockerY="20.0" flowable:targetDockerX="80.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="400.0" y="194.93827849588723"></omgdi:waypoint>
+        <omgdi:waypoint x="400.0" y="260.0"></omgdi:waypoint>
+        <omgdi:waypoint x="410.0" y="260.0"></omgdi:waypoint>
+        <omgdi:waypoint x="410.0" y="300.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4" flowable:sourceDockerX="20.0" flowable:sourceDockerY="20.0" flowable:targetDockerX="80.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="419.3397789218655" y="175.60454545454544"></omgdi:waypoint>
+        <omgdi:waypoint x="700.0" y="180.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5" flowable:sourceDockerX="80.0" flowable:sourceDockerY="40.0" flowable:targetDockerX="80.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="330.0" y="340.0"></omgdi:waypoint>
+        <omgdi:waypoint x="240.0" y="340.0"></omgdi:waypoint>
+        <omgdi:waypoint x="240.0" y="219.95000000000002"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7" flowable:sourceDockerX="80.0" flowable:sourceDockerY="40.0" flowable:targetDockerX="85.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="859.9499999999224" y="180.0"></omgdi:waypoint>
+        <omgdi:waypoint x="919.9999999999685" y="180.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10" flowable:sourceDockerX="90.0" flowable:sourceDockerY="40.0" flowable:targetDockerX="20.0" flowable:targetDockerY="20.0">
+        <omgdi:waypoint x="1549.95" y="177.35294117647058"></omgdi:waypoint>
+        <omgdi:waypoint x="1610.5714285714282" y="175.57"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8" flowable:sourceDockerX="85.0" flowable:sourceDockerY="40.0" flowable:targetDockerX="80.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="1089.9499999998939" y="180.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1150.0" y="180.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11" flowable:sourceDockerX="20.0" flowable:sourceDockerY="20.0" flowable:targetDockerX="95.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="1630.0" y="194.93827849588726"></omgdi:waypoint>
+        <omgdi:waypoint x="1630.0" y="260.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1655.0" y="260.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1655.0" y="300.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9" flowable:sourceDockerX="80.0" flowable:sourceDockerY="40.0" flowable:targetDockerX="90.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="1309.9499999998957" y="180.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1369.999999999957" y="180.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow12" id="BPMNEdge_flow12" flowable:sourceDockerX="20.0" flowable:sourceDockerY="20.0" flowable:targetDockerX="95.0" flowable:targetDockerY="40.0">
+        <omgdi:waypoint x="1649.3906024430867" y="175.55416666666665"></omgdi:waypoint>
+        <omgdi:waypoint x="1709.9999999999998" y="177.28571428571428"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
