@@ -36,6 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -120,11 +121,17 @@ public class SolicitudMantenimientoService {
     }
 
     @Transactional
-    public SolicitudMantenimientoResponse enviar(UUID id, EnviarSolicitudMantenimientoRequest request) {
+    public SolicitudMantenimientoResponse enviar(
+            UUID id,
+            EnviarSolicitudMantenimientoRequest request
+    ) {
 
-        SolicitudMantenimiento solicitud = findDomainById(id);
+        SolicitudMantenimiento solicitud =
+                findDomainById(id);
 
-        if (!ESTADO_BORRADOR.equalsIgnoreCase(solicitud.getEstado())) {
+        if (!ESTADO_BORRADOR.equalsIgnoreCase(
+                solicitud.getEstado()
+        )) {
             throw new ConflictException(
                     "SOLICITUD_ESTADO_INVALIDO",
                     "Solo se puede enviar una solicitud en estado BORRADOR"
@@ -138,33 +145,52 @@ public class SolicitudMantenimientoService {
             );
         }
 
-        Map<String, Object> variables = Map.of(
-                "solicitudId", solicitud.getId().toString(),
+        UUID aprobadorId = request.getEffectiveAprobadorId();
+        if (aprobadorId == null) {
+            throw new BusinessException(
+                    "APROBADOR_REQUERIDO",
+                    "Debe seleccionar un aprobador"
+            );
+        }
 
-                "solicitanteId", solicitud.getSolicitanteId().toString(),
+        // 1. Guardar responsables designados
+        solicitud.setAprobadoPorId(aprobadorId);
 
-                "aprobadorId", request.aprobadorId().toString(),
+        if (request.supervisorId() != null) {
+            solicitud.setSupervisorId(request.supervisorId());
+        }
 
-                "supervisorId", request.supervisorId().toString()
-        );
+        // 2. Variables que necesita Flowable
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("solicitudId", solicitud.getId().toString());
+        variables.put("solicitanteId", solicitud.getSolicitanteId().toString());
+        variables.put("aprobadorId", solicitud.getAprobadoPorId().toString());
+        if (solicitud.getSupervisorId() != null) {
+            variables.put("supervisorId", solicitud.getSupervisorId().toString());
+        }
 
-        String processInstanceId = workflowApplicationService.iniciar(
+        // 3. Iniciar workflow
+        String processInstanceId =
+                workflowApplicationService.iniciar(
                         WORKFLOW_CODIGO,
                         solicitud.getId().toString(),
                         variables
                 );
 
-        solicitud.setProcessInstanceId(processInstanceId);
-        solicitud.setEstado(ESTADO_SOLICITADO);
 
-        solicitud.setAprobadoPorId(request.aprobadorId());
+        // 4. Guardar instancia y estado
+        solicitud.setProcessInstanceId(
+                processInstanceId
+        );
 
-        solicitud.setSupervisorId(request.supervisorId());
+        solicitud.setEstado(
+                ESTADO_SOLICITADO
+        );
 
-        return toResponse(repository.save(solicitud)
+        return toResponse(
+                repository.save(solicitud)
         );
     }
-
     @Transactional
     public SolicitudMantenimientoResponse update(UUID id, SolicitudMantenimientoRequest request) {
         validateForeignEntities(request.activoId(), request.tipoMantenimientoId(), request.prioridadId());

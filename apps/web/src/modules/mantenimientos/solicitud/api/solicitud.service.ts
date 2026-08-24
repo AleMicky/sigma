@@ -151,11 +151,21 @@ export async function deleteAdjunto(
   await http.delete<void>(solicitudEndpoints.adjuntos.byId(solicitudId, adjuntoId))
 }
 
+export type EnviarSolicitudPayload = {
+  aprobadoPorId: string
+  supervisorId?: string | null
+}
+
 export async function enviarSolicitud(
   id: string,
+  payload: EnviarSolicitudPayload,
 ): Promise<SolicitudMantenimiento> {
-  return http.post<SolicitudMantenimiento>(solicitudEndpoints.enviar(id))
+  return http.post<SolicitudMantenimiento, EnviarSolicitudPayload>(
+    solicitudEndpoints.enviar(id),
+    payload,
+  )
 }
+
 
 export type WorkflowAction = {
   name: string

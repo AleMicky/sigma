@@ -58,13 +58,18 @@ public class SolicitudMantenimientoController {
 
     @PostMapping("/{id}/enviar")
     @Operation(summary = "Enviar solicitud e iniciar flujo de trabajo")
-    public SolicitudMantenimientoResponse enviar(
+    public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> enviar(
             @PathVariable UUID id,
             @Valid @RequestBody EnviarSolicitudMantenimientoRequest request
     ) {
-        return service.enviar(
-                id,
-                request
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Solicitud enviada correctamente",
+                        service.enviar(
+                                id,
+                                request
+                        )
+                )
         );
     }
     @PostMapping("/{id}/workflow/complete")

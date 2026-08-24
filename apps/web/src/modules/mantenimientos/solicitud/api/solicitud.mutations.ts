@@ -14,9 +14,11 @@ import {
   enviarSolicitud,
   updateSolicitud,
   type CompleteWorkflowTaskPayload,
+  type EnviarSolicitudPayload,
   type SolicitudMantenimiento,
   type SolicitudPayload,
 } from "./solicitud.service"
+
 
 const solicitudCrudMutations = createCrudMutations<
   SolicitudMantenimiento,
@@ -114,7 +116,13 @@ export function useEnviarSolicitud() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => enviarSolicitud(id),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string
+      payload: EnviarSolicitudPayload
+    }) => enviarSolicitud(id, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
       toast.success("Solicitud enviada correctamente e iniciado el flujo de trabajo")
@@ -124,6 +132,7 @@ export function useEnviarSolicitud() {
     },
   })
 }
+
 
 export function useCompleteWorkflowTask() {
   const queryClient = useQueryClient()

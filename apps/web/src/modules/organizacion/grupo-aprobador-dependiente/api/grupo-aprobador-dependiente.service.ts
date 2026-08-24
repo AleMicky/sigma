@@ -67,3 +67,18 @@ export async function deleteGrupoAprobadorDependiente(
     grupoAprobadorDependienteEndpoints.byId(grupoAprobadorId, id),
   )
 }
+
+export type AprobadorSelect = {
+  id: string
+  nombreCompleto: string
+  cargo?: string | null
+}
+
+export async function getAprobadoresSelectByEmpleado(
+  empleadoId: string,
+): Promise<AprobadorSelect[]> {
+  return http.get<AprobadorSelect[]>(
+    grupoAprobadorDependienteEndpoints.aprobadoresSelect(empleadoId),
+  )
+}
+

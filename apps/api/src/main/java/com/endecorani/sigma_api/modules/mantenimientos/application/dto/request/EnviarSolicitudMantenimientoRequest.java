@@ -1,17 +1,21 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.request;
 
-import jakarta.validation.constraints.NotNull;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 import java.util.UUID;
 
 public record EnviarSolicitudMantenimientoRequest(
 
-        @NotNull
+        @JsonAlias({"aprobadorId"})
+        UUID aprobadoPorId,
+
         UUID aprobadorId,
 
-        @NotNull
         UUID supervisorId
 
 ) {
 
+    public UUID getEffectiveAprobadorId() {
+        return aprobadoPorId != null ? aprobadoPorId : aprobadorId;
+    }
 }

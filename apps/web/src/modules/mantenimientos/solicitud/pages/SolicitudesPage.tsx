@@ -131,15 +131,19 @@ export function SolicitudesPage() {
     }
   }
 
-  async function handleEnviar() {
+  async function handleEnviar(aprobadoPorId: string) {
     if (!enviando) return
     try {
-      await enviarMutation.mutateAsync(enviando.id)
+      await enviarMutation.mutateAsync({
+        id: enviando.id,
+        payload: { aprobadoPorId },
+      })
       setEnviando(null)
     } catch {
       // Handled by mutation toast
     }
   }
+
 
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">

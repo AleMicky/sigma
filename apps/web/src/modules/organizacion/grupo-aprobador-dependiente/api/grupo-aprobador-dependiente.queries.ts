@@ -4,6 +4,7 @@ import type { PageParams } from "@/shared/types/api.types"
 
 import { grupoAprobadorDependienteKeys } from "./grupo-aprobador-dependiente.keys"
 import {
+  getAprobadoresSelectByEmpleado,
   getGrupoAprobadorDependiente,
   listGrupoAprobadorDependientes,
 } from "./grupo-aprobador-dependiente.service"
@@ -20,4 +21,11 @@ export const grupoAprobadorDependienteQueries = {
       queryKey: grupoAprobadorDependienteKeys.detail(grupoAprobadorId, id),
       queryFn: () => getGrupoAprobadorDependiente(grupoAprobadorId, id),
     }),
+  aprobadoresSelect: (empleadoId: string) =>
+    queryOptions({
+      queryKey: grupoAprobadorDependienteKeys.aprobadoresSelect(empleadoId),
+      queryFn: () => getAprobadoresSelectByEmpleado(empleadoId),
+      enabled: Boolean(empleadoId),
+    }),
 }
+
