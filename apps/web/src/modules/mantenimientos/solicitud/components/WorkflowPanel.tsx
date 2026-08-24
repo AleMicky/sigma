@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
 import {
   AlertCircle,
   AlertOctagon,
   CheckCircle2,
   CheckCheck,
+  ClipboardCheck,
   Clock,
   FileCheck2,
   Loader2,
@@ -13,7 +15,9 @@ import {
   ShieldCheck,
   UserCheck,
 } from "lucide-react"
+import { toast } from "sonner"
 
+import { controlActivoQueries } from "@/modules/mantenimientos/control-activo/api/control-activo.queries"
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 
@@ -141,6 +145,26 @@ export function WorkflowPanel({
   const fields = actionsQuery.data?.fields ?? []
   const currentStatus = actionsQuery.data?.status ?? solicitud.estado
 
+  const isTrabajoRealizado =
+    (currentStatus ?? "").toUpperCase() === "TRABAJO_REALIZADO" ||
+    (solicitud.estado ?? "").toUpperCase() === "TRABAJO_REALIZADO"
+
+  // Check Control de Activo for DEVOLUCION
+  const controlesQuery = useQuery({
+    ...controlActivoQueries.list({ size: 100 }),
+    enabled: Boolean(solicitud.id && isTrabajoRealizado),
+  })
+
+  const hasDevolucion = Boolean(
+    controlesQuery.data?.content?.some(
+      (c) =>
+        c.solicitudMantenimientoId === solicitud.id &&
+        c.tipo === "DEVOLUCION",
+    ),
+  )
+
+  const canAdvance = !isTrabajoRealizado || hasDevolucion
+
   // If no processInstanceId is present (e.g. Borrador), show initiate notice
   if (!solicitud.processInstanceId) {
     return (
@@ -213,6 +237,54 @@ export function WorkflowPanel({
         )}
       </div>
 
+      {/* Callout de Devolución de Activo para TRABAJO_REALIZADO */}
+      {isTrabajoRealizado && (
+        <div
+          className={cn(
+            "rounded-xl border p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5",
+            hasDevolucion
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
+              : "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200",
+          )}
+        >
+          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+            {hasDevolucion ? (
+              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            ) : (
+              <AlertCircle className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className="text-xs font-bold text-foreground">
+                {hasDevolucion
+                  ? "Control de Activo: Devolución Registrada"
+                  : "Paso Obligatorio: Registrar Devolución de Activo"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {hasDevolucion
+                  ? "El acta de devolución del activo fue completada. Puedes cerrar el flujo y confirmar la recepción."
+                  : "Para dar por finalizado el mantenimiento y cerrar el expediente, primero debes registrar la devolución del activo."}
+              </p>
+            </div>
+          </div>
+
+          {!hasDevolucion ? (
+            <Link
+              to="/mantenimientos/controles-activos/nuevo"
+              search={{ solicitudId: solicitud.id, tipo: "DEVOLUCION" }}
+            >
+              <Button
+                type="button"
+                size="sm"
+                className="h-7.5 px-3 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-2xs shrink-0 cursor-pointer"
+              >
+                <ClipboardCheck className="size-3.5 mr-1.5" />
+                <span>Registrar Devolución</span>
+              </Button>
+            </Link>
+          ) : null}
+        </div>
+      )}
+
       {/* Action Buttons Toolbar */}
       <div className="pt-2 border-t border-border/50">
         {actionsQuery.isLoading ? (
@@ -235,13 +307,27 @@ export function WorkflowPanel({
                   key={`${act.variable}-${act.value}`}
                   type="button"
                   size="sm"
-                  onClick={() =>
+                  disabled={!canAdvance}
+                  onClick={() => {
+                    if (!canAdvance) {
+                      toast.warning(
+                        "Para finalizar el flujo y cerrar la solicitud, primero debes registrar la Devolución del Activo.",
+                      )
+                      return
+                    }
                     onActionSelect(solicitud, act, taskName, fields)
-                  }
+                  }}
                   className={cn(
-                    "h-8.5 gap-1.5 px-3.5 text-xs font-bold transition-all cursor-pointer rounded-xl",
-                    visual.btnClass,
+                    "h-8.5 gap-1.5 px-3.5 text-xs font-bold transition-all rounded-xl",
+                    !canAdvance
+                      ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground ring-0"
+                      : cn("cursor-pointer", visual.btnClass),
                   )}
+                  title={
+                    !canAdvance
+                      ? "Bloqueado: Primero registra la Devolución del Activo"
+                      : act.name
+                  }
                 >
                   <IconComponent className="size-3.5 shrink-0" />
                   <span>{act.name}</span>

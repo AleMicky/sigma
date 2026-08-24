@@ -181,6 +181,7 @@ export function SolicitudAprobacionListItem({
   )
 
   const isValidado = estadoNorm === "validado"
+  const isTrabajoRealizado = estadoNorm === "trabajo_realizado"
 
   // Actividades query to verify all tasks are checked
   const actividadesQuery = useQuery({
@@ -194,14 +195,24 @@ export function SolicitudAprobacionListItem({
   const allActividadesCompleted =
     totalActividades > 0 && completadasCount === totalActividades
 
+  const hasDevolucion = Boolean(
+    controlesQuery.data?.content?.some(
+      (c) =>
+        c.solicitudMantenimientoId === solicitud.id &&
+        c.tipo === "DEVOLUCION",
+    ),
+  )
+
   // Step 3: Only when requirements are met can the workflow state advance:
   // - For ASIGNADO: requires hasControlActivo && hasOrdenTrabajo.
   // - For VALIDADO: requires hasControlActivo && hasOrdenTrabajo && allActividadesCompleted (all tasks checked).
+  // - For TRABAJO_REALIZADO: requires hasDevolucion (Devolución de Activo registrada).
   const canAdvanceWorkflow =
     !showControlActivo ||
     (hasControlActivo &&
       hasOrdenTrabajo &&
-      (!isValidado || allActividadesCompleted))
+      (!isValidado || allActividadesCompleted) &&
+      (!isTrabajoRealizado || hasDevolucion))
 
   function copyNumero(e: React.MouseEvent) {
     e.stopPropagation()
@@ -361,7 +372,41 @@ export function SolicitudAprobacionListItem({
       >
         {/* 1. Control de Activo (Entrega / Devolución) */}
         {showControlActivo && (
-          hasControlActivo ? (
+          isTrabajoRealizado ? (
+            hasDevolucion ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onViewControlActivo?.(solicitud)
+                }}
+                className="h-8 gap-1.5 text-xs font-semibold rounded-lg shadow-2xs cursor-pointer transition-all bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50"
+                title="Devolución de Activo registrada (clic para ver el acta y detalle)"
+              >
+                <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">Devolución (Lista)</span>
+              </Button>
+            ) : (
+              <Link
+                to="/mantenimientos/controles-activos/nuevo"
+                search={{ solicitudId: solicitud.id, tipo: "DEVOLUCION" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 text-xs font-semibold rounded-lg shadow-2xs cursor-pointer transition-all bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40 hover:bg-amber-500/25 ring-1 ring-amber-500/30"
+                  title="Paso requerido: Registrar acta de devolución de activo para finalizar el flujo"
+                >
+                  <ClipboardCheck className="size-3.5 text-amber-600 dark:text-amber-400" />
+                  <span className="hidden sm:inline">Registrar Devolución</span>
+                </Button>
+              </Link>
+            )
+          ) : hasControlActivo ? (
             <Button
               type="button"
               size="sm"
@@ -500,6 +545,10 @@ export function SolicitudAprobacionListItem({
                           `Para registrar el trabajo finalizado, debes marcar como realizadas todas las tareas de la Orden de Trabajo (${completadasCount} de ${totalActividades} completadas). Haz clic en el botón de OT para marcar los checks.`,
                         )
                       }
+                    } else if (isTrabajoRealizado && !hasDevolucion) {
+                      toast.warning(
+                        "Para finalizar el flujo y cerrar la solicitud, primero debes registrar la Devolución del Activo.",
+                      )
                     }
                     return
                   }
@@ -524,7 +573,9 @@ export function SolicitudAprobacionListItem({
                         ? "Bloqueado: Primero crea la Orden de Trabajo"
                         : isValidado
                           ? `Bloqueado: Debes marcar todas las tareas como realizadas (${completadasCount}/${totalActividades})`
-                          : "Bloqueado: Requisitos pendientes"
+                          : isTrabajoRealizado && !hasDevolucion
+                            ? "Bloqueado: Primero registra la Devolución del Activo"
+                            : "Bloqueado: Requisitos pendientes"
                     : `Avanzar workflow: ${act.name}`
                 }
               >

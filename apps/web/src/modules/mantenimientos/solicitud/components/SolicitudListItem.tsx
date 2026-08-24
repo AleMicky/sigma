@@ -1,8 +1,12 @@
 import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
 import {
   Box,
   Calendar,
   Check,
+  CheckCircle2,
+  ClipboardCheck,
   Clock,
   Copy,
   Eye,
@@ -16,6 +20,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { controlActivoQueries } from "@/modules/mantenimientos/control-activo/api/control-activo.queries"
 import { Button } from "@/shared/components/ui/button"
 import {
   DropdownMenu,
@@ -54,9 +59,23 @@ export function SolicitudListItem({
   const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
   const isBorrador = estadoNorm === "borrador"
   const isSolicitado = estadoNorm === "solicitado"
+  const isTrabajoRealizado = estadoNorm === "trabajo_realizado"
   const estadoStyle = getEstadoBadgeStyles(solicitud.estado)
   const prioridadStyle = getPrioridadBadgeStyles(solicitud.prioridad?.nivel ?? 1)
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
+
+  const controlesQuery = useQuery({
+    ...controlActivoQueries.list({ size: 100 }),
+    enabled: Boolean(isTrabajoRealizado && solicitud.id),
+  })
+
+  const hasDevolucion = Boolean(
+    controlesQuery.data?.content?.some(
+      (c) =>
+        c.solicitudMantenimientoId === solicitud.id &&
+        c.tipo === "DEVOLUCION",
+    ),
+  )
 
   const audit =
     "auditoria" in solicitud && solicitud.auditoria
@@ -264,6 +283,32 @@ export function SolicitudListItem({
               <span>Enviar</span>
             </Button>
           ) : null}
+
+          {/* Botón Registrar Devolución si está en TRABAJO_REALIZADO */}
+          {isTrabajoRealizado && (
+            hasDevolucion ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-lg">
+                <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">Devolución Lista</span>
+              </span>
+            ) : (
+              <Link
+                to="/mantenimientos/controles-activos/nuevo"
+                search={{ solicitudId: solicitud.id, tipo: "DEVOLUCION" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  type="button"
+                  size="xs"
+                  className="h-7.5 gap-1.5 px-3 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-2xs cursor-pointer ring-1 ring-amber-500/30"
+                  title="Paso requerido: Registrar Devolución de Activo para cerrar el mantenimiento"
+                >
+                  <ClipboardCheck className="size-3.5" />
+                  <span>Devolución Activo</span>
+                </Button>
+              </Link>
+            )
+          )}
 
           {/* Botón Ver Detalles */}
           <Button
