@@ -49,8 +49,6 @@ type ActivoDetailPageProps = {
 export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
   const [activeTab, setActiveTab] = useState<TabType>("informacion")
   const [isEditing, setIsEditing] = useState(false)
-  const [docFilter, setDocFilter] = useState<string>("todos")
-  const [docSearch, setDocSearch] = useState<string>("")
   const [isAddDocOpen, setIsAddDocOpen] = useState(false)
   const [editingDocumento, setEditingDocumento] = useState<ActivoDocumento | null>(null)
   const [isAddAccesorioOpen, setIsAddAccesorioOpen] = useState(false)
@@ -128,7 +126,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
   const color = tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
   const Icon = getTipoActivoIcon(tipoActivo?.icono)
 
-  // Real list of documents for this asset
   // Real list of documents for this asset
   const documentosQuery = useQuery(
     activoDocumentoQueries.byActivo(activoId, {
@@ -332,10 +329,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
         {activeTab === "documentacion" && (
           <ActivoDocumentosTab
             activoId={activo.id}
-            docSearch={docSearch}
-            onSearchChange={setDocSearch}
-            docFilter={docFilter}
-            onFilterChange={setDocFilter}
             onOpenAddDocument={handleOpenAddDocument}
             onEditDocumento={handleEditDocumento}
           />

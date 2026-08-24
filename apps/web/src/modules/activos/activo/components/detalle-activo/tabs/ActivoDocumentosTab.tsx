@@ -80,25 +80,32 @@ export function formatDateString(dateStr?: string | null): string {
 
 type ActivoDocumentosTabProps = {
   activoId: string
-  docSearch: string
-  onSearchChange: (value: string) => void
-  docFilter: string
-  onFilterChange: (value: string) => void
+  docSearch?: string
+  onSearchChange?: (value: string) => void
+  docFilter?: string
+  onFilterChange?: (value: string) => void
   onOpenAddDocument: () => void
   onEditDocumento?: (doc: ActivoDocumento) => void
 }
 
 export function ActivoDocumentosTab({
   activoId,
-  docSearch,
+  docSearch: externalSearch,
   onSearchChange,
-  docFilter,
+  docFilter: externalFilter,
   onFilterChange,
   onOpenAddDocument,
   onEditDocumento,
 }: ActivoDocumentosTabProps) {
+  const [internalSearch, setInternalSearch] = useState("")
+  const [internalFilter, setInternalFilter] = useState("todos")
   const [docToDelete, setDocToDelete] = useState<ActivoDocumento | null>(null)
   const [loadingDocId, setLoadingDocId] = useState<string | null>(null)
+
+  const docSearch = externalSearch ?? internalSearch
+  const docFilter = externalFilter ?? internalFilter
+  const handleSearchChange = onSearchChange ?? setInternalSearch
+  const handleFilterChange = onFilterChange ?? setInternalFilter
 
   const deleteMutation = useDeleteActivoDocumento()
 
@@ -211,7 +218,7 @@ export function ActivoDocumentosTab({
             <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
             <Input
               value={docSearch}
-              onChange={(e) => onSearchChange(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Buscar documento por título o código..."
               className="h-8.5 pl-8 text-xs"
             />
@@ -219,7 +226,7 @@ export function ActivoDocumentosTab({
 
           <Select
             value={docFilter}
-            onValueChange={(val) => onFilterChange(val ?? "todos")}
+            onValueChange={(val) => handleFilterChange(val ?? "todos")}
           >
             <SelectTrigger className="w-40 h-8.5 text-xs">
               <SelectValue placeholder="Estado" />
