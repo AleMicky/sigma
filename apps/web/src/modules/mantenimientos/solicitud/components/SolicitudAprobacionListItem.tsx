@@ -46,6 +46,7 @@ type SolicitudAprobacionListItemProps = {
     taskName?: string,
     fields?: WorkflowField[],
   ) => void
+  onCreateOT?: (solicitud: SolicitudMantenimiento) => void
 }
 
 function getInitials(name?: string | null): string {
@@ -114,6 +115,7 @@ export function SolicitudAprobacionListItem({
   solicitud,
   onQuickView,
   onActionSelect,
+  onCreateOT,
 }: SolicitudAprobacionListItemProps) {
   const [copied, setCopied] = useState(false)
 
@@ -338,6 +340,21 @@ export function SolicitudAprobacionListItem({
             <span className="hidden sm:inline">Control Activo</span>
           </Button>
         </Link>
+
+        {/* Crear / Gestionar Orden de Trabajo */}
+        {onCreateOT && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => onCreateOT(solicitud)}
+            className="h-8 gap-1.5 text-xs font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20 hover:border-indigo-500/50 rounded-lg shadow-2xs cursor-pointer"
+            title="Crear o gestionar Orden de Trabajo para esta solicitud"
+          >
+            <Wrench className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span className="hidden sm:inline">Crear OT</span>
+          </Button>
+        )}
 
         {/* Revisar Expediente (Opens Modal) */}
         <Button

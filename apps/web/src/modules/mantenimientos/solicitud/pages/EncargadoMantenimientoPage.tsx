@@ -1,9 +1,7 @@
 import { useMemo, useState } from "react"
-import { Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
-  ClipboardCheck,
   FileCheck2,
   Paperclip,
   UserCheck,
@@ -17,10 +15,12 @@ import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
 import { RefreshButton } from "@/shared/components/refresh-button"
-import { Button } from "@/shared/components/ui/button"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
+import { OrdenTrabajoDetailModal } from "@/modules/mantenimientos/orden-trabajo/components/OrdenTrabajoDetailModal"
+import { OrdenTrabajoFormDialog } from "@/modules/mantenimientos/orden-trabajo/components/OrdenTrabajoFormDialog"
+import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
@@ -37,6 +37,14 @@ export function EncargadoMantenimientoPage() {
   const [modalSolicitud, setModalSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
+
+  // OT Creation from Solicitud
+  const [otFormModal, setOtFormModal] = useState<{
+    open: boolean
+    initialSolicitudId?: string
+    initialActivoId?: string
+  }>({ open: false })
+  const [selectedOT, setSelectedOT] = useState<OrdenTrabajo | null>(null)
 
   const [workflowActionTarget, setWorkflowActionTarget] = useState<{
     solicitud: SolicitudMantenimiento
@@ -67,7 +75,8 @@ export function EncargadoMantenimientoPage() {
   )
 
   // Métricas rápidas para el encargado
-  const totalCount = solicitudesQuery.data?.totalElements ?? rawSolicitudes.length
+  const totalCount =
+    solicitudesQuery.data?.totalElements ?? rawSolicitudes.length
 
   const urgentesCount = useMemo(
     () => rawSolicitudes.filter((s) => (s.prioridad?.nivel ?? 1) >= 4).length,
@@ -117,6 +126,14 @@ export function EncargadoMantenimientoPage() {
     })
   }
 
+  function handleCreateOT(solicitud: SolicitudMantenimiento) {
+    setOtFormModal({
+      open: true,
+      initialSolicitudId: solicitud.id,
+      initialActivoId: solicitud.activo?.id,
+    })
+  }
+
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
       {/* Header */}
@@ -137,16 +154,6 @@ export function EncargadoMantenimientoPage() {
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0 md:hidden">
-              <Link to="/mantenimientos/controles-activos/nuevo">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 text-xs font-semibold gap-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30"
-                >
-                  <ClipboardCheck className="size-3.5" />
-                  <span>Control</span>
-                </Button>
-              </Link>
               <RefreshButton
                 size="sm"
                 className="h-7 px-2"
@@ -160,17 +167,7 @@ export function EncargadoMantenimientoPage() {
           </p>
         </div>
 
-        <div className="hidden shrink-0 md:flex md:items-center md:gap-2">
-          <Link to="/mantenimientos/controles-activos/nuevo">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 gap-1.5 px-3 text-xs font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20 hover:border-sky-500/50 shadow-2xs cursor-pointer"
-            >
-              <ClipboardCheck className="size-3.5 text-sky-600 dark:text-sky-400" />
-              <span>Nuevo Control Activo</span>
-            </Button>
-          </Link>
+        <div className="hidden shrink-0 md:flex md:items-center md:gap-1.5">
           <RefreshButton
             size="sm"
             className="h-8 gap-1.5 px-2.5 text-xs font-medium"
@@ -316,6 +313,7 @@ export function EncargadoMantenimientoPage() {
                   solicitudes={solicitudes}
                   onQuickView={handleOpenModal}
                   onActionSelect={handleActionSelect}
+                  onCreateOT={handleCreateOT}
                 />
               </div>
 
@@ -350,6 +348,29 @@ export function EncargadoMantenimientoPage() {
         onSuccess={() => {
           solicitudesQuery.refetch()
           setModalSolicitud(null)
+        }}
+      />
+
+      {/* Modal Formulario Crear Orden de Trabajo */}
+      <OrdenTrabajoFormDialog
+        open={otFormModal.open}
+        onOpenChange={(open) =>
+          setOtFormModal((prev) => ({ ...prev, open }))
+        }
+        initialSolicitudId={otFormModal.initialSolicitudId}
+        initialActivoId={otFormModal.initialActivoId}
+        onSuccess={(savedOT) => {
+          setSelectedOT(savedOT)
+        }}
+      />
+
+      {/* Modal Workbench Detalle de Orden de Trabajo */}
+      <OrdenTrabajoDetailModal
+        ordenTrabajo={selectedOT}
+        open={Boolean(selectedOT)}
+        onOpenChange={(open) => !open && setSelectedOT(null)}
+        onUpdated={() => {
+          solicitudesQuery.refetch()
         }}
       />
     </PageShell>
