@@ -19,6 +19,8 @@ import {
 } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
+import { toast } from "sonner"
+
 import { useDeleteSolicitud, useEnviarSolicitud } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
@@ -109,6 +111,10 @@ export function SolicitudesPage() {
   }
 
   function openEdit(solicitud: SolicitudMantenimiento) {
+    if ((solicitud.estado ?? "").toLowerCase() !== "borrador") {
+      toast.error("Solo se pueden editar solicitudes en estado Borrador")
+      return
+    }
     navigate({
       to: routes.mantenimientos.editarSolicitud(solicitud.id),
     })
@@ -123,6 +129,11 @@ export function SolicitudesPage() {
 
   async function handleDelete() {
     if (!deleting) return
+    if ((deleting.estado ?? "").toLowerCase() !== "borrador") {
+      toast.error("Solo se pueden eliminar solicitudes en estado Borrador")
+      setDeleting(null)
+      return
+    }
     try {
       await deleteMutation.mutateAsync(deleting.id)
       setDeleting(null)

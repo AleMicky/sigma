@@ -271,30 +271,34 @@ export function SolicitudListItem({
             <span className="hidden sm:inline">Detalles</span>
           </Button>
 
-          {/* Botón Editar */}
-          <Button
-            type="button"
-            size="xs"
-            variant="outline"
-            onClick={() => onEdit(solicitud)}
-            className="h-7.5 gap-1.5 px-2.5 text-xs font-medium hover:bg-muted/80 shadow-2xs cursor-pointer"
-            title="Editar solicitud"
-          >
-            <Pencil className="size-3.5 text-muted-foreground" />
-            <span className="hidden sm:inline">Editar</span>
-          </Button>
+          {/* Botón Editar (Solo en Borrador) */}
+          {isBorrador && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={() => onEdit(solicitud)}
+              className="h-7.5 gap-1.5 px-2.5 text-xs font-medium hover:bg-muted/80 shadow-2xs cursor-pointer"
+              title="Editar solicitud"
+            >
+              <Pencil className="size-3.5 text-muted-foreground" />
+              <span className="hidden sm:inline">Editar</span>
+            </Button>
+          )}
 
-          {/* Botón Eliminar */}
-          <Button
-            type="button"
-            size="icon-xs"
-            variant="ghost"
-            onClick={() => onDelete(solicitud)}
-            className="size-7.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-            title="Eliminar solicitud"
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
+          {/* Botón Eliminar (Solo en Borrador) */}
+          {isBorrador && (
+            <Button
+              type="button"
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => onDelete(solicitud)}
+              className="size-7.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+              title="Eliminar solicitud"
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          )}
 
           {/* Dropdown Menu para móvil / overflow */}
           <div className="sm:hidden">
@@ -319,13 +323,15 @@ export function SolicitudListItem({
                   <Eye className="size-3.5 mr-2 text-primary" />
                   Ver Detalles
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onEdit(solicitud)}
-                  className="text-xs cursor-pointer py-2"
-                >
-                  <Pencil className="size-3.5 mr-2 text-muted-foreground" />
-                  Editar Solicitud
-                </DropdownMenuItem>
+                {isBorrador && (
+                  <DropdownMenuItem
+                    onClick={() => onEdit(solicitud)}
+                    className="text-xs cursor-pointer py-2"
+                  >
+                    <Pencil className="size-3.5 mr-2 text-muted-foreground" />
+                    Editar Solicitud
+                  </DropdownMenuItem>
+                )}
                 {isBorrador && onEnviar ? (
                   <DropdownMenuItem
                     onClick={() => onEnviar(solicitud)}
@@ -335,14 +341,18 @@ export function SolicitudListItem({
                     Enviar Solicitud
                   </DropdownMenuItem>
                 ) : null}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-xs text-destructive focus:text-destructive cursor-pointer py-2"
-                  onClick={() => onDelete(solicitud)}
-                >
-                  <Trash2 className="size-3.5 mr-2" />
-                  Eliminar
-                </DropdownMenuItem>
+                {isBorrador && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-xs text-destructive focus:text-destructive cursor-pointer py-2"
+                      onClick={() => onDelete(solicitud)}
+                    >
+                      <Trash2 className="size-3.5 mr-2" />
+                      Eliminar
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

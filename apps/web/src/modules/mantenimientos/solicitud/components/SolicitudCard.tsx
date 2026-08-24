@@ -113,13 +113,15 @@ export function SolicitudCard({
                   <Eye className="size-3.5 mr-2 text-primary" />
                   Ver Detalles
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onEdit(solicitud)}
-                  className="text-xs cursor-pointer py-2"
-                >
-                  <Pencil className="size-3.5 mr-2 text-muted-foreground" />
-                  Editar Solicitud
-                </DropdownMenuItem>
+                {solicitud.estado?.toLowerCase() === "borrador" && (
+                  <DropdownMenuItem
+                    onClick={() => onEdit(solicitud)}
+                    className="text-xs cursor-pointer py-2"
+                  >
+                    <Pencil className="size-3.5 mr-2 text-muted-foreground" />
+                    Editar Solicitud
+                  </DropdownMenuItem>
+                )}
                 {solicitud.estado?.toLowerCase() === "borrador" && onEnviar ? (
                   <DropdownMenuItem
                     onClick={() => onEnviar(solicitud)}
@@ -129,14 +131,18 @@ export function SolicitudCard({
                     Enviar Solicitud
                   </DropdownMenuItem>
                 ) : null}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-xs text-destructive focus:text-destructive cursor-pointer py-2"
-                  onClick={() => onDelete(solicitud)}
-                >
-                  <Trash2 className="size-3.5 mr-2" />
-                  Eliminar
-                </DropdownMenuItem>
+                {solicitud.estado?.toLowerCase() === "borrador" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-xs text-destructive focus:text-destructive cursor-pointer py-2"
+                      onClick={() => onDelete(solicitud)}
+                    >
+                      <Trash2 className="size-3.5 mr-2" />
+                      Eliminar
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
