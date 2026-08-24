@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
+  AlertOctagon,
   Box,
   Calendar,
   Check,
@@ -13,8 +14,6 @@ import {
   RotateCcw,
   Send,
   ShieldCheck,
-  User,
-  UserCheck,
   Wrench,
 } from "lucide-react"
 import { useState } from "react"
@@ -47,6 +46,13 @@ type SolicitudAprobacionListItemProps = {
   ) => void
 }
 
+function getInitials(name?: string | null): string {
+  if (!name) return "US"
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[1][0]).toUpperCase()
+}
+
 function getActionStyle(action: WorkflowAction) {
   const name = (action.name ?? "").toLowerCase()
   const val = (action.value ?? "").toUpperCase()
@@ -55,13 +61,21 @@ function getActionStyle(action: WorkflowAction) {
     return {
       icon: CheckCircle2,
       btnClass:
-        "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs",
+        "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs ring-1 ring-emerald-500/30",
     }
   }
   if (val.includes("OBSERV") || name.includes("observar")) {
     return {
       icon: AlertCircle,
-      btnClass: "bg-amber-600 hover:bg-amber-700 text-white shadow-xs",
+      btnClass:
+        "bg-amber-600 hover:bg-amber-700 text-white shadow-xs ring-1 ring-amber-500/30",
+    }
+  }
+  if (val.includes("RECHAZ") || val.includes("CANCEL") || name.includes("rechazar")) {
+    return {
+      icon: AlertOctagon,
+      btnClass:
+        "bg-rose-600 hover:bg-rose-700 text-white shadow-xs ring-1 ring-rose-500/30",
     }
   }
   if (val.includes("INIC") || name.includes("iniciar")) {
@@ -103,7 +117,6 @@ export function SolicitudAprobacionListItem({
 
   const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
   const isSolicitado = !solicitud.estado || estadoNorm === "solicitado"
-  const isAsignado = estadoNorm === "asignado"
   const isCritica = (solicitud.prioridad?.nivel ?? 1) >= 4
 
   const prioridadStyle = getPrioridadBadgeStyles(
@@ -133,12 +146,10 @@ export function SolicitudAprobacionListItem({
     <li
       onClick={() => onQuickView(solicitud)}
       className={cn(
-        "group flex flex-col md:flex-row md:items-center md:justify-between gap-3.5 p-4 transition-all cursor-pointer border-l-4 hover:bg-muted/35 select-none",
+        "group flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 transition-all duration-200 cursor-pointer border-l-4 hover:bg-muted/40 select-none",
         isCritica
-          ? "border-l-rose-500 bg-rose-500/[0.02]"
-          : isAsignado
-            ? "border-l-sky-500 bg-sky-500/[0.02]"
-            : "border-l-amber-500 bg-amber-500/[0.02]",
+          ? "border-l-rose-500 bg-rose-500/[0.02] hover:bg-rose-500/[0.04]"
+          : "border-l-amber-500 bg-amber-500/[0.02] hover:bg-amber-500/[0.04]",
       )}
     >
       {/* Left / Main info */}
@@ -148,7 +159,7 @@ export function SolicitudAprobacionListItem({
           {solicitud.numero ? (
             <div
               onClick={copyNumero}
-              className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-mono text-xs font-bold text-foreground border border-border/80 hover:border-primary/50 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-bold text-foreground border border-border/80 hover:border-primary/50 transition-colors cursor-pointer shadow-2xs"
               title="Copiar folio"
             >
               <span>{solicitud.numero}</span>
@@ -160,16 +171,14 @@ export function SolicitudAprobacionListItem({
             </div>
           ) : null}
 
-          {/* Estado */}
+          {/* Estado Badge */}
           {isSolicitado ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300">
-              <Clock className="size-3" />
-              Por Aprobar
-            </span>
-          ) : isAsignado ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/15 px-2.5 py-0.5 text-xs font-bold text-sky-700 dark:text-sky-300">
-              <UserCheck className="size-3" />
-              Asignado
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300">
+              <span className="relative flex size-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full size-2 bg-amber-500" />
+              </span>
+              <span>Por Aprobar</span>
             </span>
           ) : (
             <span
@@ -186,11 +195,14 @@ export function SolicitudAprobacionListItem({
           {solicitud.prioridad ? (
             <span
               className={cn(
-                "inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold border shrink-0",
+                "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold border shrink-0",
                 prioridadStyle,
               )}
             >
-              {solicitud.prioridad.nombre}
+              {isCritica && (
+                <span className="size-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
+              )}
+              <span>{solicitud.prioridad.nombre}</span>
             </span>
           ) : null}
 
@@ -198,7 +210,7 @@ export function SolicitudAprobacionListItem({
           {solicitud.tipoMantenimiento ? (
             <span
               className={cn(
-                "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border shrink-0",
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border shrink-0",
                 getTipoMantenimientoBadgeClass(
                   solicitud.tipoMantenimiento.nombre,
                   false,
@@ -212,7 +224,7 @@ export function SolicitudAprobacionListItem({
 
           {/* Workflow Task Name Badge */}
           {taskName && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-muted text-muted-foreground border truncate">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-muted/80 text-muted-foreground border border-border/70 truncate">
               <span className="size-1.5 rounded-full bg-primary" />
               <span className="truncate">{taskName}</span>
             </span>
@@ -224,7 +236,7 @@ export function SolicitudAprobacionListItem({
           {solicitud.titulo}
         </h3>
 
-        {/* Asset, Requester & Responsable Line */}
+        {/* Details Line */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
           {solicitud.activo && (
             <div className="flex items-center gap-1.5 truncate">
@@ -240,18 +252,11 @@ export function SolicitudAprobacionListItem({
 
           {solicitud.solicitante && (
             <div className="flex items-center gap-1.5 truncate">
-              <User className="size-3 text-muted-foreground/70 shrink-0" />
+              <div className="flex size-4.5 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[9px] shrink-0 border border-primary/20">
+                {getInitials(solicitud.solicitante.nombre)}
+              </div>
               <span className="truncate">
                 Solicitante: <strong className="text-foreground font-medium">{solicitud.solicitante.nombre}</strong>
-              </span>
-            </div>
-          )}
-
-          {solicitud.responsable && (
-            <div className="flex items-center gap-1.5 text-sky-700 dark:text-sky-300 font-medium truncate">
-              <UserCheck className="size-3 shrink-0" />
-              <span className="truncate">
-                Técnico: <strong>{solicitud.responsable.nombre}</strong>
               </span>
             </div>
           )}
@@ -265,13 +270,13 @@ export function SolicitudAprobacionListItem({
 
           {solicitud.fechaEstimadaOt && (
             <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md text-[11px] font-medium shrink-0">
-              <Calendar className="size-3 text-emerald-600 dark:text-emerald-400" />
+              <Clock className="size-3 text-emerald-600 dark:text-emerald-400" />
               <span>Est. OT: <strong>{formatDate(solicitud.fechaEstimadaOt)}</strong></span>
             </div>
           )}
 
           {adjuntosCount > 0 && (
-            <div className="inline-flex items-center gap-1 font-bold text-primary">
+            <div className="inline-flex items-center gap-1 font-semibold text-primary bg-primary/5 px-2 py-0.5 rounded-md border border-primary/15">
               <Paperclip className="size-3" />
               <span>{adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}</span>
             </div>
@@ -286,8 +291,9 @@ export function SolicitudAprobacionListItem({
       >
         {/* Dynamic Workflow Actions */}
         {actionsQuery.isLoading ? (
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground px-2">
-            <span className="size-2 rounded-full bg-primary/60 animate-pulse" />
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2">
+            <span className="size-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-[11px]">Cargando acciones...</span>
           </div>
         ) : (
           actions.map((act) => {
@@ -302,7 +308,7 @@ export function SolicitudAprobacionListItem({
                   onActionSelect(solicitud, act, taskName, actionsQuery.data?.fields)
                 }
                 className={cn(
-                  "h-8 gap-1.5 px-3 text-xs font-bold transition-all rounded-lg cursor-pointer",
+                  "h-8 gap-1.5 px-3 text-xs font-bold transition-all rounded-lg cursor-pointer shadow-2xs hover:scale-[1.02]",
                   style.btnClass,
                 )}
               >
@@ -319,7 +325,7 @@ export function SolicitudAprobacionListItem({
           size="sm"
           variant="outline"
           onClick={() => onQuickView(solicitud)}
-          className="h-8 gap-1.5 text-xs font-semibold hover:bg-primary/10 hover:text-primary hover:border-primary/40 rounded-lg"
+          className="h-8 gap-1.5 text-xs font-semibold hover:bg-primary/10 hover:text-primary hover:border-primary/40 rounded-lg shadow-2xs"
         >
           <Eye className="size-3.5 text-muted-foreground" />
           <span>Ver Expediente</span>
