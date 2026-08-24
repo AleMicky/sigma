@@ -1,8 +1,7 @@
-import { History, Plus } from "lucide-react"
+import { History } from "lucide-react"
 
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
-import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 
 import type { MantenimientoItem } from "../types"
@@ -11,14 +10,12 @@ type ActivoHistorialTabProps = {
   activo: Activo
   tipoActivo?: TipoActivo | null
   mantenimientos: MantenimientoItem[]
-  onOpenMantenimiento: () => void
 }
 
 export function ActivoHistorialTab({
   activo,
   tipoActivo,
   mantenimientos,
-  onOpenMantenimiento,
 }: ActivoHistorialTabProps) {
   return (
     <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col gap-4">
@@ -29,15 +26,6 @@ export function ActivoHistorialTab({
             Bitácora de Mantenimiento & Trazabilidad
           </h3>
         </div>
-
-        <Button
-          size="sm"
-          onClick={onOpenMantenimiento}
-          className="h-8 text-xs font-semibold shadow-xs"
-        >
-          <Plus className="size-3.5" />
-          Registrar Mantenimiento
-        </Button>
       </div>
 
       {/* Timeline */}

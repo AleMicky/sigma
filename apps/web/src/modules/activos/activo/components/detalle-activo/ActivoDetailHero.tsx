@@ -5,7 +5,6 @@ import {
   FilePlus,
   ImageIcon,
   Maximize2,
-  Wrench,
   X,
 } from "lucide-react"
 
@@ -23,7 +22,6 @@ type ActivoDetailHeroProps = {
   onToggleEdit?: (editing: boolean) => void
   onCopyCode: () => void
   onOpenImageModal: () => void
-  onOpenMantenimiento: () => void
   onOpenAddDocument: () => void
 }
 
@@ -36,7 +34,6 @@ export function ActivoDetailHero({
   onToggleEdit,
   onCopyCode,
   onOpenImageModal,
-  onOpenMantenimiento,
   onOpenAddDocument,
 }: ActivoDetailHeroProps) {
   return (
@@ -169,16 +166,6 @@ export function ActivoDetailHero({
               Editar Información
             </Button>
           )}
-
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={onOpenMantenimiento}
-            className="h-8.5 px-3.5 text-xs font-semibold shadow-xs bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25 border border-amber-500/30"
-          >
-            <Wrench className="size-3.5" />
-            Registrar Mantenimiento
-          </Button>
 
           <Button
             size="sm"

@@ -25,7 +25,6 @@ import {
   ActivoAccesorioFormModal,
   ActivoAccesoriosTab,
   ActivoAddDocumentModal,
-  ActivoAddMantenimientoModal,
   ActivoAsignacionTab,
   ActivoDetailHeader,
   ActivoDetailHero,
@@ -49,7 +48,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
   const [editingDocumento, setEditingDocumento] = useState<ActivoDocumento | null>(null)
   const [isAddAccesorioOpen, setIsAddAccesorioOpen] = useState(false)
   const [editingAccesorio, setEditingAccesorio] = useState<ActivoAccesorio | null>(null)
-  const [isMantenimientoOpen, setIsMantenimientoOpen] = useState(false)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
 
   // Queries
@@ -108,7 +106,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
   const accesorios = accesoriosQuery.data?.content ?? []
 
   // Mock list of maintenance history
-  const [mantenimientos, setMantenimientos] = useState<MantenimientoItem[]>([
+  const [mantenimientos] = useState<MantenimientoItem[]>([
     {
       id: "maint-1",
       tipo: "preventivo",
@@ -158,10 +156,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
       setActiveTab("informacion")
     }
     setIsEditing(editing)
-  }
-
-  function handleAddMantenimiento(newMaint: MantenimientoItem) {
-    setMantenimientos((prev) => [newMaint, ...prev])
   }
 
   function handleOpenAddDocument() {
@@ -245,7 +239,6 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
           onToggleEdit={handleToggleEdit}
           onCopyCode={copyCode}
           onOpenImageModal={() => setIsImageModalOpen(true)}
-          onOpenMantenimiento={() => setIsMantenimientoOpen(true)}
           onOpenAddDocument={() => {
             setActiveTab("documentacion")
             handleOpenAddDocument()
@@ -308,19 +301,11 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
             activo={activo}
             tipoActivo={tipoActivo}
             mantenimientos={mantenimientos}
-            onOpenMantenimiento={() => setIsMantenimientoOpen(true)}
           />
         )}
       </main>
 
       {/* Modals */}
-      <ActivoAddMantenimientoModal
-        open={isMantenimientoOpen}
-        onOpenChange={setIsMantenimientoOpen}
-        activoCodigo={activo.codigo}
-        onAddMantenimiento={handleAddMantenimiento}
-      />
-
       <ActivoAddDocumentModal
         open={isAddDocOpen}
         onOpenChange={(open) => {
