@@ -1,15 +1,15 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { AlertCircle, HelpCircle, Plus } from "lucide-react"
+import { AlertCircle, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
-import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
 import { RefreshButton } from "@/shared/components/refresh-button"
+import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
 import {
   useClampPage,
@@ -17,32 +17,17 @@ import {
 } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
-import { useDeletePrioridad } from "../api/prioridad.mutations"
 import { prioridadQueries } from "../api/prioridad.queries"
 import type { Prioridad } from "../api/prioridad.service"
-import { PrioridadCard } from "../components/PrioridadCard"
-import {
-  PrioridadFilterToolbar,
-  type ViewMode,
-} from "../components/PrioridadFilterToolbar"
 import { PrioridadFormDialog } from "../components/PrioridadFormDialog"
-import { PrioridadHelpModal } from "../components/PrioridadHelpModal"
-import { PrioridadQuickViewSheet } from "../components/PrioridadQuickViewSheet"
-import { PrioridadStats } from "../components/PrioridadStats"
-import { PrioridadTableView } from "../components/PrioridadTableView"
+import { PrioridadListView } from "../components/PrioridadListView"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function PrioridadesPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [helpModalOpen, setHelpModalOpen] = useState(false)
   const [editing, setEditing] = useState<Prioridad | null>(null)
-  const [quickView, setQuickView] = useState<Prioridad | null>(null)
-  const [deleting, setDeleting] = useState<Prioridad | null>(null)
-
   const search = usePaginatedSearch()
-  const deleteMutation = useDeletePrioridad()
 
   const prioridadesQuery = useQuery(
     prioridadQueries.list({
@@ -55,11 +40,6 @@ export function PrioridadesPage() {
   )
 
   const prioridades = prioridadesQuery.data?.content ?? []
-
-  const criticaCount = useMemo(
-    () => prioridades.filter((item) => item.nivel >= 4).length,
-    [prioridades],
-  )
 
   useClampPage(
     search.page,
@@ -77,122 +57,70 @@ export function PrioridadesPage() {
     setDialogOpen(true)
   }
 
-  const hasActiveFilters = Boolean(search.search.trim())
-
-  function resetFilters() {
-    search.setSearch("")
-  }
-
-  async function handleDelete() {
-    if (!deleting) return
-    try {
-      await deleteMutation.mutateAsync(deleting.id)
-      setDeleting(null)
-    } catch {
-      // Handled by mutation toast
-    }
-  }
-
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
-      {/* Compact Header */}
-      <header className="flex shrink-0 flex-col gap-2 border-b py-2.5 sm:gap-3 sm:py-3.5 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0 flex flex-1 flex-col gap-0.5">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="font-heading text-lg font-semibold tracking-tight sm:text-xl md:text-2xl">
+    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
+      {/* Header */}
+      <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:gap-4 sm:py-6 md:flex-row md:items-start md:justify-between md:py-8">
+        <div className="min-w-0 flex flex-1 flex-col gap-1">
+          <div className="flex items-center gap-3">
+            <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
               Prioridades de Mantenimiento
             </h1>
-            <div className="flex items-center gap-1 shrink-0 md:hidden">
-              <RefreshButton
-                size="sm"
-                className="h-7 px-2"
-                onRefresh={() => prioridadesQuery.refetch()}
-                isRefreshing={prioridadesQuery.isFetching}
-              />
+            {prioridadesQuery.data && (
+              <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                {prioridadesQuery.data.totalElements}
+              </span>
+            )}
+            <div className="flex items-center gap-1.5 md:hidden ml-auto">
+              <RefreshButton queries={[prioridadesQuery]} />
               <Button
                 size="sm"
-                variant="outline"
                 type="button"
-                onClick={() => setHelpModalOpen(true)}
-                className="h-7 px-2 text-xs"
+                onClick={openCreate}
+                className="shrink-0"
               >
-                <HelpCircle className="size-3.5 text-primary" />
-                <span className="sr-only sm:not-sr-only">Guía</span>
-              </Button>
-              <Button size="sm" type="button" onClick={openCreate} className="h-7 px-2 text-xs">
-                <Plus className="size-3.5" />
+                <Plus className="size-4" />
                 <span className="sr-only sm:not-sr-only">Crear</span>
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground line-clamp-1">
-            Administra los niveles de urgencia y priorización para las solicitudes y órdenes de trabajo.
+          <p className="text-sm text-muted-foreground">
+            Configura los niveles de urgencia y priorización para las solicitudes y órdenes de trabajo (ej. Crítica, Alta, Media, Baja).
           </p>
         </div>
 
-        <div className="hidden shrink-0 md:flex md:items-center md:gap-1.5">
-          <RefreshButton
-            size="sm"
-            className="h-8 gap-1.5 px-2.5 text-xs"
-            onRefresh={() => prioridadesQuery.refetch()}
-            isRefreshing={prioridadesQuery.isFetching}
-          />
-
-          <Button
-            size="sm"
-            variant="outline"
-            type="button"
-            onClick={() => setHelpModalOpen(true)}
-            className="h-8 gap-1.5 px-2.5 text-xs border-border/80 hover:bg-muted"
-          >
-            <HelpCircle className="size-3.5 text-primary" />
-            <span>Guía de Niveles</span>
-          </Button>
-
+        <div className="hidden shrink-0 items-center gap-2 self-start md:flex">
+          <RefreshButton queries={[prioridadesQuery]} />
           <Button
             size="sm"
             type="button"
             onClick={openCreate}
-            className="h-8 gap-1.5 px-3 text-xs"
+            className="shadow-xs"
           >
-            <Plus className="size-3.5" />
-            <span>Crear Prioridad</span>
+            <Plus className="size-4" />
+            Nueva Prioridad
           </Button>
         </div>
       </header>
 
-      {/* Compact Stats Section */}
-      <div className="shrink-0 pt-2.5 pb-1">
-        <PrioridadStats
-          totalCount={prioridadesQuery.data?.totalElements}
-          criticaCount={criticaCount}
-          isLoading={prioridadesQuery.isLoading}
+      {/* Toolbar / Search */}
+      <div className="flex shrink-0 flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <SearchField
+          value={search.search}
+          onChange={search.setSearch}
+          placeholder="Buscar por código, nombre o descripción…"
+          aria-label="Buscar prioridades de mantenimiento"
+          className="w-full flex-1 min-w-0"
         />
       </div>
 
-      {/* Compact Filter Toolbar */}
-      <PrioridadFilterToolbar
-        searchValue={search.search}
-        onSearchChange={search.setSearch}
-        hasActiveFilters={hasActiveFilters}
-        onResetFilters={resetFilters}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-      />
-
-      {/* Content Section */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2">
+      {/* Content Area */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {prioridadesQuery.isLoading ? (
           <ListSkeleton
             rows={6}
-            rowClassName={
-              viewMode === "grid" ? "h-24 rounded-lg" : "h-10 rounded-md"
-            }
-            className={
-              viewMode === "grid"
-                ? "grid grid-cols-1 gap-2.5 p-0 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
-                : "flex flex-col gap-1.5"
-            }
+            rowClassName="h-16 rounded-xl"
+            className="space-y-2.5"
           />
         ) : prioridadesQuery.isError ? (
           <EmptyState
@@ -201,25 +129,31 @@ export function PrioridadesPage() {
           />
         ) : prioridades.length === 0 ? (
           <EmptyState
-            icon={<AlertCircle className="size-4 text-muted-foreground" />}
+            icon={<AlertCircle className="size-8 text-muted-foreground/60" />}
             title={
-              hasActiveFilters
-                ? "Sin resultados"
-                : "No hay prioridades registradas"
+              search.search.trim()
+                ? "Sin resultados para la búsqueda"
+                : "No hay prioridades de mantenimiento"
             }
             description={
-              hasActiveFilters
-                ? "Prueba con otra búsqueda o limpia los filtros activos."
-                : "Crea la primera prioridad de mantenimiento (ejemplo: ALTA, MEDIA, BAJA) para comenzar."
+              search.search.trim()
+                ? "Prueba modificando el texto de búsqueda o borrando los filtros."
+                : "Comienza registrando la primera prioridad para categorizar tus solicitudes de mantenimiento."
             }
             action={
-              hasActiveFilters ? (
-                <Button size="sm" type="button" onClick={resetFilters} className="h-8 text-xs">
-                  Limpiar filtros
+              search.search.trim() ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  onClick={() => search.setSearch("")}
+                  className="rounded-xl"
+                >
+                  Limpiar Búsqueda
                 </Button>
               ) : (
-                <Button size="sm" type="button" onClick={openCreate} className="h-8 text-xs">
-                  <Plus className="size-3.5" />
+                <Button size="sm" type="button" onClick={openCreate} className="rounded-xl">
+                  <Plus className="size-4" />
                   Crear Prioridad
                 </Button>
               )
@@ -229,37 +163,21 @@ export function PrioridadesPage() {
           <>
             <div
               className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2",
+                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4 pr-1",
                 prioridadesQuery.isFetching && "opacity-70",
               )}
             >
-              {viewMode === "grid" ? (
-                <ul className="grid grid-cols-1 content-start gap-2.5 p-0.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {prioridades.map((item) => (
-                    <PrioridadCard
-                      key={item.id}
-                      prioridad={item}
-                      onEdit={openEdit}
-                      onQuickView={(p) => setQuickView(p)}
-                      onDelete={(p) => setDeleting(p)}
-                    />
-                  ))}
-                </ul>
-              ) : (
-                <PrioridadTableView
-                  prioridades={prioridades}
-                  onEdit={openEdit}
-                  onQuickView={(p) => setQuickView(p)}
-                  onDelete={(p) => setDeleting(p)}
-                />
-              )}
+              <PrioridadListView
+                prioridades={prioridades}
+                onEdit={openEdit}
+              />
             </div>
 
             {prioridadesQuery.data ? (
               <Pagination
                 page={prioridadesQuery.data}
                 onPageChange={search.setPage}
-                className="-mx-3 border-x-0 px-3 sm:-mx-5 sm:px-5 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 shrink-0"
+                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 py-3"
               />
             ) : null}
           </>
@@ -277,30 +195,6 @@ export function PrioridadesPage() {
             search.setPage(0)
           }
         }}
-      />
-
-      {/* Quick View Sheet */}
-      <PrioridadQuickViewSheet
-        prioridad={quickView}
-        open={Boolean(quickView)}
-        onOpenChange={(open) => !open && setQuickView(null)}
-        onEdit={openEdit}
-      />
-
-      {/* Educational Help Modal */}
-      <PrioridadHelpModal
-        open={helpModalOpen}
-        onOpenChange={setHelpModalOpen}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDeleteDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        title={`¿Eliminar prioridad "${deleting?.nombre}"?`}
-        description="Esta acción no se puede deshacer. Se eliminará la parametrización de esta prioridad del sistema."
-        isPending={deleteMutation.isPending}
-        onConfirm={handleDelete}
       />
     </PageShell>
   )

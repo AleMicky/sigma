@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Calendar, Check, Clock, Copy, FolderTree, Layers, User } from "lucide-react"
+import React, { useState } from "react"
+import { AlertCircle, Calendar, Check, Clock, Copy, Flame, User } from "lucide-react"
 import { toast } from "sonner"
 
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
@@ -7,47 +7,80 @@ import { RowActions } from "@/shared/components/row-actions"
 import { Badge } from "@/shared/components/ui/badge"
 import { formatDateTime } from "@/shared/utils/date.utils"
 
-import { useDeleteCategoriaInsumo } from "../api/categoria-insumo.mutations"
-import type { CategoriaInsumo } from "../api/categoria-insumo.service"
+import { useDeletePrioridad } from "../api/prioridad.mutations"
+import type { Prioridad } from "../api/prioridad.service"
 
-type CategoriaInsumoListViewProps = {
-  categorias: CategoriaInsumo[]
-  tiposInsumoMap: Map<string, { nombre: string; codigo: string }>
-  onEdit: (categoria: CategoriaInsumo) => void
+type PrioridadListViewProps = {
+  prioridades: Prioridad[]
+  onEdit: (prioridad: Prioridad) => void
 }
 
-export function CategoriaInsumoListView({
-  categorias,
-  tiposInsumoMap,
-  onEdit,
-}: CategoriaInsumoListViewProps) {
-  const [categoriaToDelete, setCategoriaToDelete] =
-    useState<CategoriaInsumo | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
-  const deleteMutation = useDeleteCategoriaInsumo()
+export function getNivelPrioridadInfo(nivel: number) {
+  switch (nivel) {
+    case 5:
+      return {
+        label: "Nivel 5 (Crítica / Urgente)",
+        shortLabel: "Nivel 5",
+        badgeClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25",
+        iconClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25",
+      }
+    case 4:
+      return {
+        label: "Nivel 4 (Alta)",
+        shortLabel: "Nivel 4",
+        badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25",
+        iconClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25",
+      }
+    case 3:
+      return {
+        label: "Nivel 3 (Media)",
+        shortLabel: "Nivel 3",
+        badgeClass: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/25",
+        iconClass: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/25",
+      }
+    case 2:
+      return {
+        label: "Nivel 2 (Baja)",
+        shortLabel: "Nivel 2",
+        badgeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25",
+        iconClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25",
+      }
+    default:
+      return {
+        label: "Nivel 1 (Muy baja / Normal)",
+        shortLabel: "Nivel 1",
+        badgeClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+        iconClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+      }
+  }
+}
 
-  function copyCode(e: React.MouseEvent, categoria: CategoriaInsumo) {
+export function PrioridadListView({
+  prioridades,
+  onEdit,
+}: PrioridadListViewProps) {
+  const [prioridadToDelete, setPrioridadToDelete] = useState<Prioridad | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const deleteMutation = useDeletePrioridad()
+
+  function copyCode(e: React.MouseEvent, prioridad: Prioridad) {
     e.stopPropagation()
-    navigator.clipboard.writeText(categoria.codigo)
-    setCopiedId(categoria.id)
-    toast.success(`Código "${categoria.codigo}" copiado al portapapeles`)
+    navigator.clipboard.writeText(prioridad.codigo)
+    setCopiedId(prioridad.id)
+    toast.success(`Código "${prioridad.codigo}" copiado al portapapeles`)
     setTimeout(() => setCopiedId(null), 2000)
   }
 
   return (
     <div className="flex flex-col gap-2.5">
-      {categorias.map((categoria) => {
-        const tipoInfo =
-          categoria.tipoInsumo ??
-          (categoria.tipoInsumoId
-            ? tiposInsumoMap.get(categoria.tipoInsumoId)
-            : undefined)
-        const isCopied = copiedId === categoria.id
+      {prioridades.map((prioridad) => {
+        const nivelInfo = getNivelPrioridadInfo(prioridad.nivel)
+        const isCopied = copiedId === prioridad.id
 
         const audit =
-          "auditoria" in categoria && categoria.auditoria
-            ? categoria.auditoria
-            : categoria
+          "auditoria" in prioridad && prioridad.auditoria
+            ? prioridad.auditoria
+            : prioridad
         const createdAt = audit.createdAt ?? ""
         const updatedAt = audit.updatedAt ?? audit.createdAt ?? ""
         const createdBy = audit.createdBy ?? null
@@ -55,30 +88,36 @@ export function CategoriaInsumoListView({
 
         return (
           <div
-            key={categoria.id}
+            key={prioridad.id}
             className="group flex flex-col justify-between gap-3 p-4 sm:p-5 rounded-2xl border border-border/80 bg-card shadow-2xs hover:border-primary/40 hover:bg-muted/10 hover:shadow-xs transition-all"
           >
-            {/* Cabecera de la fila: Icono, Título, Código, Badge y Acciones */}
+            {/* Cabecera de la fila: Icono, Título, Código, Badge de Nivel y Acciones */}
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs transition-transform group-hover:scale-105">
-                  <FolderTree className="size-5" />
+                <span
+                  className={`flex size-10 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105 ${nivelInfo.iconClass}`}
+                >
+                  {prioridad.nivel >= 4 ? (
+                    <Flame className="size-5" />
+                  ) : (
+                    <AlertCircle className="size-5" />
+                  )}
                 </span>
 
                 <div className="flex flex-col min-w-0 flex-1 gap-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors">
-                      {categoria.nombre}
+                      {prioridad.nombre}
                     </span>
 
                     <div className="flex items-center gap-1">
                       <code className="rounded-md bg-muted px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground">
-                        {categoria.codigo}
+                        {prioridad.codigo}
                       </code>
                       <button
                         type="button"
-                        onClick={(e) => copyCode(e, categoria)}
-                        className="inline-flex size-5 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+                        onClick={(e) => copyCode(e, prioridad)}
+                        className="inline-flex size-5 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
                         title="Copiar código"
                       >
                         {isCopied ? (
@@ -89,27 +128,18 @@ export function CategoriaInsumoListView({
                       </button>
                     </div>
 
-                    {tipoInfo ? (
-                      <Badge
-                        variant="secondary"
-                        className="gap-1 text-[11px] font-medium"
-                      >
-                        <Layers className="size-3 text-primary" />
-                        <span className="truncate max-w-[180px]">
-                          {tipoInfo.nombre}
-                        </span>
-                      </Badge>
-                    ) : (
-                      <span className="text-[11px] text-muted-foreground/60 italic">
-                        Sin tipo asignado
-                      </span>
-                    )}
+                    <Badge
+                      variant="outline"
+                      className={`gap-1 text-[11px] font-semibold px-2 py-0.5 ${nivelInfo.badgeClass}`}
+                    >
+                      <span>{nivelInfo.label}</span>
+                    </Badge>
                   </div>
 
                   {/* Descripción */}
-                  {categoria.descripcion ? (
+                  {prioridad.descripcion ? (
                     <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed pt-0.5">
-                      {categoria.descripcion}
+                      {prioridad.descripcion}
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground/40 italic pt-0.5">
@@ -122,11 +152,11 @@ export function CategoriaInsumoListView({
               {/* Botones de acción */}
               <div className="flex items-center justify-end shrink-0 pt-0.5">
                 <RowActions
-                  editLabel="Editar categoría"
-                  deleteLabel="Eliminar categoría"
+                  editLabel="Editar prioridad"
+                  deleteLabel="Eliminar prioridad"
                   deleteDisabled={deleteMutation.isPending}
-                  onEdit={() => onEdit(categoria)}
-                  onDelete={() => setCategoriaToDelete(categoria)}
+                  onEdit={() => onEdit(prioridad)}
+                  onDelete={() => setPrioridadToDelete(prioridad)}
                 />
               </div>
             </div>
@@ -170,21 +200,21 @@ export function CategoriaInsumoListView({
       })}
 
       <ConfirmDeleteDialog
-        open={Boolean(categoriaToDelete)}
+        open={Boolean(prioridadToDelete)}
         onOpenChange={(open) => {
-          if (!open) setCategoriaToDelete(null)
+          if (!open) setPrioridadToDelete(null)
         }}
-        title="Eliminar categoría de insumo"
+        title="Eliminar prioridad de mantenimiento"
         description={
-          categoriaToDelete
-            ? `¿Seguro que deseas eliminar la categoría "${categoriaToDelete.nombre}"?`
-            : "¿Seguro que deseas eliminar esta categoría?"
+          prioridadToDelete
+            ? `¿Seguro que deseas eliminar la prioridad "${prioridadToDelete.nombre}"?`
+            : "¿Seguro que deseas eliminar esta prioridad?"
         }
         isPending={deleteMutation.isPending}
         onConfirm={async () => {
-          if (!categoriaToDelete) return
-          await deleteMutation.mutateAsync(categoriaToDelete.id)
-          setCategoriaToDelete(null)
+          if (!prioridadToDelete) return
+          await deleteMutation.mutateAsync(prioridadToDelete.id)
+          setPrioridadToDelete(null)
         }}
       />
     </div>
