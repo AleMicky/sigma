@@ -122,10 +122,17 @@ export function ControlActivoFormPage({
   const [selectAccesorioOpen, setSelectAccesorioOpen] = useState(false)
   const [historialOpen, setHistorialOpen] = useState(false)
 
+  const isAsignado = (solicitud?.estado ?? "").toUpperCase() === "ASIGNADO"
+
   // Auto-cargar datos iniciales de la solicitud y empleados por defecto
   useEffect(() => {
     if (solicitud) {
-      if (tipo === "ENTREGA") {
+      const effectiveTipo = isAsignado ? "ENTREGA" : tipo
+      if (isAsignado && tipo !== "ENTREGA") {
+        setTipo("ENTREGA")
+      }
+
+      if (effectiveTipo === "ENTREGA") {
         if (!entregadoPorId && solicitud.solicitante?.id) {
           setEntregadoPorId(solicitud.solicitante.id)
         }
@@ -141,7 +148,7 @@ export function ControlActivoFormPage({
         }
       }
     }
-  }, [solicitud, tipo])
+  }, [solicitud, tipo, isAsignado])
 
   // Cargar accesorios asociados al activo
   useEffect(() => {
@@ -371,36 +378,46 @@ export function ControlActivoFormPage({
               </div>
             </div>
 
-            {/* Selector de Tipo (Pills) */}
-            <div className="inline-flex rounded-xl bg-muted p-1 border shadow-inner shrink-0 self-start sm:self-center">
-              <button
-                type="button"
-                onClick={() => setTipo("ENTREGA")}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                  tipo === "ENTREGA"
-                    ? "bg-sky-600 text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Send className="size-3.5" />
-                <span>Acta Entrega</span>
-              </button>
+            {/* Selector de Tipo (Pills / Badge bloqueado) */}
+            {isAsignado ? (
+              <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 font-bold text-xs shadow-2xs shrink-0 self-start sm:self-center">
+                <Send className="size-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+                <span>Acta de Entrega de Activo</span>
+                <span className="text-[10px] font-normal text-sky-700/80 dark:text-sky-300/80 border-l border-sky-500/30 pl-2">
+                  (Estado: Asignado)
+                </span>
+              </div>
+            ) : (
+              <div className="inline-flex rounded-xl bg-muted p-1 border shadow-inner shrink-0 self-start sm:self-center">
+                <button
+                  type="button"
+                  onClick={() => setTipo("ENTREGA")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                    tipo === "ENTREGA"
+                      ? "bg-sky-600 text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Send className="size-3.5" />
+                  <span>Acta Entrega</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setTipo("DEVOLUCION")}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                  tipo === "DEVOLUCION"
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <RotateCcw className="size-3.5" />
-                <span>Acta Devolución</span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setTipo("DEVOLUCION")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                    tipo === "DEVOLUCION"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <RotateCcw className="size-3.5" />
+                  <span>Acta Devolución</span>
+                </button>
+              </div>
+            )}
           </div>
         </Card>
 
