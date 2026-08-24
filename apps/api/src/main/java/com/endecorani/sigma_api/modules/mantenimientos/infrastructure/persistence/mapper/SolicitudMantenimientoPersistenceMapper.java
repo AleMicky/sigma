@@ -29,6 +29,7 @@ public class SolicitudMantenimientoPersistenceMapper {
         entity.setFechaSolicitud(domain.getFechaSolicitud());
         entity.setAprobadoPorId(domain.getAprobadoPorId());
         entity.setFechaAprobacion(domain.getFechaAprobacion());
+        entity.setFechaEstimadaOt(domain.getFechaEstimadaOt());
         entity.setObservacionAprobacion(domain.getObservacionAprobacion());
         entity.setResponsableId(domain.getResponsableId());
         entity.setFechaAsignacion(domain.getFechaAsignacion());
@@ -72,6 +73,7 @@ public class SolicitudMantenimientoPersistenceMapper {
                 .fechaSolicitud(entity.getFechaSolicitud())
                 .aprobadoPorId(entity.getAprobadoPorId())
                 .fechaAprobacion(entity.getFechaAprobacion())
+                .fechaEstimadaOt(entity.getFechaEstimadaOt())
                 .observacionAprobacion(
                         entity.getObservacionAprobacion()
                 )

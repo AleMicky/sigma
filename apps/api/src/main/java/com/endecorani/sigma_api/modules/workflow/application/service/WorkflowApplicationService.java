@@ -212,6 +212,7 @@ public class WorkflowApplicationService {
         variables.add("supervisorId");
         variables.add("observacion");
         variables.add("observacionAprobacion");
+        variables.add("fechaEstimadaOt");
         variables.add("observacionValidacion");
         variables.add("observacionCierre");
         variables.add("motivo");

@@ -24,6 +24,7 @@ public record SolicitudMantenimientoResponse(
         LocalDateTime fechaSolicitud,
         UserInfo aprobadoPor,
         LocalDateTime fechaAprobacion,
+        LocalDateTime fechaEstimadaOt,
         String observacionAprobacion,
         UserInfo responsable,
         LocalDateTime fechaAsignacion,

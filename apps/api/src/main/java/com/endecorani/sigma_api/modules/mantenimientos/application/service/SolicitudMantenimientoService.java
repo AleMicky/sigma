@@ -58,7 +58,7 @@ public class SolicitudMantenimientoService {
 
     private static final Set<String> SORT_FIELDS = Set.copyOf(Arrays.asList(
             "id", "numero", "activoId", "tipoMantenimientoId", "prioridadId",
-            "solicitanteId", "estado", "fechaSolicitud", "createdAt", "updatedAt"
+            "solicitanteId", "estado", "fechaSolicitud", "fechaEstimadaOt", "createdAt", "updatedAt"
     ));
 
     private final SolicitudMantenimientoRepository repository;
@@ -90,6 +90,7 @@ public class SolicitudMantenimientoService {
                 .descripcion(requireNormalizedDescripcion(request.descripcion()))
                 .estado(ESTADO_BORRADOR)
                 .fechaSolicitud(request.fechaSolicitud() != null ? request.fechaSolicitud() : LocalDateTime.now())
+                .fechaEstimadaOt(request.fechaEstimadaOt())
                 .build();
 
         return toResponse(repository.save(domain));
@@ -126,8 +127,7 @@ public class SolicitudMantenimientoService {
             EnviarSolicitudMantenimientoRequest request
     ) {
 
-        SolicitudMantenimiento solicitud =
-                findDomainById(id);
+        SolicitudMantenimiento solicitud = findDomainById(id);
 
         if (!ESTADO_BORRADOR.equalsIgnoreCase(
                 solicitud.getEstado()
@@ -204,6 +204,7 @@ public class SolicitudMantenimientoService {
         domain.setSolicitanteId(request.solicitanteId());
         domain.setTitulo(requireNormalizedTitulo(request.titulo()));
         domain.setDescripcion(requireNormalizedDescripcion(request.descripcion()));
+        domain.setFechaEstimadaOt(request.fechaEstimadaOt());
 
         if (request.fechaSolicitud() != null) {
             domain.setFechaSolicitud(request.fechaSolicitud());
@@ -276,6 +277,12 @@ public class SolicitudMantenimientoService {
                 if (solicitud.getFechaAprobacion() == null) {
                     solicitud.setFechaAprobacion(LocalDateTime.now());
                 }
+            }
+            Object fechaEstimadaOtObj = request.variables().get("fechaEstimadaOt");
+            if (fechaEstimadaOtObj != null && !fechaEstimadaOtObj.toString().isBlank()) {
+                try {
+                    solicitud.setFechaEstimadaOt(LocalDateTime.parse(fechaEstimadaOtObj.toString().trim()));
+                } catch (Exception ignored) {}
             }
             Object obsVal = request.variables().get("observacionValidacion");
             if (obsVal != null && !obsVal.toString().isBlank()) {
@@ -439,7 +446,7 @@ public class SolicitudMantenimientoService {
                 domain.getId(), domain.getNumero(), activoInfo, tipoInfo,
                 domain.getTipoFallas(), prioridadInfo, solicitanteInfo, domain.getTitulo(),
                 domain.getDescripcion(), domain.getFechaSolicitud(), aprobadoPorInfo, domain.getFechaAprobacion(),
-                domain.getObservacionAprobacion(), responsableInfo, domain.getFechaAsignacion(),
+                domain.getFechaEstimadaOt(), domain.getObservacionAprobacion(), responsableInfo, domain.getFechaAsignacion(),
                 domain.getFechaInicioMantenimiento(), domain.getFechaFinMantenimiento(), supervisorInfo,
                 domain.getFechaValidacion(), domain.getObservacionValidacion(), domain.getFechaFinalizacion(),
                 recibidoPorInfo, domain.getObservacionCierre(), domain.getEstado(), domain.getProcessInstanceId(),

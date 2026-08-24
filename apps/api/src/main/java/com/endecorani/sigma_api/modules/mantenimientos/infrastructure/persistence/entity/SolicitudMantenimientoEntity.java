@@ -119,6 +119,11 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
     private LocalDateTime fechaAprobacion;
 
     @Column(
+            name = "fecha_estimada_ot"
+    )
+    private LocalDateTime fechaEstimadaOt;
+
+    @Column(
             name = "observacion_aprobacion",
             length = 1000
     )

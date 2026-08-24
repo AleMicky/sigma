@@ -84,6 +84,12 @@ public record SolicitudMantenimientoRequest(
                 description = "Fecha de la solicitud",
                 example = "2026-08-17T10:30:00"
         )
-        LocalDateTime fechaSolicitud
+        LocalDateTime fechaSolicitud,
+
+        @Schema(
+                description = "Fecha estimada de la orden de trabajo",
+                example = "2026-08-20T14:00:00"
+        )
+        LocalDateTime fechaEstimadaOt
 ) {
 }
