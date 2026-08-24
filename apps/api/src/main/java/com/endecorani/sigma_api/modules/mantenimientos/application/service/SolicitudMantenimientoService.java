@@ -11,6 +11,9 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.Priorid
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoAdjuntoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMantenimientoRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
@@ -37,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -59,10 +64,13 @@ public class SolicitudMantenimientoService {
     private final ActivoRepository activoRepository;
     private final TipoMantenimientoRepository tipoMantenimientoRepository;
     private final PrioridadRepository prioridadRepository;
+    private final EmpleadoRepository empleadoRepository;
+    private final PersonaRepository personaRepository;
     private final SolicitudMantenimientoAdjuntoRepository adjuntoRepository;
     private final DocumentStorageService documentStorageService;
     private final CorrelativoService correlativoService;
     private final WorkflowApplicationService workflowApplicationService;
+
 
     @Transactional
     public SolicitudMantenimientoResponse create(SolicitudMantenimientoRequest request) {
@@ -312,7 +320,14 @@ public class SolicitudMantenimientoService {
     // --- Mappings ---
 
     private SolicitudMantenimientoResponse toResponse(SolicitudMantenimiento domain) {
-        return toResponse(domain, Collections.emptyList());
+        List<SolicitudMantenimientoAdjuntoResponse> adjuntos = domain.getId() != null
+                ? adjuntoRepository.findBySolicitudMantenimientoId(domain.getId())
+                .stream()
+                .map(this::toAdjuntoResponse)
+                .toList()
+                : Collections.emptyList();
+
+        return toResponse(domain, adjuntos);
     }
 
     private SolicitudMantenimientoResponse toResponse(SolicitudMantenimiento domain, List<SolicitudMantenimientoAdjuntoResponse> adjuntos) {
@@ -334,16 +349,59 @@ public class SolicitudMantenimientoService {
                 .orElse(null)
                 : null;
 
+        var solicitanteInfo = buildUserInfo(domain.getSolicitanteId());
+        var aprobadoPorInfo = buildUserInfo(domain.getAprobadoPorId());
+        var responsableInfo = buildUserInfo(domain.getResponsableId());
+        var supervisorInfo = buildUserInfo(domain.getSupervisorId());
+        var recibidoPorInfo = buildUserInfo(domain.getRecibidoPorId());
+
         return new SolicitudMantenimientoResponse(
                 domain.getId(), domain.getNumero(), activoInfo, tipoInfo,
-                domain.getMotivoMantenimiento(), prioridadInfo, null, domain.getTitulo(),
-                domain.getDescripcion(), domain.getFechaSolicitud(), null, domain.getFechaAprobacion(),
-                domain.getObservacionAprobacion(), null, domain.getFechaAsignacion(),
-                domain.getFechaInicioMantenimiento(), domain.getFechaFinMantenimiento(), null,
+                domain.getMotivoMantenimiento(), prioridadInfo, solicitanteInfo, domain.getTitulo(),
+                domain.getDescripcion(), domain.getFechaSolicitud(), aprobadoPorInfo, domain.getFechaAprobacion(),
+                domain.getObservacionAprobacion(), responsableInfo, domain.getFechaAsignacion(),
+                domain.getFechaInicioMantenimiento(), domain.getFechaFinMantenimiento(), supervisorInfo,
                 domain.getFechaValidacion(), domain.getObservacionValidacion(), domain.getFechaFinalizacion(),
-                null, domain.getObservacionCierre(), domain.getEstado(), domain.getProcessInstanceId(),
-                adjuntos, AuditoriaMapper.from(domain)
+                recibidoPorInfo, domain.getObservacionCierre(), domain.getEstado(), domain.getProcessInstanceId(),
+                adjuntos != null ? adjuntos : Collections.emptyList(), AuditoriaMapper.from(domain)
         );
+    }
+
+    private SolicitudMantenimientoResponse.UserInfo buildUserInfo(UUID empleadoId) {
+        if (empleadoId == null) {
+            return null;
+        }
+
+        return empleadoRepository.findById(empleadoId)
+                .map(empleado -> {
+                    String nombre = buildNombreCompleto(empleado.getPersonaId());
+                    if (nombre == null || nombre.isBlank()) {
+                        nombre = empleado.getCodigo();
+                    }
+                    return new SolicitudMantenimientoResponse.UserInfo(empleado.getId(), nombre);
+                })
+                .orElse(null);
+    }
+
+    private String buildNombreCompleto(UUID personaId) {
+        if (personaId == null) {
+            return null;
+        }
+
+        return personaRepository.findById(personaId)
+                .map(this::buildNombreCompleto)
+                .orElse(null);
+    }
+
+    private String buildNombreCompleto(Persona persona) {
+        return Stream.of(
+                        persona.getNombres(),
+                        persona.getPrimerApellido(),
+                        persona.getSegundoApellido()
+                )
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .collect(Collectors.joining(" "));
     }
 
     private SolicitudMantenimientoAdjuntoResponse toAdjuntoResponse(SolicitudMantenimientoAdjunto domain) {

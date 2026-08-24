@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,6 +55,19 @@ public class SolicitudMantenimientoAdjuntoRepositoryImpl
                 )
                 .map(mapper::toDomain);
     }
+
+    @Override
+    public java.util.List<SolicitudMantenimientoAdjunto>
+    findBySolicitudMantenimientoId(
+            UUID solicitudMantenimientoId
+    ) {
+        return springRepository
+                .findBySolicitudMantenimientoId(solicitudMantenimientoId)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
 
     @Override
     public boolean existsById(UUID id) {
