@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.adapter;
 
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.AprobadorSelectResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.DependienteSelectResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.GrupoAprobadorDependiente;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.GrupoAprobadorDependienteRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.GrupoAprobadorDependienteEntity;
@@ -67,5 +68,10 @@ public class GrupoAprobadorDependienteRepositoryImpl implements GrupoAprobadorDe
     @Override
     public List<AprobadorSelectResponse> findAprobadoresSelectByEmpleadoId(UUID empleadoId) {
         return springRepository.findAprobadoresSelectByEmpleadoId(empleadoId);
+    }
+
+    @Override
+    public List<DependienteSelectResponse> findDependientesSelectByAprobadorId(UUID aprobadorId) {
+        return springRepository.findDependientesSelectByAprobadorId(aprobadorId);
     }
 }

@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.organizacion.application.service;
 
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.GrupoAprobadorDependienteRequest;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.AprobadorSelectResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.DependienteSelectResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResumenResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.GrupoAprobadorDependienteResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.GrupoAprobadorDependiente;
@@ -100,6 +101,12 @@ public class GrupoAprobadorDependienteService {
     public List<AprobadorSelectResponse> findAprobadoresSelectByEmpleadoId(UUID empleadoId) {
         requireEmpleadoExists(empleadoId);
         return dependienteRepository.findAprobadoresSelectByEmpleadoId(empleadoId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DependienteSelectResponse> findDependientesSelectByAprobadorId(UUID aprobadorId) {
+        requireEmpleadoExists(aprobadorId);
+        return dependienteRepository.findDependientesSelectByAprobadorId(aprobadorId);
     }
 
     // --- Métodos Privados de Validación ---

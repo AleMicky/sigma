@@ -3,6 +3,7 @@ package com.endecorani.sigma_api.modules.organizacion.presentation.controller;
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.GrupoAprobadorDependienteRequest;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.AprobadorSelectResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.DependienteSelectResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.GrupoAprobadorDependienteResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.service.GrupoAprobadorDependienteService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -127,6 +128,22 @@ public class GrupoAprobadorDependienteController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Aprobadores obtenidos correctamente",
+                        response
+                )
+        );
+    }
+
+    @GetMapping("/aprobadores/{aprobadorId}/dependientes/select")
+    @Operation(summary = "Listar los dependientes asignados a un aprobador para dropdown/select")
+    public ResponseEntity<ApiResponse<List<DependienteSelectResponse>>> findDependientesSelectByAprobadorId(
+            @PathVariable UUID aprobadorId
+    ) {
+        List<DependienteSelectResponse> response =
+                grupoAprobadorDependienteService.findDependientesSelectByAprobadorId(aprobadorId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Dependientes obtenidos correctamente",
                         response
                 )
         );

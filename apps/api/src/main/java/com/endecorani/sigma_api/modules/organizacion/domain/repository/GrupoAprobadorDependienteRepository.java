@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.organizacion.domain.repository;
 
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.AprobadorSelectResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.DependienteSelectResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.GrupoAprobadorDependiente;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,4 +29,6 @@ public interface GrupoAprobadorDependienteRepository {
     void deleteById(UUID id);
 
     List<AprobadorSelectResponse> findAprobadoresSelectByEmpleadoId(UUID empleadoId);
+
+    List<DependienteSelectResponse> findDependientesSelectByAprobadorId(UUID aprobadorId);
 }
