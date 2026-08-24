@@ -11,6 +11,7 @@ import {
   Clock,
   Copy,
   Eye,
+  ListTodo,
   Paperclip,
   Play,
   RotateCcw,
@@ -179,8 +180,28 @@ export function SolicitudAprobacionListItem({
     (ot) => ot.solicitudMantenimientoId === solicitud.id,
   )
 
-  // Step 3: Only when both Control Activo & OT exist can the workflow state advance
-  const canAdvanceWorkflow = !showControlActivo || (hasControlActivo && hasOrdenTrabajo)
+  const isValidado = estadoNorm === "validado"
+
+  // Actividades query to verify all tasks are checked
+  const actividadesQuery = useQuery({
+    ...ordenTrabajoQueries.actividadesByOT(matchingOT?.id ?? ""),
+    enabled: Boolean(matchingOT?.id && showControlActivo),
+  })
+
+  const actividades = actividadesQuery.data?.content ?? []
+  const totalActividades = actividades.length
+  const completadasCount = actividades.filter((a) => a.realizado).length
+  const allActividadesCompleted =
+    totalActividades > 0 && completadasCount === totalActividades
+
+  // Step 3: Only when requirements are met can the workflow state advance:
+  // - For ASIGNADO: requires hasControlActivo && hasOrdenTrabajo.
+  // - For VALIDADO: requires hasControlActivo && hasOrdenTrabajo && allActividadesCompleted (all tasks checked).
+  const canAdvanceWorkflow =
+    !showControlActivo ||
+    (hasControlActivo &&
+      hasOrdenTrabajo &&
+      (!isValidado || allActividadesCompleted))
 
   function copyNumero(e: React.MouseEvent) {
     e.stopPropagation()
@@ -413,7 +434,11 @@ export function SolicitudAprobacionListItem({
             }
           >
             {hasOrdenTrabajo ? (
-              <Check className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+              isValidado || estadoNorm === "en_mantenimiento" ? (
+                <ListTodo className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+              ) : (
+                <Check className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+              )
             ) : (
               <Wrench
                 className={cn(
@@ -425,12 +450,20 @@ export function SolicitudAprobacionListItem({
               />
             )}
             <span className="hidden sm:inline">
-              {hasOrdenTrabajo ? "OT Creada" : "Crear OT"}
+              {hasOrdenTrabajo
+                ? isValidado
+                  ? `Registrar Tareas (${completadasCount}/${totalActividades})`
+                  : estadoNorm === "en_mantenimiento"
+                    ? `Registrar Tareas (${completadasCount}/${totalActividades})`
+                    : totalActividades > 0
+                      ? `Ver OT (${completadasCount}/${totalActividades})`
+                      : "Ver OT"
+                : "Crear OT"}
             </span>
           </Button>
         )}
 
-        {/* 3. Dynamic Workflow Actions (Habilitado solo tras Control Activo + OT) */}
+        {/* 3. Dynamic Workflow Actions (Habilitado solo tras Control Activo + OT + Tareas completas si está Validado) */}
         {actionsQuery.isLoading ? (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2">
             <span className="size-2 rounded-full bg-primary animate-pulse" />
@@ -457,6 +490,16 @@ export function SolicitudAprobacionListItem({
                       toast.warning(
                         "Para avanzar el estado, primero debes crear la Orden de Trabajo.",
                       )
+                    } else if (isValidado) {
+                      if (totalActividades === 0) {
+                        toast.warning(
+                          "Para registrar el trabajo finalizado, primero debes agregar actividades a la Orden de Trabajo y completarlas.",
+                        )
+                      } else {
+                        toast.warning(
+                          `Para registrar el trabajo finalizado, debes marcar como realizadas todas las tareas de la Orden de Trabajo (${completadasCount} de ${totalActividades} completadas). Haz clic en el botón de OT para marcar los checks.`,
+                        )
+                      }
                     }
                     return
                   }
@@ -477,7 +520,11 @@ export function SolicitudAprobacionListItem({
                   !canAdvanceWorkflow
                     ? !hasControlActivo
                       ? "Bloqueado: Primero registra el Control de Activo y crea la OT"
-                      : "Bloqueado: Primero crea la Orden de Trabajo"
+                      : !hasOrdenTrabajo
+                        ? "Bloqueado: Primero crea la Orden de Trabajo"
+                        : isValidado
+                          ? `Bloqueado: Debes marcar todas las tareas como realizadas (${completadasCount}/${totalActividades})`
+                          : "Bloqueado: Requisitos pendientes"
                     : `Avanzar workflow: ${act.name}`
                 }
               >

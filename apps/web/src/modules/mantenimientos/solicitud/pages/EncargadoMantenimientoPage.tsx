@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router"
 import {
   Activity,
   AlertTriangle,
+  CheckCircle2,
   FileCheck2,
   Layers,
   UserCheck,
@@ -40,7 +41,7 @@ export function EncargadoMantenimientoPage() {
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
   const [estadoFilter, setEstadoFilter] = useState<
-    "ALL" | "ASIGNADO" | "EN_MANTENIMIENTO"
+    "ALL" | "ASIGNADO" | "EN_MANTENIMIENTO" | "VALIDADO"
   >("ALL")
 
   const [controlActivoTarget, setControlActivoTarget] =
@@ -56,7 +57,7 @@ export function EncargadoMantenimientoPage() {
 
   const search = usePaginatedSearch()
 
-  // Consulta para solicitudes en gestión del encargado (ASIGNADO y EN_MANTENIMIENTO)
+  // Consulta para solicitudes en gestión del encargado (ASIGNADO, EN_MANTENIMIENTO, VALIDADO)
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
       page: search.page,
@@ -81,10 +82,20 @@ export function EncargadoMantenimientoPage() {
         (s) => (s.estado ?? "").toUpperCase() === "EN_MANTENIMIENTO",
       )
     }
+    if (estadoFilter === "VALIDADO") {
+      return allItems.filter(
+        (s) => (s.estado ?? "").toUpperCase() === "VALIDADO",
+      )
+    }
     // "ALL" -> filtrar solo solicitudes pertenecientes a la gestión del encargado
     return allItems.filter((s) => {
       const st = (s.estado ?? "").toUpperCase()
-      return st === "ASIGNADO" || st === "EN_MANTENIMIENTO"
+      return (
+        st === "ASIGNADO" ||
+        st === "EN_MANTENIMIENTO" ||
+        st === "VALIDADO" ||
+        st === "OBSERVADO_MANTENIMIENTO"
+      )
     })
   }, [allItems, estadoFilter])
 
@@ -101,6 +112,13 @@ export function EncargadoMantenimientoPage() {
       allItems.filter(
         (s) => (s.estado ?? "").toUpperCase() === "EN_MANTENIMIENTO",
       ).length,
+    [allItems],
+  )
+
+  const validadasCount = useMemo(
+    () =>
+      allItems.filter((s) => (s.estado ?? "").toUpperCase() === "VALIDADO")
+        .length,
     [allItems],
   )
 
@@ -197,7 +215,7 @@ export function EncargadoMantenimientoPage() {
 
       {/* Mini Dashboard de Métricas Rápidas */}
       <div className="shrink-0 pt-2.5 pb-1">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
           {/* Todas en Gestión */}
           <div
             onClick={() => {
@@ -259,19 +277,45 @@ export function EncargadoMantenimientoPage() {
             className={cn(
               "flex items-center gap-2.5 rounded-xl border p-2.5 shadow-2xs transition-all cursor-pointer",
               estadoFilter === "EN_MANTENIMIENTO" && !filterUrgentesOnly
+                ? "bg-blue-500/15 border-blue-500 ring-2 ring-blue-500/30 scale-[1.01]"
+                : "bg-card/60 border-border/70 hover:bg-muted/40",
+            )}
+          >
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-xs">
+              <Activity className="size-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400 truncate">
+                En Ejecución
+              </p>
+              <p className="font-heading text-sm sm:text-base font-bold text-foreground">
+                {enMantenimientoCount}
+              </p>
+            </div>
+          </div>
+
+          {/* Validadas (Por Registrar Trabajo Final) */}
+          <div
+            onClick={() => {
+              setEstadoFilter("VALIDADO")
+              setFilterUrgentesOnly(false)
+            }}
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border p-2.5 shadow-2xs transition-all cursor-pointer",
+              estadoFilter === "VALIDADO" && !filterUrgentesOnly
                 ? "bg-emerald-500/15 border-emerald-500 ring-2 ring-emerald-500/30 scale-[1.01]"
                 : "bg-card/60 border-border/70 hover:bg-muted/40",
             )}
           >
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
-              <Activity className="size-4" />
+              <CheckCircle2 className="size-4" />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 truncate">
-                En Ejecución
+                Validadas
               </p>
               <p className="font-heading text-sm sm:text-base font-bold text-foreground">
-                {enMantenimientoCount}
+                {validadasCount}
               </p>
             </div>
           </div>
@@ -354,12 +398,28 @@ export function EncargadoMantenimientoPage() {
               className={cn(
                 "px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1.5",
                 estadoFilter === "EN_MANTENIMIENTO"
+                  ? "bg-background text-blue-700 dark:text-blue-300 shadow-2xs font-bold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <span className="size-1.5 rounded-full bg-blue-500" />
+              <span>En Mantenimiento ({enMantenimientoCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEstadoFilter("VALIDADO")
+                setFilterUrgentesOnly(false)
+              }}
+              className={cn(
+                "px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1.5",
+                estadoFilter === "VALIDADO"
                   ? "bg-background text-emerald-700 dark:text-emerald-300 shadow-2xs font-bold"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
               <span className="size-1.5 rounded-full bg-emerald-500" />
-              <span>En Mantenimiento ({enMantenimientoCount})</span>
+              <span>Validadas ({validadasCount})</span>
             </button>
           </div>
         </div>
@@ -378,16 +438,18 @@ export function EncargadoMantenimientoPage() {
             />
           ) : solicitudes.length === 0 ? (
             <EmptyState
-              icon={<FileCheck2 className="size-9 text-sky-500" />}
-              title="¡Todo al día!"
+              icon={<FileCheck2 className="size-9 text-muted-foreground" />}
+              title="Sin solicitudes en este estado"
               description={
                 filterUrgentesOnly
                   ? "No hay solicitudes de alta prioridad pendientes en este filtro."
                   : estadoFilter === "ASIGNADO"
-                    ? "No hay solicitudes en estado Asignado."
+                    ? "No hay solicitudes asignadas pendientes de planificar OT o Control de Activo."
                     : estadoFilter === "EN_MANTENIMIENTO"
-                      ? "No hay solicitudes en estado En Mantenimiento."
-                      : "No hay solicitudes de mantenimiento en gestión en este momento."
+                      ? "No hay solicitudes en ejecución técnica en este momento."
+                      : estadoFilter === "VALIDADO"
+                        ? "No hay solicitudes validadas pendientes de registrar trabajo final."
+                        : "No tienes solicitudes de mantenimiento asignadas para gestionar."
               }
               action={
                 filterUrgentesOnly ? (
