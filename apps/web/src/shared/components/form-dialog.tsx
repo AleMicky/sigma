@@ -134,17 +134,16 @@ export function FormDialogSubmit({
   )
 }
 
-type RequiredFieldLabelProps = {
-  htmlFor: string
-  children: ReactNode
-}
+type RequiredFieldLabelProps = React.ComponentProps<typeof FieldLabel>
 
 export function RequiredFieldLabel({
   htmlFor,
   children,
+  className,
+  ...props
 }: RequiredFieldLabelProps) {
   return (
-    <FieldLabel htmlFor={htmlFor}>
+    <FieldLabel htmlFor={htmlFor} className={className} {...props}>
       {children}{" "}
       <span className="text-destructive" aria-hidden>
         *
