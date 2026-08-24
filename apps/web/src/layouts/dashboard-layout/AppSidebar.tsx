@@ -1,6 +1,6 @@
-import { useEffect, useState, type ComponentProps } from "react"
+import { useEffect, useMemo, useState, type ComponentProps } from "react"
 import { Link, useRouterState } from "@tanstack/react-router"
-import { ChevronRight, Search, Sparkles } from "lucide-react"
+import { ChevronRight, Search, X } from "lucide-react"
 
 import logoEndeCorani from "@/assets/logo-ende-corani.png"
 import {
@@ -116,13 +116,15 @@ const DEFAULT_THEME = {
 }
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
+  const [searchQuery, setSearchQuery] = useState("")
+
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r border-border/70 bg-sidebar/95 backdrop-blur-md transition-all duration-300"
+      className="border-r border-border/70 bg-sidebar/95 backdrop-blur-md transition-all duration-300 select-none"
       {...props}
     >
-      <SidebarHeader className="gap-3 px-3 pt-3.5 pb-2 border-b border-border/40">
+      <SidebarHeader className="gap-3 px-3 pt-3.5 pb-2.5 border-b border-border/40">
         <div className="flex items-center justify-between gap-2">
           <Link
             to="/"
@@ -137,12 +139,11 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
             </div>
             <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
               <div className="flex items-center gap-1.5">
-                <span className="truncate text-sm font-bold tracking-tight text-foreground font-heading">
+                <span className="text-sm font-bold tracking-tight text-foreground font-heading">
                   {appConfig.shortName}
                 </span>
-                <span className="inline-flex items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-0.2 text-[10px] font-semibold text-primary">
-                  <Sparkles className="size-2.5" />
-                  PRO
+                <span className="rounded-md border border-border/60 bg-muted/60 px-1.5 py-0.2 text-[9.5px] font-semibold text-muted-foreground">
+                  v{appConfig.version}
                 </span>
               </div>
               <span className="truncate text-[11px] font-medium text-muted-foreground">
@@ -152,7 +153,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           </Link>
         </div>
 
-        <SidebarSearch />
+        <SidebarSearch query={searchQuery} onQueryChange={setSearchQuery} />
       </SidebarHeader>
 
       <SidebarContent className="px-2.5">
@@ -162,7 +163,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
             <span className="size-1.5 rounded-full bg-primary/60 animate-pulse" />
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <NavigationMenu />
+            <NavigationMenu searchQuery={searchQuery} />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
@@ -176,7 +177,13 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   )
 }
 
-function SidebarSearch() {
+function SidebarSearch({
+  query,
+  onQueryChange,
+}: {
+  query: string
+  onQueryChange: (q: string) => void
+}) {
   const { state, setOpen } = useSidebar()
 
   if (state === "collapsed") {
@@ -195,7 +202,7 @@ function SidebarSearch() {
           <Search className="size-4 text-primary" />
         </TooltipTrigger>
         <TooltipContent side="right" align="center">
-          Buscar en el sistema (⌘K)
+          Buscar módulo o menú
         </TooltipContent>
       </Tooltip>
     )
@@ -205,13 +212,25 @@ function SidebarSearch() {
     <div className="relative group-data-[collapsible=icon]:hidden">
       <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
       <SidebarInput
-        placeholder="Buscar módulo o registro…"
-        className="h-8.5 rounded-lg border-border/50 bg-muted/40 pl-8 pr-12 text-xs shadow-none transition-all hover:border-border/80 focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/50"
-        readOnly
+        value={query}
+        onChange={(e) => onQueryChange(e.target.value)}
+        placeholder="Buscar módulo o menú…"
+        className="h-8.5 rounded-lg border-border/50 bg-muted/40 pl-8 pr-8 text-xs shadow-none transition-all hover:border-border/80 focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/50"
       />
-      <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border/70 bg-background/80 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground shadow-2xs">
-        ⌘K
-      </kbd>
+      {query ? (
+        <button
+          type="button"
+          onClick={() => onQueryChange("")}
+          className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground rounded p-0.5"
+          title="Limpiar búsqueda"
+        >
+          <X className="size-3.5" />
+        </button>
+      ) : (
+        <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border/70 bg-background/80 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground shadow-2xs">
+          ⌘K
+        </kbd>
+      )}
     </div>
   )
 }
@@ -229,11 +248,60 @@ function isItemActive(pathname: string, item: (typeof navItems)[number]) {
   return false
 }
 
-function NavigationMenu() {
+function NavigationMenu({ searchQuery }: { searchQuery: string }) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
   const { state } = useSidebar()
+
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+
+  // Filter items if searching
+  const filteredNavItems = useMemo(() => {
+    if (!normalizedQuery) return navItems
+
+    return navItems
+      .map((item) => {
+        const matchesParent = item.title.toLowerCase().includes(normalizedQuery)
+        if (!item.children) {
+          return matchesParent ? item : null
+        }
+
+        const filteredChildren = item.children
+          .map((child) => {
+            if ("items" in child) {
+              const matchesSubGroup = child.title
+                .toLowerCase()
+                .includes(normalizedQuery)
+              const filteredSubItems = child.items.filter((sub) =>
+                sub.title.toLowerCase().includes(normalizedQuery),
+              )
+              if (matchesSubGroup || filteredSubItems.length > 0) {
+                return {
+                  ...child,
+                  items: matchesSubGroup ? child.items : filteredSubItems,
+                }
+              }
+              return null
+            }
+
+            const matchesChild = child.title
+              .toLowerCase()
+              .includes(normalizedQuery)
+            return matchesChild ? child : null
+          })
+          .filter(Boolean) as typeof item.children
+
+        if (matchesParent || filteredChildren.length > 0) {
+          return {
+            ...item,
+            children: matchesParent ? item.children : filteredChildren,
+          }
+        }
+        return null
+      })
+      .filter(Boolean) as typeof navItems
+  }, [normalizedQuery])
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
@@ -253,13 +321,32 @@ function NavigationMenu() {
     })
   }, [pathname])
 
+  // When searching, auto-expand all matching groups
+  useEffect(() => {
+    if (normalizedQuery) {
+      const allOpen: Record<string, boolean> = {}
+      filteredNavItems.forEach((item) => {
+        allOpen[item.title] = true
+      })
+      setOpenGroups(allOpen)
+    }
+  }, [normalizedQuery, filteredNavItems])
+
   function toggleGroup(title: string) {
     setOpenGroups((prev) => ({ ...prev, [title]: !prev[title] }))
   }
 
+  if (filteredNavItems.length === 0) {
+    return (
+      <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+        No se encontraron menús para &ldquo;{searchQuery}&rdquo;
+      </div>
+    )
+  }
+
   return (
     <SidebarMenu className="gap-1.5">
-      {navItems.map((item) => {
+      {filteredNavItems.map((item) => {
         const hasChildren = Boolean(item.children?.length)
         const isActive = isItemActive(pathname, item)
         const isSelfActive = !hasChildren && isPathActive(pathname, item.to)
@@ -299,7 +386,7 @@ function NavigationMenu() {
                     )}
                   />
                 </div>
-                <span className="truncate">{item.title}</span>
+                <span className="truncate font-medium">{item.title}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )
@@ -477,20 +564,20 @@ function NavigationMenu() {
               </span>
               <ChevronRight
                 className={cn(
-                  "size-4 text-muted-foreground/70 transition-transform duration-200",
+                  "size-4 text-muted-foreground/70 transition-transform duration-200 shrink-0",
                   isOpen && "rotate-90 text-foreground",
                 )}
               />
             </SidebarMenuButton>
 
             {isOpen && (
-              <SidebarMenuSub className="my-1 ml-3.5 border-l-2 border-border/60 pl-2.5 gap-1">
+              <SidebarMenuSub className="my-1 ml-3 border-l-2 border-border/60 pl-2 gap-0.5">
                 {item.children?.map((child, childIdx) => {
                   if ("items" in child) {
                     return (
                       <div
                         key={child.title || childIdx}
-                        className="pt-2 first:pt-1"
+                        className="pt-2 pb-0.5 first:pt-1"
                       >
                         <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 select-none">
                           <span
@@ -514,10 +601,10 @@ function NavigationMenu() {
                                   render={<Link to={subItem.to as any} />}
                                   title={subItem.title}
                                   className={cn(
-                                    "relative h-8.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-150 hover:translate-x-0.5",
+                                    "relative min-h-8.5 h-auto py-1.5 rounded-lg px-2 text-[12.5px] font-medium transition-all duration-150 hover:translate-x-0.5",
                                     isSubActive
-                                      ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary shadow-2xs before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-1 before:rounded-r-full before:bg-primary"
-                                      : "text-sidebar-foreground/75 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
+                                      ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary shadow-2xs before:absolute before:-left-2.5 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-1 before:rounded-r-full before:bg-primary"
+                                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
                                   )}
                                 >
                                   <subItem.icon
@@ -528,7 +615,7 @@ function NavigationMenu() {
                                         : "text-muted-foreground/80",
                                     )}
                                   />
-                                  <span className="truncate">
+                                  <span className="truncate leading-snug">
                                     {subItem.title}
                                   </span>
                                 </SidebarMenuSubButton>
@@ -548,10 +635,10 @@ function NavigationMenu() {
                         render={<Link to={child.to as any} />}
                         title={child.title}
                         className={cn(
-                          "relative h-8.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-150 hover:translate-x-0.5",
+                          "relative min-h-8.5 h-auto py-1.5 rounded-lg px-2 text-[12.5px] font-medium transition-all duration-150 hover:translate-x-0.5",
                           isSubActive
-                            ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary shadow-2xs before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-1 before:rounded-r-full before:bg-primary"
-                            : "text-sidebar-foreground/75 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
+                            ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary shadow-2xs before:absolute before:-left-2.5 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-1 before:rounded-r-full before:bg-primary"
+                            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
                         )}
                       >
                         <child.icon
@@ -562,7 +649,9 @@ function NavigationMenu() {
                               : "text-muted-foreground/80",
                           )}
                         />
-                        <span className="truncate">{child.title}</span>
+                        <span className="truncate leading-snug">
+                          {child.title}
+                        </span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   )

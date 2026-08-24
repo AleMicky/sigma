@@ -102,7 +102,7 @@ export const navItems: NavItem[] = [
         icon: LayoutGrid,
       },
       {
-        title: "Reporte GRS (Documentos",
+        title: "Reporte GRS (Documentos)",
         to: routes.activos.consultaDocumentos,
         icon: FileSearch,
       },
