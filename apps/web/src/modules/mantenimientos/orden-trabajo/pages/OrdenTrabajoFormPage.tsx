@@ -27,7 +27,7 @@ import { Card } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
-import { cn } from "@/shared/lib/utils"
+import { cn, generateId } from "@/shared/lib/utils"
 
 import { useCreateOrdenTrabajoWithActividades } from "../api/orden-trabajo.mutations"
 import type { OrdenTrabajoPayload } from "../api/orden-trabajo.service"
@@ -126,7 +126,7 @@ export function OrdenTrabajoFormPage({
   // Handler for adding an activity row
   function handleAddActividad() {
     const newItem: ActividadFormItem = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       actividadMantenimientoId: null,
       descripcion: "",
       realizado: false,
