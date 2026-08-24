@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
   FileCheck2,
@@ -11,7 +10,6 @@ import {
 } from "lucide-react"
 
 import { appConfig } from "@/app/config"
-import { routes } from "@/app/config/routes"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -46,10 +44,11 @@ import { WorkflowActionDialog } from "../components/WorkflowActionDialog"
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function AprobacionesPage() {
-  const navigate = useNavigate()
   const [selectedEstado, setSelectedEstado] = useState<string>("all")
   const [selectedPrioridad, setSelectedPrioridad] = useState<string>("all")
-  const [quickView, setQuickView] = useState<SolicitudMantenimiento | null>(null)
+  const [sheetSolicitud, setSheetSolicitud] =
+    useState<SolicitudMantenimiento | null>(null)
+
   const [workflowActionTarget, setWorkflowActionTarget] = useState<{
     solicitud: SolicitudMantenimiento
     action: WorkflowAction
@@ -59,7 +58,7 @@ export function AprobacionesPage() {
 
   const search = usePaginatedSearch()
 
-  // Solicitudes con filtro de estado (solicitado, asignado, o all)
+  // Solicitudes list query
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
       page: search.page,
@@ -86,7 +85,8 @@ export function AprobacionesPage() {
   }, [solicitudes, selectedPrioridad])
 
   // KPIs de la bandeja de aprobaciones
-  const totalElements = solicitudesQuery.data?.totalElements ?? solicitudes.length
+  const totalElements =
+    solicitudesQuery.data?.totalElements ?? solicitudes.length
 
   const porAprobarCount = useMemo(
     () =>
@@ -98,9 +98,8 @@ export function AprobacionesPage() {
 
   const asignadasCount = useMemo(
     () =>
-      solicitudes.filter(
-        (s) => (s.estado ?? "").toLowerCase() === "asignado",
-      ).length,
+      solicitudes.filter((s) => (s.estado ?? "").toLowerCase() === "asignado")
+        .length,
     [solicitudes],
   )
 
@@ -112,9 +111,7 @@ export function AprobacionesPage() {
   const preventivasCount = useMemo(
     () =>
       solicitudes.filter((s) =>
-        (s.tipoMantenimiento?.nombre ?? "")
-          .toLowerCase()
-          .includes("preventiv"),
+        (s.tipoMantenimiento?.nombre ?? "").toLowerCase().includes("preventiv"),
       ).length,
     [solicitudes],
   )
@@ -122,9 +119,7 @@ export function AprobacionesPage() {
   const correctivasCount = useMemo(
     () =>
       solicitudes.filter((s) =>
-        (s.tipoMantenimiento?.nombre ?? "")
-          .toLowerCase()
-          .includes("correctiv"),
+        (s.tipoMantenimiento?.nombre ?? "").toLowerCase().includes("correctiv"),
       ).length,
     [solicitudes],
   )
@@ -135,10 +130,8 @@ export function AprobacionesPage() {
     solicitudesQuery.data?.totalPages,
   )
 
-  function openEdit(solicitud: SolicitudMantenimiento) {
-    navigate({
-      to: routes.mantenimientos.editarSolicitud(solicitud.id),
-    })
+  function handleOpenSheet(solicitud: SolicitudMantenimiento) {
+    setSheetSolicitud(solicitud)
   }
 
   function handleActionSelect(
@@ -170,7 +163,7 @@ export function AprobacionesPage() {
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
       {/* Header */}
-      <header className="flex shrink-0 flex-col gap-2 border-b py-2.5 sm:gap-3 sm:py-3.5 md:flex-row md:items-center md:justify-between">
+      <header className="flex shrink-0 flex-col gap-2 border-b py-3 sm:gap-3 sm:py-4 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0 flex flex-1 flex-col gap-0.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -196,7 +189,7 @@ export function AprobacionesPage() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-1">
-            Supervisa, evalúa y gestiona las solicitudes de mantenimiento en proceso de aprobación y asignación técnica.
+            Supervisa, evalúa y toma decisiones en el flujo de trabajo con asignación directa de técnicos.
           </p>
         </div>
 
@@ -210,9 +203,9 @@ export function AprobacionesPage() {
         </div>
       </header>
 
-      {/* KPI Stats Section for Approvers and Coordinators */}
-      <div className="shrink-0 pt-2.5 pb-1">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {/* KPI Stats Section */}
+      <div className="shrink-0 pt-3 pb-1">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {/* Por Aprobar (Solicitado) */}
           <div
             onClick={() =>
@@ -221,14 +214,14 @@ export function AprobacionesPage() {
               )
             }
             className={cn(
-              "flex items-center gap-2.5 rounded-xl border p-2.5 sm:p-3 shadow-2xs cursor-pointer transition-all hover:scale-[1.01]",
+              "flex items-center gap-2.5 rounded-xl border p-3 shadow-2xs cursor-pointer transition-all hover:scale-[1.01]",
               selectedEstado === "solicitado"
                 ? "border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/30"
                 : "border-amber-500/40 bg-amber-500/10",
             )}
           >
-            <div className="relative flex size-8.5 sm:size-9 shrink-0 items-center justify-center rounded-xl bg-amber-600 text-white shadow-xs">
-              <UserCheck className="size-4" />
+            <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-600 text-white shadow-xs">
+              <UserCheck className="size-4.5" />
               <span className="absolute -top-1 -right-1 flex size-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                 <span className="relative inline-flex rounded-full size-2 bg-amber-500" />
@@ -246,7 +239,7 @@ export function AprobacionesPage() {
             </div>
           </div>
 
-          {/* Asignadas (Para Asignar / En Asignación) */}
+          {/* Asignadas */}
           <div
             onClick={() =>
               setSelectedEstado((prev) =>
@@ -254,14 +247,14 @@ export function AprobacionesPage() {
               )
             }
             className={cn(
-              "flex items-center gap-2.5 rounded-xl border p-2.5 sm:p-3 shadow-2xs cursor-pointer transition-all hover:scale-[1.01]",
+              "flex items-center gap-2.5 rounded-xl border p-3 shadow-2xs cursor-pointer transition-all hover:scale-[1.01]",
               selectedEstado === "asignado"
                 ? "border-sky-500 bg-sky-500/15 ring-2 ring-sky-500/30"
                 : "border-sky-500/30 bg-sky-500/5",
             )}
           >
-            <div className="flex size-8.5 sm:size-9 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs">
-              <Wrench className="size-4" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs">
+              <Wrench className="size-4.5" />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-sky-800 dark:text-sky-300 truncate">
@@ -276,9 +269,9 @@ export function AprobacionesPage() {
           </div>
 
           {/* Críticas / Urgentes */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/5 p-2.5 sm:p-3 shadow-2xs">
-            <div className="flex size-8.5 sm:size-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 shadow-2xs">
-              <Flame className="size-4" />
+          <div className="flex items-center gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/5 p-3 shadow-2xs">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 shadow-2xs">
+              <Flame className="size-4.5" />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
@@ -290,10 +283,10 @@ export function AprobacionesPage() {
             </div>
           </div>
 
-          {/* Preventivas / Correctivas */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-2.5 sm:p-3 shadow-2xs">
-            <div className="flex size-8.5 sm:size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs">
-              <ShieldCheck className="size-4" />
+          {/* Totales */}
+          <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 shadow-2xs">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs">
+              <ShieldCheck className="size-4.5" />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
@@ -307,184 +300,172 @@ export function AprobacionesPage() {
         </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="flex flex-col gap-2.5 pt-2 pb-1 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="w-full sm:w-72">
+      {/* Main Full-Width Content */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-3 gap-3">
+        {/* Search & Filters Toolbar */}
+        <div className="flex flex-col sm:flex-row items-center gap-2.5 shrink-0">
+          <div className="w-full sm:flex-1">
             <SearchField
-              placeholder="Buscar por título, número, activo o solicitante..."
+              placeholder="Buscar por título, número de folio, activo o solicitante..."
               value={search.search}
               onChange={search.setSearch}
               className="w-full h-9 text-xs"
             />
           </div>
 
-          {/* Estado Filter Selector */}
-          <div className="w-48">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Select
               value={selectedEstado}
               onValueChange={(val) => setSelectedEstado(val ?? "all")}
             >
-              <SelectTrigger className="h-9 text-xs">
+              <SelectTrigger className="h-9 text-xs w-[160px]">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all" className="text-xs font-medium">
-                  📋 Todos los pendientes
+                  📋 Todos los estados
                 </SelectItem>
-                <SelectItem value="solicitado" className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
-                  🟡 Por Aprobar (Solicitado)
+                <SelectItem
+                  value="solicitado"
+                  className="text-xs text-amber-600 dark:text-amber-400 font-semibold"
+                >
+                  🟡 Por Aprobar
                 </SelectItem>
-                <SelectItem value="asignado" className="text-xs text-sky-600 dark:text-sky-400 font-semibold">
-                  🔵 Asignado (Para Asignar)
+                <SelectItem
+                  value="asignado"
+                  className="text-xs text-sky-600 dark:text-sky-400 font-semibold"
+                >
+                  🔵 Asignado
                 </SelectItem>
-                <SelectItem value="aprobado" className="text-xs text-emerald-600 dark:text-emerald-400">
+                <SelectItem
+                  value="aprobado"
+                  className="text-xs text-emerald-600 dark:text-emerald-400"
+                >
                   🟢 Aprobado
                 </SelectItem>
               </SelectContent>
             </Select>
-          </div>
 
-          {/* Prioridad Filter */}
-          <div className="w-44">
             <Select
               value={selectedPrioridad}
               onValueChange={(val) => setSelectedPrioridad(val ?? "all")}
             >
-              <SelectTrigger className="h-9 text-xs">
+              <SelectTrigger className="h-9 text-xs w-[150px]">
                 <SelectValue placeholder="Prioridad" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all" className="text-xs">
-                  Todas las prioridades
+                  Todas prioridades
                 </SelectItem>
                 <SelectItem value="5" className="text-xs text-rose-600">
-                  🔴 Crítica (Nivel 5)
+                  🔴 Crítica
                 </SelectItem>
                 <SelectItem value="4" className="text-xs text-orange-600">
-                  🟠 Alta (Nivel 4)
+                  🟠 Alta
                 </SelectItem>
                 <SelectItem value="3" className="text-xs text-amber-600">
-                  🟡 Media (Nivel 3)
+                  🟡 Media
                 </SelectItem>
                 <SelectItem value="2" className="text-xs text-blue-600">
-                  🔵 Baja (Nivel 2)
+                  🔵 Baja
                 </SelectItem>
                 <SelectItem value="1" className="text-xs text-emerald-600">
-                  🟢 Menor (Nivel 1)
+                  🟢 Menor
                 </SelectItem>
               </SelectContent>
             </Select>
-          </div>
 
-          {hasActiveFilters ? (
-            <Button
-              size="sm"
-              variant="ghost"
-              type="button"
-              onClick={resetFilters}
-              className="h-9 gap-1.5 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60"
-            >
-              <X className="size-3.5" />
-              <span>Limpiar filtros</span>
-            </Button>
-          ) : null}
+            {hasActiveFilters ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                type="button"
+                onClick={resetFilters}
+                className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground shrink-0 gap-1"
+                title="Limpiar filtros"
+              >
+                <X className="size-3.5" />
+                <span>Limpiar</span>
+              </Button>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Requests List */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {solicitudesQuery.isLoading ? (
+            <ListSkeleton
+              rows={6}
+              rowClassName="h-20 rounded-xl"
+              className="space-y-2.5"
+            />
+          ) : solicitudesQuery.isError ? (
+            <EmptyState
+              title={getErrorMessage(solicitudesQuery.error)}
+              className="text-destructive"
+            />
+          ) : filteredSolicitudes.length === 0 ? (
+            <EmptyState
+              icon={<FileCheck2 className="size-9 text-amber-500" />}
+              title={
+                hasActiveFilters
+                  ? "Sin resultados para este filtro"
+                  : "¡Bandeja al día!"
+              }
+              description={
+                hasActiveFilters
+                  ? "No se encontraron solicitudes con los criterios seleccionados."
+                  : "No hay solicitudes pendientes en este momento."
+              }
+              action={
+                hasActiveFilters ? (
+                  <Button
+                    size="sm"
+                    type="button"
+                    onClick={resetFilters}
+                    className="h-8 text-xs"
+                  >
+                    Limpiar filtros
+                  </Button>
+                ) : null
+              }
+            />
+          ) : (
+            <>
+              <div
+                className={cn(
+                  "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 pr-0.5",
+                  solicitudesQuery.isFetching && "opacity-75",
+                )}
+              >
+                <SolicitudAprobacionListView
+                  solicitudes={filteredSolicitudes}
+                  onQuickView={handleOpenSheet}
+                  onActionSelect={handleActionSelect}
+                />
+              </div>
+
+              {solicitudesQuery.data ? (
+                <Pagination
+                  page={solicitudesQuery.data}
+                  onPageChange={search.setPage}
+                  className="border-t pt-2 shrink-0 text-xs"
+                />
+              ) : null}
+            </>
+          )}
         </div>
       </div>
 
-
-      {/* Content Section */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2">
-        {solicitudesQuery.isLoading ? (
-          <ListSkeleton
-            rows={6}
-            rowClassName="h-28 rounded-2xl"
-            className="space-y-3"
-          />
-        ) : solicitudesQuery.isError ? (
-          <EmptyState
-            title={getErrorMessage(solicitudesQuery.error)}
-            className="text-destructive"
-          />
-        ) : filteredSolicitudes.length === 0 ? (
-          <EmptyState
-            icon={<FileCheck2 className="size-8 text-amber-500" />}
-            title={
-              hasActiveFilters
-                ? "Sin resultados para este filtro"
-                : "¡Bandeja de Aprobaciones al día!"
-            }
-            description={
-              hasActiveFilters
-                ? "No se encontraron solicitudes pendientes con los criterios especificados."
-                : "No hay solicitudes de mantenimiento pendientes de aprobación en este momento."
-            }
-            action={
-              hasActiveFilters ? (
-                <Button
-                  size="sm"
-                  type="button"
-                  onClick={resetFilters}
-                  className="h-8 text-xs"
-                >
-                  Limpiar filtros
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  type="button"
-                  onClick={() => solicitudesQuery.refetch()}
-                  className="h-8 text-xs gap-1.5"
-                >
-                  <RefreshButton
-                    size="sm"
-                    className="h-6 px-1"
-                    onRefresh={() => solicitudesQuery.refetch()}
-                    isRefreshing={solicitudesQuery.isFetching}
-                  />
-                  <span>Actualizar Bandeja</span>
-                </Button>
-              )
-            }
-          />
-        ) : (
-          <>
-            <div
-              className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2",
-                solicitudesQuery.isFetching && "opacity-70",
-              )}
-            >
-              <SolicitudAprobacionListView
-                solicitudes={filteredSolicitudes}
-                onQuickView={(s) => setQuickView(s)}
-                onActionSelect={handleActionSelect}
-                onEdit={openEdit}
-              />
-            </div>
-
-            {solicitudesQuery.data ? (
-              <Pagination
-                page={solicitudesQuery.data}
-                onPageChange={search.setPage}
-                className="-mx-3 border-x-0 px-3 sm:-mx-5 sm:px-5 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 shrink-0"
-              />
-            ) : null}
-          </>
-        )}
-      </div>
-
-      {/* Quick View & Review Sheet */}
+      {/* Detalle de Solicitud + WorkflowPanel Slide-over Sheet */}
       <SolicitudQuickViewSheet
-        solicitud={quickView}
-        open={Boolean(quickView)}
-        onOpenChange={(open) => !open && setQuickView(null)}
-        onEdit={openEdit}
+        solicitud={sheetSolicitud}
+        open={Boolean(sheetSolicitud)}
+        onOpenChange={(open) => !open && setSheetSolicitud(null)}
         onWorkflowAction={handleActionSelect}
       />
 
-      {/* Workflow Action Dialog */}
+      {/* Dynamic Workflow Action Dialog */}
       <WorkflowActionDialog
         open={Boolean(workflowActionTarget)}
         onOpenChange={(open) => !open && setWorkflowActionTarget(null)}
@@ -493,12 +474,10 @@ export function AprobacionesPage() {
         taskName={workflowActionTarget?.taskName}
         fields={workflowActionTarget?.fields}
         onSuccess={() => {
-          if (quickView && workflowActionTarget?.solicitud.id === quickView.id) {
-            setQuickView(null)
-          }
+          solicitudesQuery.refetch()
+          setSheetSolicitud(null)
         }}
       />
     </PageShell>
   )
 }
-

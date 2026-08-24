@@ -239,6 +239,39 @@ public class SolicitudMantenimientoService {
             );
         }
 
+        if (request != null && request.variables() != null) {
+            Object responsableIdObj = request.variables().get("responsableId");
+            if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
+                try {
+                    solicitud.setResponsableId(UUID.fromString(responsableIdObj.toString().trim()));
+                    if (solicitud.getFechaAsignacion() == null) {
+                        solicitud.setFechaAsignacion(LocalDateTime.now());
+                    }
+                } catch (Exception ignored) {}
+            }
+            Object obsAprob = request.variables().get("observacionAprobacion");
+            if (obsAprob != null && !obsAprob.toString().isBlank()) {
+                solicitud.setObservacionAprobacion(obsAprob.toString().trim());
+                if (solicitud.getFechaAprobacion() == null) {
+                    solicitud.setFechaAprobacion(LocalDateTime.now());
+                }
+            }
+            Object obsVal = request.variables().get("observacionValidacion");
+            if (obsVal != null && !obsVal.toString().isBlank()) {
+                solicitud.setObservacionValidacion(obsVal.toString().trim());
+                if (solicitud.getFechaValidacion() == null) {
+                    solicitud.setFechaValidacion(LocalDateTime.now());
+                }
+            }
+            Object obsCierre = request.variables().get("observacionCierre");
+            if (obsCierre != null && !obsCierre.toString().isBlank()) {
+                solicitud.setObservacionCierre(obsCierre.toString().trim());
+                if (solicitud.getFechaFinalizacion() == null) {
+                    solicitud.setFechaFinalizacion(LocalDateTime.now());
+                }
+            }
+        }
+
         return toResponse(
                 repository.save(solicitud)
         );

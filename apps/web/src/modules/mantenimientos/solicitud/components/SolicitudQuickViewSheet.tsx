@@ -1,29 +1,26 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
-  AlertCircle,
   Box,
-  CheckCircle2,
+  Check,
   Clock,
+  Copy,
   Download,
   ExternalLink,
   Eye,
-  FileCheck2,
   FileCode,
   FileSpreadsheet,
   FileText,
   ImageIcon,
   Loader2,
   Paperclip,
-  Pencil,
-  SendHorizontal,
   User,
-  UserCheck,
   Wrench,
   X,
 } from "lucide-react"
+import { toast } from "sonner"
 
-
+import { fetchAuthenticatedBlob } from "@/shared/api"
 import { AuditInfo } from "@/shared/components/audit-info"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Button } from "@/shared/components/ui/button"
@@ -34,9 +31,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/shared/components/ui/sheet"
-import { fetchAuthenticatedBlob } from "@/shared/api"
-import { formatDateTime } from "@/shared/utils/date.utils"
 import { cn } from "@/shared/lib/utils"
+import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
 import { solicitudQueries } from "../api/solicitud.queries"
 import type {
@@ -50,12 +46,13 @@ import {
   getPrioridadBadgeStyles,
   getTipoMantenimientoBadgeClass,
 } from "../lib/solicitud.utils"
+import { WorkflowPanel } from "./WorkflowPanel"
 
 type SolicitudQuickViewSheetProps = {
   solicitud: SolicitudMantenimiento | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onEdit: (solicitud: SolicitudMantenimiento) => void
+  onEdit?: (solicitud: SolicitudMantenimiento) => void
   onEnviar?: (solicitud: SolicitudMantenimiento) => void
   onWorkflowAction?: (
     solicitud: SolicitudMantenimiento,
@@ -64,7 +61,6 @@ type SolicitudQuickViewSheetProps = {
     fields?: WorkflowField[],
   ) => void
 }
-
 
 function formatFileSize(bytes?: number): string {
   if (!bytes || bytes <= 0) return "0 B"
@@ -105,10 +101,11 @@ export function SolicitudQuickViewSheet({
   solicitud: initialSolicitud,
   open,
   onOpenChange,
-  onEdit,
-  onEnviar,
+  onEdit: _onEdit,
+  onEnviar: _onEnviar,
   onWorkflowAction,
 }: SolicitudQuickViewSheetProps) {
+  const [copied, setCopied] = useState(false)
   const [selectedPreviewImage, setSelectedPreviewImage] = useState<{
     url: string
     name: string
@@ -130,18 +127,8 @@ export function SolicitudQuickViewSheet({
 
   const solicitud = detailQuery.data ?? initialSolicitud
 
-  const workflowActionsQuery = useQuery({
-    ...solicitudQueries.workflowActions(solicitud?.processInstanceId),
-    enabled: open && Boolean(solicitud?.processInstanceId),
-  })
-
-  const workflowActions = workflowActionsQuery.data?.actions ?? []
-  const workflowTaskName = workflowActionsQuery.data?.taskName
-  const workflowFields = workflowActionsQuery.data?.fields ?? []
-
   const adjuntos = useMemo(() => {
     if (adjuntosQuery.data?.content && adjuntosQuery.data.content.length > 0) {
-
       return adjuntosQuery.data.content
     }
     if (detailQuery.data?.adjuntos && detailQuery.data.adjuntos.length > 0) {
@@ -161,6 +148,15 @@ export function SolicitudQuickViewSheet({
 
   const isLoadingAdjuntos =
     (adjuntosQuery.isLoading || detailQuery.isLoading) && adjuntos.length === 0
+
+  function copyNumero(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!solicitud?.numero) return
+    navigator.clipboard.writeText(solicitud.numero)
+    setCopied(true)
+    toast.success(`Folio "${solicitud.numero}" copiado`)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   async function handleDownloadFile(adj: SolicitudMantenimientoAdjunto) {
     if (!adj.url) return
@@ -189,339 +185,368 @@ export function SolicitudQuickViewSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md md:max-w-lg overflow-y-auto p-4 sm:p-5 flex flex-col gap-0">
-        {/* Header Compacto */}
-        <SheetHeader className="pb-3 border-b space-y-1.5 shrink-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {solicitud.numero ? (
-                <code className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-bold text-primary border border-primary/20">
-                  {solicitud.numero}
-                </code>
-              ) : null}
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize",
-                  estadoStyle,
-                )}
+      <SheetContent className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto p-4 sm:p-6 flex flex-col gap-4">
+        {/* Header Bar */}
+        <SheetHeader className="pb-3 border-b space-y-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
+            {solicitud.numero ? (
+              <div
+                onClick={copyNumero}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-bold text-primary border border-primary/20 hover:bg-primary/15 transition-colors cursor-pointer"
+                title="Copiar folio"
               >
-                {solicitud.estado}
-              </span>
-            </div>
+                <span>{solicitud.numero}</span>
+                {copied ? (
+                  <Check className="size-3 text-emerald-600" />
+                ) : (
+                  <Copy className="size-3 opacity-70" />
+                )}
+              </div>
+            ) : null}
+
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize",
+                estadoStyle,
+              )}
+            >
+              {solicitud.estado}
+            </span>
 
             {solicitud.prioridad ? (
               <span
                 className={cn(
-                  "inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold shrink-0",
+                  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold shrink-0",
                   prioridadStyle,
                 )}
               >
-                Prioridad: {solicitud.prioridad.nombre}
+                {solicitud.prioridad.nombre}
+              </span>
+            ) : null}
+
+            {solicitud.tipoMantenimiento ? (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold border shrink-0",
+                  getTipoMantenimientoBadgeClass(
+                    solicitud.tipoMantenimiento.nombre,
+                    false,
+                  ),
+                )}
+              >
+                <Wrench className="size-3" />
+                <span>{solicitud.tipoMantenimiento.nombre}</span>
               </span>
             ) : null}
           </div>
 
-          <SheetTitle className="text-sm sm:text-base font-heading font-bold text-foreground text-left leading-tight">
+          <SheetTitle className="text-base sm:text-lg font-heading font-bold text-foreground text-left leading-snug">
             {solicitud.titulo}
           </SheetTitle>
 
           {solicitud.motivoMantenimiento ? (
             <SheetDescription className="text-xs text-foreground/80 font-medium text-left">
-              <span className="text-muted-foreground font-semibold">Motivo:</span>{" "}
+              <strong className="text-muted-foreground font-semibold">Motivo:</strong>{" "}
               {solicitud.motivoMantenimiento}
             </SheetDescription>
           ) : null}
         </SheetHeader>
 
-        {/* Cuerpo Compacto con Scroll */}
-        <div className="flex-1 space-y-3 py-3 text-xs overflow-y-auto pr-0.5">
-          {solicitud.estado?.toLowerCase() === "solicitado" && (
-            <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-amber-900 dark:text-amber-200">
-              <UserCheck className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
-              <div className="min-w-0 flex-1 text-[11px] leading-tight">
-                <p className="font-semibold text-amber-800 dark:text-amber-300">
-                  Pendiente de Aprobación
-                </p>
-                <p className="text-amber-700/90 dark:text-amber-300/80 text-[10.5px]">
-                  La solicitud está a la espera de revisión y aprobación por parte de los responsables correspondientes.
-                </p>
-              </div>
+        {/* WorkflowPanel - Action Bar */}
+        {onWorkflowAction && (
+          <WorkflowPanel
+            solicitud={solicitud}
+            onActionSelect={onWorkflowAction}
+          />
+        )}
+
+        {/* Info Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Activo Info */}
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-1">
+            <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
+              <Box className="size-3.5 text-primary" />
+              <span>Activo Fijo Relacionado</span>
             </div>
-          )}
-
-          {/* Activo & Tipo Compact Strip */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 space-y-0.5">
-              <div className="flex items-center gap-1 text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
-                <Box className="size-3 text-primary" />
-                <span>Activo</span>
+            {solicitud.activo ? (
+              <div className="flex items-center gap-2">
+                <code className="text-xs font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                  {solicitud.activo.codigo}
+                </code>
+                <span className="font-semibold text-xs text-foreground truncate">
+                  {solicitud.activo.nombre}
+                </span>
               </div>
-              {solicitud.activo ? (
-                <div className="truncate">
-                  <p className="font-semibold text-foreground truncate text-xs">
-                    <span className="font-mono text-primary font-bold mr-1 text-[10.5px]">
-                      {solicitud.activo.codigo}
-                    </span>
-                    {solicitud.activo.nombre}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-muted-foreground italic text-[11px]">No asignado</p>
-              )}
-            </div>
-
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 space-y-0.5">
-              <div className="flex items-center gap-1 text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
-                <Wrench className="size-3 text-primary" />
-                <span>Tipo Mantenimiento</span>
-              </div>
-              {solicitud.tipoMantenimiento ? (
-                <div className="truncate">
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border truncate mt-0.5",
-                      getTipoMantenimientoBadgeClass(
-                        solicitud.tipoMantenimiento.nombre,
-                        false,
-                      ),
-                    )}
-                  >
-                    {solicitud.tipoMantenimiento.nombre}
-                  </span>
-                </div>
-              ) : (
-                <p className="text-muted-foreground italic text-[11px]">No especificado</p>
-              )}
-            </div>
-          </div>
-
-          {/* Descripción */}
-          <div className="rounded-xl border border-border/70 bg-card p-2.5 space-y-1">
-            <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Descripción del Problema
-            </h4>
-            <p className="text-foreground leading-relaxed whitespace-pre-wrap text-xs">
-              {solicitud.descripcion}
-            </p>
-          </div>
-
-          {/* Archivos Adjuntos con Galería y Documentos */}
-          <div className="rounded-xl border border-border/70 bg-card p-2.5 space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Paperclip className="size-3 text-primary" />
-                Archivos Adjuntos ({adjuntos.length})
-              </h4>
-              {isLoadingAdjuntos && (
-                <Loader2 className="size-3 animate-spin text-muted-foreground" />
-              )}
-            </div>
-
-            {isLoadingAdjuntos ? (
-              <div className="flex items-center gap-2 py-3 justify-center text-muted-foreground text-[11px]">
-                <Loader2 className="size-3.5 animate-spin" />
-                <span>Cargando archivos adjuntos...</span>
-              </div>
-            ) : adjuntos.length === 0 ? (
-              <p className="text-muted-foreground/60 italic text-[11px] py-1">
-                Sin archivos adjuntos en esta solicitud.
-              </p>
             ) : (
-              <div className="space-y-2.5">
-                {/* Image Previews Grid */}
-                {imageAdjuntos.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {imageAdjuntos.map((img) => (
-                      <div
-                        key={img.id}
-                        onClick={() =>
-                          setSelectedPreviewImage({
-                            url: img.url,
-                            name: img.nombreArchivo,
-                          })
-                        }
-                        className="group relative aspect-square rounded-lg border border-border/80 bg-muted/40 overflow-hidden cursor-pointer hover:border-primary/60 transition-all shadow-2xs"
-                        title={img.nombreArchivo}
-                      >
-                        <AuthenticatedImage
-                          src={img.url}
-                          alt={img.nombreArchivo}
-                          className="size-full object-cover group-hover:scale-105 transition-transform"
-                          fallback={
-                            <div className="size-full flex flex-col items-center justify-center p-1 text-center bg-muted">
-                              <ImageIcon className="size-4 text-muted-foreground mb-1" />
-                              <span className="text-[9px] text-muted-foreground truncate max-w-full px-1">
-                                {img.nombreArchivo}
-                              </span>
-                            </div>
-                          }
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                          <span className="p-1 rounded-md bg-black/60 text-white shadow-xs">
-                            <Eye className="size-3.5" />
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Document Files List */}
-                {docAdjuntos.length > 0 && (
-                  <ul className="space-y-1.5 divide-y divide-border/40">
-                    {docAdjuntos.map((adj: SolicitudMantenimientoAdjunto) => (
-                      <li
-                        key={adj.id}
-                        className="flex items-center justify-between gap-2 pt-1.5 first:pt-0"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          {getFileIcon(adj.tipoContenido, adj.nombreArchivo)}
-                          <div className="min-w-0">
-                            <p className="font-medium text-foreground truncate max-w-[190px] sm:max-w-[240px] text-xs">
-                              {adj.nombreArchivo}
-                            </p>
-                            <p className="text-[9.5px] text-muted-foreground">
-                              {formatFileSize(adj.size)}
-                              {adj.descripcion ? ` • ${adj.descripcion}` : ""}
-                            </p>
-                          </div>
-                        </div>
-
-                        {adj.url ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDownloadFile(adj)}
-                            disabled={downloadingId === adj.id}
-                            className="h-7 px-2 text-[11px] gap-1 text-primary hover:text-primary hover:bg-primary/10 shrink-0"
-                            title="Descargar archivo"
-                          >
-                            {downloadingId === adj.id ? (
-                              <Loader2 className="size-3 animate-spin" />
-                            ) : (
-                              <Download className="size-3" />
-                            )}
-                            <span className="hidden sm:inline">Descargar</span>
-                          </Button>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              <p className="text-xs text-muted-foreground italic">No asignado</p>
             )}
           </div>
 
-          {/* Ciclo de Vida Compacto */}
-          <div className="rounded-xl border border-border/70 bg-card p-2.5 space-y-2">
-            <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Flujo de Estado
-            </h4>
-
-            <div className="space-y-2 divide-y divide-border/40 text-[11px]">
-              {/* Solicitado */}
-              <div className="flex items-start gap-2 pt-1.5 first:pt-0">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary mt-0.5">
-                  <User className="size-3" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-foreground">Solicitado</p>
-                    {solicitud.fechaSolicitud ? (
-                      <span className="text-[9.5px] text-muted-foreground">
-                        {formatDateTime(solicitud.fechaSolicitud)}
-                      </span>
-                    ) : null}
-                  </div>
-                  {solicitud.solicitante ? (
-                    <p className="text-[10.5px] text-muted-foreground">
-                      Por: {solicitud.solicitante.nombre}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Aprobación */}
-              {solicitud.aprobadoPor || solicitud.fechaAprobacion ? (
-                <div className="flex items-start gap-2 pt-1.5">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 mt-0.5">
-                    <UserCheck className="size-3" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold text-foreground">Aprobado</p>
-                      {solicitud.fechaAprobacion ? (
-                        <span className="text-[9.5px] text-muted-foreground">
-                          {formatDateTime(solicitud.fechaAprobacion)}
-                        </span>
-                      ) : null}
-                    </div>
-                    {solicitud.aprobadoPor ? (
-                      <p className="text-[10.5px] text-muted-foreground">
-                        Aprobador: {solicitud.aprobadoPor.nombre}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Ejecución */}
-              {solicitud.responsable || solicitud.fechaInicioMantenimiento ? (
-                <div className="flex items-start gap-2 pt-1.5">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 mt-0.5">
-                    <Clock className="size-3" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold text-foreground">En Ejecución</p>
-                      {solicitud.fechaInicioMantenimiento ? (
-                        <span className="text-[9.5px] text-muted-foreground">
-                          {formatDateTime(solicitud.fechaInicioMantenimiento)}
-                        </span>
-                      ) : null}
-                    </div>
-                    {solicitud.responsable ? (
-                      <p className="text-[10.5px] text-muted-foreground">
-                        Responsable: {solicitud.responsable.nombre}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Finalización */}
-              {solicitud.fechaFinalizacion || solicitud.recibidoPor ? (
-                <div className="flex items-start gap-2 pt-1.5">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mt-0.5">
-                    <CheckCircle2 className="size-3" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold text-foreground">Finalizado</p>
-                      {solicitud.fechaFinalizacion ? (
-                        <span className="text-[9.5px] text-muted-foreground">
-                          {formatDateTime(solicitud.fechaFinalizacion)}
-                        </span>
-                      ) : null}
-                    </div>
-                    {solicitud.recibidoPor ? (
-                      <p className="text-[10.5px] text-muted-foreground">
-                        Recibido por: {solicitud.recibidoPor.nombre}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
+          {/* Solicitante Info */}
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-1">
+            <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
+              <User className="size-3.5 text-primary" />
+              <span>Datos de Solicitud</span>
             </div>
-          </div>
-
-          {/* Información de Auditoría */}
-          <div className="rounded-xl border border-border/70 bg-muted/10 p-2.5">
-            <AuditInfo data={solicitud} compact className="text-[10px]" />
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Solicitante:</span>
+              <span className="font-medium text-foreground">
+                {solicitud.solicitante?.nombre || "No especificado"}
+              </span>
+            </div>
+            {solicitud.fechaSolicitud && (
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40">
+                <span className="text-muted-foreground">Fecha:</span>
+                <span className="font-medium text-foreground">
+                  {formatDate(solicitud.fechaSolicitud)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Modal de Vista Previa de Imagen */}
+        {/* Problem Description */}
+        <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-1.5">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <FileText className="size-3.5 text-primary" />
+            <span>Descripción Detallada del Problema</span>
+          </h4>
+          <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+            {solicitud.descripcion || "Sin descripción proporcionada."}
+          </p>
+        </div>
+
+        {/* Attachments Section */}
+        <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Paperclip className="size-3.5 text-primary" />
+              <span>Archivos Adjuntos ({adjuntos.length})</span>
+            </h4>
+            {isLoadingAdjuntos && (
+              <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+            )}
+          </div>
+
+          {isLoadingAdjuntos ? (
+            <div className="flex items-center justify-center py-3 text-xs text-muted-foreground gap-2">
+              <Loader2 className="size-4 animate-spin text-primary" />
+              <span>Cargando archivos...</span>
+            </div>
+          ) : adjuntos.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic py-1">
+              Sin archivos adjuntos.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {/* Photo Thumbnails */}
+              {imageAdjuntos.length > 0 && (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                  {imageAdjuntos.map((img) => (
+                    <div
+                      key={img.id}
+                      onClick={() =>
+                        setSelectedPreviewImage({
+                          url: img.url,
+                          name: img.nombreArchivo,
+                        })
+                      }
+                      className="group relative aspect-square rounded-xl border border-border bg-muted/30 overflow-hidden cursor-pointer hover:border-primary transition-all shadow-2xs"
+                      title={img.nombreArchivo}
+                    >
+                      <AuthenticatedImage
+                        src={img.url}
+                        alt={img.nombreArchivo}
+                        className="size-full object-cover group-hover:scale-105 transition-transform"
+                        fallback={
+                          <div className="size-full flex flex-col items-center justify-center p-2 text-center bg-muted">
+                            <ImageIcon className="size-5 text-muted-foreground mb-1" />
+                            <span className="text-[10px] text-muted-foreground truncate max-w-full">
+                              {img.nombreArchivo}
+                            </span>
+                          </div>
+                        }
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="p-1 rounded-md bg-black/60 text-white shadow-xs">
+                          <Eye className="size-3.5" />
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Document List */}
+              {docAdjuntos.length > 0 && (
+                <ul className="space-y-1.5 divide-y divide-border/40">
+                  {docAdjuntos.map((adj: SolicitudMantenimientoAdjunto) => (
+                    <li
+                      key={adj.id}
+                      className="flex items-center justify-between gap-2 pt-1.5 first:pt-0"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {getFileIcon(adj.tipoContenido, adj.nombreArchivo)}
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground truncate text-xs">
+                            {adj.nombreArchivo}
+                          </p>
+                          <p className="text-[9.5px] text-muted-foreground">
+                            {formatFileSize(adj.size)}
+                            {adj.descripcion ? ` • ${adj.descripcion}` : ""}
+                          </p>
+                        </div>
+                      </div>
+
+                      {adj.url ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDownloadFile(adj)}
+                          disabled={downloadingId === adj.id}
+                          className="h-7 px-2 text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10 shrink-0"
+                          title="Descargar archivo"
+                        >
+                          {downloadingId === adj.id ? (
+                            <Loader2 className="size-3 animate-spin" />
+                          ) : (
+                            <Download className="size-3" />
+                          )}
+                          <span>Descargar</span>
+                        </Button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Lifecycle Flow */}
+        <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2.5">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Clock className="size-3.5 text-primary" />
+            <span>Trazabilidad de Estados</span>
+          </h4>
+
+          <div className="space-y-2 divide-y divide-border/40 text-xs">
+            {/* Solicitado */}
+            <div className="flex items-start gap-2.5 pt-1.5 first:pt-0">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary mt-0.5 font-bold text-[10px]">
+                1
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-foreground">Solicitado</p>
+                  {solicitud.fechaSolicitud && (
+                    <span className="text-[9.5px] text-muted-foreground">
+                      {formatDateTime(solicitud.fechaSolicitud)}
+                    </span>
+                  )}
+                </div>
+                {solicitud.solicitante && (
+                  <p className="text-[10.5px] text-muted-foreground">
+                    Por: {solicitud.solicitante.nombre}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Aprobado */}
+            {(solicitud.aprobadoPor || solicitud.fechaAprobacion) && (
+              <div className="flex items-start gap-2.5 pt-1.5">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mt-0.5 font-bold text-[10px]">
+                  2
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-foreground">Aprobado</p>
+                    {solicitud.fechaAprobacion && (
+                      <span className="text-[9.5px] text-muted-foreground">
+                        {formatDateTime(solicitud.fechaAprobacion)}
+                      </span>
+                    )}
+                  </div>
+                  {solicitud.aprobadoPor && (
+                    <p className="text-[10.5px] text-muted-foreground">
+                      Aprobador: {solicitud.aprobadoPor.nombre}
+                    </p>
+                  )}
+                  {solicitud.observacionAprobacion && (
+                    <p className="text-[10.5px] text-muted-foreground/90 italic bg-muted/40 p-1.5 rounded-md mt-1">
+                      "{solicitud.observacionAprobacion}"
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Asignado / En Ejecución */}
+            {(solicitud.responsable || solicitud.fechaInicioMantenimiento) && (
+              <div className="flex items-start gap-2.5 pt-1.5">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-400 mt-0.5 font-bold text-[10px]">
+                  3
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-foreground">
+                      Asignación y Ejecución
+                    </p>
+                    {solicitud.fechaInicioMantenimiento && (
+                      <span className="text-[9.5px] text-muted-foreground">
+                        {formatDateTime(solicitud.fechaInicioMantenimiento)}
+                      </span>
+                    )}
+                  </div>
+                  {solicitud.responsable && (
+                    <p className="text-[10.5px] text-muted-foreground">
+                      Responsable: <strong>{solicitud.responsable.nombre}</strong>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Cierre */}
+            {(solicitud.fechaFinalizacion || solicitud.recibidoPor) && (
+              <div className="flex items-start gap-2.5 pt-1.5">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mt-0.5 font-bold text-[10px]">
+                  4
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-foreground">
+                      Finalizado y Cerrado
+                    </p>
+                    {solicitud.fechaFinalizacion && (
+                      <span className="text-[9.5px] text-muted-foreground">
+                        {formatDateTime(solicitud.fechaFinalizacion)}
+                      </span>
+                    )}
+                  </div>
+                  {solicitud.recibidoPor && (
+                    <p className="text-[10.5px] text-muted-foreground">
+                      Recibido por: {solicitud.recibidoPor.nombre}
+                    </p>
+                  )}
+                  {solicitud.observacionCierre && (
+                    <p className="text-[10.5px] text-muted-foreground/90 italic bg-muted/40 p-1.5 rounded-md mt-1">
+                      "{solicitud.observacionCierre}"
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Audit Info */}
+        <div className="rounded-xl border border-border/70 bg-muted/15 p-2.5 shrink-0">
+          <AuditInfo data={solicitud} compact className="text-[10px]" />
+        </div>
+
+        {/* Preview Lightbox */}
         {selectedPreviewImage && (
           <div
             onClick={() => setSelectedPreviewImage(null)}
@@ -529,19 +554,19 @@ export function SolicitudQuickViewSheet({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative max-w-xl max-h-[85vh] bg-background rounded-2xl overflow-hidden shadow-2xl p-2 flex flex-col gap-2"
+              className="relative max-w-xl max-h-[85vh] bg-background rounded-2xl overflow-hidden shadow-2xl p-2.5 flex flex-col gap-2"
             >
-              <div className="flex items-center justify-between px-2 pt-1">
-                <span className="text-xs font-semibold text-foreground truncate max-w-[300px]">
-                  {selectedPreviewImage.name || "Vista Previa"}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-semibold text-foreground truncate max-w-[280px]">
+                  {selectedPreviewImage.name}
                 </span>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <a
                     href={selectedPreviewImage.url}
                     target="_blank"
                     rel="noreferrer"
                     className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
-                    title="Abrir en pestaña nueva"
+                    title="Abrir imagen"
                   >
                     <ExternalLink className="size-4" />
                   </a>
@@ -557,97 +582,14 @@ export function SolicitudQuickViewSheet({
               <div className="rounded-xl overflow-hidden bg-black/5 flex items-center justify-center max-h-[70vh]">
                 <AuthenticatedImage
                   src={selectedPreviewImage.url}
-                  alt={selectedPreviewImage.name || "Vista previa"}
+                  alt={selectedPreviewImage.name}
                   className="max-h-[70vh] w-auto object-contain"
                 />
               </div>
             </div>
           </div>
         )}
-
-        {/* Footer Actions */}
-        <div className="pt-3 border-t flex flex-wrap items-center justify-between gap-2 shrink-0">
-          <div className="flex items-center gap-1.5">
-            {workflowActions.map((act) => {
-              const isAprobar =
-                act.value?.toUpperCase().includes("APROB") ||
-                act.name?.toLowerCase().includes("aprobar")
-              const isObservar =
-                act.value?.toUpperCase().includes("OBSERV") ||
-                act.name?.toLowerCase().includes("observar")
-
-              return (
-                <Button
-                  key={`${act.variable}-${act.value}`}
-                  size="sm"
-                  onClick={() =>
-                    onWorkflowAction?.(
-                      solicitud,
-                      act,
-                      workflowTaskName,
-                      workflowFields,
-                    )
-                  }
-                  className={cn(
-                    "gap-1.5 text-xs h-8 font-semibold shadow-2xs",
-                    isAprobar
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                      : isObservar
-                        ? "bg-amber-600 hover:bg-amber-700 text-white"
-                        : "bg-primary hover:bg-primary/90 text-primary-foreground",
-                  )}
-                >
-                  {isAprobar ? (
-                    <CheckCircle2 className="size-3.5" />
-                  ) : isObservar ? (
-                    <AlertCircle className="size-3.5" />
-                  ) : (
-                    <FileCheck2 className="size-3.5" />
-                  )}
-                  <span>{act.name}</span>
-                </Button>
-              )
-            })}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="text-xs h-8"
-            >
-              Cerrar
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                onOpenChange(false)
-                onEdit(solicitud)
-              }}
-              className="gap-1.5 text-xs h-8 font-semibold shadow-2xs"
-            >
-              <Pencil className="size-3.5" />
-              <span>Editar</span>
-            </Button>
-            {solicitud.estado?.toLowerCase() === "borrador" && onEnviar ? (
-              <Button
-                size="sm"
-                onClick={() => {
-                  onOpenChange(false)
-                  onEnviar(solicitud)
-                }}
-                className="gap-1.5 text-xs h-8 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs"
-              >
-                <SendHorizontal className="size-3.5" />
-                <span>Enviar Solicitud</span>
-              </Button>
-            ) : null}
-          </div>
-        </div>
       </SheetContent>
     </Sheet>
   )
 }
-

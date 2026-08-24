@@ -1,12 +1,20 @@
-import { useState, useId } from "react"
+import { useState, useId, useEffect } from "react"
 import {
   AlertCircle,
+  AlertOctagon,
   CheckCircle2,
+  CheckCheck,
+  FileCheck2,
   HelpCircle,
   Loader2,
+  Play,
+  RotateCcw,
+  Send,
   ShieldCheck,
+  UserCheck,
 } from "lucide-react"
 
+import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -59,26 +67,77 @@ export function WorkflowActionDialog({
 
   const [formValues, setFormValues] = useState<Record<string, string>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [responsableId, setResponsableId] = useState<string>("")
+
+  // Reset form when opened with a new action or solicitud
+  useEffect(() => {
+    if (open && solicitud) {
+      setResponsableId(solicitud.responsable?.id ?? "")
+      setFormValues({})
+      setFormErrors({})
+    }
+  }, [open, solicitud, action])
+
+  if (!solicitud || !action) return null
+
+  const actionName = (action.name ?? "").toLowerCase()
+  const actionVal = (action.value ?? "").toUpperCase()
 
   const isAprobar =
-    action?.value?.toUpperCase().includes("APROB") ||
-    action?.name?.toLowerCase().includes("aprobar")
+    actionVal.includes("APROB") || actionName.includes("aprobar")
   const isObservar =
-    action?.value?.toUpperCase().includes("OBSERV") ||
-    action?.name?.toLowerCase().includes("observar")
+    actionVal.includes("OBSERV") || actionName.includes("observar")
+  const isCorregir =
+    actionVal.includes("CORREG") || actionName.includes("corregir")
+  const isIniciar =
+    actionVal.includes("INIC") || actionName.includes("iniciar")
+  const isRevision =
+    actionVal.includes("REVIS") || actionName.includes("revisión") || actionName.includes("revision")
+  const isValidar =
+    actionVal.includes("VALID") || actionName.includes("validar")
+  const isCerrar =
+    actionVal.includes("CERR") || actionVal.includes("RECIB") || actionName.includes("cerrar") || actionName.includes("recibir")
   const isRechazar =
-    action?.value?.toUpperCase().includes("RECHAZ") ||
-    action?.name?.toLowerCase().includes("rechazar")
+    actionVal.includes("RECHAZ") || actionVal.includes("CANCEL") || actionName.includes("rechazar")
+
+  // Check if this action or current task involves assigning/selecting a responsible
+  const hasResponsableFieldInBpmn = fields.some(
+    (f) =>
+      f.id.toLowerCase() === "responsableid" ||
+      f.name.toLowerCase().includes("responsable") ||
+      f.name.toLowerCase().includes("técnico") ||
+      f.name.toLowerCase().includes("tecnico"),
+  )
+
+  const isAssignmentRelevant =
+    hasResponsableFieldInBpmn ||
+    actionName.includes("asign") ||
+    actionVal.includes("ASIGN") ||
+    (isAprobar && !solicitud.responsable) ||
+    taskName?.toLowerCase().includes("asign") ||
+    taskName?.toLowerCase().includes("responsable")
 
   const actionColorClass = isAprobar
     ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
     : isObservar
       ? "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-500/20"
-      : isRechazar
-        ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20"
-        : "bg-primary hover:bg-primary/90 text-primary-foreground"
+      : isCorregir
+        ? "bg-orange-600 hover:bg-orange-700 text-white shadow-orange-500/20"
+        : isIniciar
+          ? "bg-sky-600 hover:bg-sky-700 text-white shadow-sky-500/20"
+          : isRevision
+            ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/20"
+            : isValidar
+              ? "bg-teal-600 hover:bg-teal-700 text-white shadow-teal-500/20"
+              : isCerrar
+                ? "bg-emerald-700 hover:bg-emerald-800 text-white shadow-emerald-600/20"
+                : isRechazar
+                  ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground"
 
-  const writableFields = fields.filter((f) => f.writable !== false)
+  const writableFields = fields.filter(
+    (f) => f.writable !== false && f.id.toLowerCase() !== "responsableid",
+  )
 
   function handleFieldChange(fieldId: string, val: string) {
     setFormValues((prev) => ({ ...prev, [fieldId]: val }))
@@ -95,12 +154,32 @@ export function WorkflowActionDialog({
     e.preventDefault()
     if (!solicitud || !action) return
 
-    // Validar campos requeridos
     const errors: Record<string, string> = {}
+
+    // Check required BPMN fields
     for (const field of writableFields) {
       if (field.required && !formValues[field.id]?.trim()) {
         errors[field.id] = `El campo ${field.name} es obligatorio.`
       }
+    }
+
+    // Check observation requirement for OBSERVAR / CORREGIR
+    if (isObservar || isCorregir) {
+      const obsValue =
+        formValues.observacion ||
+        formValues.observacionAprobacion ||
+        formValues.observacionValidacion ||
+        formValues.motivo
+      if (!obsValue?.trim()) {
+        errors.observacion =
+          "Por favor ingrese el motivo u observación para continuar."
+      }
+    }
+
+    // Check responsable requirement if assignment is relevant
+    if (isAssignmentRelevant && (isAprobar || actionName.includes("asign")) && !responsableId) {
+      errors.responsableId =
+        "Debe seleccionar el técnico o responsable asignado."
     }
 
     if (Object.keys(errors).length > 0) {
@@ -113,21 +192,21 @@ export function WorkflowActionDialog({
       ...formValues,
     }
 
+    if (responsableId) {
+      variables.responsableId = responsableId
+    }
+
     try {
       await completeMutation.mutateAsync({
         solicitudId: solicitud.id,
         payload: { variables },
       })
-      setFormValues({})
-      setFormErrors({})
       onOpenChange(false)
       onSuccess?.()
     } catch {
-      // Toast notification is managed by mutation
+      // Handled by toast in mutation
     }
   }
-
-  if (!solicitud || !action) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -136,22 +215,44 @@ export function WorkflowActionDialog({
           <div className="flex items-center gap-2">
             <div
               className={cn(
-                "flex size-7.5 items-center justify-center rounded-lg text-white shadow-xs",
+                "flex size-8 items-center justify-center rounded-xl text-white shadow-xs",
                 isAprobar
                   ? "bg-emerald-600"
                   : isObservar
                     ? "bg-amber-600"
-                    : isRechazar
-                      ? "bg-rose-600"
-                      : "bg-primary",
+                    : isCorregir
+                      ? "bg-orange-600"
+                      : isIniciar
+                        ? "bg-sky-600"
+                        : isRevision
+                          ? "bg-indigo-600"
+                          : isValidar
+                            ? "bg-teal-600"
+                            : isCerrar
+                              ? "bg-emerald-700"
+                              : isRechazar
+                                ? "bg-rose-600"
+                                : "bg-primary",
               )}
             >
               {isAprobar ? (
                 <CheckCircle2 className="size-4" />
               ) : isObservar ? (
                 <AlertCircle className="size-4" />
-              ) : (
+              ) : isCorregir ? (
+                <RotateCcw className="size-4" />
+              ) : isIniciar ? (
+                <Play className="size-4" />
+              ) : isRevision ? (
+                <Send className="size-4" />
+              ) : isValidar ? (
                 <ShieldCheck className="size-4" />
+              ) : isCerrar ? (
+                <CheckCheck className="size-4" />
+              ) : isRechazar ? (
+                <AlertOctagon className="size-4" />
+              ) : (
+                <FileCheck2 className="size-4" />
               )}
             </div>
             <div>
@@ -166,42 +267,122 @@ export function WorkflowActionDialog({
             </div>
           </div>
           <DialogDescription className="text-xs text-muted-foreground">
-            Vas a registrar la decisión <strong className="text-foreground">{action.name}</strong> para el expediente.
+            Vas a registrar la decisión <strong className="text-foreground">{action.name}</strong> en el flujo de trabajo.
           </DialogDescription>
         </DialogHeader>
 
         <form id={formId} onSubmit={handleSubmit} className="space-y-3.5 py-1">
-          {/* Summary card */}
-          <div className="rounded-xl border border-border/80 bg-muted/30 p-3 space-y-1.5 text-xs">
+          {/* Summary Mini Card */}
+          <div className="rounded-xl border border-border/80 bg-muted/20 p-2.5 space-y-1 text-xs">
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono font-bold text-primary text-[11px]">
                 {solicitud.numero}
               </span>
-              <span
-                className={cn(
-                  "px-2 py-0.5 rounded-full font-bold text-[10px] uppercase border",
-                  isAprobar
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
-                    : isObservar
-                      ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
-                      : "bg-primary/10 border-primary/20 text-primary",
-                )}
-              >
+              <span className="px-2 py-0.5 rounded-full font-bold text-[10px] uppercase bg-primary/10 text-primary border border-primary/20">
                 Acción: {action.name}
               </span>
             </div>
-            <p className="font-semibold text-foreground truncate">
+            <p className="font-medium text-foreground truncate">
               {solicitud.titulo}
             </p>
-            {solicitud.activo && (
-              <p className="text-muted-foreground text-[11px] truncate">
-                Activo: <span className="font-medium text-foreground">{solicitud.activo.codigo} - {solicitud.activo.nombre}</span>
-              </p>
-            )}
           </div>
 
-          {/* Dynamic Workflow Fields */}
-          {writableFields.length > 0 ? (
+          {/* Selector de Responsable (if assignment or approval) */}
+          {isAssignmentRelevant && (
+            <div className="space-y-1.5 rounded-xl bg-muted/30 border border-border/70 p-3">
+              <Label
+                htmlFor="modalResponsableSelect"
+                className="text-xs font-semibold text-foreground flex items-center justify-between"
+              >
+                <div className="flex items-center gap-1.5">
+                  <UserCheck className="size-3.5 text-primary" />
+                  <span>Asignar Técnico / Responsable</span>
+                  <span className="text-destructive">*</span>
+                </div>
+              </Label>
+
+              <EmpleadoCombobox
+                id="modalResponsableSelect"
+                value={responsableId}
+                onValueChange={(val) => {
+                  setResponsableId(val)
+                  if (formErrors.responsableId) {
+                    setFormErrors((prev) => {
+                      const next = { ...prev }
+                      delete next.responsableId
+                      return next
+                    })
+                  }
+                }}
+                placeholder="Buscar y seleccionar técnico responsable..."
+                aria-invalid={Boolean(formErrors.responsableId)}
+                className="w-full"
+              />
+
+              {formErrors.responsableId && (
+                <p className="text-[11px] font-medium text-destructive mt-1 flex items-center gap-1">
+                  <AlertCircle className="size-3" />
+                  <span>{formErrors.responsableId}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Observation Field for OBSERVAR / CORREGIR or General Note */}
+          {(isObservar || isCorregir || isAprobar || isCerrar) && (
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="modalObservacion"
+                className="text-xs font-semibold flex items-center justify-between"
+              >
+                <span>
+                  {isObservar
+                    ? "Motivo de la Observación"
+                    : isCorregir
+                      ? "Detalles de Corrección requerida"
+                      : isCerrar
+                        ? "Observaciones de Cierre / Conformidad"
+                        : "Comentario u Observación de Aprobación"}
+                  {(isObservar || isCorregir) && (
+                    <span className="text-destructive ml-1">*</span>
+                  )}
+                </span>
+              </Label>
+              <Textarea
+                id="modalObservacion"
+                placeholder={
+                  isObservar
+                    ? "Explique detalladamente qué debe subsanar el solicitante..."
+                    : isCorregir
+                      ? "Indique qué correcciones técnicas deben efectuarse..."
+                      : "Comentarios u observaciones adicionales (opcional)..."
+                }
+                value={
+                  formValues.observacion ||
+                  formValues.observacionAprobacion ||
+                  formValues.observacionValidacion ||
+                  formValues.observacionCierre ||
+                  ""
+                }
+                onChange={(e) => {
+                  handleFieldChange("observacion", e.target.value)
+                  handleFieldChange("observacionAprobacion", e.target.value)
+                  handleFieldChange("observacionValidacion", e.target.value)
+                  handleFieldChange("observacionCierre", e.target.value)
+                }}
+                className="text-xs min-h-[80px] resize-none"
+              />
+              {formErrors.observacion && (
+                <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
+                  <AlertCircle className="size-3" />
+                  <span>{formErrors.observacion}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Dynamic BPMN Fields */}
+          {writableFields.length > 0 && (
             <div className="space-y-3">
               {writableFields.map((field) => {
                 const isTextarea =
@@ -219,7 +400,7 @@ export function WorkflowActionDialog({
                       <span>
                         {field.name}
                         {field.required && (
-                          <span className="text-rose-500 ml-1">*</span>
+                          <span className="text-destructive ml-1">*</span>
                         )}
                       </span>
                     </Label>
@@ -270,7 +451,7 @@ export function WorkflowActionDialog({
                     )}
 
                     {formErrors[field.id] && (
-                      <p className="text-[11px] font-medium text-rose-500">
+                      <p className="text-[11px] font-medium text-destructive">
                         {formErrors[field.id]}
                       </p>
                     )}
@@ -278,15 +459,20 @@ export function WorkflowActionDialog({
                 )
               })}
             </div>
-          ) : (
-            <div className="rounded-lg bg-muted/40 p-2.5 flex items-start gap-2 text-muted-foreground text-xs">
-              <HelpCircle className="size-4 text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-[11.5px] leading-relaxed">
-                Esta acción actualizará el estado de la solicitud en el flujo de trabajo automáticamente con el valor{" "}
-                <strong className="text-foreground">{action.value}</strong>.
-              </p>
-            </div>
           )}
+
+          {/* Simple Confirmation notice if no inputs needed */}
+          {!isAssignmentRelevant &&
+            !isObservar &&
+            !isCorregir &&
+            writableFields.length === 0 && (
+              <div className="rounded-lg bg-muted/40 p-2.5 flex items-start gap-2 text-muted-foreground text-xs">
+                <HelpCircle className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                <p className="text-[11.5px] leading-relaxed">
+                  Esta acción registrará <strong className="text-foreground">{action.name}</strong> y avanzará la solicitud a la siguiente etapa automáticamente.
+                </p>
+              </div>
+            )}
         </form>
 
         <DialogFooter className="gap-2 pt-2 border-t sm:justify-end">
@@ -316,8 +502,22 @@ export function WorkflowActionDialog({
               <>
                 {isAprobar ? (
                   <CheckCircle2 className="size-3.5" />
-                ) : (
+                ) : isObservar ? (
                   <AlertCircle className="size-3.5" />
+                ) : isCorregir ? (
+                  <RotateCcw className="size-3.5" />
+                ) : isIniciar ? (
+                  <Play className="size-3.5" />
+                ) : isRevision ? (
+                  <Send className="size-3.5" />
+                ) : isValidar ? (
+                  <ShieldCheck className="size-3.5" />
+                ) : isCerrar ? (
+                  <CheckCheck className="size-3.5" />
+                ) : isRechazar ? (
+                  <AlertOctagon className="size-3.5" />
+                ) : (
+                  <CheckCircle2 className="size-3.5" />
                 )}
                 <span>Confirmar {action.name}</span>
               </>

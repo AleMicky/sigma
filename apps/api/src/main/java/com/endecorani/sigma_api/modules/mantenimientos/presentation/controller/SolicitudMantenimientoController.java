@@ -73,13 +73,16 @@ public class SolicitudMantenimientoController {
         );
     }
     @PostMapping("/{id}/workflow/complete")
-    public SolicitudMantenimientoResponse completarWorkflow(
+    @Operation(summary = "Completar tarea de workflow para una solicitud")
+    public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> completarWorkflow(
             @PathVariable UUID id,
             @RequestBody CompleteWorkflowTaskRequest request
     ) {
-        return service.completarWorkflow(
-                id,
-                request
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Tarea de workflow completada correctamente",
+                        service.completarWorkflow(id, request)
+                )
         );
     }
 

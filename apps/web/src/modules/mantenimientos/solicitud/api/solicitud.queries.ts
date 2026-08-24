@@ -41,7 +41,7 @@ export const solicitudQueries = {
       queryKey: solicitudKeys.workflowActions(processInstanceId ?? ""),
       queryFn: () => getWorkflowActions(processInstanceId!),
       enabled: Boolean(processInstanceId),
-      staleTime: 1000 * 30,
+      staleTime: 0,
     }),
 }
 
