@@ -1,4 +1,4 @@
-import { useState, useId, useEffect } from "react"
+import { useState, useId, useEffect, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
@@ -6,8 +6,10 @@ import {
   Calendar,
   CheckCircle2,
   CheckCheck,
+  Clock,
   FileCheck2,
   HelpCircle,
+  ListChecks,
   Loader2,
   Play,
   RotateCcw,
@@ -17,6 +19,7 @@ import {
   Users,
 } from "lucide-react"
 
+import { ordenTrabajoQueries } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.queries"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { empleadoResponsabilidadQueries } from "@/modules/organizacion/empleado-responsabilidad/api/empleado-responsabilidad.queries"
 import { grupoAprobadorDependienteQueries } from "@/modules/organizacion/grupo-aprobador-dependiente/api/grupo-aprobador-dependiente.queries"
@@ -40,6 +43,7 @@ import {
 } from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
+import { formatDate } from "@/shared/utils/date.utils"
 
 import { useCompleteWorkflowTask } from "../api/solicitud.mutations"
 import type {
@@ -99,6 +103,30 @@ export function WorkflowActionDialog({
 
   const supervisores = supervisoresQuery.data ?? []
   const hasSupervisores = supervisores.length > 0
+
+  // Query OT list to find matching OT by solicitudId
+  const otListQuery = useQuery({
+    ...ordenTrabajoQueries.list({ size: 100 }),
+    enabled: open && Boolean(solicitud?.id),
+  })
+
+  const ordenTrabajo = useMemo(() => {
+    const list = otListQuery.data?.content ?? []
+    return (
+      list.find((ot) => ot.solicitudMantenimientoId === solicitud?.id) ?? null
+    )
+  }, [otListQuery.data?.content, solicitud?.id])
+
+  // Query actividades if OT exists
+  const actividadesQuery = useQuery({
+    ...ordenTrabajoQueries.actividadesByOT(ordenTrabajo?.id ?? "", { size: 100 }),
+    enabled: open && Boolean(ordenTrabajo?.id),
+  })
+
+  const actividades = useMemo(
+    () => actividadesQuery.data?.content ?? [],
+    [actividadesQuery.data?.content],
+  )
 
   // Reset form when opened with a new action or solicitud
   useEffect(() => {
@@ -377,6 +405,114 @@ export function WorkflowActionDialog({
               {solicitud.titulo}
             </p>
           </div>
+
+          {/* Listado de Actividades de la OT para Validación del Supervisor */}
+          {(isValidar || isObservar || solicitud.estado === "EN_REVISION") && (
+            <div className="space-y-2.5 rounded-xl bg-muted/30 border border-border/80 p-3 shadow-2xs">
+              <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <ListChecks className="size-4 text-primary shrink-0" />
+                  <span className="text-xs font-bold text-foreground">
+                    Actividades de la Orden de Trabajo
+                  </span>
+                  {ordenTrabajo?.numero && (
+                    <span className="font-mono text-[10.5px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold truncate">
+                      {ordenTrabajo.numero}
+                    </span>
+                  )}
+                </div>
+
+                {actividades.length > 0 && (
+                  <span className="text-[10.5px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full shrink-0">
+                    {actividades.filter((a) => a.realizado).length} de {actividades.length} realizadas
+                  </span>
+                )}
+              </div>
+
+              {otListQuery.isLoading || actividadesQuery.isLoading ? (
+                <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+                  <Loader2 className="size-3.5 animate-spin text-primary" />
+                  <span>Consultando actividades técnicas...</span>
+                </div>
+              ) : !ordenTrabajo ? (
+                <div className="py-2 text-center text-xs text-muted-foreground italic">
+                  No se encontró una orden de trabajo vinculada a esta solicitud.
+                </div>
+              ) : actividades.length === 0 ? (
+                <div className="py-2.5 text-center text-xs text-muted-foreground">
+                  <p className="font-medium text-foreground">Sin actividades registradas</p>
+                  <p className="text-[11px]">La orden de trabajo aún no contiene tareas registradas.</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  {actividades.map((act, index) => (
+                    <div
+                      key={act.id}
+                      className={cn(
+                        "rounded-lg border p-2 text-xs flex items-start gap-2 transition-all",
+                        act.realizado
+                          ? "bg-background border-border/80"
+                          : "bg-muted/40 border-border/50 opacity-80",
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "flex size-5 shrink-0 items-center justify-center rounded text-[10px] font-bold mt-0.5",
+                          act.realizado
+                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                            : "bg-muted text-muted-foreground border border-border/60",
+                        )}
+                      >
+                        {act.realizado ? (
+                          <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <span>{index + 1}</span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="font-semibold text-foreground text-[11.5px] leading-tight">
+                            {act.actividadMantenimiento?.nombre || act.descripcion || `Actividad #${index + 1}`}
+                          </p>
+                          <span
+                            className={cn(
+                              "text-[9.5px] font-bold px-1.5 py-0.2 rounded shrink-0",
+                              act.realizado
+                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                                : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {act.realizado ? "Realizada" : "Pendiente"}
+                          </span>
+                        </div>
+
+                        {act.observacion && (
+                          <p className="text-[11px] text-muted-foreground leading-snug">
+                            {act.observacion}
+                          </p>
+                        )}
+
+                        {act.fechaRealizacion && (
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1 pt-0.5">
+                            <Clock className="size-2.5" />
+                            <span>{formatDate(act.fechaRealizacion)}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {ordenTrabajo?.trabajoRealizado && (
+                <div className="pt-1.5 border-t border-border/50 text-[11.5px]">
+                  <span className="font-bold text-foreground">Detalle del Trabajo: </span>
+                  <span className="text-muted-foreground">{ordenTrabajo.trabajoRealizado}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Selector de Responsable (con soporte para dependientes del aprobador) */}
           {isAssignmentRelevant && (
