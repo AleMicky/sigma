@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResumenResponse;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -101,6 +103,38 @@ public class EmpleadoResponsabilidadController {
                                 responsabilidadId,
                                 pageRequest
                         )
+                )
+        );
+    }
+
+    @GetMapping("/responsabilidades/{codigo}/empleados")
+    @Operation(summary = "Listar empleados que poseen una responsabilidad específica por su código")
+    public ResponseEntity<ApiResponse<List<EmpleadoResumenResponse>>> findEmpleadosByResponsabilidadCodigo(
+            @PathVariable String codigo
+    ) {
+        List<EmpleadoResumenResponse> response =
+                empleadoResponsabilidadService.findEmpleadosByResponsabilidadCodigo(codigo);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Empleados obtenidos correctamente",
+                        response
+                )
+        );
+    }
+
+    @GetMapping("/empleados")
+    @Operation(summary = "Listar empleados filtrados por código de responsabilidad")
+    public ResponseEntity<ApiResponse<List<EmpleadoResumenResponse>>> findEmpleadosByResponsabilidadParam(
+            @RequestParam("codigo") String codigo
+    ) {
+        List<EmpleadoResumenResponse> response =
+                empleadoResponsabilidadService.findEmpleadosByResponsabilidadCodigo(codigo);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Empleados obtenidos correctamente",
+                        response
                 )
         );
     }

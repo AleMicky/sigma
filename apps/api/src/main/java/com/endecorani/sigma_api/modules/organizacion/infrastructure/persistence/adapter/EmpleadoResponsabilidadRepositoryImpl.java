@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,6 +40,15 @@ public class EmpleadoResponsabilidadRepositoryImpl implements EmpleadoResponsabi
         return springRepository
                 .findAll(pageable)
                 .map(mapper::toDomain);
+    }
+
+    @Override
+    public List<EmpleadoResponsabilidad> findByResponsabilidadId(UUID responsabilidadId) {
+        return springRepository
+                .findByResponsabilidadId(responsabilidadId)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 
     @Override

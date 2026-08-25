@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -45,6 +46,13 @@ public class ResponsabilidadRepositoryImpl
     @Override
     protected Responsabilidad toDomain(ResponsabilidadEntity entity) {
         return mapper.toDomain(entity);
+    }
+
+    @Override
+    public Optional<Responsabilidad> findByCodigoIgnoreCase(String codigo) {
+        return springRepository
+                .findByCodigoIgnoreCase(codigo)
+                .map(mapper::toDomain);
     }
 
     @Override

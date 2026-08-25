@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
+import { empleadoResponsabilidadQueries } from "@/modules/organizacion/empleado-responsabilidad/api/empleado-responsabilidad.queries"
 import { grupoAprobadorDependienteQueries } from "@/modules/organizacion/grupo-aprobador-dependiente/api/grupo-aprobador-dependiente.queries"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -76,6 +77,7 @@ export function WorkflowActionDialog({
   const [supervisorId, setSupervisorId] = useState<string>("")
   const [fechaEstimadaOt, setFechaEstimadaOt] = useState<string>("")
   const [useAllEmployeesSearch, setUseAllEmployeesSearch] = useState<boolean>(false)
+  const [useAllEmployeesForSupervisor, setUseAllEmployeesForSupervisor] = useState<boolean>(false)
 
   // Aprobador ID from the request if already approved
   const aprobadorId = solicitud?.aprobadoPor?.id
@@ -88,6 +90,15 @@ export function WorkflowActionDialog({
 
   const dependientes = dependientesQuery.data ?? []
   const hasDependientes = dependientes.length > 0
+
+  // Query supervisores de mantenimiento with responsibility SUP_MANTENIMIENTO
+  const supervisoresQuery = useQuery({
+    ...empleadoResponsabilidadQueries.byResponsabilidadCodigo("SUP_MANTENIMIENTO"),
+    enabled: open,
+  })
+
+  const supervisores = supervisoresQuery.data ?? []
+  const hasSupervisores = supervisores.length > 0
 
   // Reset form when opened with a new action or solicitud
   useEffect(() => {
@@ -104,6 +115,7 @@ export function WorkflowActionDialog({
       setFormValues({})
       setFormErrors({})
       setUseAllEmployeesSearch(false)
+      setUseAllEmployeesForSupervisor(false)
     }
   }, [open, solicitud, action])
 
@@ -476,38 +488,92 @@ export function WorkflowActionDialog({
           {/* Selector de Supervisor para Validación (Requerido al enviar a revisión) */}
           {isSupervisorRelevant && (
             <div className="space-y-2.5 rounded-xl bg-indigo-500/5 border border-indigo-500/30 p-3.5 shadow-2xs">
-              <div className="space-y-0.5">
-                <Label
-                  htmlFor="modalSupervisorSelect"
-                  className="text-xs font-semibold text-foreground flex items-center gap-1.5"
-                >
-                  <ShieldCheck className="size-4 text-indigo-600 dark:text-indigo-400" />
-                  <span>Asignar Supervisor para Validación</span>
-                  <span className="text-destructive font-bold">*</span>
-                </Label>
-                <p className="text-[11px] text-muted-foreground">
-                  Selecciona el supervisor responsable de validar los trabajos realizados y evidencias técnicas.
-                </p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-0.5">
+                  <Label
+                    htmlFor="modalSupervisorSelect"
+                    className="text-xs font-semibold text-foreground flex items-center gap-1.5"
+                  >
+                    <ShieldCheck className="size-4 text-indigo-600 dark:text-indigo-400" />
+                    <span>Asignar Supervisor para Validación</span>
+                    <span className="text-destructive font-bold">*</span>
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Selecciona el supervisor responsable de validar los trabajos realizados y evidencias técnicas.
+                  </p>
+                </div>
+
+                {hasSupervisores && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setUseAllEmployeesForSupervisor((prev) => !prev)}
+                    className="h-6 px-1.5 text-[10.5px] text-muted-foreground hover:text-indigo-600 font-normal shrink-0"
+                  >
+                    {useAllEmployeesForSupervisor ? "Ver supervisores" : "Buscar en todos"}
+                  </Button>
+                )}
               </div>
 
               <div className="pt-0.5">
-                <EmpleadoCombobox
-                  id="modalSupervisorSelect"
-                  value={supervisorId}
-                  onValueChange={(val) => {
-                    setSupervisorId(val)
-                    if (formErrors.supervisorId) {
-                      setFormErrors((prev) => {
-                        const next = { ...prev }
-                        delete next.supervisorId
-                        return next
-                      })
-                    }
-                  }}
-                  placeholder="Buscar y seleccionar supervisor..."
-                  aria-invalid={Boolean(formErrors.supervisorId)}
-                  className="w-full bg-background text-xs"
-                />
+                {hasSupervisores && !useAllEmployeesForSupervisor ? (
+                  <Select
+                    value={supervisorId}
+                    onValueChange={(val) => {
+                      setSupervisorId(val ?? "")
+                      if (formErrors.supervisorId) {
+                        setFormErrors((prev) => {
+                          const next = { ...prev }
+                          delete next.supervisorId
+                          return next
+                        })
+                      }
+                    }}
+                  >
+                    <SelectTrigger
+                      id="modalSupervisorSelect"
+                      className="h-9 w-full text-xs bg-background shadow-2xs"
+                    >
+                      <SelectValue placeholder={supervisoresQuery.isLoading ? "Cargando supervisores..." : "Buscar y seleccionar supervisor..."}>
+                        {supervisores.find((s) => s.id === supervisorId)
+                          ? (() => {
+                              const sup = supervisores.find((s) => s.id === supervisorId)!
+                              return `${sup.nombreCompleto} (${sup.codigo})`
+                            })()
+                          : undefined}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {supervisores.map((sup) => (
+                        <SelectItem key={sup.id} value={sup.id} className="text-xs py-1.5 cursor-pointer">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground">{sup.nombreCompleto}</span>
+                            <span className="text-[11px] font-mono text-muted-foreground">({sup.codigo})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <EmpleadoCombobox
+                    id="modalSupervisorSelect"
+                    value={supervisorId}
+                    onValueChange={(val) => {
+                      setSupervisorId(val)
+                      if (formErrors.supervisorId) {
+                        setFormErrors((prev) => {
+                          const next = { ...prev }
+                          delete next.supervisorId
+                          return next
+                        })
+                      }
+                    }}
+                    placeholder="Buscar y seleccionar supervisor..."
+                    aria-invalid={Boolean(formErrors.supervisorId)}
+                    className="w-full bg-background text-xs"
+                  />
+                )}
               </div>
 
               {formErrors.supervisorId && (

@@ -7,6 +7,7 @@ import {
 import {
   getEmpleadoResponsabilidad,
   listEmpleadoResponsabilidades,
+  listEmpleadosByResponsabilidadCodigo,
 } from "./empleado-responsabilidad.service"
 
 export const empleadoResponsabilidadQueries = {
@@ -20,5 +21,11 @@ export const empleadoResponsabilidadQueries = {
       queryKey: empleadoResponsabilidadKeys.detail(id),
       queryFn: () => getEmpleadoResponsabilidad(id),
       enabled: Boolean(id),
+    }),
+  byResponsabilidadCodigo: (codigo: string) =>
+    queryOptions({
+      queryKey: empleadoResponsabilidadKeys.byResponsabilidadCodigo(codigo),
+      queryFn: () => listEmpleadosByResponsabilidadCodigo(codigo),
+      enabled: Boolean(codigo),
     }),
 }

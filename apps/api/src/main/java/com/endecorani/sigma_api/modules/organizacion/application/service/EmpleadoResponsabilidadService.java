@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -93,8 +94,24 @@ public class EmpleadoResponsabilidadService {
                 : empleadoResponsabilidadRepository.findAll(
                         pageRequest.toPageable(SORT_FIELDS)
                 );
-
         return PageResponse.from(page, this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EmpleadoResumenResponse> findEmpleadosByResponsabilidadCodigo(String codigo) {
+        com.endecorani.sigma_api.modules.organizacion.domain.model.Responsabilidad responsabilidad =
+                responsabilidadRepository.findByCodigoIgnoreCase(codigo)
+                        .orElseThrow(() -> new ResourceNotFoundException("Responsabilidad", codigo));
+
+        LocalDate hoy = LocalDate.now();
+
+        return empleadoResponsabilidadRepository.findByResponsabilidadId(responsabilidad.getId())
+                .stream()
+                .filter(er -> er.getFechaFin() == null || !er.getFechaFin().isBefore(hoy))
+                .map(er -> buildEmpleadoInfo(er.getEmpleadoId()))
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
     }
 
     @Transactional

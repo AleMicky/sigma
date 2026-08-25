@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.modules.organizacion.domain.model.EmpleadoRespon
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,6 +15,8 @@ public interface EmpleadoResponsabilidadRepository {
     Optional<EmpleadoResponsabilidad> findById(UUID id);
 
     Page<EmpleadoResponsabilidad> findAll(Pageable pageable);
+
+    List<EmpleadoResponsabilidad> findByResponsabilidadId(UUID responsabilidadId);
 
     Page<EmpleadoResponsabilidad> findByResponsabilidadId(
             UUID responsabilidadId,

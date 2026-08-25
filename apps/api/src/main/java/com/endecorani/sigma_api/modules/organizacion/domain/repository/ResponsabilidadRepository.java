@@ -5,9 +5,12 @@ import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ResponsabilidadRepository extends CrudRepository<Responsabilidad, UUID> {
+
+    Optional<Responsabilidad> findByCodigoIgnoreCase(String codigo);
 
     boolean existsByCodigoIgnoreCase(String codigo);
 

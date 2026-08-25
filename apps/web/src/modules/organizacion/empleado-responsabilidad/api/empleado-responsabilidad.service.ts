@@ -64,3 +64,11 @@ export async function updateEmpleadoResponsabilidad(
 export async function deleteEmpleadoResponsabilidad(id: string): Promise<void> {
   await http.delete<void>(empleadoResponsabilidadEndpoints.byId(id))
 }
+
+export async function listEmpleadosByResponsabilidadCodigo(
+  codigo: string,
+): Promise<EmpleadoResumen[]> {
+  return http.get<EmpleadoResumen[]>(
+    empleadoResponsabilidadEndpoints.byResponsabilidadCodigo(codigo),
+  )
+}

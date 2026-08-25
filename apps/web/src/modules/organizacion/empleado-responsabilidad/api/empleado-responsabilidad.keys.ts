@@ -12,4 +12,6 @@ export const empleadoResponsabilidadKeys = {
   details: () => [...empleadoResponsabilidadKeys.all, "detail"] as const,
   detail: (id: string) =>
     [...empleadoResponsabilidadKeys.details(), id] as const,
+  byResponsabilidadCodigo: (codigo: string) =>
+    [...empleadoResponsabilidadKeys.all, "responsabilidad", codigo] as const,
 }
