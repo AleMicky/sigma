@@ -123,6 +123,10 @@ export function ControlActivoFormPage({
   const [historialOpen, setHistorialOpen] = useState(false)
 
   const isAsignado = (solicitud?.estado ?? "").toUpperCase() === "ASIGNADO"
+  const targetRoute =
+    tipo === "DEVOLUCION"
+      ? routes.mantenimientos.solicitudes
+      : routes.mantenimientos.encargado
 
   // Auto-cargar datos iniciales de la solicitud y empleados por defecto
   useEffect(() => {
@@ -262,7 +266,7 @@ export function ControlActivoFormPage({
         })),
       })
 
-      navigate({ to: routes.mantenimientos.encargado })
+      navigate({ to: targetRoute })
     } catch {
       // Manejado por mutation
     }
@@ -289,7 +293,7 @@ export function ControlActivoFormPage({
             variant="ghost"
             size="icon"
             className="size-7 shrink-0 rounded-lg hover:bg-muted"
-            onClick={() => navigate({ to: routes.mantenimientos.encargado })}
+            onClick={() => navigate({ to: targetRoute })}
           >
             <ArrowLeft className="size-3.5" />
           </Button>
@@ -738,7 +742,7 @@ export function ControlActivoFormPage({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => navigate({ to: routes.mantenimientos.encargado })}
+              onClick={() => navigate({ to: targetRoute })}
               disabled={createMutation.isPending}
               className="h-8 px-4 text-xs font-semibold"
             >
