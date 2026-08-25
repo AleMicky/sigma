@@ -79,12 +79,16 @@ public class ControlActivoController {
     @GetMapping
     @Operation(summary = "Listar controles de activos de forma paginada")
     public ResponseEntity<ApiResponse<PageResponse<ControlActivoResponse>>> findAll(
+            @RequestParam(required = false) UUID solicitudMantenimientoId,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        PageResponse<ControlActivoResponse> response =
+                solicitudMantenimientoId != null
+                        ? controlActivoService.findAll(solicitudMantenimientoId, pageRequest)
+                        : controlActivoService.findAll(pageRequest);
+
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        controlActivoService.findAll(pageRequest)
-                )
+                ApiResponse.success(response)
         );
     }
 

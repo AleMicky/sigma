@@ -18,6 +18,8 @@ public interface ControlActivoRepository {
 
     Page<ControlActivo> findAll(Pageable pageable);
 
+    Page<ControlActivo> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId, Pageable pageable);
+
     boolean existsById(UUID id);
 
     void deleteById(UUID id);

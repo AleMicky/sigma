@@ -53,6 +53,13 @@ public class ControlActivoRepositoryImpl implements ControlActivoRepository {
     }
 
     @Override
+    public Page<ControlActivo> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId, Pageable pageable) {
+        return springRepository
+                .findBySolicitudMantenimientoId(solicitudMantenimientoId, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public boolean existsById(UUID id) {
         return springRepository.existsById(id);
     }

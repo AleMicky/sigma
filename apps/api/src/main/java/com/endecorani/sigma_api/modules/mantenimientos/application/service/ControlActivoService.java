@@ -72,6 +72,20 @@ public class ControlActivoService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public PageResponse<ControlActivoResponse> findAll(
+            UUID solicitudMantenimientoId,
+            PageRequestDto pageRequest
+    ) {
+        return PageResponse.from(
+                controlActivoRepository.findBySolicitudMantenimientoId(
+                        solicitudMantenimientoId,
+                        pageRequest.toPageable(SORT_FIELDS)
+                ),
+                this::toResponse
+        );
+    }
+
     @Transactional
     public void delete(UUID id) {
         findDomainById(id);
