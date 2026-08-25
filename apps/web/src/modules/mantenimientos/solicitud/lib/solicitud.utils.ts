@@ -162,3 +162,20 @@ export function getTipoMantenimientoBadgeClass(nombre: string, isSelected: boole
     ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/30 scale-[1.02]"
     : "bg-muted/80 text-foreground border-border/80 hover:bg-accent hover:border-primary/40 hover:text-accent-foreground"
 }
+
+export function fixEncoding(str?: string | null): string {
+  if (!str) return ""
+  return str
+    .replace(/Ã¡/g, "á")
+    .replace(/Ã©/g, "é")
+    .replace(/Ã­/g, "í")
+    .replace(/Ã³/g, "ó")
+    .replace(/Ãº/g, "ú")
+    .replace(/Ã±/g, "ñ")
+    .replace(/Ã /g, "Á")
+    .replace(/Ã‰/g, "É")
+    .replace(/Ã /g, "Í")
+    .replace(/Ã“/g, "Ó")
+    .replace(/Ãš/g, "Ú")
+    .replace(/Ã‘/g, "Ñ")
+}

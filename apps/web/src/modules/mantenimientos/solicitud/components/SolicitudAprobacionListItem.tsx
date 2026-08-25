@@ -39,6 +39,7 @@ import {
   getEstadoBadgeStyles,
   getPrioridadBadgeStyles,
   getTipoMantenimientoBadgeClass,
+  fixEncoding,
 } from "../lib/solicitud.utils"
 
 type SolicitudAprobacionListItemProps = {
@@ -64,7 +65,7 @@ function getInitials(name?: string | null): string {
 }
 
 function getActionStyle(action: WorkflowAction) {
-  const name = (action.name ?? "").toLowerCase()
+  const name = fixEncoding(action.name ?? "").toLowerCase()
   const val = (action.value ?? "").toUpperCase()
 
   if (val.includes("APROB") || name.includes("aprobar")) {
@@ -307,7 +308,7 @@ export function SolicitudAprobacionListItem({
           {taskName && (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-muted/80 text-muted-foreground border border-border/70 truncate">
               <span className="size-1.5 rounded-full bg-primary" />
-              <span className="truncate">{taskName}</span>
+              <span className="truncate">{fixEncoding(taskName)}</span>
             </span>
           )}
         </div>
@@ -576,11 +577,11 @@ export function SolicitudAprobacionListItem({
                           : isTrabajoRealizado && !hasDevolucion
                             ? "Bloqueado: Primero registra la Devolución del Activo"
                             : "Bloqueado: Requisitos pendientes"
-                    : `Avanzar workflow: ${act.name}`
+                    : `Avanzar workflow: ${fixEncoding(act.name)}`
                 }
               >
                 <IconComp className="size-3.5 shrink-0" />
-                <span>{act.name}</span>
+                <span>{fixEncoding(act.name)}</span>
               </Button>
             )
           })

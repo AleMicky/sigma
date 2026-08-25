@@ -46,6 +46,7 @@ import type {
   WorkflowAction,
   WorkflowField,
 } from "../api/solicitud.service"
+import { fixEncoding } from "../lib/solicitud.utils"
 
 type WorkflowActionDialogProps = {
   open: boolean
@@ -55,23 +56,6 @@ type WorkflowActionDialogProps = {
   taskName?: string
   fields?: WorkflowField[]
   onSuccess?: () => void
-}
-
-function fixEncoding(str?: string | null): string {
-  if (!str) return ""
-  return str
-    .replace(/Ã¡/g, "á")
-    .replace(/Ã©/g, "é")
-    .replace(/Ã­/g, "í")
-    .replace(/Ã³/g, "ó")
-    .replace(/Ãº/g, "ú")
-    .replace(/Ã±/g, "ñ")
-    .replace(/Ã/g, "Á")
-    .replace(/Ã‰/g, "É")
-    .replace(/Ã/g, "Í")
-    .replace(/Ã“/g, "Ó")
-    .replace(/Ãš/g, "Ú")
-    .replace(/Ã‘/g, "Ñ")
 }
 
 export function WorkflowActionDialog({

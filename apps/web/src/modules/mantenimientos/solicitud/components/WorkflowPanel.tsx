@@ -27,6 +27,7 @@ import type {
   WorkflowAction,
   WorkflowField,
 } from "../api/solicitud.service"
+import { fixEncoding } from "../lib/solicitud.utils"
 
 export type WorkflowPanelProps = {
   solicitud: SolicitudMantenimiento
@@ -40,7 +41,7 @@ export type WorkflowPanelProps = {
 }
 
 function getActionVisuals(action: WorkflowAction) {
-  const name = (action.name ?? "").toLowerCase()
+  const name = fixEncoding(action.name ?? "").toLowerCase()
   const val = (action.value ?? "").toUpperCase()
 
   if (val.includes("APROB") || name.includes("aprobar")) {
@@ -221,7 +222,7 @@ export function WorkflowPanel({
               )}
             </div>
             <h3 className="font-heading text-xs sm:text-sm md:text-base font-bold text-foreground leading-snug">
-              {taskName || "En Proceso de Evaluación"}
+              {taskName ? fixEncoding(taskName) : "En Proceso de Evaluación"}
             </h3>
           </div>
         </div>
@@ -326,11 +327,11 @@ export function WorkflowPanel({
                   title={
                     !canAdvance
                       ? "Bloqueado: Primero registra la Devolución del Activo"
-                      : act.name
+                      : fixEncoding(act.name)
                   }
                 >
                   <IconComponent className="size-3.5 shrink-0" />
-                  <span>{act.name}</span>
+                  <span>{fixEncoding(act.name)}</span>
                 </Button>
               )
             })}
