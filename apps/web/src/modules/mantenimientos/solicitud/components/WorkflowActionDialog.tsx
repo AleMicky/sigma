@@ -161,12 +161,14 @@ export function WorkflowActionDialog({
   )
 
   const isAssignmentRelevant =
-    hasResponsableFieldInBpmn ||
-    actionName.includes("asign") ||
-    actionVal.includes("ASIGN") ||
-    (isAprobar && !solicitud.responsable) ||
-    taskName?.toLowerCase().includes("asign") ||
-    taskName?.toLowerCase().includes("responsable")
+    !isIniciar &&
+    (hasResponsableFieldInBpmn ||
+      (isAprobar && !solicitud.responsable) ||
+      (actionName.includes("asign") && !actionName.includes("iniciar")) ||
+      (actionVal.includes("ASIGN") && !actionVal.includes("INIC")) ||
+      (cleanTaskName?.toLowerCase().includes("asign") &&
+        !cleanTaskName?.toLowerCase().includes("iniciar") &&
+        !cleanTaskName?.toLowerCase().includes("mantenimiento")))
 
   // Check if this action involves assigning a supervisor (sending to review from maintenance)
   const hasSupervisorFieldInBpmn = fields.some(
@@ -176,14 +178,14 @@ export function WorkflowActionDialog({
   )
 
   const isSupervisorRelevant =
-    hasSupervisorFieldInBpmn ||
-    isRevision ||
-    actionVal.includes("REVIS") ||
-    actionName.includes("revis") ||
-    actionName.includes("completar") ||
-    actionName.includes("finalizar") ||
-    taskName?.toLowerCase().includes("mantenimiento") ||
-    taskName?.toLowerCase().includes("enviar")
+    !isIniciar &&
+    !isAprobar &&
+    (hasSupervisorFieldInBpmn ||
+      isRevision ||
+      actionVal.includes("REVIS") ||
+      actionName.includes("revis") ||
+      (cleanTaskName?.toLowerCase().includes("enviar") &&
+        cleanTaskName?.toLowerCase().includes("revis")))
 
   const actionColorClass = isAprobar
     ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
