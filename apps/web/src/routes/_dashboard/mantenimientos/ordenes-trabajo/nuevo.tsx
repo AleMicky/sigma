@@ -6,6 +6,7 @@ import { OrdenTrabajoFormPage } from "@/modules/mantenimientos/orden-trabajo/pag
 const searchSchema = z.object({
   solicitudId: z.string().optional(),
   activoId: z.string().optional(),
+  responsableId: z.string().optional(),
 })
 
 export const Route = createFileRoute(

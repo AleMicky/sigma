@@ -46,19 +46,26 @@ export type ActividadFormItem = {
 type OrdenTrabajoFormPageProps = {
   solicitudId?: string
   activoId?: string
+  responsableId?: string
 }
 
 export function OrdenTrabajoFormPage({
   solicitudId: propSolicitudId,
   activoId: propActivoId,
+  responsableId: propResponsableId,
 }: OrdenTrabajoFormPageProps) {
   const navigate = useNavigate()
 
-  let searchParams: { solicitudId?: string; activoId?: string } = {}
+  let searchParams: {
+    solicitudId?: string
+    activoId?: string
+    responsableId?: string
+  } = {}
   try {
     searchParams = useSearch({ strict: false }) as {
       solicitudId?: string
       activoId?: string
+      responsableId?: string
     }
   } catch {
     // Non-route context fallback
@@ -67,12 +74,16 @@ export function OrdenTrabajoFormPage({
   const initialSolicitudId =
     propSolicitudId || searchParams.solicitudId || ""
   const initialActivoId = propActivoId || searchParams.activoId || ""
+  const initialResponsableId =
+    propResponsableId || searchParams.responsableId || ""
 
   // Form State - Maestro
   const [solicitudMantenimientoId, setSolicitudMantenimientoId] =
     useState<string>(initialSolicitudId)
   const [activoId, setActivoId] = useState<string>(initialActivoId)
-  const [responsableId, setResponsableId] = useState<string>("")
+  const [responsableId, setResponsableId] = useState<string>(
+    initialResponsableId,
+  )
   const [fechaInicio, setFechaInicio] = useState<string>("")
   const [fechaFin, setFechaFin] = useState<string>("")
   const [diagnostico, setDiagnostico] = useState<string>("")
@@ -96,7 +107,17 @@ export function OrdenTrabajoFormPage({
     if (initialActivoId && !activoId) {
       setActivoId(initialActivoId)
     }
-  }, [initialSolicitudId, initialActivoId, solicitudMantenimientoId, activoId])
+    if (initialResponsableId && !responsableId) {
+      setResponsableId(initialResponsableId)
+    }
+  }, [
+    initialSolicitudId,
+    initialActivoId,
+    initialResponsableId,
+    solicitudMantenimientoId,
+    activoId,
+    responsableId,
+  ])
 
   // Queries for contextual data
   const solicitudQuery = useQuery({
@@ -105,15 +126,18 @@ export function OrdenTrabajoFormPage({
   })
   const solicitud = solicitudQuery.data
 
-  // When solicitud loads, auto-populate activoId if not set
+  // When solicitud loads, auto-populate activoId and responsableId if not set
   useEffect(() => {
     if (solicitud?.activo?.id && !activoId) {
       setActivoId(solicitud.activo.id)
     }
+    if (solicitud?.responsable?.id && !responsableId) {
+      setResponsableId(solicitud.responsable.id)
+    }
     if (solicitud?.descripcion && !diagnostico) {
       setDiagnostico(solicitud.descripcion)
     }
-  }, [solicitud, activoId, diagnostico])
+  }, [solicitud, activoId, responsableId, diagnostico])
 
   const activoDetailQuery = useQuery({
     ...activoQueries.detail(activoId || solicitud?.activo?.id || ""),
@@ -186,9 +210,9 @@ export function OrdenTrabajoFormPage({
         actividades: actPayloads,
       })
 
-      // Navigate to list
+      // Navigate to encargado page
       navigate({
-        to: "/mantenimientos/ordenes-trabajo",
+        to: "/mantenimientos/encargado",
       })
     } catch {
       // Error handled by mutation toast
@@ -290,6 +314,9 @@ export function OrdenTrabajoFormPage({
                     setSolicitudMantenimientoId(val)
                     if (sol?.activo?.id) {
                       setActivoId(sol.activo.id)
+                    }
+                    if (sol?.responsable?.id) {
+                      setResponsableId(sol.responsable.id)
                     }
                     if (sol?.descripcion && !diagnostico) {
                       setDiagnostico(sol.descripcion)

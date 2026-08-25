@@ -166,6 +166,7 @@ export function EncargadoMantenimientoPage() {
       search: {
         solicitudId: solicitud.id,
         activoId: solicitud.activo?.id,
+        responsableId: solicitud.responsable?.id,
       },
     })
   }
