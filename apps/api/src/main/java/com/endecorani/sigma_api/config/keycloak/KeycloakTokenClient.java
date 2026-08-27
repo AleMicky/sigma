@@ -50,6 +50,11 @@ public class KeycloakTokenClient {
         return exchange(form);
     }
 
+    public KeycloakTokenResponse clientCredentialsGrant() {
+        MultiValueMap<String, String> form = baseForm("client_credentials");
+        return exchange(form);
+    }
+
     public void logout(String refreshToken) {
         MultiValueMap<String, String> form = baseForm(null);
         form.add(REFRESH_TOKEN, refreshToken);
