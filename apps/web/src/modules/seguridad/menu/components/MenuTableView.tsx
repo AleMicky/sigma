@@ -53,13 +53,11 @@ export function MenuTableView({
                 <tr key={menu.id} className="group hover:bg-accent/40 transition-colors">
                   <td className="px-4 py-3 sm:px-6 font-medium">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex size-7 items-center justify-center rounded-lg bg-muted border border-border/60 text-muted-foreground shrink-0">
-                        {menu.icono ? (
+                      {menu.icono ? (
+                        <div className="flex size-7 items-center justify-center rounded-lg bg-muted border border-border/60 text-muted-foreground shrink-0">
                           <DynamicLucideIcon name={menu.icono} className="size-3.5" />
-                        ) : (
-                          <span className="text-[10px] font-mono opacity-40">—</span>
-                        )}
-                      </div>
+                        </div>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => onQuickView(menu.id)}

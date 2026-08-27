@@ -100,21 +100,19 @@ export function MenuTreeNodeItem({
             </span>
           )}
 
-          {/* Menu Icon Badge */}
-          <div
-            className={cn(
-              "flex size-7 items-center justify-center rounded-lg border shrink-0 transition-colors",
-              level === 0
-                ? "bg-primary/10 border-primary/20 text-primary"
-                : "bg-muted/80 border-border text-muted-foreground",
-            )}
-          >
-            {node.icono ? (
+          {/* Menu Icon Badge (only if icon exists) */}
+          {node.icono ? (
+            <div
+              className={cn(
+                "flex size-7 items-center justify-center rounded-lg border shrink-0 transition-colors",
+                level === 0
+                  ? "bg-primary/10 border-primary/20 text-primary"
+                  : "bg-muted/80 border-border text-muted-foreground",
+              )}
+            >
               <DynamicLucideIcon name={node.icono} className="size-3.5" />
-            ) : (
-              <span className="text-[10px] font-mono opacity-50">•</span>
-            )}
-          </div>
+            </div>
+          ) : null}
 
           {/* Name and Code */}
           <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
