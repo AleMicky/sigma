@@ -38,10 +38,10 @@ function getNextOrder(parentId: string | null | undefined, menus: Menu[]): numbe
     return m.menuPadreId === targetParentId
   })
   if (siblings.length === 0) {
-    return 10
+    return 1
   }
   const maxOrder = Math.max(...siblings.map((s) => (typeof s.orden === "number" ? s.orden : 0)), 0)
-  return maxOrder + 10
+  return maxOrder + 1
 }
 
 type MenuFormSheetProps = {
@@ -85,16 +85,17 @@ export function MenuFormSheet({
       ? {
           codigo: menu.codigo,
           nombre: menu.nombre,
-          icono: menu.icono ?? "folder",
+          icono: menu.icono ?? "",
           ruta: menu.ruta ?? "",
           menuPadreId: initialParentId,
-          orden: menu.orden,
+          orden: String(menu.orden ?? 0),
           activo: menu.activo,
         }
       : {
           ...defaultMenuValues,
+          icono: "",
           menuPadreId: initialParentId,
-          orden: autoOrder,
+          orden: String(autoOrder),
         },
     validators: {
       onSubmit: menuSchema,
@@ -107,18 +108,22 @@ export function MenuFormSheet({
           ? value.menuPadreId
           : null
 
+      const parsedOrder = parseInt(value.orden || "0", 10)
+      const finalOrder = isNaN(parsedOrder) ? 0 : parsedOrder
+
       try {
+        const targetId = menu?.id
         const saved =
-          isEditing && menu
+          isEditing && targetId
             ? await updateMutation.mutateAsync({
-                id: menu.id,
+                id: targetId,
                 payload: {
-                  codigo: value.codigo.trim(),
+                  codigo: (value.codigo || menu.codigo).trim(),
                   nombre: value.nombre.trim(),
                   icono: value.icono?.trim() || null,
                   ruta: value.ruta?.trim() || null,
                   menuPadreId: parentId,
-                  orden: value.orden !== null && value.orden !== undefined ? Number(value.orden) : 0,
+                  orden: finalOrder,
                   activo: value.activo ?? true,
                 },
               })
@@ -128,7 +133,7 @@ export function MenuFormSheet({
                 icono: value.icono?.trim() || null,
                 ruta: value.ruta?.trim() || null,
                 menuPadreId: parentId,
-                orden: value.orden !== null && value.orden !== undefined ? Number(value.orden) : 0,
+                orden: finalOrder,
                 activo: value.activo ?? true,
               })
 
@@ -146,12 +151,27 @@ export function MenuFormSheet({
   })
 
   useEffect(() => {
-    if (open && !isEditing) {
-      const calculated = getNextOrder(initialParentId, availableMenus)
-      form.setFieldValue("menuPadreId", initialParentId)
-      form.setFieldValue("orden", calculated)
+    if (open) {
+      if (menu) {
+        form.setFieldValue("codigo", menu.codigo)
+        form.setFieldValue("nombre", menu.nombre)
+        form.setFieldValue("icono", menu.icono ?? "")
+        form.setFieldValue("ruta", menu.ruta ?? "")
+        form.setFieldValue("menuPadreId", menu.menuPadreId ?? NONE_PARENT)
+        form.setFieldValue("orden", String(menu.orden ?? 0))
+        form.setFieldValue("activo", menu.activo)
+      } else {
+        const calculated = getNextOrder(initialParentId, availableMenus)
+        form.setFieldValue("codigo", "")
+        form.setFieldValue("nombre", "")
+        form.setFieldValue("icono", "")
+        form.setFieldValue("ruta", "")
+        form.setFieldValue("menuPadreId", initialParentId)
+        form.setFieldValue("orden", String(calculated))
+        form.setFieldValue("activo", true)
+      }
     }
-  }, [open, isEditing, initialParentId, availableMenus])
+  }, [open, menu, initialParentId, availableMenus])
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending
 
@@ -276,7 +296,7 @@ export function MenuFormSheet({
                       // Auto calculate next order for this parent level if creating
                       if (!isEditing) {
                         const calculatedOrder = getNextOrder(newParent, availableMenus)
-                        form.setFieldValue("orden", calculatedOrder)
+                        form.setFieldValue("orden", String(calculatedOrder))
                       }
                     }}
                   >
@@ -357,98 +377,159 @@ export function MenuFormSheet({
 
           {/* Icon Picker with live preview */}
           <form.Field name="icono">
-            {(field) => (
-              <Field className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <FieldLabel htmlFor={field.name}>Icono del Menú</FieldLabel>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>Vista previa:</span>
-                    <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                      <DynamicLucideIcon name={field.state.value ?? undefined} className="size-4" />
+            {(field) => {
+              const hasIcon = Boolean(field.state.value && field.state.value.trim())
+
+              return (
+                <Field className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <FieldLabel htmlFor={field.name}>
+                      Icono del Menú <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
+                    </FieldLabel>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Vista previa:</span>
+                      <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+                        {hasIcon ? (
+                          <DynamicLucideIcon name={field.state.value} className="size-4" />
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground font-mono font-medium">Ø</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value ?? ""}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value.toLowerCase().trim())}
-                  placeholder="Ej: shield, users, folder-tree, settings-2..."
-                  className="font-mono text-xs"
-                />
-
-                {/* Popular icon buttons */}
-                <div className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-2">
-                  <p className="text-[11px] font-medium text-muted-foreground">
-                    Sugerencias de iconos populares:
-                  </p>
-                  <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-32 overflow-y-auto pr-1">
-                    {AVAILABLE_MENU_ICONS.map((item) => {
-                      const Icon = item.icon
-                      const isSelected = field.state.value === item.name
-                      return (
-                        <button
-                          key={item.name}
-                          type="button"
-                          onClick={() => field.handleChange(item.name)}
-                          title={`${item.label} (${item.name})`}
-                          className={`flex size-8 items-center justify-center rounded-lg border transition-all ${
-                            isSelected
-                              ? "bg-primary text-primary-foreground border-primary shadow-xs scale-105"
-                              : "bg-card border-border hover:bg-accent text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Icon className="size-4" />
-                        </button>
-                      )
-                    })}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value ?? ""}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value.toLowerCase().trim())}
+                      placeholder="Ej: shield, users, folder-tree... (dejar vacío si no lleva icono)"
+                      className="font-mono text-xs flex-1"
+                    />
+                    {hasIcon && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => field.handleChange("")}
+                        className="text-xs text-muted-foreground hover:text-destructive h-9 px-2.5"
+                        title="Quitar icono"
+                      >
+                        Quitar
+                      </Button>
+                    )}
                   </div>
-                </div>
-              </Field>
-            )}
+
+                  {/* Popular icon buttons */}
+                  <div className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        Sugerencias de iconos:
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => field.handleChange("")}
+                        className={`text-[11px] font-medium transition-colors cursor-pointer ${
+                          !hasIcon ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Sin icono (Agrupador / Título)
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-32 overflow-y-auto pr-1">
+                      <button
+                        type="button"
+                        onClick={() => field.handleChange("")}
+                        title="Sin icono (Agrupador o título)"
+                        className={`flex size-8 items-center justify-center rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                          !hasIcon
+                            ? "bg-primary text-primary-foreground border-primary shadow-xs scale-105"
+                            : "bg-card border-border hover:bg-accent text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Ø
+                      </button>
+                      {AVAILABLE_MENU_ICONS.map((item) => {
+                        const Icon = item.icon
+                        const isSelected = field.state.value === item.name
+                        return (
+                          <button
+                            key={item.name}
+                            type="button"
+                            onClick={() => field.handleChange(item.name)}
+                            title={`${item.label} (${item.name})`}
+                            className={`flex size-8 items-center justify-center rounded-lg border transition-all cursor-pointer ${
+                              isSelected
+                                ? "bg-primary text-primary-foreground border-primary shadow-xs scale-105"
+                                : "bg-card border-border hover:bg-accent text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <Icon className="size-4" />
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Puedes dejar el icono vacío para títulos o agrupadores de sección en la navegación.
+                    </p>
+                  </div>
+                </Field>
+              )
+            }}
           </form.Field>
 
           {/* Orden & Estado Activo */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-1">
             <form.Field name="orden">
-              {(field) => (
-                <Field>
-                  <div className="flex items-center justify-between">
-                    <FieldLabel htmlFor={field.name}>Orden de Presentación</FieldLabel>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const currentParent = form.getFieldValue("menuPadreId")
-                        form.setFieldValue("orden", getNextOrder(currentParent, availableMenus))
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <div className="flex items-center justify-between">
+                      <FieldLabel htmlFor={field.name}>Orden de Presentación</FieldLabel>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentParent = form.getFieldValue("menuPadreId")
+                          form.setFieldValue(
+                            "orden",
+                            String(getNextOrder(currentParent, availableMenus)),
+                          )
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline cursor-pointer"
+                        title="Calcular el siguiente orden automáticamente"
+                      >
+                        <Sparkles className="size-3" />
+                        <span>Auto</span>
+                      </button>
+                    </div>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="text"
+                      inputMode="numeric"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, "")
+                        field.handleChange(digitsOnly)
                       }}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-                      title="Calcular el siguiente orden automáticamente"
-                    >
-                      <Sparkles className="size-3" />
-                      <span>Auto</span>
-                    </button>
-                  </div>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type="number"
-                    min="0"
-                    value={field.state.value ?? 0}
-                    onBlur={field.handleBlur}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value === "" ? 0 : Number(e.target.value),
-                      )
-                    }
-                    className="font-mono text-xs"
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Calculado automáticamente en múltiplos de 10 para este nivel.
-                  </p>
-                </Field>
-              )}
+                      placeholder="1"
+                      className="font-mono text-xs"
+                      aria-invalid={isInvalid}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Calculado automáticamente en orden correlativo (1, 2, 3...) para este nivel.
+                    </p>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                )
+              }}
             </form.Field>
 
             <form.Field name="activo">

@@ -25,6 +25,8 @@ public class MenuPersistenceMapper {
             MenuEntity menuPadre = new MenuEntity();
             menuPadre.setId(menu.getMenuPadreId());
             entity.setMenuPadre(menuPadre);
+        } else {
+            entity.setMenuPadre(null);
         }
         return entity;
     }

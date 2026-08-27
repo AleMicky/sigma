@@ -109,7 +109,11 @@ export function MenuTreeNodeItem({
                 : "bg-muted/80 border-border text-muted-foreground",
             )}
           >
-            <DynamicLucideIcon name={node.icono ?? undefined} className="size-3.5" />
+            {node.icono ? (
+              <DynamicLucideIcon name={node.icono} className="size-3.5" />
+            ) : (
+              <span className="text-[10px] font-mono opacity-50">•</span>
+            )}
           </div>
 
           {/* Name and Code */}

@@ -221,9 +221,12 @@ public class MenuService {
     }
 
     private void rejectCodigoChange(String currentCodigo, String requestedCodigo) {
+        if (requestedCodigo == null || requestedCodigo.isBlank()) {
+            return;
+        }
         String normalized = StringUtils.normalize(requestedCodigo);
 
-        if (normalized == null || !normalized.equalsIgnoreCase(currentCodigo)) {
+        if (normalized != null && !normalized.equalsIgnoreCase(currentCodigo)) {
             throw new BusinessException(
                     "MENU_CODIGO_IMMUTABLE",
                     "El código del menú no se puede modificar"

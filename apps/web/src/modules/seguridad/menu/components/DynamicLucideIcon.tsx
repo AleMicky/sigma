@@ -184,15 +184,16 @@ const ICONS_MAP: Record<string, React.ComponentType<LucideProps>> = {
 
 type DynamicLucideIconProps = LucideProps & {
   name?: string | null
-  fallback?: React.ComponentType<LucideProps>
+  fallback?: React.ComponentType<LucideProps> | null
 }
 
 export function DynamicLucideIcon({
   name,
-  fallback = Folder,
+  fallback = null,
   ...props
 }: DynamicLucideIconProps) {
-  if (!name) {
+  if (!name || !name.trim()) {
+    if (!fallback) return null
     const FallbackIcon = fallback
     return <FallbackIcon {...props} />
   }
@@ -201,6 +202,7 @@ export function DynamicLucideIcon({
   const IconComponent = ICONS_MAP[normalized]
 
   if (!IconComponent) {
+    if (!fallback) return null
     const FallbackIcon = fallback
     return <FallbackIcon {...props} />
   }

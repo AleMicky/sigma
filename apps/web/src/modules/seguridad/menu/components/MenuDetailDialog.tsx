@@ -61,8 +61,12 @@ export function MenuDetailDialog({
         <DialogHeader className="p-6 border-b bg-muted/20 pb-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs">
-                <DynamicLucideIcon name={menu.icono ?? undefined} className="size-6" />
+              <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs font-mono font-bold">
+                {menu.icono ? (
+                  <DynamicLucideIcon name={menu.icono} className="size-6" />
+                ) : (
+                  <span className="text-base text-muted-foreground">Ø</span>
+                )}
               </div>
               <div>
                 <DialogTitle className="text-lg font-bold">
