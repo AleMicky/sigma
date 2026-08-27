@@ -260,6 +260,11 @@ export const navItems: NavItem[] = [
         to: routes.seguridad.usuarios,
         icon: Users,
       },
+      {
+        title: "Roles",
+        to: routes.seguridad.roles,
+        icon: ShieldCheck,
+      },
     ],
   },
 ]
