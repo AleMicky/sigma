@@ -21,4 +21,17 @@ public class Rol extends AuditableModel {
     private String nombre;
     private String descripcion;
     private boolean activo;
+
+    public void actualizarDesdeKeycloak(
+            String codigo,
+            String nombre,
+            String descripcion,
+            boolean activo
+    ) {
+
+        this.codigo = codigo;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.activo = activo;
+    }
 }

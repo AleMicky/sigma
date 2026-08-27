@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.seguridad.application.dto.response;
+package com.endecorani.sigma_api.modules.seguridad.infrastructure.keycloak.dto;
 
 public record KeycloakRolResponse(
         String id,

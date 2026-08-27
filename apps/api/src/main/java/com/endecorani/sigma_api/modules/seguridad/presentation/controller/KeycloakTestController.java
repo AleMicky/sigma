@@ -13,10 +13,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class KeycloakTestController {
     private final KeycloakUsuarioClient keycloakUsuarioClient;
+    private final com.endecorani.sigma_api.modules.seguridad.infrastructure.keycloak.client.KeycloakRolClient keycloakRolClient;
 
     @GetMapping("/test-usuarios")
     public ResponseEntity<?> testUsuarios() {
         var usuarios = keycloakUsuarioClient.obtenerTodos();
         return ResponseEntity.ok(usuarios);
+    }
+
+    @GetMapping("/test-roles")
+    public ResponseEntity<?> testRoles() {
+        var roles = keycloakRolClient.obtenerTodos();
+        return ResponseEntity.ok(roles);
     }
 }

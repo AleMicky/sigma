@@ -39,6 +39,10 @@ public record KeycloakProperties(
         return "%s/admin/realms/%s/users".formatted(resolvedBaseUrl(), resolvedRealm());
     }
 
+    public String adminRolesUrl() {
+        return "%s/admin/realms/%s/roles".formatted(resolvedBaseUrl(), resolvedRealm());
+    }
+
     public String resolvedLogoutUrl() {
         if (logoutUrl != null && !logoutUrl.isBlank()) {
             return logoutUrl;
