@@ -20,7 +20,7 @@ public record KeycloakProperties(
         if (tokenUrl != null && tokenUrl.contains("/realms/")) {
             return tokenUrl.substring(0, tokenUrl.indexOf("/realms/"));
         }
-        return "http://localhost:8081";
+        return "http://157.173.99.216:8081";
     }
 
     public String resolvedRealm() {
