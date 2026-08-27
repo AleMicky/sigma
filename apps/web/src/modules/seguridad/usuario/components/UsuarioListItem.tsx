@@ -1,4 +1,4 @@
-import { Eye, KeyRound, Mail, UserCheck, UserX } from "lucide-react"
+import { Eye, KeyRound, Mail, Shield, UserCheck, UserX } from "lucide-react"
 
 import { AuditInfo } from "@/shared/components/audit-info"
 import { Badge } from "@/shared/components/ui/badge"
@@ -64,23 +64,31 @@ export function UsuarioListItem({ usuario, onSelect }: UsuarioListItemProps) {
           </div>
 
           {/* Roles Badges */}
-          {usuario.roles && usuario.roles.length > 0 && (
-            <div className="hidden lg:flex items-center gap-1 flex-wrap">
+          {usuario.roles && usuario.roles.length > 0 ? (
+            <div className="hidden md:flex items-center gap-1.5 flex-wrap">
               {usuario.roles.slice(0, 2).map((rol) => (
                 <Badge
                   key={rol}
-                  variant="outline"
-                  className="font-mono text-[10px] px-1.5 py-0 text-muted-foreground bg-muted/40 border-border/50"
+                  variant="secondary"
+                  className="gap-1 font-mono text-[10px] px-2 py-0.5 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15"
                 >
-                  {rol}
+                  <Shield className="size-2.5 shrink-0" />
+                  <span>{rol}</span>
                 </Badge>
               ))}
               {usuario.roles.length > 2 && (
-                <span className="text-[10px] text-muted-foreground font-mono">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] text-muted-foreground font-mono px-1.5 py-0"
+                >
                   +{usuario.roles.length - 2}
-                </span>
+                </Badge>
               )}
             </div>
+          ) : (
+            <span className="hidden lg:inline text-[11px] text-muted-foreground/40 italic">
+              Sin roles
+            </span>
           )}
 
           {/* Keycloak User ID Badge */}

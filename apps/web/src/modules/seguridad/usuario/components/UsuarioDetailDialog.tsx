@@ -4,6 +4,7 @@ import {
   Copy,
   KeyRound,
   Mail,
+  Shield,
   ShieldCheck,
   User,
   UserCheck,
@@ -174,25 +175,36 @@ export function UsuarioDetailDialog({
           </div>
 
           {/* Sección de Roles Asignados */}
-          {usuario.roles && usuario.roles.length > 0 && (
-            <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                <ShieldCheck className="size-3.5 text-primary" />
-                <span>Roles Asignados ({usuario.roles.length})</span>
+          <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <ShieldCheck className="size-4 text-primary" />
+                <span>Roles Asignados</span>
               </div>
-              <div className="flex flex-wrap gap-1.5 pt-1">
+              <Badge variant="outline" className="font-mono text-[10px]">
+                {usuario.roles?.length ?? 0} {usuario.roles?.length === 1 ? "rol" : "roles"}
+              </Badge>
+            </div>
+
+            {usuario.roles && usuario.roles.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
                 {usuario.roles.map((rol) => (
                   <Badge
                     key={rol}
                     variant="secondary"
-                    className="font-mono text-xs px-2 py-0.5"
+                    className="gap-1.5 font-mono text-xs px-2.5 py-1 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15"
                   >
-                    {rol}
+                    <Shield className="size-3" />
+                    <span>{rol}</span>
                   </Badge>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-muted-foreground italic py-1">
+                Este usuario no tiene roles asignados en Keycloak.
+              </p>
+            )}
+          </div>
 
           {/* Sección de Auditoría */}
           <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2">
