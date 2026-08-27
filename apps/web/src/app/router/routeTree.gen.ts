@@ -77,6 +77,7 @@ import { Route as DashboardOrganizacionGruposAprobadoresIndexRouteImport } from 
 import { Route as DashboardOrganizacionMigracionesIndexRouteImport } from './../../routes/_dashboard/organizacion/migraciones/index'
 import { Route as DashboardOrganizacionPersonasIndexRouteImport } from './../../routes/_dashboard/organizacion/personas/index'
 import { Route as DashboardOrganizacionResponsabilidadesIndexRouteImport } from './../../routes/_dashboard/organizacion/responsabilidades/index'
+import { Route as DashboardSeguridadMenusIndexRouteImport } from './../../routes/_dashboard/seguridad/menus/index'
 import { Route as DashboardSeguridadRolesIndexRouteImport } from './../../routes/_dashboard/seguridad/roles/index'
 import { Route as DashboardSeguridadUsuariosIndexRouteImport } from './../../routes/_dashboard/seguridad/usuarios/index'
 import { Route as DashboardTiposActivoTipoActivoIdIndexRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/index'
@@ -484,6 +485,12 @@ const DashboardOrganizacionResponsabilidadesIndexRoute =
     path: '/responsabilidades/',
     getParentRoute: () => DashboardOrganizacionRouteRoute,
   } as any)
+const DashboardSeguridadMenusIndexRoute =
+  DashboardSeguridadMenusIndexRouteImport.update({
+    id: '/menus/',
+    path: '/menus/',
+    getParentRoute: () => DashboardSeguridadRouteRoute,
+  } as any)
 const DashboardSeguridadRolesIndexRoute =
   DashboardSeguridadRolesIndexRouteImport.update({
     id: '/roles/',
@@ -603,6 +610,7 @@ export interface FileRoutesByFullPath {
   '/organizacion/migraciones/': typeof DashboardOrganizacionMigracionesIndexRoute
   '/organizacion/personas/': typeof DashboardOrganizacionPersonasIndexRoute
   '/organizacion/responsabilidades/': typeof DashboardOrganizacionResponsabilidadesIndexRoute
+  '/seguridad/menus/': typeof DashboardSeguridadMenusIndexRoute
   '/seguridad/roles/': typeof DashboardSeguridadRolesIndexRoute
   '/seguridad/usuarios/': typeof DashboardSeguridadUsuariosIndexRoute
   '/tipos-activo/$tipoActivoId/': typeof DashboardTiposActivoTipoActivoIdIndexRoute
@@ -662,6 +670,7 @@ export interface FileRoutesByTo {
   '/organizacion/migraciones': typeof DashboardOrganizacionMigracionesIndexRoute
   '/organizacion/personas': typeof DashboardOrganizacionPersonasIndexRoute
   '/organizacion/responsabilidades': typeof DashboardOrganizacionResponsabilidadesIndexRoute
+  '/seguridad/menus': typeof DashboardSeguridadMenusIndexRoute
   '/seguridad/roles': typeof DashboardSeguridadRolesIndexRoute
   '/seguridad/usuarios': typeof DashboardSeguridadUsuariosIndexRoute
   '/tipos-activo/$tipoActivoId': typeof DashboardTiposActivoTipoActivoIdIndexRoute
@@ -741,6 +750,7 @@ export interface FileRoutesById {
   '/_dashboard/organizacion/migraciones/': typeof DashboardOrganizacionMigracionesIndexRoute
   '/_dashboard/organizacion/personas/': typeof DashboardOrganizacionPersonasIndexRoute
   '/_dashboard/organizacion/responsabilidades/': typeof DashboardOrganizacionResponsabilidadesIndexRoute
+  '/_dashboard/seguridad/menus/': typeof DashboardSeguridadMenusIndexRoute
   '/_dashboard/seguridad/roles/': typeof DashboardSeguridadRolesIndexRoute
   '/_dashboard/seguridad/usuarios/': typeof DashboardSeguridadUsuariosIndexRoute
   '/_dashboard/tipos-activo/$tipoActivoId/': typeof DashboardTiposActivoTipoActivoIdIndexRoute
@@ -820,6 +830,7 @@ export interface FileRouteTypes {
     | '/organizacion/migraciones/'
     | '/organizacion/personas/'
     | '/organizacion/responsabilidades/'
+    | '/seguridad/menus/'
     | '/seguridad/roles/'
     | '/seguridad/usuarios/'
     | '/tipos-activo/$tipoActivoId/'
@@ -879,6 +890,7 @@ export interface FileRouteTypes {
     | '/organizacion/migraciones'
     | '/organizacion/personas'
     | '/organizacion/responsabilidades'
+    | '/seguridad/menus'
     | '/seguridad/roles'
     | '/seguridad/usuarios'
     | '/tipos-activo/$tipoActivoId'
@@ -957,6 +969,7 @@ export interface FileRouteTypes {
     | '/_dashboard/organizacion/migraciones/'
     | '/_dashboard/organizacion/personas/'
     | '/_dashboard/organizacion/responsabilidades/'
+    | '/_dashboard/seguridad/menus/'
     | '/_dashboard/seguridad/roles/'
     | '/_dashboard/seguridad/usuarios/'
     | '/_dashboard/tipos-activo/$tipoActivoId/'
@@ -1448,6 +1461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardOrganizacionResponsabilidadesIndexRouteImport
       parentRoute: typeof DashboardOrganizacionRouteRoute
     }
+    '/_dashboard/seguridad/menus/': {
+      id: '/_dashboard/seguridad/menus/'
+      path: '/menus'
+      fullPath: '/seguridad/menus/'
+      preLoaderRoute: typeof DashboardSeguridadMenusIndexRouteImport
+      parentRoute: typeof DashboardSeguridadRouteRoute
+    }
     '/_dashboard/seguridad/roles/': {
       id: '/_dashboard/seguridad/roles/'
       path: '/roles'
@@ -1827,6 +1847,7 @@ const DashboardParametrosRouteRouteWithChildren =
 
 interface DashboardSeguridadRouteRouteChildren {
   DashboardSeguridadIndexRoute: typeof DashboardSeguridadIndexRoute
+  DashboardSeguridadMenusIndexRoute: typeof DashboardSeguridadMenusIndexRoute
   DashboardSeguridadRolesIndexRoute: typeof DashboardSeguridadRolesIndexRoute
   DashboardSeguridadUsuariosIndexRoute: typeof DashboardSeguridadUsuariosIndexRoute
 }
@@ -1834,6 +1855,7 @@ interface DashboardSeguridadRouteRouteChildren {
 const DashboardSeguridadRouteRouteChildren: DashboardSeguridadRouteRouteChildren =
   {
     DashboardSeguridadIndexRoute: DashboardSeguridadIndexRoute,
+    DashboardSeguridadMenusIndexRoute: DashboardSeguridadMenusIndexRoute,
     DashboardSeguridadRolesIndexRoute: DashboardSeguridadRolesIndexRoute,
     DashboardSeguridadUsuariosIndexRoute: DashboardSeguridadUsuariosIndexRoute,
   }

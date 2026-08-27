@@ -265,6 +265,11 @@ export const navItems: NavItem[] = [
         to: routes.seguridad.roles,
         icon: ShieldCheck,
       },
+      {
+        title: "Menús",
+        to: routes.seguridad.menus,
+        icon: FolderTree,
+      },
     ],
   },
 ]

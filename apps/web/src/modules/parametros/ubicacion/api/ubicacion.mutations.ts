@@ -21,6 +21,11 @@ const ubicacionMutations = createCrudMutations<Ubicacion, UbicacionPayload>({
     updated: "Ubicación actualizada correctamente",
     deleted: "Ubicación eliminada correctamente",
   },
+  invalidateKeys: [
+    ubicacionKeys.all,
+    ubicacionKeys.arbol(),
+    ubicacionKeys.raices(),
+  ],
 })
 
 export const useCreateUbicacion = ubicacionMutations.useCreate

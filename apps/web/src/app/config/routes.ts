@@ -96,6 +96,7 @@ export const routes = {
     root: "/seguridad",
     usuarios: "/seguridad/usuarios",
     roles: "/seguridad/roles",
+    menus: "/seguridad/menus",
   },
 } as const
 
