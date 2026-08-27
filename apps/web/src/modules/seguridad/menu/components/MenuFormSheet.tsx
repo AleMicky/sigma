@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { FolderTree, Loader2, Save, Sparkles } from "lucide-react"
 
@@ -31,11 +31,16 @@ const NONE_PARENT = "__none__"
 
 function getNextOrder(parentId: string | null | undefined, menus: Menu[]): number {
   const targetParentId = !parentId || parentId === NONE_PARENT ? null : parentId
-  const siblings = menus.filter((m) => m.menuPadreId === targetParentId)
+  const siblings = menus.filter((m) => {
+    if (targetParentId === null) {
+      return !m.menuPadreId
+    }
+    return m.menuPadreId === targetParentId
+  })
   if (siblings.length === 0) {
     return 10
   }
-  const maxOrder = Math.max(...siblings.map((s) => s.orden ?? 0), 0)
+  const maxOrder = Math.max(...siblings.map((s) => (typeof s.orden === "number" ? s.orden : 0)), 0)
   return maxOrder + 10
 }
 
@@ -139,6 +144,14 @@ export function MenuFormSheet({
       }
     },
   })
+
+  useEffect(() => {
+    if (open && !isEditing) {
+      const calculated = getNextOrder(initialParentId, availableMenus)
+      form.setFieldValue("menuPadreId", initialParentId)
+      form.setFieldValue("orden", calculated)
+    }
+  }, [open, isEditing, initialParentId, availableMenus])
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending
 

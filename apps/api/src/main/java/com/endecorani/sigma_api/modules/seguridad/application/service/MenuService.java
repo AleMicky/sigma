@@ -137,15 +137,36 @@ public class MenuService {
             validatePadreExists(request.menuPadreId());
         }
 
+        int orden = request.orden() == null || request.orden() <= 0
+                ? calculateNextOrden(request.menuPadreId())
+                : request.orden();
+
         return Menu.builder()
                 .codigo(codigo)
                 .nombre(requireNormalizedNombre(request.nombre()))
                 .icono(normalizeIcono(request.icono()))
                 .ruta(normalizeRuta(request.ruta()))
                 .menuPadreId(request.menuPadreId())
-                .orden(normalizeOrden(request.orden()))
+                .orden(orden)
                 .activo(request.activo() == null || request.activo())
                 .build();
+    }
+
+    private int calculateNextOrden(UUID menuPadreId) {
+        List<Menu> siblings = menuPadreId == null
+                ? menuRepository.findByMenuPadreIdIsNull()
+                : menuRepository.findByMenuPadreId(menuPadreId);
+
+        if (siblings == null || siblings.isEmpty()) {
+            return 10;
+        }
+
+        int maxOrden = siblings.stream()
+                .mapToInt(Menu::getOrden)
+                .max()
+                .orElse(0);
+
+        return maxOrden + 10;
     }
 
     private void updateDomain(Menu domain, MenuRequest request) {

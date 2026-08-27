@@ -292,7 +292,7 @@ export function MenusPage() {
 
       {/* Form Drawer Sheet */}
       <MenuFormSheet
-        key={editing?.id ?? presetParentId ?? "new-menu"}
+        key={`${editing?.id ?? "new"}-${presetParentId ?? "root"}-${dialogOpen ? "open" : "closed"}-${allMenus.length}`}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         menu={editing}
