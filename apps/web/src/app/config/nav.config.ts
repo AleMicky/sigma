@@ -19,6 +19,7 @@ import {
   Ruler,
   ScrollText,
   Settings2,
+  Shield,
   ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
@@ -246,6 +247,18 @@ export const navItems: NavItem[] = [
             icon: AlertCircle,
           },
         ],
+      },
+    ],
+  },
+  {
+    title: "Seguridad",
+    to: routes.seguridad.root,
+    icon: Shield,
+    children: [
+      {
+        title: "Usuarios",
+        to: routes.seguridad.usuarios,
+        icon: Users,
       },
     ],
   },

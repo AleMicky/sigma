@@ -3,6 +3,7 @@ package com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.en
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
 
@@ -25,7 +26,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class UsuarioEntity extends BaseEntity {
 
     @Column(

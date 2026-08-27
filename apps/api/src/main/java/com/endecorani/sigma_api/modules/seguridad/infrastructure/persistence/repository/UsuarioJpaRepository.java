@@ -9,6 +9,4 @@ import java.util.UUID;
 public interface UsuarioJpaRepository extends JpaRepository<UsuarioEntity, UUID> {
 
     Optional<UsuarioEntity> findByKeycloakUserId(String keycloakUserId);
-
-    Optional<UsuarioEntity> findByUsername(String username);
 }

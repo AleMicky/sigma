@@ -91,5 +91,10 @@ export const routes = {
       nuevo: "/mantenimientos/ordenes-trabajo/nuevo",
     },
   },
+
+  seguridad: {
+    root: "/seguridad",
+    usuarios: "/seguridad/usuarios",
+  },
 } as const
 

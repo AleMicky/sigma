@@ -104,6 +104,14 @@ const MODULE_THEMES: Record<
     activePill: "bg-orange-500/10 text-orange-700 dark:text-orange-300 hover:bg-orange-500/15",
     indicatorColor: "bg-orange-500",
   },
+  Seguridad: {
+    iconColor: "text-indigo-500 dark:text-indigo-400",
+    activeIconColor: "text-indigo-600 dark:text-indigo-300",
+    iconBg: "bg-indigo-500/10 group-hover:bg-indigo-500/20",
+    activeIconBg: "bg-indigo-500/20 shadow-xs",
+    activePill: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/15",
+    indicatorColor: "bg-indigo-500",
+  },
 }
 
 const DEFAULT_THEME = {

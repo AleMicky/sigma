@@ -21,4 +21,16 @@ public class Usuario extends AuditableModel {
     private String nombre;
     private String email;
     private boolean activo;
+
+    public void actualizarDesdeKeycloak(
+            String username,
+            String nombre,
+            String email,
+            boolean activo
+    ) {
+        this.username = username;
+        this.nombre = nombre;
+        this.email = email;
+        this.activo = activo;
+    }
 }
