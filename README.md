@@ -11,20 +11,28 @@ Sistema de gestión de activos para ENDE Corani. Monorepo con API Spring Boot (J
   - **PostgreSQL 16**
   - **Keycloak** (realm `sigma`)
 
-## Inicio rápido (Docker)
+## Comandos Rápidos (Makefile)
+
+El proyecto incluye un [Makefile](file:///Users/hyomin.micky/Desktop/develop/sigma/Makefile) para simplificar tareas de despliegue y desarrollo:
 
 ```bash
-# 1. Copiar variables de entorno
-cp .env.example .env
-# Editar .env con los valores de tu entorno (Keycloak, DB, etc.)
+# Ver todos los comandos disponibles
+make help
 
-# 2. Levantar todo el stack (PostgreSQL + API + Web)
-docker compose up -d --build
+# Despliegue en PRODUCCIÓN (crea red, .env, compila y levanta en segundo plano)
+make deploy
 
-# 3. Verificar
-# API:     http://localhost:8080/swagger-ui.html
-# Web:     http://localhost:3000
-# Postgres: localhost:5432
+# Actualizar desde Git y re-desplegar en PRODUCCIÓN
+make pull-deploy
+
+# Ver logs de producción
+make logs
+
+# Iniciar entorno de DESARROLLO local
+make dev-up
+
+# Detener entorno de desarrollo
+make dev-down
 ```
 
 ## Estructura del monorepo
