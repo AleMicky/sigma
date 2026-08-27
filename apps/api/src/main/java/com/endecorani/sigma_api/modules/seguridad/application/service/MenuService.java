@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +45,10 @@ public class MenuService {
             "createdAt",
             "updatedAt"
     );
+
+    private static final Comparator<Menu> MENU_ORDER_COMPARATOR =
+            Comparator.comparingInt(Menu::getOrden)
+                    .thenComparing(Menu::getNombre, String.CASE_INSENSITIVE_ORDER);
 
     private final MenuRepository menuRepository;
 
@@ -79,6 +84,7 @@ public class MenuService {
     public List<MenuResponse> findAllList() {
         return menuRepository.findAll()
                 .stream()
+                .sorted(MENU_ORDER_COMPARATOR)
                 .map(this::toResponse)
                 .toList();
     }
@@ -121,6 +127,7 @@ public class MenuService {
     public List<MenuResponse> findRaices() {
         return menuRepository.findByMenuPadreIdIsNull()
                 .stream()
+                .sorted(MENU_ORDER_COMPARATOR)
                 .map(this::toResponse)
                 .toList();
     }
@@ -132,6 +139,7 @@ public class MenuService {
         }
         return menuRepository.findByMenuPadreId(id)
                 .stream()
+                .sorted(MENU_ORDER_COMPARATOR)
                 .map(this::toResponse)
                 .toList();
     }
@@ -346,7 +354,10 @@ public class MenuService {
 
     private List<MenuTreeNode> construirArbolDesdeRaices(List<Menu> todos) {
         Map<UUID, List<Menu>> porPadre = agruparPorPadre(todos);
-        List<Menu> raices = porPadre.getOrDefault(null, List.of());
+        List<Menu> raices = porPadre.getOrDefault(null, List.of())
+                .stream()
+                .sorted(MENU_ORDER_COMPARATOR)
+                .toList();
         List<MenuTreeNode> nodos = new ArrayList<>();
         for (Menu raiz : raices) {
             nodos.add(construirNodo(raiz, porPadre));
@@ -361,7 +372,9 @@ public class MenuService {
         List<Menu> hijosEntities = porPadre.getOrDefault(
                 menu.getId(),
                 List.of()
-        );
+        ).stream()
+                .sorted(MENU_ORDER_COMPARATOR)
+                .toList();
         List<MenuTreeNode> hijos = new ArrayList<>();
         for (Menu hijo : hijosEntities) {
             hijos.add(construirNodo(hijo, porPadre));

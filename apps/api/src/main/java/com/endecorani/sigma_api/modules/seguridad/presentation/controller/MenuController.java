@@ -96,6 +96,18 @@ public class MenuController {
         );
     }
 
+    @GetMapping
+    @Operation(summary = "Listar menús paginados")
+    public ResponseEntity<ApiResponse<PageResponse<MenuResponse>>> findAll(
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        menuService.findAll(pageRequest)
+                )
+        );
+    }
+
     @GetMapping(params = "q")
     @Operation(summary = "Buscar menús por código o nombre")
     public ResponseEntity<ApiResponse<PageResponse<MenuResponse>>> search(
@@ -159,18 +171,6 @@ public class MenuController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         menuService.buildArbol(id)
-                )
-        );
-    }
-
-    @GetMapping
-    @Operation(summary = "Listar menús paginados")
-    public ResponseEntity<ApiResponse<PageResponse<MenuResponse>>> findAll(
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        menuService.findAll(pageRequest)
                 )
         );
     }
