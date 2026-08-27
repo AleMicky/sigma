@@ -63,8 +63,28 @@ export function UsuarioListItem({ usuario, onSelect }: UsuarioListItemProps) {
             )}
           </div>
 
+          {/* Roles Badges */}
+          {usuario.roles && usuario.roles.length > 0 && (
+            <div className="hidden lg:flex items-center gap-1 flex-wrap">
+              {usuario.roles.slice(0, 2).map((rol) => (
+                <Badge
+                  key={rol}
+                  variant="outline"
+                  className="font-mono text-[10px] px-1.5 py-0 text-muted-foreground bg-muted/40 border-border/50"
+                >
+                  {rol}
+                </Badge>
+              ))}
+              {usuario.roles.length > 2 && (
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  +{usuario.roles.length - 2}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Keycloak User ID Badge */}
-          <div className="hidden xl:flex items-center gap-1 text-[11px] text-muted-foreground font-mono bg-muted/50 rounded-md px-2 py-0.5 border border-border/40">
+          <div className="hidden 2xl:flex items-center gap-1 text-[11px] text-muted-foreground font-mono bg-muted/50 rounded-md px-2 py-0.5 border border-border/40">
             <KeyRound className="size-3 text-primary/70 shrink-0" />
             <span className="truncate max-w-[140px]">
               {usuario.keycloakUserId}

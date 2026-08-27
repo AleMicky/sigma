@@ -10,6 +10,7 @@ export type Usuario = AuditableEntity & {
   nombre: string
   email: string
   activo: boolean
+  roles?: string[]
 }
 
 export const listUsuarios = (params?: PageParams) =>

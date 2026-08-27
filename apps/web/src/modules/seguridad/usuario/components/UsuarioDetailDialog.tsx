@@ -173,6 +173,27 @@ export function UsuarioDetailDialog({
             </div>
           </div>
 
+          {/* Sección de Roles Asignados */}
+          {usuario.roles && usuario.roles.length > 0 && (
+            <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                <ShieldCheck className="size-3.5 text-primary" />
+                <span>Roles Asignados ({usuario.roles.length})</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {usuario.roles.map((rol) => (
+                  <Badge
+                    key={rol}
+                    variant="secondary"
+                    className="font-mono text-xs px-2 py-0.5"
+                  >
+                    {rol}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Sección de Auditoría */}
           <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">

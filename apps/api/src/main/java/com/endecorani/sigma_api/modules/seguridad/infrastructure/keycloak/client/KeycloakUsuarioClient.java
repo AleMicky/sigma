@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.seguridad.infrastructure.keycloak.clien
 
 import com.endecorani.sigma_api.config.keycloak.KeycloakProperties;
 import com.endecorani.sigma_api.config.keycloak.KeycloakTokenClient;
+import com.endecorani.sigma_api.modules.seguridad.infrastructure.keycloak.dto.KeycloakRolResponse;
 import com.endecorani.sigma_api.modules.seguridad.infrastructure.keycloak.dto.KeycloakUsuarioResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,27 @@ public class KeycloakUsuarioClient {
                     "KEYCLOAK_SYNC_ERROR",
                     "No se pudo sincronizar con Keycloak: " + ex.getMessage()
             );
+        }
+    }
+
+    public List<KeycloakRolResponse> obtenerRolesDeUsuario(String keycloakUserId) {
+        String token = resolveAccessToken();
+
+        try {
+            var roles = keycloakRestClient.get()
+                    .uri(properties.adminUserRealmRolesUrl(keycloakUserId))
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<List<KeycloakRolResponse>>() {});
+
+            return roles == null ? List.of() : roles;
+        } catch (RestClientResponseException ex) {
+            log.error("Error al obtener roles del usuario {} desde Keycloak Admin API (status={}): {}",
+                    keycloakUserId, ex.getStatusCode().value(), ex.getResponseBodyAsString());
+            return List.of();
+        } catch (Exception ex) {
+            log.error("Error inesperado al obtener roles del usuario {} desde Keycloak", keycloakUserId, ex);
+            return List.of();
         }
     }
 
