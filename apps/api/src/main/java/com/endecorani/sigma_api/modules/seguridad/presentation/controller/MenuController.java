@@ -131,46 +131,12 @@ public class MenuController {
         );
     }
 
-    @GetMapping("/raices")
-    @Operation(summary = "Obtener menús raíz (sin padre)")
-    public ResponseEntity<ApiResponse<List<MenuResponse>>> findRaices() {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        menuService.findRaices()
-                )
-        );
-    }
-
     @GetMapping("/arbol")
     @Operation(summary = "Obtener árbol jerárquico completo de menús")
     public ResponseEntity<ApiResponse<List<MenuTreeNode>>> buildArbol() {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         menuService.buildArbol()
-                )
-        );
-    }
-
-    @GetMapping("/{id}/hijos")
-    @Operation(summary = "Obtener menús hijos directos de un menú")
-    public ResponseEntity<ApiResponse<List<MenuResponse>>> findHijos(
-            @PathVariable UUID id
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        menuService.findHijos(id)
-                )
-        );
-    }
-
-    @GetMapping("/{id}/arbol")
-    @Operation(summary = "Obtener subárbol jerárquico desde un menú específico")
-    public ResponseEntity<ApiResponse<MenuTreeNode>> buildArbol(
-            @PathVariable UUID id
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        menuService.buildArbol(id)
                 )
         );
     }

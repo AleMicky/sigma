@@ -52,17 +52,8 @@ export const listMenus = (params?: PageParams) =>
 export const listAllMenus = () =>
   http.get<Menu[]>(menuEndpoints.todos)
 
-export const getMenuRaices = () =>
-  http.get<Menu[]>(menuEndpoints.raices)
-
 export const getMenuArbol = () =>
   http.get<MenuTreeNode[]>(menuEndpoints.arbol)
-
-export const getMenuArbolById = (id: string) =>
-  http.get<MenuTreeNode>(menuEndpoints.arbolById(id))
-
-export const getMenuHijos = (id: string) =>
-  http.get<Menu[]>(menuEndpoints.hijos(id))
 
 export const getMenu = (id: string) =>
   http.get<Menu>(menuEndpoints.byId(id))

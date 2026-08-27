@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMemo } from "react"
 import {
   Calendar,
   CheckCircle2,
@@ -20,10 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog"
-import { Skeleton } from "@/shared/components/ui/skeleton"
 import { formatDateTime } from "@/shared/utils/date.utils"
 
-import { menuQueries } from "../api/menu.queries"
 import type { Menu } from "../api/menu.service"
 import { DynamicLucideIcon } from "./DynamicLucideIcon"
 
@@ -32,6 +30,7 @@ type MenuDetailDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   parentMenu?: Menu | null
+  allMenus?: Menu[]
   onEdit?: (menu: Menu) => void
 }
 
@@ -40,15 +39,20 @@ export function MenuDetailDialog({
   open,
   onOpenChange,
   parentMenu,
+  allMenus = [],
   onEdit,
 }: MenuDetailDialogProps) {
-  const hijosQuery = useQuery(
-    menuQueries.hijos(menu?.id ?? ""),
+  const hijos = useMemo(
+    () =>
+      menu
+        ? allMenus
+            .filter((m) => m.menuPadreId === menu.id)
+            .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+        : [],
+    [allMenus, menu],
   )
 
   if (!menu) return null
-
-  const hijos = hijosQuery.data ?? []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -155,12 +159,7 @@ export function MenuDetailDialog({
               </span>
             </div>
 
-            {hijosQuery.isLoading ? (
-              <div className="space-y-1.5 pt-1">
-                <Skeleton className="h-8 rounded-lg" />
-                <Skeleton className="h-8 rounded-lg" />
-              </div>
-            ) : hijos.length === 0 ? (
+            {hijos.length === 0 ? (
               <p className="text-xs italic text-muted-foreground pt-1">
                 Este menú no tiene submenús directos.
               </p>
@@ -179,14 +178,15 @@ export function MenuDetailDialog({
                       <span className="font-medium text-foreground truncate">
                         {hijo.nombre}
                       </span>
-                      <code className="rounded bg-muted px-1 py-0.2 font-mono text-[10px] text-muted-foreground shrink-0">
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <code className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
                         {hijo.codigo}
                       </code>
+                      <span className="text-[10px] font-mono text-muted-foreground">
+                        #{hijo.orden}
+                      </span>
                     </div>
-
-                    <span className="text-[10px] font-mono text-muted-foreground shrink-0">
-                      Ord: {hijo.orden}
-                    </span>
                   </li>
                 ))}
               </ul>
@@ -194,64 +194,74 @@ export function MenuDetailDialog({
           </div>
 
           {/* Auditoría */}
-          <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-1 text-xs text-muted-foreground">
-            <p className="text-[11px] font-semibold text-foreground mb-1">
-              Registro de Auditoría
-            </p>
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              {menu.createdAt && (
-                <div className="flex items-center gap-1">
-                  <Calendar className="size-3 opacity-60" />
-                  <span>Creado: {formatDateTime(menu.createdAt)}</span>
+          {menu.auditoria && (
+            <div className="rounded-xl border border-border/70 bg-muted/10 p-3.5 space-y-2">
+              <span className="text-xs font-semibold text-foreground">
+                Información de Auditoría
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-[11px]">
+                    <User className="size-3" />
+                    <span>Creado por:</span>
+                    <span className="font-medium text-foreground">
+                      {menu.auditoria.createdBy ?? "Sistema"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px]">
+                    <Calendar className="size-3" />
+                    <span>Fecha creación:</span>
+                    <span className="font-medium text-foreground">
+                      {formatDateTime(menu.auditoria.createdAt)}
+                    </span>
+                  </div>
                 </div>
-              )}
-              {menu.createdBy && (
-                <div className="flex items-center gap-1 truncate">
-                  <User className="size-3 opacity-60 shrink-0" />
-                  <span className="truncate">Por: {menu.createdBy}</span>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-[11px]">
+                    <User className="size-3" />
+                    <span>Modificado por:</span>
+                    <span className="font-medium text-foreground">
+                      {menu.auditoria.updatedBy ?? "—"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px]">
+                    <Calendar className="size-3" />
+                    <span>Fecha modificación:</span>
+                    <span className="font-medium text-foreground">
+                      {menu.auditoria.updatedAt ? formatDateTime(menu.auditoria.updatedAt) : "—"}
+                    </span>
+                  </div>
                 </div>
-              )}
-              {menu.updatedAt && (
-                <div className="flex items-center gap-1">
-                  <Calendar className="size-3 opacity-60" />
-                  <span>Modificado: {formatDateTime(menu.updatedAt)}</span>
-                </div>
-              )}
-              {menu.updatedBy && (
-                <div className="flex items-center gap-1 truncate">
-                  <User className="size-3 opacity-60 shrink-0" />
-                  <span className="truncate">Por: {menu.updatedBy}</span>
-                </div>
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
         <DialogFooter className="p-4 border-t bg-card flex-row gap-2 justify-end">
+          {onEdit && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                onOpenChange(false)
+                onEdit(menu)
+              }}
+            >
+              <Pencil className="size-3.5" />
+              <span>Editar</span>
+            </Button>
+          )}
           <Button
             type="button"
-            variant="outline"
             size="sm"
             onClick={() => onOpenChange(false)}
           >
             Cerrar
           </Button>
-
-          {onEdit && (
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                onOpenChange(false)
-                onEdit(menu)
-              }}
-              className="gap-1.5"
-            >
-              <Pencil className="size-3.5" />
-              <span>Editar Menú</span>
-            </Button>
-          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

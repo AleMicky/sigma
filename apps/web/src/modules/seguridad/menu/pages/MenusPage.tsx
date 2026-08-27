@@ -45,7 +45,6 @@ export function MenusPage() {
 
   // Queries
   const arbolQuery = useQuery(menuQueries.arbol())
-  const raicesQuery = useQuery(menuQueries.raices())
   const allListQuery = useQuery(menuQueries.allList())
   const paginatedListQuery = useQuery(
     menuQueries.list({
@@ -141,7 +140,7 @@ export function MenusPage() {
             <div className="flex items-center gap-1.5 shrink-0 md:hidden">
               <RefreshButton
                 size="sm"
-                queries={[arbolQuery, raicesQuery, allListQuery, paginatedListQuery]}
+                queries={[arbolQuery, allListQuery, paginatedListQuery]}
               />
               <Button
                 size="sm"
@@ -173,7 +172,7 @@ export function MenusPage() {
         <div className="hidden shrink-0 self-start md:flex md:items-center md:gap-2">
           <RefreshButton
             size="sm"
-            queries={[arbolQuery, raicesQuery, allListQuery, paginatedListQuery]}
+            queries={[arbolQuery, allListQuery, paginatedListQuery]}
           />
 
           <Button
@@ -312,6 +311,7 @@ export function MenusPage() {
         onOpenChange={(open) => !open && setQuickViewId(null)}
         menu={selectedQuickViewMenu}
         parentMenu={selectedQuickViewParent}
+        allMenus={allMenus}
         onEdit={openEdit}
       />
 

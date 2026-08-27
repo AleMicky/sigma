@@ -24,7 +24,6 @@ const menuMutations = createCrudMutations<Menu, CreateMenuDto>({
   invalidateKeys: [
     menuKeys.all,
     menuKeys.arbol(),
-    menuKeys.raices(),
     menuKeys.allList(),
   ],
 })

@@ -124,38 +124,9 @@ public class MenuService {
     }
 
     @Transactional(readOnly = true)
-    public List<MenuResponse> findRaices() {
-        return menuRepository.findByMenuPadreIdIsNull()
-                .stream()
-                .sorted(MENU_ORDER_COMPARATOR)
-                .map(this::toResponse)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<MenuResponse> findHijos(UUID id) {
-        if (!menuRepository.existsById(id)) {
-            throw new ResourceNotFoundException(resourceName(), id);
-        }
-        return menuRepository.findByMenuPadreId(id)
-                .stream()
-                .sorted(MENU_ORDER_COMPARATOR)
-                .map(this::toResponse)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public List<MenuTreeNode> buildArbol() {
         List<Menu> todos = menuRepository.findAll();
         return construirArbolDesdeRaices(todos);
-    }
-
-    @Transactional(readOnly = true)
-    public MenuTreeNode buildArbol(UUID id) {
-        Menu raiz = findDomainById(id);
-        List<Menu> todos = menuRepository.findAll();
-        Map<UUID, List<Menu>> porPadre = agruparPorPadre(todos);
-        return construirNodo(raiz, porPadre);
     }
 
     private Menu toDomain(MenuRequest request) {
