@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
@@ -138,9 +138,9 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     [activosList],
   )
 
-  // Fetch Prioridades
+  // Fetch Prioridades (ordenadas por nivel de menor a mayor)
   const prioridadesQuery = useQuery(
-    prioridadQueries.list({ size: 100, sortBy: "nivel", direction: "DESC" }),
+    prioridadQueries.list({ size: 100, sortBy: "nivel", direction: "ASC" }),
   )
   const prioridades = useMemo(
     () => prioridadesQuery.data?.content ?? [],
@@ -163,15 +163,20 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
       singlePrioridadQuery.data &&
       !list.some((p) => p.id === singlePrioridadQuery.data.id)
     ) {
-      list.unshift(singlePrioridadQuery.data)
+      list.push(singlePrioridadQuery.data)
     }
-    return list
+    return list.sort((a, b) => a.nivel - b.nivel)
   }, [prioridades, singlePrioridadQuery.data])
 
   const prioridadesMap = useMemo(
     () => new Map(prioridadesList.map((p) => [p.id, p])),
     [prioridadesList],
   )
+
+  const defaultPrioridadId = useMemo(() => {
+    if (currentPrioridadId) return currentPrioridadId
+    return prioridadesList[0]?.id ?? ""
+  }, [currentPrioridadId, prioridadesList])
 
   // Fetch Tipos de Mantenimiento
   const tiposMantenimientoQuery = useQuery(
@@ -293,6 +298,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
       }
       : {
         ...defaultSolicitudValues,
+        prioridadId: defaultPrioridadId,
         fechaSolicitud: getTodayDateString(),
       }) as SolicitudFormValues,
     validators: {
@@ -312,8 +318,8 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
           solicitanteId: value.solicitanteId.trim(),
           fechaSolicitud: value.fechaSolicitud
             ? (value.fechaSolicitud.includes("T")
-                ? value.fechaSolicitud
-                : `${value.fechaSolicitud}T00:00:00`)
+              ? value.fechaSolicitud
+              : `${value.fechaSolicitud}T00:00:00`)
             : null,
         }
 
@@ -343,6 +349,16 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
       }
     },
   })
+
+  // Autoseleccionar por defecto el primer nivel de prioridad (nivel más bajo) en creación
+  useEffect(() => {
+    if (!isEditing && prioridadesList.length > 0) {
+      const currentVal = form.getFieldValue("prioridadId")
+      if (!currentVal) {
+        form.setFieldValue("prioridadId", prioridadesList[0].id)
+      }
+    }
+  }, [isEditing, prioridadesList, form])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
@@ -692,7 +708,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-foreground tracking-tight">
-                    Personal Responsable
+                    Personal Solicitante
                   </h2>
                   <p className="text-xs text-muted-foreground">
                     Persona o área encargada de reportar y gestionar la solicitud.
@@ -703,10 +719,8 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
               {/* Solicitante Selector */}
               <form.Field name="solicitanteId">
                 {(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  const selectedEmpleado =
-                    empleadosMap.get(field.state.value) ?? null
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+                  const selectedEmpleado = empleadosMap.get(field.state.value) ?? null
 
                   return (
                     <Field data-invalid={isInvalid || undefined}>
