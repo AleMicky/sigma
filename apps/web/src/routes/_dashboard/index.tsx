@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
 import { Link, createFileRoute } from "@tanstack/react-router"
+import type { LucideIcon } from "lucide-react"
 import {
   ArrowRight,
   Boxes,
@@ -133,13 +134,15 @@ function HomePage() {
     const list: {
       title: string
       to: string
-      icon: any
+      icon: LucideIcon
       moduleTitle: string
     }[] = []
     menuModules.forEach((mod) => {
       const links = mod.children?.length
         ? flattenNavChildren(mod.children)
-        : [{ title: mod.title, to: mod.to, icon: mod.icon }]
+        : mod.to
+          ? [{ title: mod.title, to: mod.to, icon: mod.icon || LayoutGrid }]
+          : []
       links.forEach((l) => {
         list.push({ ...l, moduleTitle: mod.title })
       })
@@ -271,23 +274,26 @@ function HomePage() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
-                  {filteredSearchResults.map((item) => (
-                    <Link
-                      key={item.to}
-                      to={item.to as any}
-                      className="group flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-muted"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <item.icon className="size-4 text-primary shrink-0" />
-                        <span className="truncate text-foreground font-semibold">
-                          {item.title}
-                        </span>
-                      </div>
-                      <Badge variant="outline" className="text-[10px] shrink-0 font-normal">
-                        {item.moduleTitle}
-                      </Badge>
-                    </Link>
-                  ))}
+                  {filteredSearchResults.map((item) => {
+                    const ItemIcon = item.icon || LayoutGrid
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to as any}
+                        className="group flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-muted"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <ItemIcon className="size-4 text-primary shrink-0" />
+                          <span className="truncate text-foreground font-semibold">
+                            {item.title}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] shrink-0 font-normal">
+                          {item.moduleTitle}
+                        </Badge>
+                      </Link>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -367,7 +373,11 @@ function HomePage() {
 
             const links = module.children?.length
               ? flattenNavChildren(module.children)
-              : [{ title: module.title, to: module.to, icon: module.icon }]
+              : module.to
+                ? [{ title: module.title, to: module.to, icon: module.icon || LayoutGrid }]
+                : []
+
+            const ModuleIcon = module.icon || LayoutGrid
 
             return (
               <Card
@@ -394,7 +404,7 @@ function HomePage() {
                           meta.color,
                         )}
                       >
-                        <module.icon className="size-5.5" />
+                        <ModuleIcon className="size-5.5" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <CardTitle className="text-base font-bold tracking-tight text-foreground font-heading">
@@ -420,21 +430,24 @@ function HomePage() {
 
                 <CardContent className="relative z-10 flex-1 pt-3 pb-3">
                   <div className="flex flex-col gap-1">
-                    {links.slice(0, 5).map((link) => (
-                      <Link
-                        key={link.to}
-                        to={link.to as any}
-                        className="group flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150 hover:bg-muted/80 hover:translate-x-0.5"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <link.icon className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                          <span className="truncate text-foreground/85 group-hover:text-foreground">
-                            {link.title}
-                          </span>
-                        </div>
-                        <ChevronRight className="size-3.5 text-muted-foreground/60 opacity-0 transition-opacity group-hover:opacity-100 shrink-0" />
-                      </Link>
-                    ))}
+                    {links.slice(0, 5).map((link) => {
+                      const LinkIcon = link.icon || LayoutGrid
+                      return (
+                        <Link
+                          key={link.to}
+                          to={link.to as any}
+                          className="group flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150 hover:bg-muted/80 hover:translate-x-0.5"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <LinkIcon className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                            <span className="truncate text-foreground/85 group-hover:text-foreground">
+                              {link.title}
+                            </span>
+                          </div>
+                          <ChevronRight className="size-3.5 text-muted-foreground/60 opacity-0 transition-opacity group-hover:opacity-100 shrink-0" />
+                        </Link>
+                      )
+                    })}
 
                     {links.length > 5 && (
                       <div className="mt-1 px-2.5 text-[11px] text-muted-foreground font-medium">
