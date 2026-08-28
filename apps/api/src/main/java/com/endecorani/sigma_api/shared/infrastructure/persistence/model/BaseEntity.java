@@ -59,4 +59,15 @@ public abstract class BaseEntity {
             length = 100
     )
     private String updatedBy;
+
+    @Column(
+            name = "created_by_id",
+            updatable = false
+    )
+    private UUID createdById;
+
+    @Column(
+            name = "updated_by_id"
+    )
+    private UUID updatedById;
 }

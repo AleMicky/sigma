@@ -6,6 +6,7 @@ import com.endecorani.sigma_api.modules.activos.domain.model.Accesorio;
 import com.endecorani.sigma_api.modules.activos.domain.repository.AccesorioRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.CategoriaRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -200,20 +201,13 @@ public class AccesorioService {
                     .orElse(null);
         }
 
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
-
         return new AccesorioResponse(
                 domain.getId(),
                 catalogoInfo,
                 domain.getCodigo(),
                 domain.getNombre(),
                 domain.getDescripcion(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 }

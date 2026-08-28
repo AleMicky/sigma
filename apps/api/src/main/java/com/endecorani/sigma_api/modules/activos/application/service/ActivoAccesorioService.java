@@ -9,6 +9,7 @@ import com.endecorani.sigma_api.modules.activos.domain.repository.AccesorioRepos
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoAccesorioRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -239,13 +240,6 @@ public class ActivoAccesorioService {
                     .orElse(null);
         }
 
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
-
         return new ActivoAccesorioResponse(
                 domain.getId(),
                 activoInfo,
@@ -253,7 +247,7 @@ public class ActivoAccesorioService {
                 domain.getCantidad(),
                 domain.getNumeroSerie(),
                 domain.getObservacion(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 }

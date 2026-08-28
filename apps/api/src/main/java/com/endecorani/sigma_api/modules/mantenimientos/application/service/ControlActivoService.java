@@ -11,6 +11,7 @@ import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
@@ -157,12 +158,7 @@ public class ControlActivoService {
                 domain.getFecha(),
                 domain.isConforme(),
                 domain.getObservacion(),
-                new AuditoriaResponse(
-                        domain.getCreatedAt(),
-                        domain.getUpdatedAt(),
-                        domain.getCreatedBy(),
-                        domain.getUpdatedBy()
-                )
+                AuditoriaMapper.from(domain)
         );
     }
 

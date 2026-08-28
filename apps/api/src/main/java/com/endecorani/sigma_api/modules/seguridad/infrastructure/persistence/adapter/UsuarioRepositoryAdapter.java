@@ -70,6 +70,8 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())
                 .updatedBy(entity.getUpdatedBy())
+                .createdById(entity.getCreatedById())
+                .updatedById(entity.getUpdatedById())
                 .build();
     }
 

@@ -51,6 +51,8 @@ public class PermisoPersistenceMapper {
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())
                 .updatedBy(entity.getUpdatedBy())
+                .createdById(entity.getCreatedById())
+                .updatedById(entity.getUpdatedById())
                 .build();
     }
 }

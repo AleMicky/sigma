@@ -98,7 +98,9 @@ public class RolService {
                                     u.getCreatedAt(),
                                     u.getUpdatedAt(),
                                     u.getCreatedBy(),
-                                    u.getUpdatedBy()
+                                    u.getUpdatedBy(),
+                                    u.getCreatedById(),
+                                    u.getUpdatedById()
                             )
                     );
                 })

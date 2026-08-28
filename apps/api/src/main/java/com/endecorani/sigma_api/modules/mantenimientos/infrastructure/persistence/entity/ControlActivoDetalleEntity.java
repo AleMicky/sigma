@@ -1,22 +1,20 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity;
 
+import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.UuidGenerator;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 @Entity
 @Table(
         schema = "mantenimientos",
@@ -41,41 +39,7 @@ import java.util.UUID;
                 )
         }
 )
-@EntityListeners(AuditingEntityListener.class)
-public class ControlActivoDetalleEntity {
-
-    @Id
-    @GeneratedValue
-    @UuidGenerator
-    @Column(unique = true, nullable = false)
-    private UUID id;
-
-    @CreatedDate
-    @Column(
-            name = "created_at",
-            nullable = false,
-            updatable = false
-    )
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-
-    @CreatedBy
-    @Column(
-            name = "created_by",
-            updatable = false,
-            length = 100
-    )
-    private String createdBy;
-
-    @LastModifiedBy
-    @Column(
-            name = "updated_by",
-            length = 100
-    )
-    private String updatedBy;
+public class ControlActivoDetalleEntity extends BaseEntity {
 
     @Column(
             name = "control_activo_id",

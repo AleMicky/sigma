@@ -7,6 +7,7 @@ import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoReposito
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.storage.ImageStorageService;
@@ -236,13 +237,6 @@ public class ActivoService {
                     .orElse(null);
         }
 
-        AuditoriaResponse auditoria = new AuditoriaResponse(
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy()
-        );
-
         return new ActivoResponse(
                 domain.getId(),
                 domain.getCodigo(),
@@ -253,7 +247,7 @@ public class ActivoService {
                 domain.getFechaAdquisicion(),
                 domain.getUrlImagen(),
                 domain.getActivo(),
-                auditoria
+                AuditoriaMapper.from(domain)
         );
     }
 

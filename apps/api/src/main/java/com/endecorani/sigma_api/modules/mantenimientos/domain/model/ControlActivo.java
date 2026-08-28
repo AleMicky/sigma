@@ -1,13 +1,13 @@
 package com.endecorani.sigma_api.modules.mantenimientos.domain.model;
 
 import com.endecorani.sigma_api.modules.mantenimientos.domain.enums.TipoControlActivo;
+import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -15,8 +15,8 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class ControlActivo {
+@SuperBuilder
+public class ControlActivo extends AuditableModel {
     private UUID id;
     private UUID solicitudMantenimientoId;
     private UUID ordenTrabajoId;
@@ -27,8 +27,4 @@ public class ControlActivo {
     private LocalDateTime fecha;
     private boolean conforme;
     private String observacion;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private String createdBy;
-    private String updatedBy;
 }

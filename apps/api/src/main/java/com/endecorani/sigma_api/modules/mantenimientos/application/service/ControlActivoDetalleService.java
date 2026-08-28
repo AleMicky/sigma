@@ -6,6 +6,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ControlActivoDetalle;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ControlActivoDetalleRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
+import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -180,12 +181,7 @@ public class ControlActivoDetalleService {
                 domain.getCantidadEncontrada(),
                 domain.isConforme(),
                 domain.getObservacion(),
-                new AuditoriaResponse(
-                        domain.getCreatedAt(),
-                        domain.getUpdatedAt(),
-                        domain.getCreatedBy(),
-                        domain.getUpdatedBy()
-                )
+                AuditoriaMapper.from(domain)
         );
     }
 }

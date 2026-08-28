@@ -14,7 +14,9 @@ public final class AuditoriaMapper {
                 domain.getCreatedAt(),
                 domain.getUpdatedAt(),
                 domain.getCreatedBy(),
-                domain.getUpdatedBy()
+                domain.getUpdatedBy(),
+                domain.getCreatedById(),
+                domain.getUpdatedById()
         );
     }
 }

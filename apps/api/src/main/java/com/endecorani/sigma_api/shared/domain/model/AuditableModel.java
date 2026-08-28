@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -22,4 +23,8 @@ public abstract class AuditableModel {
     private String createdBy;
 
     private String updatedBy;
+
+    private UUID createdById;
+
+    private UUID updatedById;
 }
