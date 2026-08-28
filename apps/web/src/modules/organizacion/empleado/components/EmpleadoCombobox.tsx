@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Briefcase, Building, Loader2, X } from "lucide-react"
+import { Briefcase, Building, ChevronLeft, ChevronRight, Loader2, RefreshCw, X } from "lucide-react"
 
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -27,6 +27,7 @@ export type EmpleadoComboboxProps = {
   id?: string
   name?: string
   "aria-invalid"?: boolean
+  pageSize?: number
 }
 
 function getEmpleadoNombre(emp: Empleado): string {
@@ -54,20 +55,40 @@ export function EmpleadoCombobox({
   id,
   name,
   "aria-invalid": ariaInvalid,
+  pageSize = 7,
 }: EmpleadoComboboxProps) {
+  const [page, setPage] = React.useState(0)
+
   const query = useQuery({
-    ...empleadoQueries.list({ size: 100, sortBy: "codigo", direction: "ASC" }),
+    ...empleadoQueries.list({ page, size: pageSize, sortBy: "codigo", direction: "ASC" }),
+  })
+
+  // Consulta individual si hay un valor seleccionado que quizás no esté en la página actual
+  const singleQuery = useQuery({
+    ...empleadoQueries.detail(value ?? ""),
+    enabled: Boolean(value),
   })
 
   const empleados = React.useMemo(
     () => query.data?.content ?? [],
     [query.data?.content],
   )
+  const totalPages = query.data?.totalPages ?? 1
+  const totalElements = query.data?.totalElements ?? empleados.length
 
   const selectedEmpleado = React.useMemo(() => {
     if (!value) return null
-    return empleados.find((e) => e.id === value) ?? null
-  }, [value, empleados])
+    return (
+      empleados.find((e) => e.id === value) ??
+      (singleQuery.data?.id === value ? singleQuery.data : null)
+    )
+  }, [value, empleados, singleQuery.data])
+
+  const handleRefresh = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    query.refetch()
+  }
 
   // Si hay un empleado seleccionado, mostramos la tarjeta idéntica a la imagen de referencia
   if (selectedEmpleado) {
@@ -168,25 +189,44 @@ export function EmpleadoCombobox({
         <ComboboxInput
           id={id}
           name={name}
-          placeholder={query.isLoading ? "Cargando empleados..." : placeholder}
+          placeholder={query.isLoading && !query.data ? "Cargando personal..." : placeholder}
           aria-invalid={ariaInvalid}
           onBlur={onBlur}
           className={cn("w-full shadow-2xs", className)}
         />
-        {query.isLoading && (
+        {query.isFetching && (
           <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
             <Loader2 className="size-4 animate-spin text-muted-foreground" />
           </div>
         )}
       </div>
 
-      <ComboboxContent className="z-50 max-h-64 min-w-[320px] p-1 rounded-xl shadow-lg border border-border/80">
-        <ComboboxEmpty className="py-4 text-xs text-muted-foreground text-center">
+      <ComboboxContent className="z-50 w-(--anchor-width) min-w-[min(100vw-2rem,var(--anchor-width))] max-w-[var(--anchor-width)] p-1 rounded-xl shadow-lg border border-border/80 bg-popover overflow-hidden flex flex-col">
+        {/* Header con indicador y botón de recarga */}
+        <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/50 text-[11px] text-muted-foreground bg-muted/30 select-none">
+          <span className="font-medium truncate">
+            {query.isFetching ? "Actualizando personal..." : `Personal (${totalElements} registros)`}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            onClick={handleRefresh}
+            disabled={query.isFetching}
+            title="Recargar lista de personal"
+            className="size-6 text-muted-foreground hover:text-foreground hover:bg-background/80"
+          >
+            <RefreshCw className={cn("size-3", query.isFetching && "animate-spin")} />
+          </Button>
+        </div>
+
+        <ComboboxEmpty className="py-5 text-xs text-muted-foreground text-center">
           {query.isLoading
             ? "Cargando empleados..."
             : "No se encontraron empleados coincidentes."}
         </ComboboxEmpty>
-        <ComboboxList>
+
+        <ComboboxList className="max-h-52 overflow-y-auto overscroll-contain pr-1 py-1">
           {(item: Empleado) => {
             const nombre = getEmpleadoNombre(item)
             const cargo = item.cargoInfo?.nombre || item.cargoNombre
@@ -226,6 +266,47 @@ export function EmpleadoCombobox({
             )
           }}
         </ComboboxList>
+
+        {/* Footer con controles de paginación */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-2 py-1.5 border-t border-border/50 bg-muted/20 text-[11px] text-muted-foreground select-none">
+            <span className="font-medium tabular-nums">
+              Página {page + 1} de {totalPages}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setPage((p) => Math.max(0, p - 1))
+                }}
+                disabled={page === 0 || query.isFetching}
+                className="size-6 text-muted-foreground hover:text-foreground"
+                title="Página anterior"
+              >
+                <ChevronLeft className="size-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setPage((p) => Math.min(totalPages - 1, p + 1))
+                }}
+                disabled={page >= totalPages - 1 || query.isFetching}
+                className="size-6 text-muted-foreground hover:text-foreground"
+                title="Página siguiente"
+              >
+                <ChevronRight className="size-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
       </ComboboxContent>
     </Combobox>
   )

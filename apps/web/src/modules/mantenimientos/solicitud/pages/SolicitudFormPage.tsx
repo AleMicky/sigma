@@ -6,8 +6,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   Box,
-  Briefcase,
-  Building2,
   Calendar,
   Check,
   FileText,
@@ -56,6 +54,8 @@ import {
 } from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { CatalogoCombobox } from "@/shared/components/catalogo-combobox"
+import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
+import { ActivoCombobox } from "@/modules/mantenimientos/orden-trabajo/components/ActivoCombobox"
 import { cn } from "@/shared/lib/utils"
 
 import {
@@ -258,28 +258,9 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     return `${year}-${month}-${day}`
   }
 
-  function getInitials(name?: string | null) {
-    if (!name) return "EM"
-    const parts = name.trim().split(" ").filter(Boolean)
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-    }
-    return name.substring(0, 2).toUpperCase()
-  }
-
   function getEmpleadoNombre(emp?: Empleado | null): string {
     if (!emp) return ""
     return emp.personaInfo?.nombreCompleto || emp.personaNombreCompleto || emp.codigo
-  }
-
-  function getEmpleadoCargo(emp?: Empleado | null): string | null {
-    if (!emp) return null
-    return emp.cargoInfo?.nombre || emp.cargoNombre || null
-  }
-
-  function getEmpleadoArea(emp?: Empleado | null): string | null {
-    if (!emp) return null
-    return emp.areaInfo?.nombre || emp.areaNombre || null
   }
 
   const form = useForm({
@@ -720,7 +701,6 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
               <form.Field name="solicitanteId">
                 {(field) => {
                   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-                  const selectedEmpleado = empleadosMap.get(field.state.value) ?? null
 
                   return (
                     <Field data-invalid={isInvalid || undefined}>
@@ -728,148 +708,15 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         Personal Solicitante
                       </RequiredFieldLabel>
 
-                      {selectedEmpleado ? (
-                        <div className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/20 p-2.5 shadow-2xs hover:border-primary/40 hover:bg-muted/30 transition-all">
-                          <div className="flex items-center gap-3 min-w-0">
-                            {/* Avatar con iniciales */}
-                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-bold text-sm border border-primary/20 shadow-xs">
-                              {getInitials(getEmpleadoNombre(selectedEmpleado))}
-                            </div>
-
-                            {/* Datos del Solicitante */}
-                            <div className="min-w-0 space-y-0.5">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                                  {selectedEmpleado.codigo}
-                                </code>
-                                <span className="font-semibold text-xs text-foreground truncate">
-                                  {getEmpleadoNombre(selectedEmpleado)}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
-                                {getEmpleadoCargo(selectedEmpleado) && (
-                                  <div className="flex items-center gap-1 font-medium text-foreground/80 truncate">
-                                    <Briefcase className="size-3 text-primary shrink-0" />
-                                    <span className="truncate">{getEmpleadoCargo(selectedEmpleado)}</span>
-                                  </div>
-                                )}
-                                {getEmpleadoArea(selectedEmpleado) && (
-                                  <>
-                                    <span className="text-muted-foreground/40">•</span>
-                                    <div className="flex items-center gap-1 truncate text-muted-foreground">
-                                      <Building2 className="size-3 shrink-0" />
-                                      <span className="truncate">{getEmpleadoArea(selectedEmpleado)}</span>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Acciones */}
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => field.handleChange("")}
-                              className="size-8 text-muted-foreground hover:text-destructive shrink-0"
-                            >
-                              <X className="size-4" />
-                              <span className="sr-only">Remover</span>
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <Combobox
-                          items={empleadosList}
-                          itemToStringLabel={(item: Empleado) => {
-                            const cargo = getEmpleadoCargo(item)
-                            return item ? `${getEmpleadoNombre(item)}${cargo ? ` - ${cargo}` : ""}` : ""
-                          }}
-                          itemToStringValue={(item: Empleado) => item?.id ?? ""}
-                          value={selectedEmpleado}
-                          onValueChange={(val: Empleado | null) => {
-                            field.handleChange(val?.id ?? "")
-                          }}
-                          disabled={empleadosQuery.isLoading}
-                        >
-                          <ComboboxInput
-                            id={field.name}
-                            placeholder={
-                              empleadosQuery.isLoading
-                                ? "Cargando personal..."
-                                : "Buscar solicitante por nombre, código o cargo..."
-                            }
-                            showClear={Boolean(field.state.value)}
-                            aria-invalid={isInvalid}
-                            className="w-full h-10 text-sm shadow-2xs"
-                          />
-                          <ComboboxContent className="z-50 max-h-72 min-w-[340px] sm:min-w-[440px]">
-                            <ComboboxEmpty>
-                              {empleadosQuery.isLoading ? (
-                                <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
-                                  <Loader2 className="size-3.5 animate-spin" />
-                                  <span>Cargando personal...</span>
-                                </div>
-                              ) : (
-                                "No se encontraron resultados."
-                              )}
-                            </ComboboxEmpty>
-                            <ComboboxList>
-                              {(item: Empleado) => {
-                                const cargo = getEmpleadoCargo(item)
-                                const area = getEmpleadoArea(item)
-                                return (
-                                  <ComboboxItem
-                                    key={item.id}
-                                    value={item}
-                                    className="text-xs py-2.5 px-3 cursor-pointer"
-                                  >
-                                    <div className="flex items-center gap-3 w-full min-w-0">
-                                      {/* Avatar */}
-                                      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs border border-primary/15 shadow-2xs">
-                                        {getInitials(getEmpleadoNombre(item))}
-                                      </div>
-
-                                      {/* Info */}
-                                      <div className="flex-1 min-w-0 space-y-0.5">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                          <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.2 rounded shrink-0">
-                                            {item.codigo}
-                                          </code>
-                                          <span className="font-semibold text-foreground truncate text-xs">
-                                            {getEmpleadoNombre(item)}
-                                          </span>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
-                                          {cargo && (
-                                            <div className="flex items-center gap-1 font-medium text-foreground/75 truncate">
-                                              <Briefcase className="size-3 text-primary/80 shrink-0" />
-                                              <span className="truncate">{cargo}</span>
-                                            </div>
-                                          )}
-                                          {area && (
-                                            <>
-                                              <span className="text-muted-foreground/40">•</span>
-                                              <div className="flex items-center gap-1 truncate text-muted-foreground">
-                                                <Building2 className="size-3 shrink-0" />
-                                                <span className="truncate">{area}</span>
-                                              </div>
-                                            </>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </ComboboxItem>
-                                )
-                              }}
-                            </ComboboxList>
-                          </ComboboxContent>
-                        </Combobox>
-                      )}
+                      <EmpleadoCombobox
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onValueChange={(val) => field.handleChange(val)}
+                        onBlur={field.handleBlur}
+                        aria-invalid={isInvalid}
+                        placeholder="Buscar solicitante por nombre, código o cargo..."
+                      />
 
                       {isInvalid && (
                         <FieldError errors={field.state.meta.errors} />
@@ -902,8 +749,6 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                   {(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
-                    const selectedActivo =
-                      activosMap.get(field.state.value) ?? null
 
                     return (
                       <Field data-invalid={isInvalid || undefined}>
@@ -911,161 +756,15 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           Activo / Ubicación
                         </RequiredFieldLabel>
 
-                        {selectedActivo ? (
-                          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/20 p-2.5 shadow-2xs hover:border-primary/40 hover:bg-muted/30 transition-all">
-                            <div className="flex items-center gap-3 min-w-0">
-                              {/* Foto / Miniatura */}
-                              <div className="relative size-11 shrink-0 overflow-hidden rounded-lg border border-border bg-background flex items-center justify-center shadow-xs">
-                                {selectedActivo.urlImagen ? (
-                                  <AuthenticatedImage
-                                    src={selectedActivo.urlImagen}
-                                    alt={selectedActivo.nombre}
-                                    className="size-full object-cover"
-                                    fallback={
-                                      <Box className="size-5 text-muted-foreground/60" />
-                                    }
-                                  />
-                                ) : (
-                                  <Box className="size-5 text-muted-foreground/60" />
-                                )}
-                              </div>
-
-                              {/* Datos del Activo */}
-                              <div className="min-w-0 space-y-0.5">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                                    {selectedActivo.codigo}
-                                  </code>
-                                  <span className="font-semibold text-xs text-foreground truncate">
-                                    {selectedActivo.nombre}
-                                  </span>
-                                </div>
-
-                                <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
-                                  <div className="flex items-center gap-1 truncate">
-                                    <MapPin className="size-3 text-primary shrink-0" />
-                                    <span className="truncate font-medium">
-                                      {selectedActivo.ubicacion?.nombre || "Sin ubicación"}
-                                    </span>
-                                  </div>
-                                  {selectedActivo.tipoActivo?.nombre ? (
-                                    <>
-                                      <span className="text-muted-foreground/40">•</span>
-                                      <span className="text-[10px] bg-background border border-border/60 px-1.5 py-0.2 rounded shrink-0">
-                                        {selectedActivo.tipoActivo.nombre}
-                                      </span>
-                                    </>
-                                  ) : null}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Acciones */}
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => field.handleChange("")}
-                                className="size-8 text-muted-foreground hover:text-destructive shrink-0"
-                              >
-                                <X className="size-4" />
-                                <span className="sr-only">Remover</span>
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <Combobox
-                            items={activosList}
-                            itemToStringLabel={(item: Activo) =>
-                              item ? `${item.codigo} - ${item.nombre}` : ""
-                            }
-                            itemToStringValue={(item: Activo) => item?.id ?? ""}
-                            value={selectedActivo}
-                            onValueChange={(val: Activo | null) => {
-                              field.handleChange(val?.id ?? "")
-                            }}
-                            disabled={activosQuery.isLoading}
-                          >
-                            <ComboboxInput
-                              id={field.name}
-                              placeholder={
-                                activosQuery.isLoading
-                                  ? "Cargando activos..."
-                                  : "Buscar activo por código, nombre o ubicación..."
-                              }
-                              showClear={Boolean(field.state.value)}
-                              aria-invalid={isInvalid}
-                              className="w-full h-10 text-sm shadow-2xs"
-                            />
-                            <ComboboxContent className="z-50 max-h-72 min-w-[340px] sm:min-w-[440px]">
-                              <ComboboxEmpty>
-                                {activosQuery.isLoading ? (
-                                  <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
-                                    <Loader2 className="size-3.5 animate-spin" />
-                                    <span>Cargando activos...</span>
-                                  </div>
-                                ) : (
-                                  "No se encontraron activos."
-                                )}
-                              </ComboboxEmpty>
-                              <ComboboxList>
-                                {(item: Activo) => (
-                                  <ComboboxItem
-                                    key={item.id}
-                                    value={item}
-                                    className="text-xs py-2.5 px-3 cursor-pointer"
-                                  >
-                                    <div className="flex items-center gap-3 w-full min-w-0">
-                                      {/* Miniatura de la Foto */}
-                                      <div className="relative size-10 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/50 flex items-center justify-center">
-                                        {item.urlImagen ? (
-                                          <AuthenticatedImage
-                                            src={item.urlImagen}
-                                            alt={item.nombre}
-                                            className="size-full object-cover"
-                                            fallback={
-                                              <Box className="size-5 text-muted-foreground/60" />
-                                            }
-                                          />
-                                        ) : (
-                                          <Box className="size-5 text-muted-foreground/60" />
-                                        )}
-                                      </div>
-
-                                      {/* Información del Activo */}
-                                      <div className="flex-1 min-w-0 space-y-0.5">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                          <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                                            {item.codigo}
-                                          </code>
-                                          <span className="font-semibold text-foreground truncate text-xs">
-                                            {item.nombre}
-                                          </span>
-                                        </div>
-
-                                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
-                                          <MapPin className="size-3 text-primary/80 shrink-0" />
-                                          <span className="truncate">
-                                            {item.ubicacion?.nombre || "Sin ubicación"}
-                                          </span>
-                                          {item.tipoActivo?.nombre ? (
-                                            <>
-                                              <span className="text-muted-foreground/40">•</span>
-                                              <span className="truncate text-muted-foreground/80">
-                                                {item.tipoActivo.nombre}
-                                              </span>
-                                            </>
-                                          ) : null}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </ComboboxItem>
-                                )}
-                              </ComboboxList>
-                            </ComboboxContent>
-                          </Combobox>
-                        )}
+                        <ActivoCombobox
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onValueChange={(val) => field.handleChange(val)}
+                          onBlur={field.handleBlur}
+                          aria-invalid={isInvalid}
+                          placeholder="Buscar activo por código, nombre o ubicación..."
+                        />
 
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
