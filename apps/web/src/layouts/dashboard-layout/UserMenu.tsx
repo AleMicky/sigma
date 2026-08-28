@@ -63,35 +63,36 @@ export function UserMenu() {
           <DropdownMenuTrigger
             render={
               <SidebarMenuButton
-                size="lg"
+                size="default"
                 tooltip={displayName}
-                className="group rounded-xl data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground hover:bg-sidebar-accent/80 transition-all duration-200"
+                className="group h-9 rounded-lg px-2 data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground hover:bg-sidebar-accent/80 transition-all duration-150"
               />
             }
           >
             <div className="relative shrink-0">
-              <Avatar className="size-9 rounded-xl border border-primary/20 shadow-xs transition-transform duration-200 group-hover:scale-105">
-                <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-600 text-xs font-bold text-white shadow-inner">
+              <Avatar className="size-7.5 rounded-lg border border-primary/20 shadow-2xs transition-transform duration-150 group-hover:scale-105">
+                <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-600 text-[11px] font-bold text-white shadow-inner">
                   {initials || "U"}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-sidebar animate-pulse" />
+              <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-emerald-500 ring-2 ring-sidebar animate-pulse" />
             </div>
-            <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="truncate font-semibold text-foreground group-hover:text-primary transition-colors">
+            <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+              <span className="truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
                 {displayName}
               </span>
               <div className="flex items-center gap-1">
                 <span className="inline-block size-1 rounded-full bg-emerald-500" />
-                <span className="truncate text-[11px] font-medium text-muted-foreground">
+                <span className="truncate text-[10.5px] font-medium text-muted-foreground">
                   {subtitle}
                 </span>
               </div>
             </div>
-            <ChevronsUpDown className="ml-auto size-4 text-muted-foreground/70 transition-transform group-hover:text-foreground group-data-[collapsible=icon]:hidden" />
+            <ChevronsUpDown className="ml-auto size-3.5 text-muted-foreground/70 transition-transform group-hover:text-foreground group-data-[collapsible=icon]:hidden" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-64 rounded-2xl p-2 shadow-2xl border-border/60 bg-popover/95 backdrop-blur-md"
+            className="min-w-60 rounded-xl p-1.5 shadow-xl border-border/60 bg-popover/95 backdrop-blur-md"
+
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={10}
