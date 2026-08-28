@@ -1,185 +1,126 @@
-import type { LucideProps } from "lucide-react"
-import {
-  AlertCircle,
-  Award,
-  BookOpen,
-  Boxes,
-  Briefcase,
-  Building,
-  Building2,
-  Calendar,
-  CheckCircle2,
-  CheckSquare,
-  CircleDot,
-  Clock,
-  Database,
-  Eye,
-  FileCheck,
-  FileSearch,
-  FileSpreadsheet,
-  FileText,
-  Files,
-  Filter,
-  Folder,
-  FolderOpen,
-  FolderTree,
-  Grid,
-  Hash,
-  HelpCircle,
-  Key,
-  Layers,
-  LayoutDashboard,
-  LayoutGrid,
-  List,
-  ListFilter,
-  ListOrdered,
-  ListTodo,
-  Lock,
-  Mail,
-  MapPin,
-  Menu as MenuIcon,
-  Package,
-  PackageCheck,
-  Paperclip,
-  QrCode,
-  RotateCcw,
-  Ruler,
-  ScrollText,
-  Search,
-  Server,
-  Settings,
-  Settings2,
-  Share2,
-  Shield,
-  ShieldAlert,
-  ShieldCheck,
-  SlidersHorizontal,
-  Tag,
-  Tags,
-  Trash2,
-  Truck,
-  Type,
-  UserCheck,
-  UserCog,
-  Users,
-  Wrench,
-} from "lucide-react"
+import type { LucideIcon, LucideProps } from "lucide-react"
+import * as LucideIcons from "lucide-react"
 
 export const AVAILABLE_MENU_ICONS = [
-  { name: "layout-dashboard", label: "Dashboard / Inicio", icon: LayoutDashboard },
-  { name: "shield", label: "Seguridad", icon: Shield },
-  { name: "shield-check", label: "Permisos / Aprobación", icon: ShieldCheck },
-  { name: "users", label: "Usuarios / Personas", icon: Users },
-  { name: "user-check", label: "Empleados", icon: UserCheck },
-  { name: "user-cog", label: "Configuración Usuario", icon: UserCog },
-  { name: "key", label: "Claves / Acceso", icon: Key },
-  { name: "lock", label: "Bloqueo", icon: Lock },
-  { name: "building-2", label: "Organización", icon: Building2 },
-  { name: "building", label: "Áreas / Edificios", icon: Building },
-  { name: "briefcase", label: "Cargos", icon: Briefcase },
-  { name: "award", label: "Responsabilidades", icon: Award },
-  { name: "boxes", label: "Activos / Cajas", icon: Boxes },
-  { name: "package", label: "Insumos / Paquetes", icon: Package },
-  { name: "package-check", label: "Inventario Revisado", icon: PackageCheck },
-  { name: "layout-grid", label: "Catálogo", icon: LayoutGrid },
-  { name: "folder-tree", label: "Jerarquía / Árbol", icon: FolderTree },
-  { name: "folder", label: "Carpeta", icon: Folder },
-  { name: "folder-open", label: "Carpeta Abierta", icon: FolderOpen },
-  { name: "tags", label: "Etiquetas / Tipos", icon: Tags },
-  { name: "tag", label: "Etiqueta", icon: Tag },
-  { name: "paperclip", label: "Accesorios", icon: Paperclip },
-  { name: "file-text", label: "Documentos / Informes", icon: FileText },
-  { name: "file-search", label: "Consulta Documentos", icon: FileSearch },
-  { name: "file-check", label: "Auditorías", icon: FileCheck },
-  { name: "file-spreadsheet", label: "Hojas de Cálculo", icon: FileSpreadsheet },
-  { name: "files", label: "Archivos Múltiples", icon: Files },
-  { name: "settings-2", label: "Parámetros", icon: Settings2 },
-  { name: "settings", label: "Ajustes", icon: Settings },
-  { name: "sliders-horizontal", label: "Gestión", icon: SlidersHorizontal },
-  { name: "book-open", label: "Catálogos / Guías", icon: BookOpen },
-  { name: "map-pin", label: "Ubicaciones", icon: MapPin },
-  { name: "type", label: "Tipos de Datos", icon: Type },
-  { name: "ruler", label: "Unidades de Medida", icon: Ruler },
-  { name: "wrench", label: "Mantenimientos", icon: Wrench },
-  { name: "list-todo", label: "Actividades", icon: ListTodo },
-  { name: "check-square", label: "Checklists", icon: CheckSquare },
-  { name: "alert-circle", label: "Prioridades / Alertas", icon: AlertCircle },
-  { name: "scroll-text", label: "Logs de Migración", icon: ScrollText },
-  { name: "list", label: "Lista", icon: List },
-  { name: "list-filter", label: "Filtros", icon: ListFilter },
-  { name: "list-ordered", label: "Orden", icon: ListOrdered },
-  { name: "layers", label: "Módulos / Capas", icon: Layers },
-  { name: "database", label: "Base de Datos", icon: Database },
-  { name: "server", label: "Servidor", icon: Server },
-  { name: "truck", label: "Transporte", icon: Truck },
-  { name: "qr-code", label: "Código QR", icon: QrCode },
-  { name: "menu", label: "Menú", icon: MenuIcon },
+  { name: "LayoutDashboard", label: "Dashboard / Inicio", icon: LucideIcons.LayoutDashboard },
+  { name: "Shield", label: "Seguridad", icon: LucideIcons.Shield },
+  { name: "ShieldCheck", label: "Permisos / Aprobación", icon: LucideIcons.ShieldCheck },
+  { name: "ShieldAlert", label: "Alerta / Seguridad", icon: LucideIcons.ShieldAlert },
+  { name: "Users", label: "Usuarios / Personas", icon: LucideIcons.Users },
+  { name: "UserCheck", label: "Empleados / Verificado", icon: LucideIcons.UserCheck },
+  { name: "UserCog", label: "Configuración Usuario", icon: LucideIcons.UserCog },
+  { name: "Key", label: "Claves / Acceso", icon: LucideIcons.Key },
+  { name: "Lock", label: "Bloqueo", icon: LucideIcons.Lock },
+  { name: "Building2", label: "Organización", icon: LucideIcons.Building2 },
+  { name: "Building", label: "Áreas / Edificios", icon: LucideIcons.Building },
+  { name: "Briefcase", label: "Cargos", icon: LucideIcons.Briefcase },
+  { name: "Award", label: "Responsabilidades", icon: LucideIcons.Award },
+  { name: "Boxes", label: "Activos / Cajas", icon: LucideIcons.Boxes },
+  { name: "Package", label: "Insumos / Paquetes", icon: LucideIcons.Package },
+  { name: "PackageCheck", label: "Inventario Revisado", icon: LucideIcons.PackageCheck },
+  { name: "LayoutGrid", label: "Catálogo", icon: LucideIcons.LayoutGrid },
+  { name: "FolderTree", label: "Jerarquía / Árbol", icon: LucideIcons.FolderTree },
+  { name: "Folder", label: "Carpeta", icon: LucideIcons.Folder },
+  { name: "FolderOpen", label: "Carpeta Abierta", icon: LucideIcons.FolderOpen },
+  { name: "Tags", label: "Etiquetas / Tipos", icon: LucideIcons.Tags },
+  { name: "Tag", label: "Etiqueta", icon: LucideIcons.Tag },
+  { name: "Paperclip", label: "Accesorios", icon: LucideIcons.Paperclip },
+  { name: "FileText", label: "Documentos / Informes", icon: LucideIcons.FileText },
+  { name: "FileSearch", label: "Consulta Documentos", icon: LucideIcons.FileSearch },
+  { name: "FileCheck", label: "Auditorías", icon: LucideIcons.FileCheck },
+  { name: "FileSpreadsheet", label: "Hojas de Cálculo", icon: LucideIcons.FileSpreadsheet },
+  { name: "Files", label: "Archivos Múltiples", icon: LucideIcons.Files },
+  { name: "Settings2", label: "Parámetros", icon: LucideIcons.Settings2 },
+  { name: "Settings", label: "Ajustes", icon: LucideIcons.Settings },
+  { name: "SlidersHorizontal", label: "Gestión", icon: LucideIcons.SlidersHorizontal },
+  { name: "BookOpen", label: "Catálogos / Guías", icon: LucideIcons.BookOpen },
+  { name: "MapPin", label: "Ubicaciones", icon: LucideIcons.MapPin },
+  { name: "Type", label: "Tipos de Datos", icon: LucideIcons.Type },
+  { name: "Ruler", label: "Unidades de Medida", icon: LucideIcons.Ruler },
+  { name: "Wrench", label: "Mantenimientos", icon: LucideIcons.Wrench },
+  { name: "ListTodo", label: "Actividades", icon: LucideIcons.ListTodo },
+  { name: "CheckSquare", label: "Checklists", icon: LucideIcons.CheckSquare },
+  { name: "AlertCircle", label: "Prioridades / Alertas", icon: LucideIcons.AlertCircle },
+  { name: "ScrollText", label: "Logs de Migración", icon: LucideIcons.ScrollText },
+  { name: "List", label: "Lista", icon: LucideIcons.List },
+  { name: "ListFilter", label: "Filtros", icon: LucideIcons.ListFilter },
+  { name: "ListOrdered", label: "Orden", icon: LucideIcons.ListOrdered },
+  { name: "Layers", label: "Módulos / Capas", icon: LucideIcons.Layers },
+  { name: "Database", label: "Base de Datos", icon: LucideIcons.Database },
+  { name: "Server", label: "Servidor", icon: LucideIcons.Server },
+  { name: "Truck", label: "Transporte", icon: LucideIcons.Truck },
+  { name: "QrCode", label: "Código QR", icon: LucideIcons.QrCode },
+  { name: "Menu", label: "Menú", icon: LucideIcons.Menu },
 ] as const
 
-const ICONS_MAP: Record<string, React.ComponentType<LucideProps>> = {
-  "alert-circle": AlertCircle,
-  award: Award,
-  "book-open": BookOpen,
-  boxes: Boxes,
-  briefcase: Briefcase,
-  building: Building,
-  "building-2": Building2,
-  calendar: Calendar,
-  "check-circle-2": CheckCircle2,
-  "check-square": CheckSquare,
-  "circle-dot": CircleDot,
-  clock: Clock,
-  database: Database,
-  eye: Eye,
-  "file-check": FileCheck,
-  "file-search": FileSearch,
-  "file-spreadsheet": FileSpreadsheet,
-  "file-text": FileText,
-  files: Files,
-  filter: Filter,
-  folder: Folder,
-  "folder-open": FolderOpen,
-  "folder-tree": FolderTree,
-  grid: Grid,
-  hash: Hash,
-  "help-circle": HelpCircle,
-  key: Key,
-  layers: Layers,
-  "layout-dashboard": LayoutDashboard,
-  "layout-grid": LayoutGrid,
-  list: List,
-  "list-filter": ListFilter,
-  "list-ordered": ListOrdered,
-  "list-todo": ListTodo,
-  lock: Lock,
-  mail: Mail,
-  "map-pin": MapPin,
-  menu: MenuIcon,
-  package: Package,
-  "package-check": PackageCheck,
-  paperclip: Paperclip,
-  "qr-code": QrCode,
-  "rotate-ccw": RotateCcw,
-  ruler: Ruler,
-  "scroll-text": ScrollText,
-  search: Search,
-  server: Server,
-  settings: Settings,
-  "settings-2": Settings2,
-  "share-2": Share2,
-  shield: Shield,
-  "shield-alert": ShieldAlert,
-  "shield-check": ShieldCheck,
-  "sliders-horizontal": SlidersHorizontal,
-  tag: Tag,
-  tags: Tags,
-  "trash-2": Trash2,
-  truck: Truck,
-  type: Type,
-  "user-check": UserCheck,
-  "user-cog": UserCog,
-  users: Users,
-  wrench: Wrench,
+/**
+ * Cache resolved icon components to avoid re-computations
+ */
+const resolvedIconCache = new Map<string, LucideIcon | null>()
+
+/**
+ * Converts any string format (kebab-case, camelCase, snake_case, spaces) to PascalCase.
+ * Example:
+ * - "layout-dashboard" -> "LayoutDashboard"
+ * - "building-2" -> "Building2"
+ * - "settings_2" -> "Settings2"
+ * - "user check" -> "UserCheck"
+ */
+function toPascalCase(str: string): string {
+  return str
+    .split(/[-_\s]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join("")
+}
+
+/**
+ * Resolves a Lucide icon component dynamically from any naming format.
+ */
+export function resolveLucideIcon(name?: string | null): LucideIcon | null {
+  if (!name || typeof name !== "string") return null
+  const trimmed = name.trim()
+  if (!trimmed) return null
+
+  if (resolvedIconCache.has(trimmed)) {
+    return resolvedIconCache.get(trimmed) ?? null
+  }
+
+  const iconsRecord = LucideIcons as unknown as Record<string, unknown>
+
+  // 1. Direct exact lookup (e.g. "LayoutDashboard", "Building2")
+  if (isLucideIcon(iconsRecord[trimmed])) {
+    const icon = iconsRecord[trimmed] as LucideIcon
+    resolvedIconCache.set(trimmed, icon)
+    return icon
+  }
+
+  // 2. PascalCase conversion (e.g. "layout-dashboard" -> "LayoutDashboard", "building-2" -> "Building2")
+  const pascal = toPascalCase(trimmed)
+  if (isLucideIcon(iconsRecord[pascal])) {
+    const icon = iconsRecord[pascal] as LucideIcon
+    resolvedIconCache.set(trimmed, icon)
+    return icon
+  }
+
+  // 3. Normalized alphanumeric lowercase match (fallback for cases like "layoutdashboard", "foldertree")
+  const cleanTarget = trimmed.toLowerCase().replace(/[^a-z0-9]/g, "")
+  for (const [key, value] of Object.entries(iconsRecord)) {
+    if (key === "default" || key === "icons" || key === "createLucideIcon") continue
+    if (key.toLowerCase().replace(/[^a-z0-9]/g, "") === cleanTarget) {
+      if (isLucideIcon(value)) {
+        const icon = value as LucideIcon
+        resolvedIconCache.set(trimmed, icon)
+        return icon
+      }
+    }
+  }
+
+  resolvedIconCache.set(trimmed, null)
+  return null
+}
+
+function isLucideIcon(val: unknown): val is LucideIcon {
+  return typeof val === "function" || (typeof val === "object" && val !== null && "$$typeof" in val)
 }
 
 type DynamicLucideIconProps = LucideProps & {
@@ -192,14 +133,7 @@ export function DynamicLucideIcon({
   fallback = null,
   ...props
 }: DynamicLucideIconProps) {
-  if (!name || !name.trim()) {
-    if (!fallback) return null
-    const FallbackIcon = fallback
-    return <FallbackIcon {...props} />
-  }
-
-  const normalized = name.toLowerCase().trim()
-  const IconComponent = ICONS_MAP[normalized]
+  const IconComponent = resolveLucideIcon(name)
 
   if (!IconComponent) {
     if (!fallback) return null
