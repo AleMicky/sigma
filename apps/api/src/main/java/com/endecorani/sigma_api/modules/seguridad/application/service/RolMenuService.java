@@ -101,7 +101,8 @@ public class RolMenuService {
         }
 
         boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_ADMIN") || a.getAuthority().equalsIgnoreCase("ADMIN"));
+                .anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_ADMIN")
+                        || a.getAuthority().equalsIgnoreCase("ADMIN"));
 
         Set<UUID> rolIds = new HashSet<>();
 
@@ -122,12 +123,14 @@ public class RolMenuService {
         if (principalName != null && !principalName.isBlank()) {
             usuarioJpaRepository.findByKeycloakUserId(principalName)
                     .ifPresent(usuario -> {
-                        List<UsuarioRolEntity> userRoles = usuarioRolJpaRepository.findActiveRolesByUsuarioId(usuario.getId());
+                        List<UsuarioRolEntity> userRoles = usuarioRolJpaRepository
+                                .findActiveRolesByUsuarioId(usuario.getId());
                         userRoles.forEach(ur -> rolIds.add(ur.getRol().getId()));
                     });
             usuarioJpaRepository.findByUsernameIgnoreCase(principalName)
                     .ifPresent(usuario -> {
-                        List<UsuarioRolEntity> userRoles = usuarioRolJpaRepository.findActiveRolesByUsuarioId(usuario.getId());
+                        List<UsuarioRolEntity> userRoles = usuarioRolJpaRepository
+                                .findActiveRolesByUsuarioId(usuario.getId());
                         userRoles.forEach(ur -> rolIds.add(ur.getRol().getId()));
                     });
         }
@@ -170,7 +173,8 @@ public class RolMenuService {
 
         // Asegurar que el menú de Inicio esté siempre accesible si existe en el sistema
         allMenus.stream()
-                .filter(m -> "MOD_INICIO".equalsIgnoreCase(m.getCodigo()) || "MENU_INICIO".equalsIgnoreCase(m.getCodigo()))
+                .filter(m -> "MOD_INICIO".equalsIgnoreCase(m.getCodigo())
+                        || "MENU_INICIO".equalsIgnoreCase(m.getCodigo()))
                 .forEach(assignedWithAncestors::add);
 
         return menuService.buildArbolFromMenus(new ArrayList<>(assignedWithAncestors));
