@@ -33,6 +33,13 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
     }
 
     @Override
+    public Optional<Usuario> findByUsernameIgnoreCase(String username) {
+        return repository
+                .findByUsernameIgnoreCase(username)
+                .map(this::toDomain);
+    }
+
+    @Override
     public Optional<Usuario> findByPersonaId(UUID personaId) {
         return repository
                 .findByPersonaId(personaId)

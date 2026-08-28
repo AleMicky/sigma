@@ -13,6 +13,8 @@ public interface UsuarioRepository {
 
     Optional<Usuario> findByKeycloakUserId(String keycloakUserId);
 
+    Optional<Usuario> findByUsernameIgnoreCase(String username);
+
     Optional<Usuario> findByPersonaId(UUID personaId);
 
     boolean existsByPersonaId(UUID personaId);

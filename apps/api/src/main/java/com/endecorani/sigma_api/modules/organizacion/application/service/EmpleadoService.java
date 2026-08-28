@@ -13,6 +13,8 @@ import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepo
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.EmpleadoSearchCriteria;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
+import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
+import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.CatalogoResumenResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -22,9 +24,13 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,6 +42,8 @@ public class EmpleadoService {
 
     private static final int CODIGO_MIN_LENGTH = 2;
     private static final int CODIGO_MAX_LENGTH = 50;
+
+    private static final String ROL_ADMIN = "ADMIN";
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -50,6 +58,7 @@ public class EmpleadoService {
     private final AreaRepository areaRepository;
     private final CargoRepository cargoRepository;
     private final PersonaService personaService;
+    private final UsuarioRepository usuarioRepository;
 
     @Transactional
     public EmpleadoResponse create(EmpleadoRequest request) {
@@ -72,11 +81,18 @@ public class EmpleadoService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<EmpleadoResponse> findAll(PageRequestDto pageRequest) {
-        return PageResponse.from(
-                empleadoRepository.findAll(pageRequest.toPageable(allowedSortFields())),
-                this::toResponse
-        );
+    public PageResponse<EmpleadoResponse> findAll(
+            PageRequestDto pageRequest,
+            Authentication authentication
+    ) {
+        if (esAdmin(authentication)) {
+            return PageResponse.from(
+                    empleadoRepository.findAll(pageRequest.toPageable(allowedSortFields())),
+                    this::toResponse
+            );
+        }
+
+        return find(null, null, null, null, pageRequest, authentication);
     }
 
     @Transactional
@@ -143,14 +159,20 @@ public class EmpleadoService {
             UUID areaId,
             UUID cargoId,
             String query,
-            PageRequestDto pageRequest
+            PageRequestDto pageRequest,
+            Authentication authentication
     ) {
-        EmpleadoSearchCriteria criteria = new EmpleadoSearchCriteria(
+        EmpleadoSearchCriteria criteria = buildCriteria(
                 personaId,
                 areaId,
                 cargoId,
-                StringUtils.normalize(query)
+                query,
+                authentication
         );
+
+        if (criteria == null) {
+            return PageResponse.from(Page.<Empleado>empty(), this::toResponse);
+        }
 
         return PageResponse.from(
                 empleadoRepository.findAll(
@@ -159,6 +181,61 @@ public class EmpleadoService {
                 ),
                 this::toResponse
         );
+    }
+
+    private EmpleadoSearchCriteria buildCriteria(
+            UUID personaId,
+            UUID areaId,
+            UUID cargoId,
+            String query,
+            Authentication authentication
+    ) {
+        UUID effectivePersonaId = personaId;
+
+        if (!esAdmin(authentication)) {
+            effectivePersonaId = personaIdDeSesion(authentication);
+            if (effectivePersonaId == null) {
+                return null;
+            }
+        }
+
+        return new EmpleadoSearchCriteria(
+                effectivePersonaId,
+                areaId,
+                cargoId,
+                StringUtils.normalize(query)
+        );
+    }
+
+    private UUID personaIdDeSesion(Authentication authentication) {
+        if (authentication == null) {
+            return null;
+        }
+
+        String principalName = authentication.getName();
+        if (principalName == null || principalName.isBlank()) {
+            return null;
+        }
+
+        Optional<Usuario> usuario = usuarioRepository
+                .findByKeycloakUserId(principalName);
+
+        if (usuario.isEmpty()) {
+            usuario = usuarioRepository.findByUsernameIgnoreCase(principalName);
+        }
+
+        return usuario.map(Usuario::getPersonaId).orElse(null);
+    }
+
+    private boolean esAdmin(Authentication authentication) {
+        if (authentication == null) {
+            return false;
+        }
+
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(authority -> authority.equalsIgnoreCase(ROL_ADMIN)
+                        || authority.equalsIgnoreCase("ROLE_" + ROL_ADMIN));
     }
 
     private Empleado findDomainById(UUID id) {

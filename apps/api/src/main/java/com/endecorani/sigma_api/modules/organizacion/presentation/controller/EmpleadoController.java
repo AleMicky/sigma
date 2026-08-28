@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -121,13 +122,14 @@ public class EmpleadoController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar empleados de forma paginada")
+    @Operation(summary = "Listar empleados de forma paginada (admin: todos; resto: solo los de su sesión)")
     public ResponseEntity<ApiResponse<PageResponse<EmpleadoResponse>>> findAll(
-            @Valid @ModelAttribute PageRequestDto pageRequest
+            @Valid @ModelAttribute PageRequestDto pageRequest,
+            Authentication authentication
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        empleadoService.findAll(pageRequest)
+                        empleadoService.findAll(pageRequest, authentication)
                 )
         );
     }
@@ -137,11 +139,12 @@ public class EmpleadoController {
     public ResponseEntity<ApiResponse<PageResponse<EmpleadoResponse>>> findByAreaId(
             @RequestParam UUID areaId,
             @RequestParam(required = false) String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
+            @Valid @ModelAttribute PageRequestDto pageRequest,
+            Authentication authentication
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        empleadoService.find(null, areaId, null, q, pageRequest)
+                        empleadoService.find(null, areaId, null, q, pageRequest, authentication)
                 )
         );
     }
@@ -151,11 +154,12 @@ public class EmpleadoController {
     public ResponseEntity<ApiResponse<PageResponse<EmpleadoResponse>>> findByAreaPath(
             @PathVariable UUID areaId,
             @RequestParam(required = false) String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
+            @Valid @ModelAttribute PageRequestDto pageRequest,
+            Authentication authentication
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        empleadoService.find(null, areaId, null, q, pageRequest)
+                        empleadoService.find(null, areaId, null, q, pageRequest, authentication)
                 )
         );
     }
@@ -167,19 +171,20 @@ public class EmpleadoController {
             @RequestParam(required = false) UUID areaId,
             @RequestParam(required = false) UUID cargoId,
             @RequestParam(required = false) String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
+            @Valid @ModelAttribute PageRequestDto pageRequest,
+            Authentication authentication
     ) {
         if (personaId == null && areaId == null && cargoId == null && q == null) {
             return ResponseEntity.ok(
                     ApiResponse.success(
-                            empleadoService.findAll(pageRequest)
+                            empleadoService.findAll(pageRequest, authentication)
                     )
             );
         }
 
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        empleadoService.find(personaId, areaId, cargoId, q, pageRequest)
+                        empleadoService.find(personaId, areaId, cargoId, q, pageRequest, authentication)
                 )
         );
     }
