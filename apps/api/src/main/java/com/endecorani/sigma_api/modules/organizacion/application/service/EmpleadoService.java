@@ -1,8 +1,11 @@
 package com.endecorani.sigma_api.modules.organizacion.application.service;
 
+import com.endecorani.sigma_api.modules.organizacion.application.dto.request.EmpleadoPersonaRequest;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.EmpleadoRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.request.PersonaRequest;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResumenResponse;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.AreaRepository;
@@ -46,6 +49,7 @@ public class EmpleadoService {
     private final PersonaRepository personaRepository;
     private final AreaRepository areaRepository;
     private final CargoRepository cargoRepository;
+    private final PersonaService personaService;
 
     @Transactional
     public EmpleadoResponse create(EmpleadoRequest request) {
@@ -79,6 +83,58 @@ public class EmpleadoService {
     public void delete(UUID id) {
         findDomainById(id);
         empleadoRepository.deleteById(id);
+    }
+
+    @Transactional
+    public EmpleadoResponse createWithPersona(EmpleadoPersonaRequest request) {
+        PersonaResponse persona = personaService.create(personaRequestOf(request));
+        return create(empleadoRequestOf(request, persona.id()));
+    }
+
+    @Transactional
+    public EmpleadoResponse updateWithPersona(
+            UUID id,
+            EmpleadoPersonaRequest request
+    ) {
+        Empleado empleado = findDomainById(id);
+
+        if (empleado.getPersonaId() == null) {
+            throw new BusinessException(
+                    "EMPLEADO_SIN_PERSONA",
+                    "El empleado no tiene una persona asociada"
+            );
+        }
+
+        personaService.update(empleado.getPersonaId(), personaRequestOf(request));
+        return update(id, empleadoRequestOf(request, empleado.getPersonaId()));
+    }
+
+    private PersonaRequest personaRequestOf(EmpleadoPersonaRequest request) {
+        return new PersonaRequest(
+                request.tipoDocumento(),
+                request.numeroDocumento(),
+                request.complemento(),
+                request.nombres(),
+                request.primerApellido(),
+                request.segundoApellido(),
+                request.fechaNacimiento(),
+                request.telefono(),
+                request.correo()
+        );
+    }
+
+    private EmpleadoRequest empleadoRequestOf(
+            EmpleadoPersonaRequest request,
+            UUID personaId
+    ) {
+        return new EmpleadoRequest(
+                personaId,
+                request.areaId(),
+                request.cargoId(),
+                request.codigo(),
+                request.fechaInicio(),
+                request.fechaFin()
+        );
     }
 
     @Transactional(readOnly = true)

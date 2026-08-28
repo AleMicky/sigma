@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.organizacion.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.request.EmpleadoPersonaRequest;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.EmpleadoRequest;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.service.EmpleadoService;
@@ -56,6 +57,39 @@ public class EmpleadoController {
                                 response
                         )
                 );
+    }
+
+    @PostMapping("/con-persona")
+    @Operation(summary = "Registrar una persona y su empleado de forma conjunta")
+    public ResponseEntity<ApiResponse<EmpleadoResponse>> createWithPersona(
+            @Valid @RequestBody EmpleadoPersonaRequest request
+    ) {
+        EmpleadoResponse response = empleadoService.createWithPersona(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        ApiResponse.success(
+                                "Registro creado correctamente",
+                                response
+                        )
+                );
+    }
+
+    @PutMapping("/con-persona/{id}")
+    @Operation(summary = "Actualizar un empleado y su persona de forma conjunta")
+    public ResponseEntity<ApiResponse<EmpleadoResponse>> updateWithPersona(
+            @PathVariable UUID id,
+            @Valid @RequestBody EmpleadoPersonaRequest request
+    ) {
+        EmpleadoResponse response = empleadoService.updateWithPersona(id, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Registro actualizado correctamente",
+                        response
+                )
+        );
     }
 
     @PutMapping("/{id}")
