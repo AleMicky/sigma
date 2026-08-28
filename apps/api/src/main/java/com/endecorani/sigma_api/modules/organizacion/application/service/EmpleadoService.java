@@ -1,20 +1,16 @@
 package com.endecorani.sigma_api.modules.organizacion.application.service;
 
-import com.endecorani.sigma_api.modules.organizacion.application.dto.request.EmpleadoPersonaRequest;
+import com.endecorani.sigma_api.modules.organizacion.application.dto.EmpleadoSearchCriteria;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.EmpleadoRequest;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.request.PersonaRequest;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResumenResponse;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.AreaRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
-import com.endecorani.sigma_api.modules.organizacion.application.dto.EmpleadoSearchCriteria;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
-import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
-import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
+import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.dto.response.CatalogoResumenResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -24,26 +20,23 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Servicio de aplicación para la gestión de empleados y su vinculación con personas, áreas y cargos.
+ */
 @Service
 @RequiredArgsConstructor
-public class EmpleadoService {
+public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoResponse, UUID> {
 
     private static final int CODIGO_MIN_LENGTH = 2;
     private static final int CODIGO_MAX_LENGTH = 50;
-
-    private static final String ROL_ADMIN = "ADMIN";
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -57,9 +50,12 @@ public class EmpleadoService {
     private final PersonaRepository personaRepository;
     private final AreaRepository areaRepository;
     private final CargoRepository cargoRepository;
-    private final PersonaService personaService;
-    private final UsuarioRepository usuarioRepository;
 
+    // =========================================================================
+    // COMANDOS / MUTACIONES
+    // =========================================================================
+
+    @Override
     @Transactional
     public EmpleadoResponse create(EmpleadoRequest request) {
         Empleado domain = toDomain(request);
@@ -67,6 +63,7 @@ public class EmpleadoService {
         return toResponse(saved);
     }
 
+    @Override
     @Transactional
     public EmpleadoResponse update(UUID id, EmpleadoRequest request) {
         Empleado domain = findDomainById(id);
@@ -75,81 +72,29 @@ public class EmpleadoService {
         return toResponse(updated);
     }
 
-    @Transactional(readOnly = true)
-    public EmpleadoResponse findById(UUID id) {
-        return toResponse(findDomainById(id));
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<EmpleadoResponse> findAll(
-            PageRequestDto pageRequest,
-            Authentication authentication
-    ) {
-        if (esAdmin(authentication)) {
-            return PageResponse.from(
-                    empleadoRepository.findAll(pageRequest.toPageable(allowedSortFields())),
-                    this::toResponse
-            );
-        }
-
-        return find(null, null, null, null, pageRequest, authentication);
-    }
-
+    @Override
     @Transactional
     public void delete(UUID id) {
         findDomainById(id);
         empleadoRepository.deleteById(id);
     }
 
-    @Transactional
-    public EmpleadoResponse createWithPersona(EmpleadoPersonaRequest request) {
-        PersonaResponse persona = personaService.create(personaRequestOf(request));
-        return create(empleadoRequestOf(request, persona.id()));
+    // =========================================================================
+    // CONSULTAS / QUERIES
+    // =========================================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public EmpleadoResponse findById(UUID id) {
+        return toResponse(findDomainById(id));
     }
 
-    @Transactional
-    public EmpleadoResponse updateWithPersona(
-            UUID id,
-            EmpleadoPersonaRequest request
-    ) {
-        Empleado empleado = findDomainById(id);
-
-        if (empleado.getPersonaId() == null) {
-            throw new BusinessException(
-                    "EMPLEADO_SIN_PERSONA",
-                    "El empleado no tiene una persona asociada"
-            );
-        }
-
-        personaService.update(empleado.getPersonaId(), personaRequestOf(request));
-        return update(id, empleadoRequestOf(request, empleado.getPersonaId()));
-    }
-
-    private PersonaRequest personaRequestOf(EmpleadoPersonaRequest request) {
-        return new PersonaRequest(
-                request.tipoDocumento(),
-                request.numeroDocumento(),
-                request.complemento(),
-                request.nombres(),
-                request.primerApellido(),
-                request.segundoApellido(),
-                request.fechaNacimiento(),
-                request.telefono(),
-                request.correo()
-        );
-    }
-
-    private EmpleadoRequest empleadoRequestOf(
-            EmpleadoPersonaRequest request,
-            UUID personaId
-    ) {
-        return new EmpleadoRequest(
-                personaId,
-                request.areaId(),
-                request.cargoId(),
-                request.codigo(),
-                request.fechaInicio(),
-                request.fechaFin()
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<EmpleadoResponse> findAll(PageRequestDto pageRequest) {
+        return PageResponse.from(
+                empleadoRepository.findAll(pageRequest.toPageable(allowedSortFields())),
+                this::toResponse
         );
     }
 
@@ -159,93 +104,25 @@ public class EmpleadoService {
             UUID areaId,
             UUID cargoId,
             String query,
-            PageRequestDto pageRequest,
-            Authentication authentication
+            PageRequestDto pageRequest
     ) {
-        EmpleadoSearchCriteria criteria = buildCriteria(
-                personaId,
-                areaId,
-                cargoId,
-                query,
-                authentication
-        );
-
-        if (criteria == null) {
-            return PageResponse.from(Page.<Empleado>empty(), this::toResponse);
-        }
-
         return PageResponse.from(
                 empleadoRepository.findAll(
-                        criteria,
+                        new EmpleadoSearchCriteria(
+                                personaId,
+                                areaId,
+                                cargoId,
+                                StringUtils.normalize(query)
+                        ),
                         pageRequest.toPageable(allowedSortFields())
                 ),
                 this::toResponse
         );
     }
 
-    private EmpleadoSearchCriteria buildCriteria(
-            UUID personaId,
-            UUID areaId,
-            UUID cargoId,
-            String query,
-            Authentication authentication
-    ) {
-        UUID effectivePersonaId = personaId;
-
-        if (!esAdmin(authentication)) {
-            effectivePersonaId = personaIdDeSesion(authentication);
-            if (effectivePersonaId == null) {
-                return null;
-            }
-        }
-
-        return new EmpleadoSearchCriteria(
-                effectivePersonaId,
-                areaId,
-                cargoId,
-                StringUtils.normalize(query)
-        );
-    }
-
-    private UUID personaIdDeSesion(Authentication authentication) {
-        if (authentication == null) {
-            return null;
-        }
-
-        String principalName = authentication.getName();
-        if (principalName == null || principalName.isBlank()) {
-            return null;
-        }
-
-        Optional<Usuario> usuario = usuarioRepository
-                .findByKeycloakUserId(principalName);
-
-        if (usuario.isEmpty()) {
-            usuario = usuarioRepository.findByUsernameIgnoreCase(principalName);
-        }
-
-        return usuario.map(Usuario::getPersonaId).orElse(null);
-    }
-
-    private boolean esAdmin(Authentication authentication) {
-        if (authentication == null) {
-            return false;
-        }
-
-        return authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(authority -> authority.equalsIgnoreCase(ROL_ADMIN)
-                        || authority.equalsIgnoreCase("ROLE_" + ROL_ADMIN));
-    }
-
-    private Empleado findDomainById(UUID id) {
-        return empleadoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Empleado", id));
-    }
-
-    private Set<String> allowedSortFields() {
-        return SORT_FIELDS;
-    }
+    // =========================================================================
+    // MAPEOS Y CONVERSIONES DTO / DOMINIO
+    // =========================================================================
 
     private Empleado toDomain(EmpleadoRequest request) {
         validateReferencias(request);
@@ -335,6 +212,15 @@ public class EmpleadoService {
                 .collect(Collectors.joining(" "));
     }
 
+    // =========================================================================
+    // VALIDACIONES Y REGLAS DE NEGOCIO
+    // =========================================================================
+
+    private Empleado findDomainById(UUID id) {
+        return empleadoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Empleado", id));
+    }
+
     private void validateReferencias(EmpleadoRequest request) {
         requirePersonaExists(request.personaId());
         requireAreaExists(request.areaId());
@@ -363,24 +249,16 @@ public class EmpleadoService {
         if (empleadoRepository.existsByCodigoIgnoreCase(codigo)) {
             throw new ConflictException(
                     "EMPLEADO_ALREADY_EXISTS",
-                    "Ya existe un empleado con el código '%s'"
-                            .formatted(codigo)
+                    "Ya existe un empleado con el código '%s'".formatted(codigo)
             );
         }
     }
 
-    private void validateUniqueCodigoForUpdate(
-            String codigo,
-            UUID currentId
-    ) {
-        if (empleadoRepository.existsByCodigoIgnoreCaseAndIdNot(
-                codigo,
-                currentId
-        )) {
+    private void validateUniqueCodigoForUpdate(String codigo, UUID currentId) {
+        if (empleadoRepository.existsByCodigoIgnoreCaseAndIdNot(codigo, currentId)) {
             throw new ConflictException(
                     "EMPLEADO_ALREADY_EXISTS",
-                    "Ya existe otro empleado con el código '%s'"
-                            .formatted(codigo)
+                    "Ya existe otro empleado con el código '%s'".formatted(codigo)
             );
         }
     }
@@ -399,5 +277,9 @@ public class EmpleadoService {
         }
 
         return normalized;
+    }
+
+    private Set<String> allowedSortFields() {
+        return SORT_FIELDS;
     }
 }
