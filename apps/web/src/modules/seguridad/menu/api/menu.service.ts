@@ -55,6 +55,9 @@ export const listAllMenus = () =>
 export const getMenuArbol = () =>
   http.get<MenuTreeNode[]>(menuEndpoints.arbol)
 
+export const getMisMenus = () =>
+  http.get<MenuTreeNode[]>(menuEndpoints.misMenus)
+
 export const getMenu = (id: string) =>
   http.get<Menu>(menuEndpoints.byId(id))
 

@@ -2,7 +2,6 @@ import { Fragment } from "react"
 import { Link, useRouterState } from "@tanstack/react-router"
 import { Home } from "lucide-react"
 
-import { routes } from "@/app/config"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,75 +17,63 @@ export interface BreadcrumbSegment {
   isCurrent?: boolean
 }
 
-// Map for explicit route titles
-const pathLabels: Record<string, string> = {
+/**
+ * Diccionario de títulos legibles para rutas y segmentos del sistema.
+ */
+const SEGMENT_LABELS: Record<string, string> = {
   // Organización
-  "/organizacion": "Organización",
-  "/organizacion/empleados": "Empleados",
-  "/organizacion/areas": "Áreas",
-  "/organizacion/cargos": "Cargos",
-  "/organizacion/personas": "Personas",
-  "/organizacion/migraciones": "Logs de Migración",
-
-  // Activos
-  "/activos": "Activos",
-  "/activos/nuevo": "Nuevo Activo",
-  "/activos/catalogo": "Catálogo de Activos",
-  "/activos/consulta-documentos": "Consulta de Documentos",
-  "/tipos-activo": "Tipos de Activo",
-  "/tipos-activo/historial": "Historial",
-  "/categorias": "Categorías",
-  "/accesorios": "Accesorios",
-  "/tipos-documento": "Tipos de Documento",
-
-  // Inventarios
-  "/inventarios": "Inventarios",
-  "/inventarios/nuevo": "Nuevo Insumo",
-  "/inventarios/tipos-insumo": "Tipos de Insumo",
-  "/inventarios/categorias": "Categorías",
-
-  // Parámetros
-  "/parametros": "Parámetros",
-  "/parametros/gestion": "Gestión",
-  "/parametros/catalogos": "Catálogos",
-  "/parametros/tipos-dato": "Tipos de Datos",
-  "/parametros/ubicaciones": "Ubicaciones",
-  "/parametros/unidades-medida": "Unidades de Medida",
-
-  // Mantenimientos
-  "/mantenimientos": "Mantenimientos",
-  "/mantenimientos/tipos-mantenimiento": "Tipos de Mantenimiento",
-  "/mantenimientos/prioridades": "Prioridades",
-
-  // Perfil
-  "/perfil": "Mi Perfil",
-}
-
-// Translations / readable titles for path segments
-const segmentLabels: Record<string, string> = {
-  activos: "Activos",
   organizacion: "Organización",
-  inventarios: "Inventarios",
-  parametros: "Parámetros",
-  mantenimientos: "Mantenimientos",
-  "tipos-mantenimiento": "Tipos de Mantenimiento",
-  prioridades: "Prioridades",
-  "tipos-activo": "Tipos de Activo",
-  "tipos-insumo": "Tipos de Insumo",
-  "tipos-documento": "Tipos de Documento",
-  "tipos-dato": "Tipos de Datos",
-  "unidades-medida": "Unidades de Medida",
   empleados: "Empleados",
   areas: "Áreas",
   cargos: "Cargos",
   personas: "Personas",
+  responsabilidades: "Responsabilidades",
+  "grupos-aprobadores": "Grupos Aprobadores",
   migraciones: "Logs de Migración",
+
+  // Activos
+  activos: "Activos",
+  catalogo: "Catálogo",
+  "consulta-documentos": "Consulta de Documentos",
+  "tipos-activo": "Tipos de Activo",
   categorias: "Categorías",
   accesorios: "Accesorios",
+  "tipos-documento": "Tipos de Documento",
+
+  // Inventarios
+  inventarios: "Inventarios",
+  "tipos-insumo": "Tipos de Insumo",
+
+  // Parámetros
+  parametros: "Parámetros",
   gestion: "Gestión",
   catalogos: "Catálogos",
+  "tipos-dato": "Tipos de Datos",
   ubicaciones: "Ubicaciones",
+  "unidades-medida": "Unidades de Medida",
+
+  // Mantenimientos
+  mantenimientos: "Mantenimientos",
+  solicitudes: "Solicitudes",
+  aprobaciones: "Aprobaciones",
+  encargado: "Encargado",
+  supervisor: "Supervisor",
+  actividades: "Actividades",
+  checklists: "Checklists",
+  "tipos-mantenimiento": "Tipos de Mantenimiento",
+  prioridades: "Prioridades",
+  "controles-activos": "Controles de Activos",
+  "ordenes-trabajo": "Órdenes de Trabajo",
+
+  // Seguridad
+  seguridad: "Seguridad",
+  usuarios: "Usuarios",
+  roles: "Roles",
+  menus: "Menús",
+
+  // Acciones comunes
   nuevo: "Nuevo",
+  nueva: "Nueva",
   editar: "Editar",
   atributos: "Atributos",
   componentes: "Componentes",
@@ -95,11 +82,11 @@ const segmentLabels: Record<string, string> = {
 }
 
 function formatSegment(segment: string): string {
-  if (segmentLabels[segment]) {
-    return segmentLabels[segment]
+  if (SEGMENT_LABELS[segment]) {
+    return SEGMENT_LABELS[segment]
   }
 
-  // Detect IDs / UUIDs
+  // Detectar IDs numéricos o UUIDs
   if (/^[0-9a-fA-F-]{8,}$/.test(segment) || /^\d+$/.test(segment)) {
     return "Detalle"
   }
@@ -121,26 +108,13 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbSegment[] {
   }
 
   const items: BreadcrumbSegment[] = [{ title: "Inicio", href: "/" }]
-
-  // Group sub-modules under their logical parent if applicable
-  const isActivosSubModule =
-    cleanPath.startsWith("/tipos-activo") ||
-    cleanPath.startsWith("/categorias") ||
-    cleanPath.startsWith("/accesorios") ||
-    cleanPath.startsWith("/tipos-documento")
-
-  if (isActivosSubModule) {
-    items.push({ title: "Activos", href: routes.activos.root })
-  }
-
   const rawSegments = cleanPath.split("/").filter(Boolean)
   let accumulatedPath = ""
 
   rawSegments.forEach((segment, index) => {
     accumulatedPath += `/${segment}`
     const isLast = index === rawSegments.length - 1
-
-    const title = pathLabels[accumulatedPath] || formatSegment(segment)
+    const title = formatSegment(segment)
     const isId = /^[0-9a-fA-F-]{8,}$/.test(segment) || /^\d+$/.test(segment)
 
     items.push({
@@ -173,7 +147,9 @@ export function AppBreadcrumb() {
 
           return (
             <Fragment key={`${item.title}-${index}`}>
-              {index > 0 && <BreadcrumbSeparator className="size-3.5 shrink-0 opacity-60" />}
+              {index > 0 && (
+                <BreadcrumbSeparator className="size-3.5 shrink-0 opacity-60" />
+              )}
               <BreadcrumbItem className="inline-flex items-center min-w-0">
                 {item.isCurrent ? (
                   <BreadcrumbPage className="font-medium text-foreground truncate max-w-40 sm:max-w-60 md:max-w-none">

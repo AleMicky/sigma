@@ -16,6 +16,9 @@ public interface UsuarioRolJpaRepository extends JpaRepository<UsuarioRolEntity,
     @Query("SELECT ur FROM UsuarioRolEntity ur JOIN FETCH ur.rol WHERE ur.usuario.id = :usuarioId AND ur.activo = true")
     List<UsuarioRolEntity> findActiveRolesByUsuarioId(@Param("usuarioId") UUID usuarioId);
 
+    @Query("SELECT ur FROM UsuarioRolEntity ur JOIN FETCH ur.usuario WHERE ur.rol.id = :rolId AND ur.activo = true")
+    List<UsuarioRolEntity> findActiveUsuariosByRolId(@Param("rolId") UUID rolId);
+
     Optional<UsuarioRolEntity> findByUsuarioIdAndRolId(UUID usuarioId, UUID rolId);
 
     void deleteByUsuarioId(UUID usuarioId);

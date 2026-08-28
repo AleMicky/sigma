@@ -7,4 +7,5 @@ export const rolEndpoints = {
   menus: (id: string) => `/roles/${id}/menus`,
   menuIds: (id: string) => `/roles/${id}/menus/ids`,
   menuArbol: (id: string) => `/roles/${id}/menus/arbol`,
+  usuarios: (id: string) => `/roles/${id}/usuarios`,
 }

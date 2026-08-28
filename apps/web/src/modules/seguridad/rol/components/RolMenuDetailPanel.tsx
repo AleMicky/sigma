@@ -19,6 +19,7 @@ import {
   Shield,
   ShieldCheck,
   Sparkles,
+  Users,
   X,
   XCircle,
 } from "lucide-react"
@@ -36,6 +37,7 @@ import { useAsignarMenusRol } from "../api/rol.mutations"
 import { rolQueries } from "../api/rol.queries"
 import type { Rol } from "../api/rol.service"
 import { getFriendlyRoleName } from "../utils/rol.utils"
+import { RolUsuariosTab } from "./RolUsuariosTab"
 
 type MenuFilterMode = "all" | "assigned" | "unassigned"
 
@@ -132,6 +134,7 @@ export function RolMenuDetailPanel({
   onBackToMaster,
   onOpenDetailDialog,
 }: RolMenuDetailPanelProps) {
+  const [activeTab, setActiveTab] = useState<"menus" | "usuarios">("menus")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [initialIds, setInitialIds] = useState<Set<string>>(new Set())
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
@@ -142,6 +145,10 @@ export function RolMenuDetailPanel({
   const menuArbolQuery = useQuery(menuQueries.arbol())
   const rolMenuIdsQuery = useQuery({
     ...rolQueries.menuIds(rol?.id ?? ""),
+    enabled: Boolean(rol?.id),
+  })
+  const rolUsuariosQuery = useQuery({
+    ...rolQueries.usuarios(rol?.id ?? ""),
     enabled: Boolean(rol?.id),
   })
 
@@ -365,253 +372,314 @@ export function RolMenuDetailPanel({
               </Button>
             )}
 
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={asignarMutation.isPending || isLoadingData || !isDirty}
-              className={cn(
-                "h-7 gap-1.5 text-[11px] px-3 font-semibold transition-all cursor-pointer",
-                isDirty && "shadow-xs ring-2 ring-primary/20",
-              )}
-              title="Guardar permisos (Ctrl+S / ⌘S)"
-            >
-              {asignarMutation.isPending ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <Save className="size-3" />
-              )}
-              <span>Guardar</span>
-              <kbd className="hidden md:inline-block ml-0.5 text-[9px] opacity-70 bg-primary-foreground/20 px-1 rounded font-mono">
-                ⌘S
-              </kbd>
-            </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={asignarMutation.isPending || isLoadingData || !isDirty}
+                className={cn(
+                  "h-7 gap-1.5 text-[11px] px-3 font-semibold transition-all cursor-pointer",
+                  isDirty && "shadow-xs ring-2 ring-primary/20",
+                )}
+                title="Guardar permisos (Ctrl+S / ⌘S)"
+              >
+                {asignarMutation.isPending ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <Save className="size-3" />
+                )}
+                <span>Guardar</span>
+                <kbd className="hidden md:inline-block ml-0.5 text-[9px] opacity-70 bg-primary-foreground/20 px-1 rounded font-mono">
+                  ⌘S
+                </kbd>
+              </Button>
           </div>
         </div>
 
-        {/* Barra de progreso de cobertura de menús */}
-        <div className="flex flex-col gap-1 pt-1 border-t border-border/40">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="size-3.5 text-primary" />
-              <span className="font-medium text-foreground">
-                {selectedIds.size} de {allAvailableIds.length} menús asignados
-              </span>
-              <span className="text-muted-foreground/60">({coveragePercent}%)</span>
+        {/* Selector de Pestañas (Permisos / Usuarios) */}
+        <div className="flex items-center gap-1.5 pt-1.5 border-t border-border/40">
+          <button
+            type="button"
+            onClick={() => setActiveTab("menus")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer",
+              activeTab === "menus"
+                ? "bg-primary text-primary-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+            )}
+          >
+            <FolderTree className="size-3.5" />
+            <span>Permisos y Menús</span>
+            <Badge
+              variant={activeTab === "menus" ? "secondary" : "outline"}
+              className={cn(
+                "ml-0.5 text-[9.5px] py-0 px-1 font-mono h-4",
+                activeTab === "menus"
+                  ? "bg-primary-foreground/20 text-primary-foreground border-transparent"
+                  : "text-muted-foreground",
+              )}
+            >
+              {selectedIds.size}/{allAvailableIds.length}
+            </Badge>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("usuarios")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer",
+              activeTab === "usuarios"
+                ? "bg-primary text-primary-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+            )}
+          >
+            <Users className="size-3.5" />
+            <span>Usuarios Asignados</span>
+            <Badge
+              variant={activeTab === "usuarios" ? "secondary" : "outline"}
+              className={cn(
+                "ml-0.5 text-[9.5px] py-0 px-1 font-mono h-4",
+                activeTab === "usuarios"
+                  ? "bg-primary-foreground/20 text-primary-foreground border-transparent"
+                  : "text-muted-foreground",
+              )}
+            >
+              {rolUsuariosQuery.data?.length ?? 0}
+            </Badge>
+          </button>
+        </div>
+
+        {/* Barra de progreso de cobertura de menús (solo en pestaña de menús) */}
+        {activeTab === "menus" && (
+          <div className="flex flex-col gap-1 pt-1 border-t border-border/40">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="size-3.5 text-primary" />
+                <span className="font-medium text-foreground">
+                  {selectedIds.size} de {allAvailableIds.length} menús asignados
+                </span>
+                <span className="text-muted-foreground/60">({coveragePercent}%)</span>
+              </div>
+
+              {isDirty && (
+                <span className="flex items-center gap-1 text-[10.5px] font-medium text-amber-600 dark:text-amber-400 animate-pulse">
+                  <AlertTriangle className="size-3" />
+                  Cambios pendientes
+                </span>
+              )}
             </div>
 
-            {isDirty && (
-              <span className="flex items-center gap-1 text-[10.5px] font-medium text-amber-600 dark:text-amber-400 animate-pulse">
-                <AlertTriangle className="size-3" />
-                Cambios pendientes
-              </span>
-            )}
-          </div>
-
-          {/* Mini barra de progreso */}
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className={cn(
-                "h-full transition-all duration-300 rounded-full",
-                coveragePercent === 100
-                  ? "bg-emerald-500"
-                  : coveragePercent > 0
-                    ? "bg-primary"
-                    : "bg-muted-foreground/30",
-              )}
-              style={{ width: `${coveragePercent}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Barra de Herramientas, Filtros y Búsqueda */}
-      <div className="shrink-0 px-3.5 py-2 border-b border-border/70 bg-card/60 space-y-2">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          {/* Buscador de menús */}
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar en el árbol por nombre, código o ruta…"
-              className="pl-7 pr-7 text-xs h-7.5 bg-background/80"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                <X className="size-3" />
-              </button>
-            )}
-          </div>
-
-          {/* Filtro de asignación (Todos / Asignados / No asignados) */}
-          <div className="flex items-center rounded-lg bg-muted/60 p-0.5 text-[11px] border border-border/40 shrink-0">
-            <button
-              type="button"
-              onClick={() => setFilterMode("all")}
-              className={cn(
-                "px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer",
-                filterMode === "all"
-                  ? "bg-card text-foreground shadow-2xs"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              Todos
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterMode("assigned")}
-              className={cn(
-                "px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1",
-                filterMode === "assigned"
-                  ? "bg-card text-primary shadow-2xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Check className="size-2.5" />
-              <span>Asignados</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterMode("unassigned")}
-              className={cn(
-                "px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1",
-                filterMode === "unassigned"
-                  ? "bg-card text-foreground shadow-2xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <X className="size-2.5" />
-              <span>Sin asignar</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Acciones rápidas de selección y expansión */}
-        <div className="flex items-center justify-between text-[11px] text-muted-foreground px-0.5">
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleSelectAll}
-              className="hover:text-primary transition-colors cursor-pointer font-medium"
-            >
-              Seleccionar todos
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={handleDeselectAll}
-              className="hover:text-primary transition-colors cursor-pointer font-medium"
-            >
-              Limpiar selección
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleExpandAll}
-              className="hover:text-primary transition-colors cursor-pointer"
-            >
-              Expandir todo
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={handleCollapseAll}
-              className="hover:text-primary transition-colors cursor-pointer"
-            >
-              Colapsar todo
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Árbol Jerárquico de Menús */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-0.5 overscroll-contain">
-        {isLoadingData ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-2.5 text-muted-foreground">
-            <Loader2 className="size-6 animate-spin text-primary" />
-            <p className="text-xs font-medium">Cargando árbol de permisos…</p>
-          </div>
-        ) : filteredNodes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground gap-2">
-            <FolderTree className="size-8 stroke-1 text-muted-foreground/50" />
-            <p className="text-xs font-semibold text-foreground">No se encontraron menús</p>
-            <p className="text-[11px] text-muted-foreground/70 max-w-xs">
-              {searchQuery || filterMode !== "all"
-                ? "Ningún elemento coincide con los filtros aplicados."
-                : "No hay menús disponibles en el sistema."}
-            </p>
-            {(searchQuery || filterMode !== "all") && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchQuery("")
-                  setFilterMode("all")
-                }}
-                className="h-7 text-xs gap-1 mt-1 cursor-pointer"
-              >
-                <Filter className="size-3" />
-                <span>Restablecer filtros</span>
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-0.5">
-            {filteredNodes.map((node) => (
-              <TreeNodeItem
-                key={node.id}
-                node={node}
-                level={0}
-                selectedIds={selectedIds}
-                expandedIds={expandedIds}
-                onToggleExpand={toggleNode}
-                onSelectNode={handleSelectNode}
+            {/* Mini barra de progreso */}
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn(
+                  "h-full transition-all duration-300 rounded-full",
+                  coveragePercent === 100
+                    ? "bg-emerald-500"
+                    : coveragePercent > 0
+                      ? "bg-primary"
+                      : "bg-muted-foreground/30",
+                )}
+                style={{ width: `${coveragePercent}%` }}
               />
-            ))}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Banner flotante de cambios sin guardar */}
-      {isDirty && (
-        <div className="shrink-0 border-t border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 px-3.5 py-2 flex items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300 font-medium">
-            <Sparkles className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>Tienes modificaciones pendientes de guardar</span>
+      {activeTab === "menus" ? (
+        <>
+          {/* Barra de Herramientas, Filtros y Búsqueda */}
+          <div className="shrink-0 px-3.5 py-2 border-b border-border/70 bg-card/60 space-y-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {/* Buscador de menús */}
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar en el árbol por nombre, código o ruta…"
+                  className="pl-7 pr-7 text-xs h-7.5 bg-background/80"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filtro de asignación (Todos / Asignados / No asignados) */}
+              <div className="flex items-center rounded-lg bg-muted/60 p-0.5 text-[11px] border border-border/40 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setFilterMode("all")}
+                  className={cn(
+                    "px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer",
+                    filterMode === "all"
+                      ? "bg-card text-foreground shadow-2xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Todos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterMode("assigned")}
+                  className={cn(
+                    "px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1",
+                    filterMode === "assigned"
+                      ? "bg-card text-primary shadow-2xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Check className="size-2.5" />
+                  <span>Asignados</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterMode("unassigned")}
+                  className={cn(
+                    "px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1",
+                    filterMode === "unassigned"
+                      ? "bg-card text-foreground shadow-2xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <X className="size-2.5" />
+                  <span>Sin asignar</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Acciones rápidas de selección y expansión */}
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground px-0.5">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="hover:text-primary transition-colors cursor-pointer font-medium"
+                >
+                  Seleccionar todos
+                </button>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={handleDeselectAll}
+                  className="hover:text-primary transition-colors cursor-pointer font-medium"
+                >
+                  Limpiar selección
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleExpandAll}
+                  className="hover:text-primary transition-colors cursor-pointer"
+                >
+                  Expandir todo
+                </button>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={handleCollapseAll}
+                  className="hover:text-primary transition-colors cursor-pointer"
+                >
+                  Colapsar todo
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleResetChanges}
-              disabled={asignarMutation.isPending}
-              className="h-6.5 text-[11px] px-2 text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200 cursor-pointer"
-            >
-              <RotateCcw className="size-2.5 mr-1" />
-              <span>Deshacer</span>
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={asignarMutation.isPending}
-              className="h-6.5 text-[11px] px-2.5 gap-1 font-semibold cursor-pointer shadow-xs"
-            >
-              {asignarMutation.isPending ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <Save className="size-3" />
-              )}
-              <span>Guardar cambios</span>
-            </Button>
+          {/* Árbol Jerárquico de Menús */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-0.5 overscroll-contain">
+            {isLoadingData ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-2.5 text-muted-foreground">
+                <Loader2 className="size-6 animate-spin text-primary" />
+                <p className="text-xs font-medium">Cargando árbol de permisos…</p>
+              </div>
+            ) : filteredNodes.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground gap-2">
+                <FolderTree className="size-8 stroke-1 text-muted-foreground/50" />
+                <p className="text-xs font-semibold text-foreground">No se encontraron menús</p>
+                <p className="text-[11px] text-muted-foreground/70 max-w-xs">
+                  {searchQuery || filterMode !== "all"
+                    ? "Ningún elemento coincide con los filtros aplicados."
+                    : "No hay menús disponibles en el sistema."}
+                </p>
+                {(searchQuery || filterMode !== "all") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchQuery("")
+                      setFilterMode("all")
+                    }}
+                    className="h-7 text-xs gap-1 mt-1 cursor-pointer"
+                  >
+                    <Filter className="size-3" />
+                    <span>Restablecer filtros</span>
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {filteredNodes.map((node) => (
+                  <TreeNodeItem
+                    key={node.id}
+                    node={node}
+                    level={0}
+                    selectedIds={selectedIds}
+                    expandedIds={expandedIds}
+                    onToggleExpand={toggleNode}
+                    onSelectNode={handleSelectNode}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+
+          {/* Banner flotante de cambios sin guardar */}
+          {isDirty && (
+            <div className="shrink-0 border-t border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 px-3.5 py-2 flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300 font-medium">
+                <Sparkles className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>Tienes modificaciones pendientes de guardar</span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetChanges}
+                  disabled={asignarMutation.isPending}
+                  className="h-6.5 text-[11px] px-2 text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200 cursor-pointer"
+                >
+                  <RotateCcw className="size-2.5 mr-1" />
+                  <span>Deshacer</span>
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={asignarMutation.isPending}
+                  className="h-6.5 text-[11px] px-2.5 gap-1 font-semibold cursor-pointer shadow-xs"
+                >
+                  {asignarMutation.isPending ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : (
+                    <Save className="size-3" />
+                  )}
+                  <span>Guardar cambios</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <RolUsuariosTab rol={rol} />
       )}
     </div>
   )

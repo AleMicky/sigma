@@ -7,4 +7,5 @@ export const rolKeys = {
   menus: (id: string) => ["roles", id, "menus"] as const,
   menuIds: (id: string) => ["roles", id, "menus", "ids"] as const,
   menuArbol: (id: string) => ["roles", id, "menus", "arbol"] as const,
+  usuarios: (id: string) => ["roles", id, "usuarios"] as const,
 }

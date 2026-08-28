@@ -6,6 +6,7 @@ import { menuKeys } from "./menu.keys"
 import {
   getMenu,
   getMenuArbol,
+  getMisMenus,
   listAllMenus,
   listMenus,
 } from "./menu.service"
@@ -31,6 +32,13 @@ export const menuQueries = {
     queryOptions({
       queryKey: menuKeys.arbol(),
       queryFn: () => getMenuArbol(),
+    }),
+
+  misMenus: () =>
+    queryOptions({
+      queryKey: menuKeys.misMenus(),
+      queryFn: () => getMisMenus(),
+      staleTime: 5 * 60 * 1000,
     }),
 
   detail: (id: string) =>

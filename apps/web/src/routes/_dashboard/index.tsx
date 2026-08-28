@@ -15,8 +15,9 @@ import {
   X,
 } from "lucide-react"
 
-import { appConfig, flattenNavChildren, navItems, routes } from "@/app/config"
+import { appConfig, flattenNavChildren, routes } from "@/app/config"
 import { useAuthStore } from "@/app/store/auth.store"
+import { useAllowedNavItems } from "@/shared/hooks/use-allowed-nav-items"
 import { PageShell } from "@/shared/components/page-shell"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -108,13 +109,14 @@ export const Route = createFileRoute("/_dashboard/")({
 
 function HomePage() {
   const user = useAuthStore((state) => state.user)
+  const { navItems: userNavItems } = useAllowedNavItems()
   const displayName =
     user?.name?.split(/\s+/)[0] || user?.username || "Usuario"
   const [searchQuery, setSearchQuery] = useState("")
 
   const menuModules = useMemo(
-    () => navItems.filter((item) => item.to !== routes.home),
-    [],
+    () => userNavItems.filter((item) => item.to !== routes.home),
+    [userNavItems],
   )
 
   // Collect all flat links for instant search

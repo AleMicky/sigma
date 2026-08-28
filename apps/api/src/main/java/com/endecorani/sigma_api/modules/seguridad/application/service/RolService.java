@@ -1,14 +1,12 @@
 package com.endecorani.sigma_api.modules.seguridad.application.service;
 
-import com.endecorani.sigma_api.modules.seguridad.application.dto.request.AsignarMenusRolRequest;
-import com.endecorani.sigma_api.modules.seguridad.application.dto.response.MenuResponse;
-import com.endecorani.sigma_api.modules.seguridad.application.dto.response.MenuTreeNode;
 import com.endecorani.sigma_api.modules.seguridad.application.dto.response.RolResponse;
-import com.endecorani.sigma_api.modules.seguridad.domain.model.Menu;
+import com.endecorani.sigma_api.modules.seguridad.application.dto.response.UsuarioResponse;
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Rol;
-import com.endecorani.sigma_api.modules.seguridad.domain.repository.MenuRepository;
-import com.endecorani.sigma_api.modules.seguridad.domain.repository.RolMenuRepository;
 import com.endecorani.sigma_api.modules.seguridad.domain.repository.RolRepository;
+import com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.entity.UsuarioRolEntity;
+import com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.repository.UsuarioRolJpaRepository;
+import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -19,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -39,9 +36,7 @@ public class RolService {
     );
 
     private final RolRepository rolRepository;
-    private final RolMenuRepository rolMenuRepository;
-    private final MenuRepository menuRepository;
-    private final MenuService menuService;
+    private final UsuarioRolJpaRepository usuarioRolJpaRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<RolResponse> findAll(PageRequestDto pageRequest) {
@@ -85,54 +80,29 @@ public class RolService {
     }
 
     @Transactional(readOnly = true)
-    public List<UUID> obtenerMenuIdsPorRol(UUID rolId) {
+    public List<UsuarioResponse> obtenerUsuariosPorRol(UUID rolId) {
         validarRolExiste(rolId);
-        return rolMenuRepository.findMenuIdsByRolId(rolId);
-    }
-
-    @Transactional(readOnly = true)
-    public List<MenuResponse> obtenerMenusPorRol(UUID rolId) {
-        validarRolExiste(rolId);
-        List<UUID> menuIds = rolMenuRepository.findMenuIdsByRolId(rolId);
-        if (menuIds.isEmpty()) {
-            return List.of();
-        }
-        List<Menu> menus = menuRepository.findAllById(menuIds);
-        return menus.stream()
-                .map(menuService::toResponse)
+        List<UsuarioRolEntity> usuariosRoles = usuarioRolJpaRepository.findActiveUsuariosByRolId(rolId);
+        return usuariosRoles.stream()
+                .map(ur -> {
+                    var u = ur.getUsuario();
+                    return new UsuarioResponse(
+                            u.getId(),
+                            u.getKeycloakUserId(),
+                            u.getUsername(),
+                            u.getNombre(),
+                            u.getEmail(),
+                            u.isActivo(),
+                            List.of(ur.getRol().getNombre()),
+                            new AuditoriaResponse(
+                                    u.getCreatedAt(),
+                                    u.getUpdatedAt(),
+                                    u.getCreatedBy(),
+                                    u.getUpdatedBy()
+                            )
+                    );
+                })
                 .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<MenuTreeNode> obtenerArbolMenusPorRol(UUID rolId) {
-        validarRolExiste(rolId);
-        List<UUID> menuIds = rolMenuRepository.findMenuIdsByRolId(rolId);
-        if (menuIds.isEmpty()) {
-            return List.of();
-        }
-        List<Menu> menus = menuRepository.findAllById(menuIds);
-        return menuService.buildArbolFromMenus(menus);
-    }
-
-    @Transactional
-    public List<UUID> asignarMenus(UUID rolId, AsignarMenusRolRequest request) {
-        validarRolExiste(rolId);
-
-        List<UUID> menuIds = request.getMenuIds() != null
-                ? request.getMenuIds().stream()
-                        .filter(Objects::nonNull)
-                        .distinct()
-                        .toList()
-                : List.of();
-
-        for (UUID menuId : menuIds) {
-            if (!menuRepository.existsById(menuId)) {
-                throw new ResourceNotFoundException("Menú", menuId);
-            }
-        }
-
-        rolMenuRepository.asignarMenusARol(rolId, menuIds);
-        return menuIds;
     }
 
     private void validarRolExiste(UUID rolId) {

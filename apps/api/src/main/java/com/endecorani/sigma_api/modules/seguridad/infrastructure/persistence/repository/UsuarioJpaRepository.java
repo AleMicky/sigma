@@ -16,6 +16,10 @@ public interface UsuarioJpaRepository extends JpaRepository<UsuarioEntity, UUID>
 
     Optional<UsuarioEntity> findByKeycloakUserId(String keycloakUserId);
 
+    Optional<UsuarioEntity> findByUsernameIgnoreCase(String username);
+
+    Optional<UsuarioEntity> findByEmailIgnoreCase(String email);
+
     @Query("""
             select u
             from UsuarioEntity u

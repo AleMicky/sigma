@@ -8,6 +8,7 @@ import {
   getRolMenuArbol,
   getRolMenuIds,
   getRolMenus,
+  getRolUsuarios,
   listAllRoles,
   listRoles,
 } from "./rol.service"
@@ -56,4 +57,12 @@ export const rolQueries = {
       queryFn: () => getRolMenuArbol(id),
       enabled: Boolean(id),
     }),
+
+  usuarios: (id: string) =>
+    queryOptions({
+      queryKey: rolKeys.usuarios(id),
+      queryFn: () => getRolUsuarios(id),
+      enabled: Boolean(id),
+    }),
 }
+

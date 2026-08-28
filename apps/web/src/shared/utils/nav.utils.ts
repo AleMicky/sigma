@@ -1,16 +1,16 @@
-import { navItems } from "@/app/config/nav.config"
 import type { NavChild, NavItem, NavLeaf } from "@/shared/types/nav.types"
 
 export function flattenNavChildren(children?: NavChild[]): NavLeaf[] {
   if (!children) return []
   return children.flatMap((child) =>
-    "items" in child ? child.items : [child]
+    "items" in child ? child.items : [child],
   )
 }
 
-export function getAllNavLeaves(): NavLeaf[] {
-  return navItems.flatMap((item) => {
-    if (!item.children) return [{ title: item.title, to: item.to, icon: item.icon }]
+export function getAllNavLeaves(items: NavItem[] = []): NavLeaf[] {
+  return items.flatMap((item) => {
+    if (!item.children)
+      return [{ title: item.title, to: item.to, icon: item.icon }]
     return flattenNavChildren(item.children)
   })
 }
@@ -24,16 +24,17 @@ export function isPathActive(
   if (pathname === to) return true
   if (!pathname.startsWith(`${to}/`)) return false
 
-  // If other candidate routes exist, verify if a more specific/longer candidate matches
-  const candidates = allCandidateRoutes ?? getAllNavLeaves().map((l) => l.to)
-  const hasMoreSpecificMatch = candidates.some(
-    (otherTo) =>
-      otherTo !== to &&
-      otherTo.length > to.length &&
-      (pathname === otherTo || pathname.startsWith(`${otherTo}/`)),
-  )
+  if (allCandidateRoutes && allCandidateRoutes.length > 0) {
+    const hasMoreSpecificMatch = allCandidateRoutes.some(
+      (otherTo) =>
+        otherTo !== to &&
+        otherTo.length > to.length &&
+        (pathname === otherTo || pathname.startsWith(`${otherTo}/`)),
+    )
+    return !hasMoreSpecificMatch
+  }
 
-  return !hasMoreSpecificMatch
+  return true
 }
 
 export function isNavItemActive(pathname: string, item: NavItem): boolean {
@@ -49,6 +50,6 @@ export function isNavItemActive(pathname: string, item: NavItem): boolean {
   return false
 }
 
-export function findActiveNavItem(pathname: string) {
-  return navItems.find((item) => isNavItemActive(pathname, item)) ?? null
+export function findActiveNavItem(pathname: string, items: NavItem[] = []) {
+  return items.find((item) => isNavItemActive(pathname, item)) ?? null
 }

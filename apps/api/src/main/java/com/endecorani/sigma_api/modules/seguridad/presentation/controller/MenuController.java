@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.seguridad.application.dto.request.MenuRe
 import com.endecorani.sigma_api.modules.seguridad.application.dto.response.MenuResponse;
 import com.endecorani.sigma_api.modules.seguridad.application.dto.response.MenuTreeNode;
 import com.endecorani.sigma_api.modules.seguridad.application.service.MenuService;
+import com.endecorani.sigma_api.modules.seguridad.application.service.RolMenuService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -39,12 +41,14 @@ import java.util.UUID;
         description = "Administración de menús con jerarquía recursiva"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
+@PreAuthorize("isAuthenticated()")
 public class MenuController {
 
     private final MenuService menuService;
+    private final RolMenuService rolMenuService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Crear un menú")
     public ResponseEntity<ApiResponse<MenuResponse>> create(
             @Valid @RequestBody MenuRequest request
@@ -60,6 +64,7 @@ public class MenuController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Actualizar un menú")
     public ResponseEntity<ApiResponse<MenuResponse>> update(
             @PathVariable UUID id,
@@ -74,6 +79,7 @@ public class MenuController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Eliminar un menú")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         menuService.delete(id);
@@ -85,6 +91,7 @@ public class MenuController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Obtener menú por ID")
     public ResponseEntity<ApiResponse<MenuResponse>> findById(
             @PathVariable UUID id
@@ -97,6 +104,7 @@ public class MenuController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Listar menús paginados")
     public ResponseEntity<ApiResponse<PageResponse<MenuResponse>>> findAll(
             @Valid @ModelAttribute PageRequestDto pageRequest
@@ -109,6 +117,7 @@ public class MenuController {
     }
 
     @GetMapping(params = "q")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Buscar menús por código o nombre")
     public ResponseEntity<ApiResponse<PageResponse<MenuResponse>>> search(
             @RequestParam String q,
@@ -122,6 +131,7 @@ public class MenuController {
     }
 
     @GetMapping("/todos")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Listar todos los menús sin paginación")
     public ResponseEntity<ApiResponse<List<MenuResponse>>> findAllList() {
         return ResponseEntity.ok(
@@ -132,11 +142,28 @@ public class MenuController {
     }
 
     @GetMapping("/arbol")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Obtener árbol jerárquico completo de menús")
     public ResponseEntity<ApiResponse<List<MenuTreeNode>>> buildArbol() {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         menuService.buildArbol()
+                )
+        );
+    }
+
+    @GetMapping("/mis-menus")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Obtener árbol de menús permitidos para el usuario autenticado",
+            description = "Devuelve los menús y módulos asignados a los roles del usuario autenticado"
+    )
+    public ResponseEntity<ApiResponse<List<MenuTreeNode>>> obtenerMisMenus(
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        rolMenuService.obtenerMisMenus(authentication)
                 )
         );
     }
