@@ -1,136 +1,88 @@
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { FileText, FolderTree, LayoutDashboard } from "lucide-react"
+import { FileText, Folder, LayoutDashboard } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
 import { useAuthStore } from "@/app/store/auth.store"
 import { menuQueries } from "@/modules/seguridad/menu/api/menu.queries"
 import type { MenuTreeNode } from "@/modules/seguridad/menu/api/menu.service"
 import { resolveLucideIcon } from "@/modules/seguridad/menu/components/DynamicLucideIcon"
-import type {
-  AppPath,
-  NavChild,
-  NavItem,
-  NavLeaf,
-  NavSubGroup,
-} from "@/shared/types/nav.types"
+import type { NavNode, NavSection } from "@/shared/types/nav.types"
 
-const fallbackHomeItem: NavItem = {
-  title: "Inicio",
-  to: routes.home,
-  icon: LayoutDashboard,
+/**
+ * Convierte un nodo de árbol de menú de forma recursiva a NavNode
+ */
+function mapTreeNodeToNavNode(node: MenuTreeNode): NavNode {
+  const isLeaf = !node.hijos || node.hijos.length === 0
+  const defaultIcon = isLeaf ? FileText : Folder
+  const Icon = resolveLucideIcon(node.icono) || defaultIcon
+
+  const activeChildren = (node.hijos || [])
+    .filter((child) => child && child.activo !== false)
+    .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+
+  return {
+    id: node.id,
+    title: node.nombre,
+    to: node.ruta || undefined,
+    icon: Icon,
+    order: node.orden,
+    children:
+      activeChildren.length > 0
+        ? activeChildren.map(mapTreeNodeToNavNode)
+        : undefined,
+  }
 }
 
 /**
- * Transforma la jerarquía dinámica de MenuTreeNode obtenida de la base de datos (API)
- * a la estructura NavItem que requiere la interfaz de navegación y sidebar.
+ * Transforma el árbol de menús dinámico entregado por la API (GET /menus/mis-menus)
+ * a secciones y nodos de navegación recursivos para el Sidebar.
+ *
+ * El primer nivel (raíces) siempre corresponde al TÍTULO del Módulo/Sección
+ * (por ejemplo: "Módulo de Activos", "Módulo de Seguridad", "Inicio").
+ * Los niveles inferiores se renderizan recursivamente como agrupadores o menús directos.
  */
-function convertTreeToNavItems(nodes: MenuTreeNode[] | unknown): NavItem[] {
+function convertTreeToNavSections(nodes: MenuTreeNode[] | unknown): NavSection[] {
   const rawList: MenuTreeNode[] = Array.isArray(nodes)
     ? nodes
-    : Array.isArray((nodes as any)?.data)
-      ? (nodes as any).data
+    : typeof nodes === "object" &&
+        nodes !== null &&
+        "data" in nodes &&
+        Array.isArray((nodes as { data: unknown }).data)
+      ? ((nodes as { data: MenuTreeNode[] }).data)
       : []
+
 
   if (!rawList || rawList.length === 0) return []
 
-  const rootItems: MenuTreeNode[] = []
+  const activeRoots = rawList
+    .filter((n) => n && n.activo !== false)
+    .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
 
-  for (const node of rawList) {
-    if (!node || node.activo === false) continue
+  return activeRoots.map((root): NavSection => {
+    const isHome =
+      root.codigo === "MENU_INICIO" ||
+      root.codigo === "MOD_INICIO" ||
+      (!root.hijos?.length && (root.ruta === "/" || !root.ruta))
 
-    // Si es un contenedor de módulo superior (ej. MOD_ORGANIZACION o contenedor sin ruta ni icono directo)
-    if (
-      (node.codigo?.startsWith("MOD_") || (!node.ruta && !node.icono)) &&
-      node.hijos &&
-      node.hijos.length > 0
-    ) {
-      for (const child of node.hijos) {
-        if (child && child.activo !== false) {
-          rootItems.push(child)
-        }
-      }
-    } else {
-      rootItems.push(node)
-    }
-  }
+    const defaultIcon = isHome ? LayoutDashboard : LayoutDashboard
+    const Icon = resolveLucideIcon(root.icono) || defaultIcon
 
-  rootItems.sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-
-  return rootItems.map((item): NavItem => {
-    const Icon = resolveLucideIcon(item.icono) || LayoutDashboard
-
-    // Identificar Inicio
-    if (
-      item.codigo === "MENU_INICIO" ||
-      item.codigo === "MOD_INICIO" ||
-      (item.ruta === routes.home && (!item.hijos || item.hijos.length === 0))
-    ) {
-      return {
-        title: item.nombre,
-        to: routes.home,
-        icon: Icon,
-      }
-    }
-
-    // Elemento hoja directo sin hijos (Nivel 1 hoja)
-    if (!item.hijos || item.hijos.length === 0) {
-      return {
-        title: item.nombre,
-        to: (item.ruta || routes.home) as AppPath,
-        icon: Icon,
-      }
-    }
-
-    // Submenús (Nivel 2 hijos y Nivel 3 subgrupos)
-    const children: NavChild[] = []
-    const sortedChildren = [...item.hijos]
-      .filter((h) => h && h.activo !== false)
+    const activeChildren = (root.hijos || [])
+      .filter((child) => child && child.activo !== false)
       .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
 
-    for (const child of sortedChildren) {
-      const childIcon = resolveLucideIcon(child.icono) || FolderTree
-
-      if (child.hijos && child.hijos.length > 0) {
-        // Nivel 2 es un subgrupo con hijos en Nivel 3 (ej. "Configuraciones", "Mantenimiento")
-        const subItems: NavLeaf[] = child.hijos
-          .filter((sub) => sub && sub.activo !== false && sub.ruta)
-          .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-          .map((sub) => ({
-            title: sub.nombre,
-            to: sub.ruta as AppPath,
-            icon: resolveLucideIcon(sub.icono) || FileText,
-          }))
-
-        if (subItems.length > 0) {
-          children.push({
-            title: child.nombre,
-            icon: childIcon,
-            items: subItems,
-          } as NavSubGroup)
-        }
-      } else if (child.ruta) {
-        // Nivel 2 es un enlace hoja directo
-        children.push({
-          title: child.nombre,
-          to: child.ruta as AppPath,
-          icon: childIcon,
-        } as NavLeaf)
-      }
-    }
-
-    const defaultRoute = (item.ruta ||
-      (children[0] && "to" in children[0] ? children[0].to : undefined) ||
-      (children[0] && "items" in children[0]
-        ? children[0].items[0]?.to
-        : undefined) ||
-      routes.home) as AppPath
-
     return {
-      title: item.nombre,
-      to: defaultRoute,
+      id: root.id,
+      title: root.nombre,
+      code: root.codigo,
+      to: isHome ? (root.ruta || routes.home) : root.ruta || undefined,
       icon: Icon,
-      children: children.length > 0 ? children : undefined,
+      order: root.orden,
+      children:
+        activeChildren.length > 0
+          ? activeChildren.map(mapTreeNodeToNavNode)
+          : undefined,
     }
   })
 }
@@ -147,27 +99,18 @@ export function useAllowedNavItems() {
     enabled: isEnabled,
   })
 
-  const dynamicNavItems = useMemo(() => {
+  const dynamicNavSections = useMemo(() => {
     const data = misMenusQuery.data
-
     if (data) {
-      const converted = convertTreeToNavItems(data)
-      if (converted.length > 0) {
-        return converted
-      }
+      return convertTreeToNavSections(data)
     }
-
-    if (!isEnabled) return []
-
-    // Mientras carga o si aún no hay respuesta
-    return [fallbackHomeItem]
-  }, [isEnabled, misMenusQuery.data])
+    return []
+  }, [misMenusQuery.data])
 
   return {
-    navItems: dynamicNavItems,
+    navItems: dynamicNavSections,
     isLoading: misMenusQuery.isLoading,
     isFetched: misMenusQuery.isFetched,
     refetch: misMenusQuery.refetch,
   }
 }
-

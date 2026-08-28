@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react"
 import { Link, useRouterState } from "@tanstack/react-router"
-import { ChevronRight, Search, X } from "lucide-react"
+import { ChevronRight, FileText, Folder, LayoutDashboard, Search, X } from "lucide-react"
 
 import logoEndeCorani from "@/assets/logo-ende-corani.png"
 import { appConfig, isPathActive } from "@/app/config"
 import { useAllowedNavItems } from "@/shared/hooks/use-allowed-nav-items"
-import type { NavItem, NavLeaf, NavSubGroup } from "@/shared/types/nav.types"
+import type { NavNode, NavSection } from "@/shared/types/nav.types"
+import { isNavNodeActive } from "@/shared/utils/nav.utils"
 import { Button } from "@/shared/components/ui/button"
 import { Skeleton } from "@/shared/components/ui/skeleton"
 import {
@@ -14,6 +15,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
 import {
@@ -43,7 +47,7 @@ import { cn } from "@/shared/lib/utils"
 
 import { UserMenu } from "./UserMenu"
 
-// Paletas de color dinámicas para dar identidad visual a cada módulo
+// Paletas de color temáticas para cada módulo o sección raíz
 const MODULE_PALETTES = [
   {
     icon: "text-sky-500 dark:text-sky-400",
@@ -119,21 +123,10 @@ const MODULE_PALETTES = [
   },
 ]
 
-function getModuleTheme(index: number) {
-  return MODULE_PALETTES[index % MODULE_PALETTES.length]
-}
+type ThemePalette = (typeof MODULE_PALETTES)[number]
 
-function isItemActive(pathname: string, item: NavItem): boolean {
-  if (isPathActive(pathname, item.to)) return true
-  if (item.children) {
-    return item.children.some((child) => {
-      if ("items" in child) {
-        return child.items.some((subItem) => isPathActive(pathname, subItem.to))
-      }
-      return isPathActive(pathname, child.to)
-    })
-  }
-  return false
+function getModuleTheme(index: number): ThemePalette {
+  return MODULE_PALETTES[index % MODULE_PALETTES.length]
 }
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
@@ -175,16 +168,8 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
         <SidebarSearch query={searchQuery} onQueryChange={setSearchQuery} />
       </SidebarHeader>
 
-      <SidebarContent className="px-2.5">
-        <SidebarGroup className="px-0 py-2">
-          <SidebarGroupLabel className="flex items-center justify-between text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/75 group-data-[collapsible=icon]:hidden px-2 mb-1.5">
-            <span>Módulos del Sistema</span>
-            <span className="size-1.5 rounded-full bg-primary/60 animate-pulse" />
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <NavigationMenu searchQuery={searchQuery} />
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="px-2.5 py-2">
+        <NavigationMenu searchQuery={searchQuery} />
       </SidebarContent>
 
       <SidebarFooter className="px-3 pb-3 pt-2 border-t border-border/50 bg-muted/20">
@@ -206,7 +191,6 @@ function SidebarSearch({
   const { state, setOpen } = useSidebar()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Acceso directo con atajo ⌘K / Ctrl+K
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -275,99 +259,78 @@ function SidebarSearch({
   )
 }
 
+/**
+ * Filtra de manera recursiva los nodos del árbol según el término de búsqueda
+ */
+function filterNavNodes(nodes: NavNode[], query: string): NavNode[] {
+  const result: NavNode[] = []
+
+  for (const node of nodes) {
+    const matchesNode = node.title.toLowerCase().includes(query)
+    const filteredSubChildren = node.children
+      ? filterNavNodes(node.children, query)
+      : []
+
+    if (matchesNode) {
+      // Si el padre coincide, mostramos todos sus hijos o los filtrados
+      result.push(node)
+    } else if (filteredSubChildren.length > 0) {
+      // Si algún hijo coincide, conservamos el nodo con los hijos que hicieron match
+      result.push({
+        ...node,
+        children: filteredSubChildren,
+      })
+    }
+  }
+
+  return result
+}
+
 function NavigationMenu({ searchQuery }: { searchQuery: string }) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
-  const { state } = useSidebar()
-  const { navItems: userNavItems, isLoading } = useAllowedNavItems()
+  const { navItems: sections, isLoading } = useAllowedNavItems()
 
   const normalizedQuery = searchQuery.trim().toLowerCase()
 
-  // Filtro de búsqueda optimizado para módulos, subgrupos y sub-ítems
-  const filteredNavItems = useMemo(() => {
-    if (!normalizedQuery) return userNavItems
+  const filteredSections = useMemo(() => {
+    if (!normalizedQuery) return sections
 
-    return userNavItems
-      .map((item) => {
-        const matchesParent = item.title.toLowerCase().includes(normalizedQuery)
-        if (!item.children) {
-          return matchesParent ? item : null
+    return sections
+      .map((section) => {
+        const matchesSection = section.title.toLowerCase().includes(normalizedQuery)
+        if (!section.children || section.children.length === 0) {
+          return matchesSection ? section : null
         }
 
-        const filteredChildren = item.children
-          .map((child) => {
-            if ("items" in child) {
-              const matchesSubGroup = child.title
-                .toLowerCase()
-                .includes(normalizedQuery)
-              const filteredSubItems = child.items.filter((sub) =>
-                sub.title.toLowerCase().includes(normalizedQuery),
-              )
-              if (matchesSubGroup || filteredSubItems.length > 0) {
-                return {
-                  ...child,
-                  items: matchesSubGroup ? child.items : filteredSubItems,
-                }
-              }
-              return null
-            }
+        const filteredChildren = filterNavNodes(section.children, normalizedQuery)
 
-            return child.title.toLowerCase().includes(normalizedQuery)
-              ? child
-              : null
-          })
-          .filter(Boolean) as typeof item.children
-
-        if (matchesParent || filteredChildren.length > 0) {
+        if (matchesSection || filteredChildren.length > 0) {
           return {
-            ...item,
-            children: matchesParent ? item.children : filteredChildren,
+            ...section,
+            children: matchesSection ? section.children : filteredChildren,
           }
         }
         return null
       })
-      .filter(Boolean) as typeof userNavItems
-  }, [normalizedQuery, userNavItems])
+      .filter(Boolean) as NavSection[]
+  }, [normalizedQuery, sections])
 
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
-
-  // Expandir automáticamente módulos activos
-  useEffect(() => {
-    userNavItems.forEach((item) => {
-      if (item.children && isItemActive(pathname, item)) {
-        setOpenGroups((prev) => ({ ...prev, [item.title]: true }))
-      }
-    })
-  }, [pathname, userNavItems])
-
-  // Expandir todo al realizar una búsqueda
-  useEffect(() => {
-    if (normalizedQuery) {
-      const allOpen: Record<string, boolean> = {}
-      filteredNavItems.forEach((item) => {
-        allOpen[item.title] = true
-      })
-      setOpenGroups(allOpen)
-    }
-  }, [normalizedQuery, filteredNavItems])
-
-  function toggleGroup(title: string) {
-    setOpenGroups((prev) => ({ ...prev, [title]: !prev[title] }))
-  }
-
-  if (isLoading && (!userNavItems || userNavItems.length === 0)) {
+  if (isLoading && (!sections || sections.length === 0)) {
     return (
-      <div className="flex flex-col gap-2 p-1">
+      <div className="flex flex-col gap-3 p-1">
+        <Skeleton className="h-3.5 w-24 rounded" />
         <Skeleton className="h-9 w-full rounded-xl" />
         <Skeleton className="h-9 w-full rounded-xl" />
+        <Skeleton className="h-3.5 w-28 rounded mt-2" />
         <Skeleton className="h-9 w-full rounded-xl" />
         <Skeleton className="h-9 w-full rounded-xl" />
       </div>
     )
   }
 
-  if (filteredNavItems.length === 0) {
+  if (filteredSections.length === 0) {
     return (
       <div className="px-3 py-6 text-center text-xs text-muted-foreground">
         No se encontraron menús para &ldquo;{searchQuery}&rdquo;
@@ -376,376 +339,420 @@ function NavigationMenu({ searchQuery }: { searchQuery: string }) {
   }
 
   return (
-    <SidebarMenu className="gap-1.5">
-      {filteredNavItems.map((item, index) => {
-        const theme = getModuleTheme(index)
-        const hasChildren = Boolean(item.children?.length)
-
-        if (!hasChildren) {
-          return (
-            <NavSingleItem
-              key={item.to}
-              item={item}
-              pathname={pathname}
-              theme={theme}
-            />
-          )
-        }
-
-        if (state === "collapsed") {
-          return (
-            <NavFlyoutItem
-              key={item.title}
-              item={item}
-              pathname={pathname}
-              theme={theme}
-            />
-          )
-        }
-
+    <div className="flex flex-col gap-4">
+      {filteredSections.map((section, sectionIndex) => {
+        const theme = getModuleTheme(sectionIndex)
         return (
-          <NavAccordionItem
-            key={item.title}
-            item={item}
-            pathname={pathname}
+          <NavSectionGroup
+            key={section.id || section.title}
+            section={section}
             theme={theme}
-            isOpen={Boolean(openGroups[item.title])}
-            onToggle={() => toggleGroup(item.title)}
+            pathname={pathname}
           />
         )
       })}
-    </SidebarMenu>
-  )
-}
-
-function NavSingleItem({
-  item,
-  pathname,
-  theme,
-}: {
-  item: NavItem
-  pathname: string
-  theme: (typeof MODULE_PALETTES)[number]
-}) {
-  const isSelfActive = isPathActive(pathname, item.to)
-
-  return (
-    <SidebarMenuItem key={item.to}>
-      <SidebarMenuButton
-        isActive={isSelfActive}
-        tooltip={item.title}
-        render={<Link to={item.to as any} />}
-        title={item.title}
-        className={cn(
-          "group relative h-10 rounded-xl px-2.5 text-[13px] font-medium transition-all duration-200 hover:translate-x-0.5",
-          isSelfActive
-            ? cn(
-                theme.pillActive,
-                "font-semibold shadow-xs before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1.5 before:rounded-r-full",
-                theme.indicator,
-              )
-            : "text-sidebar-foreground/85 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
-        )}
-      >
-        <div
-          className={cn(
-            "flex size-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110",
-            isSelfActive ? theme.iconBgActive : theme.iconBg,
-          )}
-        >
-          <item.icon
-            className={cn(
-              "size-4 shrink-0 transition-colors",
-              isSelfActive ? theme.iconActive : theme.icon,
-            )}
-          />
-        </div>
-        <span className="truncate font-medium">{item.title}</span>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  )
-}
-
-function NavFlyoutItem({
-  item,
-  pathname,
-  theme,
-}: {
-  item: NavItem
-  pathname: string
-  theme: (typeof MODULE_PALETTES)[number]
-}) {
-  const isActive = isItemActive(pathname, item)
-
-  return (
-    <SidebarMenuItem key={item.title}>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <SidebarMenuButton
-              isActive={isActive}
-              tooltip={item.title}
-              className={cn(
-                "group relative h-10 rounded-xl transition-all duration-200",
-                isActive
-                  ? cn(
-                      theme.pillActive,
-                      "font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1.5 before:rounded-r-full",
-                      theme.indicator,
-                    )
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
-              )}
-            />
-          }
-        >
-          <div
-            className={cn(
-              "flex size-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110",
-              isActive ? theme.iconBgActive : theme.iconBg,
-            )}
-          >
-            <item.icon
-              className={cn(
-                "size-4 shrink-0 transition-colors",
-                isActive ? theme.iconActive : theme.icon,
-              )}
-            />
-          </div>
-          <span className="truncate">{item.title}</span>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          side="right"
-          align="start"
-          sideOffset={10}
-          className="min-w-64 rounded-2xl p-2 shadow-2xl border-border/60 bg-popover/95 backdrop-blur-md"
-        >
-          <DropdownMenuLabel className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-bold text-foreground">
-            <div
-              className={cn(
-                "flex size-5 items-center justify-center rounded-md",
-                theme.iconBg,
-              )}
-            >
-              <item.icon className={cn("size-3.5", theme.icon)} />
-            </div>
-            <span>{item.title}</span>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator className="my-1.5" />
-          {item.children?.map((child, childIdx) => {
-            if ("items" in child) {
-              return (
-                <div key={child.title || childIdx} className="pt-1.5">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                    <span
-                      className={cn("size-1.5 rounded-full", theme.indicator)}
-                    />
-                    <span>{child.title}</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5 mt-0.5">
-                    {child.items.map((subItem) => (
-                      <FlyoutSubItemLink
-                        key={subItem.to}
-                        subItem={subItem}
-                        pathname={pathname}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )
-            }
-
-            return (
-              <FlyoutSubItemLink
-                key={child.to}
-                subItem={child}
-                pathname={pathname}
-              />
-            )
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </SidebarMenuItem>
-  )
-}
-
-function FlyoutSubItemLink({
-  subItem,
-  pathname,
-}: {
-  subItem: NavLeaf
-  pathname: string
-}) {
-  const isSubActive = isPathActive(pathname, subItem.to)
-
-  return (
-    <DropdownMenuItem
-      render={<Link to={subItem.to as any} />}
-      className={cn(
-        "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium cursor-pointer transition-all duration-150",
-        isSubActive
-          ? "bg-primary/10 text-primary font-semibold shadow-2xs"
-          : "text-foreground/80 hover:bg-sidebar-accent hover:text-foreground",
-      )}
-    >
-      <subItem.icon
-        className={cn(
-          "size-4 shrink-0 transition-colors",
-          isSubActive ? "text-primary" : "text-muted-foreground",
-        )}
-      />
-      <span className="truncate">{subItem.title}</span>
-    </DropdownMenuItem>
-  )
-}
-
-function NavAccordionItem({
-  item,
-  pathname,
-  theme,
-  isOpen,
-  onToggle,
-}: {
-  item: NavItem
-  pathname: string
-  theme: (typeof MODULE_PALETTES)[number]
-  isOpen: boolean
-  onToggle: () => void
-}) {
-  const isActive = isItemActive(pathname, item)
-
-  return (
-    <SidebarMenuItem key={item.title}>
-      <SidebarMenuButton
-        isActive={isActive}
-        tooltip={item.title}
-        onClick={onToggle}
-        title={item.title}
-        className={cn(
-          "group relative h-10 rounded-xl px-2.5 text-[13px] font-medium transition-all duration-200 hover:translate-x-0.5",
-          isActive && !isOpen
-            ? cn(
-                theme.pillActive,
-                "font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1.5 before:rounded-r-full",
-                theme.indicator,
-              )
-            : "text-sidebar-foreground/85 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
-        )}
-      >
-        <div
-          className={cn(
-            "flex size-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110",
-            isActive ? theme.iconBgActive : theme.iconBg,
-          )}
-        >
-          <item.icon
-            className={cn(
-              "size-4 shrink-0 transition-colors",
-              isActive ? theme.iconActive : theme.icon,
-            )}
-          />
-        </div>
-        <span className="flex-1 text-left font-medium tracking-tight truncate">
-          {item.title}
-        </span>
-        <ChevronRight
-          className={cn(
-            "size-4 text-muted-foreground/70 transition-transform duration-200 shrink-0",
-            isOpen && "rotate-90 text-foreground",
-          )}
-        />
-      </SidebarMenuButton>
-
-      {isOpen && (
-        <SidebarMenuSub className="my-1 ml-3 border-l-2 border-border/60 pl-2 gap-0.5">
-          {item.children?.map((child, childIdx) => {
-            if ("items" in child) {
-              return (
-                <AccordionSubGroup
-                  key={child.title || childIdx}
-                  group={child}
-                  pathname={pathname}
-                  theme={theme}
-                />
-              )
-            }
-
-            return (
-              <AccordionSubItemLink
-                key={child.to}
-                subItem={child}
-                pathname={pathname}
-              />
-            )
-          })}
-        </SidebarMenuSub>
-      )}
-    </SidebarMenuItem>
-  )
-}
-
-function AccordionSubGroup({
-  group,
-  pathname,
-  theme,
-}: {
-  group: NavSubGroup
-  pathname: string
-  theme: (typeof MODULE_PALETTES)[number]
-}) {
-  return (
-    <div className="pt-2 pb-0.5 first:pt-1">
-      <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 select-none">
-        <span
-          className={cn(
-            "size-1.5 rounded-full shrink-0",
-            theme.indicator,
-          )}
-        />
-        <span className="truncate">{group.title}</span>
-      </div>
-      <div className="flex flex-col gap-0.5 mt-0.5">
-        {group.items.map((subItem) => (
-          <AccordionSubItemLink
-            key={subItem.to}
-            subItem={subItem}
-            pathname={pathname}
-          />
-        ))}
-      </div>
     </div>
   )
 }
 
-function AccordionSubItemLink({
-  subItem,
+/**
+ * Componente para renderizar la sección raíz / módulo (primer nivel)
+ */
+function NavSectionGroup({
+  section,
+  theme,
   pathname,
 }: {
-  subItem: NavLeaf
+  section: NavSection
+  theme: ThemePalette
   pathname: string
 }) {
-  const isSubActive = isPathActive(pathname, subItem.to)
+  const { state } = useSidebar()
+  const hasChildren = Boolean(section.children && section.children.length > 0)
+  const isSectionActive =
+    (section.to && isPathActive(pathname, section.to)) ||
+    Boolean(section.children?.some((child) => isNavNodeActive(pathname, child)))
 
+  // Si la sección NO tiene hijos y tiene ruta (ejemplo: "Inicio" con ruta "/"),
+  // se renderiza como un botón de menú directo tanto en expandido como en colapsado
+  if (!hasChildren && section.to) {
+    const isSelfActive = isPathActive(pathname, section.to)
+    const SectionIcon = section.icon || LayoutDashboard
+
+    return (
+      <SidebarGroup className="p-0">
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={isSelfActive}
+                tooltip={section.title}
+                render={<Link to={section.to as any} />}
+                title={section.title}
+                className={cn(
+                  "group relative h-9.5 rounded-xl px-2.5 text-[13px] font-medium transition-all duration-200 hover:translate-x-0.5",
+                  isSelfActive
+                    ? cn(
+                        theme.pillActive,
+                        "font-semibold shadow-xs before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1.5 before:rounded-r-full",
+                        theme.indicator,
+                      )
+                    : "text-sidebar-foreground/85 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex size-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110",
+                    isSelfActive ? theme.iconBgActive : theme.iconBg,
+                  )}
+                >
+                  <SectionIcon
+                    className={cn(
+                      "size-4 shrink-0 transition-colors",
+                      isSelfActive ? theme.iconActive : theme.icon,
+                    )}
+                  />
+                </div>
+                <span className="truncate font-medium">{section.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    )
+  }
+
+  // Vista en modo colapsado (Icon mode) para secciones con hijos
+  if (state === "collapsed") {
+    const SectionIcon = section.icon || Folder
+
+    return (
+      <SidebarGroup className="p-0">
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <SidebarMenuButton
+                      isActive={isSectionActive}
+                      tooltip={section.title}
+                      className={cn(
+                        "group relative h-9.5 rounded-xl transition-all duration-200",
+                        isSectionActive
+                          ? cn(
+                              theme.pillActive,
+                              "font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1.5 before:rounded-r-full",
+                              theme.indicator,
+                            )
+                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
+                      )}
+                    />
+                  }
+                >
+                  <div
+                    className={cn(
+                      "flex size-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110",
+                      isSectionActive ? theme.iconBgActive : theme.iconBg,
+                    )}
+                  >
+                    <SectionIcon
+                      className={cn(
+                        "size-4 shrink-0 transition-colors",
+                        isSectionActive ? theme.iconActive : theme.icon,
+                      )}
+                    />
+                  </div>
+                  <span className="truncate">{section.title}</span>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent
+                  side="right"
+                  align="start"
+                  sideOffset={10}
+                  className="min-w-60 rounded-2xl p-2 shadow-2xl border-border/60 bg-popover/95 backdrop-blur-md"
+                >
+                  <DropdownMenuLabel className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-bold text-foreground">
+                    <span
+                      className={cn("size-1.5 rounded-full", theme.indicator)}
+                    />
+                    <span className="truncate">{section.title}</span>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="my-1.5" />
+                  <div className="flex flex-col gap-0.5">
+                    {section.children?.map((child) => (
+                      <DropdownRecursiveNode
+                        key={child.id || child.title}
+                        node={child}
+                        pathname={pathname}
+                        theme={theme}
+                      />
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    )
+  }
+
+  // Vista en modo expandido: El primer nivel es siempre el TÍTULO de la sección / módulo
   return (
-    <SidebarMenuSubItem key={subItem.to}>
+    <SidebarGroup className="p-0">
+      <SidebarGroupLabel className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 group-data-[collapsible=icon]:hidden px-2 mb-1 select-none font-heading">
+        <span className="truncate">{section.title}</span>
+        <span className={cn("size-1.5 rounded-full shrink-0 ml-1.5", theme.indicator)} />
+      </SidebarGroupLabel>
+
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-1">
+          {section.children?.map((child) => (
+            <NavNodeItem
+              key={child.id || child.title}
+              node={child}
+              depth={0}
+              theme={theme}
+              pathname={pathname}
+            />
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  )
+}
+
+/**
+ * Renderizado recursivo de elementos en el Sidebar expandido
+ * - Si tiene hijos: Agrupador / Acordeón colapsable
+ * - Si NO tiene hijos: Solo menú / Enlace directo
+ */
+function NavNodeItem({
+  node,
+  depth = 0,
+  theme,
+  pathname,
+}: {
+  node: NavNode
+  depth?: number
+  theme: ThemePalette
+  pathname: string
+}) {
+  const hasChildren = Boolean(node.children && node.children.length > 0)
+  const isSelfActive = node.to ? isPathActive(pathname, node.to) : false
+  const isChildActive = hasChildren
+    ? Boolean(node.children?.some((child) => isNavNodeActive(pathname, child)))
+    : false
+  const isActive = isSelfActive || isChildActive
+
+  const [isOpen, setIsOpen] = useState(isActive)
+
+  useEffect(() => {
+    if (isActive) {
+      setIsOpen(true)
+    }
+  }, [isActive])
+
+  const NodeIcon = node.icon || (hasChildren ? Folder : FileText)
+
+  // Caso 1: Agrupador / Submenú con hijos (Renderizado Recursivo)
+  if (hasChildren) {
+    return (
+      <SidebarMenuItem key={node.id || node.title}>
+        <SidebarMenuButton
+          isActive={isActive}
+          tooltip={node.title}
+          onClick={() => setIsOpen(!isOpen)}
+          title={node.title}
+          className={cn(
+            "group relative rounded-xl px-2.5 font-medium transition-all duration-200 hover:translate-x-0.5",
+            depth === 0 ? "h-9 text-[13px]" : "h-8.5 text-[12.5px]",
+            isActive && !isOpen
+              ? cn(
+                  theme.pillActive,
+                  "font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1.5 before:rounded-r-full",
+                  theme.indicator,
+                )
+              : "text-sidebar-foreground/85 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
+          )}
+        >
+          <div
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110",
+              depth === 0 ? "size-6.5" : "size-5.5",
+              isActive ? theme.iconBgActive : theme.iconBg,
+            )}
+          >
+            <NodeIcon
+              className={cn(
+                "shrink-0 transition-colors",
+                depth === 0 ? "size-4" : "size-3.5",
+                isActive ? theme.iconActive : theme.icon,
+              )}
+            />
+          </div>
+          <span className="flex-1 text-left font-medium tracking-tight truncate">
+            {node.title}
+          </span>
+          <ChevronRight
+            className={cn(
+              "size-3.5 text-muted-foreground/70 transition-transform duration-200 shrink-0",
+              isOpen && "rotate-90 text-foreground",
+            )}
+          />
+        </SidebarMenuButton>
+
+        {isOpen && node.children && (
+          <SidebarMenuSub className="my-1 ml-3 border-l-2 border-border/50 pl-2 gap-1">
+            {node.children.map((child) => (
+              <NavNodeItem
+                key={child.id || child.title}
+                node={child}
+                depth={depth + 1}
+                theme={theme}
+                pathname={pathname}
+              />
+            ))}
+          </SidebarMenuSub>
+        )}
+      </SidebarMenuItem>
+    )
+  }
+
+  // Caso 2: Solo Menú / Enlace Directo (Hoja)
+  if (depth === 0) {
+    return (
+      <SidebarMenuItem key={node.id || node.to || node.title}>
+        <SidebarMenuButton
+          isActive={isSelfActive}
+          tooltip={node.title}
+          render={node.to ? <Link to={node.to as any} /> : undefined}
+          title={node.title}
+          className={cn(
+            "group relative h-9.5 rounded-xl px-2.5 text-[13px] font-medium transition-all duration-200 hover:translate-x-0.5",
+            isSelfActive
+              ? cn(
+                  theme.pillActive,
+                  "font-semibold shadow-xs before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1.5 before:rounded-r-full",
+                  theme.indicator,
+                )
+              : "text-sidebar-foreground/85 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
+          )}
+        >
+          <div
+            className={cn(
+              "flex size-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-110",
+              isSelfActive ? theme.iconBgActive : theme.iconBg,
+            )}
+          >
+            <NodeIcon
+              className={cn(
+                "size-4 shrink-0 transition-colors",
+                isSelfActive ? theme.iconActive : theme.icon,
+              )}
+            />
+          </div>
+          <span className="truncate font-medium">{node.title}</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    )
+  }
+
+  // Enlace dentro de un subnivel (depth > 0)
+  return (
+    <SidebarMenuSubItem key={node.id || node.to || node.title}>
       <SidebarMenuSubButton
-        isActive={isSubActive}
-        render={<Link to={subItem.to as any} />}
-        title={subItem.title}
+        isActive={isSelfActive}
+        render={node.to ? <Link to={node.to as any} /> : undefined}
+        title={node.title}
         className={cn(
           "relative min-h-8.5 h-auto py-1.5 rounded-lg px-2 text-[12.5px] font-medium transition-all duration-150 hover:translate-x-0.5",
-          isSubActive
+          isSelfActive
             ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary shadow-2xs before:absolute before:-left-2.5 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-1 before:rounded-r-full before:bg-primary"
             : "text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
         )}
       >
-        <subItem.icon
+        <NodeIcon
           className={cn(
             "size-3.5 shrink-0 transition-colors",
-            isSubActive ? "text-primary" : "text-muted-foreground/80",
+            isSelfActive ? "text-primary" : "text-muted-foreground/80",
           )}
         />
-        <span className="truncate leading-snug">{subItem.title}</span>
+        <span className="truncate leading-snug">{node.title}</span>
       </SidebarMenuSubButton>
     </SidebarMenuSubItem>
+  )
+}
+
+/**
+ * Renderizado recursivo para el Dropdown en vista colapsada
+ */
+function DropdownRecursiveNode({
+  node,
+  pathname,
+  theme,
+}: {
+  node: NavNode
+  pathname: string
+  theme: ThemePalette
+}) {
+  const hasChildren = Boolean(node.children && node.children.length > 0)
+  const isSelfActive = node.to ? isPathActive(pathname, node.to) : false
+  const isAnyDescendantActive = isNavNodeActive(pathname, node)
+  const NodeIcon = node.icon || (hasChildren ? Folder : FileText)
+
+  if (hasChildren && node.children) {
+    return (
+      <DropdownMenuSub key={node.id || node.title}>
+        <DropdownMenuSubTrigger
+          className={cn(
+            "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium cursor-pointer transition-all duration-150",
+            isAnyDescendantActive
+              ? "bg-primary/10 text-primary font-semibold"
+              : "text-foreground/80 hover:bg-sidebar-accent hover:text-foreground",
+          )}
+        >
+          <NodeIcon
+            className={cn(
+              "size-4 shrink-0 transition-colors",
+              isAnyDescendantActive ? "text-primary" : "text-muted-foreground",
+            )}
+          />
+          <span className="truncate flex-1 text-left">{node.title}</span>
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent className="min-w-48 rounded-xl p-1.5 shadow-xl border-border/60 bg-popover/95 backdrop-blur-md">
+          {node.children.map((child) => (
+            <DropdownRecursiveNode
+              key={child.id || child.title}
+              node={child}
+              pathname={pathname}
+              theme={theme}
+            />
+          ))}
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+    )
+  }
+
+  return (
+    <DropdownMenuItem
+      key={node.id || node.to || node.title}
+      render={node.to ? <Link to={node.to as any} /> : undefined}
+      className={cn(
+        "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium cursor-pointer transition-all duration-150",
+        isSelfActive
+          ? "bg-primary/10 text-primary font-semibold shadow-2xs"
+          : "text-foreground/80 hover:bg-sidebar-accent hover:text-foreground",
+      )}
+    >
+      <NodeIcon
+        className={cn(
+          "size-4 shrink-0 transition-colors",
+          isSelfActive ? "text-primary" : "text-muted-foreground",
+        )}
+      />
+      <span className="truncate">{node.title}</span>
+    </DropdownMenuItem>
   )
 }

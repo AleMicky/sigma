@@ -1,25 +1,11 @@
-import type { NavChild, NavItem, NavLeaf } from "@/shared/types/nav.types"
-
-export function flattenNavChildren(children?: NavChild[]): NavLeaf[] {
-  if (!children) return []
-  return children.flatMap((child) =>
-    "items" in child ? child.items : [child],
-  )
-}
-
-export function getAllNavLeaves(items: NavItem[] = []): NavLeaf[] {
-  return items.flatMap((item) => {
-    if (!item.children)
-      return [{ title: item.title, to: item.to, icon: item.icon }]
-    return flattenNavChildren(item.children)
-  })
-}
+import type { NavItem, NavLeaf, NavNode, NavSection } from "@/shared/types/nav.types"
 
 export function isPathActive(
   pathname: string,
-  to: string,
+  to?: string,
   allCandidateRoutes?: string[],
-) {
+): boolean {
+  if (!to) return false
   if (to === "/") return pathname === "/"
   if (pathname === to) return true
   if (!pathname.startsWith(`${to}/`)) return false
@@ -37,19 +23,58 @@ export function isPathActive(
   return true
 }
 
-export function isNavItemActive(pathname: string, item: NavItem): boolean {
-  if (isPathActive(pathname, item.to)) return true
-  if (item.children) {
-    return item.children.some((child) => {
-      if ("items" in child) {
-        return child.items.some((subItem) => isPathActive(pathname, subItem.to))
-      }
-      return isPathActive(pathname, child.to)
-    })
+export function isNavNodeActive(pathname: string, node: NavNode): boolean {
+  if (node.to && isPathActive(pathname, node.to)) return true
+  if (node.children && node.children.length > 0) {
+    return node.children.some((child) => isNavNodeActive(pathname, child))
   }
   return false
+}
+
+export function isNavSectionActive(
+  pathname: string,
+  section: NavSection,
+): boolean {
+  if (section.to && isPathActive(pathname, section.to)) return true
+  if (section.children && section.children.length > 0) {
+    return section.children.some((child) => isNavNodeActive(pathname, child))
+  }
+  return false
+}
+
+export function flattenNavNodeLeaves(node: NavNode): NavLeaf[] {
+  if (!node.children || node.children.length === 0) {
+    if (node.to && node.icon) {
+      return [{ title: node.title, to: node.to, icon: node.icon }]
+    }
+    return []
+  }
+  return node.children.flatMap(flattenNavNodeLeaves)
+}
+
+export function flattenNavChildren(children?: NavNode[]): NavLeaf[] {
+  if (!children || children.length === 0) return []
+  return children.flatMap(flattenNavNodeLeaves)
+}
+
+export function getAllNavLeaves(items: NavItem[] = []): NavLeaf[] {
+  return items.flatMap((item) => {
+    if (item.children && item.children.length > 0) {
+      return item.children.flatMap(flattenNavNodeLeaves)
+    }
+    if (item.to && item.icon) {
+      return [{ title: item.title, to: item.to, icon: item.icon }]
+    }
+    return []
+  })
+}
+
+
+export function isNavItemActive(pathname: string, item: NavItem): boolean {
+  return isNavSectionActive(pathname, item)
 }
 
 export function findActiveNavItem(pathname: string, items: NavItem[] = []) {
   return items.find((item) => isNavItemActive(pathname, item)) ?? null
 }
+

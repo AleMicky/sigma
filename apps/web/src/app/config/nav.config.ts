@@ -1,19 +1,10 @@
-import { LayoutDashboard } from "lucide-react"
-
 import type { NavItem } from "@/shared/types/nav.types"
 
-import { routes } from "./routes"
-
 /**
- * Navegación base / fallback por defecto (la navegación real se obtiene dinámicamente
- * desde la API de roles y menús mediante el hook `useAllowedNavItems`).
+ * Navegación base por defecto vacía.
+ * La navegación del sistema se carga 100% dinámicamente desde el backend
+ * según los roles y permisos del usuario autenticado (hook `useAllowedNavItems`).
  */
-export const defaultNavItems: NavItem[] = [
-  {
-    title: "Inicio",
-    to: routes.home,
-    icon: LayoutDashboard,
-  },
-]
+export const defaultNavItems: NavItem[] = []
 
 export const navItems = defaultNavItems

@@ -84,6 +84,15 @@ const moduleMeta: Record<
     gradient: "from-violet-500/10 via-violet-500/5 to-transparent",
     borderHover: "hover:border-violet-500/40",
   },
+  Seguridad: {
+    description:
+      "Administración de usuarios, roles, menús y permisos de acceso al sistema.",
+    color: "text-rose-500 dark:text-rose-400 bg-rose-500/10",
+    badgeColor:
+      "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20",
+    gradient: "from-rose-500/10 via-rose-500/5 to-transparent",
+    borderHover: "hover:border-rose-500/40",
+  },
 }
 
 function getGreeting(date = new Date()) {

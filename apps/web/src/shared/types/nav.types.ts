@@ -6,11 +6,31 @@ type DeepStringValues<T> = T extends string
   ? T
   : { [K in keyof T]: DeepStringValues<T[K]> }[keyof T]
 
-export type AppPath = DeepStringValues<typeof routes>
+export type AppPath = DeepStringValues<typeof routes> | (string & {})
+
+export interface NavNode {
+  id?: string
+  title: string
+  to?: string
+  icon?: LucideIcon
+  children?: NavNode[]
+  badge?: string | number
+  order?: number
+}
+
+export interface NavSection {
+  id?: string
+  title: string
+  code?: string
+  to?: string
+  icon?: LucideIcon
+  children?: NavNode[]
+  order?: number
+}
 
 export type NavLeaf = {
   title: string
-  to: AppPath
+  to: string
   icon: LucideIcon
 }
 
@@ -20,11 +40,6 @@ export type NavSubGroup = {
   items: NavLeaf[]
 }
 
-export type NavChild = NavLeaf | NavSubGroup
+export type NavChild = NavNode
+export type NavItem = NavSection
 
-export type NavItem = {
-  title: string
-  to: AppPath
-  icon: LucideIcon
-  children?: NavChild[]
-}
