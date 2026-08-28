@@ -34,7 +34,6 @@ import java.util.UUID;
         description = "Administración de adjuntos de órdenes de trabajo"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class OrdenTrabajoAdjuntoController {
 
     private final OrdenTrabajoAdjuntoService service;

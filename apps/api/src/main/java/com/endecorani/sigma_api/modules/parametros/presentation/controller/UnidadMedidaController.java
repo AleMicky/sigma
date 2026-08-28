@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración de unidades de medida de parámetros"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class UnidadMedidaController
         extends AbstractCrudController<
         UnidadMedidaRequest,

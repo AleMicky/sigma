@@ -28,7 +28,6 @@ import java.util.UUID;
         description = "Administración de detalles de controles de activos (accesorios)"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class ControlActivoDetalleController {
 
     private final ControlActivoDetalleService controlActivoDetalleService;

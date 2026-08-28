@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Consulta y actualización de períodos de gestión"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class PeriodoController
         extends AbstractCrudController<
         PeriodoRequest,

@@ -37,7 +37,6 @@ import java.util.UUID;
         description = "Administración de ubicaciones con jerarquía recursiva"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class UbicacionController
         extends AbstractCrudController<
         UbicacionRequest,

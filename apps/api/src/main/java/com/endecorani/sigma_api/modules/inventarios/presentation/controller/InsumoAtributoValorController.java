@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración de valores de atributos personalizados por insumo"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class InsumoAtributoValorController
         extends AbstractCrudController<
         InsumoAtributoValorRequest,

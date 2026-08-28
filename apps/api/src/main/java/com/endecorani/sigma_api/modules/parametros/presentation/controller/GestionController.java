@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración de gestiones y sus períodos"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class GestionController
         extends AbstractCrudController<
         GestionRequest,

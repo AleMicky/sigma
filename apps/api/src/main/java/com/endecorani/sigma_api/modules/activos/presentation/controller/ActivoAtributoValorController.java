@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración de valores de atributos personalizados por activo"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class ActivoAtributoValorController
         extends AbstractCrudController<
         ActivoAtributoValorRequest,

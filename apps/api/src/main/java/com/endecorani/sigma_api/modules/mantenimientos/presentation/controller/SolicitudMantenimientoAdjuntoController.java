@@ -43,7 +43,6 @@ import java.util.UUID;
                 "Administración de adjuntos de solicitudes de mantenimiento"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class SolicitudMantenimientoAdjuntoController {
 
     private final SolicitudMantenimientoAdjuntoService service;

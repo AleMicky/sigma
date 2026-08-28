@@ -30,7 +30,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Solicitudes de Mantenimiento", description = "Administración de solicitudes de mantenimiento")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class SolicitudMantenimientoController {
 
     private final SolicitudMantenimientoService service;

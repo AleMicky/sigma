@@ -28,7 +28,6 @@ import java.util.UUID;
         description = "Administración del catálogo de insumos"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class InsumoController {
 
     private final InsumoService insumoService;

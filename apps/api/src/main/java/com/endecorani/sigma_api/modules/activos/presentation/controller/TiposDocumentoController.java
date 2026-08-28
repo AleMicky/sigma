@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración del catálogo de tipos de documento de activos"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class TiposDocumentoController
         extends AbstractCrudController<
         TiposDocumentoRequest,

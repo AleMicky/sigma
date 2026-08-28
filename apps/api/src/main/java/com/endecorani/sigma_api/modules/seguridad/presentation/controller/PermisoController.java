@@ -44,7 +44,6 @@ public class PermisoController {
     private final PermisoService permisoService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Crear un permiso")
     public ResponseEntity<ApiResponse<PermisoResponse>> create(
             @Valid @RequestBody PermisoRequest request
@@ -60,7 +59,6 @@ public class PermisoController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Actualizar un permiso")
     public ResponseEntity<ApiResponse<PermisoResponse>> update(
             @PathVariable UUID id,
@@ -75,7 +73,6 @@ public class PermisoController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Eliminar un permiso")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         permisoService.delete(id);
@@ -85,7 +82,6 @@ public class PermisoController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Obtener permiso por ID")
     public ResponseEntity<ApiResponse<PermisoResponse>> findById(
             @PathVariable UUID id
@@ -96,7 +92,6 @@ public class PermisoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(
             summary = "Listar permisos paginados",
             description = "Lista permisos con opción de filtrar por menuId"
@@ -137,7 +132,6 @@ public class PermisoController {
     }
 
     @GetMapping("/todos")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Listar todos los permisos sin paginación")
     public ResponseEntity<ApiResponse<List<PermisoResponse>>> findAllList() {
         return ResponseEntity.ok(
@@ -146,7 +140,6 @@ public class PermisoController {
     }
 
     @GetMapping("/todos/menu/{menuId}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Listar permisos de un menú sin paginación")
     public ResponseEntity<ApiResponse<List<PermisoResponse>>> findByMenuIdList(
             @PathVariable UUID menuId

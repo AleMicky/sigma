@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración del catálogo de grupos aprobadores de la organización"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class GrupoAprobadorController
         extends AbstractCrudController<
         GrupoAprobadorRequest,

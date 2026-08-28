@@ -37,7 +37,6 @@ import java.util.UUID;
         description = "Administración de items de checklists de mantenimiento"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class ChecklistItemController {
 
     private final ChecklistItemService service;

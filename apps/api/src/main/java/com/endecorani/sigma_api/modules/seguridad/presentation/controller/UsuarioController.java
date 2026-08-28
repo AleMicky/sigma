@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración y sincronización de usuarios del sistema"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;

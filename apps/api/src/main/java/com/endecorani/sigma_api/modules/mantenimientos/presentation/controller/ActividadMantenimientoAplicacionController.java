@@ -37,7 +37,6 @@ import java.util.UUID;
         description = "Administración de aplicaciones de actividades de mantenimiento a tipos de activo"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class ActividadMantenimientoAplicacionController {
 
     private final ActividadMantenimientoAplicacionService service;

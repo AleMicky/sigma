@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración de evidencias (archivos) de actividades de órdenes de trabajo"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class OrdenTrabajoActividadEvidenciaController {
 
     private final OrdenTrabajoActividadEvidenciaService service;

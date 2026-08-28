@@ -30,7 +30,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Activo Documentos", description = "Administración de documentos de un activo con archivos físicos")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class ActivoDocumentoController extends AbstractCrudController<ActivoDocumentoRequest, ActivoDocumentoResponse, UUID> {
 
     private final ActivoDocumentoService service;

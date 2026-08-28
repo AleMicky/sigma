@@ -30,7 +30,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Activo Asignaciones", description = "Administración de asignaciones de activos a empleados o áreas")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class ActivoAsignacionController extends AbstractCrudController<ActivoAsignacionRequest, ActivoAsignacionResponse, UUID> {
 
     private final ActivoAsignacionService service;

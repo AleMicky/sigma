@@ -48,7 +48,6 @@ public class MenuController {
     private final RolMenuService rolMenuService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Crear un menú")
     public ResponseEntity<ApiResponse<MenuResponse>> create(
             @Valid @RequestBody MenuRequest request
@@ -64,7 +63,6 @@ public class MenuController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Actualizar un menú")
     public ResponseEntity<ApiResponse<MenuResponse>> update(
             @PathVariable UUID id,
@@ -79,7 +77,6 @@ public class MenuController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Eliminar un menú")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         menuService.delete(id);
@@ -91,7 +88,6 @@ public class MenuController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Obtener menú por ID")
     public ResponseEntity<ApiResponse<MenuResponse>> findById(
             @PathVariable UUID id
@@ -104,7 +100,6 @@ public class MenuController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Listar menús paginados")
     public ResponseEntity<ApiResponse<PageResponse<MenuResponse>>> findAll(
             @Valid @ModelAttribute PageRequestDto pageRequest
@@ -117,7 +112,6 @@ public class MenuController {
     }
 
     @GetMapping(params = "q")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Buscar menús por código o nombre")
     public ResponseEntity<ApiResponse<PageResponse<MenuResponse>>> search(
             @RequestParam String q,
@@ -131,7 +125,6 @@ public class MenuController {
     }
 
     @GetMapping("/todos")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Listar todos los menús sin paginación")
     public ResponseEntity<ApiResponse<List<MenuResponse>>> findAllList() {
         return ResponseEntity.ok(
@@ -142,7 +135,6 @@ public class MenuController {
     }
 
     @GetMapping("/arbol")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Obtener árbol jerárquico completo de menús")
     public ResponseEntity<ApiResponse<List<MenuTreeNode>>> buildArbol() {
         return ResponseEntity.ok(

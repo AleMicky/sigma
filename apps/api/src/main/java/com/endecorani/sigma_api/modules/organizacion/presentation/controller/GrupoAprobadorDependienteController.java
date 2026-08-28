@@ -31,7 +31,6 @@ import java.util.UUID;
         description = "Administración de los empleados dependientes asociados a cada grupo aprobador de la organización"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class GrupoAprobadorDependienteController {
 
     private final GrupoAprobadorDependienteService grupoAprobadorDependienteService;

@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración del catálogo de tipos de insumo"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class TipoInsumoController
         extends AbstractCrudController<
         TipoInsumoRequest,

@@ -41,7 +41,6 @@ import java.util.UUID;
         description = "Administración de documentos de activos"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class DocumentosController
         extends AbstractCrudController<
         DocumentosRequest,

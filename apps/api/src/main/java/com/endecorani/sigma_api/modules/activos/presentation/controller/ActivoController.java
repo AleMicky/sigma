@@ -38,7 +38,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Activos", description = "Administración de activos")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class ActivoController {
 
     private final ActivoService activoService;

@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración del catálogo de categorías de activos"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class CategoriaController
         extends AbstractCrudController<
         CategoriaRequest,

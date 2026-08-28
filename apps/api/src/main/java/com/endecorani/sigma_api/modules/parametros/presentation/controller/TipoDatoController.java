@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración de tipos de dato de parámetros"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class TipoDatoController
         extends AbstractCrudController<
         TipoDatoRequest,

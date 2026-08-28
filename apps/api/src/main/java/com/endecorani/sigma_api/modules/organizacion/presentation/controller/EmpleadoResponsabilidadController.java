@@ -39,7 +39,6 @@ import java.util.UUID;
         description = "Administración de las responsabilidades asignadas a cada empleado de la organización"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class EmpleadoResponsabilidadController {
 
     private final EmpleadoResponsabilidadService empleadoResponsabilidadService;

@@ -33,7 +33,6 @@ import java.util.UUID;
         description = "Administración de catálogos de parámetros"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class CatalogoController
         extends AbstractCrudController<
         CatalogoRequest,
