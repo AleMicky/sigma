@@ -9,12 +9,12 @@
 INSERT INTO seguridad.menus (id, menu_padre_id, codigo, nombre, icono, ruta, orden, activo, created_at, updated_at, created_by, updated_by)
 VALUES
     ('d0000000-0000-4000-a000-000000000001', NULL, 'MOD_INICIO',         'Módulo Inicio',         NULL, NULL, 1, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('d0000000-0000-4000-a000-000000000002', NULL, 'MOD_ORGANIZACION',   'Módulo Organización',   NULL,       NULL, 2, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('d0000000-0000-4000-a000-000000000003', NULL, 'MOD_ACTIVOS',        'Módulo Activos',        NULL,           NULL, 3, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('d0000000-0000-4000-a000-000000000004', NULL, 'MOD_INVENTARIOS',    'Módulo Inventarios',    NULL,          NULL, 4, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('d0000000-0000-4000-a000-000000000005', NULL, 'MOD_PARAMETROS',     'Módulo Parámetros',     NULL,       NULL, 5, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('d0000000-0000-4000-a000-000000000006', NULL, 'MOD_MANTENIMIENTOS', 'Módulo Mantenimientos', NULL,          NULL, 6, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('d0000000-0000-4000-a000-000000000007', NULL, 'MOD_SEGURIDAD',      'Módulo Seguridad',      NULL,          NULL, 7, TRUE, NOW(), NOW(), 'seed', 'seed')
+    ('d0000000-0000-4000-a000-000000000002', NULL, 'MOD_ORGANIZACION',   'Módulo Organización',   NULL, NULL, 2, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('d0000000-0000-4000-a000-000000000003', NULL, 'MOD_ACTIVOS',        'Módulo Activos',        NULL, NULL, 3, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('d0000000-0000-4000-a000-000000000004', NULL, 'MOD_INVENTARIOS',    'Módulo Inventarios',    NULL, NULL, 4, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('d0000000-0000-4000-a000-000000000005', NULL, 'MOD_PARAMETROS',     'Módulo Parámetros',     NULL, NULL, 5, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('d0000000-0000-4000-a000-000000000006', NULL, 'MOD_MANTENIMIENTOS', 'Módulo Mantenimientos', NULL, NULL, 6, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('d0000000-0000-4000-a000-000000000007', NULL, 'MOD_SEGURIDAD',      'Módulo Seguridad',      NULL, NULL, 7, TRUE, NOW(), NOW(), 'seed', 'seed')
 ON CONFLICT (codigo) DO UPDATE SET
     menu_padre_id = EXCLUDED.menu_padre_id,
     nombre        = EXCLUDED.nombre,
@@ -26,17 +26,17 @@ ON CONFLICT (codigo) DO UPDATE SET
     updated_by    = 'seed';
 
 -- ---------------------------------------------------------------------------
--- 2. Menús Principales (Nivel 2 - Asignados a cada Módulo)
+-- 2. Menús Principales (Nivel 2 - Agrupadores por Módulo)
 -- ---------------------------------------------------------------------------
 INSERT INTO seguridad.menus (id, menu_padre_id, codigo, nombre, icono, ruta, orden, activo, created_at, updated_at, created_by, updated_by)
 VALUES
-    ('e0000000-0000-4000-a000-000000000001', 'd0000000-0000-4000-a000-000000000001', 'MENU_INICIO',         'Inicio',         'LayoutDashboard', '/',              1, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('e0000000-0000-4000-a000-000000000002', 'd0000000-0000-4000-a000-000000000002', 'MENU_ORGANIZACION',   'Organización',   'Building2',       '/organizacion',  1, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('e0000000-0000-4000-a000-000000000003', 'd0000000-0000-4000-a000-000000000003', 'MENU_ACTIVOS',        'Activos',        'Boxes',           '/activos',       1, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('e0000000-0000-4000-a000-000000000004', 'd0000000-0000-4000-a000-000000000004', 'MENU_INVENTARIOS',    'Inventarios',    'Boxes',           '/inventarios',   1, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('e0000000-0000-4000-a000-000000000005', 'd0000000-0000-4000-a000-000000000005', 'MENU_PARAMETROS',     'Parámetros',     'Settings2',       '/parametros',    1, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('e0000000-0000-4000-a000-000000000006', 'd0000000-0000-4000-a000-000000000006', 'MENU_MANTENIMIENTOS', 'Mantenimientos', 'Wrench',          '/mantenimientos',1, TRUE, NOW(), NOW(), 'seed', 'seed'),
-    ('e0000000-0000-4000-a000-000000000007', 'd0000000-0000-4000-a000-000000000007', 'MENU_SEGURIDAD',      'Seguridad',      'Shield',          '/seguridad',     1, TRUE, NOW(), NOW(), 'seed', 'seed')
+    ('e0000000-0000-4000-a000-000000000001', 'd0000000-0000-4000-a000-000000000001', 'MENU_INICIO',         'Inicio',         'LayoutDashboard', NULL, 1, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('e0000000-0000-4000-a000-000000000002', 'd0000000-0000-4000-a000-000000000002', 'MENU_ORGANIZACION',   'Organización',   'Building2',       NULL, 1, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('e0000000-0000-4000-a000-000000000003', 'd0000000-0000-4000-a000-000000000003', 'MENU_ACTIVOS',        'Activos',        'Boxes',           NULL, 1, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('e0000000-0000-4000-a000-000000000004', 'd0000000-0000-4000-a000-000000000004', 'MENU_INVENTARIOS',    'Inventarios',    'Boxes',           NULL, 1, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('e0000000-0000-4000-a000-000000000005', 'd0000000-0000-4000-a000-000000000005', 'MENU_PARAMETROS',     'Parámetros',     'Settings2',       NULL, 1, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('e0000000-0000-4000-a000-000000000006', 'd0000000-0000-4000-a000-000000000006', 'MENU_MANTENIMIENTOS', 'Mantenimientos', 'Wrench',          NULL, 1, TRUE, NOW(), NOW(), 'seed', 'seed'),
+    ('e0000000-0000-4000-a000-000000000007', 'd0000000-0000-4000-a000-000000000007', 'MENU_SEGURIDAD',      'Seguridad',      'Shield',          NULL, 1, TRUE, NOW(), NOW(), 'seed', 'seed')
 ON CONFLICT (codigo) DO UPDATE SET
     menu_padre_id = EXCLUDED.menu_padre_id,
     nombre        = EXCLUDED.nombre,
