@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -94,6 +95,19 @@ public class EmpleadoController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         empleadoService.findAll(pageRequest)
+                )
+        );
+    }
+
+    @GetMapping("/mis-empleados")
+    @Operation(summary = "Listar empleados con código, nombre completo y cargo. Admin: todos; resto: solo los de su persona")
+    public ResponseEntity<ApiResponse<PageResponse<EmpleadoResponse>>> findMisEmpleados(
+            @Valid @ModelAttribute PageRequestDto pageRequest,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        empleadoService.findMisEmpleados(pageRequest, authentication)
                 )
         );
     }
