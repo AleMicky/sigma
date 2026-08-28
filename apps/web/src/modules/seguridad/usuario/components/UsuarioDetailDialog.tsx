@@ -2,6 +2,8 @@ import { useState } from "react"
 import {
   Check,
   Copy,
+  Edit,
+  IdCard,
   KeyRound,
   Mail,
   Shield,
@@ -27,12 +29,14 @@ type UsuarioDetailDialogProps = {
   usuario: Usuario | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onAssignPersona?: (usuario: Usuario) => void
 }
 
 export function UsuarioDetailDialog({
   usuario,
   open,
   onOpenChange,
+  onAssignPersona,
 }: UsuarioDetailDialogProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
 
@@ -172,6 +176,45 @@ export function UsuarioDetailDialog({
                 )}
               </Button>
             </div>
+          </div>
+
+          {/* Sección de Persona Organizacional Vinculada */}
+          <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <IdCard className="size-4 text-primary" />
+                <span>Persona Organizacional</span>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1 border-border/80 hover:bg-muted"
+                onClick={() => onAssignPersona?.(usuario)}
+              >
+                <Edit className="size-3 text-primary" />
+                <span>{usuario.persona ? "Cambiar" : "Asociar"}</span>
+              </Button>
+            </div>
+
+            {usuario.persona ? (
+              <div className="flex items-center justify-between gap-2.5 rounded-lg border border-border/60 bg-muted/40 p-2.5">
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="font-semibold text-xs text-foreground truncate">
+                    {usuario.persona.nombreCompleto}
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                      {usuario.persona.tipoDocumento}: {usuario.persona.numeroDocumento}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic py-1">
+                No tiene una persona asignada en el módulo organizacional.
+              </p>
+            )}
           </div>
 
           {/* Sección de Roles Asignados */}

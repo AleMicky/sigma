@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.entity;
 
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.PersonaEntity;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -47,6 +48,16 @@ public class UsuarioEntity extends BaseEntity {
 
     @Column(length = 200)
     private String email;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "persona_id",
+            unique = true,
+            foreignKey = @ForeignKey(
+                    name = "fk_usuarios_persona"
+            )
+    )
+    private PersonaEntity persona;
 
     @Builder.Default
     @Column(nullable = false)

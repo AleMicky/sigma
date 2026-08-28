@@ -4,13 +4,26 @@ import type { AuditableEntity } from "@/shared/types/audit.types"
 
 import { usuarioEndpoints } from "./usuario.endpoints"
 
+export type PersonaResumen = {
+  id: string
+  nombreCompleto: string
+  tipoDocumento: string
+  numeroDocumento: string
+}
+
 export type Usuario = AuditableEntity & {
   keycloakUserId: string
   username: string
   nombre: string
   email: string
+  personaId?: string | null
+  persona?: PersonaResumen | null
   activo: boolean
   roles?: string[]
+}
+
+export type AsignarPersonaRequest = {
+  personaId: string | null
 }
 
 export const listUsuarios = (params?: PageParams) =>
@@ -21,3 +34,6 @@ export const getUsuario = (id: string) =>
 
 export const sincronizarUsuarios = () =>
   http.post<number>(usuarioEndpoints.sincronizar)
+
+export const actualizarPersonaUsuario = (id: string, data: AsignarPersonaRequest) =>
+  http.put<Usuario>(usuarioEndpoints.persona(id), data)

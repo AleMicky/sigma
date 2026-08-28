@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.seguridad.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
+import com.endecorani.sigma_api.modules.seguridad.application.dto.request.AsignarPersonaUsuarioRequest;
 import com.endecorani.sigma_api.modules.seguridad.application.dto.response.UsuarioResponse;
 import com.endecorani.sigma_api.modules.seguridad.application.service.UsuarioService;
 import com.endecorani.sigma_api.modules.seguridad.application.service.UsuarioSyncService;
@@ -14,11 +15,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -81,6 +83,20 @@ public class UsuarioController {
                 ApiResponse.success(
                         "Usuarios sincronizados correctamente",
                         totalSincronizados
+                )
+        );
+    }
+
+    @PutMapping("/{id}/persona")
+    @Operation(summary = "Asignar o actualizar la persona asociada al usuario")
+    public ResponseEntity<ApiResponse<UsuarioResponse>> actualizarPersona(
+            @PathVariable UUID id,
+            @Valid @RequestBody AsignarPersonaUsuarioRequest request
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Persona asignada al usuario correctamente",
+                        usuarioService.actualizarPersona(id, request.getPersonaId())
                 )
         );
     }

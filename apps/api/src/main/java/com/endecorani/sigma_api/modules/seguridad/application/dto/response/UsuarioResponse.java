@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.seguridad.application.dto.response;
 
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResumenResponse;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 
 import java.util.List;
@@ -11,6 +12,8 @@ public record UsuarioResponse(
         String username,
         String nombre,
         String email,
+        UUID personaId,
+        PersonaResumenResponse persona,
         boolean activo,
         List<String> roles,
         AuditoriaResponse auditoria

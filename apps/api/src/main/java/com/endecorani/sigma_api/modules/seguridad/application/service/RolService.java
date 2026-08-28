@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.seguridad.application.service;
 
+import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResumenResponse;
 import com.endecorani.sigma_api.modules.seguridad.application.dto.response.RolResponse;
 import com.endecorani.sigma_api.modules.seguridad.application.dto.response.UsuarioResponse;
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Rol;
@@ -19,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -86,12 +89,29 @@ public class RolService {
         return usuariosRoles.stream()
                 .map(ur -> {
                     var u = ur.getUsuario();
+                    PersonaResumenResponse personaResumen = null;
+                    if (u.getPersona() != null) {
+                        var p = u.getPersona();
+                        String nombreCompleto = Stream.of(p.getNombres(), p.getPrimerApellido(), p.getSegundoApellido())
+                                .filter(val -> val != null && !val.isBlank())
+                                .map(String::trim)
+                                .collect(Collectors.joining(" "));
+                        personaResumen = new PersonaResumenResponse(
+                                p.getId(),
+                                nombreCompleto,
+                                p.getTipoDocumento(),
+                                p.getNumeroDocumento()
+                        );
+                    }
+
                     return new UsuarioResponse(
                             u.getId(),
                             u.getKeycloakUserId(),
                             u.getUsername(),
                             u.getNombre(),
                             u.getEmail(),
+                            u.getPersona() != null ? u.getPersona().getId() : null,
+                            personaResumen,
                             u.isActivo(),
                             List.of(ur.getRol().getNombre()),
                             new AuditoriaResponse(

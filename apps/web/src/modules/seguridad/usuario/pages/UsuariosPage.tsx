@@ -29,6 +29,7 @@ import { cn } from "@/shared/lib/utils"
 import { useSincronizarUsuarios } from "../api/usuario.mutations"
 import { usuarioQueries } from "../api/usuario.queries"
 import type { Usuario } from "../api/usuario.service"
+import { AsignarPersonaModal } from "../components/AsignarPersonaModal"
 import { UsuarioDetailDialog } from "../components/UsuarioDetailDialog"
 import { UsuarioHelpModal } from "../components/UsuarioHelpModal"
 import { UsuarioListItem } from "../components/UsuarioListItem"
@@ -37,6 +38,7 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function UsuariosPage() {
   const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null)
+  const [personaModalUsuario, setPersonaModalUsuario] = useState<Usuario | null>(null)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
 
   const search = usePaginatedSearch()
@@ -255,6 +257,7 @@ export function UsuariosPage() {
                     key={usuario.id}
                     usuario={usuario}
                     onSelect={(u) => setSelectedUsuario(u)}
+                    onAssignPersona={(u) => setPersonaModalUsuario(u)}
                   />
                 ))}
               </ul>
@@ -277,6 +280,18 @@ export function UsuariosPage() {
         usuario={selectedUsuario}
         open={Boolean(selectedUsuario)}
         onOpenChange={(open) => !open && setSelectedUsuario(null)}
+        onAssignPersona={(u) => {
+          setSelectedUsuario(null)
+          setPersonaModalUsuario(u)
+        }}
+      />
+
+      {/* Modal Asociar Persona */}
+      <AsignarPersonaModal
+        key={personaModalUsuario?.id ?? "empty-persona"}
+        usuario={personaModalUsuario}
+        open={Boolean(personaModalUsuario)}
+        onOpenChange={(open) => !open && setPersonaModalUsuario(null)}
       />
 
       {/* Help Guide Modal */}

@@ -1,4 +1,4 @@
-import { Eye, KeyRound, Mail, Shield, UserCheck, UserX } from "lucide-react"
+import { Eye, IdCard, KeyRound, Mail, Shield, UserCheck, UserX } from "lucide-react"
 
 import { AuditInfo } from "@/shared/components/audit-info"
 import { Badge } from "@/shared/components/ui/badge"
@@ -8,9 +8,14 @@ import type { Usuario } from "../api/usuario.service"
 type UsuarioListItemProps = {
   usuario: Usuario
   onSelect: (usuario: Usuario) => void
+  onAssignPersona?: (usuario: Usuario) => void
 }
 
-export function UsuarioListItem({ usuario, onSelect }: UsuarioListItemProps) {
+export function UsuarioListItem({
+  usuario,
+  onSelect,
+  onAssignPersona,
+}: UsuarioListItemProps) {
   const initials = usuario.nombre
     ? usuario.nombre
         .split(" ")
@@ -63,6 +68,24 @@ export function UsuarioListItem({ usuario, onSelect }: UsuarioListItemProps) {
             )}
           </div>
 
+          {/* Persona Vinculada */}
+          {usuario.persona ? (
+            <div className="hidden xl:flex items-center gap-1.5 min-w-0">
+              <Badge
+                variant="outline"
+                className="gap-1.5 font-sans text-[11px] px-2 py-0.5 bg-background border-border/80 text-foreground truncate max-w-[200px]"
+                title={`Persona: ${usuario.persona.nombreCompleto} (${usuario.persona.tipoDocumento}: ${usuario.persona.numeroDocumento})`}
+              >
+                <IdCard className="size-3 text-primary shrink-0" />
+                <span className="truncate">{usuario.persona.nombreCompleto}</span>
+              </Badge>
+            </div>
+          ) : (
+            <span className="hidden xl:inline text-[11px] text-muted-foreground/40 italic">
+              Sin persona vinculada
+            </span>
+          )}
+
           {/* Roles Badges */}
           {usuario.roles && usuario.roles.length > 0 ? (
             <div className="hidden md:flex items-center gap-1.5 flex-wrap">
@@ -101,8 +124,21 @@ export function UsuarioListItem({ usuario, onSelect }: UsuarioListItemProps) {
         </div>
       </div>
 
-      {/* Estado, Auditoría y Botón de Detalle */}
-      <div className="flex shrink-0 items-center gap-3">
+      {/* Estado, Persona Action, Auditoría y Botón de Detalle */}
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onAssignPersona?.(usuario)}
+          className="h-8 gap-1 border-border/80 hover:bg-muted text-xs font-medium cursor-pointer"
+          title={usuario.persona ? "Cambiar persona vinculada" : "Vincular persona"}
+        >
+          <IdCard className="size-3.5 text-primary" />
+          <span className="hidden lg:inline">
+            {usuario.persona ? "Persona" : "Asociar Persona"}
+          </span>
+        </Button>
+
         <Badge
           variant={usuario.activo ? "default" : "destructive"}
           className="gap-1 text-[11px] font-medium hidden sm:inline-flex"

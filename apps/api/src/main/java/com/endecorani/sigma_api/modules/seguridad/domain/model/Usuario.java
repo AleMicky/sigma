@@ -23,6 +23,7 @@ public class Usuario extends AuditableModel {
     private String username;
     private String nombre;
     private String email;
+    private UUID personaId;
     private boolean activo;
 
     @Builder.Default
@@ -38,5 +39,9 @@ public class Usuario extends AuditableModel {
         this.nombre = nombre;
         this.email = email;
         this.activo = activo;
+    }
+
+    public void asignarPersona(UUID personaId) {
+        this.personaId = personaId;
     }
 }

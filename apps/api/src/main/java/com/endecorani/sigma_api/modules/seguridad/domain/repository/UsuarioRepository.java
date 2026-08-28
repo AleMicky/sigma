@@ -13,6 +13,12 @@ public interface UsuarioRepository {
 
     Optional<Usuario> findByKeycloakUserId(String keycloakUserId);
 
+    Optional<Usuario> findByPersonaId(UUID personaId);
+
+    boolean existsByPersonaId(UUID personaId);
+
+    boolean existsByPersonaIdAndIdNot(UUID personaId, UUID id);
+
     Usuario save(Usuario usuario);
 
     List<Usuario> findAll();
