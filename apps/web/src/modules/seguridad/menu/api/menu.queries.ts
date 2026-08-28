@@ -38,7 +38,8 @@ export const menuQueries = {
     queryOptions({
       queryKey: menuKeys.misMenus(),
       queryFn: () => getMisMenus(),
-      staleTime: 5 * 60 * 1000,
+      staleTime: 0,
+      refetchOnMount: "always",
     }),
 
   detail: (id: string) =>

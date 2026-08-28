@@ -10,6 +10,7 @@ import type { AuthUser } from "@/app/router/router.context";
 import { useAuthStore } from "@/app/store/auth.store";
 import { authEndpoints } from "@/modules/auth/api/auth.endpoints";
 
+import { queryClient } from "@/app/query/queryClient";
 import { axiosInstance } from "./axios";
 import { parseApiError } from "./errors";
 
@@ -81,6 +82,7 @@ function handleRequestError(
 }
 
 function redirectToLogin(): void {
+    queryClient.clear();
     useAuthStore.getState().clearSession();
 
     const currentPath = window.location.pathname;

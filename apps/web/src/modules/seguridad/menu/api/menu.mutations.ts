@@ -25,6 +25,7 @@ const menuMutations = createCrudMutations<Menu, CreateMenuDto>({
     menuKeys.all,
     menuKeys.arbol(),
     menuKeys.allList(),
+    menuKeys.misMenus(),
   ],
 })
 

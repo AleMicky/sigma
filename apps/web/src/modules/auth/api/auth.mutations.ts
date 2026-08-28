@@ -12,6 +12,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: login,
     onSuccess: (session) => {
+      queryClient.clear()
       setSession({
         user: session.user,
         accessToken: session.accessToken,
@@ -34,7 +35,7 @@ export function useLogout() {
     },
     onSettled: () => {
       clearSession()
-      queryClient.removeQueries({ queryKey: authKeys.all })
+      queryClient.clear()
     },
   })
 }
