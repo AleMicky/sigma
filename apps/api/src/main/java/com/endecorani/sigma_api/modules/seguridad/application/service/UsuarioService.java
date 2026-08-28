@@ -41,6 +41,26 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<UsuarioResponse> search(
+            String query,
+            PageRequestDto pageRequest
+    ) {
+        String normalized = com.endecorani.sigma_api.shared.util.StringUtils.normalize(query);
+
+        if (normalized == null) {
+            return findAll(pageRequest);
+        }
+
+        return PageResponse.from(
+                usuarioRepository.search(
+                        normalized,
+                        pageRequest.toPageable(SORT_FIELDS)
+                ),
+                this::toResponse
+        );
+    }
+
+    @Transactional(readOnly = true)
     public UsuarioResponse findById(UUID id) {
         return usuarioRepository.findById(id)
                 .map(this::toResponse)

@@ -59,6 +59,12 @@ public class RolRepositoryAdapter implements RolRepository {
                 .map(this::toDomain);
     }
 
+    @Override
+    public org.springframework.data.domain.Page<Rol> search(String query, org.springframework.data.domain.Pageable pageable) {
+        return repository.search(query, pageable)
+                .map(this::toDomain);
+    }
+
     private Rol toDomain(RolEntity entity) {
 
         return Rol.builder()

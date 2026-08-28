@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -47,6 +48,19 @@ public class RolController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         rolService.findAll(pageRequest)
+                )
+        );
+    }
+
+    @GetMapping(params = "q")
+    @Operation(summary = "Buscar roles por código, nombre o descripción")
+    public ResponseEntity<ApiResponse<PageResponse<RolResponse>>> search(
+            @RequestParam String q,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        rolService.search(q, pageRequest)
                 )
         );
     }

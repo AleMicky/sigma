@@ -52,6 +52,12 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
                 .map(this::toDomain);
     }
 
+    @Override
+    public Page<Usuario> search(String query, Pageable pageable) {
+        return repository.search(query, pageable)
+                .map(this::toDomain);
+    }
+
     private Usuario toDomain(UsuarioEntity entity) {
         return Usuario.builder()
                 .id(entity.getId())

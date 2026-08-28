@@ -21,4 +21,6 @@ public interface RolRepository {
     List<Rol> findAll();
 
     Page<Rol> findAll(Pageable pageable);
+
+    Page<Rol> search(String query, Pageable pageable);
 }

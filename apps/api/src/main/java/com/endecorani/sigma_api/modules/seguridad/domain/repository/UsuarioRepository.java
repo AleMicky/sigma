@@ -18,4 +18,6 @@ public interface UsuarioRepository {
     List<Usuario> findAll();
 
     Page<Usuario> findAll(Pageable pageable);
+
+    Page<Usuario> search(String query, Pageable pageable);
 }

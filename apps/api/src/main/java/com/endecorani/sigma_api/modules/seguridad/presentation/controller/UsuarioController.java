@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -46,6 +47,19 @@ public class UsuarioController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         usuarioService.findAll(pageRequest)
+                )
+        );
+    }
+
+    @GetMapping(params = "q")
+    @Operation(summary = "Buscar usuarios por nombre de usuario, nombre o correo")
+    public ResponseEntity<ApiResponse<PageResponse<UsuarioResponse>>> search(
+            @RequestParam String q,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        usuarioService.search(q, pageRequest)
                 )
         );
     }

@@ -39,6 +39,26 @@ public class RolService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<RolResponse> search(
+            String query,
+            PageRequestDto pageRequest
+    ) {
+        String normalized = com.endecorani.sigma_api.shared.util.StringUtils.normalize(query);
+
+        if (normalized == null) {
+            return findAll(pageRequest);
+        }
+
+        return PageResponse.from(
+                rolRepository.search(
+                        normalized,
+                        pageRequest.toPageable(SORT_FIELDS)
+                ),
+                this::toResponse
+        );
+    }
+
+    @Transactional(readOnly = true)
     public List<RolResponse> findAllList() {
         return rolRepository.findAll()
                 .stream()
