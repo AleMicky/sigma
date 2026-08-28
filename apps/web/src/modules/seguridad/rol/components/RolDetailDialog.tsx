@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog"
 import type { Rol } from "../api/rol.service"
+import { getFriendlyRoleName } from "../utils/rol.utils"
 
 type RolDetailDialogProps = {
   rol: Rol | null
@@ -57,7 +58,7 @@ export function RolDetailDialog({
             </div>
             <div className="flex flex-col min-w-0">
               <DialogTitle className="text-lg font-semibold truncate">
-                {rol.nombre || rol.codigo}
+                {getFriendlyRoleName(rol)}
               </DialogTitle>
               <DialogDescription className="text-xs font-mono">
                 Rol del Sistema SIGMA
