@@ -1,6 +1,9 @@
 package com.endecorani.sigma_api.modules.seguridad.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
+import com.endecorani.sigma_api.modules.seguridad.application.dto.request.AsignarMenusRolRequest;
+import com.endecorani.sigma_api.modules.seguridad.application.dto.response.MenuResponse;
+import com.endecorani.sigma_api.modules.seguridad.application.dto.response.MenuTreeNode;
 import com.endecorani.sigma_api.modules.seguridad.application.dto.response.RolResponse;
 import com.endecorani.sigma_api.modules.seguridad.application.service.RolService;
 import com.endecorani.sigma_api.modules.seguridad.application.service.RolSyncService;
@@ -19,6 +22,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -81,6 +86,50 @@ public class RolController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         rolService.findById(id)
+                )
+        );
+    }
+
+    @GetMapping("/{id}/menus")
+    @Operation(summary = "Listar menús asignados a un rol")
+    public ResponseEntity<ApiResponse<List<MenuResponse>>> findMenusByRol(@PathVariable UUID id) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        rolService.obtenerMenusPorRol(id)
+                )
+        );
+    }
+
+    @GetMapping("/{id}/menus/ids")
+    @Operation(summary = "Listar IDs de menús asignados a un rol")
+    public ResponseEntity<ApiResponse<List<UUID>>> findMenuIdsByRol(@PathVariable UUID id) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        rolService.obtenerMenuIdsPorRol(id)
+                )
+        );
+    }
+
+    @GetMapping("/{id}/menus/arbol")
+    @Operation(summary = "Obtener árbol de menús asignados a un rol")
+    public ResponseEntity<ApiResponse<List<MenuTreeNode>>> findArbolMenusByRol(@PathVariable UUID id) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        rolService.obtenerArbolMenusPorRol(id)
+                )
+        );
+    }
+
+    @PutMapping("/{id}/menus")
+    @Operation(summary = "Asignar menús a un rol")
+    public ResponseEntity<ApiResponse<List<UUID>>> asignarMenus(
+            @PathVariable UUID id,
+            @Valid @RequestBody AsignarMenusRolRequest request
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Menús asignados correctamente al rol",
+                        rolService.asignarMenus(id, request)
                 )
         );
     }

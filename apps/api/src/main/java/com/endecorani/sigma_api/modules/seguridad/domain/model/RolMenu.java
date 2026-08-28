@@ -1,4 +1,18 @@
 package com.endecorani.sigma_api.modules.seguridad.domain.model;
 
-public class RolMenu {
+import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import java.util.UUID;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+public class RolMenu extends AuditableModel {
+    private UUID id;
+    private UUID rolId;
+    private UUID menuId;
 }

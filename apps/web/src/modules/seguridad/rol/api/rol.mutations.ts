@@ -4,7 +4,7 @@ import { toast } from "sonner"
 import { getErrorMessage } from "@/shared/api"
 
 import { rolKeys } from "./rol.keys"
-import { sincronizarRoles } from "./rol.service"
+import { asignarMenusRol, sincronizarRoles } from "./rol.service"
 
 export function useSincronizarRoles() {
   const queryClient = useQueryClient()
@@ -16,6 +16,24 @@ export function useSincronizarRoles() {
       toast.success(
         `Sincronización completada: ${total} ${total === 1 ? "rol procesado" : "roles procesados"}`,
       )
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
+    },
+  })
+}
+
+export function useAsignarMenusRol() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, menuIds }: { id: string; menuIds: string[] }) =>
+      asignarMenusRol(id, menuIds),
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: rolKeys.menus(variables.id) })
+      void queryClient.invalidateQueries({ queryKey: rolKeys.menuIds(variables.id) })
+      void queryClient.invalidateQueries({ queryKey: rolKeys.menuArbol(variables.id) })
+      toast.success("Menús y permisos del rol actualizados correctamente")
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))

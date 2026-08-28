@@ -129,6 +129,13 @@ public class MenuService {
         return construirArbolDesdeRaices(todos);
     }
 
+    public List<MenuTreeNode> buildArbolFromMenus(List<Menu> menus) {
+        if (menus == null || menus.isEmpty()) {
+            return List.of();
+        }
+        return construirArbolDesdeRaices(menus);
+    }
+
     private Menu toDomain(MenuRequest request) {
         String codigo = requireNormalizedCodigo(request.codigo());
         validateUniqueCodigoForCreate(codigo);
@@ -185,7 +192,7 @@ public class MenuService {
         domain.setActivo(request.activo() == null || request.activo());
     }
 
-    private MenuResponse toResponse(Menu menu) {
+    public MenuResponse toResponse(Menu menu) {
         return new MenuResponse(
                 menu.getId(),
                 menu.getMenuPadreId(),

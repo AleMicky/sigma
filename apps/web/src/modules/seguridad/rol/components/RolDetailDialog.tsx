@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Copy,
   FileText,
+  FolderTree,
   KeyRound,
   Shield,
   Tag,
@@ -17,6 +18,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog"
@@ -26,12 +28,14 @@ type RolDetailDialogProps = {
   rol: Rol | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onAssignMenus?: (rol: Rol) => void
 }
 
 export function RolDetailDialog({
   rol,
   open,
   onOpenChange,
+  onAssignMenus,
 }: RolDetailDialogProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
 
@@ -201,6 +205,32 @@ export function RolDetailDialog({
             <AuditInfo data={rol} className="text-xs" />
           </div>
         </div>
+
+        <DialogFooter className="flex flex-row items-center justify-between gap-2 border-t pt-3">
+          {onAssignMenus && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onOpenChange(false)
+                onAssignMenus(rol)
+              }}
+              className="gap-1.5 border-primary/40 text-primary hover:bg-primary/5 text-xs font-medium cursor-pointer"
+            >
+              <FolderTree className="size-3.5" />
+              <span>Configurar Menús y Accesos</span>
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+          >
+            Cerrar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -3,7 +3,14 @@ import { queryOptions } from "@tanstack/react-query"
 import type { PageParams } from "@/shared/types/api.types"
 
 import { rolKeys } from "./rol.keys"
-import { getRol, listAllRoles, listRoles } from "./rol.service"
+import {
+  getRol,
+  getRolMenuArbol,
+  getRolMenuIds,
+  getRolMenus,
+  listAllRoles,
+  listRoles,
+} from "./rol.service"
 
 export const rolQueries = {
   list: (filters?: PageParams) =>
@@ -26,6 +33,27 @@ export const rolQueries = {
     queryOptions({
       queryKey: rolKeys.detail(id),
       queryFn: () => getRol(id),
+      enabled: Boolean(id),
+    }),
+
+  menus: (id: string) =>
+    queryOptions({
+      queryKey: rolKeys.menus(id),
+      queryFn: () => getRolMenus(id),
+      enabled: Boolean(id),
+    }),
+
+  menuIds: (id: string) =>
+    queryOptions({
+      queryKey: rolKeys.menuIds(id),
+      queryFn: () => getRolMenuIds(id),
+      enabled: Boolean(id),
+    }),
+
+  menuArbol: (id: string) =>
+    queryOptions({
+      queryKey: rolKeys.menuArbol(id),
+      queryFn: () => getRolMenuArbol(id),
       enabled: Boolean(id),
     }),
 }

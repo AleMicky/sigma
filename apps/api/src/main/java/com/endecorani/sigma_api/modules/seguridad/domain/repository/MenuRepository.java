@@ -18,6 +18,8 @@ public interface MenuRepository {
 
     List<Menu> findAll();
 
+    List<Menu> findAllById(List<UUID> ids);
+
     Page<Menu> findAll(Pageable pageable);
 
     Page<Menu> search(String query, Pageable pageable);

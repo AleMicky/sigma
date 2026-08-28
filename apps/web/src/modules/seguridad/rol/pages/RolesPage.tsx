@@ -32,11 +32,13 @@ import type { Rol } from "../api/rol.service"
 import { RolDetailDialog } from "../components/RolDetailDialog"
 import { RolHelpModal } from "../components/RolHelpModal"
 import { RolListItem } from "../components/RolListItem"
+import { RolMenuAssignmentSheet } from "../components/RolMenuAssignmentSheet"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function RolesPage() {
   const [selectedRol, setSelectedRol] = useState<Rol | null>(null)
+  const [selectedRolForMenus, setSelectedRolForMenus] = useState<Rol | null>(null)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
 
   const search = usePaginatedSearch()
@@ -127,7 +129,7 @@ export function RolesPage() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Gestión y sincronización de roles locales con el servidor de identidades Keycloak.
+            Gestión y sincronización de roles locales con el servidor de identidades Keycloak y asignación de menús.
           </p>
 
           {/* Badges de estadísticas rápidas */}
@@ -255,6 +257,7 @@ export function RolesPage() {
                     key={rol.id}
                     rol={rol}
                     onSelect={(r) => setSelectedRol(r)}
+                    onAssignMenus={(r) => setSelectedRolForMenus(r)}
                   />
                 ))}
               </ul>
@@ -277,6 +280,15 @@ export function RolesPage() {
         rol={selectedRol}
         open={Boolean(selectedRol)}
         onOpenChange={(open) => !open && setSelectedRol(null)}
+        onAssignMenus={(r) => setSelectedRolForMenus(r)}
+      />
+
+      {/* Asignación de Menús Sheet */}
+      <RolMenuAssignmentSheet
+        key={selectedRolForMenus?.id ?? "empty-menus-assignment"}
+        rol={selectedRolForMenus}
+        open={Boolean(selectedRolForMenus)}
+        onOpenChange={(open) => !open && setSelectedRolForMenus(null)}
       />
 
       {/* Help Guide Modal */}

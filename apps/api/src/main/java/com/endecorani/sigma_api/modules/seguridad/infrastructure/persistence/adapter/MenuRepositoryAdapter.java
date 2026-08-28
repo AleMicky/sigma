@@ -51,6 +51,17 @@ public class MenuRepositoryAdapter implements MenuRepository {
     }
 
     @Override
+    public List<Menu> findAllById(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return repository.findAllById(ids)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public Page<Menu> findAll(Pageable pageable) {
         return repository
                 .findAll(pageable)

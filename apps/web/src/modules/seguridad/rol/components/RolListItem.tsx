@@ -1,4 +1,4 @@
-import { CheckCircle2, Eye, KeyRound, Shield, XCircle } from "lucide-react"
+import { CheckCircle2, Eye, FolderTree, KeyRound, Shield, XCircle } from "lucide-react"
 
 import { AuditInfo } from "@/shared/components/audit-info"
 import { Badge } from "@/shared/components/ui/badge"
@@ -8,9 +8,14 @@ import type { Rol } from "../api/rol.service"
 type RolListItemProps = {
   rol: Rol
   onSelect: (rol: Rol) => void
+  onAssignMenus: (rol: Rol) => void
 }
 
-export function RolListItem({ rol, onSelect }: RolListItemProps) {
+export function RolListItem({
+  rol,
+  onSelect,
+  onAssignMenus,
+}: RolListItemProps) {
   return (
     <li className="group flex items-center justify-between gap-3 px-3.5 py-3 transition-colors hover:bg-muted/40">
       {/* Información del Rol */}
@@ -65,8 +70,8 @@ export function RolListItem({ rol, onSelect }: RolListItemProps) {
         </div>
       </div>
 
-      {/* Estado, Auditoría y Botón de Detalle */}
-      <div className="flex shrink-0 items-center gap-3">
+      {/* Estado, Auditoría y Acciones */}
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <Badge
           variant={rol.activo ? "default" : "destructive"}
           className="gap-1 text-[11px] font-medium hidden sm:inline-flex"
@@ -87,8 +92,19 @@ export function RolListItem({ rol, onSelect }: RolListItemProps) {
         <AuditInfo
           data={rol}
           compact
-          className="hidden md:inline-block max-w-[180px] text-right text-[11px]"
+          className="hidden lg:inline-block max-w-[180px] text-right text-[11px]"
         />
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onAssignMenus(rol)}
+          className="h-8 gap-1.5 border-primary/30 hover:border-primary/60 hover:bg-primary/5 text-primary text-xs font-medium cursor-pointer"
+          title="Asignar o editar menús y accesos del rol"
+        >
+          <FolderTree className="size-3.5" />
+          <span className="hidden sm:inline">Menús</span>
+        </Button>
 
         <Button
           size="sm"
@@ -96,7 +112,7 @@ export function RolListItem({ rol, onSelect }: RolListItemProps) {
           onClick={() => onSelect(rol)}
           className="h-8 gap-1.5 border-border/80 hover:bg-muted text-xs font-medium cursor-pointer"
         >
-          <Eye className="size-3.5 text-primary" />
+          <Eye className="size-3.5 text-muted-foreground" />
           <span className="hidden sm:inline">Detalle</span>
         </Button>
       </div>
