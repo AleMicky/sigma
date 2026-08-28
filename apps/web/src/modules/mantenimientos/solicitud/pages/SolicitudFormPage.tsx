@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
   ArrowLeft,
-  Box,
   Calendar,
   Check,
   FileText,
@@ -13,7 +12,6 @@ import {
   ImageIcon,
   Layers,
   Loader2,
-  MapPin,
   Paperclip,
   Plus,
   User,
@@ -23,26 +21,16 @@ import {
 
 import { routes } from "@/app/config/routes"
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
-import type { Activo } from "@/modules/activos/activo/api/activo.service"
 import { prioridadQueries } from "@/modules/mantenimientos/prioridad/api/prioridad.queries"
 import { tipoMantenimientoQueries } from "@/modules/mantenimientos/tipo-mantenimiento/api/tipo-mantenimiento.queries"
 import { empleadoQueries } from "@/modules/organizacion/empleado/api/empleado.queries"
 import type { Empleado } from "@/modules/organizacion/empleado/api/empleado.service"
 import { isApiError } from "@/shared/api"
-import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
 import { PageShell } from "@/shared/components/page-shell"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card } from "@/shared/components/ui/card"
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/shared/components/ui/combobox"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import {
