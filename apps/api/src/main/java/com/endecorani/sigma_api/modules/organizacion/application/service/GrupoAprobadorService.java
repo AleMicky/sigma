@@ -5,7 +5,6 @@ import com.endecorani.sigma_api.modules.organizacion.application.dto.response.Gr
 import com.endecorani.sigma_api.modules.organizacion.domain.model.GrupoAprobador;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.GrupoAprobadorRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;

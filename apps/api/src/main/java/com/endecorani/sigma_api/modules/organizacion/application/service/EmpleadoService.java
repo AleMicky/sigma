@@ -28,9 +28,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Servicio de aplicación para la gestión de empleados y su vinculación con personas, áreas y cargos.
- */
 @Service
 @RequiredArgsConstructor
 public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoResponse, UUID> {

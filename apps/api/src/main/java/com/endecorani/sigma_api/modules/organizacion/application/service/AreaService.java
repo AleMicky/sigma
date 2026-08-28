@@ -5,7 +5,6 @@ import com.endecorani.sigma_api.modules.organizacion.application.dto.response.Ar
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Area;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.AreaRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;

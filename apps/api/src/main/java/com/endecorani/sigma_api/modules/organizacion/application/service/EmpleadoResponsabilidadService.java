@@ -9,7 +9,6 @@ import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoR
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoResponsabilidadRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.ResponsabilidadRepository;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.dto.response.CatalogoResumenResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;

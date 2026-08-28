@@ -5,7 +5,6 @@ import com.endecorani.sigma_api.modules.organizacion.application.dto.response.Re
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Responsabilidad;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.ResponsabilidadRepository;
 import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
