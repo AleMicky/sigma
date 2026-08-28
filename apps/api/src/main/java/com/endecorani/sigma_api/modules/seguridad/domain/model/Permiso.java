@@ -1,4 +1,23 @@
 package com.endecorani.sigma_api.modules.seguridad.domain.model;
 
-public class Permiso {
+import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import java.util.UUID;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+public class Permiso extends AuditableModel {
+    private UUID id;
+    private UUID menuId;
+    private String codigo;
+    private String nombre;
+    private String descripcion;
+    private String metodoHttp;
+    private String ruta;
+    private boolean activo;
 }
