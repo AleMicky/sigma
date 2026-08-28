@@ -52,6 +52,7 @@ export function EmpleadoFormDialog({
         }
       : defaultEmpleadoValues,
     validators: {
+      onChange: empleadoSchema,
       onSubmit: empleadoSchema,
     },
     onSubmit: async ({ value }) => {
@@ -119,8 +120,7 @@ export function EmpleadoFormDialog({
         {/* 1. Persona Natural */}
         <form.Field name="personaId">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = Boolean(field.state.meta.errors.length)
 
             return (
               <Field data-invalid={isInvalid || undefined}>
@@ -147,8 +147,7 @@ export function EmpleadoFormDialog({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <form.Field name="areaId">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = Boolean(field.state.meta.errors.length)
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
@@ -173,8 +172,7 @@ export function EmpleadoFormDialog({
 
           <form.Field name="cargoId">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = Boolean(field.state.meta.errors.length)
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
@@ -202,8 +200,7 @@ export function EmpleadoFormDialog({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <form.Field name="codigo">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = Boolean(field.state.meta.errors.length)
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
@@ -229,8 +226,7 @@ export function EmpleadoFormDialog({
 
           <form.Field name="fechaInicio">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = Boolean(field.state.meta.errors.length)
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
@@ -255,8 +251,7 @@ export function EmpleadoFormDialog({
 
           <form.Field name="fechaFin">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = Boolean(field.state.meta.errors.length)
 
               return (
                 <Field data-invalid={isInvalid || undefined}>

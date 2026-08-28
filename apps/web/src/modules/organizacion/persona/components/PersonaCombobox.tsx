@@ -1,6 +1,15 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { FileText, Loader2, Mail, Phone, X } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Loader2,
+  Mail,
+  Phone,
+  RefreshCw,
+  X,
+} from "lucide-react"
 
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -12,6 +21,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/shared/components/ui/combobox"
+import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { cn } from "@/shared/lib/utils"
 
 import { personaQueries } from "../api/persona.queries"
@@ -27,6 +37,7 @@ export type PersonaComboboxProps = {
   id?: string
   name?: string
   "aria-invalid"?: boolean
+  pageSize?: number
 }
 
 function getPersonaNombre(p: Persona): string {
@@ -52,20 +63,53 @@ export function PersonaCombobox({
   id,
   name,
   "aria-invalid": ariaInvalid,
+  pageSize = 8,
 }: PersonaComboboxProps) {
+  const [page, setPage] = React.useState(0)
+  const [search, setSearch] = React.useState("")
+  const debouncedSearch = useDebouncedValue(search, 300)
+
+  React.useEffect(() => {
+    setPage(0)
+  }, [debouncedSearch])
+
+  // Realiza la búsqueda directamente al endpoint del backend (/api/v1/personas?q=...)
   const query = useQuery({
-    ...personaQueries.list({ size: 100, sortBy: "nombres", direction: "ASC" }),
+    ...personaQueries.list({
+      page,
+      size: pageSize,
+      sortBy: "nombres",
+      direction: "ASC",
+      ...(debouncedSearch.trim() ? { q: debouncedSearch.trim() } : {}),
+    }),
+  })
+
+  // Consulta individual si hay un valor seleccionado que quizás no esté en la página actual
+  const singleQuery = useQuery({
+    ...personaQueries.detail(value ?? ""),
+    enabled: Boolean(value),
   })
 
   const personas = React.useMemo(
     () => query.data?.content ?? [],
     [query.data?.content],
   )
+  const totalPages = query.data?.totalPages ?? 1
+  const totalElements = query.data?.totalElements ?? personas.length
 
   const selectedPersona = React.useMemo(() => {
     if (!value) return null
-    return personas.find((p) => p.id === value) ?? null
-  }, [value, personas])
+    return (
+      personas.find((p) => p.id === value) ??
+      (singleQuery.data?.id === value ? singleQuery.data : null)
+    )
+  }, [value, personas, singleQuery.data])
+
+  const handleRefresh = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    void query.refetch()
+  }
 
   // Tarjeta compacta cuando una persona está seleccionada
   if (selectedPersona) {
@@ -122,7 +166,10 @@ export function PersonaCombobox({
             type="button"
             variant="ghost"
             size="icon-xs"
-            onClick={() => onValueChange?.("", null)}
+            onClick={() => {
+              onValueChange?.("", null)
+              setSearch("")
+            }}
             className="size-6 text-muted-foreground hover:text-foreground hover:bg-muted rounded shrink-0 cursor-pointer"
             title="Cambiar persona"
           >
@@ -134,10 +181,11 @@ export function PersonaCombobox({
     )
   }
 
-  // Combobox Input
+  // Combobox Input con búsqueda al endpoint
   return (
     <Combobox
       items={personas}
+      filter={() => true}
       itemToStringLabel={(item: Persona) =>
         item
           ? `${getPersonaNombre(item)} (${item.tipoDocumento}: ${item.numeroDocumento}${item.complemento ? `-${item.complemento}` : ""})`
@@ -147,6 +195,7 @@ export function PersonaCombobox({
       value={null}
       onValueChange={(val: Persona | null) => {
         onValueChange?.(val?.id ?? "", val)
+        setSearch("")
       }}
       disabled={disabled || query.isLoading}
     >
@@ -154,25 +203,49 @@ export function PersonaCombobox({
         <ComboboxInput
           id={id}
           name={name}
-          placeholder={query.isLoading ? "Cargando personas..." : placeholder}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={query.isLoading && !query.data ? "Cargando personas..." : placeholder}
           aria-invalid={ariaInvalid}
           onBlur={onBlur}
           className={cn("w-full shadow-2xs text-xs bg-background", className)}
         />
-        {query.isLoading && (
+        {query.isFetching && (
           <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
             <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
           </div>
         )}
       </div>
 
-      <ComboboxContent className="z-50 max-h-56 min-w-[300px] p-1 rounded-lg shadow-lg border border-border/80">
-        <ComboboxEmpty className="py-3 text-xs text-muted-foreground text-center">
+      <ComboboxContent className="z-50 w-(--anchor-width) min-w-[min(100vw-2rem,var(--anchor-width))] max-w-[var(--anchor-width)] p-1 rounded-xl shadow-lg border border-border/80 bg-popover overflow-hidden flex flex-col">
+        {/* Header con indicador y botón de recarga */}
+        <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/50 text-[11px] text-muted-foreground bg-muted/30 select-none">
+          <span className="font-medium truncate">
+            {query.isFetching
+              ? "Buscando en servidor..."
+              : debouncedSearch.trim()
+                ? `Resultados (${totalElements} encontrados)`
+                : `Personas (${totalElements} registros)`}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            onClick={handleRefresh}
+            disabled={query.isFetching}
+            title="Recargar lista de personas"
+            className="size-6 text-muted-foreground hover:text-foreground hover:bg-background/80"
+          >
+            <RefreshCw className={cn("size-3", query.isFetching && "animate-spin")} />
+          </Button>
+        </div>
+
+        <ComboboxEmpty className="py-5 text-xs text-muted-foreground text-center">
           {query.isLoading
-            ? "Cargando personas..."
-            : "No se encontraron personas."}
+            ? "Buscando en el servidor..."
+            : "No se encontraron personas coincidentes."}
         </ComboboxEmpty>
-        <ComboboxList>
+
+        <ComboboxList className="max-h-52 overflow-y-auto overscroll-contain pr-1 py-1">
           {(item: Persona) => {
             const nombre = getPersonaNombre(item)
             const initials = getInitials(nombre)
@@ -201,6 +274,47 @@ export function PersonaCombobox({
             )
           }}
         </ComboboxList>
+
+        {/* Footer con controles de paginación */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-2 py-1.5 border-t border-border/50 bg-muted/20 text-[11px] text-muted-foreground select-none">
+            <span className="font-medium tabular-nums">
+              Página {page + 1} de {totalPages}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setPage((p) => Math.max(0, p - 1))
+                }}
+                disabled={page === 0 || query.isFetching}
+                className="size-6 text-muted-foreground hover:text-foreground"
+                title="Página anterior"
+              >
+                <ChevronLeft className="size-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setPage((p) => Math.min(totalPages - 1, p + 1))
+                }}
+                disabled={page >= totalPages - 1 || query.isFetching}
+                className="size-6 text-muted-foreground hover:text-foreground"
+                title="Página siguiente"
+              >
+                <ChevronRight className="size-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
       </ComboboxContent>
     </Combobox>
   )

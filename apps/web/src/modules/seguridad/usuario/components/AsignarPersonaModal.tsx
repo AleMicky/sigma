@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import { IdCard, Loader2, UserCheck, X } from "lucide-react"
 
 import { PersonaCombobox } from "@/modules/organizacion/persona/components/PersonaCombobox"
-import type { Persona } from "@/modules/organizacion/persona/api/persona.service"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -28,40 +27,31 @@ export function AsignarPersonaModal({
   onOpenChange,
 }: AsignarPersonaModalProps) {
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>("")
-  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null)
-
   const mutation = useActualizarPersonaUsuario()
 
   useEffect(() => {
     if (usuario && open) {
       setSelectedPersonaId(usuario.personaId ?? "")
-      setSelectedPersona(null)
     }
   }, [usuario, open])
 
   if (!usuario) return null
 
   const isPending = mutation.isPending
+  const hasChanges = (usuario.personaId ?? "") !== selectedPersonaId
 
   async function handleSave() {
     if (!usuario) return
     try {
       await mutation.mutateAsync({
         id: usuario.id,
-        personaId: selectedPersonaId ? selectedPersonaId : null,
+        personaId: selectedPersonaId || null,
       })
       onOpenChange(false)
     } catch {
-      // Handled in mutation toast
+      // Toast notification is managed by mutation
     }
   }
-
-  function handleUnlink() {
-    setSelectedPersonaId("")
-    setSelectedPersona(null)
-  }
-
-  const hasChanges = (usuario.personaId ?? "") !== (selectedPersonaId ?? "")
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,38 +64,35 @@ export function AsignarPersonaModal({
             </DialogTitle>
           </div>
           <DialogDescription>
-            Vincula una persona del módulo organizacional a la cuenta de usuario{" "}
-            <span className="font-semibold text-foreground font-mono">
+            Vincula una persona del módulo organizacional a{" "}
+            <span className="font-mono font-semibold text-foreground">
               @{usuario.username}
             </span>
             .
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          <div className="rounded-lg border border-border/70 bg-muted/30 p-3 text-xs space-y-1">
+        <div className="space-y-4 py-2 text-xs">
+          <div className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-1">
             <div className="flex justify-between">
-              <span className="text-muted-foreground font-medium">Usuario:</span>
+              <span className="font-medium text-muted-foreground">Usuario:</span>
               <span className="font-semibold text-foreground">
                 {usuario.nombre || usuario.username}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground font-medium">Correo:</span>
+              <span className="font-medium text-muted-foreground">Correo:</span>
               <span className="text-foreground">{usuario.email || "Sin correo"}</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground block">
+            <label className="block font-semibold text-foreground">
               Persona Organizacional
             </label>
             <PersonaCombobox
               value={selectedPersonaId}
-              onValueChange={(val, persona) => {
-                setSelectedPersonaId(val)
-                setSelectedPersona(persona ?? null)
-              }}
+              onValueChange={setSelectedPersonaId}
               placeholder="Buscar persona por nombre o documento..."
               disabled={isPending}
             />
@@ -121,9 +108,9 @@ export function AsignarPersonaModal({
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleUnlink}
+              onClick={() => setSelectedPersonaId("")}
               disabled={isPending}
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive text-xs gap-1 border-destructive/30 cursor-pointer"
+              className="gap-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive text-xs cursor-pointer"
             >
               <X className="size-3.5" />
               <span>Desvincular</span>
@@ -148,7 +135,7 @@ export function AsignarPersonaModal({
               size="sm"
               onClick={handleSave}
               disabled={isPending || !hasChanges}
-              className="text-xs gap-1.5"
+              className="gap-1.5 text-xs cursor-pointer"
             >
               {isPending ? (
                 <Loader2 className="size-3.5 animate-spin" />
