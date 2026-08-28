@@ -10,7 +10,6 @@ import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepo
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.EmpleadoSearchCriteria;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
-import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
 import com.endecorani.sigma_api.shared.application.dto.response.CatalogoResumenResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -18,7 +17,6 @@ import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
-import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,12 +29,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
-public class EmpleadoService extends AbstractCrudService<
-        Empleado,
-        EmpleadoRequest,
-        EmpleadoResponse,
-        UUID
-        > {
+public class EmpleadoService {
 
     private static final int CODIGO_MIN_LENGTH = 2;
     private static final int CODIGO_MAX_LENGTH = 50;
@@ -54,14 +47,38 @@ public class EmpleadoService extends AbstractCrudService<
     private final AreaRepository areaRepository;
     private final CargoRepository cargoRepository;
 
-    @Override
-    protected CrudRepository<Empleado, UUID> repository() {
-        return empleadoRepository;
+    @Transactional
+    public EmpleadoResponse create(EmpleadoRequest request) {
+        Empleado domain = toDomain(request);
+        Empleado saved = empleadoRepository.save(domain);
+        return toResponse(saved);
     }
 
-    @Override
-    protected Set<String> allowedSortFields() {
-        return SORT_FIELDS;
+    @Transactional
+    public EmpleadoResponse update(UUID id, EmpleadoRequest request) {
+        Empleado domain = findDomainById(id);
+        updateDomain(domain, request);
+        Empleado updated = empleadoRepository.save(domain);
+        return toResponse(updated);
+    }
+
+    @Transactional(readOnly = true)
+    public EmpleadoResponse findById(UUID id) {
+        return toResponse(findDomainById(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<EmpleadoResponse> findAll(PageRequestDto pageRequest) {
+        return PageResponse.from(
+                empleadoRepository.findAll(pageRequest.toPageable(allowedSortFields())),
+                this::toResponse
+        );
+    }
+
+    @Transactional
+    public void delete(UUID id) {
+        findDomainById(id);
+        empleadoRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
@@ -88,8 +105,16 @@ public class EmpleadoService extends AbstractCrudService<
         );
     }
 
-    @Override
-    protected Empleado toDomain(EmpleadoRequest request) {
+    private Empleado findDomainById(UUID id) {
+        return empleadoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Empleado", id));
+    }
+
+    private Set<String> allowedSortFields() {
+        return SORT_FIELDS;
+    }
+
+    private Empleado toDomain(EmpleadoRequest request) {
         validateReferencias(request);
         String codigo = requireNormalizedCodigo(request.codigo());
         validateUniqueCodigoForCreate(codigo);
@@ -105,8 +130,7 @@ public class EmpleadoService extends AbstractCrudService<
                 .build();
     }
 
-    @Override
-    protected void updateDomain(Empleado domain, EmpleadoRequest request) {
+    private void updateDomain(Empleado domain, EmpleadoRequest request) {
         validateReferencias(request);
         String codigo = requireNormalizedCodigo(request.codigo());
         validateUniqueCodigoForUpdate(codigo, domain.getId());
@@ -119,8 +143,7 @@ public class EmpleadoService extends AbstractCrudService<
         domain.setFechaFin(request.fechaFin());
     }
 
-    @Override
-    protected EmpleadoResponse toResponse(Empleado domain) {
+    private EmpleadoResponse toResponse(Empleado domain) {
         return new EmpleadoResponse(
                 domain.getId(),
                 buildPersonaInfo(domain.getPersonaId()),
@@ -177,11 +200,6 @@ public class EmpleadoService extends AbstractCrudService<
                 .filter(value -> value != null && !value.isBlank())
                 .map(String::trim)
                 .collect(Collectors.joining(" "));
-    }
-
-    @Override
-    protected String resourceName() {
-        return "Empleado";
     }
 
     private void validateReferencias(EmpleadoRequest request) {

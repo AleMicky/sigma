@@ -7,46 +7,50 @@ import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.mapper.EmpleadoPersistenceMapper;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringEmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.specification.EmpleadoSpecifications;
-import com.endecorani.sigma_api.shared.infrastructure.persistence.AbstractJpaRepositoryAdapter;
-import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
-public class EmpleadoRepositoryImpl
-        extends AbstractJpaRepositoryAdapter<
-        Empleado,
-        EmpleadoEntity,
-        UUID
-        >
-        implements EmpleadoRepository {
+public class EmpleadoRepositoryImpl implements EmpleadoRepository {
 
     private final SpringEmpleadoRepository springRepository;
 
     private final EmpleadoPersistenceMapper mapper;
 
     @Override
-    protected BaseJpaRepository<
-            EmpleadoEntity,
-            UUID
-            > jpaRepository() {
-
-        return springRepository;
+    public Empleado save(Empleado empleado) {
+        EmpleadoEntity saved = springRepository.save(mapper.toEntity(empleado));
+        return mapper.toDomain(saved);
     }
 
     @Override
-    protected EmpleadoEntity toEntity(Empleado domain) {
-        return mapper.toEntity(domain);
+    public Optional<Empleado> findById(UUID id) {
+        return springRepository
+                .findById(id)
+                .map(mapper::toDomain);
     }
 
     @Override
-    protected Empleado toDomain(EmpleadoEntity entity) {
-        return mapper.toDomain(entity);
+    public Page<Empleado> findAll(Pageable pageable) {
+        return springRepository
+                .findAll(pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return springRepository.existsById(id);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springRepository.deleteById(id);
     }
 
     @Override
