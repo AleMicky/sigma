@@ -1,15 +1,19 @@
 import { useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
 import {
   Calendar,
   CheckCircle2,
   FolderTree,
   Hash,
+  KeyRound,
   Link as LinkIcon,
   Pencil,
   ShieldAlert,
   User,
 } from "lucide-react"
 
+import { permisoQueries } from "@/modules/seguridad/permiso/api/permiso.queries"
+import { PermisoMethodBadge } from "@/modules/seguridad/permiso/components/PermisoMethodBadge"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -32,6 +36,7 @@ type MenuDetailDialogProps = {
   parentMenu?: Menu | null
   allMenus?: Menu[]
   onEdit?: (menu: Menu) => void
+  onManagePermisos?: (menu: Menu) => void
 }
 
 export function MenuDetailDialog({
@@ -41,6 +46,7 @@ export function MenuDetailDialog({
   parentMenu,
   allMenus = [],
   onEdit,
+  onManagePermisos,
 }: MenuDetailDialogProps) {
   const hijos = useMemo(
     () =>
@@ -51,6 +57,13 @@ export function MenuDetailDialog({
         : [],
     [allMenus, menu],
   )
+
+  const permisosQuery = useQuery({
+    ...permisoQueries.byMenu(menu?.id ?? ""),
+    enabled: Boolean(menu?.id && open),
+  })
+
+  const permisos = permisosQuery.data ?? []
 
   if (!menu) return null
 
@@ -151,6 +164,66 @@ export function MenuDetailDialog({
             </p>
           </div>
 
+          {/* Permisos de API Asociados */}
+          <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <KeyRound className="size-3.5 text-primary" />
+                Permisos de API Asociados
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  {permisos.length} {permisos.length === 1 ? "permiso" : "permisos"}
+                </span>
+                {onManagePermisos && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-[11px] px-2 text-primary hover:bg-primary/10 cursor-pointer"
+                    onClick={() => {
+                      onOpenChange(false)
+                      onManagePermisos(menu)
+                    }}
+                  >
+                    Gestionar
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {permisos.length === 0 ? (
+              <p className="text-xs italic text-muted-foreground pt-1">
+                No hay permisos de API registrados para este menú.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border/50 rounded-lg border border-border/60 bg-muted/20 overflow-hidden max-h-48 overflow-y-auto">
+                {permisos.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center justify-between p-2 text-xs gap-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <PermisoMethodBadge method={p.metodoHttp} size="sm" />
+                      <span className="font-medium text-foreground truncate">
+                        {p.nombre}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 font-mono text-[10.5px]">
+                      <code className="text-muted-foreground bg-muted px-1.5 py-0.5 rounded truncate max-w-[140px]">
+                        {p.ruta}
+                      </code>
+                      {!p.activo && (
+                        <Badge variant="outline" className="text-[9px] py-0 px-1 border-destructive/40 text-destructive">
+                          Inactivo
+                        </Badge>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {/* Submenús directos */}
           <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2">
             <div className="flex items-center justify-between">
@@ -244,12 +317,28 @@ export function MenuDetailDialog({
 
         {/* Footer */}
         <DialogFooter className="p-4 border-t bg-card flex-row gap-2 justify-end">
+          {onManagePermisos && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5 cursor-pointer"
+              onClick={() => {
+                onOpenChange(false)
+                onManagePermisos(menu)
+              }}
+            >
+              <KeyRound className="size-3.5 text-primary" />
+              <span>Permisos</span>
+            </Button>
+          )}
+
           {onEdit && (
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 cursor-pointer"
               onClick={() => {
                 onOpenChange(false)
                 onEdit(menu)
@@ -263,6 +352,7 @@ export function MenuDetailDialog({
             type="button"
             size="sm"
             onClick={() => onOpenChange(false)}
+            className="cursor-pointer"
           >
             Cerrar
           </Button>

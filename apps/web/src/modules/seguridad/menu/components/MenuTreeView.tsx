@@ -12,10 +12,12 @@ type MenuTreeViewProps = {
   searchQuery?: string
   statusFilter?: "all" | "active" | "inactive"
   expandedAll?: boolean
+  permisosCountByMenuId?: Map<string, number>
   onEdit: (menu: Menu) => void
   onAddChild: (parent: MenuTreeNode) => void
   onQuickView: (id: string) => void
   onOpenCreate: () => void
+  onManagePermisos?: (menu: Menu) => void
 }
 
 export function MenuTreeView({
@@ -23,10 +25,12 @@ export function MenuTreeView({
   searchQuery = "",
   statusFilter = "all",
   expandedAll = true,
+  permisosCountByMenuId,
   onEdit,
   onAddChild,
   onQuickView,
   onOpenCreate,
+  onManagePermisos,
 }: MenuTreeViewProps) {
   // Recursive filter helper
   const filteredTree = useMemo(() => {
@@ -75,7 +79,7 @@ export function MenuTreeView({
             : "Crea el primer módulo de menú raíz para estructurar la navegación del sistema."
         }
         action={
-          <Button size="sm" type="button" onClick={onOpenCreate} className="gap-1.5">
+          <Button size="sm" type="button" onClick={onOpenCreate} className="gap-1.5 cursor-pointer">
             <Plus className="size-4" />
             <span>Crear Menú Raíz</span>
           </Button>
@@ -110,9 +114,11 @@ export function MenuTreeView({
               defaultExpanded={expandedAll}
               searchQuery={searchQuery}
               statusFilter={statusFilter}
+              permisosCountByMenuId={permisosCountByMenuId}
               onEdit={onEdit}
               onAddChild={onAddChild}
               onQuickView={onQuickView}
+              onManagePermisos={onManagePermisos}
             />
           ))}
         </ul>

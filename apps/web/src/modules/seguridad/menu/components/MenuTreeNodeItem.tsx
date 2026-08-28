@@ -3,6 +3,7 @@ import {
   ChevronDown,
   ChevronRight,
   Eye,
+  KeyRound,
   Link as LinkIcon,
   Plus,
 } from "lucide-react"
@@ -23,9 +24,11 @@ type MenuTreeNodeItemProps = {
   defaultExpanded?: boolean
   searchQuery?: string
   statusFilter?: "all" | "active" | "inactive"
+  permisosCountByMenuId?: Map<string, number>
   onEdit: (menu: Menu) => void
   onAddChild: (parent: MenuTreeNode) => void
   onQuickView: (id: string) => void
+  onManagePermisos?: (menu: Menu) => void
 }
 
 export function MenuTreeNodeItem({
@@ -34,9 +37,11 @@ export function MenuTreeNodeItem({
   defaultExpanded = true,
   searchQuery = "",
   statusFilter = "all",
+  permisosCountByMenuId,
   onEdit,
   onAddChild,
   onQuickView,
+  onManagePermisos,
 }: MenuTreeNodeItemProps) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -44,8 +49,9 @@ export function MenuTreeNodeItem({
 
   const hasChildren = Boolean(node.hijos && node.hijos.length > 0)
   const childrenCount = node.hijos ? node.hijos.length : 0
+  const permisosCount = permisosCountByMenuId?.get(node.id) ?? 0
 
-  // Adapter for onEdit callback
+  // Adapter for onEdit / onManagePermisos callback
   const menuObj: Menu = {
     id: node.id,
     menuPadreId: node.menuPadreId,
@@ -85,7 +91,7 @@ export function MenuTreeNodeItem({
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
               aria-label={expanded ? "Colapsar submenús" : "Expandir submenús"}
             >
               {expanded ? (
@@ -119,7 +125,7 @@ export function MenuTreeNodeItem({
             <button
               type="button"
               onClick={() => onQuickView(node.id)}
-              className="text-left font-medium text-foreground hover:text-primary transition-colors truncate"
+              className="text-left font-medium text-foreground hover:text-primary transition-colors truncate cursor-pointer"
             >
               {node.nombre}
             </button>
@@ -130,12 +136,30 @@ export function MenuTreeNodeItem({
 
             {/* Route link preview */}
             {node.ruta && (
-              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground/80 font-mono truncate max-w-[200px]">
+              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground/80 font-mono truncate max-w-[180px]">
                 <LinkIcon className="size-2.5 shrink-0 opacity-60" />
                 <span className="truncate">{node.ruta}</span>
               </span>
             )}
           </div>
+
+          {/* Permisos counter badge */}
+          {onManagePermisos && (
+            <button
+              type="button"
+              onClick={() => onManagePermisos(menuObj)}
+              title={`${permisosCount} permisos de API configurados para este menú`}
+              className={cn(
+                "hidden md:inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-mono transition-colors shrink-0 border cursor-pointer",
+                permisosCount > 0
+                  ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                  : "bg-muted/60 text-muted-foreground/80 border-border/50 hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <KeyRound className="size-2.5" />
+              <span>{permisosCount} perm</span>
+            </button>
+          )}
 
           {/* Orden badge */}
           <span className="hidden lg:inline-flex rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground font-mono shrink-0">
@@ -159,12 +183,24 @@ export function MenuTreeNodeItem({
 
         {/* Right Side: Quick Action Buttons */}
         <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity shrink-0">
+          {onManagePermisos && (
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              title="Gestionar permisos de API de este menú"
+              onClick={() => onManagePermisos(menuObj)}
+              className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer"
+            >
+              <KeyRound className="size-3.5" />
+            </Button>
+          )}
+
           <Button
             size="icon-xs"
             variant="ghost"
             title="Agregar submenú hijo"
             onClick={() => onAddChild(node)}
-            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
           >
             <Plus className="size-3.5" />
           </Button>
@@ -174,7 +210,7 @@ export function MenuTreeNodeItem({
             variant="ghost"
             title="Ver detalles del menú"
             onClick={() => onQuickView(node.id)}
-            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
           >
             <Eye className="size-3.5" />
           </Button>
@@ -201,9 +237,11 @@ export function MenuTreeNodeItem({
               defaultExpanded={defaultExpanded}
               searchQuery={searchQuery}
               statusFilter={statusFilter}
+              permisosCountByMenuId={permisosCountByMenuId}
               onEdit={onEdit}
               onAddChild={onAddChild}
               onQuickView={onQuickView}
+              onManagePermisos={onManagePermisos}
             />
           ))}
         </ul>

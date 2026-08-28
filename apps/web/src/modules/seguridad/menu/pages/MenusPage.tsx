@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query"
 import { FolderTree, HelpCircle, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
+import { permisoQueries } from "@/modules/seguridad/permiso/api/permiso.queries"
+import { MenuPermisosSheet } from "@/modules/seguridad/permiso/components/MenuPermisosSheet"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -39,6 +41,7 @@ export function MenusPage() {
   const [editing, setEditing] = useState<Menu | null>(null)
   const [presetParentId, setPresetParentId] = useState<string | null>(null)
   const [quickViewId, setQuickViewId] = useState<string | null>(null)
+  const [permisosMenu, setPermisosMenu] = useState<Menu | null>(null)
   const [treeExpandedAll, setTreeExpandedAll] = useState(true)
 
   const search = usePaginatedSearch()
@@ -46,6 +49,7 @@ export function MenusPage() {
   // Queries
   const arbolQuery = useQuery(menuQueries.arbol())
   const allListQuery = useQuery(menuQueries.allList())
+  const allPermisosQuery = useQuery(permisoQueries.allList())
   const paginatedListQuery = useQuery(
     menuQueries.list({
       page: search.page,
@@ -58,7 +62,17 @@ export function MenusPage() {
 
   const treeNodes = arbolQuery.data ?? []
   const allMenus = allListQuery.data ?? []
+  const allPermisos = allPermisosQuery.data ?? []
   const paginatedMenus = paginatedListQuery.data?.content ?? []
+
+  // Permissions count per menu
+  const permisosCountByMenuId = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const p of allPermisos) {
+      map.set(p.menuId, (map.get(p.menuId) ?? 0) + 1)
+    }
+    return map
+  }, [allPermisos])
 
   // Create lookup maps for parent menu lookup
   const parentsById = useMemo(() => {
@@ -102,6 +116,10 @@ export function MenusPage() {
     openCreate(parentNode.id)
   }
 
+  function handleManagePermisos(menu: Menu) {
+    setPermisosMenu(menu)
+  }
+
   const hasActiveFilters = Boolean(
     search.search.trim() || statusFilter !== "all",
   )
@@ -140,7 +158,12 @@ export function MenusPage() {
             <div className="flex items-center gap-1.5 shrink-0 md:hidden">
               <RefreshButton
                 size="sm"
-                queries={[arbolQuery, allListQuery, paginatedListQuery]}
+                queries={[
+                  arbolQuery,
+                  allListQuery,
+                  paginatedListQuery,
+                  allPermisosQuery,
+                ]}
               />
               <Button
                 size="sm"
@@ -164,7 +187,7 @@ export function MenusPage() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Estructura jerárquica, iconos, rutas y orden de los elementos del menú de navegación.
+            Estructura jerárquica, iconos, rutas, orden y permisos de seguridad por menú.
           </p>
         </div>
 
@@ -172,7 +195,12 @@ export function MenusPage() {
         <div className="hidden shrink-0 self-start md:flex md:items-center md:gap-2">
           <RefreshButton
             size="sm"
-            queries={[arbolQuery, allListQuery, paginatedListQuery]}
+            queries={[
+              arbolQuery,
+              allListQuery,
+              paginatedListQuery,
+              allPermisosQuery,
+            ]}
           />
 
           <Button
@@ -180,7 +208,7 @@ export function MenusPage() {
             variant="outline"
             type="button"
             onClick={() => setHelpModalOpen(true)}
-            className="gap-1.5 border-border/80 hover:bg-muted"
+            className="gap-1.5 border-border/80 hover:bg-muted cursor-pointer"
           >
             <HelpCircle className="size-4 text-primary" />
             <span>Guía de Estructura</span>
@@ -190,7 +218,7 @@ export function MenusPage() {
             size="sm"
             type="button"
             onClick={() => openCreate()}
-            className="gap-1.5"
+            className="gap-1.5 cursor-pointer"
           >
             <Plus className="size-4" />
             <span>Crear Menú Raíz</span>
@@ -228,10 +256,12 @@ export function MenusPage() {
               searchQuery={search.search}
               statusFilter={statusFilter}
               expandedAll={treeExpandedAll}
+              permisosCountByMenuId={permisosCountByMenuId}
               onEdit={openEdit}
               onAddChild={handleAddChildNode}
               onQuickView={(id) => setQuickViewId(id)}
               onOpenCreate={() => openCreate()}
+              onManagePermisos={handleManagePermisos}
             />
           )
         ) : paginatedListQuery.isLoading ? (
@@ -274,8 +304,10 @@ export function MenusPage() {
               <MenuTableView
                 menus={filteredTableMenus}
                 parentsById={parentsById}
+                permisosCountByMenuId={permisosCountByMenuId}
                 onEdit={openEdit}
                 onQuickView={(id) => setQuickViewId(id)}
+                onManagePermisos={handleManagePermisos}
               />
             </div>
 
@@ -313,6 +345,15 @@ export function MenusPage() {
         parentMenu={selectedQuickViewParent}
         allMenus={allMenus}
         onEdit={openEdit}
+        onManagePermisos={handleManagePermisos}
+      />
+
+      {/* Permissions Management Sheet */}
+      <MenuPermisosSheet
+        key={`permisos-${permisosMenu?.id ?? "closed"}-${permisosMenu ? "open" : "closed"}`}
+        open={Boolean(permisosMenu)}
+        onOpenChange={(open) => !open && setPermisosMenu(null)}
+        menu={permisosMenu}
       />
 
       {/* Structural Hierarchy Help Modal */}

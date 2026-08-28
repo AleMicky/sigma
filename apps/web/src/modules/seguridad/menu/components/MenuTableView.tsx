@@ -1,10 +1,11 @@
 import { useState } from "react"
-import { Eye, Link as LinkIcon } from "lucide-react"
+import { Eye, KeyRound, Link as LinkIcon } from "lucide-react"
 
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { cn } from "@/shared/lib/utils"
 
 import { useDeleteMenu } from "../api/menu.mutations"
 import type { Menu } from "../api/menu.service"
@@ -13,15 +14,19 @@ import { DynamicLucideIcon } from "./DynamicLucideIcon"
 type MenuTableViewProps = {
   menus: Menu[]
   parentsById: Map<string, Menu>
+  permisosCountByMenuId?: Map<string, number>
   onEdit: (menu: Menu) => void
   onQuickView: (id: string) => void
+  onManagePermisos?: (menu: Menu) => void
 }
 
 export function MenuTableView({
   menus,
   parentsById,
+  permisosCountByMenuId,
   onEdit,
   onQuickView,
+  onManagePermisos,
 }: MenuTableViewProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const deleteMutation = useDeleteMenu()
@@ -38,6 +43,7 @@ export function MenuTableView({
               <th scope="col" className="px-4 py-3 sm:px-6">Código</th>
               <th scope="col" className="px-4 py-3 sm:px-6">Ruta</th>
               <th scope="col" className="hidden px-4 py-3 md:table-cell sm:px-6">Menú Padre</th>
+              <th scope="col" className="hidden lg:table-cell px-4 py-3 text-center sm:px-6">Permisos</th>
               <th scope="col" className="px-4 py-3 text-center sm:px-6">Orden</th>
               <th scope="col" className="px-4 py-3 text-center sm:px-6">Estado</th>
               <th scope="col" className="px-4 py-3 text-right sm:px-6">Acciones</th>
@@ -48,6 +54,8 @@ export function MenuTableView({
               const parent = menu.menuPadreId
                 ? parentsById.get(menu.menuPadreId)
                 : null
+
+              const permisosCount = permisosCountByMenuId?.get(menu.id) ?? 0
 
               return (
                 <tr key={menu.id} className="group hover:bg-accent/40 transition-colors">
@@ -61,7 +69,7 @@ export function MenuTableView({
                       <button
                         type="button"
                         onClick={() => onQuickView(menu.id)}
-                        className="font-medium text-foreground hover:text-primary transition-colors text-left truncate max-w-[200px]"
+                        className="font-medium text-foreground hover:text-primary transition-colors text-left truncate max-w-[200px] cursor-pointer"
                       >
                         {menu.nombre}
                       </button>
@@ -102,6 +110,30 @@ export function MenuTableView({
                     )}
                   </td>
 
+                  {/* Permisos Column */}
+                  <td className="hidden lg:table-cell px-4 py-3 text-center sm:px-6">
+                    {onManagePermisos ? (
+                      <button
+                        type="button"
+                        onClick={() => onManagePermisos(menu)}
+                        title="Gestionar permisos de este menú"
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-mono transition-all cursor-pointer border",
+                          permisosCount > 0
+                            ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                            : "bg-muted text-muted-foreground/70 border-border/50 hover:bg-muted/80 hover:text-foreground",
+                        )}
+                      >
+                        <KeyRound className="size-3" />
+                        <span>{permisosCount}</span>
+                      </button>
+                    ) : (
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {permisosCount}
+                      </span>
+                    )}
+                  </td>
+
                   <td className="px-4 py-3 sm:px-6 text-center font-mono text-xs">
                     {menu.orden}
                   </td>
@@ -121,12 +153,24 @@ export function MenuTableView({
 
                   <td className="px-4 py-3 sm:px-6 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {onManagePermisos && (
+                        <Button
+                          size="icon-xs"
+                          variant="ghost"
+                          title="Gestionar permisos"
+                          onClick={() => onManagePermisos(menu)}
+                          className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer"
+                        >
+                          <KeyRound className="size-3.5" />
+                        </Button>
+                      )}
+
                       <Button
                         size="icon-xs"
                         variant="ghost"
                         title="Ver detalles"
                         onClick={() => onQuickView(menu.id)}
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
                       >
                         <Eye className="size-3.5" />
                       </Button>
