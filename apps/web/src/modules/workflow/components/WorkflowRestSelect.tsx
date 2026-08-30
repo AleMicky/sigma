@@ -184,7 +184,7 @@ export function WorkflowRestSelect({
         )}
       </div>
 
-      <ComboboxContent className="z-50 w-(--anchor-width) min-w-[min(100vw-2rem,var(--anchor-width))] max-w-[var(--anchor-width)] p-1 rounded-xl shadow-lg border border-border/80 bg-popover overflow-hidden flex flex-col">
+      <ComboboxContent className="z-50 w-(--anchor-width) min-w-[min(100vw-2rem,var(--anchor-width))] max-w-(--anchor-width) p-1 rounded-xl shadow-lg border border-border/80 bg-popover overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-2.5 py-1 border-b border-border/50 text-[11px] text-muted-foreground bg-muted/30 select-none">
           <span className="font-medium truncate">
             {query.isFetching
