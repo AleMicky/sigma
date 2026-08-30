@@ -14,8 +14,13 @@ import {
 } from "@/shared/components/ui/combobox"
 import { cn } from "@/shared/lib/utils"
 
+import { empleadoKeys } from "../api/empleado.keys"
 import { empleadoQueries } from "../api/empleado.queries"
-import type { Empleado } from "../api/empleado.service"
+import {
+  type Empleado,
+  listEmpleados,
+  listMisEmpleados,
+} from "../api/empleado.service"
 
 export type EmpleadoComboboxProps = {
   value?: string | null
@@ -28,6 +33,7 @@ export type EmpleadoComboboxProps = {
   name?: string
   "aria-invalid"?: boolean
   pageSize?: number
+  onlyMisEmpleados?: boolean
 }
 
 function getEmpleadoNombre(emp: Empleado): string {
@@ -56,11 +62,18 @@ export function EmpleadoCombobox({
   name,
   "aria-invalid": ariaInvalid,
   pageSize = 7,
+  onlyMisEmpleados = false,
 }: EmpleadoComboboxProps) {
   const [page, setPage] = React.useState(0)
 
   const query = useQuery({
-    ...empleadoQueries.list({ page, size: pageSize, sortBy: "codigo", direction: "ASC" }),
+    queryKey: onlyMisEmpleados
+      ? empleadoKeys.misEmpleados({ page, size: pageSize, sortBy: "codigo", direction: "ASC" })
+      : empleadoKeys.list({ page, size: pageSize, sortBy: "codigo", direction: "ASC" }),
+    queryFn: () =>
+      onlyMisEmpleados
+        ? listMisEmpleados({ page, size: pageSize, sortBy: "codigo", direction: "ASC" })
+        : listEmpleados({ page, size: pageSize, sortBy: "codigo", direction: "ASC" }),
   })
 
   // Consulta individual si hay un valor seleccionado que quizás no esté en la página actual
@@ -79,7 +92,7 @@ export function EmpleadoCombobox({
   const selectedEmpleado = React.useMemo(() => {
     if (!value) return null
     return (
-      empleados.find((e) => e.id === value) ??
+      empleados.find((e: Empleado) => e.id === value) ??
       (singleQuery.data?.id === value ? singleQuery.data : null)
     )
   }, [value, empleados, singleQuery.data])

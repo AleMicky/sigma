@@ -23,8 +23,8 @@ public final class EmpleadoSpecifications {
             addEqualIfPresent(predicates, cb, root.get("areaId"), criteria.areaId());
             addEqualIfPresent(predicates, cb, root.get("cargoId"), criteria.cargoId());
 
-            if (criteria.query() != null) {
-                String pattern = "%" + criteria.query().toLowerCase() + "%";
+            if (criteria.query() != null && !criteria.query().isBlank()) {
+                String pattern = "%" + criteria.query().trim().toLowerCase() + "%";
                 predicates.add(
                         cb.like(cb.lower(root.get("codigo")), pattern)
                 );

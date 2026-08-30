@@ -202,16 +202,16 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     [tiposMantenimientoList],
   )
 
-  // Fetch Empleados (Solicitante)
+  // Fetch Empleados (Solicitante) - Usa endpoint mis-empleados (admin ve todos, usuario ve los suyos)
   const empleadosQuery = useQuery(
-    empleadoQueries.list({ size: 100, sortBy: "codigo", direction: "ASC" }),
+    empleadoQueries.misEmpleados({ size: 100, sortBy: "codigo", direction: "ASC" }),
   )
   const empleados = useMemo(
     () => empleadosQuery.data?.content ?? [],
     [empleadosQuery.data?.content],
   )
   const empleadosById = useMemo(
-    () => new Map(empleados.map((e) => [e.id, e])),
+    () => new Map(empleados.map((e: Empleado) => [e.id, e])),
     [empleados],
   )
 
@@ -226,7 +226,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     const list = [...empleados]
     if (
       singleEmpleadoQuery.data &&
-      !list.some((e) => e.id === singleEmpleadoQuery.data.id)
+      !list.some((e: Empleado) => e.id === singleEmpleadoQuery.data.id)
     ) {
       list.unshift(singleEmpleadoQuery.data)
     }
@@ -328,6 +328,16 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
       }
     }
   }, [isEditing, prioridadesList, form])
+
+  // Autoseleccionar automáticamente al solicitante si solo tiene 1 empleado asociado en creación
+  useEffect(() => {
+    if (!isEditing && empleados.length === 1) {
+      const currentVal = form.getFieldValue("solicitanteId")
+      if (!currentVal) {
+        form.setFieldValue("solicitanteId", empleados[0].id)
+      }
+    }
+  }, [isEditing, empleados, form])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
@@ -703,6 +713,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         onValueChange={(val) => field.handleChange(val)}
                         onBlur={field.handleBlur}
                         aria-invalid={isInvalid}
+                        onlyMisEmpleados={true}
                         placeholder="Buscar solicitante por nombre, código o cargo..."
                       />
 

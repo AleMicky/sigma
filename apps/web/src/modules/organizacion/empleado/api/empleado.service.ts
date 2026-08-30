@@ -50,6 +50,14 @@ export const listEmpleadosByArea = (
   })
 }
 
+export const listMisEmpleados = (
+  filters?: EmpleadoListFilters,
+): Promise<PageResponse<Empleado>> => {
+  return http.get<PageResponse<Empleado>>(empleadoEndpoints.misEmpleados, {
+    params: filters,
+  })
+}
+
 export const getEmpleado = crud.get
 export const createEmpleado = crud.create
 export const updateEmpleado = crud.update

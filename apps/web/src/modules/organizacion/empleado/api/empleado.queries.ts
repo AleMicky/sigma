@@ -5,6 +5,7 @@ import {
   getEmpleado,
   listEmpleados,
   listEmpleadosByArea,
+  listMisEmpleados,
 } from "./empleado.service"
 
 export const empleadoQueries = {
@@ -15,6 +16,16 @@ export const empleadoQueries = {
         const { q, ...rest } = filters ?? {}
         const trimmed = q?.trim()
         return listEmpleados(trimmed ? { ...rest, q: trimmed } : rest)
+      },
+    }),
+
+  misEmpleados: (filters?: EmpleadoListFilters) =>
+    queryOptions({
+      queryKey: empleadoKeys.misEmpleados(filters),
+      queryFn: () => {
+        const { q, ...rest } = filters ?? {}
+        const trimmed = q?.trim()
+        return listMisEmpleados(trimmed ? { ...rest, q: trimmed } : rest)
       },
     }),
 
