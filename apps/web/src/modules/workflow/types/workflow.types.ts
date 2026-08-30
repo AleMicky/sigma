@@ -17,6 +17,10 @@ export type WorkflowField = {
   description?: string | null
   placeholder?: string | null
   options?: WorkflowFieldOption[]
+  component?: string
+  source?: string
+  url?: string
+  params?: Record<string, string>
 }
 
 export type WorkflowAction = {

@@ -10,7 +10,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -98,25 +100,35 @@ public class BpmnDefinitionParser {
             for (int i = 0; i < formProperties.getLength(); i++) {
                 Element formProperty = (Element) formProperties.item(i);
 
-                String id = formProperty.getAttribute("id");
-                String name = formProperty.getAttribute("name");
-                String type = formProperty.getAttribute("type");
+                String id = getAttributeValue(formProperty, "id");
+                String name = getAttributeValue(formProperty, "name");
+                String type = getAttributeValue(formProperty, "type");
 
-                boolean required = Boolean.parseBoolean(formProperty.getAttribute("required"));
-                boolean readable = !"false".equalsIgnoreCase(formProperty.getAttribute("readable"));
-                boolean writable = !"false".equalsIgnoreCase(formProperty.getAttribute("writable"));
+                boolean required = Boolean.parseBoolean(getAttributeValue(formProperty, "required"));
+                boolean readable = !"false".equalsIgnoreCase(getAttributeValue(formProperty, "readable"));
+                boolean writable = !"false".equalsIgnoreCase(getAttributeValue(formProperty, "writable"));
+
+                String component = getAttributeValue(formProperty, "sigma:component", "component");
+                String source = getAttributeValue(formProperty, "sigma:source", "source");
+                String url = getAttributeValue(formProperty, "sigma:url", "url");
+                String paramsStr = getAttributeValue(formProperty, "sigma:params", "params");
+                Map<String, String> params = parseParams(paramsStr);
 
                 List<WorkflowFieldOptionResponse> options = obtenerOpciones(formProperty);
 
-                fields.add(new WorkflowFieldResponse(
-                        id,
-                        name != null && !name.isBlank() ? name : id,
-                        type != null && !type.isBlank() ? type : "string",
-                        required,
-                        readable,
-                        writable,
-                        options
-                ));
+                fields.add(WorkflowFieldResponse.builder()
+                        .id(id)
+                        .name(name != null && !name.isBlank() ? name : id)
+                        .type(type != null && !type.isBlank() ? type : "string")
+                        .required(required)
+                        .readable(readable)
+                        .writable(writable)
+                        .component(component)
+                        .source(source)
+                        .url(url)
+                        .params(params)
+                        .options(options.isEmpty() ? null : options)
+                        .build());
             }
 
             return fields;
@@ -127,6 +139,45 @@ public class BpmnDefinitionParser {
                     ex
             );
         }
+    }
+
+    private Map<String, String> parseParams(String paramsStr) {
+        if (paramsStr == null || paramsStr.isBlank()) {
+            return null;
+        }
+
+        Map<String, String> params = new LinkedHashMap<>();
+        String[] pairs = paramsStr.split("[;,\n]+");
+        for (String pair : pairs) {
+            String trimmed = pair.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            int eqIndex = trimmed.indexOf('=');
+            if (eqIndex > 0) {
+                String key = trimmed.substring(0, eqIndex).trim();
+                String value = trimmed.substring(eqIndex + 1).trim();
+                if (!key.isEmpty()) {
+                    params.put(key, value);
+                }
+            } else {
+                params.put(trimmed, "");
+            }
+        }
+
+        return params.isEmpty() ? null : params;
+    }
+
+    private String getAttributeValue(Element element, String... attributeNames) {
+        for (String attr : attributeNames) {
+            if (element.hasAttribute(attr)) {
+                String val = element.getAttribute(attr);
+                if (val != null && !val.isBlank()) {
+                    return val.trim();
+                }
+            }
+        }
+        return null;
     }
 
     private List<WorkflowFieldOptionResponse> obtenerOpciones(Element formProperty) {

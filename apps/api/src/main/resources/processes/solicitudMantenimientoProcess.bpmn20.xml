@@ -2,11 +2,43 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://endecorani.com/sigma/mantenimiento" exporter="Flowable Open Source Modeler" exporterVersion="6.8.0">
   <process id="solicitudMantenimientoProcess" name="Solicitud de Mantenimiento" isExecutable="true">
     <startEvent id="startEvent" name="Inicio" flowable:formFieldValidation="true"></startEvent>
-    <userTask id="revisarSolicitud" name="SOLICITADO - Revisar solicitud" flowable:assignee="${aprobadorId}" flowable:formFieldValidation="true">
-      <extensionElements>
-        <flowable:formProperty id="responsableId" name="Responsable de mantenimiento" type="string" required="false" writable="true"></flowable:formProperty>
-      </extensionElements>
-    </userTask>
+   <userTask
+    id="revisarSolicitud"
+    name="SOLICITADO - Revisar solicitud"
+    flowable:assignee="${aprobadorId}"
+    flowable:formFieldValidation="true">
+
+    <extensionElements>
+
+        <!-- LISTADO DE RESPONSABLES -->
+        <flowable:formProperty
+            id="responsableId"
+            name="Responsable de mantenimiento"
+            type="string"
+            required="true"
+            writable="true"
+
+            xmlns:sigma="http://endecorani.com/sigma/workflow"
+
+            sigma:component="select"
+            sigma:source="rest"
+            sigma:url="/api/v1/usuarios"
+            sigma:params="rol=RESPONSABLE_MANTENIMIENTO;areaId=${areaSolicitanteId};activo=true">
+        </flowable:formProperty>
+
+
+        <!-- COMENTARIO -->
+        <flowable:formProperty
+            id="comentario"
+            name="Comentario"
+            type="string"
+            required="false"
+            writable="true">
+        </flowable:formProperty>
+
+    </extensionElements>
+
+</userTask>
     <exclusiveGateway id="gatewayDecisionCoordinador" name="Decisión del coordinador"></exclusiveGateway>
     <userTask id="corregirSolicitud" name="OBSERVADO - Corregir y reenviar solicitud" flowable:assignee="${solicitanteId}" flowable:formFieldValidation="true"></userTask>
     <userTask id="iniciarMantenimiento" name="ASIGNADO - Iniciar mantenimiento" flowable:assignee="${responsableId}" flowable:formFieldValidation="true">
