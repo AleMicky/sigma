@@ -29,14 +29,6 @@ type PrioridadFormDialogProps = {
   onSuccess?: (prioridad: Prioridad) => void
 }
 
-const NIVEL_OPTIONS = [
-  { value: 1, label: "Nivel 1 - Muy Baja", color: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
-  { value: 2, label: "Nivel 2 - Baja", color: "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-300" },
-  { value: 3, label: "Nivel 3 - Media", color: "border-yellow-500/40 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300" },
-  { value: 4, label: "Nivel 4 - Alta", color: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300" },
-  { value: 5, label: "Nivel 5 - Crítica / Urgente", color: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300" },
-]
-
 export function PrioridadFormDialog({
   open,
   onOpenChange,
@@ -51,11 +43,12 @@ export function PrioridadFormDialog({
   const form = useForm({
     defaultValues: prioridad
       ? {
-          codigo: prioridad.codigo,
-          nombre: prioridad.nombre,
-          descripcion: prioridad.descripcion ?? "",
-          nivel: prioridad.nivel,
-        }
+        codigo: prioridad.codigo,
+        nombre: prioridad.nombre,
+        descripcion: prioridad.descripcion ?? "",
+        nivel: prioridad.nivel,
+        porDefecto: Boolean(prioridad.porDefecto),
+      }
       : defaultPrioridadValues,
     validators: {
       onSubmit: prioridadSchema,
@@ -67,20 +60,22 @@ export function PrioridadFormDialog({
         const saved =
           isEditing && prioridad
             ? await updateMutation.mutateAsync({
-                id: prioridad.id,
-                payload: {
-                  codigo: value.codigo.trim(),
-                  nombre: value.nombre.trim(),
-                  descripcion: (value.descripcion ?? "").trim() || null,
-                  nivel: Number(value.nivel),
-                },
-              })
-            : await createMutation.mutateAsync({
+              id: prioridad.id,
+              payload: {
                 codigo: value.codigo.trim(),
                 nombre: value.nombre.trim(),
                 descripcion: (value.descripcion ?? "").trim() || null,
                 nivel: Number(value.nivel),
-              })
+                porDefecto: Boolean(value.porDefecto),
+              },
+            })
+            : await createMutation.mutateAsync({
+              codigo: value.codigo.trim(),
+              nombre: value.nombre.trim(),
+              descripcion: (value.descripcion ?? "").trim() || null,
+              nivel: Number(value.nivel),
+              porDefecto: Boolean(value.porDefecto),
+            })
 
         onSuccess?.(saved)
         onOpenChange(false)
@@ -99,11 +94,12 @@ export function PrioridadFormDialog({
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
+      size="sm"
       title={isEditing ? "Editar prioridad" : "Nueva prioridad"}
       description={
         isEditing
-          ? "Actualiza la configuración de esta prioridad de mantenimiento."
-          : "Define una nueva prioridad para categorizar el nivel de urgencia de la atención."
+          ? "Actualiza los datos de esta prioridad de mantenimiento."
+          : "Define una nueva prioridad y su nivel de urgencia."
       }
       formError={formError}
       onCancel={() => {
@@ -126,43 +122,71 @@ export function PrioridadFormDialog({
         </form.Subscribe>
       }
     >
-      <form.Field name="codigo">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <form.Field name="codigo">
+          {(field) => {
+            const isInvalid = Boolean(field.state.meta.errors.length)
 
-          return (
-            <Field data-invalid={isInvalid || undefined}>
-              <RequiredFieldLabel htmlFor={field.name}>
-                Código Identificador
-              </RequiredFieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) =>
-                  field.handleChange(e.target.value.toUpperCase().replace(/\s+/g, "_"))
-                }
-                required
-                aria-required
-                aria-invalid={isInvalid}
-                placeholder="EJ: ALTA, MEDIA, CRITICA"
-                className="font-mono uppercase"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Código técnico único en mayúsculas (ej. ALTA, CRITICA).
-              </p>
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          )
-        }}
-      </form.Field>
+            return (
+              <Field data-invalid={isInvalid || undefined}>
+                <RequiredFieldLabel htmlFor={field.name}>
+                  Código
+                </RequiredFieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) =>
+                    field.handleChange(
+                      e.target.value.toUpperCase().replace(/\s+/g, "_"),
+                    )
+                  }
+                  aria-required
+                  aria-invalid={isInvalid}
+                  placeholder="EJ: ALTA"
+                  className="font-mono uppercase"
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+
+        <form.Field name="nivel">
+          {(field) => {
+            const isInvalid = Boolean(field.state.meta.errors.length)
+
+            return (
+              <Field data-invalid={isInvalid || undefined}>
+                <RequiredFieldLabel htmlFor={field.name}>
+                  Nivel (1 - 5)
+                </RequiredFieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) =>
+                    field.handleChange(Number(e.target.value))
+                  }
+                  aria-required
+                  aria-invalid={isInvalid}
+                  placeholder="1 - 5"
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+      </div>
 
       <form.Field name="nombre">
         {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid = Boolean(field.state.meta.errors.length)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
@@ -175,46 +199,10 @@ export function PrioridadFormDialog({
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
-                required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Alta, Media, Urgencia Crítica"
+                placeholder="Alta, Media, Urgencia Crítica..."
               />
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          )
-        }}
-      </form.Field>
-
-      <form.Field name="nivel">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
-
-          return (
-            <Field data-invalid={isInvalid || undefined}>
-              <RequiredFieldLabel htmlFor={field.name}>
-                Nivel de Prioridad (1 a 5)
-              </RequiredFieldLabel>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
-                {NIVEL_OPTIONS.map((opt) => {
-                  const selected = field.state.value === opt.value
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => field.handleChange(opt.value)}
-                      className={`flex items-center justify-between rounded-lg border p-2.5 text-xs font-medium transition-all ${
-                        selected
-                          ? `${opt.color} ring-2 ring-primary/40 font-semibold`
-                          : "border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40"
-                      }`}
-                    >
-                      <span>{opt.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
@@ -223,8 +211,7 @@ export function PrioridadFormDialog({
 
       <form.Field name="descripcion">
         {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid = Boolean(field.state.meta.errors.length)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
@@ -236,8 +223,8 @@ export function PrioridadFormDialog({
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
                 aria-invalid={isInvalid}
-                placeholder="Detalle de criterios de atención o tiempos de respuesta..."
-                rows={3}
+                placeholder="Detalle de criterios de atención o tiempos..."
+                rows={2}
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -245,13 +232,37 @@ export function PrioridadFormDialog({
         }}
       </form.Field>
 
+      <form.Field name="porDefecto">
+        {(field) => (
+          <Field orientation="horizontal" className="pt-0.5">
+            <input
+              id={field.name}
+              name={field.name}
+              type="checkbox"
+              checked={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.checked)}
+              className="size-4 rounded border border-input accent-primary"
+            />
+            <div className="flex flex-col gap-0.5">
+              <FieldLabel htmlFor={field.name} className="font-medium text-xs">
+                Establecer como prioridad por defecto
+              </FieldLabel>
+              <p className="text-[11px] text-muted-foreground">
+                Se autoseleccionará automáticamente al crear nuevas solicitudes.
+              </p>
+            </div>
+          </Field>
+        )}
+      </form.Field>
+
       {/* Audit info in edit mode */}
       {isEditing && prioridad ? (
-        <div className="rounded-lg border bg-muted/30 p-3 pt-2.5 space-y-1 mt-2">
+        <div className="rounded-lg border bg-muted/30 p-2.5 space-y-1 mt-1 text-xs">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Auditoría
           </p>
-          <AuditInfo data={prioridad} />
+          <AuditInfo data={prioridad} compact />
         </div>
       ) : null}
     </FormDialog>

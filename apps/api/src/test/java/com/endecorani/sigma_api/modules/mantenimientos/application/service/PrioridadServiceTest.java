@@ -40,7 +40,8 @@ class PrioridadServiceTest {
                         "  alta  ",
                         "  Alta   prioridad ",
                         "  Atención inmediata ",
-                        1
+                        1,
+                        false
                 )
         );
 
@@ -48,6 +49,7 @@ class PrioridadServiceTest {
         assertEquals("Alta prioridad", response.nombre());
         assertEquals("Atención inmediata", response.descripcion());
         assertEquals(1, response.nivel());
+        assertEquals(false, response.porDefecto());
         assertEquals(1, repository.items.size());
     }
 
@@ -56,7 +58,7 @@ class PrioridadServiceTest {
         assertThrows(
                 BusinessException.class,
                 () -> service.create(
-                        new PrioridadRequest(" a ", "Nombre válido", null, 1)
+                        new PrioridadRequest(" a ", "Nombre válido", null, 1, false)
                 )
         );
         assertTrue(repository.items.isEmpty());
@@ -69,11 +71,25 @@ class PrioridadServiceTest {
         ConflictException exception = assertThrows(
                 ConflictException.class,
                 () -> service.create(
-                        new PrioridadRequest("alta", "Otra prioridad", null, 2)
+                        new PrioridadRequest("alta", "Otra prioridad", null, 2, false)
                 )
         );
 
         assertEquals("PRIORIDAD_ALREADY_EXISTS", exception.getCode());
+    }
+
+    @Test
+    void createWithPorDefectoClearsPreviousDefault() {
+        Prioridad first = existing("ALTA", "Alta", 1);
+        first.setPorDefecto(true);
+        repository.items.add(first);
+
+        PrioridadResponse response = service.create(
+                new PrioridadRequest("MEDIA", "Media", null, 2, true)
+        );
+
+        assertTrue(response.porDefecto());
+        assertEquals(false, first.getPorDefecto());
     }
 
     @Test
@@ -87,7 +103,7 @@ class PrioridadServiceTest {
                 ConflictException.class,
                 () -> service.update(
                         second.getId(),
-                        new PrioridadRequest("alta", "Media", null, 2)
+                        new PrioridadRequest("alta", "Media", null, 2, false)
                 )
         );
     }
@@ -99,12 +115,13 @@ class PrioridadServiceTest {
 
         PrioridadResponse response = service.update(
                 stored.getId(),
-                new PrioridadRequest("ALTA", "Alta actualizada", null, 3)
+                new PrioridadRequest("ALTA", "Alta actualizada", null, 3, true)
         );
 
         assertEquals("ALTA", response.codigo());
         assertEquals("Alta actualizada", response.nombre());
         assertEquals(3, response.nivel());
+        assertTrue(response.porDefecto());
     }
 
     @Test
@@ -113,7 +130,7 @@ class PrioridadServiceTest {
                 ResourceNotFoundException.class,
                 () -> service.update(
                         UUID.randomUUID(),
-                        new PrioridadRequest("ALTA", "Alta", null, 1)
+                        new PrioridadRequest("ALTA", "Alta", null, 1, false)
                 )
         );
     }
@@ -124,6 +141,7 @@ class PrioridadServiceTest {
                 .codigo(codigo)
                 .nombre(nombre)
                 .nivel(nivel)
+                .porDefecto(false)
                 .build();
     }
 
@@ -185,6 +203,22 @@ class PrioridadServiceTest {
                     !item.getId().equals(id)
                             && item.getCodigo().equalsIgnoreCase(codigo)
             );
+        }
+
+        @Override
+        public Optional<Prioridad> findByPorDefectoTrue() {
+            return items.stream()
+                    .filter(item -> Boolean.TRUE.equals(item.getPorDefecto()))
+                    .findFirst();
+        }
+
+        @Override
+        public void clearPorDefecto(UUID excludeId) {
+            for (Prioridad item : items) {
+                if (excludeId == null || !item.getId().equals(excludeId)) {
+                    item.setPorDefecto(false);
+                }
+            }
         }
 
         @Override

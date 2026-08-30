@@ -56,6 +56,12 @@ public record PrioridadRequest(
         @NotNull(message = "El nivel de prioridad es obligatorio")
         @Min(value = 1, message = "El nivel de prioridad debe ser mayor o igual a 1")
         @Max(value = 5, message = "El nivel de prioridad no puede ser mayor a 5")
-        Integer nivel
+        Integer nivel,
+
+        @Schema(
+                description = "Indica si es la prioridad por defecto",
+                example = "false"
+        )
+        Boolean porDefecto
 ) {
 }

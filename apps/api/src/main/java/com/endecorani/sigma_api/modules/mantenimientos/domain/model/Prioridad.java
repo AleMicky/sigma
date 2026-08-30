@@ -20,4 +20,5 @@ public class Prioridad extends AuditableModel {
     private String nombre;
     private String descripcion;
     private Integer nivel;
+    private Boolean porDefecto;
 }

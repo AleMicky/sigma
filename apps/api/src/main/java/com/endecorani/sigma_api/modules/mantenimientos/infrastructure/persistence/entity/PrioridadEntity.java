@@ -25,4 +25,8 @@ public class PrioridadEntity extends BaseEntity {
 
     @Column(nullable = false)
     private Integer nivel;
+
+    @Builder.Default
+    @Column(name = "por_defecto", nullable = false)
+    private Boolean porDefecto = false;
 }

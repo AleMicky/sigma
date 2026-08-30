@@ -15,40 +15,30 @@ type PrioridadListViewProps = {
   onEdit: (prioridad: Prioridad) => void
 }
 
-export function getNivelPrioridadInfo(nivel: number) {
+function getNivelPrioridadStyles(nivel: number) {
   switch (nivel) {
     case 5:
       return {
-        label: "Nivel 5 (Crítica / Urgente)",
-        shortLabel: "Nivel 5",
         badgeClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25",
         iconClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25",
       }
     case 4:
       return {
-        label: "Nivel 4 (Alta)",
-        shortLabel: "Nivel 4",
-        badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25",
-        iconClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25",
+        badgeClass: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/25",
+        iconClass: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/25",
       }
     case 3:
       return {
-        label: "Nivel 3 (Media)",
-        shortLabel: "Nivel 3",
         badgeClass: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/25",
         iconClass: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/25",
       }
     case 2:
       return {
-        label: "Nivel 2 (Baja)",
-        shortLabel: "Nivel 2",
         badgeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25",
         iconClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25",
       }
     default:
       return {
-        label: "Nivel 1 (Muy baja / Normal)",
-        shortLabel: "Nivel 1",
         badgeClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
         iconClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
       }
@@ -74,7 +64,7 @@ export function PrioridadListView({
   return (
     <div className="flex flex-col gap-2.5">
       {prioridades.map((prioridad) => {
-        const nivelInfo = getNivelPrioridadInfo(prioridad.nivel)
+        const nivelStyles = getNivelPrioridadStyles(prioridad.nivel)
         const isCopied = copiedId === prioridad.id
 
         const audit =
@@ -95,7 +85,7 @@ export function PrioridadListView({
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3.5 min-w-0 flex-1">
                 <span
-                  className={`flex size-10 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105 ${nivelInfo.iconClass}`}
+                  className={`flex size-10 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105 ${nivelStyles.iconClass}`}
                 >
                   {prioridad.nivel >= 4 ? (
                     <Flame className="size-5" />
@@ -130,10 +120,19 @@ export function PrioridadListView({
 
                     <Badge
                       variant="outline"
-                      className={`gap-1 text-[11px] font-semibold px-2 py-0.5 ${nivelInfo.badgeClass}`}
+                      className={`gap-1 text-[11px] font-semibold px-2 py-0.5 ${nivelStyles.badgeClass}`}
                     >
-                      <span>{nivelInfo.label}</span>
+                      <span>Nivel {prioridad.nivel}</span>
                     </Badge>
+
+                    {prioridad.porDefecto ? (
+                      <Badge
+                        variant="secondary"
+                        className="bg-primary/10 text-primary border-primary/25 text-[10px] font-semibold px-2 py-0.5"
+                      >
+                        Por Defecto
+                      </Badge>
+                    ) : null}
                   </div>
 
                   {/* Descripción */}

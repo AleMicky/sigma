@@ -4,10 +4,12 @@ import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistenc
 import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -25,6 +27,17 @@ public interface SpringPrioridadRepository
             String codigo,
             UUID id
     );
+
+    Optional<PrioridadEntity> findByPorDefectoTrue();
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update PrioridadEntity prioridad
+            set prioridad.porDefecto = false
+            where prioridad.porDefecto = true
+              and (:excludeId is null or prioridad.id <> :excludeId)
+            """)
+    void clearPorDefecto(@Param("excludeId") UUID excludeId);
 
     @Query("""
             select prioridad

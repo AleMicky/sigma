@@ -226,11 +226,8 @@ export function SolicitudesPage() {
       <SolicitudFilterToolbar
         searchValue={search.search}
         onSearchChange={search.setSearch}
-        statusValue={statusFilter}
-        onStatusChange={setStatusFilter}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={resetFilters}
-        borradorCount={borradorCount}
       />
 
       {/* Content Section */}

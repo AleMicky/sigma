@@ -41,6 +41,7 @@ public class PrioridadService extends AbstractCrudService<
             "nombre",
             "descripcion",
             "nivel",
+            "porDefecto",
             "createdAt",
             "updatedAt"
     );
@@ -82,12 +83,18 @@ public class PrioridadService extends AbstractCrudService<
         String codigo = requireNormalizedCodigo(request.codigo());
         validateUniqueCodigoForCreate(codigo);
         Integer nivel = requireValidNivel(request.nivel());
+        boolean porDefecto = Boolean.TRUE.equals(request.porDefecto());
+
+        if (porDefecto) {
+            prioridadRepository.clearPorDefecto(null);
+        }
 
         return Prioridad.builder()
                 .codigo(codigo)
                 .nombre(requireNormalizedNombre(request.nombre()))
                 .descripcion(StringUtils.normalize(request.descripcion()))
                 .nivel(nivel)
+                .porDefecto(porDefecto)
                 .build();
     }
 
@@ -98,11 +105,17 @@ public class PrioridadService extends AbstractCrudService<
     ) {
         String codigo = requireNormalizedCodigo(request.codigo());
         validateUniqueCodigoForUpdate(codigo, domain.getId());
+        boolean porDefecto = Boolean.TRUE.equals(request.porDefecto());
+
+        if (porDefecto) {
+            prioridadRepository.clearPorDefecto(domain.getId());
+        }
 
         domain.setCodigo(codigo);
         domain.setNombre(requireNormalizedNombre(request.nombre()));
         domain.setDescripcion(StringUtils.normalize(request.descripcion()));
         domain.setNivel(requireValidNivel(request.nivel()));
+        domain.setPorDefecto(porDefecto);
     }
 
     @Override
@@ -114,6 +127,7 @@ public class PrioridadService extends AbstractCrudService<
                 domain.getNombre(),
                 domain.getDescripcion(),
                 domain.getNivel(),
+                Boolean.TRUE.equals(domain.getPorDefecto()),
                 AuditoriaMapper.from(domain)
         );
     }

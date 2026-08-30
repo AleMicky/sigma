@@ -19,10 +19,11 @@ export const prioridadSchema = z.object({
     .optional()
     .or(z.literal("")),
   nivel: z
-    .number()
+    .number({ message: "El nivel debe ser un número" })
     .int("El nivel debe ser un número entero")
     .min(1, "El nivel mínimo es 1")
     .max(5, "El nivel máximo es 5"),
+  porDefecto: z.boolean(),
 })
 
 export type PrioridadFormValues = z.infer<typeof prioridadSchema>
@@ -32,4 +33,5 @@ export const defaultPrioridadValues: PrioridadFormValues = {
   nombre: "",
   descripcion: "",
   nivel: 1,
+  porDefecto: false,
 }

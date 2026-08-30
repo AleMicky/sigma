@@ -20,6 +20,7 @@ public class PrioridadPersistenceMapper {
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
         entity.setNivel(domain.getNivel());
+        entity.setPorDefecto(Boolean.TRUE.equals(domain.getPorDefecto()));
 
         return entity;
     }
@@ -35,6 +36,7 @@ public class PrioridadPersistenceMapper {
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
                 .nivel(entity.getNivel())
+                .porDefecto(Boolean.TRUE.equals(entity.getPorDefecto()))
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())

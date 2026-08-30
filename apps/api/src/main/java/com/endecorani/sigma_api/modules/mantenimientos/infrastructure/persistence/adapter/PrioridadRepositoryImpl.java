@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -69,6 +70,18 @@ public class PrioridadRepositoryImpl
                         codigo,
                         id
                 );
+    }
+
+    @Override
+    public Optional<Prioridad> findByPorDefectoTrue() {
+        return springRepository
+                .findByPorDefectoTrue()
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public void clearPorDefecto(UUID excludeId) {
+        springRepository.clearPorDefecto(excludeId);
     }
 
     @Override

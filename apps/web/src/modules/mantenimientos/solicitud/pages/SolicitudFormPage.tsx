@@ -163,7 +163,8 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
 
   const defaultPrioridadId = useMemo(() => {
     if (currentPrioridadId) return currentPrioridadId
-    return prioridadesList[0]?.id ?? ""
+    const defaultItem = prioridadesList.find((p) => p.porDefecto) ?? prioridadesList[0]
+    return defaultItem?.id ?? ""
   }, [currentPrioridadId, prioridadesList])
 
   // Fetch Tipos de Mantenimiento
@@ -319,12 +320,13 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     },
   })
 
-  // Autoseleccionar por defecto el primer nivel de prioridad (nivel más bajo) en creación
+  // Autoseleccionar por defecto la prioridad predeterminada (o primer nivel) en creación
   useEffect(() => {
     if (!isEditing && prioridadesList.length > 0) {
       const currentVal = form.getFieldValue("prioridadId")
       if (!currentVal) {
-        form.setFieldValue("prioridadId", prioridadesList[0].id)
+        const defaultItem = prioridadesList.find((p) => p.porDefecto) ?? prioridadesList[0]
+        form.setFieldValue("prioridadId", defaultItem.id)
       }
     }
   }, [isEditing, prioridadesList, form])

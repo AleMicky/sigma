@@ -15,5 +15,6 @@ public record PrioridadResponse(
         String nombre,
         String descripcion,
         Integer nivel,
+        Boolean porDefecto,
         AuditoriaResponse auditoria) {
 }

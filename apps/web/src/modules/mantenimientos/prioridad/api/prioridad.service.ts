@@ -8,6 +8,7 @@ export type Prioridad = AuditableEntity & {
   nombre: string
   descripcion: string | null
   nivel: number
+  porDefecto: boolean
 }
 
 export type PrioridadPayload = {
@@ -15,6 +16,7 @@ export type PrioridadPayload = {
   nombre: string
   descripcion?: string | null
   nivel: number
+  porDefecto?: boolean
 }
 
 const crud = createCrudService<Prioridad, PrioridadPayload>(prioridadEndpoints)
