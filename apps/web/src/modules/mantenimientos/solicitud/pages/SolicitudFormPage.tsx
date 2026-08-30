@@ -54,6 +54,7 @@ import {
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudPayload } from "../api/solicitud.service"
 import {
+  extractPlaca,
   getEstadoBadgeVariant,
   getPrioridadColorConfig,
   getTipoMantenimientoBadgeClass,
@@ -759,7 +760,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           onValueChange={(val) => field.handleChange(val)}
                           onBlur={field.handleBlur}
                           aria-invalid={isInvalid}
-                          placeholder="Buscar activo por código, nombre o ubicación..."
+                          placeholder="Buscar activo por código, nombre, ubicación o placa..."
                           className="h-9.5 text-xs sm:text-sm"
                         />
 
@@ -1060,7 +1061,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           </span>
                           <span className="font-medium text-foreground truncate">
                             {selectedActivo
-                              ? `${selectedActivo.nombre} (${selectedActivo.codigo})`
+                              ? `${selectedActivo.nombre} (${selectedActivo.codigo})${extractPlaca(selectedActivo) ? ` - Placa: ${extractPlaca(selectedActivo)}` : ""}`
                               : "—"}
                           </span>
                         </div>

@@ -23,6 +23,7 @@ public interface SpringActivoRepository
               and (
                    lower(activo.codigo) like lower(concat('%', :query, '%'))
                    or lower(activo.nombre) like lower(concat('%', :query, '%'))
+                   or (activo.descripcion is not null and lower(activo.descripcion) like lower(concat('%', :query, '%')))
               )
             """)
     Page<ActivoEntity> searchByTipoActivoId(
@@ -36,6 +37,7 @@ public interface SpringActivoRepository
             from ActivoEntity activo
             where lower(activo.codigo) like lower(concat('%', :query, '%'))
                or lower(activo.nombre) like lower(concat('%', :query, '%'))
+               or (activo.descripcion is not null and lower(activo.descripcion) like lower(concat('%', :query, '%')))
             """)
     Page<ActivoEntity> search(
             @Param("query") String query,
