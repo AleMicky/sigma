@@ -172,13 +172,28 @@ export function fixEncoding(str?: string | null): string {
     .replace(/Ã‘/g, "Ñ")
 }
 
-export function extractPlaca(activo?: { descripcion?: string | null } | null): string | null {
+export function extractPlaca(
+  activo?: {
+    descripcion?: string | null
+    nombre?: string | null
+    codigo?: string | null
+    [key: string]: unknown
+  } | null,
+): string | null {
   try {
     if (!activo || typeof activo !== "object") return null
-    if (!activo.descripcion || typeof activo.descripcion !== "string") return null
+
+    const textToSearch = [
+      "descripcion" in activo && typeof activo.descripcion === "string" ? activo.descripcion : "",
+      "nombre" in activo && typeof activo.nombre === "string" ? activo.nombre : "",
+    ]
+      .filter(Boolean)
+      .join(" ")
+
+    if (!textToSearch) return null
 
     // Matches "PLACA 5202TGB", "PLACA: 6333-SYX", "PLACA 5197 LIB", "PLACA-123", etc.
-    const match = activo.descripcion.match(
+    const match = textToSearch.match(
       /PLACA[:\s#-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)*)/i,
     )
     if (match && match[1]) {

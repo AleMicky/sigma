@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import {
+  AlertTriangle,
   Box,
   Calendar,
   Check,
@@ -14,8 +15,10 @@ import {
   Paperclip,
   Pencil,
   SendHorizontal,
+  ShieldCheck,
   Trash2,
   User,
+  UserCheck,
   Wrench,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -34,6 +37,7 @@ import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
 import {
+  extractPlaca,
   getEstadoBadgeStyles,
   getPrioridadBadgeStyles,
   getTipoMantenimientoBadgeClass,
@@ -63,6 +67,7 @@ export function SolicitudListItem({
   const estadoStyle = getEstadoBadgeStyles(solicitud.estado)
   const prioridadStyle = getPrioridadBadgeStyles(solicitud.prioridad?.nivel ?? 1)
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
+  const placa = extractPlaca(solicitud.activo)
 
   const controlesQuery = useQuery({
     ...controlActivoQueries.list({ size: 100 }),
@@ -88,8 +93,7 @@ export function SolicitudListItem({
         })
   const createdAt = audit.createdAt ?? solicitud.fechaSolicitud ?? ""
   const updatedAt = audit.updatedAt ?? audit.createdAt ?? ""
-  const createdBy = audit.createdBy ?? null
-  const updatedBy = audit.updatedBy ?? audit.createdBy ?? null
+  const isUpdated = Boolean(updatedAt && updatedAt !== createdAt)
 
   function copyNumero(e: React.MouseEvent) {
     e.stopPropagation()
@@ -104,338 +108,365 @@ export function SolicitudListItem({
     <li
       onClick={() => onQuickView(solicitud)}
       className={cn(
-        "group flex flex-col justify-between gap-3.5 p-4 sm:p-4.5 transition-all cursor-pointer hover:bg-muted/30",
+        "group relative flex flex-col justify-between gap-2.5 p-3 sm:px-4 sm:py-3 transition-all cursor-pointer hover:bg-muted/35",
         isSolicitado && "bg-amber-500/[0.02]",
+        isBorrador && "bg-muted/[0.15]",
       )}
     >
-      {/* Main Row */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        {/* Left Section: Icon & Details */}
-        <div className="flex items-start gap-3.5 min-w-0 flex-1">
-          {/* Icon Badge */}
-          <div
-            className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105",
-              isBorrador
-                ? "bg-muted/80 text-muted-foreground border-border/80"
-                : isSolicitado
-                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                  : "bg-primary/10 text-primary border-primary/20",
-            )}
-          >
-            <Wrench className="size-5" />
-          </div>
-
-          {/* Info Container */}
-          <div className="flex flex-col min-w-0 flex-1 gap-1.5">
-            {/* Line 1: Folio, Title & Badges */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Folio Chip with Copy */}
-              {solicitud.numero ? (
-                <div
-                  onClick={copyNumero}
-                  className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-2 py-0.5 border border-border/70 hover:border-primary/50 transition-colors"
-                  title="Copiar folio"
-                >
-                  <code className="font-mono text-[11px] font-bold text-foreground/90">
-                    {solicitud.numero}
-                  </code>
-                  <span className="inline-flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground">
-                    {copied ? (
-                      <Check className="size-2.5 text-emerald-500" />
-                    ) : (
-                      <Copy className="size-2.5" />
-                    )}
-                  </span>
-                </div>
-              ) : null}
-
-              {/* Title */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onQuickView(solicitud)
-                }}
-                className="font-heading font-bold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors text-left truncate max-w-lg cursor-pointer"
-              >
-                {solicitud.titulo}
-              </button>
-
-              {/* Estado Badge */}
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize shrink-0",
-                  estadoStyle,
-                )}
-              >
-                {isSolicitado ? "En Revisión" : solicitud.estado}
-              </span>
-
-              {/* Prioridad Badge */}
-              {solicitud.prioridad ? (
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold shrink-0",
-                    prioridadStyle,
-                  )}
-                >
-                  {solicitud.prioridad.nombre}
-                </span>
-              ) : null}
-
-              {/* Tipo Mantenimiento Badge */}
-              {solicitud.tipoMantenimiento ? (
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border shrink-0",
-                    getTipoMantenimientoBadgeClass(
-                      solicitud.tipoMantenimiento.nombre,
-                      false,
-                    ),
-                  )}
-                >
-                  <Wrench className="size-2.5 shrink-0" />
-                  <span>{solicitud.tipoMantenimiento.nombre}</span>
-                </span>
-              ) : null}
-            </div>
-
-            {/* Line 2: Activo, Motivo y Descripción */}
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              {solicitud.activo ? (
-                <div className="inline-flex items-center gap-1.5 rounded-md bg-muted/50 px-2 py-0.5 text-[11px] text-foreground border border-border/50 max-w-sm truncate">
-                  <Box className="size-3 shrink-0 text-primary opacity-90" />
-                  <span className="font-mono font-bold text-[11px] text-primary">
-                    {solicitud.activo.codigo}
-                  </span>
-                  <span className="text-muted-foreground truncate">
-                    {solicitud.activo.nombre}
-                  </span>
-                </div>
-              ) : null}
-
-              {solicitud.tipoFallas ? (
-                <span className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground/80">Falla:</span>{" "}
-                  {solicitud.tipoFallas}
-                </span>
-              ) : null}
-
-              {solicitud.descripcion ? (
-                <p className="line-clamp-1 text-xs text-muted-foreground/80 leading-relaxed">
-                  {solicitud.descripcion}
-                </p>
-              ) : null}
-            </div>
-
-            {/* Line 3: Solicitante, Fecha, Adjuntos */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pt-0.5">
-              {solicitud.solicitante ? (
-                <span className="inline-flex items-center gap-1 text-[11px]">
-                  <User className="size-3 text-muted-foreground/70" />
-                  <span>{solicitud.solicitante.nombre}</span>
-                </span>
-              ) : null}
-
-              {solicitud.fechaSolicitud ? (
-                <span className="inline-flex items-center gap-1 text-[11px]">
-                  <Calendar className="size-3 text-muted-foreground/70" />
-                  <span>{formatDateTime(solicitud.fechaSolicitud)}</span>
-                </span>
-              ) : null}
-
-              {solicitud.fechaEstimadaOt ? (
-                <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 px-1.5 py-0.2 text-[10.5px] font-medium">
-                  <Calendar className="size-2.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Est. OT: <strong>{formatDate(solicitud.fechaEstimadaOt)}</strong></span>
-                </span>
-              ) : null}
-
-              {adjuntosCount > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">
-                  <Paperclip className="size-3" />
-                  <span>
-                    {adjuntosCount} adjunto{adjuntosCount > 1 ? "s" : ""}
-                  </span>
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Section: Visible Action Buttons */}
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 shrink-0 self-end lg:self-center pt-1 lg:pt-0"
-        >
-          {/* Botón Enviar destacado si está en Borrador */}
-          {isBorrador && onEnviar ? (
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={() => onEnviar(solicitud)}
-              className="h-7.5 gap-1.5 px-3 text-xs font-semibold text-primary border-primary/40 bg-primary/5 hover:bg-primary/15 hover:border-primary/60 shadow-2xs cursor-pointer"
-              title="Enviar solicitud para aprobación"
-            >
-              <SendHorizontal className="size-3.5" />
-              <span>Enviar</span>
-            </Button>
-          ) : null}
-
-          {/* Botón Registrar Devolución si está en TRABAJO_REALIZADO */}
-          {isTrabajoRealizado && (
-            hasDevolucion ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-lg">
-                <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="hidden sm:inline">Devolución Lista</span>
-              </span>
-            ) : (
-              <Link
-                to="/mantenimientos/controles-activos/nuevo"
-                search={{ solicitudId: solicitud.id, tipo: "DEVOLUCION" }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Button
-                  type="button"
-                  size="xs"
-                  className="h-7.5 gap-1.5 px-3 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-2xs cursor-pointer ring-1 ring-amber-500/30"
-                  title="Paso requerido: Registrar Devolución de Activo para cerrar el mantenimiento"
-                >
-                  <ClipboardCheck className="size-3.5" />
-                  <span>Devolución Activo</span>
-                </Button>
-              </Link>
-            )
-          )}
-
-          {/* Botón Ver Detalles */}
+      {/* Floating Action Island on Hover (Desktop) */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="absolute top-2.5 right-3 z-10 hidden sm:flex items-center gap-1 bg-background/95 backdrop-blur-md border border-border/80 rounded-lg p-1 shadow-md transition-all duration-200 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0 -translate-y-1"
+      >
+        {/* Botón Enviar destacado si está en Borrador */}
+        {isBorrador && onEnviar ? (
           <Button
             type="button"
             size="xs"
             variant="outline"
-            onClick={() => onQuickView(solicitud)}
-            className="h-7.5 gap-1.5 px-2.5 text-xs font-medium hover:bg-muted/80 shadow-2xs cursor-pointer"
-            title="Ver detalles completos"
+            onClick={() => onEnviar(solicitud)}
+            className="h-6.5 gap-1 px-2 text-[11px] font-semibold text-primary border-primary/40 bg-primary/10 hover:bg-primary/20 shadow-2xs cursor-pointer"
+            title="Enviar solicitud para aprobación"
           >
-            <Eye className="size-3.5 text-primary" />
-            <span className="hidden sm:inline">Detalles</span>
+            <SendHorizontal className="size-3" />
+            <span>Enviar</span>
           </Button>
+        ) : null}
 
-          {/* Botón Editar (Solo en Borrador) */}
-          {isBorrador && (
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={() => onEdit(solicitud)}
-              className="h-7.5 gap-1.5 px-2.5 text-xs font-medium hover:bg-muted/80 shadow-2xs cursor-pointer"
-              title="Editar solicitud"
+        {/* Botón Registrar Devolución si está en TRABAJO_REALIZADO */}
+        {isTrabajoRealizado && (
+          hasDevolucion ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 rounded-md">
+              <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+              <span>Devolución Lista</span>
+            </span>
+          ) : (
+            <Link
+              to="/mantenimientos/controles-activos/nuevo"
+              search={{
+                solicitudId: solicitud.id,
+                tipo: "DEVOLUCION",
+              }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <Pencil className="size-3.5 text-muted-foreground" />
-              <span className="hidden sm:inline">Editar</span>
-            </Button>
-          )}
-
-          {/* Botón Eliminar (Solo en Borrador) */}
-          {isBorrador && (
-            <Button
-              type="button"
-              size="icon-xs"
-              variant="ghost"
-              onClick={() => onDelete(solicitud)}
-              className="size-7.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-              title="Eliminar solicitud"
-            >
-              <Trash2 className="size-3.5" />
-            </Button>
-          )}
-
-          {/* Dropdown Menu para móvil / overflow */}
-          <div className="sm:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    className="size-7.5 rounded-lg text-muted-foreground hover:text-foreground shrink-0"
-                  />
-                }
+              <Button
+                type="button"
+                size="xs"
+                className="h-6.5 gap-1 px-2 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-md shadow-2xs cursor-pointer"
+                title="Registrar Devolución de Activo para cerrar el mantenimiento"
               >
-                <MoreVertical className="size-4" />
-                <span className="sr-only">Más opciones</span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-lg">
+                <ClipboardCheck className="size-3" />
+                <span>Devolución</span>
+              </Button>
+            </Link>
+          )
+        )}
+
+        {/* Botón Ver Detalles */}
+        <Button
+          type="button"
+          size="xs"
+          variant="ghost"
+          onClick={() => onQuickView(solicitud)}
+          className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
+          title="Ver detalles completos"
+        >
+          <Eye className="size-3 text-primary" />
+          <span>Detalles</span>
+        </Button>
+
+        {/* Botón Editar (Solo en Borrador) */}
+        {isBorrador && (
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            onClick={() => onEdit(solicitud)}
+            className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
+            title="Editar solicitud"
+          >
+            <Pencil className="size-3 text-muted-foreground" />
+            <span>Editar</span>
+          </Button>
+        )}
+
+        {/* Botón Eliminar (Solo en Borrador) */}
+        {isBorrador && (
+          <Button
+            type="button"
+            size="icon-xs"
+            variant="ghost"
+            onClick={() => onDelete(solicitud)}
+            className="size-6.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+            title="Eliminar solicitud"
+          >
+            <Trash2 className="size-3 text-destructive/80" />
+          </Button>
+        )}
+      </div>
+
+      {/* Top Row: Folio, Title, Status Badges & Mobile Menu */}
+      <div className="flex items-start justify-between gap-2.5 min-w-0">
+        {/* Left container: Folio + Title + Status Chips */}
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 flex-1 sm:pr-12">
+          {/* Folio Chip */}
+          {solicitud.numero ? (
+            <div
+              onClick={copyNumero}
+              className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-1.5 py-0.5 border border-border/70 hover:border-primary/50 hover:bg-muted transition-colors shrink-0"
+              title="Copiar folio"
+            >
+              <code className="font-mono text-[11px] font-bold text-foreground/90">
+                {solicitud.numero}
+              </code>
+              <span className="inline-flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground">
+                {copied ? (
+                  <Check className="size-2.5 text-emerald-500" />
+                ) : (
+                  <Copy className="size-2.5" />
+                )}
+              </span>
+            </div>
+          ) : null}
+
+          {/* Title */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onQuickView(solicitud)
+            }}
+            className="font-heading font-semibold text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors text-left truncate max-w-xs sm:max-w-md md:max-w-lg cursor-pointer"
+          >
+            {solicitud.titulo}
+          </button>
+
+          {/* Estado Badge */}
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full border px-2 py-0.2 text-[10px] font-semibold capitalize shrink-0 shadow-2xs",
+              estadoStyle,
+            )}
+          >
+            {isSolicitado ? "En Revisión" : solicitud.estado}
+          </span>
+
+          {/* Prioridad Badge */}
+          {solicitud.prioridad ? (
+            <span
+              className={cn(
+                "inline-flex items-center rounded-md border px-1.5 py-0.2 text-[10px] font-semibold shrink-0 shadow-2xs",
+                prioridadStyle,
+              )}
+            >
+              {solicitud.prioridad.nombre}
+            </span>
+          ) : null}
+
+          {/* Tipo Mantenimiento Badge */}
+          {solicitud.tipoMantenimiento ? (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10px] font-semibold border shrink-0 shadow-2xs",
+                getTipoMantenimientoBadgeClass(
+                  solicitud.tipoMantenimiento.nombre,
+                  false,
+                ),
+              )}
+            >
+              <Wrench className="size-2.5 shrink-0" />
+              <span>{solicitud.tipoMantenimiento.nombre}</span>
+            </span>
+          ) : null}
+
+          {/* Estado de Devolución Chip visible en fila si aplica */}
+          {isTrabajoRealizado && (
+            hasDevolucion ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.2 rounded-md shrink-0 sm:group-hover:hidden transition-all">
+                <CheckCircle2 className="size-2.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Devolución Lista</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.2 rounded-md shrink-0 sm:group-hover:hidden transition-all">
+                <ClipboardCheck className="size-2.5 text-amber-600 dark:text-amber-400" />
+                <span>Devolución Pendiente</span>
+              </span>
+            )
+          )}
+        </div>
+
+        {/* Mobile Action Dropdown */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="flex sm:hidden items-center gap-1 shrink-0"
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  className="size-7 rounded-md text-muted-foreground hover:text-foreground shrink-0"
+                />
+              }
+            >
+              <MoreVertical className="size-3.5" />
+              <span className="sr-only">Más opciones</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-lg">
+              <DropdownMenuItem
+                onClick={() => onQuickView(solicitud)}
+                className="text-xs cursor-pointer py-1.5"
+              >
+                <Eye className="size-3.5 mr-2 text-primary" />
+                Ver Detalles
+              </DropdownMenuItem>
+              {isBorrador && (
                 <DropdownMenuItem
-                  onClick={() => onQuickView(solicitud)}
-                  className="text-xs cursor-pointer py-2"
+                  onClick={() => onEdit(solicitud)}
+                  className="text-xs cursor-pointer py-1.5"
                 >
-                  <Eye className="size-3.5 mr-2 text-primary" />
-                  Ver Detalles
+                  <Pencil className="size-3.5 mr-2 text-muted-foreground" />
+                  Editar Solicitud
                 </DropdownMenuItem>
-                {isBorrador && (
+              )}
+              {isBorrador && onEnviar ? (
+                <DropdownMenuItem
+                  onClick={() => onEnviar(solicitud)}
+                  className="text-xs text-primary focus:text-primary cursor-pointer py-1.5 font-medium"
+                >
+                  <SendHorizontal className="size-3.5 mr-2" />
+                  Enviar Solicitud
+                </DropdownMenuItem>
+              ) : null}
+              {isTrabajoRealizado && !hasDevolucion && (
+                <DropdownMenuItem
+                  render={
+                    <Link
+                      to="/mantenimientos/controles-activos/nuevo"
+                      search={{
+                        solicitudId: solicitud.id,
+                        tipo: "DEVOLUCION",
+                      }}
+                    />
+                  }
+                  className="text-xs text-amber-600 focus:text-amber-600 cursor-pointer py-1.5 font-medium"
+                >
+                  <ClipboardCheck className="size-3.5 mr-2" />
+                  Devolución Activo
+                </DropdownMenuItem>
+              )}
+              {isBorrador && (
+                <>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => onEdit(solicitud)}
-                    className="text-xs cursor-pointer py-2"
+                    className="text-xs text-destructive focus:text-destructive cursor-pointer py-1.5"
+                    onClick={() => onDelete(solicitud)}
                   >
-                    <Pencil className="size-3.5 mr-2 text-muted-foreground" />
-                    Editar Solicitud
+                    <Trash2 className="size-3.5 mr-2" />
+                    Eliminar
                   </DropdownMenuItem>
-                )}
-                {isBorrador && onEnviar ? (
-                  <DropdownMenuItem
-                    onClick={() => onEnviar(solicitud)}
-                    className="text-xs text-primary focus:text-primary cursor-pointer py-2 font-medium"
-                  >
-                    <SendHorizontal className="size-3.5 mr-2" />
-                    Enviar Solicitud
-                  </DropdownMenuItem>
-                ) : null}
-                {isBorrador && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-xs text-destructive focus:text-destructive cursor-pointer py-2"
-                      onClick={() => onDelete(solicitud)}
-                    >
-                      <Trash2 className="size-3.5 mr-2" />
-                      Eliminar
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* Bottom Audit Row */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 pt-2 border-t border-border/30 text-[11px] text-muted-foreground/75 font-normal">
-        {createdAt ? (
-          <div className="flex items-center gap-1.5">
-            <Calendar className="size-3 text-muted-foreground/50 shrink-0" />
-            <span>
-              <strong className="font-medium text-muted-foreground">Creado:</strong>{" "}
-              {formatDateTime(createdAt)}
-              {createdBy ? ` por ${createdBy}` : ""}
+      {/* Middle Row: Activo (con Placa), Falla y Descripción */}
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs min-w-0">
+        {/* Activo con Placa */}
+        {solicitud.activo ? (
+          <div className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 px-2 py-0.5 text-[11px] text-foreground border border-border/50 max-w-md truncate">
+            <Box className="size-3 shrink-0 text-primary opacity-90" />
+            <span className="font-mono font-bold text-[11px] text-primary">
+              {solicitud.activo.codigo}
             </span>
+            <span className="text-foreground/90 truncate font-medium">
+              {solicitud.activo.nombre}
+            </span>
+            {placa ? (
+              <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
+                Placa: {placa}
+              </span>
+            ) : null}
           </div>
         ) : null}
 
-        {updatedAt && updatedAt !== createdAt ? (
-          <div className="flex items-center gap-1.5">
-            <Clock className="size-3 text-muted-foreground/50 shrink-0" />
-            <span>
-              <strong className="font-medium text-muted-foreground">
-                Actualizado:
-              </strong>{" "}
-              {formatDateTime(updatedAt)}
-              {updatedBy ? ` por ${updatedBy}` : ""}
-            </span>
+        {/* Tipo de Falla */}
+        {solicitud.tipoFallas ? (
+          <div className="inline-flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.2 rounded shrink-0">
+            <AlertTriangle className="size-2.5 shrink-0" />
+            <span className="truncate max-w-[200px] font-medium">{solicitud.tipoFallas}</span>
           </div>
         ) : null}
+
+        {/* Descripción corta */}
+        {solicitud.descripcion ? (
+          <p className="line-clamp-1 text-[11.5px] text-muted-foreground/80 leading-relaxed flex-1 min-w-[200px]">
+            {solicitud.descripcion}
+          </p>
+        ) : null}
+      </div>
+
+      {/* Bottom Row: Solicitante, Aprobador, Responsable, Fechas y Adjuntos */}
+      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11px] text-muted-foreground pt-0.5 border-t border-border/25">
+        {/* Solicitante */}
+        {solicitud.solicitante ? (
+          <span className="inline-flex items-center gap-1 text-[11px] truncate max-w-[200px]">
+            <User className="size-3 text-muted-foreground/70 shrink-0" />
+            <span className="truncate">{solicitud.solicitante.nombre}</span>
+          </span>
+        ) : null}
+
+        {/* Aprobado Por */}
+        {solicitud.aprobadoPor ? (
+          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300 font-medium truncate max-w-[220px]">
+            <ShieldCheck className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="truncate">Aprobó: {solicitud.aprobadoPor.nombre}</span>
+          </span>
+        ) : null}
+
+        {/* Responsable Técnico */}
+        {solicitud.responsable ? (
+          <span className="inline-flex items-center gap-1 text-[11px] text-sky-700 dark:text-sky-300 font-medium truncate max-w-[220px]">
+            <UserCheck className="size-3 text-sky-600 dark:text-sky-400 shrink-0" />
+            <span className="truncate">Resp: {solicitud.responsable.nombre}</span>
+          </span>
+        ) : null}
+
+        {/* Fecha Solicitud */}
+        {solicitud.fechaSolicitud ? (
+          <span className="inline-flex items-center gap-1 text-[11px]">
+            <Clock className="size-3 text-muted-foreground/70 shrink-0" />
+            <span>{formatDateTime(solicitud.fechaSolicitud)}</span>
+          </span>
+        ) : null}
+
+        {/* Fecha Estimada OT */}
+        {solicitud.fechaEstimadaOt ? (
+          <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 px-1.5 py-0.2 text-[10.5px] font-medium">
+            <Calendar className="size-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>Est. OT: <strong>{formatDate(solicitud.fechaEstimadaOt)}</strong></span>
+          </span>
+        ) : null}
+
+        {/* Adjuntos */}
+        {adjuntosCount > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-1.5 py-0.2 text-[10px] font-bold shrink-0">
+            <Paperclip className="size-2.5 shrink-0" />
+            <span>
+              {adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}
+            </span>
+          </span>
+        )}
+
+        {/* Indicador modificado */}
+        {isUpdated && (
+          <span className="text-[10px] text-muted-foreground/60 italic ml-auto hidden md:inline">
+            Editado: {formatDate(updatedAt)}
+          </span>
+        )}
       </div>
     </li>
   )

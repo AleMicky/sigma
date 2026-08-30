@@ -8,6 +8,7 @@ export type ActivoInfo = {
   id: string
   codigo: string
   nombre: string
+  descripcion?: string | null
 }
 
 export type TipoMantenimientoInfo = {

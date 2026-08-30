@@ -235,8 +235,8 @@ export function SolicitudesPage() {
         {solicitudesQuery.isLoading ? (
           <ListSkeleton
             rows={6}
-            rowClassName="h-28 rounded-2xl"
-            className="space-y-3"
+            rowClassName="h-20 rounded-xl"
+            className="space-y-2"
           />
         ) : solicitudesQuery.isError ? (
           <EmptyState
