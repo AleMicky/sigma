@@ -1,20 +1,22 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
+  AlertTriangle,
   Box,
+  Calendar,
   Check,
-  Clock,
   Copy,
   Download,
   ExternalLink,
-  Eye,
   FileCode,
   FileSpreadsheet,
   FileText,
   ImageIcon,
   Loader2,
+  Maximize2,
+  MessageSquare,
   Paperclip,
-  User,
+  UserCheck,
   Wrench,
   X,
 } from "lucide-react"
@@ -27,7 +29,6 @@ import { Button } from "@/shared/components/ui/button"
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/shared/components/ui/sheet"
@@ -42,7 +43,6 @@ import type {
   WorkflowField,
 } from "../api/solicitud.service"
 import {
-  getEstadoBadgeStyles,
   getPrioridadBadgeStyles,
   getTipoMantenimientoBadgeClass,
 } from "../lib/solicitud.utils"
@@ -90,7 +90,7 @@ function getFileIcon(tipoContenido?: string, nombreArchivo?: string) {
     return <FileCode className="size-4 text-amber-500 shrink-0" />
   }
   if (isImageFile(tipoContenido, nombreArchivo)) {
-    return <ImageIcon className="size-4 text-blue-500 shrink-0" />
+    return <ImageIcon className="size-4 text-sky-500 shrink-0" />
   }
   return <FileText className="size-4 text-muted-foreground shrink-0" />
 }
@@ -110,7 +110,7 @@ export function SolicitudQuickViewSheet({
 
   const solicitudId = initialSolicitud?.id ?? ""
 
-  // Fetch full detail and specific attachments list to ensure they are always present
+  // Detalle completo y adjuntos
   const detailQuery = useQuery({
     ...solicitudQueries.detail(solicitudId),
     enabled: open && Boolean(solicitudId),
@@ -176,377 +176,379 @@ export function SolicitudQuickViewSheet({
 
   if (!solicitud) return null
 
-  const estadoStyle = getEstadoBadgeStyles(solicitud.estado)
   const prioridadStyle = getPrioridadBadgeStyles(solicitud.prioridad?.nivel ?? 1)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto p-4 sm:p-6 flex flex-col gap-4">
-        {/* Header Bar */}
-        <SheetHeader className="pb-3 border-b space-y-2 shrink-0">
-          <div className="flex flex-wrap items-center gap-2">
-            {solicitud.numero ? (
-              <div
-                onClick={copyNumero}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-bold text-primary border border-primary/20 hover:bg-primary/15 transition-colors cursor-pointer"
-                title="Copiar folio"
-              >
-                <span>{solicitud.numero}</span>
-                {copied ? (
-                  <Check className="size-3 text-emerald-600" />
-                ) : (
-                  <Copy className="size-3 opacity-70" />
-                )}
-              </div>
-            ) : null}
-
-            <span
-              className={cn(
-                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize",
-                estadoStyle,
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-lg md:max-w-xl flex flex-col p-0 gap-0 border-l bg-background shadow-2xl overflow-hidden"
+      >
+        {/* ======================= HERO COMPACT HEADER ======================= */}
+        <SheetHeader className="p-5 pb-4 border-b bg-muted/10 shrink-0 space-y-3">
+          {/* Top badges & Folio */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pr-6">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {solicitud.numero && (
+                <button
+                  type="button"
+                  onClick={copyNumero}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-mono text-xs font-bold bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 transition-all cursor-pointer shadow-2xs"
+                  title="Copiar folio"
+                >
+                  <span>{solicitud.numero}</span>
+                  {copied ? (
+                    <Check className="size-3 text-emerald-600" />
+                  ) : (
+                    <Copy className="size-3 opacity-60" />
+                  )}
+                </button>
               )}
-            >
-              {solicitud.estado}
-            </span>
 
-            {solicitud.prioridad ? (
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold shrink-0",
-                  prioridadStyle,
-                )}
-              >
-                {solicitud.prioridad.nombre}
-              </span>
-            ) : null}
+              {solicitud.prioridad && (
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold shrink-0 shadow-2xs",
+                    prioridadStyle,
+                  )}
+                >
+                  {solicitud.prioridad.nombre}
+                </span>
+              )}
 
-            {solicitud.tipoMantenimiento ? (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold border shrink-0",
-                  getTipoMantenimientoBadgeClass(
-                    solicitud.tipoMantenimiento.nombre,
-                    false,
-                  ),
-                )}
-              >
-                <Wrench className="size-3" />
-                <span>{solicitud.tipoMantenimiento.nombre}</span>
+              {solicitud.tipoMantenimiento && (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border shrink-0 shadow-2xs",
+                    getTipoMantenimientoBadgeClass(
+                      solicitud.tipoMantenimiento.nombre,
+                      false,
+                    ),
+                  )}
+                >
+                  <Wrench className="size-3" />
+                  <span>{solicitud.tipoMantenimiento.nombre}</span>
+                </span>
+              )}
+            </div>
+
+            {solicitud.fechaSolicitud && (
+              <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                <Calendar className="size-3.5 text-muted-foreground/70" />
+                {formatDate(solicitud.fechaSolicitud)}
               </span>
-            ) : null}
+            )}
           </div>
 
-          <SheetTitle className="text-base sm:text-lg font-heading font-bold text-foreground text-left leading-snug">
-            {solicitud.titulo}
-          </SheetTitle>
-
-          {solicitud.tipoFallas ? (
-            <SheetDescription className="text-xs text-foreground/80 font-medium text-left">
-              <strong className="text-muted-foreground font-semibold">Falla:</strong>{" "}
-              {solicitud.tipoFallas}
-            </SheetDescription>
-          ) : null}
+          {/* Title & Fault Info */}
+          <div className="space-y-1.5 text-left">
+            <SheetTitle className="text-lg sm:text-xl font-heading font-bold text-foreground leading-snug tracking-tight">
+              {solicitud.titulo}
+            </SheetTitle>
+            {solicitud.tipoFallas ? (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-xs font-medium text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="size-3.5 shrink-0 text-amber-600" />
+                <span>Falla: <strong>{solicitud.tipoFallas}</strong></span>
+              </div>
+            ) : null}
+          </div>
         </SheetHeader>
 
-        {/* WorkflowPanel - Action Bar */}
-        {onWorkflowAction && (
-          <WorkflowPanel
-            solicitud={solicitud}
-            onActionSelect={onWorkflowAction}
-          />
-        )}
-
-        {/* Info Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Activo Info */}
-          <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-1">
-            <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
-              <Box className="size-3.5 text-primary" />
-              <span>Activo Fijo Relacionado</span>
-            </div>
-            {solicitud.activo ? (
-              <div className="flex items-center gap-2">
-                <code className="text-xs font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                  {solicitud.activo.codigo}
-                </code>
-                <span className="font-semibold text-xs text-foreground truncate">
-                  {solicitud.activo.nombre}
-                </span>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground italic">No asignado</p>
-            )}
-          </div>
-
-          {/* Solicitante Info */}
-          <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-1">
-            <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
-              <User className="size-3.5 text-primary" />
-              <span>Datos de Solicitud</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Solicitante:</span>
-              <span className="font-medium text-foreground">
-                {solicitud.solicitante?.nombre || "No especificado"}
-              </span>
-            </div>
-            {solicitud.fechaSolicitud && (
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40">
-                <span className="text-muted-foreground">Fecha y Hora:</span>
-                <span className="font-medium text-foreground">
-                  {formatDateTime(solicitud.fechaSolicitud)}
-                </span>
-              </div>
-            )}
-            {solicitud.fechaEstimadaOt && (
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40">
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Fecha Est. OT:</span>
-                <span className="font-semibold text-emerald-700 dark:text-emerald-300">
-                  {formatDate(solicitud.fechaEstimadaOt)}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Problem Description */}
-        <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-1.5">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <FileText className="size-3.5 text-primary" />
-            <span>Descripción Detallada del Problema</span>
-          </h4>
-          <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">
-            {solicitud.descripcion || "Sin descripción proporcionada."}
-          </p>
-        </div>
-
-        {/* Attachments Section */}
-        <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Paperclip className="size-3.5 text-primary" />
-              <span>Archivos Adjuntos ({adjuntos.length})</span>
-            </h4>
-            {isLoadingAdjuntos && (
-              <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-            )}
-          </div>
-
-          {isLoadingAdjuntos ? (
-            <div className="flex items-center justify-center py-3 text-xs text-muted-foreground gap-2">
-              <Loader2 className="size-4 animate-spin text-primary" />
-              <span>Cargando archivos...</span>
-            </div>
-          ) : adjuntos.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic py-1">
-              Sin archivos adjuntos.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {/* Photo Thumbnails */}
-              {imageAdjuntos.length > 0 && (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                  {imageAdjuntos.map((img) => (
-                    <div
-                      key={img.id}
-                      onClick={() =>
-                        setSelectedPreviewImage({
-                          url: img.url,
-                          name: img.nombreArchivo,
-                        })
-                      }
-                      className="group relative aspect-square rounded-xl border border-border bg-muted/30 overflow-hidden cursor-pointer hover:border-primary transition-all shadow-2xs"
-                      title={img.nombreArchivo}
-                    >
-                      <AuthenticatedImage
-                        src={img.url}
-                        alt={img.nombreArchivo}
-                        className="size-full object-cover group-hover:scale-105 transition-transform"
-                        fallback={
-                          <div className="size-full flex flex-col items-center justify-center p-2 text-center bg-muted">
-                            <ImageIcon className="size-5 text-muted-foreground mb-1" />
-                            <span className="text-[10px] text-muted-foreground truncate max-w-full">
-                              {img.nombreArchivo}
-                            </span>
-                          </div>
-                        }
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="p-1 rounded-md bg-black/60 text-white shadow-xs">
-                          <Eye className="size-3.5" />
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Document List */}
-              {docAdjuntos.length > 0 && (
-                <ul className="space-y-1.5 divide-y divide-border/40">
-                  {docAdjuntos.map((adj: SolicitudMantenimientoAdjunto) => (
-                    <li
-                      key={adj.id}
-                      className="flex items-center justify-between gap-2 pt-1.5 first:pt-0"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {getFileIcon(adj.tipoContenido, adj.nombreArchivo)}
-                        <div className="min-w-0">
-                          <p className="font-medium text-foreground truncate text-xs">
-                            {adj.nombreArchivo}
-                          </p>
-                          <p className="text-[9.5px] text-muted-foreground">
-                            {formatFileSize(adj.size)}
-                            {adj.descripcion ? ` • ${adj.descripcion}` : ""}
-                          </p>
-                        </div>
-                      </div>
-
-                      {adj.url ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDownloadFile(adj)}
-                          disabled={downloadingId === adj.id}
-                          className="h-7 px-2 text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10 shrink-0"
-                          title="Descargar archivo"
-                        >
-                          {downloadingId === adj.id ? (
-                            <Loader2 className="size-3 animate-spin" />
-                          ) : (
-                            <Download className="size-3" />
-                          )}
-                          <span>Descargar</span>
-                        </Button>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
+        {/* ======================= SCROLLABLE CLEAN BODY ======================= */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Action Bar (Si hay acciones de workflow) */}
+          {onWorkflowAction && (
+            <div className="rounded-xl overflow-hidden border border-border/80 shadow-2xs">
+              <WorkflowPanel
+                solicitud={solicitud}
+                onActionSelect={onWorkflowAction}
+              />
             </div>
           )}
-        </div>
 
-        {/* Lifecycle Flow */}
-        <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2.5">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Clock className="size-3.5 text-primary" />
-            <span>Trazabilidad de Estados</span>
-          </h4>
-
-          <div className="space-y-2 divide-y divide-border/40 text-xs">
-            {/* Solicitado */}
-            <div className="flex items-start gap-2.5 pt-1.5 first:pt-0">
-              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary mt-0.5 font-bold text-[10px]">
-                1
+          {/* 1. INFORMACIÓN PRINCIPAL (Diseño limpio en lista de filas) */}
+          <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-2xs">
+            <div className="px-4 py-2.5 bg-muted/30 border-b border-border/50 flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Box className="size-3.5 text-primary" />
+                <span>Información General</span>
               </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-foreground">Solicitado</p>
-                  {solicitud.fechaSolicitud && (
-                    <span className="text-[9.5px] text-muted-foreground">
-                      {formatDateTime(solicitud.fechaSolicitud)}
-                    </span>
-                  )}
-                </div>
-                {solicitud.solicitante && (
-                  <p className="text-[10.5px] text-muted-foreground">
-                    Por: {solicitud.solicitante.nombre}
-                  </p>
-                )}
-              </div>
             </div>
 
-            {/* Aprobado */}
-            {(solicitud.aprobadoPor || solicitud.fechaAprobacion) && (
-              <div className="flex items-start gap-2.5 pt-1.5">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mt-0.5 font-bold text-[10px]">
-                  2
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-foreground">Aprobado</p>
-                    {solicitud.fechaAprobacion && (
-                      <span className="text-[9.5px] text-muted-foreground">
-                        {formatDateTime(solicitud.fechaAprobacion)}
-                      </span>
-                    )}
+            <div className="divide-y divide-border/40 text-xs">
+              {/* Activo */}
+              <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                <span className="text-muted-foreground font-medium shrink-0">Activo Fijo:</span>
+                {solicitud.activo ? (
+                  <div className="flex items-center gap-2 text-right">
+                    <span className="font-mono text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                      {solicitud.activo.codigo}
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {solicitud.activo.nombre}
+                    </span>
                   </div>
+                ) : (
+                  <span className="text-muted-foreground italic">No asignado</span>
+                )}
+              </div>
+
+              {/* Solicitante */}
+              <div className="p-3.5 flex items-center justify-between gap-2">
+                <span className="text-muted-foreground font-medium">Solicitante:</span>
+                <span className="font-semibold text-foreground text-right">
+                  {solicitud.solicitante?.nombre || "No especificado"}
+                </span>
+              </div>
+
+              {/* Fecha y Hora */}
+              {solicitud.fechaSolicitud && (
+                <div className="p-3.5 flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground font-medium">Fecha y Hora:</span>
+                  <span className="font-medium text-foreground text-right">
+                    {formatDateTime(solicitud.fechaSolicitud)}
+                  </span>
+                </div>
+              )}
+
+              {/* Fecha estimada OT */}
+              {solicitud.fechaEstimadaOt && (
+                <div className="p-3.5 flex items-center justify-between gap-2">
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">Fecha Estimada OT:</span>
+                  <span className="font-semibold text-amber-700 dark:text-amber-300 text-right">
+                    {formatDate(solicitud.fechaEstimadaOt)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 2. DESCRIPCIÓN DETALLADA */}
+          <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-2xs">
+            <div className="px-4 py-2.5 bg-muted/30 border-b border-border/50">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <FileText className="size-3.5 text-primary" />
+                <span>Descripción</span>
+              </span>
+            </div>
+            <div className="p-4 text-xs text-foreground leading-relaxed whitespace-pre-wrap font-normal">
+              {solicitud.descripcion || "Sin descripción proporcionada."}
+            </div>
+          </div>
+
+          {/* 3. INTERVINIENTES EN EL FLUJO (Si existen) */}
+          {(solicitud.aprobadoPor ||
+            solicitud.responsable ||
+            solicitud.supervisor ||
+            solicitud.recibidoPor) && (
+              <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-2xs">
+                <div className="px-4 py-2.5 bg-muted/30 border-b border-border/50">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <UserCheck className="size-3.5 text-primary" />
+                    <span>Intervinientes en el Flujo</span>
+                  </span>
+                </div>
+                <div className="p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                   {solicitud.aprobadoPor && (
-                    <p className="text-[10.5px] text-muted-foreground">
-                      Aprobador: {solicitud.aprobadoPor.nombre}
-                    </p>
+                    <div className="bg-muted/30 rounded-lg p-2.5 border border-border/40">
+                      <p className="text-[10px] text-muted-foreground font-semibold uppercase">Aprobador</p>
+                      <p className="font-semibold text-xs text-foreground truncate mt-0.5">
+                        {solicitud.aprobadoPor.nombre}
+                      </p>
+                      {solicitud.fechaAprobacion && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {formatDate(solicitud.fechaAprobacion)}
+                        </p>
+                      )}
+                    </div>
                   )}
-                  {solicitud.observacionAprobacion && (
-                    <p className="text-[10.5px] text-muted-foreground/90 italic bg-muted/40 p-1.5 rounded-md mt-1">
-                      "{solicitud.observacionAprobacion}"
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
 
-            {/* Asignado / En Ejecución */}
-            {(solicitud.responsable || solicitud.fechaInicioMantenimiento) && (
-              <div className="flex items-start gap-2.5 pt-1.5">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-400 mt-0.5 font-bold text-[10px]">
-                  3
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-foreground">
-                      Asignación y Ejecución
-                    </p>
-                    {solicitud.fechaInicioMantenimiento && (
-                      <span className="text-[9.5px] text-muted-foreground">
-                        {formatDateTime(solicitud.fechaInicioMantenimiento)}
-                      </span>
-                    )}
-                  </div>
                   {solicitud.responsable && (
-                    <p className="text-[10.5px] text-muted-foreground">
-                      Responsable: <strong>{solicitud.responsable.nombre}</strong>
-                    </p>
+                    <div className="bg-muted/30 rounded-lg p-2.5 border border-border/40">
+                      <p className="text-[10px] text-sky-600 dark:text-sky-400 font-semibold uppercase">Responsable OT</p>
+                      <p className="font-semibold text-xs text-foreground truncate mt-0.5">
+                        {solicitud.responsable.nombre}
+                      </p>
+                      {solicitud.fechaAsignacion && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {formatDate(solicitud.fechaAsignacion)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {solicitud.supervisor && (
+                    <div className="bg-muted/30 rounded-lg p-2.5 border border-border/40">
+                      <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold uppercase">Supervisor</p>
+                      <p className="font-semibold text-xs text-foreground truncate mt-0.5">
+                        {solicitud.supervisor.nombre}
+                      </p>
+                    </div>
+                  )}
+
+                  {solicitud.recibidoPor && (
+                    <div className="bg-muted/30 rounded-lg p-2.5 border border-border/40">
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase">Recibido Por</p>
+                      <p className="font-semibold text-xs text-foreground truncate mt-0.5">
+                        {solicitud.recibidoPor.nombre}
+                      </p>
+                      {solicitud.fechaFinalizacion && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {formatDate(solicitud.fechaFinalizacion)}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Cierre */}
-            {(solicitud.fechaFinalizacion || solicitud.recibidoPor) && (
-              <div className="flex items-start gap-2.5 pt-1.5">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mt-0.5 font-bold text-[10px]">
-                  4
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-foreground">
-                      Finalizado y Cerrado
-                    </p>
-                    {solicitud.fechaFinalizacion && (
-                      <span className="text-[9.5px] text-muted-foreground">
-                        {formatDateTime(solicitud.fechaFinalizacion)}
-                      </span>
-                    )}
-                  </div>
-                  {solicitud.recibidoPor && (
-                    <p className="text-[10.5px] text-muted-foreground">
-                      Recibido por: {solicitud.recibidoPor.nombre}
-                    </p>
+          {/* 4. OBSERVACIONES REGISTRADAS */}
+          {(solicitud.observacionAprobacion ||
+            solicitud.observacionValidacion ||
+            solicitud.observacionCierre) && (
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 overflow-hidden shadow-2xs">
+                <div className="px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                    <MessageSquare className="size-3.5" />
+                    <span>Observaciones del Ciclo</span>
+                  </span>
+                </div>
+                <div className="p-3.5 space-y-2 text-xs divide-y divide-amber-500/15">
+                  {solicitud.observacionAprobacion && (
+                    <div className="pt-1.5 first:pt-0">
+                      <span className="font-semibold text-foreground/80">Aprobación:</span>{" "}
+                      <span className="italic text-foreground">"{solicitud.observacionAprobacion}"</span>
+                    </div>
+                  )}
+                  {solicitud.observacionValidacion && (
+                    <div className="pt-1.5 first:pt-0">
+                      <span className="font-semibold text-foreground/80">Supervisión:</span>{" "}
+                      <span className="italic text-foreground">"{solicitud.observacionValidacion}"</span>
+                    </div>
                   )}
                   {solicitud.observacionCierre && (
-                    <p className="text-[10.5px] text-muted-foreground/90 italic bg-muted/40 p-1.5 rounded-md mt-1">
-                      "{solicitud.observacionCierre}"
-                    </p>
+                    <div className="pt-1.5 first:pt-0">
+                      <span className="font-semibold text-foreground/80">Cierre:</span>{" "}
+                      <span className="italic text-foreground">"{solicitud.observacionCierre}"</span>
+                    </div>
                   )}
                 </div>
               </div>
             )}
+
+          {/* 5. ARCHIVOS ADJUNTOS */}
+          <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-2xs">
+            <div className="px-4 py-2.5 bg-muted/30 border-b border-border/50 flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Paperclip className="size-3.5 text-primary" />
+                <span>Archivos Adjuntos ({adjuntos.length})</span>
+              </span>
+              {isLoadingAdjuntos && (
+                <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+              )}
+            </div>
+
+            <div className="p-4">
+              {isLoadingAdjuntos ? (
+                <div className="flex items-center justify-center py-3 text-xs text-muted-foreground gap-2">
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <span>Cargando archivos...</span>
+                </div>
+              ) : adjuntos.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic py-1">
+                  Sin archivos adjuntos.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {/* Photo Thumbnails */}
+                  {imageAdjuntos.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                      {imageAdjuntos.map((img) => (
+                        <div
+                          key={img.id}
+                          onClick={() =>
+                            setSelectedPreviewImage({
+                              url: img.url,
+                              name: img.nombreArchivo,
+                            })
+                          }
+                          className="group relative aspect-square rounded-xl border border-border bg-muted/20 overflow-hidden cursor-pointer hover:border-primary hover:shadow-md transition-all"
+                          title={img.nombreArchivo}
+                        >
+                          <AuthenticatedImage
+                            src={img.url}
+                            alt={img.nombreArchivo}
+                            className="size-full object-cover group-hover:scale-105 transition-transform"
+                            fallback={
+                              <div className="size-full flex flex-col items-center justify-center p-2 text-center bg-muted">
+                                <ImageIcon className="size-5 text-muted-foreground mb-1" />
+                                <span className="text-[10px] text-muted-foreground truncate max-w-full">
+                                  {img.nombreArchivo}
+                                </span>
+                              </div>
+                            }
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="p-1.5 rounded-lg bg-black/60 text-white shadow-xs">
+                              <Maximize2 className="size-3.5" />
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Document List */}
+                  {docAdjuntos.length > 0 && (
+                    <div className="rounded-lg border border-border/60 divide-y divide-border/40 overflow-hidden">
+                      {docAdjuntos.map((adj: SolicitudMantenimientoAdjunto) => (
+                        <div
+                          key={adj.id}
+                          className="flex items-center justify-between gap-3 p-2.5 hover:bg-muted/30 transition-colors text-xs"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {getFileIcon(adj.tipoContenido, adj.nombreArchivo)}
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground truncate text-xs">
+                                {adj.nombreArchivo}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {formatFileSize(adj.size)}
+                                {adj.descripcion ? ` • ${adj.descripcion}` : ""}
+                              </p>
+                            </div>
+                          </div>
+
+                          {adj.url && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDownloadFile(adj)}
+                              disabled={downloadingId === adj.id}
+                              className="h-7 px-2.5 text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10 shrink-0"
+                              title="Descargar archivo"
+                            >
+                              {downloadingId === adj.id ? (
+                                <Loader2 className="size-3 animate-spin" />
+                              ) : (
+                                <Download className="size-3.5" />
+                              )}
+                              <span>Descargar</span>
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Audit Info */}
-        <div className="rounded-xl border border-border/70 bg-muted/15 p-2.5 shrink-0">
+        {/* ======================= AUDIT FOOTER ======================= */}
+        <div className="p-3.5 border-t bg-muted/20 shrink-0">
           <AuditInfo data={solicitud} compact className="text-[10px]" />
         </div>
 
@@ -577,7 +579,7 @@ export function SolicitudQuickViewSheet({
                   <button
                     type="button"
                     onClick={() => setSelectedPreviewImage(null)}
-                    className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+                    className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
                   >
                     <X className="size-4" />
                   </button>
