@@ -555,18 +555,15 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                                 type="button"
                                 onClick={() => field.handleChange(tm.id)}
                                 className={cn(
-                                  "group inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold border transition-all cursor-pointer shadow-2xs active:scale-95",
+                                  "group inline-flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs transition-all cursor-pointer shadow-2xs active:scale-95 border",
                                   getTipoMantenimientoBadgeClass(tm.nombre, isSelected),
                                 )}
                               >
-                                <Wrench
-                                  className={cn(
-                                    "size-3 shrink-0 transition-transform duration-200 group-hover:rotate-12",
-                                    isSelected
-                                      ? "text-inherit"
-                                      : "opacity-80",
-                                  )}
-                                />
+                                {isSelected ? (
+                                  <Check className="size-3.5 shrink-0 text-white stroke-[2.5]" />
+                                ) : (
+                                  <div className="size-2 rounded-full border border-muted-foreground/50 shrink-0 group-hover:border-primary/60" />
+                                )}
                                 <span className="capitalize tracking-tight">{tm.nombre}</span>
                               </button>
                             )
@@ -581,40 +578,40 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 }}
               </form.Field>
 
-              {/* Solicitante, Tipo de Falla y Nivel de Prioridad en Grid Responsive */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
-                {/* Solicitante Selector */}
-                <form.Field name="solicitanteId">
-                  {(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
+              {/* Solicitante Selector (Espacio amplio para mostrar nombre completo, código, cargo y área) */}
+              <form.Field name="solicitanteId">
+                {(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
 
-                    return (
-                      <Field data-invalid={isInvalid || undefined}>
-                        <RequiredFieldLabel htmlFor={field.name}>
-                          Solicitante
-                        </RequiredFieldLabel>
+                  return (
+                    <Field data-invalid={isInvalid || undefined}>
+                      <RequiredFieldLabel htmlFor={field.name}>
+                        Personal Solicitante
+                      </RequiredFieldLabel>
 
-                        <EmpleadoCombobox
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onValueChange={(val) => field.handleChange(val)}
-                          onBlur={field.handleBlur}
-                          aria-invalid={isInvalid}
-                          onlyMisEmpleados={true}
-                          placeholder="Buscar solicitante..."
-                          className="h-9.5 text-xs sm:text-sm"
-                        />
+                      <EmpleadoCombobox
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onValueChange={(val) => field.handleChange(val)}
+                        onBlur={field.handleBlur}
+                        aria-invalid={isInvalid}
+                        onlyMisEmpleados={true}
+                        placeholder="Buscar solicitante por nombre, código o cargo..."
+                        className="h-9.5 text-xs sm:text-sm"
+                      />
 
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              </form.Field>
 
+              {/* Tipo de Falla y Nivel de Prioridad en Grid Responsive */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-0.5">
                 {/* Tipo de Fallas (Autocompletado desde Catálogo) */}
                 <form.Field name="tipoFallas">
                   {(field) => {
@@ -1072,7 +1069,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
                             Solicitante:
                           </span>
-                          <span className="font-medium text-foreground truncate">
+                          <span className="font-medium text-foreground">
                             {selectedEmpleado
                               ? getEmpleadoNombre(selectedEmpleado)
                               : "—"}

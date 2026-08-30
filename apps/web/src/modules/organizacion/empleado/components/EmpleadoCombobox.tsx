@@ -132,20 +132,20 @@ export function EmpleadoCombobox({
 
           {/* Información del Empleado */}
           <div className="min-w-0 flex-1 space-y-0.5">
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
               <code className="text-[10.5px] font-mono font-bold text-foreground bg-muted/80 border border-border/60 px-1.5 py-0.2 rounded shrink-0">
                 {selectedEmpleado.codigo}
               </code>
-              <span className="font-semibold text-xs text-foreground truncate">
+              <span className="font-semibold text-xs text-foreground">
                 {nombre}
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground truncate">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
               {cargo ? (
-                <div className="flex items-center gap-1 text-muted-foreground truncate text-[11px]">
+                <div className="flex items-center gap-1 text-muted-foreground text-[11px]">
                   <Briefcase className="size-3 text-primary shrink-0" />
-                  <span className="truncate">{cargo}</span>
+                  <span>{cargo}</span>
                 </div>
               ) : null}
 
@@ -159,7 +159,7 @@ export function EmpleadoCombobox({
                   className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground bg-muted/40 shrink-0"
                 >
                   <Building className="size-2.5 mr-1 text-muted-foreground/70" />
-                  <span className="truncate">{area}</span>
+                  <span>{area}</span>
                 </Badge>
               ) : null}
             </div>
