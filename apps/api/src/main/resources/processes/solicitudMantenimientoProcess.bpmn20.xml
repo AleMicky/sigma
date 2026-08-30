@@ -74,17 +74,39 @@
     <userTask id="iniciarMantenimiento" name="ASIGNADO - Iniciar mantenimiento" flowable:assignee="${responsableId}" flowable:formFieldValidation="true">
       <extensionElements>
         <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
+        <flowable:formProperty id="comentario" name="Comentario" type="string" required="false" writable="true"></flowable:formProperty>
       </extensionElements>
     </userTask>
     <userTask id="ejecutarMantenimiento" name="EN_MANTENIMIENTO - Ejecutar mantenimiento" flowable:assignee="${responsableId}" flowable:formFieldValidation="true">
       <extensionElements>
         <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
+        <flowable:formProperty id="comentario" name="Comentario" type="string" required="false" writable="true"></flowable:formProperty>
       </extensionElements>
     </userTask>
     <userTask id="enviarRevision" name="EN_MANTENIMIENTO - Enviar a revisión" flowable:assignee="${responsableId}" flowable:formFieldValidation="true">
       <extensionElements>
         <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
-        <flowable:formProperty id="comentario" name="Detalle del trabajo completado" type="string" required="false" writable="true"></flowable:formProperty>
+        <!-- LISTADO DE SUPERVISORES DE MANTENIMIENTO -->
+        <flowable:formProperty
+          id="supervisorId"
+          name="Supervisor de mantenimiento"
+          type="string"
+          required="true"
+          writable="true"
+          xmlns:sigma="http://endecorani.com/sigma/workflow"
+          sigma:component="select"
+          sigma:source="rest"
+          sigma:url="/api/v1/empleado-responsabilidades/responsabilidades/SUP_MANTENIMIENTO/empleados">
+        </flowable:formProperty>
+
+        <!-- COMENTARIO -->
+        <flowable:formProperty
+          id="comentario"
+          name="Detalle del trabajo completado"
+          type="string"
+          required="false"
+          writable="true">
+        </flowable:formProperty>
       </extensionElements>
     </userTask>
     <userTask id="revisarMantenimiento" name="EN_REVISION - Revisar mantenimiento" flowable:assignee="${supervisorId}" flowable:formFieldValidation="true">
@@ -102,12 +124,13 @@
     <userTask id="registrarTrabajo" name="VALIDADO - Registrar trabajo realizado" flowable:assignee="${responsableId}" flowable:formFieldValidation="true">
       <extensionElements>
         <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
+        <flowable:formProperty id="comentario" name="Comentario" type="string" required="false" writable="true"></flowable:formProperty>
       </extensionElements>
     </userTask>
     <userTask id="recibirActivo" name="TRABAJO_REALIZADO - Recibir y verificar activo" flowable:assignee="${solicitanteId}" flowable:formFieldValidation="true">
       <extensionElements>
         <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
-        <flowable:formProperty id="comentario" name="Comentario de conformidad" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="comentario" name="Comentario" type="string" required="false" writable="true"></flowable:formProperty>
       </extensionElements>
     </userTask>
     <endEvent id="endEvent" name="FINALIZADO"></endEvent>
