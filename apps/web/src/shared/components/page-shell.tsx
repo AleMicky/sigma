@@ -25,7 +25,7 @@ const pageShellVariants = cva("mx-auto w-full flex flex-col transition-all", {
     },
   },
   defaultVariants: {
-    size: "xl",
+    size: "full",
     padding: "compact",
     layout: "fill",
   },
