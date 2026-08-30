@@ -33,9 +33,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.API_V1 + "/empleados")
 @RequiredArgsConstructor
-@Tag(
-        name = "Empleados",
-        description = "Administración de empleados de la organización"
+@Tag(name = "Empleados", description = "Administración de empleados de la organización"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class EmpleadoController {
