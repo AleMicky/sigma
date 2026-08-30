@@ -379,6 +379,7 @@ export function SolicitudListItem({
         {solicitud.activo ? (
           <div className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 px-2 py-0.5 text-[11px] text-foreground border border-border/50 max-w-md truncate">
             <Box className="size-3 shrink-0 text-primary opacity-90" />
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase">Activo:</span>
             <span className="font-mono font-bold text-[11px] text-primary">
               {solicitud.activo.codigo}
             </span>
@@ -397,25 +398,28 @@ export function SolicitudListItem({
         {solicitud.tipoFallas ? (
           <div className="inline-flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.2 rounded shrink-0">
             <AlertTriangle className="size-2.5 shrink-0" />
-            <span className="truncate max-w-[200px] font-medium">{solicitud.tipoFallas}</span>
+            <span className="text-[10px] opacity-80 font-medium uppercase">Falla:</span>
+            <span className="truncate max-w-[200px] font-semibold">{solicitud.tipoFallas}</span>
           </div>
         ) : null}
 
         {/* Descripción corta */}
         {solicitud.descripcion ? (
-          <p className="line-clamp-1 text-[11.5px] text-muted-foreground/80 leading-relaxed flex-1 min-w-[200px]">
+          <p className="line-clamp-1 text-[11.5px] text-muted-foreground/80 leading-relaxed flex-1 min-w-[200px]" title={solicitud.descripcion}>
+            <span className="text-foreground/70 font-medium">Desc: </span>
             {solicitud.descripcion}
           </p>
         ) : null}
       </div>
 
       {/* Bottom Row: Solicitante, Aprobador, Responsable, Fechas y Adjuntos */}
-      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11px] text-muted-foreground pt-0.5 border-t border-border/25">
+      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11px] text-muted-foreground pt-1 border-t border-border/30">
         {/* Solicitante */}
         {solicitud.solicitante ? (
-          <span className="inline-flex items-center gap-1 text-[11px] truncate max-w-[200px]">
+          <span className="inline-flex items-center gap-1 text-[11px] truncate max-w-[220px]">
             <User className="size-3 text-muted-foreground/70 shrink-0" />
-            <span className="truncate">{solicitud.solicitante.nombre}</span>
+            <span className="text-muted-foreground/80">Solicita:</span>
+            <strong className="truncate font-semibold text-foreground/90">{solicitud.solicitante.nombre}</strong>
           </span>
         ) : null}
 
@@ -423,7 +427,8 @@ export function SolicitudListItem({
         {solicitud.aprobadoPor ? (
           <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300 font-medium truncate max-w-[220px]">
             <ShieldCheck className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span className="truncate">Aprobó: {solicitud.aprobadoPor.nombre}</span>
+            <span>Aprobó:</span>
+            <strong className="truncate font-semibold">{solicitud.aprobadoPor.nombre}</strong>
           </span>
         ) : null}
 
@@ -431,7 +436,8 @@ export function SolicitudListItem({
         {solicitud.responsable ? (
           <span className="inline-flex items-center gap-1 text-[11px] text-sky-700 dark:text-sky-300 font-medium truncate max-w-[220px]">
             <UserCheck className="size-3 text-sky-600 dark:text-sky-400 shrink-0" />
-            <span className="truncate">Resp: {solicitud.responsable.nombre}</span>
+            <span>Resp:</span>
+            <strong className="truncate font-semibold">{solicitud.responsable.nombre}</strong>
           </span>
         ) : null}
 
@@ -445,8 +451,8 @@ export function SolicitudListItem({
 
         {/* Fecha Estimada OT */}
         {solicitud.fechaEstimadaOt ? (
-          <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 px-1.5 py-0.2 text-[10.5px] font-medium">
-            <Calendar className="size-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 px-1.5 py-0.2 text-[10.5px] font-medium">
+            <Calendar className="size-2.5 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>Est. OT: <strong>{formatDate(solicitud.fechaEstimadaOt)}</strong></span>
           </span>
         ) : null}
