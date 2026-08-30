@@ -93,10 +93,21 @@ export function WorkflowRestSelect({
     return p
   }, [params, debouncedSearch])
 
+  const normalizedUrl = React.useMemo(() => {
+    if (!url) return ""
+    let formatted = url.trim()
+    if (formatted.startsWith("/api/v1/")) {
+      formatted = formatted.substring(7)
+    } else if (formatted.startsWith("api/v1/")) {
+      formatted = "/" + formatted.substring(7)
+    }
+    return formatted
+  }, [url])
+
   const query = useQuery({
-    queryKey: ["workflow-rest-select", url, queryParams],
+    queryKey: ["workflow-rest-select", normalizedUrl, queryParams],
     queryFn: async () => {
-      const data = await http.get<any>(url, { params: queryParams })
+      const data = await http.get<any>(normalizedUrl, { params: queryParams })
       if (!data) return []
       if (Array.isArray(data)) return data
       if (data.data && Array.isArray(data.data)) return data.data
@@ -104,7 +115,7 @@ export function WorkflowRestSelect({
       if (Array.isArray(data.content)) return data.content
       return []
     },
-    enabled: Boolean(url),
+    enabled: Boolean(normalizedUrl),
     staleTime: 1000 * 60 * 2,
   })
 

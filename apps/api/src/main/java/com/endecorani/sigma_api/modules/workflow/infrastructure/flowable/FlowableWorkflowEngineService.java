@@ -114,19 +114,17 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                         processDefinition.resource()
                 );
 
-        String bpmnXml = null;
-        try {
-            bpmnXml = flowableClient.obtenerBpmn(
-                    processDefinition.deploymentId(),
-                    resourceName
-            );
-        } catch (Exception ignored) {
-        }
-
+        String bpmnXml = cargarBpmnLocal(resourceName);
         if (bpmnXml == null || !bpmnXml.contains("sigma:")) {
-            try (var is = getClass().getResourceAsStream("/processes/" + resourceName)) {
-                if (is != null) {
-                    bpmnXml = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            try {
+                String remoteBpmn = flowableClient.obtenerBpmn(
+                        processDefinition.deploymentId(),
+                        resourceName
+                );
+                if (remoteBpmn != null && remoteBpmn.contains("sigma:")) {
+                    bpmnXml = remoteBpmn;
+                } else if (bpmnXml == null) {
+                    bpmnXml = remoteBpmn;
                 }
             } catch (Exception ignored) {
             }
@@ -308,5 +306,28 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                 .substring(0, separator)
                 .trim()
                 .toUpperCase();
+    }
+
+    private String cargarBpmnLocal(String resourceName) {
+        if (resourceName == null || resourceName.isBlank()) {
+            return null;
+        }
+
+        String[] possiblePaths = {
+                "/processes/" + resourceName,
+                "/processes/" + resourceName.replaceAll("\\.bpmn$", ".bpmn20.xml"),
+                "/processes/" + resourceName.replaceAll("\\.bpmn20\\.xml$", ".bpmn"),
+                "/processes/solicitudMantenimientoProcess.bpmn20.xml"
+        };
+
+        for (String path : possiblePaths) {
+            try (var is = getClass().getResourceAsStream(path)) {
+                if (is != null) {
+                    return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
     }
 }

@@ -461,7 +461,7 @@ function WorkflowActionDialogContent({
                       min={new Date().toISOString().split("T")[0]}
                       className="h-9 text-xs bg-background"
                     />
-                  ) : field.type === "textarea" || lowerId.includes("observacion") || lowerId.includes("motivo") ? (
+                  ) : field.type === "textarea" || lowerId.includes("observacion") || lowerId.includes("motivo") || lowerId.includes("comentario") ? (
                     <Textarea
                       rows={3}
                       placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
@@ -469,26 +469,6 @@ function WorkflowActionDialogContent({
                       onChange={(e) => setFieldValue(fieldId, e.target.value)}
                       className="text-xs bg-background resize-none"
                     />
-                  ) : field.type === "enum" || field.options ? (
-                    <Select
-                      value={formValues[fieldId] || ""}
-                      onValueChange={(val) => setFieldValue(fieldId, val || "")}
-                    >
-                      <SelectTrigger className="h-9 text-xs bg-background">
-                        <SelectValue placeholder={`Seleccionar ${fieldName.toLowerCase()}...`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {field.options?.map((opt) => {
-                          const optKey = opt.value || opt.id || ""
-                          const optLabel = fixWorkflowEncoding(opt.label || opt.name || optKey)
-                          return (
-                            <SelectItem key={optKey} value={optKey} className="text-xs">
-                              {optLabel}
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
                   ) : (
                     <Input
                       type={field.type === "long" || field.type === "number" ? "number" : "text"}
