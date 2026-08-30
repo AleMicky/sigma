@@ -14,7 +14,6 @@ import {
   Loader2,
   Paperclip,
   Plus,
-  User,
   Wrench,
   X,
 } from "lucide-react"
@@ -484,19 +483,16 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
             }}
             className="divide-y divide-border/60"
           >
-            {/* SECCIÓN 1: CLASIFICACIÓN */}
-            <div className="p-5 sm:p-7 space-y-5">
-              <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Layers className="size-4" />
+            {/* SECCIÓN 1: CLASIFICACIÓN Y SOLICITANTE */}
+            <div className="p-4 sm:p-5 md:p-6 space-y-4">
+              <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
+                <div className="flex size-6.5 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                  <Layers className="size-3.5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-foreground tracking-tight">
-                    Clasificación
+                  <h2 className="text-xs sm:text-sm font-bold text-foreground tracking-tight">
+                    1. Clasificación y Solicitante
                   </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Define el título general, tipología y severidad del mantenimiento.
-                  </p>
                 </div>
               </div>
 
@@ -521,7 +517,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         aria-required
                         aria-invalid={isInvalid}
                         placeholder="Ej., Tubería con fugas en la sala de calderas principal"
-                        className="h-10 text-sm shadow-2xs"
+                        className="h-9.5 text-xs sm:text-sm shadow-2xs"
                       />
                       {isInvalid && (
                         <FieldError errors={field.state.meta.errors} />
@@ -549,7 +545,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           <span>Cargando tipos de mantenimiento...</span>
                         </div>
                       ) : (
-                        <div className="flex flex-wrap gap-2.5 pt-1">
+                        <div className="flex flex-wrap gap-2 pt-0.5">
                           {tiposMantenimientoList.map((tm) => {
                             const isSelected = field.state.value === tm.id
 
@@ -559,13 +555,13 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                                 type="button"
                                 onClick={() => field.handleChange(tm.id)}
                                 className={cn(
-                                  "group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold border transition-all cursor-pointer shadow-2xs active:scale-95",
+                                  "group inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold border transition-all cursor-pointer shadow-2xs active:scale-95",
                                   getTipoMantenimientoBadgeClass(tm.nombre, isSelected),
                                 )}
                               >
                                 <Wrench
                                   className={cn(
-                                    "size-3.5 shrink-0 transition-transform duration-200 group-hover:rotate-12",
+                                    "size-3 shrink-0 transition-transform duration-200 group-hover:rotate-12",
                                     isSelected
                                       ? "text-inherit"
                                       : "opacity-80",
@@ -585,8 +581,40 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 }}
               </form.Field>
 
-              {/* Tipo de Falla y Nivel de Prioridad */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Solicitante, Tipo de Falla y Nivel de Prioridad en Grid Responsive */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
+                {/* Solicitante Selector */}
+                <form.Field name="solicitanteId">
+                  {(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+
+                    return (
+                      <Field data-invalid={isInvalid || undefined}>
+                        <RequiredFieldLabel htmlFor={field.name}>
+                          Solicitante
+                        </RequiredFieldLabel>
+
+                        <EmpleadoCombobox
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onValueChange={(val) => field.handleChange(val)}
+                          onBlur={field.handleBlur}
+                          aria-invalid={isInvalid}
+                          onlyMisEmpleados={true}
+                          placeholder="Buscar solicitante..."
+                          className="h-9.5 text-xs sm:text-sm"
+                        />
+
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
+
                 {/* Tipo de Fallas (Autocompletado desde Catálogo) */}
                 <form.Field name="tipoFallas">
                   {(field) => {
@@ -609,6 +637,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           placeholder="Seleccionar o describir falla..."
                           maxLength={200}
                           allowCustomValue={true}
+                          className="h-9.5 text-xs sm:text-sm"
                         />
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
@@ -644,7 +673,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                             id={field.name}
                             aria-invalid={isInvalid}
                             className={cn(
-                              "w-full h-10 shadow-2xs text-sm transition-all",
+                              "w-full h-9.5 shadow-2xs text-xs sm:text-sm transition-all",
                               cfg && cfg.borderClass,
                             )}
                           >
@@ -668,10 +697,10 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                                 <SelectItem
                                   key={p.id}
                                   value={p.id}
-                                  className="text-xs cursor-pointer py-2.5"
+                                  className="text-xs cursor-pointer py-2"
                                 >
                                   <div className="flex items-center justify-between gap-2 w-full min-w-0">
-                                    <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="flex items-center gap-2 min-w-0">
                                       <span
                                         className={`size-2.5 rounded-full inline-block shrink-0 ${pCfg.dotClass}`}
                                       />
@@ -700,70 +729,20 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
               </div>
             </div>
 
-            {/* SECCIÓN 2: INFORMACIÓN DEL SOLICITANTE */}
-            <div className="p-5 sm:p-7 space-y-5">
-              <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <User className="size-4" />
+            {/* SECCIÓN 2: ACTIVO Y DESCRIPCIÓN TÉCNICA */}
+            <div className="p-4 sm:p-5 md:p-6 space-y-4">
+              <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
+                <div className="flex size-6.5 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                  <Wrench className="size-3.5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-foreground tracking-tight">
-                    Personal Solicitante
+                  <h2 className="text-xs sm:text-sm font-bold text-foreground tracking-tight">
+                    2. Activo y Descripción Técnica
                   </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Persona o área encargada de reportar y gestionar la solicitud.
-                  </p>
                 </div>
               </div>
 
-              {/* Solicitante Selector */}
-              <form.Field name="solicitanteId">
-                {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-
-                  return (
-                    <Field data-invalid={isInvalid || undefined}>
-                      <RequiredFieldLabel htmlFor={field.name}>
-                        Personal Solicitante
-                      </RequiredFieldLabel>
-
-                      <EmpleadoCombobox
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onValueChange={(val) => field.handleChange(val)}
-                        onBlur={field.handleBlur}
-                        aria-invalid={isInvalid}
-                        onlyMisEmpleados={true}
-                        placeholder="Buscar solicitante por nombre, código o cargo..."
-                      />
-
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              </form.Field>
-            </div>
-
-            {/* SECCIÓN 3: DETALLES DE LA SOLICITUD */}
-            <div className="p-5 sm:p-7 space-y-5">
-              <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <FileText className="size-4" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-foreground tracking-tight">
-                    Detalles de la Solicitud
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Especifica el activo involucrado, fecha de detección y descripción completa.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {/* Activo / Ubicación */}
                 <form.Field name="activoId">
                   {(field) => {
@@ -784,6 +763,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                           onBlur={field.handleBlur}
                           aria-invalid={isInvalid}
                           placeholder="Buscar activo por código, nombre o ubicación..."
+                          className="h-9.5 text-xs sm:text-sm"
                         />
 
                         {isInvalid && (
@@ -813,7 +793,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                             value={field.state.value ?? ""}
                             disabled
                             aria-invalid={isInvalid}
-                            className="h-10 text-sm shadow-2xs pr-9 bg-muted/50 text-muted-foreground cursor-not-allowed"
+                            className="h-9.5 text-xs sm:text-sm shadow-2xs pr-9 bg-muted/50 text-muted-foreground cursor-not-allowed"
                           />
                           <Clock className="pointer-events-none absolute right-3 top-2.5 size-4 text-muted-foreground" />
                         </div>
@@ -838,7 +818,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         <RequiredFieldLabel htmlFor={field.name}>
                           Descripción Detallada
                         </RequiredFieldLabel>
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="text-[10.5px] text-muted-foreground">
                           {field.state.value.length} / 2000 caracteres
                         </span>
                       </div>
@@ -851,10 +831,10 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         required
                         aria-required
                         aria-invalid={isInvalid}
-                        placeholder="Describa el problema, los síntomas y cualquier contexto relevante..."
-                        rows={4}
+                        placeholder="Describa el problema, síntomas observados y cualquier contexto relevante..."
+                        rows={3}
                         maxLength={2000}
-                        className="text-sm shadow-2xs resize-y"
+                        className="text-xs sm:text-sm shadow-2xs resize-y"
                       />
                       {isInvalid && (
                         <FieldError errors={field.state.meta.errors} />
@@ -864,10 +844,10 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 }}
               </form.Field>
 
-              {/* Imagen / Archivo Adjunto (Dropzone) */}
-              <div className="space-y-3">
-                <FieldLabel htmlFor="solicitud-file-dropzone">
-                  Imagen / Archivo Adjunto
+              {/* Imagen / Archivo Adjunto (Dropzone Compacto) */}
+              <div className="space-y-2.5 pt-1">
+                <FieldLabel htmlFor="solicitud-file-dropzone" className="text-xs font-semibold">
+                  Archivos y Evidencias Adjuntas (Opcional)
                 </FieldLabel>
 
                 <div
@@ -879,7 +859,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
                   className={cn(
-                    "relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-all",
+                    "relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 transition-all",
                     isDragging
                       ? "border-primary bg-primary/5 scale-[1.005]"
                       : "border-border/80 bg-muted/15 hover:bg-muted/30 hover:border-primary/50",
@@ -894,22 +874,22 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                     onChange={handleFileChange}
                   />
 
-                  <div className="flex flex-col items-center text-center gap-2 pointer-events-none">
-                    <div className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground border shadow-2xs">
-                      <ImageIcon className="size-6 text-primary" />
+                  <div className="flex items-center gap-3 text-center sm:text-left pointer-events-none">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground border shadow-2xs">
+                      <ImageIcon className="size-4.5 text-primary" />
                     </div>
 
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-foreground">
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium text-foreground">
                         <label
                           htmlFor="solicitud-page-file-input"
-                          className="cursor-pointer text-primary underline underline-offset-4 hover:text-primary/80 font-semibold pointer-events-auto"
+                          className="cursor-pointer text-primary underline underline-offset-2 hover:text-primary/80 font-semibold pointer-events-auto"
                         >
-                          Subir un archivo
+                          Seleccionar archivos
                         </label>{" "}
-                        o arrastrar y soltar
+                        o arrastrar y soltar aquí
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[11px] text-muted-foreground">
                         PNG, JPG, GIF o PDF hasta 10MB
                       </p>
                     </div>
@@ -918,21 +898,21 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
 
                 {/* Selected Files List */}
                 {selectedFiles.length > 0 ? (
-                  <div className="space-y-2 pt-1">
-                    <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                      <Paperclip className="size-3.5 text-primary" />
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[11.5px] font-semibold text-foreground flex items-center gap-1.5">
+                      <Paperclip className="size-3 text-primary" />
                       Archivos listos para enviar ({selectedFiles.length})
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {selectedFiles.map((file, idx) => (
                         <div
                           key={`${file.name}-${idx}`}
-                          className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2 border border-border/70 text-xs"
+                          className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5 border border-border/70 text-xs"
                         >
                           <div className="flex items-center gap-2 truncate min-w-0">
-                            <FileText className="size-4 text-primary shrink-0" />
+                            <FileText className="size-3.5 text-primary shrink-0" />
                             <div className="truncate min-w-0">
-                              <p className="font-medium text-foreground truncate">
+                              <p className="font-medium text-foreground truncate text-[11.5px]">
                                 {file.name}
                               </p>
                               <p className="text-[10px] text-muted-foreground">
@@ -945,9 +925,9 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                             variant="ghost"
                             size="icon-xs"
                             onClick={() => removeFile(idx)}
-                            className="size-6 text-muted-foreground hover:text-destructive shrink-0"
+                            className="size-5 text-muted-foreground hover:text-destructive shrink-0"
                           >
-                            <X className="size-3.5" />
+                            <X className="size-3" />
                             <span className="sr-only">Remover</span>
                           </Button>
                         </div>
@@ -958,24 +938,24 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
 
                 {/* Existing attachments when editing */}
                 {isEditing && solicitud?.adjuntos && solicitud.adjuntos.length > 0 ? (
-                  <div className="space-y-2 pt-2 border-t border-border/50">
-                    <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                      <Paperclip className="size-3.5 text-muted-foreground" />
+                  <div className="space-y-1.5 pt-2 border-t border-border/50">
+                    <p className="text-[11.5px] font-semibold text-foreground flex items-center gap-1.5">
+                      <Paperclip className="size-3 text-muted-foreground" />
                       Adjuntos existentes ({solicitud.adjuntos.length})
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {solicitud.adjuntos.map((adj) => (
                         <div
                           key={adj.id}
-                          className="flex items-center justify-between gap-2 rounded-lg bg-card px-3 py-2 border border-border text-xs"
+                          className="flex items-center justify-between gap-2 rounded-lg bg-card px-2.5 py-1.5 border border-border text-xs"
                         >
                           <div className="flex items-center gap-2 truncate min-w-0">
-                            <FileText className="size-4 text-muted-foreground shrink-0" />
+                            <FileText className="size-3.5 text-muted-foreground shrink-0" />
                             <a
                               href={adj.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="font-medium text-primary hover:underline truncate"
+                              className="font-medium text-primary hover:underline truncate text-[11.5px]"
                             >
                               {adj.nombreArchivo}
                             </a>
@@ -988,7 +968,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
               </div>
             </div>
 
-            {/* SECCIÓN 4: RESUMEN DE LA SOLICITUD (Visible solo cuando el formulario está completo) */}
+            {/* SECCIÓN 3: RESUMEN DE LA SOLICITUD (Visible cuando el formulario está completo) */}
             <form.Subscribe
               selector={(state) => ({
                 titulo: state.values.titulo,
@@ -1023,7 +1003,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                 const totalAdjuntos = selectedFiles.length + (solicitud?.adjuntos?.length ?? 0)
 
                 return (
-                  <div className="p-5 sm:p-7 pt-0 space-y-3 animate-in fade-in-50 duration-300 slide-in-from-bottom-2">
+                  <div className="p-4 sm:p-5 md:p-6 pt-0 space-y-3 animate-in fade-in-50 duration-300 slide-in-from-bottom-2">
                     <div
                       className={cn(
                         "rounded-xl border p-3 sm:p-3.5 transition-all shadow-2xs space-y-2",
@@ -1041,7 +1021,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                             <FileText className="size-3.5 text-inherit shrink-0" />
                           )}
                           <h3 className="font-bold text-xs tracking-tight text-inherit">
-                            Resumen de Solicitud
+                            Resumen de la Solicitud
                           </h3>
                         </div>
 
