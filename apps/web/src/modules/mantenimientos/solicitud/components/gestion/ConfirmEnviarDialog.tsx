@@ -26,7 +26,7 @@ import {
 import { Badge } from "@/shared/components/ui/badge"
 import { cn } from "@/shared/lib/utils"
 
-import type { SolicitudMantenimiento } from "../api/solicitud.service"
+import type { SolicitudMantenimiento } from "../../api/solicitud.service"
 
 type ConfirmEnviarDialogProps = {
   open: boolean

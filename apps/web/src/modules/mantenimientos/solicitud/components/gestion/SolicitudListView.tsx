@@ -1,4 +1,4 @@
-import type { SolicitudMantenimiento } from "../api/solicitud.service"
+import type { SolicitudMantenimiento } from "../../api/solicitud.service"
 import { SolicitudListItem } from "./SolicitudListItem"
 
 type SolicitudListViewProps = {

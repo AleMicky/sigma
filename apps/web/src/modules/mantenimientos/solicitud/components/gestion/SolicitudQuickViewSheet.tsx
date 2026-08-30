@@ -35,18 +35,18 @@ import {
 import { cn } from "@/shared/lib/utils"
 import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
-import { solicitudQueries } from "../api/solicitud.queries"
+import { WorkflowPanel } from "@/modules/workflow"
+import { solicitudQueries } from "../../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
   SolicitudMantenimientoAdjunto,
   WorkflowAction,
   WorkflowField,
-} from "../api/solicitud.service"
+} from "../../api/solicitud.service"
 import {
   getPrioridadBadgeStyles,
   getTipoMantenimientoBadgeClass,
-} from "../lib/solicitud.utils"
-import { WorkflowPanel } from "./WorkflowPanel"
+} from "../../lib/solicitud.utils"
 
 type SolicitudQuickViewSheetProps = {
   solicitud: SolicitudMantenimiento | null
@@ -122,6 +122,11 @@ export function SolicitudQuickViewSheet({
   })
 
   const solicitud = detailQuery.data ?? initialSolicitud
+
+  const actionsQuery = useQuery({
+    ...solicitudQueries.workflowActions(solicitud?.processInstanceId),
+    enabled: open && Boolean(solicitud?.processInstanceId && onWorkflowAction),
+  })
 
   const adjuntos = useMemo(() => {
     if (adjuntosQuery.data?.content && adjuntosQuery.data.content.length > 0) {
@@ -260,8 +265,21 @@ export function SolicitudQuickViewSheet({
           {onWorkflowAction && (
             <div className="rounded-xl overflow-hidden border border-border/80 shadow-2xs">
               <WorkflowPanel
-                solicitud={solicitud}
-                onActionSelect={onWorkflowAction}
+                processInstanceId={solicitud.processInstanceId}
+                status={solicitud.estado}
+                taskName={actionsQuery.data?.taskName}
+                actions={actionsQuery.data?.actions}
+                fields={actionsQuery.data?.fields}
+                isLoading={actionsQuery.isLoading}
+                responsable={solicitud.responsable}
+                observacion={
+                  solicitud.observacionValidacion ||
+                  solicitud.observacionAprobacion ||
+                  solicitud.observacionCierre
+                }
+                onActionSelect={(action, tName, flds) =>
+                  onWorkflowAction(solicitud, action, tName, flds)
+                }
               />
             </div>
           )}

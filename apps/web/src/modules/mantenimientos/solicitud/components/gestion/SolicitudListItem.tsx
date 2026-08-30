@@ -35,13 +35,13 @@ import {
 import { cn } from "@/shared/lib/utils"
 import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
-import type { SolicitudMantenimiento } from "../api/solicitud.service"
+import type { SolicitudMantenimiento } from "../../api/solicitud.service"
 import {
   extractPlaca,
   getEstadoBadgeStyles,
   getPrioridadBadgeStyles,
   getTipoMantenimientoBadgeClass,
-} from "../lib/solicitud.utils"
+} from "../../lib/solicitud.utils"
 
 type SolicitudListItemProps = {
   solicitud: SolicitudMantenimiento

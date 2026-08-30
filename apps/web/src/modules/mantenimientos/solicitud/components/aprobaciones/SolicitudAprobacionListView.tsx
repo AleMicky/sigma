@@ -3,13 +3,15 @@ import type {
   SolicitudMantenimiento,
   WorkflowAction,
   WorkflowField,
-} from "../api/solicitud.service"
+} from "../../api/solicitud.service"
 import { SolicitudAprobacionListItem } from "./SolicitudAprobacionListItem"
 
 type SolicitudAprobacionListViewProps = {
   solicitudes: SolicitudMantenimiento[]
   onQuickView: (solicitud: SolicitudMantenimiento) => void
-  onActionSelect: (
+  onViewTrazabilidad?: (solicitud: SolicitudMantenimiento) => void
+  onWorkflowEvaluar?: (solicitud: SolicitudMantenimiento) => void
+  onActionSelect?: (
     solicitud: SolicitudMantenimiento,
     action: WorkflowAction,
     taskName?: string,
@@ -24,7 +26,8 @@ type SolicitudAprobacionListViewProps = {
 export function SolicitudAprobacionListView({
   solicitudes,
   onQuickView,
-  onActionSelect,
+  onViewTrazabilidad,
+  onWorkflowEvaluar,
   onCreateOT,
   showControlActivo,
   onViewControlActivo,
@@ -38,7 +41,8 @@ export function SolicitudAprobacionListView({
             key={solicitud.id}
             solicitud={solicitud}
             onQuickView={onQuickView}
-            onActionSelect={onActionSelect}
+            onViewTrazabilidad={onViewTrazabilidad}
+            onWorkflowEvaluar={onWorkflowEvaluar}
             onCreateOT={onCreateOT}
             showControlActivo={showControlActivo}
             onViewControlActivo={onViewControlActivo}

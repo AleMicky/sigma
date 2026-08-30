@@ -18,29 +18,32 @@ import { RefreshButton } from "@/shared/components/refresh-button"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
+import {
+  useWorkflowActionTarget,
+  WorkflowActionDialog,
+  type WorkflowAction,
+  type WorkflowField,
+} from "@/modules/workflow"
+import { useCompleteWorkflowTask } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
-import type {
-  SolicitudMantenimiento,
-  WorkflowAction,
-  WorkflowField,
-} from "../api/solicitud.service"
-import { SolicitudAprobacionListView } from "../components/SolicitudAprobacionListView"
-import { SolicitudDetalleModal } from "../components/SolicitudDetalleModal"
-import { WorkflowActionDialog } from "../components/WorkflowActionDialog"
+import type { SolicitudMantenimiento } from "../api/solicitud.service"
+import {
+  SolicitudAprobacionListView,
+  SolicitudDetalleModal,
+  SolicitudTrazabilidadModal,
+} from "../components"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function AprobacionesPage() {
   const [modalSolicitud, setModalSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
+  const [trazabilidadSolicitud, setTrazabilidadSolicitud] =
+    useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
 
-  const [workflowActionTarget, setWorkflowActionTarget] = useState<{
-    solicitud: SolicitudMantenimiento
-    action: WorkflowAction
-    taskName?: string
-    fields?: WorkflowField[]
-  } | null>(null)
+  const completeWorkflowMutation = useCompleteWorkflowTask()
+  const workflowAction = useWorkflowActionTarget<SolicitudMantenimiento>()
 
   const search = usePaginatedSearch()
 
@@ -106,12 +109,7 @@ export function AprobacionesPage() {
     taskName?: string,
     fields?: WorkflowField[],
   ) {
-    setWorkflowActionTarget({
-      solicitud,
-      action,
-      taskName,
-      fields,
-    })
+    workflowAction.openAction(solicitud, action, taskName, fields)
   }
 
   return (
@@ -293,7 +291,8 @@ export function AprobacionesPage() {
                 <SolicitudAprobacionListView
                   solicitudes={solicitudes}
                   onQuickView={handleOpenModal}
-                  onActionSelect={handleActionSelect}
+                  onWorkflowEvaluar={handleOpenModal}
+                  onViewTrazabilidad={(solicitud) => setTrazabilidadSolicitud(solicitud)}
                 />
               </div>
 
@@ -317,14 +316,32 @@ export function AprobacionesPage() {
         onWorkflowAction={handleActionSelect}
       />
 
-      {/* Dynamic Workflow Action Dialog */}
+      {/* Modal de Trazabilidad y Línea de Tiempo del Workflow */}
+      <SolicitudTrazabilidadModal
+        solicitud={trazabilidadSolicitud}
+        open={Boolean(trazabilidadSolicitud)}
+        onOpenChange={(open) => !open && setTrazabilidadSolicitud(null)}
+      />
+
+      {/* Dynamic Generic Workflow Action Dialog */}
       <WorkflowActionDialog
-        open={Boolean(workflowActionTarget)}
-        onOpenChange={(open) => !open && setWorkflowActionTarget(null)}
-        solicitud={workflowActionTarget?.solicitud ?? null}
-        action={workflowActionTarget?.action ?? null}
-        taskName={workflowActionTarget?.taskName}
-        fields={workflowActionTarget?.fields}
+        open={workflowAction.isOpen}
+        onOpenChange={(open) => !open && workflowAction.closeAction()}
+        action={workflowAction.target?.action ?? null}
+        taskName={workflowAction.target?.taskName}
+        fields={workflowAction.target?.fields}
+        entityId={workflowAction.target?.item?.id}
+        responsableActual={workflowAction.target?.item?.responsable}
+        aprobadorId={workflowAction.target?.item?.aprobadoPor?.id}
+        fechaEstimadaActual={workflowAction.target?.item?.fechaEstimadaOt ?? undefined}
+        onExecute={({ variables }) => {
+          const item = workflowAction.target?.item
+          if (!item) return Promise.resolve()
+          return completeWorkflowMutation.mutateAsync({
+            solicitudId: item.id,
+            payload: { variables },
+          })
+        }}
         onSuccess={() => {
           solicitudesQuery.refetch()
           setModalSolicitud(null)

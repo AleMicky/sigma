@@ -36,18 +36,19 @@ import type {
   OrdenTrabajo,
   OrdenTrabajoActividad,
 } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
-import { solicitudQueries } from "../api/solicitud.queries"
+import { solicitudQueries } from "../../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
   WorkflowAction,
   WorkflowField,
-} from "../api/solicitud.service"
+} from "../../api/solicitud.service"
 import {
   getEstadoBadgeStyles,
   getPrioridadBadgeStyles,
   getTipoMantenimientoBadgeClass,
-} from "../lib/solicitud.utils"
-import { WorkflowActionDialog } from "./WorkflowActionDialog"
+} from "../../lib/solicitud.utils"
+import { WorkflowActionDialog } from "@/modules/workflow"
+import { useCompleteWorkflowTask } from "../../api/solicitud.mutations"
 
 type SupervisorRevisionModalProps = {
   solicitud: SolicitudMantenimiento | null
@@ -62,6 +63,7 @@ export function SupervisorRevisionModal({
   onOpenChange,
   onSuccess,
 }: SupervisorRevisionModalProps) {
+  const completeWorkflowMutation = useCompleteWorkflowTask()
   const [activeImagePreview, setActiveImagePreview] = useState<string | null>(null)
 
   // Dialog state for confirming validation or entering observation note
@@ -148,13 +150,13 @@ export function SupervisorRevisionModal({
     "OBSERVADO_MANTENIMIENTO"
 
   // Filter specific validation actions (VALIDAR / OBSERVAR)
-  const validarAction = workflowActions.find((a) => {
+  const validarAction = workflowActions.find((a: WorkflowAction) => {
     const val = (a.value ?? "").toUpperCase()
     const name = (a.name ?? "").toLowerCase()
     return val.includes("VALID") || name.includes("validar") || name.includes("aprobar")
   })
 
-  const observarAction = workflowActions.find((a) => {
+  const observarAction = workflowActions.find((a: WorkflowAction) => {
     const val = (a.value ?? "").toUpperCase()
     const name = (a.name ?? "").toLowerCase()
     return val.includes("OBSERV") || name.includes("observar") || val.includes("CORREG") || name.includes("corregir")
@@ -476,10 +478,20 @@ export function SupervisorRevisionModal({
         onOpenChange={(open) =>
           setActionDialogState((prev) => ({ ...prev, open }))
         }
-        solicitud={currentSolicitud}
         action={actionDialogState.action}
         taskName={actionDialogState.taskName}
         fields={actionDialogState.fields}
+        entityId={currentSolicitud?.id}
+        responsableActual={currentSolicitud?.responsable}
+        aprobadorId={currentSolicitud?.aprobadoPor?.id}
+        fechaEstimadaActual={currentSolicitud?.fechaEstimadaOt ?? undefined}
+        onExecute={({ variables }) => {
+          if (!currentSolicitud) return Promise.resolve()
+          return completeWorkflowMutation.mutateAsync({
+            solicitudId: currentSolicitud.id,
+            payload: { variables },
+          })
+        }}
         onSuccess={() => {
           onOpenChange(false)
           onSuccess?.()

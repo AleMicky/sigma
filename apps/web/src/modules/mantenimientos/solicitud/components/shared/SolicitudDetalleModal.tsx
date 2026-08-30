@@ -38,20 +38,20 @@ import {
 import { cn } from "@/shared/lib/utils"
 import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
-import { solicitudQueries } from "../api/solicitud.queries"
+import { WorkflowPanel } from "@/modules/workflow"
+import { solicitudQueries } from "../../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
   SolicitudMantenimientoAdjunto,
   WorkflowAction,
   WorkflowField,
-} from "../api/solicitud.service"
+} from "../../api/solicitud.service"
 import {
   getEstadoBadgeStyles,
   getPrioridadBadgeStyles,
   getTipoMantenimientoBadgeClass,
-} from "../lib/solicitud.utils"
+} from "../../lib/solicitud.utils"
 import { SolicitudTrazabilidadModal } from "./SolicitudTrazabilidadModal"
-import { WorkflowPanel } from "./WorkflowPanel"
 
 type SolicitudDetalleModalProps = {
   solicitud: SolicitudMantenimiento | null
@@ -128,6 +128,11 @@ export function SolicitudDetalleModal({
   })
 
   const solicitud = detailQuery.data ?? initialSolicitud
+
+  const actionsQuery = useQuery({
+    ...solicitudQueries.workflowActions(solicitud?.processInstanceId),
+    enabled: open && Boolean(solicitud?.processInstanceId && onWorkflowAction),
+  })
 
   const adjuntos = useMemo(() => {
     if (adjuntosQuery.data?.content && adjuntosQuery.data.content.length > 0) {
@@ -288,12 +293,25 @@ export function SolicitudDetalleModal({
             ) : null}
           </DialogHeader>
 
-          {/* WorkflowPanel - Action Bar */}
+          {/* Generic WorkflowPanel from @/modules/workflow */}
           {onWorkflowAction && (
             <WorkflowPanel
-              solicitud={solicitud}
-              onActionSelect={onWorkflowAction}
+              processInstanceId={solicitud.processInstanceId}
+              status={solicitud.estado}
+              taskName={actionsQuery.data?.taskName}
+              actions={actionsQuery.data?.actions}
+              fields={actionsQuery.data?.fields}
+              isLoading={actionsQuery.isLoading}
+              responsable={solicitud.responsable}
+              observacion={
+                solicitud.observacionValidacion ||
+                solicitud.observacionAprobacion ||
+                solicitud.observacionCierre
+              }
               className="p-3 sm:p-3.5 space-y-2.5 rounded-xl"
+              onActionSelect={(action, tName, flds) =>
+                onWorkflowAction(solicitud, action, tName, flds)
+              }
             />
           )}
 

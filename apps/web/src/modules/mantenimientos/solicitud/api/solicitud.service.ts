@@ -170,39 +170,20 @@ export async function enviarSolicitud(
 }
 
 
-export type WorkflowAction = {
-  name: string
-  variable: string
-  value: string
-}
+import type {
+  CompleteWorkflowTaskPayload,
+  WorkflowAction,
+  WorkflowField,
+  WorkflowFieldOption,
+  WorkflowTaskActionsResponse,
+} from "@/modules/workflow"
 
-export type WorkflowFieldOption = {
-  value: string
-  label: string
-}
-
-export type WorkflowField = {
-  id: string
-  name: string
-  type: string
-  required: boolean
-  readable: boolean
-  writable: boolean
-  options?: WorkflowFieldOption[]
-}
-
-export type WorkflowTaskActionsResponse = {
-  taskId: string
-  taskName: string
-  taskDefinitionKey: string
-  processInstanceId: string
-  status?: string
-  fields?: WorkflowField[]
-  actions: WorkflowAction[]
-}
-
-export type CompleteWorkflowTaskPayload = {
-  variables: Record<string, unknown>
+export type {
+  CompleteWorkflowTaskPayload,
+  WorkflowAction,
+  WorkflowField,
+  WorkflowFieldOption,
+  WorkflowTaskActionsResponse,
 }
 
 export async function getWorkflowActions(

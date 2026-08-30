@@ -35,11 +35,11 @@ import {
 import { cn } from "@/shared/lib/utils"
 import { formatDateTime } from "@/shared/utils/date.utils"
 
-import { solicitudQueries } from "../api/solicitud.queries"
+import { solicitudQueries } from "../../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
   WorkflowHistoryItem,
-} from "../api/solicitud.service"
+} from "../../api/solicitud.service"
 
 type SolicitudTrazabilidadModalProps = {
   solicitud: SolicitudMantenimiento | null

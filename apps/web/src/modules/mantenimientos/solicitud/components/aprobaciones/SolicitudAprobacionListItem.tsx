@@ -1,56 +1,42 @@
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import {
-  AlertCircle,
-  AlertOctagon,
+  AlertTriangle,
   Box,
   Calendar,
   Check,
-  CheckCircle2,
   ClipboardCheck,
   Clock,
   Copy,
   Eye,
+  History,
   ListTodo,
   Paperclip,
-  Play,
-  RotateCcw,
-  Send,
   ShieldCheck,
   Wrench,
 } from "lucide-react"
-import { useState } from "react"
 import { toast } from "sonner"
 
+import { controlActivoQueries } from "@/modules/mantenimientos/control-activo/api/control-activo.queries"
+import { ordenTrabajoQueries } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.queries"
+import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
-import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
-import { controlActivoQueries } from "@/modules/mantenimientos/control-activo/api/control-activo.queries"
-import { ordenTrabajoQueries } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.queries"
-import { solicitudQueries } from "../api/solicitud.queries"
-import type {
-  SolicitudMantenimiento,
-  WorkflowAction,
-  WorkflowField,
-} from "../api/solicitud.service"
+import type { SolicitudMantenimiento } from "../../api/solicitud.service"
 import {
   getEstadoBadgeStyles,
   getPrioridadBadgeStyles,
   getTipoMantenimientoBadgeClass,
-  fixEncoding,
-} from "../lib/solicitud.utils"
+} from "../../lib/solicitud.utils"
 
 type SolicitudAprobacionListItemProps = {
   solicitud: SolicitudMantenimiento
   onQuickView: (solicitud: SolicitudMantenimiento) => void
-  onActionSelect: (
-    solicitud: SolicitudMantenimiento,
-    action: WorkflowAction,
-    taskName?: string,
-    fields?: WorkflowField[],
-  ) => void
+  onViewTrazabilidad?: (solicitud: SolicitudMantenimiento) => void
+  onWorkflowEvaluar?: (solicitud: SolicitudMantenimiento) => void
   onCreateOT?: (solicitud: SolicitudMantenimiento) => void
   showControlActivo?: boolean
   onViewControlActivo?: (solicitud: SolicitudMantenimiento) => void
@@ -64,65 +50,11 @@ function getInitials(name?: string | null): string {
   return (parts[0][0] + parts[1][0]).toUpperCase()
 }
 
-function getActionStyle(action: WorkflowAction) {
-  const name = fixEncoding(action.name ?? "").toLowerCase()
-  const val = (action.value ?? "").toUpperCase()
-
-  if (val.includes("APROB") || name.includes("aprobar")) {
-    return {
-      icon: CheckCircle2,
-      btnClass:
-        "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs ring-1 ring-emerald-500/30",
-    }
-  }
-  if (val.includes("OBSERV") || name.includes("observar")) {
-    return {
-      icon: AlertCircle,
-      btnClass:
-        "bg-amber-600 hover:bg-amber-700 text-white shadow-xs ring-1 ring-amber-500/30",
-    }
-  }
-  if (val.includes("RECHAZ") || val.includes("CANCEL") || name.includes("rechazar")) {
-    return {
-      icon: AlertOctagon,
-      btnClass:
-        "bg-rose-600 hover:bg-rose-700 text-white shadow-xs ring-1 ring-rose-500/30",
-    }
-  }
-  if (val.includes("INIC") || name.includes("iniciar")) {
-    return {
-      icon: Play,
-      btnClass: "bg-sky-600 hover:bg-sky-700 text-white shadow-xs",
-    }
-  }
-  if (val.includes("REVIS") || name.includes("revisión")) {
-    return {
-      icon: Send,
-      btnClass: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs",
-    }
-  }
-  if (val.includes("VALID") || name.includes("validar")) {
-    return {
-      icon: ShieldCheck,
-      btnClass: "bg-teal-600 hover:bg-teal-700 text-white shadow-xs",
-    }
-  }
-  if (val.includes("CORREG") || name.includes("corregir")) {
-    return {
-      icon: RotateCcw,
-      btnClass: "bg-orange-600 hover:bg-orange-700 text-white shadow-xs",
-    }
-  }
-  return {
-    icon: CheckCircle2,
-    btnClass: "bg-primary hover:bg-primary/90 text-primary-foreground",
-  }
-}
-
 export function SolicitudAprobacionListItem({
   solicitud,
   onQuickView,
-  onActionSelect,
+  onViewTrazabilidad,
+  onWorkflowEvaluar,
   onCreateOT,
   showControlActivo,
   onViewControlActivo,
@@ -139,23 +71,12 @@ export function SolicitudAprobacionListItem({
   )
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
 
-  // Fetch workflow actions for this item
-  const actionsQuery = useQuery({
-    ...solicitudQueries.workflowActions(solicitud.processInstanceId),
-    enabled: Boolean(solicitud.processInstanceId),
-  })
-
-  const actions = actionsQuery.data?.actions ?? []
-  const taskName = actionsQuery.data?.taskName
-
-  // Flow step verification for Encargado:
-  // Step 1: Control Activo must exist
+  // Flow step verification for Encargado
   const controlesQuery = useQuery({
     ...controlActivoQueries.list({ size: 100 }),
     enabled: Boolean(showControlActivo),
   })
 
-  // Step 2: Orden de Trabajo must exist
   const ordenesQuery = useQuery({
     ...ordenTrabajoQueries.list({ size: 100 }),
     enabled: Boolean(showControlActivo),
@@ -184,7 +105,6 @@ export function SolicitudAprobacionListItem({
   const isValidado = estadoNorm === "validado"
   const isTrabajoRealizado = estadoNorm === "trabajo_realizado"
 
-  // Actividades query to verify all tasks are checked
   const actividadesQuery = useQuery({
     ...ordenTrabajoQueries.actividadesByOT(matchingOT?.id ?? ""),
     enabled: Boolean(matchingOT?.id && showControlActivo),
@@ -193,8 +113,6 @@ export function SolicitudAprobacionListItem({
   const actividades = actividadesQuery.data?.content ?? []
   const totalActividades = actividades.length
   const completadasCount = actividades.filter((a) => a.realizado).length
-  const allActividadesCompleted =
-    totalActividades > 0 && completadasCount === totalActividades
 
   const hasDevolucion = Boolean(
     controlesQuery.data?.content?.some(
@@ -203,17 +121,6 @@ export function SolicitudAprobacionListItem({
         c.tipo === "DEVOLUCION",
     ),
   )
-
-  // Step 3: Only when requirements are met can the workflow state advance:
-  // - For ASIGNADO: requires hasControlActivo && hasOrdenTrabajo.
-  // - For VALIDADO: requires hasControlActivo && hasOrdenTrabajo && allActividadesCompleted (all tasks checked).
-  // - For TRABAJO_REALIZADO: requires hasDevolucion (Devolución de Activo registrada).
-  const canAdvanceWorkflow =
-    !showControlActivo ||
-    (hasControlActivo &&
-      hasOrdenTrabajo &&
-      (!isValidado || allActividadesCompleted) &&
-      (!isTrabajoRealizado || hasDevolucion))
 
   function copyNumero(e: React.MouseEvent) {
     e.stopPropagation()
@@ -228,20 +135,20 @@ export function SolicitudAprobacionListItem({
     <li
       onClick={() => onQuickView(solicitud)}
       className={cn(
-        "group flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 transition-all duration-200 cursor-pointer border-l-4 hover:bg-muted/40 select-none",
+        "group flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-2.5 sm:py-2.5 sm:px-3.5 transition-all duration-200 cursor-pointer border-l-4 hover:bg-muted/40 select-none",
         isCritica
           ? "border-l-rose-500 bg-rose-500/[0.02] hover:bg-rose-500/[0.04]"
           : "border-l-amber-500 bg-amber-500/[0.02] hover:bg-amber-500/[0.04]",
       )}
     >
       {/* Left / Main info */}
-      <div className="flex flex-col gap-2 min-w-0 flex-1">
+      <div className="flex flex-col gap-1.5 min-w-0 flex-1">
         {/* Top Badges Line */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           {solicitud.numero ? (
             <div
               onClick={copyNumero}
-              className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-bold text-foreground border border-border/80 hover:border-primary/50 transition-colors cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] font-bold text-foreground border border-border/80 hover:border-primary/50 transition-colors cursor-pointer shadow-2xs"
               title="Copiar folio"
             >
               <span>{solicitud.numero}</span>
@@ -255,17 +162,17 @@ export function SolicitudAprobacionListItem({
 
           {/* Estado Badge */}
           {isSolicitado ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300">
-              <span className="relative flex size-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-300">
+              <span className="relative flex size-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex rounded-full size-2 bg-amber-500" />
+                <span className="relative inline-flex rounded-full size-1.5 bg-amber-500" />
               </span>
               <span>Por Aprobar</span>
             </span>
           ) : (
             <span
               className={cn(
-                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize",
+                "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold capitalize",
                 getEstadoBadgeStyles(solicitud.estado),
               )}
             >
@@ -277,7 +184,7 @@ export function SolicitudAprobacionListItem({
           {solicitud.prioridad ? (
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold border shrink-0",
+                "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold border shrink-0",
                 prioridadStyle,
               )}
             >
@@ -292,38 +199,45 @@ export function SolicitudAprobacionListItem({
           {solicitud.tipoMantenimiento ? (
             <span
               className={cn(
-                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border shrink-0",
+                "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-semibold border shrink-0",
                 getTipoMantenimientoBadgeClass(
                   solicitud.tipoMantenimiento.nombre,
                   false,
                 ),
               )}
             >
-              <Wrench className="size-3" />
+              <Wrench className="size-2.5" />
               <span>{solicitud.tipoMantenimiento.nombre}</span>
             </span>
           ) : null}
 
-          {/* Workflow Task Name Badge */}
-          {taskName && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-muted/80 text-muted-foreground border border-border/70 truncate">
-              <span className="size-1.5 rounded-full bg-primary" />
-              <span className="truncate">{fixEncoding(taskName)}</span>
+          {/* Tipo de Falla / Síntomas (si existe) */}
+          {solicitud.tipoFallas ? (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 truncate max-w-[200px]">
+              <AlertTriangle className="size-2.5 shrink-0" />
+              <span className="truncate">{solicitud.tipoFallas}</span>
             </span>
+          ) : null}
+        </div>
+
+        {/* Title and Short Description */}
+        <div className="space-y-0.5 min-w-0">
+          <h3 className="font-heading font-bold text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1 leading-snug">
+            {solicitud.titulo}
+          </h3>
+          {solicitud.descripcion && (
+            <p className="text-[11.5px] text-muted-foreground line-clamp-1">
+              {solicitud.descripcion}
+            </p>
           )}
         </div>
 
-        {/* Title */}
-        <h3 className="font-heading font-bold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors line-clamp-1">
-          {solicitud.titulo}
-        </h3>
-
         {/* Details Line */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11.5px] text-muted-foreground">
           {solicitud.activo && (
-            <div className="flex items-center gap-1.5 truncate">
-              <Box className="size-3.5 text-primary shrink-0 opacity-80" />
-              <span className="font-mono font-bold text-primary text-xs">
+            <div className="flex items-center gap-1.5 truncate max-w-[260px]">
+              <Box className="size-3 text-primary shrink-0 opacity-80" />
+              <span className="font-mono font-bold text-primary text-[11px]">
                 {solicitud.activo.codigo}
               </span>
               <span className="truncate text-foreground font-medium">
@@ -334,7 +248,7 @@ export function SolicitudAprobacionListItem({
 
           {solicitud.solicitante && (
             <div className="flex items-center gap-1.5 truncate">
-              <div className="flex size-4.5 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[9px] shrink-0 border border-primary/20">
+              <div className="flex size-4 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[8.5px] shrink-0 border border-primary/20">
                 {getInitials(solicitud.solicitante.nombre)}
               </div>
               <span className="truncate">
@@ -351,25 +265,25 @@ export function SolicitudAprobacionListItem({
           )}
 
           {solicitud.fechaEstimadaOt && (
-            <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md text-[11px] font-medium shrink-0">
-              <Clock className="size-3 text-emerald-600 dark:text-emerald-400" />
+            <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium shrink-0">
+              <Clock className="size-2.5 text-emerald-600 dark:text-emerald-400" />
               <span>Est. OT: <strong>{formatDate(solicitud.fechaEstimadaOt)}</strong></span>
             </div>
           )}
 
           {adjuntosCount > 0 && (
-            <div className="inline-flex items-center gap-1 font-semibold text-primary bg-primary/5 px-2 py-0.5 rounded-md border border-primary/15">
-              <Paperclip className="size-3" />
+            <div className="inline-flex items-center gap-1 font-semibold text-primary bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/15 text-[10.5px]">
+              <Paperclip className="size-2.5" />
               <span>{adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Right / Actions Section */}
+      {/* Right / Icon Actions Section */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex items-center gap-2 shrink-0 self-end md:self-center"
+        className="flex items-center gap-1 shrink-0 self-end md:self-center pt-1 md:pt-0"
       >
         {/* 1. Control de Activo (Entrega / Devolución) */}
         {showControlActivo && (
@@ -377,17 +291,16 @@ export function SolicitudAprobacionListItem({
             hasDevolucion ? (
               <Button
                 type="button"
-                size="sm"
+                size="icon"
                 variant="outline"
                 onClick={(e) => {
                   e.stopPropagation()
                   onViewControlActivo?.(solicitud)
                 }}
-                className="h-8 gap-1.5 text-xs font-semibold rounded-lg shadow-2xs cursor-pointer transition-all bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50"
-                title="Devolución de Activo registrada (clic para ver el acta y detalle)"
+                className="size-7.5 rounded-lg shadow-2xs cursor-pointer transition-all bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50"
+                title="Devolución de Activo registrada (Ver acta)"
               >
                 <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="hidden sm:inline">Devolución (Lista)</span>
               </Button>
             ) : (
               <Link
@@ -397,30 +310,28 @@ export function SolicitudAprobacionListItem({
               >
                 <Button
                   type="button"
-                  size="sm"
+                  size="icon"
                   variant="outline"
-                  className="h-8 gap-1.5 text-xs font-semibold rounded-lg shadow-2xs cursor-pointer transition-all bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40 hover:bg-amber-500/25 ring-1 ring-amber-500/30"
-                  title="Paso requerido: Registrar acta de devolución de activo para finalizar el flujo"
+                  className="size-7.5 rounded-lg shadow-2xs cursor-pointer transition-all bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40 hover:bg-amber-500/25 ring-1 ring-amber-500/30"
+                  title="Paso requerido: Registrar acta de devolución de activo"
                 >
                   <ClipboardCheck className="size-3.5 text-amber-600 dark:text-amber-400" />
-                  <span className="hidden sm:inline">Registrar Devolución</span>
                 </Button>
               </Link>
             )
           ) : hasControlActivo ? (
             <Button
               type="button"
-              size="sm"
+              size="icon"
               variant="outline"
               onClick={(e) => {
                 e.stopPropagation()
                 onViewControlActivo?.(solicitud)
               }}
-              className="h-8 gap-1.5 text-xs font-semibold rounded-lg shadow-2xs cursor-pointer transition-all bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50"
-              title="Control de Activo registrado (clic para ver el acta y detalle)"
+              className="size-7.5 rounded-lg shadow-2xs cursor-pointer transition-all bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50"
+              title="Control de Activo registrado (Ver acta)"
             >
               <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden sm:inline">Control Activo (Listo)</span>
             </Button>
           ) : (
             <Link
@@ -430,13 +341,12 @@ export function SolicitudAprobacionListItem({
             >
               <Button
                 type="button"
-                size="sm"
+                size="icon"
                 variant="outline"
-                className="h-8 gap-1.5 text-xs font-semibold rounded-lg shadow-2xs cursor-pointer transition-all bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/40 hover:bg-sky-500/25 ring-1 ring-sky-500/30"
+                className="size-7.5 rounded-lg shadow-2xs cursor-pointer transition-all bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/40 hover:bg-sky-500/25 ring-1 ring-sky-500/30"
                 title="Paso 1: Registrar acta de entrega/control de activo (Requerido)"
               >
                 <ClipboardCheck className="size-3.5 text-sky-600 dark:text-sky-400" />
-                <span className="hidden sm:inline">Control Activo</span>
               </Button>
             </Link>
           )
@@ -446,7 +356,7 @@ export function SolicitudAprobacionListItem({
         {onCreateOT && (
           <Button
             type="button"
-            size="sm"
+            size="icon"
             variant="outline"
             disabled={!hasControlActivo}
             onClick={(e) => {
@@ -464,7 +374,7 @@ export function SolicitudAprobacionListItem({
               }
             }}
             className={cn(
-              "h-8 gap-1.5 text-xs font-semibold rounded-lg shadow-2xs transition-all",
+              "size-7.5 rounded-lg shadow-2xs transition-all",
               !hasControlActivo
                 ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground border-border/60"
                 : hasOrdenTrabajo
@@ -475,8 +385,8 @@ export function SolicitudAprobacionListItem({
               !hasControlActivo
                 ? "Paso 2 bloqueado: Primero registra el Control de Activo"
                 : hasOrdenTrabajo
-                  ? "Orden de Trabajo registrada (clic para ver actividades y detalle)"
-                  : "Paso 2: Crear Orden de Trabajo para esta solicitud"
+                  ? `Orden de Trabajo (${completadasCount}/${totalActividades} tareas)`
+                  : "Paso 2: Crear Orden de Trabajo"
             }
           >
             {hasOrdenTrabajo ? (
@@ -495,108 +405,55 @@ export function SolicitudAprobacionListItem({
                 )}
               />
             )}
-            <span className="hidden sm:inline">
-              {hasOrdenTrabajo
-                ? isValidado
-                  ? `Registrar Tareas (${completadasCount}/${totalActividades})`
-                  : estadoNorm === "en_mantenimiento"
-                    ? `Registrar Tareas (${completadasCount}/${totalActividades})`
-                    : totalActividades > 0
-                      ? `Ver OT (${completadasCount}/${totalActividades})`
-                      : "Ver OT"
-                : "Crear OT"}
-            </span>
           </Button>
         )}
 
-        {/* 3. Dynamic Workflow Actions (Habilitado solo tras Control Activo + OT + Tareas completas si está Validado) */}
-        {actionsQuery.isLoading ? (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2">
-            <span className="size-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-[11px]">Cargando acciones...</span>
-          </div>
-        ) : (
-          actions.map((act) => {
-            const style = getActionStyle(act)
-            const IconComp = style.icon
-            return (
-              <Button
-                key={`${act.variable}-${act.value}`}
-                type="button"
-                size="sm"
-                disabled={!canAdvanceWorkflow}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (!canAdvanceWorkflow) {
-                    if (!hasControlActivo) {
-                      toast.warning(
-                        "Para avanzar el estado, primero debes registrar el Control de Activo.",
-                      )
-                    } else if (!hasOrdenTrabajo) {
-                      toast.warning(
-                        "Para avanzar el estado, primero debes crear la Orden de Trabajo.",
-                      )
-                    } else if (isValidado) {
-                      if (totalActividades === 0) {
-                        toast.warning(
-                          "Para registrar el trabajo finalizado, primero debes agregar actividades a la Orden de Trabajo y completarlas.",
-                        )
-                      } else {
-                        toast.warning(
-                          `Para registrar el trabajo finalizado, debes marcar como realizadas todas las tareas de la Orden de Trabajo (${completadasCount} de ${totalActividades} completadas). Haz clic en el botón de OT para marcar los checks.`,
-                        )
-                      }
-                    } else if (isTrabajoRealizado && !hasDevolucion) {
-                      toast.warning(
-                        "Para finalizar el flujo y cerrar la solicitud, primero debes registrar la Devolución del Activo.",
-                      )
-                    }
-                    return
-                  }
-                  onActionSelect(
-                    solicitud,
-                    act,
-                    taskName,
-                    actionsQuery.data?.fields,
-                  )
-                }}
-                className={cn(
-                  "h-8 gap-1.5 px-3 text-xs font-bold transition-all rounded-lg shadow-2xs",
-                  !canAdvanceWorkflow
-                    ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:scale-100 ring-0"
-                    : cn("cursor-pointer hover:scale-[1.02]", style.btnClass),
-                )}
-                title={
-                  !canAdvanceWorkflow
-                    ? !hasControlActivo
-                      ? "Bloqueado: Primero registra el Control de Activo y crea la OT"
-                      : !hasOrdenTrabajo
-                        ? "Bloqueado: Primero crea la Orden de Trabajo"
-                        : isValidado
-                          ? `Bloqueado: Debes marcar todas las tareas como realizadas (${completadasCount}/${totalActividades})`
-                          : isTrabajoRealizado && !hasDevolucion
-                            ? "Bloqueado: Primero registra la Devolución del Activo"
-                            : "Bloqueado: Requisitos pendientes"
-                    : `Avanzar workflow: ${fixEncoding(act.name)}`
-                }
-              >
-                <IconComp className="size-3.5 shrink-0" />
-                <span>{fixEncoding(act.name)}</span>
-              </Button>
-            )
-          })
+        {/* 3. Trazabilidad / Historial de Workflow */}
+        {onViewTrazabilidad && (
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation()
+              onViewTrazabilidad(solicitud)
+            }}
+            className="size-7.5 rounded-lg shadow-2xs hover:bg-sky-500/10 hover:text-sky-700 dark:hover:text-sky-300 hover:border-sky-500/40 cursor-pointer"
+            title="Ver Trazabilidad y Línea de Tiempo del Workflow"
+          >
+            <History className="size-3.5 text-muted-foreground hover:text-sky-600" />
+          </Button>
         )}
 
-        {/* 4. Revisar Expediente (Opens Modal) */}
+        {/* 4. Formulario / Evaluar Workflow (Abre directamente las decisiones de flujo) */}
         <Button
           type="button"
-          size="sm"
+          size="icon"
+          variant="outline"
+          onClick={(e) => {
+            e.stopPropagation()
+            if (onWorkflowEvaluar) {
+              onWorkflowEvaluar(solicitud)
+            } else {
+              onQuickView(solicitud)
+            }
+          }}
+          className="size-7.5 rounded-lg shadow-2xs bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20 hover:border-amber-500/50 cursor-pointer"
+          title="Evaluar / Decisiones de Workflow"
+        >
+          <ShieldCheck className="size-3.5 text-amber-600 dark:text-amber-400" />
+        </Button>
+
+        {/* 5. Ver Expediente Completo */}
+        <Button
+          type="button"
+          size="icon"
           variant="outline"
           onClick={() => onQuickView(solicitud)}
-          className="h-8 gap-1.5 text-xs font-semibold hover:bg-primary/10 hover:text-primary hover:border-primary/40 rounded-lg shadow-2xs cursor-pointer"
+          className="size-7.5 rounded-lg shadow-2xs bg-primary/5 hover:bg-primary/15 text-primary border-primary/25 cursor-pointer"
+          title="Ver Expediente Completo"
         >
-          <Eye className="size-3.5 text-muted-foreground" />
-          <span>Ver Expediente</span>
+          <Eye className="size-3.5 text-primary" />
         </Button>
       </div>
     </li>

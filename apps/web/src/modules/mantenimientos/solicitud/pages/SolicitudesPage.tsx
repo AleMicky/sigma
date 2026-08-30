@@ -24,11 +24,13 @@ import { toast } from "sonner"
 import { useDeleteSolicitud, useEnviarSolicitud } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
-import { ConfirmEnviarDialog } from "../components/ConfirmEnviarDialog"
-import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
-import { SolicitudListView } from "../components/SolicitudListView"
-import { SolicitudQuickViewSheet } from "../components/SolicitudQuickViewSheet"
-import { SolicitudStats } from "../components/SolicitudStats"
+import {
+  ConfirmEnviarDialog,
+  SolicitudFilterToolbar,
+  SolicitudListView,
+  SolicitudQuickViewSheet,
+  SolicitudStats,
+} from "../components"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 

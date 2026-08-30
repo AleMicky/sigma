@@ -22,20 +22,24 @@ import { cn } from "@/shared/lib/utils"
 import { ControlActivoHistorialModal } from "@/modules/mantenimientos/control-activo/components/ControlActivoHistorialModal"
 import { OrdenTrabajoDetailModal } from "@/modules/mantenimientos/orden-trabajo/components/OrdenTrabajoDetailModal"
 import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
+import { WorkflowActionDialog } from "@/modules/workflow"
+import { useCompleteWorkflowTask } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
   WorkflowAction,
   WorkflowField,
 } from "../api/solicitud.service"
-import { SolicitudAprobacionListView } from "../components/SolicitudAprobacionListView"
-import { SolicitudDetalleModal } from "../components/SolicitudDetalleModal"
-import { SupervisorRevisionModal } from "../components/SupervisorRevisionModal"
-import { WorkflowActionDialog } from "../components/WorkflowActionDialog"
+import {
+  SolicitudAprobacionListView,
+  SolicitudDetalleModal,
+  SupervisorRevisionModal,
+} from "../components"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function SupervisorMantenimientoPage() {
+  const completeWorkflowMutation = useCompleteWorkflowTask()
   const [modalSolicitud, setModalSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
@@ -487,10 +491,21 @@ export function SupervisorMantenimientoPage() {
       <WorkflowActionDialog
         open={Boolean(workflowActionTarget)}
         onOpenChange={(open) => !open && setWorkflowActionTarget(null)}
-        solicitud={workflowActionTarget?.solicitud ?? null}
         action={workflowActionTarget?.action ?? null}
         taskName={workflowActionTarget?.taskName}
         fields={workflowActionTarget?.fields}
+        entityId={workflowActionTarget?.solicitud?.id}
+        responsableActual={workflowActionTarget?.solicitud?.responsable}
+        aprobadorId={workflowActionTarget?.solicitud?.aprobadoPor?.id}
+        fechaEstimadaActual={workflowActionTarget?.solicitud?.fechaEstimadaOt ?? undefined}
+        onExecute={({ variables }) => {
+          const item = workflowActionTarget?.solicitud
+          if (!item) return Promise.resolve()
+          return completeWorkflowMutation.mutateAsync({
+            solicitudId: item.id,
+            payload: { variables },
+          })
+        }}
         onSuccess={() => {
           solicitudesQuery.refetch()
           setModalSolicitud(null)
