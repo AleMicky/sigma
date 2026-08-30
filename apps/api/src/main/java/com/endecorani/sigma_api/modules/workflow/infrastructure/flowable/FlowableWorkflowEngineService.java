@@ -131,9 +131,28 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
         }
 
         java.util.Map<String, Object> contextVariables = new java.util.HashMap<>();
+        if (task.processInstanceId() != null && !task.processInstanceId().isBlank()) {
+            try {
+                java.util.List<java.util.Map<String, Object>> processVariables =
+                        flowableClient.obtenerVariablesProceso(task.processInstanceId());
+                if (processVariables != null) {
+                    for (java.util.Map<String, Object> var : processVariables) {
+                        Object name = var.get("name");
+                        Object value = var.get("value");
+                        if (name != null && value != null) {
+                            contextVariables.put(name.toString(), value);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
         if (task.assignee() != null && !task.assignee().isBlank()) {
-            contextVariables.put("aprobadorId", task.assignee());
-            contextVariables.put("assignee", task.assignee());
+            contextVariables.putIfAbsent("assignee", task.assignee());
+            contextVariables.putIfAbsent("aprobadorId", task.assignee());
+            contextVariables.putIfAbsent("solicitanteId", task.assignee());
+            contextVariables.putIfAbsent("responsableId", task.assignee());
         }
 
         List<WorkflowFieldResponse> fields =

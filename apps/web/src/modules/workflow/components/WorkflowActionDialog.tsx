@@ -186,7 +186,23 @@ function WorkflowActionDialogContent({
                   ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20"
                   : "bg-primary hover:bg-primary/90 text-primary-foreground"
 
-  const writableFields = fields.filter((f) => f.writable !== false)
+  // Dynamic task and action field filtering:
+  // When observing / rejecting, assignment fields (e.g. responsableId) are not applicable
+  const activeFields = fields.filter((f) => {
+    if (f.writable === false) return false
+    const lowerId = f.id.toLowerCase()
+    if (isObservar || isRechazar) {
+      if (
+        lowerId.includes("responsable") ||
+        lowerId.includes("tecnico") ||
+        lowerId.includes("encargado") ||
+        lowerId.includes("supervisor")
+      ) {
+        return false
+      }
+    }
+    return true
+  })
 
   function setFieldValue(fieldId: string, val: any) {
     setFormValues((prev) => ({ ...prev, [fieldId]: val }))
@@ -217,23 +233,37 @@ function WorkflowActionDialogContent({
 
     const errors: Record<string, string> = {}
 
-    // Validate BPMN required fields
-    for (const field of writableFields) {
-      if (field.required && !formValues[field.id]?.toString().trim()) {
-        errors[field.id] = `El campo ${field.name} es obligatorio.`
+    // Validate active BPMN fields
+    for (const field of activeFields) {
+      const isComment =
+        field.id.toLowerCase().includes("coment") ||
+        field.id.toLowerCase().includes("observ")
+      const isRequired =
+        field.required || ((isObservar || isCorregir) && isComment)
+
+      if (isRequired && !formValues[field.id]?.toString().trim()) {
+        errors[field.id] = `El campo ${fixWorkflowEncoding(field.name || field.id)} es obligatorio.`
       }
     }
 
-    // Require reason/observation when observing or correcting if no explicit BPMN fields present
+    // Fallback observation requirement when observing/correcting without explicit fields
     if (isObservar || isCorregir) {
-      const obsValue =
-        formValues.observacion ||
-        formValues.observacionAprobacion ||
-        formValues.observacionValidacion ||
-        formValues.motivo
-      if (!obsValue?.toString().trim() && writableFields.length === 0) {
-        errors.observacion =
-          "Por favor ingrese el motivo u observación para continuar."
+      const hasCommentField = activeFields.some(
+        (f) =>
+          f.id.toLowerCase().includes("observ") ||
+          f.id.toLowerCase().includes("coment"),
+      )
+      if (!hasCommentField) {
+        const obsValue =
+          formValues.observacion ||
+          formValues.observacionAprobacion ||
+          formValues.observacionValidacion ||
+          formValues.motivo ||
+          formValues.comentario
+        if (!obsValue?.toString().trim()) {
+          errors.observacion =
+            "Por favor ingrese el motivo u observación para continuar."
+        }
       }
     }
 
@@ -368,7 +398,11 @@ function WorkflowActionDialogContent({
       <form id={formId} onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
         {/* Observaciones obligatorias si es OBSERVAR / CORREGIR y no hay campos específicos */}
         {(isObservar || isCorregir) &&
-          !writableFields.some((f) => f.id.toLowerCase().includes("observ")) && (
+          !activeFields.some(
+            (f) =>
+              f.id.toLowerCase().includes("observ") ||
+              f.id.toLowerCase().includes("coment"),
+          ) && (
             <div className="space-y-1.5 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5">
               <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <FileEdit className="size-3.5 text-amber-600" />
@@ -391,103 +425,23 @@ function WorkflowActionDialogContent({
             </div>
           )}
 
-        {/* Dynamic Camunda BPMN Form Fields */}
-        {writableFields.length > 0 && (
+        {/* Dynamic Camunda / Flowable BPMN Form Fields */}
+        {activeFields.length > 0 && (
           <div className="space-y-3 pt-1">
             <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <Layers className="size-3 text-primary" />
               <span>Campos del Formulario BPMN</span>
             </h4>
 
-            {writableFields.map((field) => {
-              const fieldId = field.id
-              const fieldName = fixWorkflowEncoding(field.name || field.id)
-              const isRequired = Boolean(field.required)
-              const error = formErrors[fieldId]
-              const lowerId = fieldId.toLowerCase()
-              const lowerType = (field.type || "").toLowerCase()
-              const isRestSource = Boolean(field.url) || field.source === "rest"
-              const isDateField =
-                lowerType === "date" ||
-                lowerId.startsWith("fecha") ||
-                lowerId.includes("fecha")
-
-              return (
-                <div key={fieldId} className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                    <span>{fieldName}</span>
-                    {isRequired && <span className="text-destructive font-bold">*</span>}
-                  </Label>
-
-                  {isRestSource && field.url ? (
-                    <WorkflowRestSelect
-                      url={field.url}
-                      params={field.params}
-                      value={formValues[fieldId] || ""}
-                      onValueChange={(val) => setFieldValue(fieldId, val ?? "")}
-                      placeholder={field.placeholder || `Seleccionar ${fieldName.toLowerCase()}...`}
-                    />
-                  ) : field.type === "enum" || (field.options && field.options.length > 0) ? (
-                    <Select
-                      value={formValues[fieldId] || ""}
-                      onValueChange={(val) => setFieldValue(fieldId, val || "")}
-                    >
-                      <SelectTrigger className="h-9 text-xs bg-background">
-                        <SelectValue placeholder={`Seleccionar ${fieldName.toLowerCase()}...`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {field.options?.map((opt) => {
-                          const optKey = opt.value || opt.id || ""
-                          const optLabel = fixWorkflowEncoding(opt.label || opt.name || optKey)
-                          return (
-                            <SelectItem key={optKey} value={optKey} className="text-xs">
-                              {optLabel}
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
-                  ) : lowerType === "empleado" ? (
-                    <EmpleadoCombobox
-                      value={formValues[fieldId] || ""}
-                      onValueChange={(val) => setFieldValue(fieldId, val ?? "")}
-                      placeholder={field.placeholder || `Seleccionar ${fieldName.toLowerCase()}...`}
-                    />
-                  ) : isDateField ? (
-                    <Input
-                      type="date"
-                      value={formValues[fieldId] || ""}
-                      onChange={(e) => setFieldValue(fieldId, e.target.value)}
-                      min={new Date().toISOString().split("T")[0]}
-                      className="h-9 text-xs bg-background"
-                    />
-                  ) : field.type === "textarea" || lowerId.includes("observacion") || lowerId.includes("motivo") || lowerId.includes("comentario") ? (
-                    <Textarea
-                      rows={3}
-                      placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
-                      value={formValues[fieldId] || ""}
-                      onChange={(e) => setFieldValue(fieldId, e.target.value)}
-                      className="text-xs bg-background resize-none"
-                    />
-                  ) : (
-                    <Input
-                      type={field.type === "long" || field.type === "number" ? "number" : "text"}
-                      placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
-                      value={formValues[fieldId] || ""}
-                      onChange={(e) => setFieldValue(fieldId, e.target.value)}
-                      className="h-9 text-xs bg-background"
-                    />
-                  )}
-
-                  {error && (
-                    <p className="text-[11px] font-semibold text-destructive flex items-center gap-1">
-                      <AlertCircle className="size-3" />
-                      <span>{error}</span>
-                    </p>
-                  )}
-                </div>
-              )
-            })}
+            {activeFields.map((field) => (
+              <WorkflowDynamicFieldRenderer
+                key={field.id}
+                field={field}
+                value={formValues[field.id]}
+                error={formErrors[field.id]}
+                onChange={(val) => setFieldValue(field.id, val)}
+              />
+            ))}
           </div>
         )}
 
@@ -542,5 +496,110 @@ function WorkflowActionDialogContent({
         </Button>
       </DialogFooter>
     </DialogContent>
+  )
+}
+
+export type WorkflowDynamicFieldRendererProps = {
+  field: WorkflowField
+  value: any
+  error?: string
+  onChange: (value: any) => void
+}
+
+export function WorkflowDynamicFieldRenderer({
+  field,
+  value,
+  error,
+  onChange,
+}: WorkflowDynamicFieldRendererProps) {
+  const fieldId = field.id
+  const fieldName = fixWorkflowEncoding(field.name || field.id)
+  const isRequired = Boolean(field.required)
+  const lowerId = fieldId.toLowerCase()
+  const lowerType = (field.type || "").toLowerCase()
+  const isRestSource = Boolean(field.url) || field.source === "rest"
+  const isDateField =
+    lowerType === "date" ||
+    lowerId.startsWith("fecha") ||
+    lowerId.includes("fecha")
+
+  return (
+    <div key={fieldId} className="space-y-1.5">
+      <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
+        <span>{fieldName}</span>
+        {isRequired && <span className="text-destructive font-bold">*</span>}
+      </Label>
+
+      {isRestSource && field.url ? (
+        <WorkflowRestSelect
+          url={field.url}
+          params={field.params}
+          value={value || ""}
+          onValueChange={(val) => onChange(val ?? "")}
+          placeholder={field.placeholder || `Seleccionar ${fieldName.toLowerCase()}...`}
+        />
+      ) : field.type === "enum" || (field.options && field.options.length > 0) ? (
+        <Select
+          value={value || ""}
+          onValueChange={(val) => onChange(val || "")}
+        >
+          <SelectTrigger className="h-9 text-xs bg-background">
+            <SelectValue placeholder={`Seleccionar ${fieldName.toLowerCase()}...`} />
+          </SelectTrigger>
+          <SelectContent>
+            {field.options?.map((opt) => {
+              const optKey = opt.value || opt.id || ""
+              const optLabel = fixWorkflowEncoding(opt.label || opt.name || optKey)
+              return (
+                <SelectItem key={optKey} value={optKey} className="text-xs">
+                  {optLabel}
+                </SelectItem>
+              )
+            })}
+          </SelectContent>
+        </Select>
+      ) : lowerType === "empleado" ? (
+        <EmpleadoCombobox
+          value={value || ""}
+          onValueChange={(val) => onChange(val ?? "")}
+          placeholder={field.placeholder || `Seleccionar ${fieldName.toLowerCase()}...`}
+        />
+      ) : isDateField ? (
+        <Input
+          type="date"
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          min={new Date().toISOString().split("T")[0]}
+          className="h-9 text-xs bg-background"
+        />
+      ) : field.type === "textarea" ||
+        lowerId.includes("observacion") ||
+        lowerId.includes("motivo") ||
+        lowerId.includes("comentario") ||
+        lowerId.includes("descripcion") ? (
+        <Textarea
+          rows={3}
+          placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="text-xs bg-background resize-none leading-relaxed"
+        />
+      ) : (
+        <Input
+          type={field.type === "long" || field.type === "number" ? "number" : "text"}
+          placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-9 text-xs bg-background"
+        />
+      )}
+
+      {error && (
+        <p className="text-[11px] font-semibold text-destructive flex items-center gap-1">
+          <AlertCircle className="size-3" />
+          <span>{error}</span>
+        </p>
+      )}
+    </div>
   )
 }

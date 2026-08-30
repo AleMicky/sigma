@@ -79,4 +79,37 @@ class BpmnDefinitionParserTest {
         assertFalse(Boolean.TRUE.equals(comentarioField.getRequired()));
         assertTrue(Boolean.TRUE.equals(comentarioField.getWritable()));
     }
+
+    @Test
+    void testBorradorSolicitudAccionesYCampos() {
+        List<WorkflowActionResponse> actions = parser.obtenerAcciones(bpmnXml, "borradorSolicitud");
+        assertFalse(actions.isEmpty(), "borradorSolicitud debe tener acciones");
+        assertEquals(1, actions.size());
+        assertEquals("Enviar a aprobación", actions.getFirst().name());
+
+        String solicitanteId = "e39c8b14-7cde-52b2-a9e3-811fd41833c1";
+        List<WorkflowFieldResponse> fields = parser.obtenerCampos(
+                bpmnXml,
+                "borradorSolicitud",
+                java.util.Map.of("solicitanteId", solicitanteId)
+        );
+        assertNotNull(fields);
+        assertEquals(2, fields.size());
+
+        WorkflowFieldResponse aprobadorField = fields.stream()
+                .filter(f -> "aprobadorId".equals(f.getId()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(aprobadorField);
+        assertEquals("Aprobador responsable", aprobadorField.getName());
+        assertTrue(Boolean.TRUE.equals(aprobadorField.getRequired()));
+        assertEquals("select", aprobadorField.getComponent());
+        assertEquals("rest", aprobadorField.getSource());
+        assertEquals(
+                "/api/v1/grupos-aprobadores/empleados/e39c8b14-7cde-52b2-a9e3-811fd41833c1/aprobadores/select",
+                aprobadorField.getUrl()
+        );
+    }
 }
+

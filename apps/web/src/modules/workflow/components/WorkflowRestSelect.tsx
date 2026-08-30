@@ -49,6 +49,7 @@ function getItemLabel(item: any): string {
   const extra =
     item.cargoInfo?.nombre ||
     item.cargoNombre ||
+    item.cargo ||
     item.areaInfo?.nombre ||
     item.areaNombre ||
     item.email ||

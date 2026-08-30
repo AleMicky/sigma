@@ -66,6 +66,17 @@ public class FlowableClient {
         );
     }
 
+    public java.util.List<java.util.Map<String, Object>> obtenerVariablesProceso(String processInstanceId) {
+        try {
+            return restClient.get()
+                    .uri("/runtime/process-instances/{id}/variables", processInstanceId)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<java.util.List<java.util.Map<String, Object>>>() {});
+        } catch (Exception ex) {
+            return java.util.List.of();
+        }
+    }
+
     public FlowablePageResponse<HistoricTaskResponse> obtenerHistorialTareas(
             String processInstanceId
     ) {

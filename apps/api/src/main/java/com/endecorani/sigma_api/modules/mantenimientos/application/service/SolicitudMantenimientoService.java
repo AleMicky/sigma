@@ -92,7 +92,21 @@ public class SolicitudMantenimientoService {
                 .fechaEstimadaOt(request.fechaEstimadaOt())
                 .build();
 
-        return toResponse(repository.save(domain));
+        SolicitudMantenimiento saved = repository.save(domain);
+
+        // Iniciar workflow en estado BORRADOR
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("solicitudId", saved.getId().toString());
+        variables.put("solicitanteId", saved.getSolicitanteId().toString());
+
+        String processInstanceId = workflowApplicationService.iniciar(
+                WORKFLOW_CODIGO,
+                saved.getId().toString(),
+                variables);
+
+        saved.setProcessInstanceId(processInstanceId);
+
+        return toResponse(repository.save(saved));
     }
 
     @Transactional
@@ -136,12 +150,6 @@ public class SolicitudMantenimientoService {
                     "Solo se puede enviar una solicitud en estado BORRADOR");
         }
 
-        if (solicitud.getProcessInstanceId() != null) {
-            throw new ConflictException(
-                    "SOLICITUD_WORKFLOW_ALREADY_STARTED",
-                    "La solicitud ya tiene un workflow iniciado");
-        }
-
         UUID aprobadorId = request.getEffectiveAprobadorId();
         if (aprobadorId == null) {
             throw new BusinessException(
@@ -160,22 +168,27 @@ public class SolicitudMantenimientoService {
         Map<String, Object> variables = new HashMap<>();
         variables.put("solicitudId", solicitud.getId().toString());
         variables.put("solicitanteId", solicitud.getSolicitanteId().toString());
-        variables.put("aprobadorId", solicitud.getAprobadoPorId().toString());
+        variables.put("aprobadorId", aprobadorId.toString());
         String supervisor = solicitud.getSupervisorId() != null
                 ? solicitud.getSupervisorId().toString()
                 : aprobadorId.toString();
         variables.put("supervisorId", supervisor);
 
-        // 3. Iniciar workflow
-        String processInstanceId = workflowApplicationService.iniciar(
-                WORKFLOW_CODIGO,
-                solicitud.getId().toString(),
-                variables);
+        // 3. Avanzar o iniciar workflow
+        if (solicitud.getProcessInstanceId() == null) {
+            String processInstanceId = workflowApplicationService.iniciar(
+                    WORKFLOW_CODIGO,
+                    solicitud.getId().toString(),
+                    variables);
+            solicitud.setProcessInstanceId(processInstanceId);
+        } else {
+            CompleteWorkflowTaskRequest taskRequest = new CompleteWorkflowTaskRequest(variables);
+            workflowApplicationService.completarTarea(
+                    solicitud.getProcessInstanceId(),
+                    taskRequest);
+        }
 
-        // 4. Guardar instancia y estado
-        solicitud.setProcessInstanceId(
-                processInstanceId);
-
+        // 4. Guardar estado
         solicitud.setEstado(
                 ESTADO_SOLICITADO);
 
