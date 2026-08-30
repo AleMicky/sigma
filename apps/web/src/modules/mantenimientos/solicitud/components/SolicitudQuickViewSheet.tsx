@@ -52,8 +52,6 @@ type SolicitudQuickViewSheetProps = {
   solicitud: SolicitudMantenimiento | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onEdit?: (solicitud: SolicitudMantenimiento) => void
-  onEnviar?: (solicitud: SolicitudMantenimiento) => void
   onWorkflowAction?: (
     solicitud: SolicitudMantenimiento,
     action: WorkflowAction,
@@ -101,8 +99,6 @@ export function SolicitudQuickViewSheet({
   solicitud: initialSolicitud,
   open,
   onOpenChange,
-  onEdit: _onEdit,
-  onEnviar: _onEnviar,
   onWorkflowAction,
 }: SolicitudQuickViewSheetProps) {
   const [copied, setCopied] = useState(false)

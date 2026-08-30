@@ -1,4 +1,4 @@
-import { useState, useId, useEffect, useMemo } from "react"
+import { useState, useId, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
@@ -63,6 +63,15 @@ type WorkflowActionDialogProps = {
   onSuccess?: () => void
 }
 
+type WorkflowActionDialogContentProps = {
+  solicitud: SolicitudMantenimiento
+  action: WorkflowAction
+  taskName?: string
+  fields: WorkflowField[]
+  onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
+}
+
 export function WorkflowActionDialog({
   open,
   onOpenChange,
@@ -72,24 +81,60 @@ export function WorkflowActionDialog({
   fields = [],
   onSuccess,
 }: WorkflowActionDialogProps) {
+  if (!open || !solicitud || !action) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <WorkflowActionDialogContent
+        key={`${solicitud.id}-${action.variable}-${action.value}`}
+        solicitud={solicitud}
+        action={action}
+        taskName={taskName}
+        fields={fields}
+        onOpenChange={onOpenChange}
+        onSuccess={onSuccess}
+      />
+    </Dialog>
+  )
+}
+
+function WorkflowActionDialogContent({
+  solicitud,
+  action,
+  taskName,
+  fields,
+  onOpenChange,
+  onSuccess,
+}: WorkflowActionDialogContentProps) {
   const completeMutation = useCompleteWorkflowTask()
   const formId = useId()
 
+  const initialFechaEstimada = solicitud.fechaEstimadaOt
+    ? (solicitud.fechaEstimadaOt.includes("T")
+        ? solicitud.fechaEstimadaOt.substring(0, 10)
+        : solicitud.fechaEstimadaOt)
+    : ""
+
   const [formValues, setFormValues] = useState<Record<string, string>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
-  const [responsableId, setResponsableId] = useState<string>("")
+  const [responsableId, setResponsableId] = useState<string>(
+    solicitud.responsable?.id ?? "",
+  )
   const [supervisorId, setSupervisorId] = useState<string>("")
-  const [fechaEstimadaOt, setFechaEstimadaOt] = useState<string>("")
-  const [useAllEmployeesSearch, setUseAllEmployeesSearch] = useState<boolean>(false)
-  const [useAllEmployeesForSupervisor, setUseAllEmployeesForSupervisor] = useState<boolean>(false)
+  const [fechaEstimadaOt, setFechaEstimadaOt] =
+    useState<string>(initialFechaEstimada)
+  const [useAllEmployeesSearch, setUseAllEmployeesSearch] =
+    useState<boolean>(false)
+  const [useAllEmployeesForSupervisor, setUseAllEmployeesForSupervisor] =
+    useState<boolean>(false)
 
   // Aprobador ID from the request if already approved
-  const aprobadorId = solicitud?.aprobadoPor?.id
+  const aprobadorId = solicitud.aprobadoPor?.id
 
   // Query dependientes of the approver via /v1/grupos-aprobadores/aprobadores/{aprobadorId}/dependientes/select
   const dependientesQuery = useQuery({
     ...grupoAprobadorDependienteQueries.dependientesSelect(aprobadorId),
-    enabled: open && Boolean(aprobadorId),
+    enabled: Boolean(aprobadorId),
   })
 
   const dependientes = dependientesQuery.data ?? []
@@ -97,8 +142,9 @@ export function WorkflowActionDialog({
 
   // Query supervisores de mantenimiento with responsibility SUP_MANTENIMIENTO
   const supervisoresQuery = useQuery({
-    ...empleadoResponsabilidadQueries.byResponsabilidadCodigo("SUP_MANTENIMIENTO"),
-    enabled: open,
+    ...empleadoResponsabilidadQueries.byResponsabilidadCodigo(
+      "SUP_MANTENIMIENTO",
+    ),
   })
 
   const supervisores = supervisoresQuery.data ?? []
@@ -107,47 +153,28 @@ export function WorkflowActionDialog({
   // Query OT list to find matching OT by solicitudId
   const otListQuery = useQuery({
     ...ordenTrabajoQueries.list({ size: 100 }),
-    enabled: open && Boolean(solicitud?.id),
+    enabled: Boolean(solicitud.id),
   })
 
   const ordenTrabajo = useMemo(() => {
     const list = otListQuery.data?.content ?? []
     return (
-      list.find((ot) => ot.solicitudMantenimientoId === solicitud?.id) ?? null
+      list.find((ot) => ot.solicitudMantenimientoId === solicitud.id) ?? null
     )
-  }, [otListQuery.data?.content, solicitud?.id])
+  }, [otListQuery.data?.content, solicitud.id])
 
   // Query actividades if OT exists
   const actividadesQuery = useQuery({
-    ...ordenTrabajoQueries.actividadesByOT(ordenTrabajo?.id ?? "", { size: 100 }),
-    enabled: open && Boolean(ordenTrabajo?.id),
+    ...ordenTrabajoQueries.actividadesByOT(ordenTrabajo?.id ?? "", {
+      size: 100,
+    }),
+    enabled: Boolean(ordenTrabajo?.id),
   })
 
   const actividades = useMemo(
     () => actividadesQuery.data?.content ?? [],
     [actividadesQuery.data?.content],
   )
-
-  // Reset form when opened with a new action or solicitud
-  useEffect(() => {
-    if (open && solicitud) {
-      setResponsableId(solicitud.responsable?.id ?? "")
-      setSupervisorId("")
-      setFechaEstimadaOt(
-        solicitud.fechaEstimadaOt
-          ? (solicitud.fechaEstimadaOt.includes("T")
-              ? solicitud.fechaEstimadaOt.substring(0, 10)
-              : solicitud.fechaEstimadaOt)
-          : "",
-      )
-      setFormValues({})
-      setFormErrors({})
-      setUseAllEmployeesSearch(false)
-      setUseAllEmployeesForSupervisor(false)
-    }
-  }, [open, solicitud, action])
-
-  if (!solicitud || !action) return null
 
   const cleanActionName = fixEncoding(action.name)
   const cleanTaskName = fixEncoding(taskName)
@@ -328,8 +355,7 @@ export function WorkflowActionDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md md:max-w-lg p-5">
+    <DialogContent className="sm:max-w-md md:max-w-lg p-5">
         <DialogHeader className="space-y-1.5 pb-2 border-b">
           <div className="flex items-center gap-2">
             <div
@@ -955,6 +981,5 @@ export function WorkflowActionDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
   )
 }

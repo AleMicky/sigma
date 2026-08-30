@@ -313,8 +313,6 @@ export function SolicitudesPage() {
         solicitud={quickView}
         open={Boolean(quickView)}
         onOpenChange={(open) => !open && setQuickView(null)}
-        onEdit={openEdit}
-        onEnviar={(s) => setEnviando(s)}
       />
 
       {/* Delete Confirmation Dialog */}

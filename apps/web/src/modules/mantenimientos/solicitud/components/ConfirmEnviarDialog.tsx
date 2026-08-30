@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
@@ -60,27 +60,23 @@ export function ConfirmEnviarDialog({
     enabled: Boolean(open && solicitanteId),
   })
 
-  const aprobadores = aprobadoresQuery.data ?? []
+  const aprobadores = useMemo(
+    () => aprobadoresQuery.data ?? [],
+    [aprobadoresQuery.data],
+  )
   const isLoadingAprobadores =
     aprobadoresQuery.isLoading && Boolean(solicitanteId)
 
-  // Reset or pre-select approver when dialog opens or list changes
-  useEffect(() => {
-    if (!open) {
-      setSelectedAprobadorId("")
-      setSearchQuery("")
-      return
+  // Derived effective selected approver (auto-select if only 1)
+  const currentSelectedId = useMemo(() => {
+    if (selectedAprobadorId && aprobadores.some((a) => a.id === selectedAprobadorId)) {
+      return selectedAprobadorId
     }
-
     if (aprobadores.length === 1) {
-      setSelectedAprobadorId(aprobadores[0].id)
-    } else if (
-      selectedAprobadorId &&
-      !aprobadores.some((a) => a.id === selectedAprobadorId)
-    ) {
-      setSelectedAprobadorId("")
+      return aprobadores[0].id
     }
-  }, [open, aprobadores, selectedAprobadorId])
+    return ""
+  }, [selectedAprobadorId, aprobadores])
 
   const filteredAprobadores = useMemo(() => {
     if (!searchQuery.trim()) return aprobadores
@@ -96,16 +92,24 @@ export function ConfirmEnviarDialog({
 
   const hasAprobadores = aprobadores.length > 0
   const canSubmit = Boolean(
-    selectedAprobadorId && !isPending && !isLoadingAprobadores,
+    currentSelectedId && !isPending && !isLoadingAprobadores,
   )
 
   const handleSubmit = async () => {
-    if (!selectedAprobadorId) return
-    await onConfirm(selectedAprobadorId)
+    if (!currentSelectedId) return
+    await onConfirm(currentSelectedId)
+  }
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setSelectedAprobadorId("")
+      setSearchQuery("")
+    }
+    onOpenChange(nextOpen)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="w-[calc(100%-1.5rem)] max-w-lg sm:max-w-[500px] p-4 sm:p-5 gap-3.5 sm:gap-4 overflow-hidden">
         <DialogHeader className="gap-1 sm:gap-1.5 pr-6 text-left">
           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -238,7 +242,7 @@ export function ConfirmEnviarDialog({
                     </div>
                   ) : (
                     filteredAprobadores.map((aprobador) => {
-                      const isSelected = selectedAprobadorId === aprobador.id
+                      const isSelected = currentSelectedId === aprobador.id
                       return (
                         <button
                           key={aprobador.id}

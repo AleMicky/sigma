@@ -5,11 +5,8 @@ import { SolicitudFormPage } from "@/modules/mantenimientos/solicitud/pages/Soli
 export const Route = createFileRoute(
   "/_dashboard/mantenimientos/solicitudes/$solicitudId/editar",
 )({
-  component: SolicitudEditarRoute,
+  component: function SolicitudEditarRoute() {
+    const { solicitudId } = Route.useParams()
+    return <SolicitudFormPage solicitudId={solicitudId} />
+  },
 })
-
-function SolicitudEditarRoute() {
-  const { solicitudId } = Route.useParams()
-
-  return <SolicitudFormPage solicitudId={solicitudId} />
-}
