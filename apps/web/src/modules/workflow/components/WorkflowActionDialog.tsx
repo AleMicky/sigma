@@ -39,6 +39,7 @@ import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
 
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
+import { WorkflowRestSelect } from "./WorkflowRestSelect"
 import type { WorkflowAction, WorkflowField } from "../types/workflow.types"
 import { fixWorkflowEncoding, getWorkflowActionVisuals } from "../utils/workflow.utils"
 
@@ -405,15 +406,7 @@ function WorkflowActionDialogContent({
               const error = formErrors[fieldId]
               const lowerId = fieldId.toLowerCase()
               const lowerType = (field.type || "").toLowerCase()
-
-              const isEmpleadoField =
-                lowerType === "empleado" ||
-                lowerId.includes("responsable") ||
-                lowerId.includes("tecnico") ||
-                lowerId.includes("supervisor") ||
-                lowerId.includes("empleado") ||
-                lowerId.includes("encargado")
-
+              const isRestSource = Boolean(field.url) || field.source === "rest"
               const isDateField =
                 lowerType === "date" ||
                 lowerId.startsWith("fecha") ||
@@ -426,7 +419,35 @@ function WorkflowActionDialogContent({
                     {isRequired && <span className="text-destructive font-bold">*</span>}
                   </Label>
 
-                  {isEmpleadoField ? (
+                  {isRestSource && field.url ? (
+                    <WorkflowRestSelect
+                      url={field.url}
+                      params={field.params}
+                      value={formValues[fieldId] || ""}
+                      onValueChange={(val) => setFieldValue(fieldId, val ?? "")}
+                      placeholder={field.placeholder || `Seleccionar ${fieldName.toLowerCase()}...`}
+                    />
+                  ) : field.type === "enum" || (field.options && field.options.length > 0) ? (
+                    <Select
+                      value={formValues[fieldId] || ""}
+                      onValueChange={(val) => setFieldValue(fieldId, val || "")}
+                    >
+                      <SelectTrigger className="h-9 text-xs bg-background">
+                        <SelectValue placeholder={`Seleccionar ${fieldName.toLowerCase()}...`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {field.options?.map((opt) => {
+                          const optKey = opt.value || opt.id || ""
+                          const optLabel = fixWorkflowEncoding(opt.label || opt.name || optKey)
+                          return (
+                            <SelectItem key={optKey} value={optKey} className="text-xs">
+                              {optLabel}
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                  ) : lowerType === "empleado" ? (
                     <EmpleadoCombobox
                       value={formValues[fieldId] || ""}
                       onValueChange={(val) => setFieldValue(fieldId, val ?? "")}

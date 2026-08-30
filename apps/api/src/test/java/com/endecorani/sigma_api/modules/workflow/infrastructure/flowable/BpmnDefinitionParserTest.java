@@ -43,7 +43,12 @@ class BpmnDefinitionParserTest {
 
     @Test
     void testRevisarSolicitudCampos() {
-        List<WorkflowFieldResponse> fields = parser.obtenerCampos(bpmnXml, "revisarSolicitud");
+        String aprobadorId = "d29c8b14-7cde-52b2-a9e3-811fd41833b0";
+        List<WorkflowFieldResponse> fields = parser.obtenerCampos(
+                bpmnXml,
+                "revisarSolicitud",
+                java.util.Map.of("aprobadorId", aprobadorId)
+        );
         assertNotNull(fields);
         assertEquals(2, fields.size());
 
@@ -59,11 +64,10 @@ class BpmnDefinitionParserTest {
         assertTrue(Boolean.TRUE.equals(responsableField.getWritable()));
         assertEquals("select", responsableField.getComponent());
         assertEquals("rest", responsableField.getSource());
-        assertEquals("/api/v1/usuarios", responsableField.getUrl());
-        assertNotNull(responsableField.getParams());
-        assertEquals("RESPONSABLE_MANTENIMIENTO", responsableField.getParams().get("rol"));
-        assertEquals("${areaSolicitanteId}", responsableField.getParams().get("areaId"));
-        assertEquals("true", responsableField.getParams().get("activo"));
+        assertEquals(
+                "/api/v1/grupos-aprobadores/aprobadores/d29c8b14-7cde-52b2-a9e3-811fd41833b0/dependientes/select",
+                responsableField.getUrl()
+        );
 
         WorkflowFieldResponse comentarioField = fields.stream()
                 .filter(f -> "comentario".equals(f.getId()))

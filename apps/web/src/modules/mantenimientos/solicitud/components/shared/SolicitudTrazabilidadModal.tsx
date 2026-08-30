@@ -346,7 +346,10 @@ export function SolicitudTrazabilidadModal({
                               <div className="flex items-center gap-1 min-w-0">
                                 <User className="size-3 text-primary shrink-0" />
                                 <span className="truncate">
-                                  Asignado a: <strong className="text-foreground">{task.assignee}</strong>
+                                  Asignado a:{" "}
+                                  <strong className="text-foreground">
+                                    {task.assigneeName || task.assignee}
+                                  </strong>
                                 </span>
                               </div>
                             ) : (

@@ -22,8 +22,7 @@
 
             sigma:component="select"
             sigma:source="rest"
-            sigma:url="/api/v1/usuarios"
-            sigma:params="rol=RESPONSABLE_MANTENIMIENTO;areaId=${areaSolicitanteId};activo=true">
+            sigma:url="/api/v1/grupos-aprobadores/aprobadores/${aprobadorId}/dependientes/select">
         </flowable:formProperty>
 
 

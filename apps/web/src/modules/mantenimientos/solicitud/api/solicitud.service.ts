@@ -209,6 +209,7 @@ export type WorkflowHistoryItem = {
   taskDefinitionKey: string
   taskName: string
   assignee?: string | null
+  assigneeName?: string | null
   startTime?: string | null
   endTime?: string | null
   status: "COMPLETADA" | "ACTIVA" | string

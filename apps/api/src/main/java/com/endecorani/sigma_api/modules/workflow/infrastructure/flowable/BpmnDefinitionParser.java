@@ -71,6 +71,14 @@ public class BpmnDefinitionParser {
             String bpmnXml,
             String taskDefinitionKey
     ) {
+        return obtenerCampos(bpmnXml, taskDefinitionKey, Map.of());
+    }
+
+    public List<WorkflowFieldResponse> obtenerCampos(
+            String bpmnXml,
+            String taskDefinitionKey,
+            Map<String, Object> contextVariables
+    ) {
 
         try {
             if (bpmnXml == null || bpmnXml.isBlank() || taskDefinitionKey == null || taskDefinitionKey.isBlank()) {
@@ -110,8 +118,8 @@ public class BpmnDefinitionParser {
 
                 String component = getAttributeValue(formProperty, "sigma:component", "component");
                 String source = getAttributeValue(formProperty, "sigma:source", "source");
-                String url = getAttributeValue(formProperty, "sigma:url", "url");
-                String paramsStr = getAttributeValue(formProperty, "sigma:params", "params");
+                String url = resolveVariables(getAttributeValue(formProperty, "sigma:url", "url"), contextVariables);
+                String paramsStr = resolveVariables(getAttributeValue(formProperty, "sigma:params", "params"), contextVariables);
                 Map<String, String> params = parseParams(paramsStr);
 
                 List<WorkflowFieldOptionResponse> options = obtenerOpciones(formProperty);
@@ -139,6 +147,22 @@ public class BpmnDefinitionParser {
                     ex
             );
         }
+    }
+
+    private String resolveVariables(String text, Map<String, Object> contextVariables) {
+        if (text == null || text.isBlank() || contextVariables == null || contextVariables.isEmpty()) {
+            return text;
+        }
+        String result = text;
+        for (Map.Entry<String, Object> entry : contextVariables.entrySet()) {
+            if (entry.getKey() != null && entry.getValue() != null) {
+                String placeholder1 = "${" + entry.getKey() + "}";
+                String placeholder2 = "{" + entry.getKey() + "}";
+                String valStr = entry.getValue().toString();
+                result = result.replace(placeholder1, valStr).replace(placeholder2, valStr);
+            }
+        }
+        return result;
     }
 
     private Map<String, String> parseParams(String paramsStr) {
@@ -169,6 +193,10 @@ public class BpmnDefinitionParser {
     }
 
     private String getAttributeValue(Element element, String... attributeNames) {
+        if (element == null) {
+            return null;
+        }
+
         for (String attr : attributeNames) {
             if (element.hasAttribute(attr)) {
                 String val = element.getAttribute(attr);
@@ -177,6 +205,23 @@ public class BpmnDefinitionParser {
                 }
             }
         }
+
+        NamedNodeMap attributes = element.getAttributes();
+        if (attributes != null) {
+            for (int i = 0; i < attributes.getLength(); i++) {
+                Node node = attributes.item(i);
+                String nodeName = node.getNodeName();
+                for (String attr : attributeNames) {
+                    if (nodeName.equalsIgnoreCase(attr) || nodeName.endsWith(":" + attr) || nodeName.equalsIgnoreCase("sigma:" + attr)) {
+                        String val = node.getNodeValue();
+                        if (val != null && !val.isBlank()) {
+                            return val.trim();
+                        }
+                    }
+                }
+            }
+        }
+
         return null;
     }
 

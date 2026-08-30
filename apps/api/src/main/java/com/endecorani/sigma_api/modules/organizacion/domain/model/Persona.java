@@ -41,4 +41,10 @@ public class Persona extends AuditableModel {
     private String codigoExterno;
 
     private Boolean activo;
+
+    public String getNombreCompleto() {
+        return java.util.stream.Stream.of(nombres, primerApellido, segundoApellido)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(java.util.stream.Collectors.joining(" "));
+    }
 }

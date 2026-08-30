@@ -5,6 +5,7 @@ public record WorkflowHistoryItemResponse(
         String taskDefinitionKey,
         String taskName,
         String assignee,
+        String assigneeName,
         String startTime,
         String endTime,
         String status

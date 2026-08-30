@@ -10,11 +10,14 @@ import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.Flo
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.HistoricTaskResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.ProcessDefinitionResponse;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.TaskResponse;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +25,8 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
 
     private final FlowableClient flowableClient;
     private final BpmnDefinitionParser bpmnDefinitionParser;
+    private final EmpleadoRepository empleadoRepository;
+    private final PersonaRepository personaRepository;
 
     @Override
     public String iniciarProceso(String processDefinitionKey, String businessKey, Map<String, Object> variables) {
@@ -109,16 +114,35 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                         processDefinition.resource()
                 );
 
-        String bpmnXml =
-                flowableClient.obtenerBpmn(
-                        processDefinition.deploymentId(),
-                        resourceName
-                );
+        String bpmnXml = null;
+        try {
+            bpmnXml = flowableClient.obtenerBpmn(
+                    processDefinition.deploymentId(),
+                    resourceName
+            );
+        } catch (Exception ignored) {
+        }
+
+        if (bpmnXml == null || !bpmnXml.contains("sigma:")) {
+            try (var is = getClass().getResourceAsStream("/processes/" + resourceName)) {
+                if (is != null) {
+                    bpmnXml = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        java.util.Map<String, Object> contextVariables = new java.util.HashMap<>();
+        if (task.assignee() != null && !task.assignee().isBlank()) {
+            contextVariables.put("aprobadorId", task.assignee());
+            contextVariables.put("assignee", task.assignee());
+        }
 
         List<WorkflowFieldResponse> fields =
                 bpmnDefinitionParser.obtenerCampos(
                         bpmnXml,
-                        task.taskDefinitionKey()
+                        task.taskDefinitionKey(),
+                        contextVariables
                 );
 
         List<WorkflowActionResponse> actions =
@@ -161,25 +185,61 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
         List<WorkflowHistoryItemResponse> items =
                 response.data()
                         .stream()
-                        .map(task ->
-                                new WorkflowHistoryItemResponse(
-                                        task.id(),
-                                        task.taskDefinitionKey(),
-                                        task.name(),
-                                        task.assignee(),
-                                        task.startTime(),
-                                        task.endTime(),
-                                        task.endTime() != null
-                                                ? "COMPLETADA"
-                                                : "ACTIVA"
-                                )
-                        )
+                        .map(task -> {
+                            String assigneeName = resolverNombreAsignado(task.assignee());
+                            return new WorkflowHistoryItemResponse(
+                                    task.id(),
+                                    task.taskDefinitionKey(),
+                                    task.name(),
+                                    task.assignee(),
+                                    assigneeName,
+                                    task.startTime(),
+                                    task.endTime(),
+                                    task.endTime() != null
+                                            ? "COMPLETADA"
+                                            : "ACTIVA"
+                            );
+                        })
                         .toList();
 
         return new WorkflowHistoryResponse(
                 processInstanceId,
                 items
         );
+    }
+
+    private String resolverNombreAsignado(String assignee) {
+        if (assignee == null || assignee.isBlank()) {
+            return null;
+        }
+
+        try {
+            UUID id = UUID.fromString(assignee.trim());
+
+            var empleadoOpt = empleadoRepository.findById(id);
+            if (empleadoOpt.isPresent()) {
+                var emp = empleadoOpt.get();
+                var personaOpt = emp.getPersonaId() != null
+                        ? personaRepository.findById(emp.getPersonaId())
+                        : java.util.Optional.<com.endecorani.sigma_api.modules.organizacion.domain.model.Persona>empty();
+
+                String nombre = personaOpt.map(com.endecorani.sigma_api.modules.organizacion.domain.model.Persona::getNombreCompleto).orElse(null);
+                if (nombre != null && !nombre.isBlank()) {
+                    return nombre + (emp.getCodigo() != null ? " [" + emp.getCodigo() + "]" : "");
+                }
+                return emp.getCodigo() != null ? "Empleado " + emp.getCodigo() : null;
+            }
+
+            var personaOpt = personaRepository.findById(id);
+            if (personaOpt.isPresent()) {
+                return personaOpt.get().getNombreCompleto();
+            }
+
+        } catch (IllegalArgumentException ignored) {
+            // No es UUID, retornar assignee directamente si ya es un nombre o username
+        }
+
+        return assignee;
     }
 
     @Override
