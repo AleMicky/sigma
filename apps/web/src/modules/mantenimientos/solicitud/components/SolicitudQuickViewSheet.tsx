@@ -292,9 +292,9 @@ export function SolicitudQuickViewSheet({
             </div>
             {solicitud.fechaSolicitud && (
               <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40">
-                <span className="text-muted-foreground">Fecha:</span>
+                <span className="text-muted-foreground">Fecha y Hora:</span>
                 <span className="font-medium text-foreground">
-                  {formatDate(solicitud.fechaSolicitud)}
+                  {formatDateTime(solicitud.fechaSolicitud)}
                 </span>
               </div>
             )}

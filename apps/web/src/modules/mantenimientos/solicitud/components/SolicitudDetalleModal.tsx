@@ -36,7 +36,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog"
 import { cn } from "@/shared/lib/utils"
-import { formatDate } from "@/shared/utils/date.utils"
+import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
 import { solicitudQueries } from "../api/solicitud.queries"
 import type {
@@ -332,7 +332,7 @@ export function SolicitudDetalleModal({
                 <span>Fecha Solicitud</span>
               </div>
               <p className="font-medium text-foreground text-[11.5px]">
-                {solicitud.fechaSolicitud ? formatDate(solicitud.fechaSolicitud) : "—"}
+                {solicitud.fechaSolicitud ? formatDateTime(solicitud.fechaSolicitud) : "—"}
               </p>
             </div>
 

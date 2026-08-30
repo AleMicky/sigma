@@ -5,8 +5,8 @@ import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
   ArrowLeft,
-  Calendar,
   Check,
+  Clock,
   FileText,
   HelpCircle,
   ImageIcon,
@@ -45,6 +45,7 @@ import { CatalogoCombobox } from "@/shared/components/catalogo-combobox"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { ActivoCombobox } from "@/modules/mantenimientos/orden-trabajo/components/ActivoCombobox"
 import { cn } from "@/shared/lib/utils"
+import { formatDateTime } from "@/shared/utils/date.utils"
 
 import {
   useCreateSolicitud,
@@ -163,7 +164,8 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
 
   const defaultPrioridadId = useMemo(() => {
     if (currentPrioridadId) return currentPrioridadId
-    const defaultItem = prioridadesList.find((p) => p.porDefecto) ?? prioridadesList[0]
+    const defaultItem =
+      prioridadesList.find((p) => Boolean(p.porDefecto)) ?? prioridadesList[0]
     return defaultItem?.id ?? ""
   }, [currentPrioridadId, prioridadesList])
 
@@ -239,12 +241,14 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     [empleadosList],
   )
 
-  function getTodayDateString() {
+  function getTodayDateTimeString() {
     const now = new Date()
     const year = now.getFullYear()
     const month = String(now.getMonth() + 1).padStart(2, "0")
     const day = String(now.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
+    const hours = String(now.getHours()).padStart(2, "0")
+    const minutes = String(now.getMinutes()).padStart(2, "0")
+    return `${year}-${month}-${day}T${hours}:${minutes}`
   }
 
   function getEmpleadoNombre(emp?: Empleado | null): string {
@@ -263,13 +267,15 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
         prioridadId: currentPrioridadId,
         solicitanteId: currentSolicitanteId,
         fechaSolicitud: solicitud.fechaSolicitud
-          ? solicitud.fechaSolicitud.substring(0, 10)
-          : getTodayDateString(),
+          ? (solicitud.fechaSolicitud.length >= 16
+              ? solicitud.fechaSolicitud.substring(0, 16)
+              : solicitud.fechaSolicitud)
+          : getTodayDateTimeString(),
       }
       : {
         ...defaultSolicitudValues,
         prioridadId: defaultPrioridadId,
-        fechaSolicitud: getTodayDateString(),
+        fechaSolicitud: getTodayDateTimeString(),
       }) as SolicitudFormValues,
     validators: {
       onSubmit: solicitudSchema,
@@ -287,9 +293,11 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
           prioridadId: value.prioridadId.trim(),
           solicitanteId: value.solicitanteId.trim(),
           fechaSolicitud: value.fechaSolicitud
-            ? (value.fechaSolicitud.includes("T")
-              ? value.fechaSolicitud
-              : `${value.fechaSolicitud}T00:00:00`)
+            ? (value.fechaSolicitud.length === 16
+                ? `${value.fechaSolicitud}:00`
+                : (value.fechaSolicitud.includes("T")
+                    ? value.fechaSolicitud
+                    : `${value.fechaSolicitud}T00:00:00`))
             : null,
         }
 
@@ -320,13 +328,17 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     },
   })
 
-  // Autoseleccionar por defecto la prioridad predeterminada (o primer nivel) en creación
+  // Autoseleccionar por defecto la prioridad predeterminada (porDefecto) en creación
   useEffect(() => {
     if (!isEditing && prioridadesList.length > 0) {
       const currentVal = form.getFieldValue("prioridadId")
       if (!currentVal) {
-        const defaultItem = prioridadesList.find((p) => p.porDefecto) ?? prioridadesList[0]
-        form.setFieldValue("prioridadId", defaultItem.id)
+        const defaultItem =
+          prioridadesList.find((p) => Boolean(p.porDefecto)) ??
+          prioridadesList[0]
+        if (defaultItem) {
+          form.setFieldValue("prioridadId", defaultItem.id)
+        }
       }
     }
   }, [isEditing, prioridadesList, form])
@@ -658,13 +670,20 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                                   value={p.id}
                                   className="text-xs cursor-pointer py-2.5"
                                 >
-                                  <div className="flex items-center gap-2.5 min-w-0">
-                                    <span
-                                      className={`size-2.5 rounded-full inline-block shrink-0 ${pCfg.dotClass}`}
-                                    />
-                                    <span className="truncate font-medium text-foreground">
-                                      {p.nombre}
-                                    </span>
+                                  <div className="flex items-center justify-between gap-2 w-full min-w-0">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <span
+                                        className={`size-2.5 rounded-full inline-block shrink-0 ${pCfg.dotClass}`}
+                                      />
+                                      <span className="truncate font-medium text-foreground">
+                                        {p.nombre}
+                                      </span>
+                                    </div>
+                                    {p.porDefecto && (
+                                      <span className="text-[10px] font-semibold text-muted-foreground px-1.5 py-0.5 rounded bg-muted border border-border/60 shrink-0">
+                                        Por defecto
+                                      </span>
+                                    )}
                                   </div>
                                 </SelectItem>
                               )
@@ -775,7 +794,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                   }}
                 </form.Field>
 
-                {/* Fecha de Solicitud */}
+                {/* Fecha y Hora de Solicitud */}
                 <form.Field name="fechaSolicitud">
                   {(field) => {
                     const isInvalid =
@@ -784,19 +803,19 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                     return (
                       <Field data-invalid={isInvalid || undefined}>
                         <FieldLabel htmlFor={field.name}>
-                          Fecha de Solicitud
+                          Fecha y Hora de Solicitud
                         </FieldLabel>
                         <div className="relative">
                           <Input
                             id={field.name}
-                            type="date"
+                            type="datetime-local"
                             name={field.name}
                             value={field.state.value ?? ""}
                             disabled
                             aria-invalid={isInvalid}
                             className="h-10 text-sm shadow-2xs pr-9 bg-muted/50 text-muted-foreground cursor-not-allowed"
                           />
-                          <Calendar className="pointer-events-none absolute right-3 top-2.5 size-4 text-muted-foreground" />
+                          <Clock className="pointer-events-none absolute right-3 top-2.5 size-4 text-muted-foreground" />
                         </div>
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
@@ -1082,10 +1101,12 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
 
                         <div className="flex items-center gap-1.5 min-w-0">
                           <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
-                            Fecha:
+                            Fecha y Hora:
                           </span>
                           <span className="font-medium text-foreground truncate">
-                            {values.fechaSolicitud || "Hoy"}
+                            {values.fechaSolicitud
+                              ? formatDateTime(values.fechaSolicitud)
+                              : "Ahora"}
                           </span>
                         </div>
 

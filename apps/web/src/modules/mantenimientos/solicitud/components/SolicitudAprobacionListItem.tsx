@@ -24,7 +24,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
-import { formatDate } from "@/shared/utils/date.utils"
+import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
 import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
 import { controlActivoQueries } from "@/modules/mantenimientos/control-activo/api/control-activo.queries"
@@ -346,7 +346,7 @@ export function SolicitudAprobacionListItem({
           {solicitud.fechaSolicitud && (
             <div className="flex items-center gap-1 text-muted-foreground">
               <Calendar className="size-3 opacity-70" />
-              <span>{formatDate(solicitud.fechaSolicitud)}</span>
+              <span>{formatDateTime(solicitud.fechaSolicitud)}</span>
             </div>
           )}
 

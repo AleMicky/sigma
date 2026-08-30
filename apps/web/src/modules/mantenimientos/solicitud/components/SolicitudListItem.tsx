@@ -241,7 +241,7 @@ export function SolicitudListItem({
               {solicitud.fechaSolicitud ? (
                 <span className="inline-flex items-center gap-1 text-[11px]">
                   <Calendar className="size-3 text-muted-foreground/70" />
-                  <span>{formatDate(solicitud.fechaSolicitud)}</span>
+                  <span>{formatDateTime(solicitud.fechaSolicitud)}</span>
                 </span>
               ) : null}
 
