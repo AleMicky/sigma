@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
 import {
   Activity,
   AlertTriangle,
@@ -40,7 +39,6 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function EncargadoMantenimientoPage() {
   const completeWorkflowMutation = useCompleteWorkflowTask()
-  const navigate = useNavigate()
   const [modalSolicitud, setModalSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
@@ -161,17 +159,6 @@ export function EncargadoMantenimientoPage() {
       action,
       taskName,
       fields,
-    })
-  }
-
-  function handleCreateOT(solicitud: SolicitudMantenimiento) {
-    navigate({
-      to: "/mantenimientos/ordenes-trabajo/nuevo",
-      search: {
-        solicitudId: solicitud.id,
-        activoId: solicitud.activo?.id,
-        responsableId: solicitud.responsable?.id,
-      },
     })
   }
 
@@ -479,11 +466,6 @@ export function EncargadoMantenimientoPage() {
                 <SolicitudAprobacionListView
                   solicitudes={solicitudes}
                   onQuickView={handleOpenModal}
-                  onActionSelect={handleActionSelect}
-                  onCreateOT={handleCreateOT}
-                  showControlActivo
-                  onViewControlActivo={(sol) => setControlActivoTarget(sol)}
-                  onViewOT={(_sol, ot) => setSelectedOT(ot ?? null)}
                 />
               </div>
 

@@ -291,8 +291,6 @@ export function AprobacionesPage() {
                 <SolicitudAprobacionListView
                   solicitudes={solicitudes}
                   onQuickView={handleOpenModal}
-                  onWorkflowEvaluar={handleOpenModal}
-                  onViewTrazabilidad={(solicitud) => setTrazabilidadSolicitud(solicitud)}
                 />
               </div>
 

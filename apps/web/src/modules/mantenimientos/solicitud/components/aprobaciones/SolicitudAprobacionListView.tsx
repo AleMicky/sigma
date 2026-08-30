@@ -1,37 +1,14 @@
-import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
-import type {
-  SolicitudMantenimiento,
-  WorkflowAction,
-  WorkflowField,
-} from "../../api/solicitud.service"
+import type { SolicitudMantenimiento } from "../../api/solicitud.service"
 import { SolicitudAprobacionListItem } from "./SolicitudAprobacionListItem"
 
 type SolicitudAprobacionListViewProps = {
   solicitudes: SolicitudMantenimiento[]
   onQuickView: (solicitud: SolicitudMantenimiento) => void
-  onViewTrazabilidad?: (solicitud: SolicitudMantenimiento) => void
-  onWorkflowEvaluar?: (solicitud: SolicitudMantenimiento) => void
-  onActionSelect?: (
-    solicitud: SolicitudMantenimiento,
-    action: WorkflowAction,
-    taskName?: string,
-    fields?: WorkflowField[],
-  ) => void
-  onCreateOT?: (solicitud: SolicitudMantenimiento) => void
-  showControlActivo?: boolean
-  onViewControlActivo?: (solicitud: SolicitudMantenimiento) => void
-  onViewOT?: (solicitud: SolicitudMantenimiento, ot?: OrdenTrabajo | null) => void
 }
 
 export function SolicitudAprobacionListView({
   solicitudes,
   onQuickView,
-  onViewTrazabilidad,
-  onWorkflowEvaluar,
-  onCreateOT,
-  showControlActivo,
-  onViewControlActivo,
-  onViewOT,
 }: SolicitudAprobacionListViewProps) {
   return (
     <div className="w-full rounded-2xl border border-border/80 bg-card overflow-hidden shadow-2xs">
@@ -41,12 +18,6 @@ export function SolicitudAprobacionListView({
             key={solicitud.id}
             solicitud={solicitud}
             onQuickView={onQuickView}
-            onViewTrazabilidad={onViewTrazabilidad}
-            onWorkflowEvaluar={onWorkflowEvaluar}
-            onCreateOT={onCreateOT}
-            showControlActivo={showControlActivo}
-            onViewControlActivo={onViewControlActivo}
-            onViewOT={onViewOT}
           />
         ))}
       </ul>

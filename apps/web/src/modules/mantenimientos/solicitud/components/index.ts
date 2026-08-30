@@ -10,9 +10,6 @@ export * from "./gestion/SolicitudFilterToolbar"
 export * from "./gestion/ConfirmEnviarDialog"
 export * from "./gestion/SolicitudQuickViewSheet"
 
-// Aprobaciones & Encargado
+// Aprobaciones & Encargado & Supervisor
 export * from "./aprobaciones/SolicitudAprobacionListItem"
 export * from "./aprobaciones/SolicitudAprobacionListView"
-
-// Supervisor
-export * from "./supervisor/SupervisorRevisionModal"

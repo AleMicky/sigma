@@ -33,7 +33,6 @@ import type {
 import {
   SolicitudAprobacionListView,
   SolicitudDetalleModal,
-  SupervisorRevisionModal,
 } from "../components"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
@@ -47,9 +46,7 @@ export function SupervisorMantenimientoPage() {
     "ALL" | "EN_REVISION" | "OBSERVADO_MANTENIMIENTO" | "VALIDADO"
   >("EN_REVISION")
 
-  // Modal states for inspecting Control de Activo, OT and Supervisor Revision
-  const [revisionModalSolicitud, setRevisionModalSolicitud] =
-    useState<SolicitudMantenimiento | null>(null)
+  // Modal states for inspecting Control de Activo and OT
   const [controlActivoTarget, setControlActivoTarget] =
     useState<SolicitudMantenimiento | null>(null)
   const [selectedOT, setSelectedOT] = useState<OrdenTrabajo | null>(null)
@@ -432,11 +429,7 @@ export function SupervisorMantenimientoPage() {
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
               <SolicitudAprobacionListView
                 solicitudes={solicitudes}
-                onQuickView={(sol) => setRevisionModalSolicitud(sol)}
-                onActionSelect={handleActionSelect}
-                showControlActivo={true}
-                onViewControlActivo={(sol) => setControlActivoTarget(sol)}
-                onViewOT={(sol) => setRevisionModalSolicitud(sol)}
+                onQuickView={(sol) => setModalSolicitud(sol)}
               />
             </div>
           )}
@@ -450,16 +443,6 @@ export function SupervisorMantenimientoPage() {
           ) : null}
         </div>
       </div>
-
-      {/* Modal Especializado de Revisión del Supervisor (OT + Actividades + Evidencias + Decisión) */}
-      <SupervisorRevisionModal
-        solicitud={revisionModalSolicitud}
-        open={Boolean(revisionModalSolicitud)}
-        onOpenChange={(open) => !open && setRevisionModalSolicitud(null)}
-        onSuccess={() => {
-          solicitudesQuery.refetch()
-        }}
-      />
 
       {/* Modal Detalle / Expediente Completo */}
       <SolicitudDetalleModal
