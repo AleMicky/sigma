@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { AlertCircle, Calendar, Check, Clock, Copy, Flame, User } from "lucide-react"
+import { AlertCircle, Calendar, Check, Clock, Copy, Flame } from "lucide-react"
 import { toast } from "sonner"
 
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
@@ -62,7 +62,7 @@ export function PrioridadListView({
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="w-full rounded-2xl border border-border/80 bg-card divide-y divide-border/40 overflow-hidden shadow-2xs">
       {prioridades.map((prioridad) => {
         const nivelStyles = getNivelPrioridadStyles(prioridad.nivel)
         const isCopied = copiedId === prioridad.id
@@ -79,120 +79,96 @@ export function PrioridadListView({
         return (
           <div
             key={prioridad.id}
-            className="group flex flex-col justify-between gap-3 p-4 sm:p-5 rounded-2xl border border-border/80 bg-card shadow-2xs hover:border-primary/40 hover:bg-muted/10 hover:shadow-xs transition-all"
+            className="group flex items-start justify-between gap-3 p-3 sm:px-4 sm:py-3 transition-colors hover:bg-muted/30"
           >
-            {/* Cabecera de la fila: Icono, Título, Código, Badge de Nivel y Acciones */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                <span
-                  className={`flex size-10 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105 ${nivelStyles.iconClass}`}
-                >
-                  {prioridad.nivel >= 4 ? (
-                    <Flame className="size-5" />
-                  ) : (
-                    <AlertCircle className="size-5" />
-                  )}
-                </span>
+            {/* Lado izquierdo: Icono y contenido principal */}
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <span
+                className={`flex size-8 shrink-0 items-center justify-center rounded-lg border shadow-2xs transition-transform group-hover:scale-105 ${nivelStyles.iconClass}`}
+              >
+                {prioridad.nivel >= 4 ? (
+                  <Flame className="size-4" />
+                ) : (
+                  <AlertCircle className="size-4" />
+                )}
+              </span>
 
-                <div className="flex flex-col min-w-0 flex-1 gap-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors">
-                      {prioridad.nombre}
-                    </span>
+              <div className="flex flex-col min-w-0 flex-1 gap-1">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
+                    {prioridad.nombre}
+                  </span>
 
-                    <div className="flex items-center gap-1">
-                      <code className="rounded-md bg-muted px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground">
-                        {prioridad.codigo}
-                      </code>
-                      <button
-                        type="button"
-                        onClick={(e) => copyCode(e, prioridad)}
-                        className="inline-flex size-5 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
-                        title="Copiar código"
-                      >
-                        {isCopied ? (
-                          <Check className="size-3 text-emerald-500" />
-                        ) : (
-                          <Copy className="size-3" />
-                        )}
-                      </button>
-                    </div>
-
-                    <Badge
-                      variant="outline"
-                      className={`gap-1 text-[11px] font-semibold px-2 py-0.5 ${nivelStyles.badgeClass}`}
+                  <div className="flex items-center gap-1">
+                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+                      {prioridad.codigo}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={(e) => copyCode(e, prioridad)}
+                      className="inline-flex size-4 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+                      title="Copiar código"
                     >
-                      <span>Nivel {prioridad.nivel}</span>
-                    </Badge>
-
-                    {prioridad.porDefecto ? (
-                      <Badge
-                        variant="secondary"
-                        className="bg-primary/10 text-primary border-primary/25 text-[10px] font-semibold px-2 py-0.5"
-                      >
-                        Por Defecto
-                      </Badge>
-                    ) : null}
+                      {isCopied ? (
+                        <Check className="size-2.5 text-emerald-500" />
+                      ) : (
+                        <Copy className="size-2.5" />
+                      )}
+                    </button>
                   </div>
 
-                  {/* Descripción */}
-                  {prioridad.descripcion ? (
-                    <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed pt-0.5">
-                      {prioridad.descripcion}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground/40 italic pt-0.5">
-                      Sin descripción registrada
-                    </p>
-                  )}
-                </div>
-              </div>
+                  <Badge
+                    variant="outline"
+                    className={`gap-1 text-[10px] font-semibold px-1.5 py-0.2 ${nivelStyles.badgeClass}`}
+                  >
+                    <span>Nivel {prioridad.nivel}</span>
+                  </Badge>
 
-              {/* Botones de acción */}
-              <div className="flex items-center justify-end shrink-0 pt-0.5">
-                <RowActions
-                  editLabel="Editar prioridad"
-                  deleteLabel="Eliminar prioridad"
-                  deleteDisabled={deleteMutation.isPending}
-                  onEdit={() => onEdit(prioridad)}
-                  onDelete={() => setPrioridadToDelete(prioridad)}
-                />
+                  {prioridad.porDefecto ? (
+                    <Badge
+                      variant="secondary"
+                      className="bg-primary/10 text-primary border-primary/25 text-[10px] font-semibold px-1.5 py-0.2"
+                    >
+                      Por Defecto
+                    </Badge>
+                  ) : null}
+                </div>
+
+                {prioridad.descripcion ? (
+                  <p className="line-clamp-1 text-xs text-muted-foreground leading-snug">
+                    {prioridad.descripcion}
+                  </p>
+                ) : null}
+
+                {/* Auditoría compacta */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground/60 font-normal">
+                  {createdAt ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="size-2.5 shrink-0" />
+                      Creado: {formatDateTime(createdAt)}
+                      {createdBy ? ` (${createdBy})` : ""}
+                    </span>
+                  ) : null}
+                  {updatedAt && updatedAt !== createdAt ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="size-2.5 shrink-0" />
+                      Modificado: {formatDateTime(updatedAt)}
+                      {updatedBy ? ` (${updatedBy})` : ""}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            {/* Barra inferior de datos de auditoría */}
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-2.5 border-t border-border/30 text-[11px] text-muted-foreground/75 font-normal">
-              {createdAt ? (
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="size-3 text-muted-foreground/50 shrink-0" />
-                  <span>
-                    <strong className="font-medium text-muted-foreground">Creado:</strong>{" "}
-                    {formatDateTime(createdAt)}
-                    {createdBy ? ` por ${createdBy}` : ""}
-                  </span>
-                </div>
-              ) : null}
-
-              {updatedAt && updatedAt !== createdAt ? (
-                <div className="flex items-center gap-1.5">
-                  <Clock className="size-3 text-muted-foreground/50 shrink-0" />
-                  <span>
-                    <strong className="font-medium text-muted-foreground">Actualizado:</strong>{" "}
-                    {formatDateTime(updatedAt)}
-                    {updatedBy ? ` por ${updatedBy}` : ""}
-                  </span>
-                </div>
-              ) : null}
-
-              {!createdAt && !updatedAt && (createdBy || updatedBy) ? (
-                <div className="flex items-center gap-1.5">
-                  <User className="size-3 text-muted-foreground/50 shrink-0" />
-                  <span>
-                    <strong className="font-medium text-muted-foreground">Autor:</strong>{" "}
-                    {updatedBy ?? createdBy}
-                  </span>
-                </div>
-              ) : null}
+            {/* Acciones */}
+            <div className="flex items-center justify-end shrink-0 pt-0.5">
+              <RowActions
+                editLabel="Editar prioridad"
+                deleteLabel="Eliminar prioridad"
+                deleteDisabled={deleteMutation.isPending}
+                onEdit={() => onEdit(prioridad)}
+                onDelete={() => setPrioridadToDelete(prioridad)}
+              />
             </div>
           </div>
         )

@@ -88,11 +88,12 @@ export function TipoMantenimientoFormDialog({
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
+      size="sm"
       title={isEditing ? "Editar tipo de mantenimiento" : "Nuevo tipo de mantenimiento"}
       description={
         isEditing
-          ? "Actualiza la información de este tipo de mantenimiento."
-          : "Define un nuevo tipo de mantenimiento para parametrizar la gestión de órdenes de trabajo."
+          ? "Actualiza los datos de este tipo de mantenimiento."
+          : "Define un nuevo tipo de mantenimiento para clasificar las órdenes de trabajo."
       }
       formError={formError}
       onCancel={() => {
@@ -117,8 +118,7 @@ export function TipoMantenimientoFormDialog({
     >
       <form.Field name="codigo">
         {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid = Boolean(field.state.meta.errors.length)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
@@ -133,7 +133,6 @@ export function TipoMantenimientoFormDialog({
                 onChange={(e) =>
                   field.handleChange(e.target.value.toUpperCase().replace(/\s+/g, "_"))
                 }
-                required
                 aria-required
                 aria-invalid={isInvalid}
                 placeholder="EJ: PREVENTIVO, CORRECTIVO, PREDICTIVO"
@@ -150,8 +149,7 @@ export function TipoMantenimientoFormDialog({
 
       <form.Field name="nombre">
         {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid = Boolean(field.state.meta.errors.length)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
@@ -164,10 +162,9 @@ export function TipoMantenimientoFormDialog({
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
-                required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Mantenimiento Preventivo, Mantenimiento Correctivo"
+                placeholder="Mantenimiento Preventivo, Mantenimiento Correctivo..."
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -177,8 +174,7 @@ export function TipoMantenimientoFormDialog({
 
       <form.Field name="descripcion">
         {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid = Boolean(field.state.meta.errors.length)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
@@ -201,11 +197,11 @@ export function TipoMantenimientoFormDialog({
 
       {/* Audit info in edit mode */}
       {isEditing && tipoMantenimiento ? (
-        <div className="rounded-lg border bg-muted/30 p-3 pt-2.5 space-y-1 mt-2">
+        <div className="rounded-lg border bg-muted/30 p-2.5 space-y-1 mt-1 text-xs">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Auditoría
           </p>
-          <AuditInfo data={tipoMantenimiento} />
+          <AuditInfo data={tipoMantenimiento} compact />
         </div>
       ) : null}
     </FormDialog>
