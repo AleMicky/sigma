@@ -15,6 +15,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.endecorani.sigma_api.shared.infrastructure.persistence.listener.AuditUserEntityListener;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -24,7 +25,7 @@ import java.util.UUID;
 @SuperBuilder
 @NoArgsConstructor
 @MappedSuperclass
-@EntityListeners(AuditingEntityListener.class)
+@EntityListeners({AuditingEntityListener.class, AuditUserEntityListener.class})
 public abstract class BaseEntity {
 
     @Id

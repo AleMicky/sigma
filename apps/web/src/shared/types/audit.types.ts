@@ -3,6 +3,8 @@ export type AuditableFields = {
   updatedAt: string | null
   createdBy: string | null
   updatedBy: string | null
+  createdById?: string | null
+  updatedById?: string | null
 }
 
 export type AuditoriaResponse = AuditableFields
