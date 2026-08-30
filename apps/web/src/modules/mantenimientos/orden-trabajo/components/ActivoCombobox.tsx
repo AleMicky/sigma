@@ -30,20 +30,24 @@ export type ActivoComboboxProps = {
 }
 
 function extractPlaca(activo?: Activo | null): string | null {
-  if (!activo) return null
-  if (!activo.descripcion) return null
+  try {
+    if (!activo || typeof activo !== "object") return null
+    if (!activo.descripcion || typeof activo.descripcion !== "string") return null
 
-  // Matches "PLACA 5202TGB", "PLACA: 6333-SYX", "PLACA 5197 LIB", "PLACA-123", etc.
-  const match = activo.descripcion.match(
-    /PLACA[:\s#-]+([0-9A-Z]+(?:[\s-][0-9A-Z]+)*)/i,
-  )
-  if (match && match[1]) {
-    const clean = match[1].replace(/[,.;-]+$/, "").trim()
-    if (clean.length >= 2 && clean.length <= 15) {
-      return clean
+    // Matches "PLACA 5202TGB", "PLACA: 6333-SYX", "PLACA 5197 LIB", "PLACA-123", etc.
+    const match = activo.descripcion.match(
+      /PLACA[:\s#-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)*)/i,
+    )
+    if (match && match[1]) {
+      const clean = match[1].replace(/[,.;-]+$/, "").trim()
+      if (clean.length >= 2 && clean.length <= 20) {
+        return clean
+      }
     }
+    return null
+  } catch {
+    return null
   }
-  return null
 }
 
 export function ActivoCombobox({

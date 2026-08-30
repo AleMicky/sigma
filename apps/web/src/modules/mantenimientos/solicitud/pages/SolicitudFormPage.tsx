@@ -268,8 +268,8 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
         solicitanteId: currentSolicitanteId,
         fechaSolicitud: solicitud.fechaSolicitud
           ? (solicitud.fechaSolicitud.length >= 16
-              ? solicitud.fechaSolicitud.substring(0, 16)
-              : solicitud.fechaSolicitud)
+            ? solicitud.fechaSolicitud.substring(0, 16)
+            : solicitud.fechaSolicitud)
           : getTodayDateTimeString(),
       }
       : {
@@ -294,10 +294,10 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
           solicitanteId: value.solicitanteId.trim(),
           fechaSolicitud: value.fechaSolicitud
             ? (value.fechaSolicitud.length === 16
-                ? `${value.fechaSolicitud}:00`
-                : (value.fechaSolicitud.includes("T")
-                    ? value.fechaSolicitud
-                    : `${value.fechaSolicitud}T00:00:00`))
+              ? `${value.fechaSolicitud}:00`
+              : (value.fechaSolicitud.includes("T")
+                ? value.fechaSolicitud
+                : `${value.fechaSolicitud}T00:00:00`))
             : null,
         }
 
@@ -517,7 +517,6 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         required
                         aria-required
                         aria-invalid={isInvalid}
-                        placeholder="Ej., Tubería con fugas en la sala de calderas principal"
                         className="h-9.5 text-xs sm:text-sm shadow-2xs"
                       />
                       {isInvalid && (
@@ -829,7 +828,6 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
                         required
                         aria-required
                         aria-invalid={isInvalid}
-                        placeholder="Describa el problema, síntomas observados y cualquier contexto relevante..."
                         rows={3}
                         maxLength={2000}
                         className="text-xs sm:text-sm shadow-2xs resize-y"
