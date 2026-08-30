@@ -466,6 +466,7 @@ export function EncargadoMantenimientoPage() {
                 <SolicitudAprobacionListView
                   solicitudes={solicitudes}
                   onQuickView={handleOpenModal}
+                  onActionSelect={handleActionSelect}
                 />
               </div>
 
@@ -497,9 +498,6 @@ export function EncargadoMantenimientoPage() {
         taskName={workflowActionTarget?.taskName}
         fields={workflowActionTarget?.fields}
         entityId={workflowActionTarget?.solicitud?.id}
-        responsableActual={workflowActionTarget?.solicitud?.responsable}
-        aprobadorId={workflowActionTarget?.solicitud?.aprobadoPor?.id}
-        fechaEstimadaActual={workflowActionTarget?.solicitud?.fechaEstimadaOt ?? undefined}
         onExecute={({ variables }) => {
           const item = workflowActionTarget?.solicitud
           if (!item) return Promise.resolve()

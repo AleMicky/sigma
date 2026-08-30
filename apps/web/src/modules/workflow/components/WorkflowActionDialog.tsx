@@ -1,9 +1,7 @@
 import { useId, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
   AlertTriangle,
-  Calendar,
   CheckCircle2,
   CheckSquare,
   FileEdit,
@@ -11,19 +9,13 @@ import {
   Loader2,
   Play,
   RotateCcw,
-  Search,
   Send,
   ShieldCheck,
   Sparkles,
-  UserCheck,
-  Users,
   XCircle,
 } from "lucide-react"
 import { toast } from "sonner"
 
-import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
-import { empleadoResponsabilidadQueries } from "@/modules/organizacion/empleado-responsabilidad/api/empleado-responsabilidad.queries"
-import { grupoAprobadorDependienteQueries } from "@/modules/organizacion/grupo-aprobador-dependiente/api/grupo-aprobador-dependiente.queries"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -49,6 +41,16 @@ import { cn } from "@/shared/lib/utils"
 import type { WorkflowAction, WorkflowField } from "../types/workflow.types"
 import { fixWorkflowEncoding, getWorkflowActionVisuals } from "../utils/workflow.utils"
 
+export type WorkflowActionDialogChildrenProps = {
+  formValues: Record<string, any>
+  setFieldValue: (key: string, value: any) => void
+  formErrors: Record<string, string>
+  setFieldError: (key: string, error: string | null) => void
+  isSubmitting: boolean
+  action: WorkflowAction
+  taskName?: string
+}
+
 export type WorkflowActionDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -56,9 +58,20 @@ export type WorkflowActionDialogProps = {
   taskName?: string
   fields?: WorkflowField[]
   entityId?: string
-  responsableActual?: { id: string; nombre?: string } | null
-  aprobadorId?: string
-  fechaEstimadaActual?: string
+  /**
+   * Optional custom description override
+   */
+  description?: string
+  /**
+   * Slot for extra domain-specific fields passed by the parent module
+   */
+  children?:
+    | React.ReactNode
+    | ((props: WorkflowActionDialogChildrenProps) => React.ReactNode)
+  /**
+   * Optional custom validation before executing
+   */
+  onValidate?: (formValues: Record<string, any>) => Record<string, string> | null
   onExecute: (payload: {
     action: WorkflowAction
     variables: Record<string, any>
@@ -74,9 +87,9 @@ export function WorkflowActionDialog({
   taskName,
   fields = [],
   entityId,
-  responsableActual,
-  aprobadorId,
-  fechaEstimadaActual,
+  description,
+  children,
+  onValidate,
   onExecute,
   onSuccess,
 }: WorkflowActionDialogProps) {
@@ -90,9 +103,9 @@ export function WorkflowActionDialog({
         taskName={taskName}
         fields={fields}
         entityId={entityId}
-        responsableActual={responsableActual}
-        aprobadorId={aprobadorId}
-        fechaEstimadaActual={fechaEstimadaActual}
+        description={description}
+        children={children}
+        onValidate={onValidate}
         onOpenChange={onOpenChange}
         onExecute={onExecute}
         onSuccess={onSuccess}
@@ -106,9 +119,9 @@ function WorkflowActionDialogContent({
   taskName,
   fields,
   entityId,
-  responsableActual,
-  aprobadorId,
-  fechaEstimadaActual,
+  description,
+  children,
+  onValidate,
   onOpenChange,
   onExecute,
   onSuccess,
@@ -117,9 +130,11 @@ function WorkflowActionDialogContent({
   taskName?: string
   fields: WorkflowField[]
   entityId?: string
-  responsableActual?: { id: string; nombre?: string } | null
-  aprobadorId?: string
-  fechaEstimadaActual?: string
+  description?: string
+  children?:
+    | React.ReactNode
+    | ((props: WorkflowActionDialogChildrenProps) => React.ReactNode)
+  onValidate?: (formValues: Record<string, any>) => Record<string, string> | null
   onOpenChange: (open: boolean) => void
   onExecute: (payload: {
     action: WorkflowAction
@@ -131,40 +146,8 @@ function WorkflowActionDialogContent({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const formId = useId()
 
-  const initialFechaEstimada = fechaEstimadaActual
-    ? fechaEstimadaActual.includes("T")
-      ? fechaEstimadaActual.substring(0, 10)
-      : fechaEstimadaActual
-    : ""
-
-  const [formValues, setFormValues] = useState<Record<string, string>>({})
+  const [formValues, setFormValues] = useState<Record<string, any>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
-  const [responsableId, setResponsableId] = useState<string>(
-    responsableActual?.id ?? "",
-  )
-  const [supervisorId, setSupervisorId] = useState<string>("")
-  const [fechaEstimadaOt, setFechaEstimadaOt] = useState<string>(initialFechaEstimada)
-  const [useAllEmployeesSearch, setUseAllEmployeesSearch] = useState<boolean>(false)
-  const [useAllEmployeesForSupervisor, setUseAllEmployeesForSupervisor] = useState<boolean>(false)
-
-  // Query dependientes if approver is given
-  const dependientesQuery = useQuery({
-    ...grupoAprobadorDependienteQueries.dependientesSelect(aprobadorId),
-    enabled: Boolean(aprobadorId),
-  })
-
-  const dependientes = dependientesQuery.data ?? []
-  const hasDependientes = dependientes.length > 0
-
-  // Query supervisores de mantenimiento
-  const supervisoresQuery = useQuery({
-    ...empleadoResponsabilidadQueries.byResponsabilidadCodigo(
-      "SUP_MANTENIMIENTO",
-    ),
-  })
-
-  const supervisores = supervisoresQuery.data ?? []
-  const hasSupervisores = supervisores.length > 0
 
   const cleanActionName = fixWorkflowEncoding(action.name || action.value)
   const cleanTaskName = fixWorkflowEncoding(taskName || "")
@@ -189,40 +172,6 @@ function WorkflowActionDialogContent({
   const isRechazar =
     actionVal.includes("RECHAZ") || actionName.includes("rechazar") || actionName.includes("cancelar")
 
-  const hasResponsableFieldInBpmn = fields.some(
-    (f) =>
-      f.id.toLowerCase() === "responsableid" ||
-      f.name.toLowerCase().includes("responsable") ||
-      f.name.toLowerCase().includes("técnico") ||
-      f.name.toLowerCase().includes("tecnico"),
-  )
-
-  const isAssignmentRelevant =
-    !isIniciar &&
-    (hasResponsableFieldInBpmn ||
-      (isAprobar && !responsableActual) ||
-      (actionName.includes("asign") && !actionName.includes("iniciar")) ||
-      (actionVal.includes("ASIGN") && !actionVal.includes("INIC")) ||
-      (cleanTaskName?.toLowerCase().includes("asign") &&
-        !cleanTaskName?.toLowerCase().includes("iniciar") &&
-        !cleanTaskName?.toLowerCase().includes("mantenimiento")))
-
-  const hasSupervisorFieldInBpmn = fields.some(
-    (f) =>
-      f.id.toLowerCase() === "supervisorid" ||
-      f.name.toLowerCase().includes("supervisor"),
-  )
-
-  const isSupervisorRelevant =
-    !isIniciar &&
-    !isAprobar &&
-    (hasSupervisorFieldInBpmn ||
-      isRevision ||
-      actionVal.includes("REVIS") ||
-      actionName.includes("revis") ||
-      (cleanTaskName?.toLowerCase().includes("enviar") &&
-        cleanTaskName?.toLowerCase().includes("revis")))
-
   const actionVisuals = getWorkflowActionVisuals(action)
 
   const actionColorClass = isAprobar
@@ -243,14 +192,9 @@ function WorkflowActionDialogContent({
                   ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20"
                   : "bg-primary hover:bg-primary/90 text-primary-foreground"
 
-  const writableFields = fields.filter(
-    (f) =>
-      f.writable !== false &&
-      f.id.toLowerCase() !== "responsableid" &&
-      f.id.toLowerCase() !== "supervisorid",
-  )
+  const writableFields = fields.filter((f) => f.writable !== false)
 
-  function handleFieldChange(fieldId: string, val: string) {
+  function setFieldValue(fieldId: string, val: any) {
     setFormValues((prev) => ({ ...prev, [fieldId]: val }))
     if (formErrors[fieldId]) {
       setFormErrors((prev) => {
@@ -261,41 +205,50 @@ function WorkflowActionDialogContent({
     }
   }
 
+  function setFieldError(fieldId: string, error: string | null) {
+    setFormErrors((prev) => {
+      const next = { ...prev }
+      if (error) {
+        next[fieldId] = error
+      } else {
+        delete next[fieldId]
+      }
+      return next
+    })
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!action) return
 
     const errors: Record<string, string> = {}
 
+    // Validate BPMN required fields
     for (const field of writableFields) {
-      if (field.required && !formValues[field.id]?.trim()) {
+      if (field.required && !formValues[field.id]?.toString().trim()) {
         errors[field.id] = `El campo ${field.name} es obligatorio.`
       }
     }
 
+    // Require reason/observation when observing or correcting if no explicit BPMN fields present
     if (isObservar || isCorregir) {
       const obsValue =
         formValues.observacion ||
         formValues.observacionAprobacion ||
         formValues.observacionValidacion ||
         formValues.motivo
-      if (!obsValue?.trim()) {
+      if (!obsValue?.toString().trim() && writableFields.length === 0) {
         errors.observacion =
           "Por favor ingrese el motivo u observación para continuar."
       }
     }
 
-    if (isAssignmentRelevant && (isAprobar || actionName.includes("asign")) && !responsableId) {
-      errors.responsableId = "Debe seleccionar el técnico o responsable asignado."
-    }
-
-    if (isSupervisorRelevant && !supervisorId) {
-      errors.supervisorId = "Debe seleccionar el supervisor que validará el mantenimiento."
-    }
-
-    if (isAprobar && !fechaEstimadaOt?.trim()) {
-      errors.fechaEstimadaOt =
-        "La fecha estimada de la orden de trabajo es obligatoria al aprobar."
+    // Custom validator from parent module if provided
+    if (onValidate) {
+      const customErrors = onValidate(formValues)
+      if (customErrors) {
+        Object.assign(errors, customErrors)
+      }
     }
 
     if (Object.keys(errors).length > 0) {
@@ -312,19 +265,6 @@ function WorkflowActionDialogContent({
       if (value !== undefined && value !== "") {
         payloadVariables[key] = value
       }
-    }
-
-    if (responsableId) {
-      payloadVariables.responsableId = responsableId
-      payloadVariables.tecnicoId = responsableId
-    }
-
-    if (supervisorId) {
-      payloadVariables.supervisorId = supervisorId
-    }
-
-    if (fechaEstimadaOt?.trim()) {
-      payloadVariables.fechaEstimadaOt = fechaEstimadaOt.trim()
     }
 
     try {
@@ -349,7 +289,7 @@ function WorkflowActionDialogContent({
   }
 
   return (
-    <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-border/80 shadow-2xl rounded-2xl">
+    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 border-border/80 shadow-2xl rounded-2xl">
       {/* Dynamic Header */}
       <DialogHeader
         className={cn(
@@ -411,254 +351,53 @@ function WorkflowActionDialogContent({
         </div>
 
         <DialogDescription className="text-xs text-muted-foreground leading-relaxed pt-1">
-          {isAprobar
-            ? "Estás a punto de aprobar esta solicitud. Selecciona el técnico responsable y la fecha estimada de la Orden de Trabajo (OT) para que el personal asignado pueda proceder con las labores."
-            : isObservar
-              ? "Describe claramente las observaciones o motivos para que el solicitante o encargado pueda subsanarlas antes de volver a evaluar."
-              : isCorregir
-                ? "Indica las correcciones que se han realizado sobre la solicitud u orden para reiniciar la revisión."
-                : isIniciar
-                  ? "Se iniciará la ejecución de los trabajos. El estado pasará a Mantenimiento en Progreso."
-                  : isRevision
-                    ? "Se enviará el trabajo completado para la validación y visto bueno del supervisor técnico."
-                    : isValidar
-                      ? "Confirma que los trabajos de mantenimiento se ejecutaron satisfactoriamente según los requerimientos técnicos."
-                      : isCerrar
-                        ? "Confirma la recepción conforme y el cierre definitivo del ciclo de mantenimiento."
-                        : `Completa los datos requeridos para ejecutar la acción "${cleanActionName}".`}
+          {description ||
+            (isAprobar
+              ? `¿Estás seguro de que deseas confirmar la acción "${cleanActionName}" para esta solicitud?`
+              : isObservar
+                ? "Describe claramente las observaciones o motivos para que el solicitante o encargado pueda subsanarlas."
+                : isCorregir
+                  ? "Indica las correcciones que se han realizado para reiniciar el flujo."
+                  : isIniciar
+                    ? "Se iniciará la ejecución de los trabajos."
+                    : isRevision
+                      ? "Se enviará el trabajo completado para validación."
+                      : isValidar
+                        ? "Confirma que las tareas se ejecutaron satisfactoriamente."
+                        : isCerrar
+                          ? "Confirma la recepción conforme y el cierre definitivo del ciclo."
+                          : `Completa los datos requeridos para ejecutar la acción "${cleanActionName}".`)}
         </DialogDescription>
       </DialogHeader>
 
       {/* Form Content */}
       <form id={formId} onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-        {/* Assignment Section (Técnico / Responsable) */}
-        {isAssignmentRelevant && (
-          <div className="space-y-3 p-3.5 rounded-xl border border-primary/20 bg-primary/5">
-            <div className="flex items-center justify-between">
+        {/* Observaciones obligatorias si es OBSERVAR / CORREGIR y no hay campos específicos */}
+        {(isObservar || isCorregir) &&
+          !writableFields.some((f) => f.id.toLowerCase().includes("observ")) && (
+            <div className="space-y-1.5 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5">
               <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <UserCheck className="size-3.5 text-primary" />
-                <span>Técnico / Responsable Asignado</span>
+                <FileEdit className="size-3.5 text-amber-600" />
+                <span>Motivo u Observaciones de la Revisión</span>
                 <span className="text-destructive font-bold">*</span>
               </Label>
-              {hasDependientes && (
-                <button
-                  type="button"
-                  onClick={() => setUseAllEmployeesSearch(!useAllEmployeesSearch)}
-                  className="text-[11px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-medium"
-                >
-                  <Search className="size-3" />
-                  <span>
-                    {useAllEmployeesSearch
-                      ? "Ver solo mi equipo"
-                      : "Buscar en todo el personal"}
-                  </span>
-                </button>
-              )}
-            </div>
-
-            {hasDependientes && !useAllEmployeesSearch ? (
-              <div className="space-y-1.5">
-                <Select
-                  value={responsableId}
-                  onValueChange={(val) => {
-                    setResponsableId(val || "")
-                    if (formErrors.responsableId) {
-                      setFormErrors((prev) => {
-                        const next = { ...prev }
-                        delete next.responsableId
-                        return next
-                      })
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-9 text-xs bg-background">
-                    <SelectValue placeholder="Seleccionar miembro de tu equipo dependiente..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dependientes.map((d) => (
-                      <SelectItem key={d.id} value={d.id} className="text-xs">
-                        <div className="flex flex-col">
-                          <span className="font-semibold">{d.nombreCompleto}</span>
-                          {d.cargo && (
-                            <span className="text-[10px] text-muted-foreground">{d.cargo}</span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-[10.5px] text-muted-foreground flex items-center gap-1">
-                  <Users className="size-3 text-primary" />
-                  <span>Personal asignado a tu grupo de aprobadores.</span>
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                <EmpleadoCombobox
-                  value={responsableId}
-                  onValueChange={(val) => {
-                    setResponsableId(val ?? "")
-                    if (formErrors.responsableId) {
-                      setFormErrors((prev) => {
-                        const next = { ...prev }
-                        delete next.responsableId
-                        return next
-                      })
-                    }
-                  }}
-                  placeholder="Buscar y seleccionar técnico responsable..."
-                />
-              </div>
-            )}
-
-            {formErrors.responsableId && (
-              <p className="text-[11px] font-semibold text-destructive flex items-center gap-1">
-                <AlertCircle className="size-3" />
-                <span>{formErrors.responsableId}</span>
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Supervisor Selection */}
-        {isSupervisorRelevant && (
-          <div className="space-y-3 p-3.5 rounded-xl border border-indigo-500/30 bg-indigo-500/5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <UserCheck className="size-3.5 text-indigo-600" />
-                <span>Supervisor de Validación Técnica</span>
-                <span className="text-destructive font-bold">*</span>
-              </Label>
-              {hasSupervisores && (
-                <button
-                  type="button"
-                  onClick={() => setUseAllEmployeesForSupervisor(!useAllEmployeesForSupervisor)}
-                  className="text-[11px] text-indigo-600 hover:underline cursor-pointer flex items-center gap-1 font-medium"
-                >
-                  <Search className="size-3" />
-                  <span>
-                    {useAllEmployeesForSupervisor
-                      ? "Ver supervisores registrados"
-                      : "Buscar en todo el personal"}
-                  </span>
-                </button>
-              )}
-            </div>
-
-            {hasSupervisores && !useAllEmployeesForSupervisor ? (
-              <div className="space-y-1.5">
-                <Select
-                  value={supervisorId}
-                  onValueChange={(val) => {
-                    setSupervisorId(val || "")
-                    if (formErrors.supervisorId) {
-                      setFormErrors((prev) => {
-                        const next = { ...prev }
-                        delete next.supervisorId
-                        return next
-                      })
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-9 text-xs bg-background">
-                    <SelectValue placeholder="Seleccionar supervisor de mantenimiento..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {supervisores.map((s) => (
-                      <SelectItem key={s.id} value={s.id} className="text-xs">
-                        <div className="flex flex-col">
-                          <span className="font-semibold">{s.nombreCompleto}</span>
-                          <span className="text-[10px] text-muted-foreground">{s.codigo}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              <EmpleadoCombobox
-                value={supervisorId}
-                onValueChange={(val) => {
-                  setSupervisorId(val ?? "")
-                  if (formErrors.supervisorId) {
-                    setFormErrors((prev) => {
-                      const next = { ...prev }
-                      delete next.supervisorId
-                      return next
-                    })
-                  }
-                }}
-                placeholder="Buscar supervisor técnico..."
+              <Textarea
+                rows={3}
+                placeholder="Escribe detalladamente las observaciones o motivos para corregir..."
+                value={formValues.observacion || ""}
+                onChange={(e) => setFieldValue("observacion", e.target.value)}
+                className="text-xs bg-background leading-relaxed resize-none"
               />
-            )}
+              {formErrors.observacion && (
+                <p className="text-[11px] font-semibold text-destructive flex items-center gap-1">
+                  <AlertCircle className="size-3" />
+                  <span>{formErrors.observacion}</span>
+                </p>
+              )}
+            </div>
+          )}
 
-            {formErrors.supervisorId && (
-              <p className="text-[11px] font-semibold text-destructive flex items-center gap-1">
-                <AlertCircle className="size-3" />
-                <span>{formErrors.supervisorId}</span>
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Fecha Estimada OT al Aprobar */}
-        {isAprobar && (
-          <div className="space-y-1.5 p-3.5 rounded-xl border border-emerald-500/25 bg-emerald-500/5">
-            <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <Calendar className="size-3.5 text-emerald-600" />
-              <span>Fecha Estimada para la Orden de Trabajo (OT)</span>
-              <span className="text-destructive font-bold">*</span>
-            </Label>
-            <Input
-              type="date"
-              value={fechaEstimadaOt}
-              onChange={(e) => {
-                setFechaEstimadaOt(e.target.value)
-                if (formErrors.fechaEstimadaOt) {
-                  setFormErrors((prev) => {
-                    const next = { ...prev }
-                    delete next.fechaEstimadaOt
-                    return next
-                  })
-                }
-              }}
-              min={new Date().toISOString().split("T")[0]}
-              className="h-9 text-xs bg-background"
-            />
-            {formErrors.fechaEstimadaOt && (
-              <p className="text-[11px] font-semibold text-destructive flex items-center gap-1">
-                <AlertCircle className="size-3" />
-                <span>{formErrors.fechaEstimadaOt}</span>
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Observaciones obligatorias si es OBSERVAR / CORREGIR */}
-        {(isObservar || isCorregir) && !writableFields.some((f) => f.id.toLowerCase().includes("observ")) && (
-          <div className="space-y-1.5 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5">
-            <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <FileEdit className="size-3.5 text-amber-600" />
-              <span>Motivo u Observaciones de la Revisión</span>
-              <span className="text-destructive font-bold">*</span>
-            </Label>
-            <Textarea
-              rows={3}
-              placeholder="Escribe detalladamente las observaciones o motivos para corregir..."
-              value={formValues.observacion || ""}
-              onChange={(e) => handleFieldChange("observacion", e.target.value)}
-              className="text-xs bg-background leading-relaxed resize-none"
-            />
-            {formErrors.observacion && (
-              <p className="text-[11px] font-semibold text-destructive flex items-center gap-1">
-                <AlertCircle className="size-3" />
-                <span>{formErrors.observacion}</span>
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Dynamic Camunda BPMN Fields */}
+        {/* Dynamic Camunda BPMN Form Fields */}
         {writableFields.length > 0 && (
           <div className="space-y-3 pt-1">
             <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -684,13 +423,13 @@ function WorkflowActionDialogContent({
                       rows={3}
                       placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
                       value={formValues[fieldId] || ""}
-                      onChange={(e) => handleFieldChange(fieldId, e.target.value)}
+                      onChange={(e) => setFieldValue(fieldId, e.target.value)}
                       className="text-xs bg-background resize-none"
                     />
                   ) : field.type === "enum" || field.options ? (
                     <Select
                       value={formValues[fieldId] || ""}
-                      onValueChange={(val) => handleFieldChange(fieldId, val || "")}
+                      onValueChange={(val) => setFieldValue(fieldId, val || "")}
                     >
                       <SelectTrigger className="h-9 text-xs bg-background">
                         <SelectValue placeholder={`Seleccionar ${fieldName.toLowerCase()}...`} />
@@ -712,7 +451,7 @@ function WorkflowActionDialogContent({
                       type={field.type === "long" || field.type === "number" ? "number" : "text"}
                       placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
                       value={formValues[fieldId] || ""}
-                      onChange={(e) => handleFieldChange(fieldId, e.target.value)}
+                      onChange={(e) => setFieldValue(fieldId, e.target.value)}
                       className="h-9 text-xs bg-background"
                     />
                   )}
@@ -728,6 +467,19 @@ function WorkflowActionDialogContent({
             })}
           </div>
         )}
+
+        {/* Extra Module-Specific Content passed through {children} */}
+        {typeof children === "function"
+          ? children({
+              formValues,
+              setFieldValue,
+              formErrors,
+              setFieldError,
+              isSubmitting,
+              action,
+              taskName: cleanTaskName,
+            })
+          : children}
       </form>
 
       {/* Footer */}
@@ -738,7 +490,7 @@ function WorkflowActionDialogContent({
           size="sm"
           onClick={() => onOpenChange(false)}
           disabled={isSubmitting}
-          className="h-8 text-xs font-semibold px-3"
+          className="h-8 text-xs font-semibold px-3 cursor-pointer"
         >
           Cancelar
         </Button>

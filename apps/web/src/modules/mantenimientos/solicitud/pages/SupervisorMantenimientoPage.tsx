@@ -430,6 +430,7 @@ export function SupervisorMantenimientoPage() {
               <SolicitudAprobacionListView
                 solicitudes={solicitudes}
                 onQuickView={(sol) => setModalSolicitud(sol)}
+                onActionSelect={handleActionSelect}
               />
             </div>
           )}
@@ -478,9 +479,6 @@ export function SupervisorMantenimientoPage() {
         taskName={workflowActionTarget?.taskName}
         fields={workflowActionTarget?.fields}
         entityId={workflowActionTarget?.solicitud?.id}
-        responsableActual={workflowActionTarget?.solicitud?.responsable}
-        aprobadorId={workflowActionTarget?.solicitud?.aprobadoPor?.id}
-        fechaEstimadaActual={workflowActionTarget?.solicitud?.fechaEstimadaOt ?? undefined}
         onExecute={({ variables }) => {
           const item = workflowActionTarget?.solicitud
           if (!item) return Promise.resolve()

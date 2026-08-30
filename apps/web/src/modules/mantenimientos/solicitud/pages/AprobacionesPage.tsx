@@ -291,6 +291,9 @@ export function AprobacionesPage() {
                 <SolicitudAprobacionListView
                   solicitudes={solicitudes}
                   onQuickView={handleOpenModal}
+                  onActionSelect={(sol, action, taskName, fields) =>
+                    workflowAction.openAction(sol, action, taskName, fields)
+                  }
                 />
               </div>
 
@@ -329,9 +332,6 @@ export function AprobacionesPage() {
         taskName={workflowAction.target?.taskName}
         fields={workflowAction.target?.fields}
         entityId={workflowAction.target?.item?.id}
-        responsableActual={workflowAction.target?.item?.responsable}
-        aprobadorId={workflowAction.target?.item?.aprobadoPor?.id}
-        fechaEstimadaActual={workflowAction.target?.item?.fechaEstimadaOt ?? undefined}
         onExecute={({ variables }) => {
           const item = workflowAction.target?.item
           if (!item) return Promise.resolve()
