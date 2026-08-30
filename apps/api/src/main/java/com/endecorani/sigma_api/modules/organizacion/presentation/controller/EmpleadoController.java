@@ -88,8 +88,16 @@ public class EmpleadoController {
     @GetMapping
     @Operation(summary = "Listar empleados de forma paginada")
     public ResponseEntity<ApiResponse<PageResponse<EmpleadoResponse>>> findAll(
+            @RequestParam(required = false) String q,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        if (q != null && !q.isBlank()) {
+            return ResponseEntity.ok(
+                    ApiResponse.success(
+                            empleadoService.find(null, null, null, q, pageRequest)
+                    )
+            );
+        }
         return ResponseEntity.ok(
                 ApiResponse.success(
                         empleadoService.findAll(pageRequest)
@@ -100,12 +108,13 @@ public class EmpleadoController {
     @GetMapping("/mis-empleados")
     @Operation(summary = "Listar empleados con código, nombre completo y cargo. Admin: todos; resto: solo los de su persona")
     public ResponseEntity<ApiResponse<PageResponse<EmpleadoResponse>>> findMisEmpleados(
+            @RequestParam(required = false) String q,
             @Valid @ModelAttribute PageRequestDto pageRequest,
             Authentication authentication
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        empleadoService.findMisEmpleados(pageRequest, authentication)
+                        empleadoService.findMisEmpleados(q, pageRequest, authentication)
                 )
         );
     }

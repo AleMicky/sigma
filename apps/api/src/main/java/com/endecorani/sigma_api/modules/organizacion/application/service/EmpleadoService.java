@@ -128,10 +128,14 @@ public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoRes
 
     @Transactional(readOnly = true)
     public PageResponse<EmpleadoResponse> findMisEmpleados(
+            String query,
             PageRequestDto pageRequest,
             Authentication authentication
     ) {
         if (esAdmin(authentication)) {
+            if (query != null && !query.isBlank()) {
+                return find(null, null, null, query, pageRequest);
+            }
             return findAll(pageRequest);
         }
 
@@ -143,7 +147,12 @@ public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoRes
 
         return PageResponse.from(
                 empleadoRepository.findAll(
-                        new EmpleadoSearchCriteria(personaId, null, null, null),
+                        new EmpleadoSearchCriteria(
+                                personaId,
+                                null,
+                                null,
+                                StringUtils.normalize(query)
+                        ),
                         pageRequest.toPageable(allowedSortFields())
                 ),
                 this::toResponse

@@ -12,6 +12,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/shared/components/ui/combobox"
+import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { cn } from "@/shared/lib/utils"
 
 import { empleadoKeys } from "../api/empleado.keys"
@@ -65,15 +66,29 @@ export function EmpleadoCombobox({
   onlyMisEmpleados = false,
 }: EmpleadoComboboxProps) {
   const [page, setPage] = React.useState(0)
+  const [search, setSearch] = React.useState("")
+  const debouncedSearch = useDebouncedValue(search, 300)
+
+  React.useEffect(() => {
+    setPage(0)
+  }, [debouncedSearch])
+
+  const queryParams = {
+    page,
+    size: pageSize,
+    sortBy: "codigo",
+    direction: "ASC" as const,
+    ...(debouncedSearch.trim() ? { q: debouncedSearch.trim() } : {}),
+  }
 
   const query = useQuery({
     queryKey: onlyMisEmpleados
-      ? empleadoKeys.misEmpleados({ page, size: pageSize, sortBy: "codigo", direction: "ASC" })
-      : empleadoKeys.list({ page, size: pageSize, sortBy: "codigo", direction: "ASC" }),
+      ? empleadoKeys.misEmpleados(queryParams)
+      : empleadoKeys.list(queryParams),
     queryFn: () =>
       onlyMisEmpleados
-        ? listMisEmpleados({ page, size: pageSize, sortBy: "codigo", direction: "ASC" })
-        : listEmpleados({ page, size: pageSize, sortBy: "codigo", direction: "ASC" }),
+        ? listMisEmpleados(queryParams)
+        : listEmpleados(queryParams),
   })
 
   // Consulta individual si hay un valor seleccionado que quizás no esté en la página actual
@@ -172,7 +187,10 @@ export function EmpleadoCombobox({
             type="button"
             variant="ghost"
             size="icon-xs"
-            onClick={() => onValueChange?.("", null)}
+            onClick={() => {
+              onValueChange?.("", null)
+              setSearch("")
+            }}
             className="size-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg shrink-0 cursor-pointer"
             title="Cambiar empleado seleccionado"
           >
@@ -188,6 +206,7 @@ export function EmpleadoCombobox({
   return (
     <Combobox
       items={empleados}
+      filter={() => true}
       itemToStringLabel={(item: Empleado) =>
         item ? `${getEmpleadoNombre(item)} [${item.codigo}]` : ""
       }
@@ -195,6 +214,7 @@ export function EmpleadoCombobox({
       value={null}
       onValueChange={(val: Empleado | null) => {
         onValueChange?.(val?.id ?? "", val)
+        setSearch("")
       }}
       disabled={disabled || query.isLoading}
     >
@@ -202,6 +222,7 @@ export function EmpleadoCombobox({
         <ComboboxInput
           id={id}
           name={name}
+          onChange={(e) => setSearch(e.target.value)}
           placeholder={query.isLoading && !query.data ? "Cargando personal..." : placeholder}
           aria-invalid={ariaInvalid}
           onBlur={onBlur}
@@ -218,7 +239,11 @@ export function EmpleadoCombobox({
         {/* Header con indicador y botón de recarga */}
         <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/50 text-[11px] text-muted-foreground bg-muted/30 select-none">
           <span className="font-medium truncate">
-            {query.isFetching ? "Actualizando personal..." : `Personal (${totalElements} registros)`}
+            {query.isFetching
+              ? "Buscando en servidor..."
+              : debouncedSearch.trim()
+                ? `Resultados (${totalElements} encontrados)`
+                : `Personal (${totalElements} registros)`}
           </span>
           <Button
             type="button"
@@ -235,7 +260,7 @@ export function EmpleadoCombobox({
 
         <ComboboxEmpty className="py-5 text-xs text-muted-foreground text-center">
           {query.isLoading
-            ? "Cargando empleados..."
+            ? "Buscando en el servidor..."
             : "No se encontraron empleados coincidentes."}
         </ComboboxEmpty>
 
