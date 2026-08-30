@@ -21,7 +21,15 @@ import { cn } from "@/shared/lib/utils"
 
 import { toast } from "sonner"
 
-import { useDeleteSolicitud, useEnviarSolicitud } from "../api/solicitud.mutations"
+import {
+  useWorkflowActionTarget,
+  WorkflowActionDialog,
+} from "@/modules/workflow"
+import {
+  useCompleteWorkflowTask,
+  useDeleteSolicitud,
+  useEnviarSolicitud,
+} from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
 import {
@@ -44,6 +52,8 @@ export function SolicitudesPage() {
   const search = usePaginatedSearch()
   const deleteMutation = useDeleteSolicitud()
   const enviarMutation = useEnviarSolicitud()
+  const completeWorkflowMutation = useCompleteWorkflowTask()
+  const workflowAction = useWorkflowActionTarget<SolicitudMantenimiento>()
 
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
@@ -113,8 +123,9 @@ export function SolicitudesPage() {
   }
 
   function openEdit(solicitud: SolicitudMantenimiento) {
-    if ((solicitud.estado ?? "").toLowerCase() !== "borrador") {
-      toast.error("Solo se pueden editar solicitudes en estado Borrador")
+    const estado = (solicitud.estado ?? "").toLowerCase()
+    if (estado !== "borrador" && estado !== "observado") {
+      toast.error("Solo se pueden editar solicitudes en estado Borrador u Observado")
       return
     }
     navigate({
@@ -295,6 +306,9 @@ export function SolicitudesPage() {
                 onQuickView={(s) => setQuickView(s)}
                 onDelete={(s) => setDeleting(s)}
                 onEnviar={(s) => setEnviando(s)}
+                onWorkflowAction={(sol, action, taskName, fields) => {
+                  workflowAction.openAction(sol, action, taskName, fields)
+                }}
               />
             </div>
 
@@ -315,6 +329,9 @@ export function SolicitudesPage() {
         solicitud={quickView}
         open={Boolean(quickView)}
         onOpenChange={(open) => !open && setQuickView(null)}
+        onWorkflowAction={(sol, action, taskName, fields) => {
+          workflowAction.openAction(sol, action, taskName, fields)
+        }}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -334,6 +351,28 @@ export function SolicitudesPage() {
         solicitud={enviando}
         isPending={enviarMutation.isPending}
         onConfirm={handleEnviar}
+      />
+
+      {/* Dynamic Workflow Action Dialog (e.g. Reenviar/Corregir en Observado) */}
+      <WorkflowActionDialog
+        open={workflowAction.isOpen}
+        onOpenChange={(open) => !open && workflowAction.closeAction()}
+        action={workflowAction.target?.action ?? null}
+        taskName={workflowAction.target?.taskName}
+        fields={workflowAction.target?.fields}
+        entityId={workflowAction.target?.item?.id}
+        onExecute={({ variables }) => {
+          const item = workflowAction.target?.item
+          if (!item) return Promise.resolve()
+          return completeWorkflowMutation.mutateAsync({
+            solicitudId: item.id,
+            payload: { variables },
+          })
+        }}
+        onSuccess={() => {
+          solicitudesQuery.refetch()
+          setQuickView(null)
+        }}
       />
     </PageShell>
   )

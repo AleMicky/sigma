@@ -35,6 +35,8 @@ import {
 import { cn } from "@/shared/lib/utils"
 import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
+import type { WorkflowAction, WorkflowField } from "@/modules/workflow"
+import { solicitudQueries } from "../../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../../api/solicitud.service"
 import {
   extractPlaca,
@@ -49,6 +51,12 @@ type SolicitudListItemProps = {
   onQuickView: (solicitud: SolicitudMantenimiento) => void
   onDelete: (solicitud: SolicitudMantenimiento) => void
   onEnviar?: (solicitud: SolicitudMantenimiento) => void
+  onWorkflowAction?: (
+    solicitud: SolicitudMantenimiento,
+    action: WorkflowAction,
+    taskName?: string,
+    fields?: WorkflowField[],
+  ) => void
 }
 
 export function SolicitudListItem({
@@ -57,11 +65,14 @@ export function SolicitudListItem({
   onQuickView,
   onDelete,
   onEnviar,
+  onWorkflowAction,
 }: SolicitudListItemProps) {
   const [copied, setCopied] = useState(false)
 
   const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
   const isBorrador = estadoNorm === "borrador"
+  const isObservado = estadoNorm === "observado"
+  const isEditable = isBorrador || isObservado
   const isSolicitado = estadoNorm === "solicitado"
   const isTrabajoRealizado = estadoNorm === "trabajo_realizado"
   const estadoStyle = getEstadoBadgeStyles(solicitud.estado)
@@ -86,11 +97,11 @@ export function SolicitudListItem({
     "auditoria" in solicitud && solicitud.auditoria
       ? solicitud.auditoria
       : (solicitud as unknown as {
-          createdAt?: string
-          updatedAt?: string
-          createdBy?: string
-          updatedBy?: string
-        })
+        createdAt?: string
+        updatedAt?: string
+        createdBy?: string
+        updatedBy?: string
+      })
   const createdAt = audit.createdAt ?? solicitud.fechaSolicitud ?? ""
   const updatedAt = audit.updatedAt ?? audit.createdAt ?? ""
   const isUpdated = Boolean(updatedAt && updatedAt !== createdAt)
@@ -104,12 +115,26 @@ export function SolicitudListItem({
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const wfActionsQuery = useQuery({
+    ...solicitudQueries.workflowActions(solicitud.processInstanceId),
+    enabled: Boolean(isObservado && solicitud.processInstanceId && onWorkflowAction),
+  })
+  const reenviarAction = wfActionsQuery.data?.actions?.find(
+    (a) =>
+      a.value === "REPROCESAR" ||
+      a.value === "CORREGIR" ||
+      a.value === "ENVIAR" ||
+      a.name?.toLowerCase().includes("reenviar") ||
+      a.name?.toLowerCase().includes("corregir"),
+  ) ?? wfActionsQuery.data?.actions?.[0]
+
   return (
     <li
       onClick={() => onQuickView(solicitud)}
       className={cn(
         "group relative flex flex-col justify-between gap-2.5 p-3 sm:px-4 sm:py-3 transition-all cursor-pointer hover:bg-muted/35",
         isSolicitado && "bg-amber-500/[0.02]",
+        isObservado && "bg-orange-500/[0.03]",
         isBorrador && "bg-muted/[0.15]",
       )}
     >
@@ -133,6 +158,28 @@ export function SolicitudListItem({
           </Button>
         ) : null}
 
+        {/* Botón Reenviar destacado si está en Observado */}
+        {isObservado && reenviarAction && onWorkflowAction ? (
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            onClick={() =>
+              onWorkflowAction(
+                solicitud,
+                reenviarAction,
+                wfActionsQuery.data?.taskName,
+                wfActionsQuery.data?.fields,
+              )
+            }
+            className="h-6.5 gap-1 px-2 text-[11px] font-semibold text-orange-600 dark:text-orange-400 border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 shadow-2xs cursor-pointer"
+            title="Reenviar solicitud corregida para aprobación"
+          >
+            <SendHorizontal className="size-3" />
+            <span>Reenviar</span>
+          </Button>
+        ) : null}
+
         {/* Botón Registrar Devolución si está en TRABAJO_REALIZADO */}
         {isTrabajoRealizado && (
           hasDevolucion ? (
@@ -149,6 +196,7 @@ export function SolicitudListItem({
               }}
               onClick={(e) => e.stopPropagation()}
             >
+
               <Button
                 type="button"
                 size="xs"
@@ -175,8 +223,8 @@ export function SolicitudListItem({
           <span>Detalles</span>
         </Button>
 
-        {/* Botón Editar (Solo en Borrador) */}
-        {isBorrador && (
+        {/* Botón Editar (En Borrador u Observado) */}
+        {isEditable && (
           <Button
             type="button"
             size="xs"
@@ -321,7 +369,7 @@ export function SolicitudListItem({
                 <Eye className="size-3.5 mr-2 text-primary" />
                 Ver Detalles
               </DropdownMenuItem>
-              {isBorrador && (
+              {isEditable && (
                 <DropdownMenuItem
                   onClick={() => onEdit(solicitud)}
                   className="text-xs cursor-pointer py-1.5"
@@ -337,6 +385,22 @@ export function SolicitudListItem({
                 >
                   <SendHorizontal className="size-3.5 mr-2" />
                   Enviar Solicitud
+                </DropdownMenuItem>
+              ) : null}
+              {isObservado && reenviarAction && onWorkflowAction ? (
+                <DropdownMenuItem
+                  onClick={() =>
+                    onWorkflowAction(
+                      solicitud,
+                      reenviarAction,
+                      wfActionsQuery.data?.taskName,
+                      wfActionsQuery.data?.fields,
+                    )
+                  }
+                  className="text-xs text-orange-600 focus:text-orange-600 cursor-pointer py-1.5 font-medium"
+                >
+                  <SendHorizontal className="size-3.5 mr-2" />
+                  Reenviar Solicitud
                 </DropdownMenuItem>
               ) : null}
               {isTrabajoRealizado && !hasDevolucion && (

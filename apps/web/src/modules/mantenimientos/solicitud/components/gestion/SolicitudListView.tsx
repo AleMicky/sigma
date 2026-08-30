@@ -1,3 +1,4 @@
+import type { WorkflowAction, WorkflowField } from "@/modules/workflow"
 import type { SolicitudMantenimiento } from "../../api/solicitud.service"
 import { SolicitudListItem } from "./SolicitudListItem"
 
@@ -7,6 +8,12 @@ type SolicitudListViewProps = {
   onQuickView: (solicitud: SolicitudMantenimiento) => void
   onDelete: (solicitud: SolicitudMantenimiento) => void
   onEnviar?: (solicitud: SolicitudMantenimiento) => void
+  onWorkflowAction?: (
+    solicitud: SolicitudMantenimiento,
+    action: WorkflowAction,
+    taskName?: string,
+    fields?: WorkflowField[],
+  ) => void
 }
 
 export function SolicitudListView({
@@ -15,6 +22,7 @@ export function SolicitudListView({
   onQuickView,
   onDelete,
   onEnviar,
+  onWorkflowAction,
 }: SolicitudListViewProps) {
   return (
     <div className="w-full rounded-2xl border border-border/80 bg-card overflow-hidden shadow-2xs">
@@ -27,6 +35,7 @@ export function SolicitudListView({
             onQuickView={onQuickView}
             onDelete={onDelete}
             onEnviar={onEnviar}
+            onWorkflowAction={onWorkflowAction}
           />
         ))}
       </ul>

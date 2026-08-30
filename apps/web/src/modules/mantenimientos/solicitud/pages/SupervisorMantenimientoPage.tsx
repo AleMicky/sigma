@@ -22,7 +22,10 @@ import { cn } from "@/shared/lib/utils"
 import { ControlActivoHistorialModal } from "@/modules/mantenimientos/control-activo/components/ControlActivoHistorialModal"
 import { OrdenTrabajoDetailModal } from "@/modules/mantenimientos/orden-trabajo/components/OrdenTrabajoDetailModal"
 import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
-import { WorkflowActionDialog } from "@/modules/workflow"
+import {
+  WorkflowActionDialog,
+  WorkflowListView,
+} from "@/modules/workflow"
 import { useCompleteWorkflowTask } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type {
@@ -30,10 +33,7 @@ import type {
   WorkflowAction,
   WorkflowField,
 } from "../api/solicitud.service"
-import {
-  SolicitudAprobacionListView,
-  SolicitudDetalleModal,
-} from "../components"
+import { SolicitudDetalleModal, SolicitudWorkflowListItem } from "../components"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
@@ -427,11 +427,68 @@ export function SupervisorMantenimientoPage() {
             />
           ) : (
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
-              <SolicitudAprobacionListView
-                solicitudes={solicitudes}
-                onQuickView={(sol) => setModalSolicitud(sol)}
-                onActionSelect={handleActionSelect}
-              />
+              <WorkflowListView>
+                {solicitudes.map((solicitud) => {
+                  const adjuntosCount = solicitud.adjuntos?.length ?? 0
+
+                  return (
+                    <SolicitudWorkflowListItem
+                      key={solicitud.id}
+                      solicitud={solicitud}
+                      badges={
+                        <>
+                          {solicitud.tipoMantenimiento && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-semibold border shrink-0 bg-primary/10 text-primary border-primary/20">
+                              <span>{solicitud.tipoMantenimiento.nombre}</span>
+                            </span>
+                          )}
+                          {solicitud.tipoFallas && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 truncate max-w-55">
+                              <AlertTriangle className="size-2.5 shrink-0" />
+                              <span className="truncate">{solicitud.tipoFallas}</span>
+                            </span>
+                          )}
+                        </>
+                      }
+                      extraContent={
+                        <>
+                          {solicitud.activo && (
+                            <div className="flex items-center gap-1.5 truncate max-w-[280px]">
+                              <span className="font-mono font-bold text-primary text-[11px]">
+                                {solicitud.activo.codigo}
+                              </span>
+                              <span className="truncate text-foreground font-medium">
+                                {solicitud.activo.nombre}
+                              </span>
+                            </div>
+                          )}
+                          {solicitud.solicitante && (
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="truncate">
+                                Solicitante:{" "}
+                                <strong className="text-foreground font-medium">
+                                  {solicitud.solicitante.nombre}
+                                </strong>
+                              </span>
+                            </div>
+                          )}
+                          {adjuntosCount > 0 && (
+                            <div className="inline-flex items-center gap-1 font-semibold text-primary bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/15 text-[10.5px]">
+                              <span>
+                                {adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      }
+                      onQuickView={() => setModalSolicitud(solicitud)}
+                      onActionSelect={(action, taskName, fields) =>
+                        handleActionSelect(solicitud, action, taskName, fields)
+                      }
+                    />
+                  )
+                })}
+              </WorkflowListView>
             </div>
           )}
 

@@ -2,6 +2,9 @@ import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
+  Box,
+  Calendar,
+  Clock,
   FileCheck2,
   Paperclip,
   ShieldCheck,
@@ -17,27 +20,25 @@ import { Pagination } from "@/shared/components/pagination"
 import { RefreshButton } from "@/shared/components/refresh-button"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
+import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
 import {
   useWorkflowActionTarget,
   WorkflowActionDialog,
-  type WorkflowAction,
-  type WorkflowField,
+  WorkflowListView,
 } from "@/modules/workflow"
 import { useCompleteWorkflowTask } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
 import {
-  SolicitudAprobacionListView,
-  SolicitudDetalleModal,
   SolicitudTrazabilidadModal,
+  SolicitudWorkflowListItem,
 } from "../components"
+import { getTipoMantenimientoBadgeClass } from "../lib/solicitud.utils"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function AprobacionesPage() {
-  const [modalSolicitud, setModalSolicitud] =
-    useState<SolicitudMantenimiento | null>(null)
   const [trazabilidadSolicitud, setTrazabilidadSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
@@ -58,40 +59,7 @@ export function AprobacionesPage() {
     }),
   )
 
-  const rawSolicitudes = useMemo(
-    () =>
-      (solicitudesQuery.data?.content ?? []).filter(
-        (s) => (s.estado ?? "").toUpperCase() === "SOLICITADO",
-      ),
-    [solicitudesQuery.data?.content],
-  )
-
-  // Métricas rápidas para el aprobador
-  const totalCount = solicitudesQuery.data?.totalElements ?? rawSolicitudes.length
-
-  const urgentesCount = useMemo(
-    () => rawSolicitudes.filter((s) => (s.prioridad?.nivel ?? 1) >= 4).length,
-    [rawSolicitudes],
-  )
-
-  const correctivosCount = useMemo(
-    () =>
-      rawSolicitudes.filter((s) =>
-        (s.tipoMantenimiento?.nombre ?? "").toLowerCase().includes("correctiv"),
-      ).length,
-    [rawSolicitudes],
-  )
-
-  const conAdjuntosCount = useMemo(
-    () => rawSolicitudes.filter((s) => (s.adjuntos?.length ?? 0) > 0).length,
-    [rawSolicitudes],
-  )
-
-  // Filtrado reactivo para urgencias
-  const solicitudes = useMemo(() => {
-    if (!filterUrgentesOnly) return rawSolicitudes
-    return rawSolicitudes.filter((s) => (s.prioridad?.nivel ?? 1) >= 4)
-  }, [rawSolicitudes, filterUrgentesOnly])
+  const totalElements = solicitudesQuery.data?.totalElements ?? 0
 
   useClampPage(
     search.page,
@@ -99,15 +67,27 @@ export function AprobacionesPage() {
     solicitudesQuery.data?.totalPages,
   )
 
-  function handleOpenModal(solicitud: SolicitudMantenimiento) {
-    setModalSolicitud(solicitud)
-  }
+  const allItems = useMemo(
+    () => solicitudesQuery.data?.content ?? [],
+    [solicitudesQuery.data?.content],
+  )
+
+  // Filtro secundario opcional para urgencias
+  const solicitudes = useMemo(() => {
+    if (!filterUrgentesOnly) return allItems
+    return allItems.filter((s) => (s.prioridad?.nivel ?? 1) >= 4)
+  }, [allItems, filterUrgentesOnly])
+
+  const urgentesCount = useMemo(
+    () => allItems.filter((s) => (s.prioridad?.nivel ?? 1) >= 4).length,
+    [allItems],
+  )
 
   function handleActionSelect(
     solicitud: SolicitudMantenimiento,
-    action: WorkflowAction,
+    action: any,
     taskName?: string,
-    fields?: WorkflowField[],
+    fields?: any[],
   ) {
     workflowAction.openAction(solicitud, action, taskName, fields)
   }
@@ -115,158 +95,97 @@ export function AprobacionesPage() {
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
       {/* Header */}
-      <header className="flex shrink-0 flex-col gap-2 border-b py-3 sm:gap-3 sm:py-3.5 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0 flex flex-1 flex-col gap-0.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="flex size-8.5 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shadow-2xs">
-                <ShieldCheck className="size-5" />
+      <div className="flex flex-col gap-2 border-b pb-3 pt-3 sm:pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-2xs">
+              <ShieldCheck className="size-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-heading text-lg font-bold tracking-tight text-foreground sm:text-xl">
+                  Bandeja de Aprobaciones
+                </h1>
+                {totalElements > 0 && (
+                  <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    {totalElements} pendientes
+                  </span>
+                )}
               </div>
-              <h1 className="font-heading text-lg font-bold tracking-tight sm:text-xl md:text-2xl">
-                Bandeja de Aprobaciones
-              </h1>
-              {totalCount > 0 && (
-                <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                  {totalCount} pendientes
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0 md:hidden">
-              <RefreshButton
-                size="sm"
-                className="h-7 px-2"
-                onRefresh={() => solicitudesQuery.refetch()}
-                isRefreshing={solicitudesQuery.isFetching}
-              />
+              <p className="text-xs text-muted-foreground">
+                Evalúa, aprueba o devuelve solicitudes de mantenimiento en etapa inicial.
+              </p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground line-clamp-1">
-            Revisa y toma decisiones de aprobación sobre las solicitudes de mantenimiento pendientes de decisión.
-          </p>
+
+          <div className="flex items-center gap-2">
+            <RefreshButton queries={solicitudesQuery} />
+          </div>
         </div>
 
-        <div className="hidden shrink-0 md:flex md:items-center md:gap-1.5">
-          <RefreshButton
-            size="sm"
-            className="h-8 gap-1.5 px-2.5 text-xs font-medium"
-            onRefresh={() => solicitudesQuery.refetch()}
-            isRefreshing={solicitudesQuery.isFetching}
-          />
-        </div>
-      </header>
-
-      {/* Mini Dashboard de Métricas Rápidas del Aprobador */}
-      <div className="shrink-0 pt-2.5 pb-1">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {/* Total Pendientes */}
-          <div
-            onClick={() => setFilterUrgentesOnly(false)}
-            className={cn(
-              "flex items-center gap-2.5 rounded-xl border p-2.5 shadow-2xs transition-all cursor-pointer",
-              !filterUrgentesOnly
-                ? "bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30"
-                : "bg-card/60 border-border/70 hover:bg-muted/40",
-            )}
-          >
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-600 text-white shadow-xs">
-              <ShieldCheck className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                Por Evaluar
-              </p>
-              <p className="font-heading text-sm sm:text-base font-bold text-foreground">
-                {totalCount}
-              </p>
-            </div>
-          </div>
-
-          {/* Críticas / Alta Prioridad (Clickable Quick Filter) */}
-          <div
-            onClick={() => setFilterUrgentesOnly((prev) => !prev)}
-            className={cn(
-              "flex items-center gap-2.5 rounded-xl border p-2.5 shadow-2xs transition-all cursor-pointer",
-              filterUrgentesOnly
-                ? "bg-rose-500/15 border-rose-500 ring-2 ring-rose-500/30 scale-[1.01]"
-                : urgentesCount > 0
-                  ? "bg-rose-500/5 border-rose-500/30 hover:bg-rose-500/10"
-                  : "bg-card/60 border-border/70",
-            )}
-          >
-            <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-rose-600 text-white shadow-xs">
-              <AlertTriangle className="size-4" />
-              {urgentesCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex size-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full size-2 bg-rose-500" />
-                </span>
+        {/* Quick Filter Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <div className="flex items-center gap-1.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setFilterUrgentesOnly(false)}
+              className={cn(
+                "rounded-lg px-2.5 py-1 font-semibold transition-colors cursor-pointer text-xs",
+                !filterUrgentesOnly
+                  ? "bg-primary text-primary-foreground shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-rose-700 dark:text-rose-400 truncate">
-                Alta / Crítica
-              </p>
-              <p className="font-heading text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400">
-                {urgentesCount} {filterUrgentesOnly && <span className="text-[10px] font-normal">(filtrado)</span>}
-              </p>
-            </div>
-          </div>
-
-          {/* Correctivos */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/60 p-2.5 shadow-2xs">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400">
-              <Wrench className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                Correctivos
-              </p>
-              <p className="font-heading text-sm sm:text-base font-bold text-foreground">
-                {correctivosCount}
-              </p>
-            </div>
-          </div>
-
-          {/* Con Documentos / Adjuntos */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/60 p-2.5 shadow-2xs">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-              <Paperclip className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                Con Adjuntos
-              </p>
-              <p className="font-heading text-sm sm:text-base font-bold text-foreground">
-                {conAdjuntosCount}
-              </p>
-            </div>
+            >
+              Todas las pendientes ({totalElements})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterUrgentesOnly(true)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 font-semibold transition-colors cursor-pointer text-xs",
+                filterUrgentesOnly
+                  ? "bg-rose-600 text-white shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <AlertTriangle className="size-3 text-rose-500" />
+              Solo Críticas / Urgentes ({urgentesCount})
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Main Full-Width Content */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2 gap-2.5">
-        {/* Requests List */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+      {/* Content */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
+        <div className="flex min-h-0 flex-1 flex-col">
           {solicitudesQuery.isLoading ? (
-            <ListSkeleton
-              rows={6}
-              rowClassName="h-20 rounded-xl"
-              className="space-y-2"
-            />
+            <ListSkeleton rows={4} />
           ) : solicitudesQuery.isError ? (
             <EmptyState
-              title={getErrorMessage(solicitudesQuery.error)}
-              className="text-destructive"
+              title="Error al cargar solicitudes"
+              description={getErrorMessage(solicitudesQuery.error)}
+              action={
+                <button
+                  type="button"
+                  onClick={() => solicitudesQuery.refetch()}
+                  className="text-xs text-primary underline"
+                >
+                  Reintentar
+                </button>
+              }
             />
           ) : solicitudes.length === 0 ? (
             <EmptyState
-              icon={<FileCheck2 className="size-9 text-amber-500" />}
-              title="¡Bandeja al día!"
+              icon={<FileCheck2 className="size-5 text-muted-foreground" />}
+              title={
+                filterUrgentesOnly
+                  ? "No hay solicitudes críticas pendientes"
+                  : "Sin solicitudes por aprobar"
+              }
               description={
                 filterUrgentesOnly
-                  ? "No hay solicitudes de alta prioridad pendientes."
-                  : "No hay solicitudes de mantenimiento pendientes de aprobación en este momento."
+                  ? "No hay solicitudes con prioridad Alta o Urgente pendientes."
+                  : "No tienes solicitudes de mantenimiento pendientes de aprobación."
               }
               action={
                 filterUrgentesOnly ? (
@@ -288,13 +207,93 @@ export function AprobacionesPage() {
                   solicitudesQuery.isFetching && "opacity-75",
                 )}
               >
-                <SolicitudAprobacionListView
-                  solicitudes={solicitudes}
-                  onQuickView={handleOpenModal}
-                  onActionSelect={(sol, action, taskName, fields) =>
-                    workflowAction.openAction(sol, action, taskName, fields)
-                  }
-                />
+                <WorkflowListView>
+                  {solicitudes.map((solicitud) => {
+                    const adjuntosCount = solicitud.adjuntos?.length ?? 0
+
+                    return (
+                      <SolicitudWorkflowListItem
+                        key={solicitud.id}
+                        solicitud={solicitud}
+                        badges={
+                          <>
+                            {solicitud.tipoMantenimiento && (
+                              <span
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-semibold border shrink-0 ${getTipoMantenimientoBadgeClass(
+                                  solicitud.tipoMantenimiento.nombre,
+                                  false,
+                                )}`}
+                              >
+                                <Wrench className="size-2.5" />
+                                <span>{solicitud.tipoMantenimiento.nombre}</span>
+                              </span>
+                            )}
+                            {solicitud.tipoFallas && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 truncate max-w-55">
+                                <AlertTriangle className="size-2.5 shrink-0" />
+                                <span className="truncate">{solicitud.tipoFallas}</span>
+                              </span>
+                            )}
+                          </>
+                        }
+                        extraContent={
+                          <>
+                            {solicitud.activo && (
+                              <div className="flex items-center gap-1.5 truncate max-w-70">
+                                <Box className="size-3 text-primary shrink-0 opacity-80" />
+                                <span className="font-mono font-bold text-primary text-[11px]">
+                                  {solicitud.activo.codigo}
+                                </span>
+                                <span className="truncate text-foreground font-medium">
+                                  {solicitud.activo.nombre}
+                                </span>
+                              </div>
+                            )}
+
+                            {solicitud.solicitante && (
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className="truncate">
+                                  Solicitante:{" "}
+                                  <strong className="text-foreground font-medium">
+                                    {solicitud.solicitante.nombre}
+                                  </strong>
+                                </span>
+                              </div>
+                            )}
+
+                            {solicitud.fechaSolicitud && (
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Calendar className="size-3 opacity-70" />
+                                <span>{formatDateTime(solicitud.fechaSolicitud)}</span>
+                              </div>
+                            )}
+
+                            {solicitud.fechaEstimadaOt && (
+                              <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium shrink-0">
+                                <Clock className="size-2.5 text-emerald-600 dark:text-emerald-400" />
+                                <span>
+                                  Est. OT: <strong>{formatDate(solicitud.fechaEstimadaOt)}</strong>
+                                </span>
+                              </div>
+                            )}
+
+                            {adjuntosCount > 0 && (
+                              <div className="inline-flex items-center gap-1 font-semibold text-primary bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/15 text-[10.5px]">
+                                <Paperclip className="size-2.5" />
+                                <span>
+                                  {adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        }
+                        onActionSelect={(action, taskName, fields) =>
+                          handleActionSelect(solicitud, action, taskName, fields)
+                        }
+                      />
+                    )
+                  })}
+                </WorkflowListView>
               </div>
 
               {solicitudesQuery.data ? (
@@ -308,14 +307,6 @@ export function AprobacionesPage() {
           )}
         </div>
       </div>
-
-      {/* Detalle de Solicitud + WorkflowPanel Modal Dialog */}
-      <SolicitudDetalleModal
-        solicitud={modalSolicitud}
-        open={Boolean(modalSolicitud)}
-        onOpenChange={(open) => !open && setModalSolicitud(null)}
-        onWorkflowAction={handleActionSelect}
-      />
 
       {/* Modal de Trazabilidad y Línea de Tiempo del Workflow */}
       <SolicitudTrazabilidadModal
@@ -335,6 +326,7 @@ export function AprobacionesPage() {
         onExecute={({ variables }) => {
           const item = workflowAction.target?.item
           if (!item) return Promise.resolve()
+
           return completeWorkflowMutation.mutateAsync({
             solicitudId: item.id,
             payload: { variables },
@@ -342,7 +334,6 @@ export function AprobacionesPage() {
         }}
         onSuccess={() => {
           solicitudesQuery.refetch()
-          setModalSolicitud(null)
         }}
       />
     </PageShell>

@@ -38,6 +38,7 @@ import {
 import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
 
+import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import type { WorkflowAction, WorkflowField } from "../types/workflow.types"
 import { fixWorkflowEncoding, getWorkflowActionVisuals } from "../utils/workflow.utils"
 
@@ -66,8 +67,8 @@ export type WorkflowActionDialogProps = {
    * Slot for extra domain-specific fields passed by the parent module
    */
   children?:
-    | React.ReactNode
-    | ((props: WorkflowActionDialogChildrenProps) => React.ReactNode)
+  | React.ReactNode
+  | ((props: WorkflowActionDialogChildrenProps) => React.ReactNode)
   /**
    * Optional custom validation before executing
    */
@@ -132,8 +133,8 @@ function WorkflowActionDialogContent({
   entityId?: string
   description?: string
   children?:
-    | React.ReactNode
-    | ((props: WorkflowActionDialogChildrenProps) => React.ReactNode)
+  | React.ReactNode
+  | ((props: WorkflowActionDialogChildrenProps) => React.ReactNode)
   onValidate?: (formValues: Record<string, any>) => Record<string, string> | null
   onOpenChange: (open: boolean) => void
   onExecute: (payload: {
@@ -155,22 +156,14 @@ function WorkflowActionDialogContent({
   const actionVal = action.value.toUpperCase()
   const actionName = cleanActionName.toLowerCase()
 
-  const isAprobar =
-    actionVal.includes("APROB") || actionName.includes("aprobar")
-  const isObservar =
-    actionVal.includes("OBSERV") || actionName.includes("observar")
-  const isCorregir =
-    actionVal.includes("CORREG") || actionName.includes("corregir")
-  const isIniciar =
-    actionVal.includes("INIC") || actionName.includes("iniciar")
-  const isRevision =
-    actionVal.includes("REVIS") || actionName.includes("revisión") || actionName.includes("revision")
-  const isValidar =
-    actionVal.includes("VALID") || actionName.includes("validar")
-  const isCerrar =
-    actionVal.includes("CERR") || actionVal.includes("RECIB") || actionName.includes("cerrar") || actionName.includes("recibir")
-  const isRechazar =
-    actionVal.includes("RECHAZ") || actionName.includes("rechazar") || actionName.includes("cancelar")
+  const isAprobar = actionVal.includes("APROB") || actionName.includes("aprobar")
+  const isObservar = actionVal.includes("OBSERV") || actionName.includes("observar")
+  const isCorregir = actionVal.includes("CORREG") || actionName.includes("corregir")
+  const isIniciar = actionVal.includes("INIC") || actionName.includes("iniciar")
+  const isRevision = actionVal.includes("REVIS") || actionName.includes("revisión") || actionName.includes("revision")
+  const isValidar = actionVal.includes("VALID") || actionName.includes("validar")
+  const isCerrar = actionVal.includes("CERR") || actionVal.includes("RECIB") || actionName.includes("cerrar") || actionName.includes("recibir")
+  const isRechazar = actionVal.includes("RECHAZ") || actionName.includes("rechazar") || actionName.includes("cancelar")
 
   const actionVisuals = getWorkflowActionVisuals(action)
 
@@ -410,6 +403,21 @@ function WorkflowActionDialogContent({
               const fieldName = fixWorkflowEncoding(field.name || field.id)
               const isRequired = Boolean(field.required)
               const error = formErrors[fieldId]
+              const lowerId = fieldId.toLowerCase()
+              const lowerType = (field.type || "").toLowerCase()
+
+              const isEmpleadoField =
+                lowerType === "empleado" ||
+                lowerId.includes("responsable") ||
+                lowerId.includes("tecnico") ||
+                lowerId.includes("supervisor") ||
+                lowerId.includes("empleado") ||
+                lowerId.includes("encargado")
+
+              const isDateField =
+                lowerType === "date" ||
+                lowerId.startsWith("fecha") ||
+                lowerId.includes("fecha")
 
               return (
                 <div key={fieldId} className="space-y-1.5">
@@ -418,7 +426,21 @@ function WorkflowActionDialogContent({
                     {isRequired && <span className="text-destructive font-bold">*</span>}
                   </Label>
 
-                  {field.type === "textarea" ? (
+                  {isEmpleadoField ? (
+                    <EmpleadoCombobox
+                      value={formValues[fieldId] || ""}
+                      onValueChange={(val) => setFieldValue(fieldId, val ?? "")}
+                      placeholder={field.placeholder || `Seleccionar ${fieldName.toLowerCase()}...`}
+                    />
+                  ) : isDateField ? (
+                    <Input
+                      type="date"
+                      value={formValues[fieldId] || ""}
+                      onChange={(e) => setFieldValue(fieldId, e.target.value)}
+                      min={new Date().toISOString().split("T")[0]}
+                      className="h-9 text-xs bg-background"
+                    />
+                  ) : field.type === "textarea" || lowerId.includes("observacion") || lowerId.includes("motivo") ? (
                     <Textarea
                       rows={3}
                       placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
@@ -471,14 +493,14 @@ function WorkflowActionDialogContent({
         {/* Extra Module-Specific Content passed through {children} */}
         {typeof children === "function"
           ? children({
-              formValues,
-              setFieldValue,
-              formErrors,
-              setFieldError,
-              isSubmitting,
-              action,
-              taskName: cleanTaskName,
-            })
+            formValues,
+            setFieldValue,
+            formErrors,
+            setFieldError,
+            isSubmitting,
+            action,
+            taskName: cleanTaskName,
+          })
           : children}
       </form>
 

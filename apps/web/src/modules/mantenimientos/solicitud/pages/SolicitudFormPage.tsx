@@ -390,9 +390,10 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
     )
   }
 
-  const isBorrador = !solicitud || (solicitud.estado ?? "").toLowerCase() === "borrador"
+  const estadoNorm = (solicitud?.estado ?? "").toLowerCase()
+  const isEditable = !solicitud || estadoNorm === "borrador" || estadoNorm === "observado"
 
-  if (isEditing && solicitud && !isBorrador) {
+  if (isEditing && solicitud && !isEditable) {
     return (
       <PageShell className="h-full min-h-0 w-full flex items-center justify-center p-8">
         <div className="flex max-w-md flex-col items-center text-center gap-4 p-6 rounded-2xl border bg-card shadow-sm">
@@ -404,7 +405,7 @@ export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
               Solicitud no editable
             </h2>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Esta solicitud se encuentra en estado <strong className="text-foreground capitalize">{solicitud.estado}</strong>. Solo se pueden modificar o eliminar solicitudes en estado <strong>Borrador</strong>.
+              Esta solicitud se encuentra en estado <strong className="text-foreground capitalize">{solicitud.estado}</strong>. Solo se pueden modificar solicitudes en estado <strong>Borrador</strong> u <strong>Observado</strong>.
             </p>
           </div>
           <Button
