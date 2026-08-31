@@ -34,7 +34,8 @@ public class KeycloakRolClient {
                     .uri(properties.adminRolesUrl())
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                     .retrieve()
-                    .body(new ParameterizedTypeReference<List<KeycloakRolResponse>>() {});
+                    .body(new ParameterizedTypeReference<List<KeycloakRolResponse>>() {
+                    });
 
             return roles == null ? List.of() : roles;
         } catch (RestClientResponseException ex) {
@@ -43,16 +44,15 @@ public class KeycloakRolClient {
             throw new BusinessException(
                     "KEYCLOAK_SYNC_ERROR",
                     "Error al sincronizar roles con Keycloak (" + ex.getStatusCode().value() + "): " +
-                    (ex.getResponseBodyAsString().isBlank() ? ex.getStatusText() : ex.getResponseBodyAsString())
-            );
+                            (ex.getResponseBodyAsString().isBlank() ? ex.getStatusText()
+                                    : ex.getResponseBodyAsString()));
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
             log.error("Error inesperado al conectar con Keycloak para obtener roles", ex);
             throw new BusinessException(
                     "KEYCLOAK_SYNC_ERROR",
-                    "No se pudo sincronizar roles con Keycloak: " + ex.getMessage()
-            );
+                    "No se pudo sincronizar roles con Keycloak: " + ex.getMessage());
         }
     }
 
@@ -76,8 +76,8 @@ public class KeycloakRolClient {
             throw new BusinessException(
                     "KEYCLOAK_SYNC_AUTH_ERROR",
                     "No se pudo autenticar con Keycloak. " +
-                    "Habilita 'Service accounts roles' en el client '" + properties.clientId() + "' de Keycloak o asigna el rol 'view-realm' / 'query-groups' / 'realm-admin' al usuario."
-            );
+                            "Habilita 'Service accounts roles' en el client '" + properties.clientId()
+                            + "' de Keycloak o asigna el rol 'view-realm' / 'query-groups' / 'realm-admin' al usuario.");
         }
     }
 }

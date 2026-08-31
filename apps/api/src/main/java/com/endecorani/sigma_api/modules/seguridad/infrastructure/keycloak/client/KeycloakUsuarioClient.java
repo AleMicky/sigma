@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -23,21 +24,41 @@ import java.util.List;
 @RequiredArgsConstructor
 public class KeycloakUsuarioClient {
 
+    private static final int PAGE_SIZE = 100;
+
     private final RestClient keycloakRestClient;
     private final KeycloakProperties properties;
     private final KeycloakTokenClient tokenClient;
 
     public List<KeycloakUsuarioResponse> obtenerTodos() {
         String token = resolveAccessToken();
+        List<KeycloakUsuarioResponse> todosLosUsuarios = new ArrayList<>();
+        int first = 0;
 
         try {
-            var usuarios = keycloakRestClient.get()
-                    .uri(properties.adminUsersUrl())
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<List<KeycloakUsuarioResponse>>() {});
+            while (true) {
+                final int currentFirst = first;
+                var lote = keycloakRestClient.get()
+                        .uri(properties.adminUsersUrl() + "?first=" + currentFirst + "&max=" + PAGE_SIZE)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .retrieve()
+                        .body(new ParameterizedTypeReference<List<KeycloakUsuarioResponse>>() {});
 
-            return usuarios == null ? List.of() : usuarios;
+                if (lote == null || lote.isEmpty()) {
+                    break;
+                }
+
+                todosLosUsuarios.addAll(lote);
+
+                // Si el lote recibido es menor al tamaño de página solicitado, ya no hay más usuarios
+                if (lote.size() < PAGE_SIZE) {
+                    break;
+                }
+
+                first += PAGE_SIZE;
+            }
+
+            return todosLosUsuarios;
         } catch (RestClientResponseException ex) {
             log.error("Error al obtener usuarios desde Keycloak Admin API (status={}): {}",
                     ex.getStatusCode().value(), ex.getResponseBodyAsString());
