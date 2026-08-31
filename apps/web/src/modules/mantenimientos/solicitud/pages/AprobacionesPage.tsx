@@ -7,7 +7,9 @@ import {
   Clock,
   FileCheck2,
   Paperclip,
+  Shield,
   ShieldCheck,
+  User,
   Wrench,
 } from "lucide-react"
 
@@ -35,6 +37,7 @@ import {
   SolicitudWorkflowListItem,
 } from "../components"
 import { getTipoMantenimientoBadgeClass } from "../lib/solicitud.utils"
+import { useSolicitudRoleScope } from "../hooks/use-solicitud-role-scope"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
@@ -43,12 +46,18 @@ export function AprobacionesPage() {
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
 
+  const {
+    isAdmin,
+    scope,
+    setScope,
+  } = useSolicitudRoleScope()
+
   const completeWorkflowMutation = useCompleteWorkflowTask()
   const workflowAction = useWorkflowActionTarget<SolicitudMantenimiento>()
 
   const search = usePaginatedSearch()
 
-  // Consulta exclusiva para solicitudes pendientes de aprobación (EN_REVISION)
+  // Consulta exclusiva para solicitudes pendientes de aprobación (SOLICITADO)
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
       page: search.page,
@@ -102,13 +111,49 @@ export function AprobacionesPage() {
               <ShieldCheck className="size-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="font-heading text-lg font-bold tracking-tight text-foreground sm:text-xl">
                   Bandeja de Aprobaciones
                 </h1>
                 {totalElements > 0 && (
                   <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300 border border-amber-500/30">
                     {totalElements} pendientes
+                  </span>
+                )}
+
+                {isAdmin ? (
+                  <div className="inline-flex rounded-lg bg-muted p-0.5 border text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setScope("ALL")}
+                      className={cn(
+                        "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                        scope === "ALL"
+                          ? "bg-amber-500 text-white shadow-xs"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <Shield className="size-3" />
+                      <span>Todas (Admin)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScope("MINE")}
+                      className={cn(
+                        "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                        scope === "MINE"
+                          ? "bg-amber-600 text-white shadow-xs"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <User className="size-3" />
+                      <span>Mis Aprobaciones</span>
+                    </button>
+                  </div>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                    <User className="size-3" />
+                    <span>Aprobador</span>
                   </span>
                 )}
               </div>

@@ -6,6 +6,8 @@ import {
   CheckCircle2,
   FileCheck2,
   Layers,
+  Shield,
+  User,
   UserCheck,
   Wrench,
 } from "lucide-react"
@@ -36,6 +38,7 @@ import type {
   WorkflowField,
 } from "../api/solicitud.service"
 import { SolicitudDetalleModal, SolicitudWorkflowListItem } from "../components"
+import { useSolicitudRoleScope } from "../hooks/use-solicitud-role-scope"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
@@ -47,6 +50,15 @@ export function EncargadoMantenimientoPage() {
   const [estadoFilter, setEstadoFilter] = useState<
     "ALL" | "ASIGNADO" | "EN_MANTENIMIENTO" | "VALIDADO"
   >("ALL")
+
+  const {
+    isAdmin,
+    scope,
+    setScope,
+    isMineOnly,
+    currentEmpleado,
+    isEncargadoPropio,
+  } = useSolicitudRoleScope()
 
   const [controlActivoTarget, setControlActivoTarget] =
     useState<SolicitudMantenimiento | null>(null)
@@ -71,13 +83,18 @@ export function EncargadoMantenimientoPage() {
       sortBy: "createdAt",
       direction: "DESC",
       estado: estadoFilter === "ALL" ? undefined : estadoFilter,
+      ...(isMineOnly && currentEmpleado?.id
+        ? { responsableId: currentEmpleado.id }
+        : {}),
     }),
   )
 
-  const allItems = useMemo(
-    () => solicitudesQuery.data?.content ?? [],
-    [solicitudesQuery.data?.content],
-  )
+  const allItems = useMemo(() => {
+    const list = solicitudesQuery.data?.content ?? []
+    if (!isMineOnly) return list
+    if (currentEmpleado?.id) return list
+    return list.filter(isEncargadoPropio)
+  }, [solicitudesQuery.data?.content, isMineOnly, currentEmpleado?.id, isEncargadoPropio])
 
   const rawSolicitudes = useMemo(() => {
     if (estadoFilter === "ASIGNADO") {
@@ -182,6 +199,42 @@ export function EncargadoMantenimientoPage() {
               {totalCount > 0 && (
                 <span className="inline-flex items-center rounded-full bg-sky-500/15 px-2.5 py-0.5 text-xs font-bold text-sky-700 dark:text-sky-300 border border-sky-500/30">
                   {totalCount} en gestión
+                </span>
+              )}
+
+              {isAdmin ? (
+                <div className="inline-flex rounded-lg bg-muted p-0.5 border text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setScope("ALL")}
+                    className={cn(
+                      "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                      scope === "ALL"
+                        ? "bg-amber-500 text-white shadow-xs"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Shield className="size-3" />
+                    <span>Todas (Admin)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScope("MINE")}
+                    className={cn(
+                      "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                      scope === "MINE"
+                        ? "bg-sky-600 text-white shadow-xs"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <User className="size-3" />
+                    <span>Solo Mías</span>
+                  </button>
+                </div>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20">
+                  <User className="size-3" />
+                  <span>Mis Asignaciones</span>
                 </span>
               )}
             </div>

@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.E
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.SolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.SolicitudMantenimientoService;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -100,49 +101,34 @@ public class SolicitudMantenimientoController {
         return ResponseEntity.ok(ApiResponse.success(service.findById(id)));
     }
 
-    @GetMapping(params = "activoId")
-    @Operation(summary = "Listar solicitudes por activo")
-    public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findByActivoId(
-            @RequestParam UUID activoId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(ApiResponse.success(service.findByActivoId(activoId, pageRequest)));
-    }
-
-    @GetMapping(params = "estado")
-    @Operation(summary = "Listar solicitudes por estado")
-    public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findByEstado(
-            @RequestParam String estado,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(ApiResponse.success(service.findByEstado(estado, pageRequest)));
-    }
-
-    @GetMapping(params = "solicitanteId")
-    @Operation(summary = "Listar solicitudes por solicitante")
-    public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findBySolicitanteId(
-            @RequestParam UUID solicitanteId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(ApiResponse.success(service.findBySolicitanteId(solicitanteId, pageRequest)));
-    }
-
-    @GetMapping(params = "responsableId")
-    @Operation(summary = "Listar solicitudes por responsable")
-    public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findByResponsableId(
-            @RequestParam UUID responsableId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(ApiResponse.success(service.findByResponsableId(responsableId, pageRequest)));
-    }
-
     @GetMapping
-    @Operation(summary = "Listar todas las solicitudes")
+    @Operation(summary = "Listar solicitudes con filtros combinados (estado, solicitante, responsable, supervisor, activo, prioridad, búsqueda)")
     public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findAll(
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) UUID solicitanteId,
+            @RequestParam(required = false) UUID responsableId,
+            @RequestParam(required = false) UUID supervisorId,
+            @RequestParam(required = false) UUID activoId,
+            @RequestParam(required = false) UUID prioridadId,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
-        return ResponseEntity.ok(ApiResponse.success(service.findAll(q, pageRequest)));
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        service.findAll(
+                                new SolicitudMantenimientoSearchCriteria(
+                                        q,
+                                        estado,
+                                        solicitanteId,
+                                        responsableId,
+                                        supervisorId,
+                                        activoId,
+                                        prioridadId
+                                ),
+                                pageRequest
+                        )
+                )
+        );
     }
 
     @DeleteMapping("/{id}")

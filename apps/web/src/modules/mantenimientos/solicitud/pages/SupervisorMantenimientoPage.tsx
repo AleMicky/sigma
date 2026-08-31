@@ -5,8 +5,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  Shield,
   ShieldAlert,
   ShieldCheck,
+  User,
 } from "lucide-react"
 
 import { appConfig } from "@/app/config"
@@ -34,6 +36,7 @@ import type {
   WorkflowField,
 } from "../api/solicitud.service"
 import { SolicitudDetalleModal, SolicitudWorkflowListItem } from "../components"
+import { useSolicitudRoleScope } from "../hooks/use-solicitud-role-scope"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
@@ -45,6 +48,14 @@ export function SupervisorMantenimientoPage() {
   const [estadoFilter, setEstadoFilter] = useState<
     "ALL" | "EN_REVISION" | "OBSERVADO_MANTENIMIENTO" | "VALIDADO"
   >("EN_REVISION")
+
+  const {
+    isAdmin,
+    scope,
+    setScope,
+    isMineOnly,
+    currentEmpleado,
+  } = useSolicitudRoleScope()
 
   // Modal states for inspecting Control de Activo and OT
   const [controlActivoTarget, setControlActivoTarget] =
@@ -69,6 +80,9 @@ export function SupervisorMantenimientoPage() {
       sortBy: "createdAt",
       direction: "DESC",
       estado: estadoFilter === "ALL" ? undefined : estadoFilter,
+      ...(isMineOnly && currentEmpleado?.id
+        ? { supervisorId: currentEmpleado.id }
+        : {}),
     }),
   )
 
@@ -174,6 +188,42 @@ export function SupervisorMantenimientoPage() {
               {enRevisionCount > 0 && (
                 <span className="inline-flex items-center rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
                   {enRevisionCount} por validar
+                </span>
+              )}
+
+              {isAdmin ? (
+                <div className="inline-flex rounded-lg bg-muted p-0.5 border text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setScope("ALL")}
+                    className={cn(
+                      "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                      scope === "ALL"
+                        ? "bg-amber-500 text-white shadow-xs"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Shield className="size-3" />
+                    <span>Todas (Admin)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScope("MINE")}
+                    className={cn(
+                      "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                      scope === "MINE"
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <User className="size-3" />
+                    <span>Mi Supervisión</span>
+                  </button>
+                </div>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                  <User className="size-3" />
+                  <span>Mi Supervisión</span>
                 </span>
               )}
             </div>

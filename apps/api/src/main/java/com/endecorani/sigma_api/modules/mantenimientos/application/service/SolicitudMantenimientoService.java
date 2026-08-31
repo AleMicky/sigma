@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.E
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.SolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoAdjuntoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoAdjunto;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.PrioridadRepository;
@@ -306,6 +307,18 @@ public class SolicitudMantenimientoService {
     @Transactional(readOnly = true)
     public SolicitudMantenimientoResponse findById(UUID id) {
         return toResponse(findDomainById(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SolicitudMantenimientoResponse> findAll(
+            SolicitudMantenimientoSearchCriteria criteria,
+            PageRequestDto pageRequest
+    ) {
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+        return PageResponse.from(
+                repository.findAll(criteria, pageable),
+                this::toResponse
+        );
     }
 
     @Transactional(readOnly = true)

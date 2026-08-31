@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.mantenimientos.domain.repository;
 
+import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimiento;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,8 @@ public interface SolicitudMantenimientoRepository {
     List<SolicitudMantenimiento> findAll();
 
     Page<SolicitudMantenimiento> findAll(Pageable pageable);
+
+    Page<SolicitudMantenimiento> findAll(SolicitudMantenimientoSearchCriteria criteria, Pageable pageable);
 
     boolean existsById(UUID id);
 

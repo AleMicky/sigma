@@ -1,10 +1,12 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.adapter;
 
+import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.SolicitudMantenimientoEntity;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.mapper.SolicitudMantenimientoPersistenceMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository.SpringSolicitudMantenimientoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.specification.SolicitudMantenimientoSpecifications;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -48,6 +50,16 @@ public class SolicitudMantenimientoRepositoryImpl
     public Page<SolicitudMantenimiento> findAll(Pageable pageable) {
         return springRepository
                 .findAll(pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<SolicitudMantenimiento> findAll(
+            SolicitudMantenimientoSearchCriteria criteria,
+            Pageable pageable
+    ) {
+        return springRepository
+                .findAll(SolicitudMantenimientoSpecifications.withCriteria(criteria), pageable)
                 .map(mapper::toDomain);
     }
 

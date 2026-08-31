@@ -86,6 +86,8 @@ export type SolicitudListParams = PageParams & {
   estado?: string
   solicitanteId?: string
   responsableId?: string
+  supervisorId?: string
+  prioridadId?: string
 }
 
 const crud = createCrudService<SolicitudMantenimiento, SolicitudPayload, SolicitudListParams>(solicitudEndpoints)
