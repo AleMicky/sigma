@@ -135,6 +135,9 @@ export function WorkflowListItem({
   const isCrit = isCritical || Boolean(priority?.isCritical) || (priority?.level ?? 1) >= 4
   const cleanTaskName = fixWorkflowEncoding(taskName || "")
   const hasActions = actions.length > 0
+  const hasWorkflowElements = Boolean(
+    showWorkflowTrigger && (isWorkflowLoading || hasActions || onWorkflowTrigger),
+  )
 
   function copyCode(e: MouseEvent) {
     e.stopPropagation()
@@ -149,21 +152,21 @@ export function WorkflowListItem({
     <li
       onClick={() => onQuickView?.()}
       className={cn(
-        "group relative flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-2.5 sm:py-3 sm:px-4 transition-all duration-150 cursor-pointer border-l-4 hover:bg-muted/40 select-none",
+        "group relative flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-2 sm:py-2.5 sm:px-3.5 transition-all duration-150 cursor-pointer border-l-4 hover:bg-muted/40 select-none",
         isCrit
-          ? "border-l-rose-500 bg-rose-500/[0.02] hover:bg-rose-500/[0.05]"
-          : "border-l-primary/60 bg-primary/[0.015] hover:bg-primary/[0.04]",
+          ? "border-l-rose-500 bg-rose-500/2 hover:bg-rose-500/5"
+          : "border-l-primary/60 bg-primary/[0.015] hover:bg-primary/4",
         className,
       )}
     >
       {/* Main Column */}
-      <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+      <div className="flex flex-col gap-1 min-w-0 flex-1">
         {/* Badges Header Line */}
         <div className="flex flex-wrap items-center gap-1.5">
           {code ? (
             <div
               onClick={copyCode}
-              className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-1.5 py-0.5 font-mono text-[11px] font-bold text-foreground border border-border/80 hover:border-primary/50 hover:bg-muted transition-colors cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-foreground border border-border/80 hover:border-primary/50 hover:bg-muted transition-colors cursor-pointer shadow-2xs"
               title="Copiar folio"
             >
               <Hash className="size-2.5 text-muted-foreground opacity-70" />
@@ -186,25 +189,25 @@ export function WorkflowListItem({
 
           {cleanTaskName && (
             <span
-              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-primary/10 text-primary border border-primary/20 shrink-0"
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10.5px] font-medium bg-primary/10 text-primary border border-primary/20 shrink-0"
               title={`Tarea actual: ${cleanTaskName}`}
             >
-              <GitBranch className="size-3 shrink-0 opacity-80" />
-              <span className="truncate max-w-45 sm:max-w-60">{cleanTaskName}</span>
+              <GitBranch className="size-2.5 shrink-0 opacity-80" />
+              <span className="truncate max-w-40 sm:max-w-60">{cleanTaskName}</span>
             </span>
           )}
 
           {priority?.label && (
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold border shrink-0",
+                "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold border shrink-0",
                 isCrit
                   ? "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30"
                   : "bg-muted text-muted-foreground border-border/70",
               )}
             >
               {isCrit ? (
-                <Flame className="size-3 text-rose-500 shrink-0 animate-pulse" />
+                <Flame className="size-2.5 text-rose-500 shrink-0 animate-pulse" />
               ) : (
                 <AlertTriangle className="size-2.5 opacity-60 shrink-0" />
               )}
@@ -218,11 +221,11 @@ export function WorkflowListItem({
 
         {/* Title and Description */}
         <div className="space-y-0.5 min-w-0">
-          <div className="font-heading font-semibold text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1 leading-snug">
+          <div className="font-heading font-semibold text-xs sm:text-[13px] text-foreground group-hover:text-primary transition-colors line-clamp-1 leading-snug">
             {title}
           </div>
           {description && (
-            <div className="text-[11.5px] text-muted-foreground line-clamp-1">
+            <div className="text-[11px] text-muted-foreground line-clamp-1 leading-normal">
               {description}
             </div>
           )}
@@ -230,76 +233,88 @@ export function WorkflowListItem({
 
         {/* Slot para campos e información adicional */}
         {extraContent && (
-          <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11.5px] text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
             {extraContent}
           </div>
         )}
       </div>
 
       {/* Right / Actions Column */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex items-center gap-1.5 shrink-0 self-end md:self-center pt-1 md:pt-0"
-      >
-        {/* Botones extras inyectados por el módulo (ej. Ver expediente, OT, acta) */}
-        {extraActions}
-
-        {/* Botones de acción directos de Workflow con Icono + Nombre compacto */}
-        {showWorkflowTrigger && (
-          isWorkflowLoading ? (
-            <div className="h-7.5 px-2.5 flex items-center justify-center rounded-lg bg-muted/50 border border-border/40">
-              <Loader2 className="size-3.5 animate-spin text-primary opacity-80" />
-              <span className="ml-1.5 text-[11px] text-muted-foreground font-medium">Cargando...</span>
-            </div>
-          ) : hasActions ? (
-            <div className="flex items-center gap-1.5 flex-wrap justify-end">
-              {actions.map((action) => {
-                const visuals = getWorkflowActionVisuals(action)
-                const ActionIcon = visuals.icon
-                const actionName = fixWorkflowEncoding(
-                  action.name || action.value,
-                )
-
-                return (
-                  <Button
-                    key={`${action.variable}-${action.value}`}
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onActionSelect?.(action, cleanTaskName, fields)
-                    }}
-                    className={cn(
-                      "h-7 px-2.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 shadow-2xs transition-all hover:scale-102 active:scale-98 cursor-pointer border-0",
-                      visuals.btnClass,
-                    )}
-                    title={`Ejecutar decisión: ${actionName}`}
-                  >
-                    <ActionIcon className="size-3.5 shrink-0" />
-                    <span className="capitalize">{actionName}</span>
-                  </Button>
-                )
-              })}
-            </div>
-          ) : onWorkflowTrigger ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation()
-                onWorkflowTrigger()
-              }}
-              className="h-7 px-2.5 rounded-lg shadow-2xs bg-primary/5 hover:bg-primary/15 text-primary border-primary/25 cursor-pointer transition-all hover:scale-102 active:scale-98 text-xs font-medium inline-flex items-center gap-1.5"
-              title="Opciones de workflow"
+      {(extraActions || hasWorkflowElements) && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1.5 shrink-0 self-end md:self-center pt-1 md:pt-0"
+        >
+          {/* Botones extras flotantes al hacer hover */}
+          {extraActions && (
+            <div
+              className={cn(
+                "flex items-center gap-1.5 transition-all duration-150 ease-out",
+                "md:opacity-0 md:group-hover:opacity-100 md:-translate-x-1 md:group-hover:translate-x-0",
+                "md:pointer-events-none md:group-hover:pointer-events-auto",
+              )}
             >
-              <GitBranch className="size-3.5 text-primary" />
-              <span>Workflow</span>
-            </Button>
-          ) : null
-        )}
-      </div>
+              {extraActions}
+            </div>
+          )}
+
+          {/* Botones de acción directos de Workflow (siempre visibles) */}
+          {showWorkflowTrigger && (
+            isWorkflowLoading ? (
+              <div className="h-7 px-2.5 flex items-center justify-center rounded-lg bg-muted/50 border border-border/40">
+                <Loader2 className="size-3 animate-spin text-primary opacity-80" />
+                <span className="ml-1.5 text-[11px] text-muted-foreground font-medium">Cargando...</span>
+              </div>
+            ) : hasActions ? (
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {actions.map((action) => {
+                  const visuals = getWorkflowActionVisuals(action)
+                  const ActionIcon = visuals.icon
+                  const actionName = fixWorkflowEncoding(
+                    action.name || action.value,
+                  )
+
+                  return (
+                    <Button
+                      key={`${action.variable}-${action.value}`}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onActionSelect?.(action, cleanTaskName, fields)
+                      }}
+                      className={cn(
+                        "h-7 px-2.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 shadow-2xs transition-all hover:scale-102 active:scale-98 cursor-pointer border-0",
+                        visuals.btnClass,
+                      )}
+                      title={`Ejecutar decisión: ${actionName}`}
+                    >
+                      <ActionIcon className="size-3.5 shrink-0" />
+                      <span className="capitalize">{actionName}</span>
+                    </Button>
+                  )
+                })}
+              </div>
+            ) : onWorkflowTrigger ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onWorkflowTrigger()
+                }}
+                className="h-7 px-2.5 rounded-lg shadow-2xs bg-primary/5 hover:bg-primary/15 text-primary border-primary/25 cursor-pointer transition-all hover:scale-102 active:scale-98 text-xs font-medium inline-flex items-center gap-1.5"
+                title="Opciones de workflow"
+              >
+                <GitBranch className="size-3.5 text-primary" />
+                <span>Workflow</span>
+              </Button>
+            ) : null
+          )}
+        </div>
+      )}
     </li>
   )
 }

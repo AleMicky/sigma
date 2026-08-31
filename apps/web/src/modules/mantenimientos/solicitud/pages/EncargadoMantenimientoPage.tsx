@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
 import {
   Activity,
   AlertTriangle,
@@ -7,10 +8,12 @@ import {
   FileCheck2,
   Layers,
   UserCheck,
+  Wrench,
 } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
+import { Button } from "@/shared/components/ui/button"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
@@ -516,6 +519,43 @@ export function EncargadoMantenimientoPage() {
                               </div>
                             )}
                           </>
+                        }
+                        extraActions={
+                          <div className="flex items-center gap-1">
+                            {/* Botón Acta (Control de Activo) */}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setControlActivoTarget(solicitud)
+                              }}
+                              className="h-7 px-2 rounded-lg text-xs font-medium inline-flex items-center gap-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98"
+                              title="Ver actas de control de activo"
+                            >
+                              <FileCheck2 className="size-3.5 text-amber-600 dark:text-amber-400" />
+                              <span>Acta</span>
+                            </Button>
+
+                            {/* Botón OT (Orden de Trabajo) */}
+                            <Link
+                              to="/mantenimientos/ordenes-trabajo/nuevo"
+                              search={{ solicitudId: solicitud.id }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 rounded-lg text-xs font-medium inline-flex items-center gap-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/30 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98"
+                                title="Crear / Gestionar Orden de Trabajo"
+                              >
+                                <Wrench className="size-3.5 text-sky-600 dark:text-sky-400" />
+                                <span>OT</span>
+                              </Button>
+                            </Link>
+                          </div>
                         }
                         onQuickView={() => handleOpenModal(solicitud)}
                         onActionSelect={(action, taskName, fields) =>

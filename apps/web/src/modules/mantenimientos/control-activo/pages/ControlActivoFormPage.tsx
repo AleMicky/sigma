@@ -19,7 +19,6 @@ import {
   RotateCcw,
   Save,
   Send,
-  Trash2,
   UserCheck,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -197,16 +196,31 @@ export function ControlActivoFormPage({
     ])
   }
 
-  function handleRemoveAccesorio(index: number) {
-    setItems((prev) => prev.filter((_, i) => i !== index))
-  }
-
   function handleUpdateItem(
     index: number,
     partial: Partial<AccesorioItemState>,
   ) {
     setItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, ...partial } : item)),
+      prev.map((item, i) => {
+        if (i !== index) return item
+        const updated = { ...item, ...partial }
+
+        // Si la cantidad encontrada es 0, cambia automáticamente a Observado (conforme = false)
+        if (partial.cantidadEncontrada !== undefined) {
+          if (partial.cantidadEncontrada === 0) {
+            updated.conforme = false
+          } else if (
+            item.cantidadEncontrada === 0 &&
+            partial.cantidadEncontrada > 0 &&
+            partial.conforme === undefined
+          ) {
+            // Si estaba en 0 y sube de cantidad, se restablece a Conforme si no se especificó lo contrario
+            updated.conforme = true
+          }
+        }
+
+        return updated
+      }),
     )
   }
 
@@ -284,7 +298,7 @@ export function ControlActivoFormPage({
   }
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-y-auto px-3 py-2 sm:px-5 md:px-6 pb-20">
+    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-y-auto px-2 sm:px-4 md:px-6 py-2 pb-24 sm:pb-20">
       {/* Top Header Compacto */}
       <header className="flex shrink-0 items-center justify-between gap-2 border-b pb-2 pt-0.5">
         <div className="flex items-center gap-2 min-w-0">
@@ -425,20 +439,20 @@ export function ControlActivoFormPage({
           </div>
         </Card>
 
-        {/* Responsables y Fecha (3 Columnas con espaciado limpio) */}
-        <Card className="p-3.5 shadow-2xs space-y-3">
-          <div className="flex items-center gap-2 border-b pb-2">
-            <UserCheck className="size-4 text-primary" />
-            <h2 className="font-heading text-xs sm:text-sm font-bold text-foreground">
+        {/* Responsables y Fecha (3 Columnas Compactas) */}
+        <Card className="p-3 shadow-2xs space-y-2.5">
+          <div className="flex items-center gap-1.5 border-b pb-1.5">
+            <UserCheck className="size-3.5 text-primary" />
+            <h2 className="font-heading text-xs sm:text-[13px] font-bold text-foreground">
               Responsables y Fecha de Control
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-start">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-start">
             {/* Fecha y Hora */}
-            <div className="space-y-1.5">
-              <Label htmlFor="fechaControl" className="text-xs font-semibold text-foreground flex items-center gap-1">
-                <Calendar className="size-3.5 text-muted-foreground" />
+            <div className="space-y-1">
+              <Label htmlFor="fechaControl" className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+                <Calendar className="size-3 text-muted-foreground" />
                 <span>Fecha / Hora</span>
                 <span className="text-destructive">*</span>
               </Label>
@@ -447,32 +461,34 @@ export function ControlActivoFormPage({
                 type="datetime-local"
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
-                className="h-10 text-xs font-medium"
+                className="h-8.5 text-xs font-medium bg-background"
                 required
               />
             </div>
 
             {/* Entregado Por */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground">
+            <div className="space-y-1">
+              <Label className="text-[11px] font-semibold text-foreground">
                 {tipo === "ENTREGA" ? "Entrega (Solicitante)" : "Entrega (Técnico)"}
               </Label>
               <EmpleadoCombobox
                 value={entregadoPorId}
                 onValueChange={(val) => setEntregadoPorId(val)}
                 placeholder="Seleccione persona..."
+                className="h-8.5 text-xs"
               />
             </div>
 
             {/* Recibido Por */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground">
+            <div className="space-y-1">
+              <Label className="text-[11px] font-semibold text-foreground">
                 {tipo === "ENTREGA" ? "Recibe (Técnico)" : "Recibe (Solicitante)"}
               </Label>
               <EmpleadoCombobox
                 value={recibidoPorId}
                 onValueChange={(val) => setRecibidoPorId(val)}
                 placeholder="Seleccione persona..."
+                className="h-8.5 text-xs"
               />
             </div>
           </div>
@@ -495,7 +511,14 @@ export function ControlActivoFormPage({
               {totalItems > 0 && (
                 <button
                   type="button"
-                  onClick={() => setItems((prev) => prev.map((i) => ({ ...i, conforme: true })))}
+                  onClick={() =>
+                    setItems((prev) =>
+                      prev.map((i) => ({
+                        ...i,
+                        conforme: i.cantidadEncontrada > 0,
+                      })),
+                    )
+                  }
                   className="text-xs text-primary hover:underline font-semibold cursor-pointer"
                 >
                   Marcar todos conformes
@@ -531,7 +554,6 @@ export function ControlActivoFormPage({
                 <div className="w-16 text-center shrink-0">Esperada</div>
                 <div className="w-24 text-center shrink-0">Encontrada</div>
                 <div className="w-28 text-center shrink-0">Conformidad</div>
-                <div className="w-8 shrink-0"></div>
               </div>
 
               {/* Filas */}
@@ -567,60 +589,59 @@ export function ControlActivoFormPage({
                     />
                   </div>
 
-                  {/* Controles de Cantidad y Conformidad */}
-                  <div className="flex items-center justify-between md:justify-end gap-3 shrink-0 pt-1 md:pt-0 border-t md:border-t-0">
-                    {/* Cantidad Esperada */}
-                    <div className="flex md:flex-col items-center gap-1">
-                      <span className="md:hidden text-[11px] font-semibold text-muted-foreground">
-                        Esp:
-                      </span>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={item.cantidadEsperada}
-                        onChange={(e) =>
-                          handleUpdateItem(idx, {
-                            cantidadEsperada: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        className="h-8 w-16 text-center text-xs font-bold"
-                      />
-                    </div>
-
-                    {/* Cantidad Encontrada con Stepper */}
-                    <div className="flex md:flex-col items-center gap-1">
-                      <span className="md:hidden text-[11px] font-semibold text-muted-foreground">
-                        Enc:
-                      </span>
-                      <div className="flex items-center border rounded-lg bg-background h-8">
-                        <button
-                          type="button"
-                          className="size-7 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
-                          onClick={() =>
-                            handleUpdateItem(idx, {
-                              cantidadEncontrada: Math.max(
-                                0,
-                                item.cantidadEncontrada - 1,
-                              ),
-                            })
-                          }
-                        >
-                          <Minus className="size-3" />
-                        </button>
-                        <span className="w-7 text-center text-xs font-bold">
-                          {item.cantidadEncontrada}
+                  {/* Controles de Cantidad y Conformidad Responsivos */}
+                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between md:justify-end gap-2 sm:gap-3 shrink-0 pt-1.5 md:pt-0 border-t md:border-t-0 w-full md:w-auto">
+                    {/* Cantidades agrupadas en mobile */}
+                    <div className="flex items-center gap-2">
+                      {/* Cantidad Esperada (Solo Lectura) */}
+                      <div className="flex items-center md:flex-col gap-1">
+                        <span className="text-[10.5px] font-semibold text-muted-foreground">
+                          Esp:
                         </span>
-                        <button
-                          type="button"
-                          className="size-7 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
-                          onClick={() =>
-                            handleUpdateItem(idx, {
-                              cantidadEncontrada: item.cantidadEncontrada + 1,
-                            })
-                          }
-                        >
-                          <Plus className="size-3" />
-                        </button>
+                        <Input
+                          type="number"
+                          disabled
+                          value={item.cantidadEsperada}
+                          className="h-7.5 w-12 sm:w-14 text-center text-xs font-bold bg-muted/60 text-muted-foreground border-border/60 cursor-not-allowed select-none px-1"
+                          title="Cantidad esperada pre-asignada al activo (Solo lectura)"
+                        />
+                      </div>
+
+                      {/* Cantidad Encontrada con Stepper */}
+                      <div className="flex items-center md:flex-col gap-1">
+                        <span className="text-[10.5px] font-semibold text-muted-foreground">
+                          Enc:
+                        </span>
+                        <div className="flex items-center border rounded-lg bg-background h-7.5">
+                          <button
+                            type="button"
+                            className="size-6 sm:size-7 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+                            onClick={() =>
+                              handleUpdateItem(idx, {
+                                cantidadEncontrada: Math.max(
+                                  0,
+                                  item.cantidadEncontrada - 1,
+                                ),
+                              })
+                            }
+                          >
+                            <Minus className="size-3" />
+                          </button>
+                          <span className="w-6 sm:w-7 text-center text-xs font-bold">
+                            {item.cantidadEncontrada}
+                          </span>
+                          <button
+                            type="button"
+                            className="size-6 sm:size-7 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+                            onClick={() =>
+                              handleUpdateItem(idx, {
+                                cantidadEncontrada: item.cantidadEncontrada + 1,
+                              })
+                            }
+                          >
+                            <Plus className="size-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -631,7 +652,7 @@ export function ControlActivoFormPage({
                         handleUpdateItem(idx, { conforme: !item.conforme })
                       }
                       className={cn(
-                        "flex items-center justify-center gap-1.5 h-8 w-26 rounded-lg font-bold text-xs border transition-all cursor-pointer",
+                        "flex items-center justify-center gap-1.5 h-7.5 sm:h-8 px-2.5 sm:px-3 rounded-lg font-bold text-xs border transition-all cursor-pointer shrink-0 ml-auto md:ml-0",
                         item.conforme
                           ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
                           : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/25",
@@ -644,18 +665,6 @@ export function ControlActivoFormPage({
                       )}
                       <span>{item.conforme ? "Conforme" : "Observado"}</span>
                     </button>
-
-                    {/* Eliminar accesorio */}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-muted-foreground hover:text-destructive shrink-0 cursor-pointer"
-                      onClick={() => handleRemoveAccesorio(idx)}
-                      title="Quitar accesorio"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
                   </div>
                 </div>
               ))}

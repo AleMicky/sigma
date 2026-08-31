@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
 import {
   AlertTriangle,
   Calendar,
@@ -10,6 +11,7 @@ import {
   History,
   Loader2,
   Package,
+  Plus,
   User,
 } from "lucide-react"
 
@@ -219,21 +221,41 @@ export function ControlActivoHistorialModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="p-4 sm:p-5 border-b bg-muted/20 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
-              <History className="size-5" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+                <History className="size-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-base sm:text-lg font-bold">
+                  Historial de Controles de Activo
+                </DialogTitle>
+                <DialogDescription className="text-xs">
+                  Actas de Entrega y Devolución registradas para el folio{" "}
+                  <strong className="text-foreground font-mono">
+                    {solicitudNumero || "N/A"}
+                  </strong>
+                </DialogDescription>
+              </div>
             </div>
-            <div>
-              <DialogTitle className="text-base sm:text-lg font-bold">
-                Historial de Controles de Activo
-              </DialogTitle>
-              <DialogDescription className="text-xs">
-                Actas de Entrega y Devolución registradas para el folio{" "}
-                <strong className="text-foreground font-mono">
-                  {solicitudNumero || "N/A"}
-                </strong>
-              </DialogDescription>
-            </div>
+
+            {solicitudId && (
+              <Link
+                to="/mantenimientos/controles-activos/nuevo"
+                search={{ solicitudId }}
+                onClick={() => onOpenChange(false)}
+                className="shrink-0"
+              >
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 rounded-lg text-xs font-semibold gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Registrar Acta</span>
+                </Button>
+              </Link>
+            )}
           </div>
         </DialogHeader>
 
@@ -253,6 +275,22 @@ export function ControlActivoHistorialModal({
                 <p className="text-xs max-w-xs text-muted-foreground">
                   Aún no se han generado actas de entrega ni devolución de activo para esta solicitud.
                 </p>
+                {solicitudId && (
+                  <Link
+                    to="/mantenimientos/controles-activos/nuevo"
+                    search={{ solicitudId }}
+                    onClick={() => onOpenChange(false)}
+                  >
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-8 px-3 rounded-lg text-xs font-semibold gap-1.5 cursor-pointer shadow-sm mt-2"
+                    >
+                      <Plus className="size-3.5" />
+                      <span>Crear Acta Ahora</span>
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           ) : (

@@ -1,8 +1,7 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Briefcase, Building, ChevronLeft, ChevronRight, Loader2, RefreshCw, X } from "lucide-react"
+import { Briefcase, ChevronLeft, ChevronRight, Loader2, RefreshCw, User, X } from "lucide-react"
 
-import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
   Combobox,
@@ -118,66 +117,33 @@ export function EmpleadoCombobox({
     query.refetch()
   }
 
-  // Si hay un empleado seleccionado, mostramos la tarjeta idéntica a la imagen de referencia
+  // Si hay un empleado seleccionado, mostramos solo nombre y cargo de forma limpia y compacta
   if (selectedEmpleado) {
     const nombre = getEmpleadoNombre(selectedEmpleado)
     const cargo = selectedEmpleado.cargoInfo?.nombre || selectedEmpleado.cargoNombre
-    const area = selectedEmpleado.areaInfo?.nombre || selectedEmpleado.areaNombre
-    const initials = getInitials(nombre)
-
-    // Remove any fixed height classes (like h-9) so the card expands naturally
-    const cardCustomClass = className
-      ?.split(" ")
-      .filter((c) => !c.startsWith("h-") && !c.startsWith("max-h-"))
-      .join(" ")
 
     return (
       <div
         className={cn(
-          "flex items-center justify-between gap-2.5 rounded-xl border border-border/80 bg-background/90 p-2 sm:p-2.5 shadow-2xs hover:border-primary/40 transition-all",
+          "flex items-center justify-between gap-2 rounded-xl border border-border/80 bg-background/95 px-2.5 py-1.5 min-h-8.5 shadow-2xs hover:border-primary/40 transition-all",
           ariaInvalid && "border-destructive ring-1 ring-destructive/20",
-          cardCustomClass,
+          className,
         )}
       >
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {/* Avatar con iniciales */}
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 text-primary font-bold text-xs border border-primary/20 shadow-2xs">
-            {initials}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary font-bold text-[10px] border border-primary/20">
+            <User className="size-3.5" />
           </div>
 
-          {/* Información del Empleado */}
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-              <code className="text-[10.5px] font-mono font-bold text-foreground bg-muted/80 border border-border/60 px-1.5 py-0.2 rounded shrink-0">
-                {selectedEmpleado.codigo}
-              </code>
-              <span className="font-semibold text-xs text-foreground">
-                {nombre}
-              </span>
+          <div className="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
+            <div className="font-semibold text-xs text-foreground truncate leading-snug" title={nombre}>
+              {nombre}
             </div>
-
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-              {cargo ? (
-                <div className="flex items-center gap-1 text-muted-foreground text-[11px]">
-                  <Briefcase className="size-3 text-primary shrink-0" />
-                  <span>{cargo}</span>
-                </div>
-              ) : null}
-
-              {cargo && area ? (
-                <span className="text-muted-foreground/40 font-bold">•</span>
-              ) : null}
-
-              {area ? (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground bg-muted/40 shrink-0"
-                >
-                  <Building className="size-2.5 mr-1 text-muted-foreground/70" />
-                  <span>{area}</span>
-                </Badge>
-              ) : null}
-            </div>
+            {cargo ? (
+              <div className="text-[11px] text-muted-foreground truncate leading-snug" title={cargo}>
+                {cargo}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -191,7 +157,7 @@ export function EmpleadoCombobox({
               onValueChange?.("", null)
               setSearch("")
             }}
-            className="size-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg shrink-0 cursor-pointer"
+            className="size-6 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md shrink-0 cursor-pointer"
             title="Cambiar empleado seleccionado"
           >
             <X className="size-3.5" />

@@ -48,14 +48,14 @@ export function AprobacionesPage() {
 
   const search = usePaginatedSearch()
 
-  // Consulta exclusiva para solicitudes pendientes de aprobación (SOLICITADO)
+  // Consulta exclusiva para solicitudes pendientes de aprobación (EN_REVISION)
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
       page: search.page,
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC",
-      estado: "SOLICITADO",
+      estado: "EN_REVISION",
     }),
   )
 

@@ -2,17 +2,20 @@ import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useNavigate, useSearch } from "@tanstack/react-router"
 import {
-  AlertTriangle,
   ArrowLeft,
+  Box,
   Calendar,
   CheckSquare,
   Clock,
   FileText,
+  Info,
   Loader2,
+  MapPin,
   Plus,
   Save,
   Trash2,
   User,
+  UserCheck,
   Wrench,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -145,6 +148,12 @@ export function OrdenTrabajoFormPage({
   })
   const activo = activoDetailQuery.data
 
+  const isCorrectivo =
+    Boolean(
+      solicitud?.tipoMantenimiento?.codigo?.toUpperCase().includes("CORR") ||
+      solicitud?.tipoMantenimiento?.nombre?.toLowerCase().includes("correctiv"),
+    )
+
   const createMutation = useCreateOrdenTrabajoWithActividades()
 
   // Handler for adding an activity row
@@ -220,92 +229,113 @@ export function OrdenTrabajoFormPage({
   }
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
-      {/* Header */}
-      <header className="flex shrink-0 flex-col gap-2 border-b py-3 sm:gap-3 sm:py-3.5 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3 min-w-0">
+    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-y-auto px-2 sm:px-4 md:px-6 py-2 pb-24 sm:pb-20">
+      {/* Top Header Compacto */}
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b pb-2 pt-0.5">
+        <div className="flex items-center gap-2 min-w-0">
           <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
+            size="icon"
+            className="size-7 shrink-0 rounded-lg hover:bg-muted"
             onClick={() => window.history.back()}
-            className="size-8 rounded-lg cursor-pointer hover:bg-muted shrink-0"
-            title="Volver"
           >
-            <ArrowLeft className="size-4" />
+            <ArrowLeft className="size-3.5" />
           </Button>
 
-          <div className="flex size-8.5 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25 shadow-2xs shrink-0">
-            <Wrench className="size-5" />
-          </div>
-
-          <div className="min-w-0">
-            <h1 className="font-heading text-lg font-bold tracking-tight sm:text-xl md:text-2xl truncate">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+              <Wrench className="size-3.5" />
+            </div>
+            <h1 className="font-heading text-sm sm:text-base font-bold tracking-tight truncate">
               Nueva Orden de Trabajo
             </h1>
-            <p className="text-xs text-muted-foreground truncate">
-              Crea la orden de trabajo (maestro) y planifica el detalle de sus actividades.
-            </p>
+            {solicitud?.numero && (
+              <span className="font-mono text-xs font-bold bg-muted px-2 py-0.5 rounded border border-border shrink-0">
+                Folio: {solicitud.numero}
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => window.history.back()}
-            className="h-8 text-xs font-semibold rounded-lg"
+            className="h-7 px-2.5 text-xs font-semibold"
           >
             Cancelar
-          </Button>
-
-          <Button
-            type="button"
-            size="sm"
-            disabled={!isValid || createMutation.isPending}
-            onClick={handleSubmit}
-            className="h-8 gap-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs cursor-pointer"
-          >
-            {createMutation.isPending ? (
-              <>
-                <Loader2 className="size-3.5 animate-spin" />
-                <span>Guardando OT...</span>
-              </>
-            ) : (
-              <>
-                <Save className="size-3.5" />
-                <span>Guardar Orden de Trabajo</span>
-              </>
-            )}
           </Button>
         </div>
       </header>
 
-      {/* Main Content: Two Columns Layout (Maestro / Detalle) */}
-      <form
-        onSubmit={handleSubmit}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-3.5 space-y-4"
-      >
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          {/* ========================================================= */}
-          {/* COLUMNA IZQUIERDA: MAESTRO (Cabecera de la OT) (5 cols)    */}
-          {/* ========================================================= */}
-          <div className="space-y-4 lg:col-span-5">
-            {/* Card: Solicitud y Activo */}
-            <Card className="p-4 space-y-3.5 border-border/80 shadow-2xs">
-              <div className="flex items-center gap-2 border-b pb-2">
-                <div className="flex size-6 items-center justify-center rounded-md bg-sky-500/15 text-sky-600 dark:text-sky-400">
-                  <FileText className="size-3.5" />
-                </div>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  1. Solicitud & Activo
-                </h2>
+      {/* Main Form Body */}
+      <form onSubmit={handleSubmit} className="mt-3 space-y-3 max-w-5xl mx-auto">
+        {/* Banner Superior: Activo & Solicitud Resumen */}
+        <Card className="p-3 border bg-card shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Activo & Solicitud Resumen */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                <Box className="size-4.5" />
               </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  {(solicitud?.activo?.codigo || activo?.codigo) && (
+                    <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                      {solicitud?.activo?.codigo || activo?.codigo}
+                    </span>
+                  )}
+                  <span className="font-heading text-sm font-bold text-foreground truncate">
+                    {solicitud?.activo?.nombre || activo?.nombre || "Activo no especificado"}
+                  </span>
+                  {solicitud?.prioridad && (
+                    <span
+                      className={cn(
+                        "px-2 py-0.5 text-xs font-semibold rounded border",
+                        getPrioridadBadgeStyles(solicitud.prioridad.nivel ?? 1),
+                      )}
+                    >
+                      {solicitud.prioridad.nombre}
+                    </span>
+                  )}
+                </div>
 
-              {/* Solicitud de Mantenimiento */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
+                  {activo?.ubicacion && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="size-3 opacity-70" />
+                      {activo.ubicacion.nombre}
+                    </span>
+                  )}
+                  {solicitud?.solicitante && (
+                    <span className="truncate">
+                      Solicitante: <strong className="text-foreground font-medium">{solicitud.solicitante.nombre}</strong>
+                    </span>
+                  )}
+                  {solicitud?.tipoMantenimiento && (
+                    <span className="hidden md:inline truncate">
+                      Tipo: <strong className="text-foreground font-medium">{solicitud.tipoMantenimiento.nombre}</strong>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Badge Indicador de Orden de Trabajo */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 font-bold text-xs shadow-2xs shrink-0 self-start sm:self-center">
+              <Wrench className="size-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span>Orden de Trabajo Técnica</span>
+            </div>
+          </div>
+
+          {/* Selectores en caso de que no venga una solicitud asignada */}
+          {!initialSolicitudId && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 mt-3 border-t border-border/60">
+              <div className="space-y-1">
+                <Label className="text-[11px] font-semibold text-foreground flex items-center gap-1">
                   Solicitud Asignada <span className="text-destructive">*</span>
                 </Label>
                 <SolicitudAsignadaCombobox
@@ -322,343 +352,324 @@ export function OrdenTrabajoFormPage({
                       setDiagnostico(sol.descripcion)
                     }
                   }}
-                  disabled={Boolean(initialSolicitudId)}
+                  className="h-8.5 text-xs"
                 />
               </div>
 
-              {/* Context Preview of Solicitud if Loaded */}
-              {solicitud && (
-                <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-2.5 space-y-2 text-xs">
-                  <div className="flex items-center justify-between gap-1 flex-wrap">
-                    <span className="font-semibold text-foreground truncate">
-                      {solicitud.titulo}
-                    </span>
-                    {solicitud.prioridad && (
-                      <span
-                        className={cn(
-                          "px-1.5 py-0.5 rounded text-[10px] font-bold border",
-                          getPrioridadBadgeStyles(solicitud.prioridad.nivel ?? 1),
-                        )}
-                      >
-                        {solicitud.prioridad.nombre ?? `Nivel ${solicitud.prioridad.nivel}`}
-                      </span>
-                    )}
-                  </div>
-                  {solicitud.tipoMantenimiento && (
-                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      <Wrench className="size-3 text-sky-600" />
-                      <span>{solicitud.tipoMantenimiento.nombre}</span>
-                      {solicitud.solicitante && (
-                        <>
-                          <span>•</span>
-                          <User className="size-3 text-muted-foreground" />
-                          <span className="truncate">
-                            {solicitud.solicitante.nombre}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Activo */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold flex items-center gap-1">
+              <div className="space-y-1">
+                <Label className="text-[11px] font-semibold text-foreground flex items-center gap-1">
                   Activo Principal <span className="text-destructive">*</span>
                 </Label>
                 <ActivoCombobox
                   value={activoId || solicitud?.activo?.id || ""}
                   onValueChange={(val) => setActivoId(val)}
                   disabled={Boolean(solicitud?.activo?.id)}
+                  className="h-8.5 text-xs"
                 />
               </div>
+            </div>
+          )}
+        </Card>
 
-              {/* Activo Summary Info if available */}
-              {activo && (
-                <div className="rounded-xl border border-border/70 bg-muted/30 p-2 text-xs flex items-center gap-2">
-                  <div className="size-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-                    {activo.codigo?.slice(0, 3) || "ACT"}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-foreground truncate">
-                      {activo.nombre}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground truncate">
-                      Código: {activo.codigo}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </Card>
-
-            {/* Card: Responsable & Fechas */}
-            <Card className="p-4 space-y-3.5 border-border/80 shadow-2xs">
-              <div className="flex items-center gap-2 border-b pb-2">
-                <div className="flex size-6 items-center justify-center rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">
-                  <User className="size-3.5" />
-                </div>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  2. Responsable & Planificación
-                </h2>
-              </div>
-
-              {/* Responsable / Técnico */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold flex items-center gap-1">
-                  Responsable / Técnico Asignado{" "}
-                  <span className="text-destructive">*</span>
-                </Label>
-                <EmpleadoCombobox
-                  value={responsableId}
-                  onValueChange={(val) => setResponsableId(val)}
-                  placeholder="Seleccionar técnico o encargado..."
-                />
-              </div>
-
-              {/* Fechas Programadas */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
-                  <Label
-                    htmlFor="fechaInicio"
-                    className="text-xs font-medium flex items-center gap-1 text-muted-foreground"
-                  >
-                    <Calendar className="size-3 text-indigo-500" />
-                    Fecha Inicio Estimada
-                  </Label>
-                  <Input
-                    id="fechaInicio"
-                    type="datetime-local"
-                    value={fechaInicio}
-                    onChange={(e) => setFechaInicio(e.target.value)}
-                    className="h-8 text-xs font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label
-                    htmlFor="fechaFin"
-                    className="text-xs font-medium flex items-center gap-1 text-muted-foreground"
-                  >
-                    <Clock className="size-3 text-indigo-500" />
-                    Fecha Fin Estimada
-                  </Label>
-                  <Input
-                    id="fechaFin"
-                    type="datetime-local"
-                    value={fechaFin}
-                    onChange={(e) => setFechaFin(e.target.value)}
-                    className="h-8 text-xs font-mono"
-                  />
-                </div>
-              </div>
-            </Card>
-
-            {/* Card: Diagnóstico y Observaciones */}
-            <Card className="p-4 space-y-3.5 border-border/80 shadow-2xs">
-              <div className="flex items-center gap-2 border-b pb-2">
-                <div className="flex size-6 items-center justify-center rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                  <AlertTriangle className="size-3.5" />
-                </div>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  3. Diagnóstico & Observaciones
-                </h2>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="diagnostico" className="text-xs font-medium">
-                  Diagnóstico Preliminar
-                </Label>
-                <Textarea
-                  id="diagnostico"
-                  value={diagnostico}
-                  onChange={(e) => setDiagnostico(e.target.value)}
-                  placeholder="Describe la evaluación preliminar del problema o falla..."
-                  rows={3}
-                  className="text-xs resize-none"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="observacion" className="text-xs font-medium">
-                  Observaciones Generales
-                </Label>
-                <Textarea
-                  id="observacion"
-                  value={observacion}
-                  onChange={(e) => setObservacion(e.target.value)}
-                  placeholder="Notas adicionales, requerimientos especiales o precauciones..."
-                  rows={3}
-                  className="text-xs resize-none"
-                />
-              </div>
-            </Card>
+        {/* Responsable y Fechas de Planificación (3 Columnas Compactas) */}
+        <Card className="p-3 shadow-2xs space-y-2.5">
+          <div className="flex items-center gap-1.5 border-b pb-1.5">
+            <UserCheck className="size-3.5 text-primary" />
+            <h2 className="font-heading text-xs sm:text-[13px] font-bold text-foreground">
+              Responsable y Planificación Temporal
+            </h2>
           </div>
 
-          {/* ========================================================= */}
-          {/* COLUMNA DERECHA: DETALLE (Actividades de la OT) (7 cols)  */}
-          {/* ========================================================= */}
-          <div className="space-y-4 lg:col-span-7">
-            <Card className="p-4 border-border/80 shadow-2xs space-y-3.5">
-              <div className="flex items-center justify-between gap-2 border-b pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="flex size-6.5 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                    <CheckSquare className="size-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                      Tareas / Actividades a Realizar
-                    </h2>
-                    <p className="text-[11px] text-muted-foreground">
-                      Planifica las actividades técnicas que se ejecutarán durante el mantenimiento.
-                    </p>
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-start">
+            {/* Responsable Técnico */}
+            <div className="space-y-1">
+              <Label className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+                <User className="size-3 text-muted-foreground" />
+                <span>Responsable / Técnico</span>
+                <span className="text-destructive">*</span>
+              </Label>
+              <EmpleadoCombobox
+                value={responsableId}
+                onValueChange={(val) => setResponsableId(val)}
+                placeholder="Seleccionar técnico..."
+                className="h-8.5 text-xs"
+              />
+            </div>
 
-                <div className="flex items-center gap-2">
-                  {actividades.length > 0 && (
-                    <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                      {actividades.length} {actividades.length === 1 ? "tarea" : "tareas"}
-                    </span>
-                  )}
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleAddActividad}
-                    className="h-7 gap-1 px-2.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-2xs cursor-pointer"
-                  >
-                    <Plus className="size-3.5" />
-                    <span>Agregar Tarea</span>
-                  </Button>
-                </div>
+            {/* Fecha Inicio Estimada */}
+            <div className="space-y-1">
+              <Label htmlFor="fechaInicio" className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+                <Calendar className="size-3 text-muted-foreground" />
+                <span>Fecha Inicio Estimada</span>
+              </Label>
+              <Input
+                id="fechaInicio"
+                type="datetime-local"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                className="h-8.5 text-xs font-medium bg-background"
+              />
+            </div>
+
+            {/* Fecha Fin Estimada */}
+            <div className="space-y-1">
+              <Label htmlFor="fechaFin" className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+                <Clock className="size-3 text-muted-foreground" />
+                <span>Fecha Fin Estimada</span>
+              </Label>
+              <Input
+                id="fechaFin"
+                type="datetime-local"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                className="h-8.5 text-xs font-medium bg-background"
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Diagnóstico y Observaciones (2 Columnas Limpias) */}
+        <Card className="p-3 shadow-2xs space-y-2.5">
+          <div className="flex items-center gap-1.5 border-b pb-1.5">
+            <FileText className="size-3.5 text-primary" />
+            <h2 className="font-heading text-xs sm:text-[13px] font-bold text-foreground">
+              Diagnóstico y Observaciones
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Diagnóstico */}
+            <div className="space-y-1">
+              <Label htmlFor="diagnostico" className="text-[11px] font-semibold text-foreground">
+                Diagnóstico Preliminar / Alcance
+              </Label>
+              <Textarea
+                id="diagnostico"
+                value={diagnostico}
+                onChange={(e) => setDiagnostico(e.target.value)}
+                placeholder="Describe la evaluación preliminar del problema o falla..."
+                rows={2}
+                className="text-xs resize-none bg-background"
+              />
+            </div>
+
+            {/* Observaciones */}
+            <div className="space-y-1">
+              <Label htmlFor="observacion" className="text-[11px] font-semibold text-foreground">
+                Observaciones Generales / Requerimientos
+              </Label>
+              <Textarea
+                id="observacion"
+                value={observacion}
+                onChange={(e) => setObservacion(e.target.value)}
+                placeholder="Notas adicionales, herramientas especiales o precauciones..."
+                rows={2}
+                className="text-xs resize-none bg-background"
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Tareas / Actividades a Realizar (Estructura tipo Checklist / Accesorios) */}
+        <Card className="p-3.5 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between gap-2 border-b pb-2">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="size-4 text-primary" />
+              <h2 className="font-heading text-xs sm:text-sm font-bold text-foreground">
+                Planificación de Actividades / Tareas
+              </h2>
+              <span className="text-xs text-muted-foreground font-medium">
+                ({actividades.length} {actividades.length === 1 ? "tarea" : "tareas"})
+              </span>
+            </div>
+
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleAddActividad}
+              className="h-7 gap-1 px-2.5 text-xs font-semibold rounded-lg"
+            >
+              <Plus className="size-3.5" />
+              <span>Agregar Tarea</span>
+            </Button>
+          </div>
+
+          {/* Lista de Actividades como Lista Contigua / Tabla */}
+          {actividades.length === 0 ? (
+            <div className="py-8 text-center text-xs text-muted-foreground border border-dashed rounded-xl bg-muted/10 p-4">
+              <p className="font-semibold text-foreground">No hay actividades planificadas</p>
+              <p className="text-muted-foreground mt-0.5">
+                {isCorrectivo
+                  ? "Escriba las tareas técnicas específicas que el técnico debe cumplir con el botón '+ Agregar Tarea'."
+                  : "Puede añadir actividades desde el catálogo o escribir tareas personalizadas con el botón '+ Agregar Tarea'."}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddActividad}
+                className="h-7 text-xs font-semibold gap-1 rounded-lg mt-2 cursor-pointer"
+              >
+                <Plus className="size-3.5" />
+                <span>Agregar primera tarea</span>
+              </Button>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border/80 overflow-hidden divide-y divide-border/60 bg-background shadow-2xs">
+              {/* Encabezado de la tabla */}
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                <div className="w-8 text-center shrink-0">#</div>
+                {!isCorrectivo && <div className="w-56 shrink-0">Catálogo</div>}
+                <div className="flex-1 min-w-0">Descripción de la Tarea <span className="text-destructive">*</span></div>
+                <div className="w-48 sm:w-56 shrink-0">Nota / Instrucción</div>
+                <div className="w-7 shrink-0"></div>
               </div>
 
-              {/* Lista dinámica de Actividades */}
-              {actividades.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border/90 bg-muted/10 p-8 text-center space-y-2.5">
-                  <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                    <CheckSquare className="size-5" />
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-semibold text-foreground">
-                      No hay actividades agregadas a la orden
-                    </p>
-                    <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
-                      Puedes añadir actividades desde el catálogo o escribir tareas específicas que el técnico debe cumplir.
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddActividad}
-                    className="h-7 text-xs font-semibold gap-1 rounded-lg border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer"
-                  >
-                    <Plus className="size-3.5" />
-                    <span>Agregar primera actividad</span>
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {actividades.map((act, index) => (
-                    <div
-                      key={act.id}
-                      className="group rounded-xl border border-border/80 bg-card/80 p-3 shadow-2xs space-y-2.5 hover:border-border transition-all"
+              {/* Filas en formato lista contigua */}
+              {actividades.map((act, index) => (
+                <div
+                  key={act.id}
+                  className="p-1.5 sm:px-3 text-xs flex flex-col md:flex-row md:items-center gap-2 hover:bg-muted/15 transition-colors"
+                >
+                  {/* Número de tarea */}
+                  <div className="flex items-center justify-between md:justify-center md:w-8 shrink-0">
+                    <span className="flex size-5 items-center justify-center rounded bg-muted font-mono font-bold text-[11px] text-foreground">
+                      {index + 1}
+                    </span>
+                    <span className="font-bold text-foreground text-xs md:hidden">
+                      Tarea #{index + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-6 text-muted-foreground hover:text-destructive md:hidden cursor-pointer"
+                      onClick={() => handleRemoveActividad(act.id)}
+                      title="Eliminar tarea"
                     >
-                      <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="flex size-5.5 items-center justify-center rounded-md bg-muted text-[11px] font-mono font-bold text-foreground">
-                            {index + 1}
-                          </span>
-                          <span className="text-xs font-semibold text-foreground">
-                            Tarea #{index + 1}
-                          </span>
-                        </div>
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
 
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => handleRemoveActividad(act.id)}
-                          className="size-6 text-destructive hover:bg-destructive/10 rounded-md cursor-pointer"
-                          title="Eliminar tarea"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
-
-                      {/* Selección del Catálogo (Opcional) */}
-                      <div className="space-y-1">
-                        <Label className="text-[11px] font-medium text-muted-foreground">
-                          Catálogo de Actividad (Opcional)
-                        </Label>
-                        <ActividadMantenimientoCombobox
-                          value={act.actividadMantenimientoId}
-                          onValueChange={(val, catAct) => {
-                            handleUpdateActividad(act.id, {
-                              actividadMantenimientoId: val || null,
-                              descripcion: act.descripcion
-                                ? act.descripcion
-                                : catAct?.nombre || "",
-                            })
-                          }}
-                          placeholder="Vincular a actividad del catálogo..."
-                        />
-                      </div>
-
-                      {/* Descripción de la Actividad */}
-                      <div className="space-y-1">
-                        <Label className="text-[11px] font-medium flex items-center gap-1">
-                          Descripción de la Tarea{" "}
-                          <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          value={act.descripcion}
-                          onChange={(e) =>
-                            handleUpdateActividad(act.id, {
-                              descripcion: e.target.value,
-                            })
-                          }
-                          placeholder="Ej: Cambio de aceite, calibración de sensores, limpieza..."
-                          className="h-8 text-xs"
-                        />
-                      </div>
-
-                      {/* Observación de la Actividad */}
-                      <div className="space-y-1">
-                        <Label className="text-[11px] font-medium text-muted-foreground">
-                          Observación / Nota técnica (Opcional)
-                        </Label>
-                        <Input
-                          value={act.observacion || ""}
-                          onChange={(e) =>
-                            handleUpdateActividad(act.id, {
-                              observacion: e.target.value,
-                            })
-                          }
-                          placeholder="Detalles sobre herramientas, repuestos o tolerancias..."
-                          className="h-7 text-xs text-muted-foreground"
-                        />
-                      </div>
+                  {/* Catálogo Opcional (solo si no es mantenimiento correctivo) */}
+                  {!isCorrectivo && (
+                    <div className="w-full md:w-56 shrink-0 space-y-0.5 md:space-y-0">
+                      <span className="md:hidden text-[10.5px] font-semibold text-muted-foreground">
+                        Catálogo de Actividad:
+                      </span>
+                      <ActividadMantenimientoCombobox
+                        value={act.actividadMantenimientoId}
+                        onValueChange={(val, catAct) => {
+                          handleUpdateActividad(act.id, {
+                            actividadMantenimientoId: val || null,
+                            descripcion: act.descripcion
+                              ? act.descripcion
+                              : catAct?.nombre || "",
+                          })
+                        }}
+                        placeholder="Catálogo (opcional)..."
+                        className="h-8 text-xs"
+                      />
                     </div>
-                  ))}
+                  )}
 
+                  {/* Descripción de la tarea */}
+                  <div className="w-full md:flex-1 min-w-0 space-y-0.5 md:space-y-0">
+                    <span className="md:hidden text-[10.5px] font-semibold text-foreground flex items-center gap-0.5">
+                      <span>Descripción</span>
+                      <span className="text-destructive">*</span>
+                    </span>
+                    <Input
+                      value={act.descripcion}
+                      onChange={(e) =>
+                        handleUpdateActividad(act.id, {
+                          descripcion: e.target.value,
+                        })
+                      }
+                      placeholder="Descripción de la tarea técnica (obligatorio)..."
+                      className="h-8 text-xs bg-background"
+                      required
+                    />
+                  </div>
+
+                  {/* Observación de la tarea */}
+                  <div className="w-full md:w-48 sm:w-56 shrink-0 space-y-0.5 md:space-y-0">
+                    <span className="md:hidden text-[10.5px] font-semibold text-muted-foreground">
+                      Nota / Instrucción (Opcional):
+                    </span>
+                    <Input
+                      value={act.observacion || ""}
+                      onChange={(e) =>
+                        handleUpdateActividad(act.id, {
+                          observacion: e.target.value,
+                        })
+                      }
+                      placeholder="Nota / Instrucción (opc)..."
+                      className="h-8 text-xs bg-background text-muted-foreground"
+                    />
+                  </div>
+
+                  {/* Eliminar tarea (Desktop) */}
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddActividad}
-                    className="w-full h-8 border-dashed text-xs font-semibold gap-1 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-xl cursor-pointer"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-muted-foreground hover:text-destructive shrink-0 hidden md:flex cursor-pointer"
+                    onClick={() => handleRemoveActividad(act.id)}
+                    title="Eliminar tarea"
                   >
-                    <Plus className="size-3.5" />
-                    <span>Agregar otra actividad</span>
+                    <Trash2 className="size-3.5" />
                   </Button>
                 </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* Bottom Sticky Action Bar */}
+        <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 p-3 rounded-2xl border bg-background/95 backdrop-blur-md shadow-lg">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground truncate">
+            <Info className="size-4 text-primary shrink-0 hidden sm:block" />
+            <span>
+              Orden de Trabajo • <strong>{actividades.length}</strong> {actividades.length === 1 ? "tarea planificada" : "tareas planificadas"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => window.history.back()}
+              disabled={createMutation.isPending}
+              className="h-8 px-4 text-xs font-semibold"
+            >
+              Cancelar
+            </Button>
+
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!isValid || createMutation.isPending}
+              className="h-8 gap-2 px-5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs cursor-pointer"
+            >
+              {createMutation.isPending ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Guardando OT...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="size-3.5" />
+                  <span>Guardar Orden de Trabajo</span>
+                </>
               )}
-            </Card>
+            </Button>
           </div>
         </div>
       </form>
     </PageShell>
   )
 }
+
