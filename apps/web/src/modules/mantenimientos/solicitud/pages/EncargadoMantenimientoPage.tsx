@@ -85,6 +85,19 @@ function SolicitudEncargadoListItem({
     }),
   })
   const hasOTRegistrada = (otsQuery.data?.totalElements ?? 0) > 0
+  const ot = otsQuery.data?.content?.[0]
+
+  // Consultar actividades de la OT si existe
+  const actividadesQuery = useQuery({
+    ...ordenTrabajoQueries.actividadesByOT(ot?.id ?? ""),
+    enabled: Boolean(ot?.id),
+  })
+  const actividades = actividadesQuery.data?.content ?? []
+  const totalActividades = actividades.length
+  const completadasCount = actividades.filter((a) => a.realizado).length
+  const pendientesCount = totalActividades - completadasCount
+  const isValidado = estadoNorm === "validado"
+  const isEnMantenimiento = estadoNorm === "en_mantenimiento"
 
   return (
     <SolicitudWorkflowListItem
@@ -101,6 +114,19 @@ function SolicitudEncargadoListItem({
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 truncate max-w-55">
               <AlertTriangle className="size-2.5 shrink-0" />
               <span className="truncate">{solicitud.tipoFallas}</span>
+            </span>
+          )}
+          {(isValidado || isEnMantenimiento) && hasOTRegistrada && pendientesCount > 0 && (
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                onOrdenTrabajo(solicitud)
+              }}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 cursor-pointer hover:bg-amber-500/25 transition-all shadow-2xs"
+              title="Haz clic para abrir la OT y completar las tareas/evidencias requeridas"
+            >
+              <AlertTriangle className="size-2.5 text-amber-600 animate-pulse" />
+              <span>{pendientesCount} {pendientesCount === 1 ? "tarea pendiente" : "tareas pendientes"} en OT</span>
             </span>
           )}
         </>
@@ -169,7 +195,7 @@ function SolicitudEncargadoListItem({
             </span>
           </Button>
 
-          {/* Botón OT (Orden de Trabajo) */}
+          {/* Botón OT (Orden de Trabajo) con estado y alerta de tareas */}
           <Button
             type="button"
             size="xs"
@@ -181,19 +207,31 @@ function SolicitudEncargadoListItem({
             className={cn(
               "h-6.5 px-2 rounded-md text-[11px] font-medium inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98",
               hasOTRegistrada
-                ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/30 font-semibold"
+                ? (isValidado || isEnMantenimiento) && pendientesCount > 0
+                  ? "bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 border-amber-500/40 font-bold animate-pulse"
+                  : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/30 font-semibold"
                 : "bg-sky-500/10 hover:bg-sky-500/20 text-sky-800 dark:text-sky-300 border-sky-500/30",
             )}
-            title={hasOTRegistrada ? "Ver Orden de Trabajo Registrada" : "Registrar Orden de Trabajo"}
+            title={
+              hasOTRegistrada
+                ? `${completadasCount}/${totalActividades} tareas completadas. Clic para editar tareas y subir evidencias.`
+                : "Registrar Orden de Trabajo"
+            }
           >
             {hasOTRegistrada ? (
-              <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+              (isValidado || isEnMantenimiento) && pendientesCount > 0 ? (
+                <AlertTriangle className="size-3 text-amber-600 dark:text-amber-400" />
+              ) : (
+                <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+              )
             ) : (
               <Wrench className="size-3 text-sky-600 dark:text-sky-400" />
             )}
             <span>
               {hasOTRegistrada
-                ? "OT Registrada"
+                ? (isValidado || isEnMantenimiento) && pendientesCount > 0
+                  ? `OT (${completadasCount}/${totalActividades} tareas)`
+                  : "OT Registrada"
                 : isAsignado
                   ? "Registrar OT"
                   : "OT"}

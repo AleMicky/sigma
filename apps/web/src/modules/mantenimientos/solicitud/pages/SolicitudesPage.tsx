@@ -409,7 +409,9 @@ export function SolicitudesPage() {
                     <SolicitudWorkflowListItem
                       key={solicitud.id}
                       solicitud={solicitud}
-                      showWorkflowTrigger={isBorrador || isValidado}
+                      showWorkflowTrigger={
+                        isBorrador || isValidado || isTrabajoRealizado
+                      }
                       badges={
                         <>
                           {solicitud.tipoMantenimiento && (

@@ -139,13 +139,11 @@ export function OrdenTrabajoDetailModal({
   const estadoSolicitudNorm = (solicitud?.estado ?? "").toUpperCase().trim()
   const isReadOnly =
     readOnly ||
-    estadoSolicitudNorm === "EN_REVISION" ||
-    estadoSolicitudNorm === "VALIDADO" ||
     estadoSolicitudNorm === "FINALIZADO" ||
     estadoSolicitudNorm === "CANCELADO" ||
     estadoSolicitudNorm === "RECHAZADO"
 
-  // Modo planificación: en SOLICITADO o ASIGNADO (la ejecución con checks/subidas se desbloquea en EN_MANTENIMIENTO)
+  // Modo planificación: en SOLICITADO o ASIGNADO (la ejecución con checks/subidas se desbloquea en EN_MANTENIMIENTO y VALIDADO)
   const isEnPlanificacion =
     !isReadOnly &&
     (estadoSolicitudNorm === "SOLICITADO" || estadoSolicitudNorm === "ASIGNADO")
