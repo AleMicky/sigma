@@ -58,6 +58,7 @@ type OrdenTrabajoDetailModalProps = {
   ordenTrabajo?: OrdenTrabajo | null
   solicitudId?: string | null
   solicitudNumero?: string | null
+  readOnly?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onUpdated?: () => void
@@ -67,6 +68,7 @@ export function OrdenTrabajoDetailModal({
   ordenTrabajo,
   solicitudId,
   solicitudNumero,
+  readOnly = false,
   open,
   onOpenChange,
   onUpdated,
@@ -136,13 +138,17 @@ export function OrdenTrabajoDetailModal({
   const solicitud = solicitudQuery.data
   const estadoSolicitudNorm = (solicitud?.estado ?? "").toUpperCase().trim()
   const isReadOnly =
+    readOnly ||
+    estadoSolicitudNorm === "EN_REVISION" ||
+    estadoSolicitudNorm === "VALIDADO" ||
     estadoSolicitudNorm === "FINALIZADO" ||
     estadoSolicitudNorm === "CANCELADO" ||
     estadoSolicitudNorm === "RECHAZADO"
 
   // Modo planificación: en SOLICITADO o ASIGNADO (la ejecución con checks/subidas se desbloquea en EN_MANTENIMIENTO)
   const isEnPlanificacion =
-    estadoSolicitudNorm === "SOLICITADO" || estadoSolicitudNorm === "ASIGNADO"
+    !isReadOnly &&
+    (estadoSolicitudNorm === "SOLICITADO" || estadoSolicitudNorm === "ASIGNADO")
 
   // Mutations
   const toggleActividadMutation = useToggleOrdenTrabajoActividadRealizado()
@@ -267,15 +273,17 @@ export function OrdenTrabajoDetailModal({
                     </div>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditDialogOpen(true)}
-                    className="h-7 text-xs gap-1 px-2.5 shrink-0"
-                  >
-                    <Edit2 className="size-3" />
-                    <span>Editar</span>
-                  </Button>
+                  {!isReadOnly && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditDialogOpen(true)}
+                      className="h-7 text-xs gap-1 px-2.5 shrink-0"
+                    >
+                      <Edit2 className="size-3" />
+                      <span>Editar</span>
+                    </Button>
+                  )}
                 </div>
 
             {/* Progress bar */}
@@ -361,17 +369,19 @@ export function OrdenTrabajoDetailModal({
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Tareas de la Orden ({completadasCount}/{totalActividades})
                 </h4>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    setActividadModal({ open: true, actividad: null })
-                  }
-                  className="h-7 text-xs font-semibold gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20"
-                >
-                  <Plus className="size-3.5" />
-                  <span>Agregar Tarea</span>
-                </Button>
+                {!isReadOnly && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      setActividadModal({ open: true, actividad: null })
+                    }
+                    className="h-7 text-xs font-semibold gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20"
+                  >
+                    <Plus className="size-3.5" />
+                    <span>Agregar Tarea</span>
+                  </Button>
+                )}
               </div>
 
               {actividades.length === 0 ? (
@@ -381,19 +391,23 @@ export function OrdenTrabajoDetailModal({
                     Sin tareas registradas
                   </p>
                   <p className="text-[11px] text-muted-foreground max-w-xs mt-0.5">
-                    Agrega las tareas y actividades técnicas que deben ejecutarse en esta orden de trabajo.
+                    {isReadOnly
+                      ? "Esta orden de trabajo no contiene actividades registradas."
+                      : "Agrega las tareas y actividades técnicas que deben ejecutarse en esta orden de trabajo."}
                   </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      setActividadModal({ open: true, actividad: null })
-                    }
-                    className="mt-3 h-7 text-xs font-semibold gap-1"
-                  >
-                    <Plus className="size-3" />
-                    <span>Agregar Primera Tarea</span>
-                  </Button>
+                  {!isReadOnly && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setActividadModal({ open: true, actividad: null })
+                      }
+                      className="mt-3 h-7 text-xs font-semibold gap-1"
+                    >
+                      <Plus className="size-3" />
+                      <span>Agregar Primera Tarea</span>
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -401,6 +415,7 @@ export function OrdenTrabajoDetailModal({
                     <ActividadItemCard
                       key={act.id}
                       actividad={act}
+                      isReadOnly={isReadOnly}
                       isEnPlanificacion={isEnPlanificacion}
                       onToggleRealizado={() => handleToggleRealizado(act)}
                       onEdit={() =>
@@ -544,26 +559,28 @@ export function OrdenTrabajoDetailModal({
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Documentos y Archivos de la OT ({adjuntos.length})
                 </h4>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={isEnPlanificacion}
-                  onClick={() =>
-                    setAdjuntoModal({ open: true, adjuntoToReplace: null })
-                  }
-                  className={cn(
-                    "h-7 text-xs font-semibold gap-1 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20",
-                    isEnPlanificacion && "opacity-50 cursor-not-allowed",
-                  )}
-                  title={
-                    isEnPlanificacion
-                      ? "Solo se pueden subir adjuntos de ejecución cuando la orden esté en mantenimiento"
-                      : "Subir archivo adjunto"
-                  }
-                >
-                  <Plus className="size-3.5" />
-                  <span>Subir Adjunto</span>
-                </Button>
+                {!isReadOnly && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isEnPlanificacion}
+                    onClick={() =>
+                      setAdjuntoModal({ open: true, adjuntoToReplace: null })
+                    }
+                    className={cn(
+                      "h-7 text-xs font-semibold gap-1 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20",
+                      isEnPlanificacion && "opacity-50 cursor-not-allowed",
+                    )}
+                    title={
+                      isEnPlanificacion
+                        ? "Solo se pueden subir adjuntos de ejecución cuando la orden esté en mantenimiento"
+                        : "Subir archivo adjunto"
+                    }
+                  >
+                    <Plus className="size-3.5" />
+                    <span>Subir Adjunto</span>
+                  </Button>
+                )}
               </div>
 
               {adjuntos.length === 0 ? (
@@ -573,9 +590,11 @@ export function OrdenTrabajoDetailModal({
                     Sin adjuntos registrados
                   </p>
                   <p className="text-[11px] text-muted-foreground max-w-xs mt-0.5">
-                    Puedes adjuntar manuales, informes o garantías en PDF, Word o imágenes una vez iniciado el mantenimiento.
+                    {isReadOnly
+                      ? "Esta orden de trabajo no contiene adjuntos registrados."
+                      : "Puedes adjuntar manuales, informes o garantías en PDF, Word o imágenes una vez iniciado el mantenimiento."}
                   </p>
-                  {!isEnPlanificacion && (
+                  {!isReadOnly && !isEnPlanificacion && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -598,15 +617,25 @@ export function OrdenTrabajoDetailModal({
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">
-                          <Paperclip className="size-4" />
+                          <FileText className="size-4" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-foreground truncate" title={adj.nombreArchivo}>
-                            {adj.nombreArchivo}
+                          <p
+                            className="text-xs font-bold text-foreground truncate"
+                            title={adj.nombreOriginal}
+                          >
+                            {adj.nombreOriginal}
                           </p>
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            {adj.descripcion || "Sin descripción"} • {adj.tamanio ? `${(adj.tamanio / 1024).toFixed(1)} KB` : ""}
-                          </p>
+                          <div className="flex items-center gap-2 text-[10.5px] text-muted-foreground">
+                            {adj.tipoDocumento && (
+                              <span className="font-medium text-foreground">
+                                {adj.tipoDocumento}
+                              </span>
+                            )}
+                            {adj.pesoBytes && (
+                              <span>{(adj.pesoBytes / 1024).toFixed(0)} KB</span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -619,35 +648,39 @@ export function OrdenTrabajoDetailModal({
                             className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
                             title="Descargar / Ver archivo"
                           >
-                            <Download className="size-3.5" />
+                            <Eye className="size-3" />
                           </a>
                         )}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setAdjuntoModal({
-                              open: true,
-                              adjuntoToReplace: adj,
-                            })
-                          }
-                          className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
-                          title="Reemplazar archivo"
-                        >
-                          <RefreshCw className="size-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            deleteAdjuntoMutation.mutate({
-                              ordenTrabajoId: otId,
-                              id: adj.id,
-                            })
-                          }
-                          className="inline-flex size-6 items-center justify-center rounded-md text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                          title="Eliminar archivo"
-                        >
-                          <Trash2 className="size-3" />
-                        </button>
+                        {!isReadOnly && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAdjuntoModal({
+                                  open: true,
+                                  adjuntoToReplace: adj,
+                                })
+                              }
+                              className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+                              title="Reemplazar archivo"
+                            >
+                              <RefreshCw className="size-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deleteAdjuntoMutation.mutate({
+                                  ordenTrabajoId: otId,
+                                  id: adj.id,
+                                })
+                              }
+                              className="inline-flex size-6 items-center justify-center rounded-md text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                              title="Eliminar archivo"
+                            >
+                              <Trash2 className="size-3" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -714,6 +747,7 @@ export function OrdenTrabajoDetailModal({
 // Sub-component for each Actividad item with embedded Evidencias query
 function ActividadItemCard({
   actividad,
+  isReadOnly = false,
   isEnPlanificacion,
   onToggleRealizado,
   onEdit,
@@ -723,6 +757,7 @@ function ActividadItemCard({
   onDeleteEvidencia,
 }: {
   actividad: OrdenTrabajoActividad
+  isReadOnly?: boolean
   isEnPlanificacion?: boolean
   onToggleRealizado: () => void
   onEdit: () => void
@@ -750,16 +785,18 @@ function ActividadItemCard({
           <input
             type="checkbox"
             checked={actividad.realizado}
-            disabled={isEnPlanificacion}
+            disabled={isReadOnly || isEnPlanificacion}
             onChange={onToggleRealizado}
             className={cn(
               "size-4 mt-0.5 rounded border-border text-emerald-600 focus:ring-emerald-500 shrink-0 cursor-pointer",
-              isEnPlanificacion && "opacity-50 cursor-not-allowed",
+              (isReadOnly || isEnPlanificacion) && "opacity-50 cursor-not-allowed",
             )}
             title={
-              actividad.realizado
-                ? "Marcar como pendiente"
-                : "Marcar como realizada"
+              isReadOnly
+                ? "Modo solo lectura"
+                : actividad.realizado
+                  ? "Marcar como pendiente"
+                  : "Marcar como realizada"
             }
           />
           <div className="min-w-0 flex-1">
@@ -796,42 +833,44 @@ function ActividadItemCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            disabled={isEnPlanificacion}
-            onClick={onAddEvidencia}
-            className={cn(
-              "size-6 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-md cursor-pointer",
-              isEnPlanificacion && "opacity-40 cursor-not-allowed",
-            )}
-            title="Adjuntar evidencia fotográfica"
-          >
-            <Camera className="size-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={onEdit}
-            className="size-6 text-muted-foreground hover:text-foreground rounded-md"
-            title="Editar tarea"
-          >
-            <Edit2 className="size-3" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={onDelete}
-            className="size-6 text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-md"
-            title="Eliminar tarea"
-          >
-            <Trash2 className="size-3" />
-          </Button>
-        </div>
+        {!isReadOnly && (
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              disabled={isEnPlanificacion}
+              onClick={onAddEvidencia}
+              className={cn(
+                "size-6 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-md cursor-pointer",
+                isEnPlanificacion && "opacity-40 cursor-not-allowed",
+              )}
+              title="Adjuntar evidencia fotográfica"
+            >
+              <Camera className="size-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={onEdit}
+              className="size-6 text-muted-foreground hover:text-foreground rounded-md"
+              title="Editar tarea"
+            >
+              <Edit2 className="size-3" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={onDelete}
+              className="size-6 text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-md"
+              title="Eliminar tarea"
+            >
+              <Trash2 className="size-3" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Evidencias de la Actividad */}
@@ -868,22 +907,26 @@ function ActividadItemCard({
                       <Eye className="size-3" />
                     </a>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => onReplaceEvidencia(ev)}
-                    className="size-5 inline-flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-                    title="Reemplazar archivo"
-                  >
-                    <RefreshCw className="size-2.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteEvidencia(ev.id)}
-                    className="size-5 inline-flex items-center justify-center rounded hover:bg-destructive/10 text-destructive/70 hover:text-destructive cursor-pointer"
-                    title="Eliminar evidencia"
-                  >
-                    <Trash2 className="size-2.5" />
-                  </button>
+                  {!isReadOnly && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onReplaceEvidencia(ev)}
+                        className="size-5 inline-flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                        title="Reemplazar archivo"
+                      >
+                        <RefreshCw className="size-2.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteEvidencia(ev.id)}
+                        className="size-5 inline-flex items-center justify-center rounded hover:bg-destructive/10 text-destructive/70 hover:text-destructive cursor-pointer"
+                        title="Eliminar evidencia"
+                      >
+                        <Trash2 className="size-2.5" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}

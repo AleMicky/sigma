@@ -35,14 +35,17 @@ type ControlActivoHistorialModalProps = {
   onOpenChange: (open: boolean) => void
   solicitudId?: string | null
   solicitudNumero?: string | null
+  readOnly?: boolean
 }
 
 function ControlItemCard({
   control,
   onCloseModal,
+  readOnly = false,
 }: {
   control: ControlActivo
   onCloseModal?: () => void
+  readOnly?: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -115,27 +118,29 @@ function ControlItemCard({
         </div>
 
         <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0 flex-wrap justify-end">
-          {/* Botón Editar Acta */}
-          <Link
-            to="/mantenimientos/controles-activos/nuevo"
-            search={{
-              solicitudId: control.solicitudMantenimientoId,
-              id: control.id,
-              tipo: control.tipo,
-            }}
-            onClick={() => onCloseModal?.()}
-          >
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs font-semibold gap-1 hover:bg-muted cursor-pointer"
-              title="Editar Acta de Control"
+          {/* Botón Editar Acta (Oculto en modo solo consulta / supervisión) */}
+          {!readOnly && (
+            <Link
+              to="/mantenimientos/controles-activos/nuevo"
+              search={{
+                solicitudId: control.solicitudMantenimientoId,
+                id: control.id,
+                tipo: control.tipo,
+              }}
+              onClick={() => onCloseModal?.()}
             >
-              <Edit2 className="size-3 text-muted-foreground" />
-              <span>Editar Acta</span>
-            </Button>
-          </Link>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs font-semibold gap-1 hover:bg-muted cursor-pointer"
+                title="Editar Acta de Control"
+              >
+                <Edit2 className="size-3 text-muted-foreground" />
+                <span>Editar Acta</span>
+              </Button>
+            </Link>
+          )}
 
           <Button
             size="sm"
@@ -233,6 +238,7 @@ export function ControlActivoHistorialModal({
   onOpenChange,
   solicitudId,
   solicitudNumero,
+  readOnly = false,
 }: ControlActivoHistorialModalProps) {
   const controlesQuery = useQuery({
     ...controlActivoQueries.list({
@@ -268,7 +274,7 @@ export function ControlActivoHistorialModal({
               </div>
             </div>
 
-            {solicitudId && (
+            {solicitudId && !readOnly && (
               <Link
                 to="/mantenimientos/controles-activos/nuevo"
                 search={{ solicitudId }}
@@ -299,12 +305,14 @@ export function ControlActivoHistorialModal({
               <ClipboardList className="size-10 text-muted-foreground/50" />
               <div className="space-y-1">
                 <p className="font-semibold text-sm text-foreground">
-                  Sin controles registrados
+                  No hay actas registradas
                 </p>
                 <p className="text-xs max-w-xs text-muted-foreground">
-                  Aún no se han generado actas de entrega ni devolución de activo para esta solicitud.
+                  {readOnly
+                    ? "Esta solicitud no tiene actas de entrega o devolución registradas aún."
+                    : "Aún no se han generado actas de entrega o devolución de activo para esta solicitud."}
                 </p>
-                {solicitudId && (
+                {solicitudId && !readOnly && (
                   <Link
                     to="/mantenimientos/controles-activos/nuevo"
                     search={{ solicitudId }}
@@ -323,13 +331,16 @@ export function ControlActivoHistorialModal({
               </div>
             </div>
           ) : (
-            controles.map((control) => (
-              <ControlItemCard
-                key={control.id}
-                control={control}
-                onCloseModal={() => onOpenChange(false)}
-              />
-            ))
+            <div className="space-y-2.5">
+              {controles.map((control) => (
+                <ControlItemCard
+                  key={control.id}
+                  control={control}
+                  readOnly={readOnly}
+                  onCloseModal={() => onOpenChange(false)}
+                />
+              ))}
+            </div>
           )}
         </div>
       </DialogContent>

@@ -715,6 +715,7 @@ export function EncargadoMantenimientoPage() {
 
       {/* Modal de Trazabilidad e Historial de Workflow */}
       <SolicitudTrazabilidadModal
+        key={`trazabilidad-${trazabilidadSolicitud?.id}-${trazabilidadSolicitud?.processInstanceId}`}
         solicitud={trazabilidadSolicitud}
         open={Boolean(trazabilidadSolicitud)}
         onOpenChange={(open) => !open && setTrazabilidadSolicitud(null)}

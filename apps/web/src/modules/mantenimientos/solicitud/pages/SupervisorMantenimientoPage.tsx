@@ -5,14 +5,17 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  FileCheck2,
   Shield,
   ShieldAlert,
   ShieldCheck,
   User,
+  Wrench,
 } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
+import { Button } from "@/shared/components/ui/button"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
@@ -35,14 +38,17 @@ import type {
   WorkflowAction,
   WorkflowField,
 } from "../api/solicitud.service"
-import { SolicitudDetalleModal, SolicitudWorkflowListItem } from "../components"
+import {
+  SolicitudTrazabilidadModal,
+  SolicitudWorkflowListItem,
+} from "../components"
 import { useSolicitudRoleScope } from "../hooks/use-solicitud-role-scope"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function SupervisorMantenimientoPage() {
   const completeWorkflowMutation = useCompleteWorkflowTask()
-  const [modalSolicitud, setModalSolicitud] =
+  const [trazabilidadSolicitud, setTrazabilidadSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
   const [estadoFilter, setEstadoFilter] = useState<
@@ -60,7 +66,8 @@ export function SupervisorMantenimientoPage() {
   // Modal states for inspecting Control de Activo and OT
   const [controlActivoTarget, setControlActivoTarget] =
     useState<SolicitudMantenimiento | null>(null)
-  const [selectedOT, setSelectedOT] = useState<OrdenTrabajo | null>(null)
+  const [ordenTrabajoTarget, setOrdenTrabajoTarget] =
+    useState<SolicitudMantenimiento | null>(null)
 
   // Dialog state for dynamic workflow actions (Validar / Observar)
   const [workflowActionTarget, setWorkflowActionTarget] = useState<{
@@ -531,7 +538,46 @@ export function SupervisorMantenimientoPage() {
                           )}
                         </>
                       }
-                      onQuickView={() => setModalSolicitud(solicitud)}
+                      extraActions={
+                        <div className="flex items-center gap-1">
+                          {/* Botón Control de Activo (Modo Consulta) */}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setControlActivoTarget(solicitud)
+                            }}
+                            className="h-7 px-2 rounded-lg text-xs font-medium inline-flex items-center gap-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98"
+                            title="Consultar actas de control de activo"
+                          >
+                            <FileCheck2 className="size-3.5 text-amber-600 dark:text-amber-400" />
+                            <span>Actas</span>
+                          </Button>
+
+                          {/* Botón Orden de Trabajo (Modo Consulta) */}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setOrdenTrabajoTarget(solicitud)
+                            }}
+                            className="h-7 px-2 rounded-lg text-xs font-medium inline-flex items-center gap-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/30 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98"
+                            title="Consultar orden de trabajo, actividades y evidencias"
+                          >
+                            <Wrench className="size-3.5 text-sky-600 dark:text-sky-400" />
+                            <span>OT</span>
+                          </Button>
+                        </div>
+                      }
+                      onTraceability={
+                        solicitud.processInstanceId
+                          ? () => setTrazabilidadSolicitud(solicitud)
+                          : undefined
+                      }
                       onActionSelect={(action, taskName, fields) =>
                         handleActionSelect(solicitud, action, taskName, fields)
                       }
@@ -552,27 +598,29 @@ export function SupervisorMantenimientoPage() {
         </div>
       </div>
 
-      {/* Modal Detalle / Expediente Completo */}
-      <SolicitudDetalleModal
-        solicitud={modalSolicitud}
-        open={Boolean(modalSolicitud)}
-        onOpenChange={(open) => !open && setModalSolicitud(null)}
-        onWorkflowAction={handleActionSelect}
+      {/* Modal de Trazabilidad e Historial de Workflow */}
+      <SolicitudTrazabilidadModal
+        key={`trazabilidad-${trazabilidadSolicitud?.id}-${trazabilidadSolicitud?.processInstanceId}`}
+        solicitud={trazabilidadSolicitud}
+        open={Boolean(trazabilidadSolicitud)}
+        onOpenChange={(open) => !open && setTrazabilidadSolicitud(null)}
       />
 
-      {/* Modal Historial / Detalle Control de Activo */}
+      {/* Modal Historial / Detalle Control de Activo (Modo Consulta) */}
       <ControlActivoHistorialModal
         solicitudId={controlActivoTarget?.id ?? null}
         solicitudNumero={controlActivoTarget?.numero ?? null}
+        readOnly={true}
         open={Boolean(controlActivoTarget)}
         onOpenChange={(open) => !open && setControlActivoTarget(null)}
       />
 
-      {/* Modal Detalle OT / Inspección de Actividades y Evidencias */}
+      {/* Modal Detalle OT / Inspección de Actividades y Evidencias (Modo Consulta) */}
       <OrdenTrabajoDetailModal
-        ordenTrabajo={selectedOT}
-        open={Boolean(selectedOT)}
-        onOpenChange={(open) => !open && setSelectedOT(null)}
+        solicitudId={ordenTrabajoTarget?.id ?? null}
+        solicitudNumero={ordenTrabajoTarget?.numero ?? null}
+        open={Boolean(ordenTrabajoTarget)}
+        onOpenChange={(open) => !open && setOrdenTrabajoTarget(null)}
         onUpdated={() => {
           solicitudesQuery.refetch()
         }}
