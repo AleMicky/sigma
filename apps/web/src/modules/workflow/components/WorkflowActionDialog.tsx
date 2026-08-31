@@ -162,10 +162,10 @@ function WorkflowActionDialogContent({
   })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
-  const cleanActionName = fixWorkflowEncoding(action.name || action.value)
+  const cleanActionName = fixWorkflowEncoding(action?.name || (action?.value != null ? String(action.value) : ""))
   const cleanTaskName = fixWorkflowEncoding(taskName || "")
 
-  const actionVal = action.value.toUpperCase()
+  const actionVal = String(action?.value ?? "").toUpperCase()
   const actionName = cleanActionName.toLowerCase()
 
   const isAprobar = actionVal.includes("APROB") || actionName.includes("aprobar")

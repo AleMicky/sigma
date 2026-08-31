@@ -24,7 +24,9 @@ import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-s
 import { cn } from "@/shared/lib/utils"
 
 import { ControlActivoHistorialModal } from "@/modules/mantenimientos/control-activo/components/ControlActivoHistorialModal"
+import { controlActivoQueries } from "@/modules/mantenimientos/control-activo/api/control-activo.queries"
 import { OrdenTrabajoDetailModal } from "@/modules/mantenimientos/orden-trabajo/components/OrdenTrabajoDetailModal"
+import { ordenTrabajoQueries } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.queries"
 import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
 import {
   WorkflowActionDialog,
@@ -37,14 +39,177 @@ import type {
   WorkflowAction,
   WorkflowField,
 } from "../api/solicitud.service"
-import { SolicitudDetalleModal, SolicitudWorkflowListItem } from "../components"
+import {
+  SolicitudTrazabilidadModal,
+  SolicitudWorkflowListItem,
+} from "../components"
 import { useSolicitudRoleScope } from "../hooks/use-solicitud-role-scope"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
+function SolicitudEncargadoListItem({
+  solicitud,
+  onControlActivo,
+  onOrdenTrabajo,
+  onTraceability,
+  onActionSelect,
+}: {
+  solicitud: SolicitudMantenimiento
+  onControlActivo: (s: SolicitudMantenimiento) => void
+  onOrdenTrabajo: (s: SolicitudMantenimiento) => void
+  onTraceability?: () => void
+  onActionSelect: (
+    action: WorkflowAction,
+    taskName?: string,
+    fields?: WorkflowField[],
+  ) => void
+}) {
+  const adjuntosCount = solicitud.adjuntos?.length ?? 0
+  const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
+  const isAsignado = estadoNorm === "asignado"
+
+  // Consultar si ya tiene actas registradas para esta solicitud
+  const controlesQuery = useQuery({
+    ...controlActivoQueries.list({
+      solicitudMantenimientoId: solicitud.id,
+      size: 1,
+    }),
+  })
+  const hasActaRegistrada = (controlesQuery.data?.totalElements ?? 0) > 0
+
+  // Consultar si ya tiene OT registrada para esta solicitud
+  const otsQuery = useQuery({
+    ...ordenTrabajoQueries.list({
+      solicitudMantenimientoId: solicitud.id,
+      size: 1,
+    }),
+  })
+  const hasOTRegistrada = (otsQuery.data?.totalElements ?? 0) > 0
+
+  return (
+    <SolicitudWorkflowListItem
+      key={solicitud.id}
+      solicitud={solicitud}
+      badges={
+        <>
+          {solicitud.tipoMantenimiento && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-semibold border shrink-0 bg-primary/10 text-primary border-primary/20">
+              <span>{solicitud.tipoMantenimiento.nombre}</span>
+            </span>
+          )}
+          {solicitud.tipoFallas && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 truncate max-w-55">
+              <AlertTriangle className="size-2.5 shrink-0" />
+              <span className="truncate">{solicitud.tipoFallas}</span>
+            </span>
+          )}
+        </>
+      }
+      extraContent={
+        <>
+          {solicitud.activo && (
+            <div className="flex items-center gap-1.5 truncate max-w-[280px]">
+              <span className="font-mono font-bold text-primary text-[11px]">
+                {solicitud.activo.codigo}
+              </span>
+              <span className="truncate text-foreground font-medium">
+                {solicitud.activo.nombre}
+              </span>
+            </div>
+          )}
+          {solicitud.solicitante && (
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="truncate">
+                Solicitante:{" "}
+                <strong className="text-foreground font-medium">
+                  {solicitud.solicitante.nombre}
+                </strong>
+              </span>
+            </div>
+          )}
+          {adjuntosCount > 0 && (
+            <div className="inline-flex items-center gap-1.5 font-semibold text-primary bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/15 text-[10.5px]">
+              <span>
+                {adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}
+              </span>
+            </div>
+          )}
+        </>
+      }
+      extraActions={
+        <div className="flex items-center gap-1.5">
+          {/* Botón Acta (Control de Activo) */}
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation()
+              onControlActivo(solicitud)
+            }}
+            className={cn(
+              "h-6.5 px-2 rounded-md text-[11px] font-medium inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98",
+              hasActaRegistrada
+                ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/30 font-semibold"
+                : "bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/30",
+            )}
+            title={hasActaRegistrada ? "Ver Acta Registrada" : "Registrar Acta de Entrega"}
+          >
+            {hasActaRegistrada ? (
+              <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <FileCheck2 className="size-3 text-amber-600 dark:text-amber-400" />
+            )}
+            <span>
+              {hasActaRegistrada
+                ? "Acta Registrada"
+                : isAsignado
+                  ? "Registrar Acta"
+                  : "Actas"}
+            </span>
+          </Button>
+
+          {/* Botón OT (Orden de Trabajo) */}
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation()
+              onOrdenTrabajo(solicitud)
+            }}
+            className={cn(
+              "h-6.5 px-2 rounded-md text-[11px] font-medium inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98",
+              hasOTRegistrada
+                ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/30 font-semibold"
+                : "bg-sky-500/10 hover:bg-sky-500/20 text-sky-800 dark:text-sky-300 border-sky-500/30",
+            )}
+            title={hasOTRegistrada ? "Ver Orden de Trabajo Registrada" : "Registrar Orden de Trabajo"}
+          >
+            {hasOTRegistrada ? (
+              <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <Wrench className="size-3 text-sky-600 dark:text-sky-400" />
+            )}
+            <span>
+              {hasOTRegistrada
+                ? "OT Registrada"
+                : isAsignado
+                  ? "Registrar OT"
+                  : "OT"}
+            </span>
+          </Button>
+        </div>
+      }
+      onTraceability={onTraceability}
+      onActionSelect={onActionSelect}
+    />
+  )
+}
+
 export function EncargadoMantenimientoPage() {
   const completeWorkflowMutation = useCompleteWorkflowTask()
-  const [modalSolicitud, setModalSolicitud] =
+  const [trazabilidadSolicitud, setTrazabilidadSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState(false)
   const [estadoFilter, setEstadoFilter] = useState<
@@ -164,10 +329,6 @@ export function EncargadoMantenimientoPage() {
     search.setPage,
     solicitudesQuery.data?.totalPages,
   )
-
-  function handleOpenModal(solicitud: SolicitudMantenimiento) {
-    setModalSolicitud(solicitud)
-  }
 
   function handleActionSelect(
     solicitud: SolicitudMantenimiento,
@@ -521,101 +682,22 @@ export function EncargadoMantenimientoPage() {
                 )}
               >
                 <WorkflowListView>
-                  {solicitudes.map((solicitud) => {
-                    const adjuntosCount = solicitud.adjuntos?.length ?? 0
-
-                    return (
-                      <SolicitudWorkflowListItem
-                        key={solicitud.id}
-                        solicitud={solicitud}
-                        badges={
-                          <>
-                            {solicitud.tipoMantenimiento && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-semibold border shrink-0 bg-primary/10 text-primary border-primary/20">
-                                <span>{solicitud.tipoMantenimiento.nombre}</span>
-                              </span>
-                            )}
-                            {solicitud.tipoFallas && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 truncate max-w-55">
-                                <AlertTriangle className="size-2.5 shrink-0" />
-                                <span className="truncate">{solicitud.tipoFallas}</span>
-                              </span>
-                            )}
-                          </>
-                        }
-                        extraContent={
-                          <>
-                            {solicitud.activo && (
-                              <div className="flex items-center gap-1.5 truncate max-w-[280px]">
-                                <span className="font-mono font-bold text-primary text-[11px]">
-                                  {solicitud.activo.codigo}
-                                </span>
-                                <span className="truncate text-foreground font-medium">
-                                  {solicitud.activo.nombre}
-                                </span>
-                              </div>
-                            )}
-                            {solicitud.solicitante && (
-                              <div className="flex items-center gap-1.5 truncate">
-                                <span className="truncate">
-                                  Solicitante:{" "}
-                                  <strong className="text-foreground font-medium">
-                                    {solicitud.solicitante.nombre}
-                                  </strong>
-                                </span>
-                              </div>
-                            )}
-                            {adjuntosCount > 0 && (
-                              <div className="inline-flex items-center gap-1 font-semibold text-primary bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/15 text-[10.5px]">
-                                <span>
-                                  {adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}
-                                </span>
-                              </div>
-                            )}
-                          </>
-                        }
-                        extraActions={
-                          <div className="flex items-center gap-1">
-                            {/* Botón Acta (Control de Activo) */}
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setControlActivoTarget(solicitud)
-                              }}
-                              className="h-7 px-2 rounded-lg text-xs font-medium inline-flex items-center gap-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98"
-                              title="Ver actas de control de activo"
-                            >
-                              <FileCheck2 className="size-3.5 text-amber-600 dark:text-amber-400" />
-                              <span>Acta</span>
-                            </Button>
-
-                            {/* Botón OT (Orden de Trabajo) */}
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setOrdenTrabajoTarget(solicitud)
-                              }}
-                              className="h-7 px-2 rounded-lg text-xs font-medium inline-flex items-center gap-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/30 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98"
-                              title="Ver / Gestionar Órdenes de Trabajo"
-                            >
-                              <Wrench className="size-3.5 text-sky-600 dark:text-sky-400" />
-                              <span>OT</span>
-                            </Button>
-                          </div>
-                        }
-                        onQuickView={() => handleOpenModal(solicitud)}
-                        onActionSelect={(action, taskName, fields) =>
-                          handleActionSelect(solicitud, action, taskName, fields)
-                        }
-                      />
-                    )
-                  })}
+                  {solicitudes.map((solicitud) => (
+                    <SolicitudEncargadoListItem
+                      key={solicitud.id}
+                      solicitud={solicitud}
+                      onControlActivo={setControlActivoTarget}
+                      onOrdenTrabajo={setOrdenTrabajoTarget}
+                      onTraceability={
+                        solicitud.processInstanceId
+                          ? () => setTrazabilidadSolicitud(solicitud)
+                          : undefined
+                      }
+                      onActionSelect={(action, taskName, fields) =>
+                        handleActionSelect(solicitud, action, taskName, fields)
+                      }
+                    />
+                  ))}
                 </WorkflowListView>
               </div>
 
@@ -631,12 +713,11 @@ export function EncargadoMantenimientoPage() {
         </div>
       </div>
 
-      {/* Detalle de Solicitud + WorkflowPanel Modal Dialog */}
-      <SolicitudDetalleModal
-        solicitud={modalSolicitud}
-        open={Boolean(modalSolicitud)}
-        onOpenChange={(open) => !open && setModalSolicitud(null)}
-        onWorkflowAction={handleActionSelect}
+      {/* Modal de Trazabilidad e Historial de Workflow */}
+      <SolicitudTrazabilidadModal
+        solicitud={trazabilidadSolicitud}
+        open={Boolean(trazabilidadSolicitud)}
+        onOpenChange={(open) => !open && setTrazabilidadSolicitud(null)}
       />
 
       {/* Dynamic Generic Workflow Action Dialog */}
@@ -657,7 +738,6 @@ export function EncargadoMantenimientoPage() {
         }}
         onSuccess={() => {
           solicitudesQuery.refetch()
-          setModalSolicitud(null)
         }}
       />
 

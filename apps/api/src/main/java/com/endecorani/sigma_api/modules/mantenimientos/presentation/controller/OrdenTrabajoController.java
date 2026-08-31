@@ -78,13 +78,17 @@ public class OrdenTrabajoController {
     @GetMapping
     @Operation(summary = "Listar órdenes de trabajo de forma paginada")
     public ResponseEntity<ApiResponse<PageResponse<OrdenTrabajoResponse>>> findAll(
+            @RequestParam(required = false) UUID solicitudMantenimientoId,
             @RequestParam(required = false) String q,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        PageResponse<OrdenTrabajoResponse> response =
+                solicitudMantenimientoId != null
+                        ? ordenTrabajoService.findAll(solicitudMantenimientoId, pageRequest)
+                        : ordenTrabajoService.findAll(q, pageRequest);
+
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        ordenTrabajoService.findAll(q, pageRequest)
-                )
+                ApiResponse.success(response)
         );
     }
 

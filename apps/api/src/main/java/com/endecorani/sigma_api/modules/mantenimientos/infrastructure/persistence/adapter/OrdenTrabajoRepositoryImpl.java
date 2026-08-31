@@ -67,6 +67,16 @@ public class OrdenTrabajoRepositoryImpl implements OrdenTrabajoRepository {
     }
 
     @Override
+    public Page<OrdenTrabajo> findBySolicitudMantenimientoId(
+            UUID solicitudMantenimientoId,
+            Pageable pageable
+    ) {
+        return springRepository
+                .findBySolicitudMantenimientoId(solicitudMantenimientoId, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public boolean existsBySolicitudMantenimientoIdAndIdNot(
             UUID solicitudMantenimientoId,
             UUID id

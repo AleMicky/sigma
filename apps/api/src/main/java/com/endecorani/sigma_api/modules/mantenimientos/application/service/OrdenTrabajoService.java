@@ -120,6 +120,21 @@ public class OrdenTrabajoService {
 
     @Transactional(readOnly = true)
     public PageResponse<OrdenTrabajoResponse> findAll(
+            UUID solicitudMantenimientoId,
+            PageRequestDto pageRequest
+    ) {
+        requireSolicitudExists(solicitudMantenimientoId);
+        return PageResponse.from(
+                repository.findBySolicitudMantenimientoId(
+                        solicitudMantenimientoId,
+                        pageRequest.toPageable(SORT_FIELDS)
+                ),
+                this::toResponse
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<OrdenTrabajoResponse> findAll(
             String query,
             PageRequestDto pageRequest
     ) {

@@ -5,8 +5,12 @@ import {
   Box,
   Calendar,
   Clock,
+  Eye,
   FileCheck2,
+  History,
+  Inbox,
   Paperclip,
+  Search,
   Shield,
   ShieldCheck,
   User,
@@ -20,6 +24,8 @@ import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
 import { RefreshButton } from "@/shared/components/refresh-button"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
@@ -33,6 +39,7 @@ import { useCompleteWorkflowTask } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
 import {
+  SolicitudQuickViewSheet,
   SolicitudTrazabilidadModal,
   SolicitudWorkflowListItem,
 } from "../components"
@@ -41,10 +48,14 @@ import { useSolicitudRoleScope } from "../hooks/use-solicitud-role-scope"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
+type AprobacionViewMode = "PENDIENTES" | "HISTORIAL"
+
 export function AprobacionesPage() {
+  const [viewMode, setViewMode] = useState<AprobacionViewMode>("PENDIENTES")
+  const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
+  const [quickView, setQuickView] = useState<SolicitudMantenimiento | null>(null)
   const [trazabilidadSolicitud, setTrazabilidadSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
-  const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
 
   const {
     isAdmin,
@@ -57,39 +68,58 @@ export function AprobacionesPage() {
 
   const search = usePaginatedSearch()
 
-  // Consulta exclusiva para solicitudes pendientes de aprobación (SOLICITADO)
+  // Conteo directo y exacto de solicitudes pendientes desde el backend
+  const pendientesCountQuery = useQuery(
+    solicitudQueries.list({
+      page: 0,
+      size: 1,
+      estado: "SOLICITADO",
+      ...(search.query ? { q: search.query } : {}),
+    }),
+  )
+  const pendientesCount = pendientesCountQuery.data?.totalElements ?? 0
+
+  // Consulta paginada según el modo seleccionado
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
       page: search.page,
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC",
-      estado: "SOLICITADO",
+      ...(search.query ? { q: search.query } : {}),
+      ...(viewMode === "PENDIENTES" ? { estado: "SOLICITADO" } : {}),
     }),
   )
 
-  const totalElements = solicitudesQuery.data?.totalElements ?? 0
+  const rawItems = useMemo(
+    () => solicitudesQuery.data?.content ?? [],
+    [solicitudesQuery.data?.content],
+  )
+
+  // Si está en modo historial, filtramos los borradores y las aún pendientes
+  const displayItems = useMemo(() => {
+    if (viewMode === "PENDIENTES") return rawItems
+    return rawItems.filter((s) => {
+      const est = (s.estado ?? "").toLowerCase().trim()
+      return est !== "borrador" && est !== "solicitado"
+    })
+  }, [rawItems, viewMode])
+
+  // Filtro de urgencias
+  const solicitudes = useMemo(() => {
+    if (!filterUrgentesOnly) return displayItems
+    return displayItems.filter((s) => (s.prioridad?.nivel ?? 1) >= 4)
+  }, [displayItems, filterUrgentesOnly])
+
+  const urgentesCount = useMemo(
+    () => displayItems.filter((s) => (s.prioridad?.nivel ?? 1) >= 4).length,
+    [displayItems],
+  )
 
   useClampPage(
     search.page,
     search.setPage,
     solicitudesQuery.data?.totalPages,
-  )
-
-  const allItems = useMemo(
-    () => solicitudesQuery.data?.content ?? [],
-    [solicitudesQuery.data?.content],
-  )
-
-  // Filtro secundario opcional para urgencias
-  const solicitudes = useMemo(() => {
-    if (!filterUrgentesOnly) return allItems
-    return allItems.filter((s) => (s.prioridad?.nivel ?? 1) >= 4)
-  }, [allItems, filterUrgentesOnly])
-
-  const urgentesCount = useMemo(
-    () => allItems.filter((s) => (s.prioridad?.nivel ?? 1) >= 4).length,
-    [allItems],
   )
 
   function handleActionSelect(
@@ -115,9 +145,9 @@ export function AprobacionesPage() {
                 <h1 className="font-heading text-lg font-bold tracking-tight text-foreground sm:text-xl">
                   Bandeja de Aprobaciones
                 </h1>
-                {totalElements > 0 && (
-                  <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                    {totalElements} pendientes
+                {pendientesCount > 0 && (
+                  <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    {pendientesCount} pendientes
                   </span>
                 )}
 
@@ -158,50 +188,96 @@ export function AprobacionesPage() {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Evalúa, aprueba o devuelve solicitudes de mantenimiento en etapa inicial.
+                Evalúa, aprueba, observa y consulta el historial de solicitudes evaluadas.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <RefreshButton queries={solicitudesQuery} />
+            <RefreshButton
+              queries={[solicitudesQuery, pendientesCountQuery]}
+              size="sm"
+              className="h-8 gap-1.5 px-2.5 text-xs font-medium"
+            />
           </div>
         </div>
 
-        {/* Quick Filter Toolbar */}
+        {/* Barra de Pestañas y Filtros */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <div className="flex items-center gap-1.5 text-xs">
+          {/* Selector de Pestañas */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="inline-flex rounded-lg bg-muted p-1 border text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode("PENDIENTES")
+                  search.setPage(0)
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer",
+                  viewMode === "PENDIENTES"
+                    ? "bg-background text-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Inbox className="size-3.5 text-amber-500" />
+                <span>Pendientes por Aprobar</span>
+                {pendientesCount > 0 && (
+                  <span className="rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.2 text-[10px] font-bold">
+                    {pendientesCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode("HISTORIAL")
+                  search.setPage(0)
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer",
+                  viewMode === "HISTORIAL"
+                    ? "bg-background text-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <History className="size-3.5 text-primary" />
+                <span>Historial de Evaluadas</span>
+              </button>
+            </div>
+
+            {/* Sub-filtro de Urgentes */}
             <button
               type="button"
-              onClick={() => setFilterUrgentesOnly(false)}
+              onClick={() => setFilterUrgentesOnly((prev) => !prev)}
               className={cn(
-                "rounded-lg px-2.5 py-1 font-semibold transition-colors cursor-pointer text-xs",
-                !filterUrgentesOnly
-                  ? "bg-primary text-primary-foreground shadow-2xs"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              Todas las pendientes ({totalElements})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterUrgentesOnly(true)}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 font-semibold transition-colors cursor-pointer text-xs",
+                "inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors cursor-pointer text-xs border",
                 filterUrgentesOnly
-                  ? "bg-rose-600 text-white shadow-2xs"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "bg-rose-600 text-white border-rose-600 shadow-2xs"
+                  : "bg-background text-muted-foreground border-border/70 hover:bg-muted hover:text-foreground",
               )}
             >
               <AlertTriangle className="size-3 text-rose-500" />
-              Solo Críticas / Urgentes ({urgentesCount})
+              <span>Solo Críticas ({urgentesCount})</span>
             </button>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            <Input
+              value={search.search}
+              onChange={(e) => search.setSearch(e.target.value)}
+              placeholder="Buscar folio, activo o título..."
+              className="h-8.5 pl-8 text-xs bg-background"
+            />
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-2">
         <div className="flex min-h-0 flex-1 flex-col">
           {solicitudesQuery.isLoading ? (
             <ListSkeleton rows={4} />
@@ -224,13 +300,17 @@ export function AprobacionesPage() {
               icon={<FileCheck2 className="size-5 text-muted-foreground" />}
               title={
                 filterUrgentesOnly
-                  ? "No hay solicitudes críticas pendientes"
-                  : "Sin solicitudes por aprobar"
+                  ? "No hay solicitudes críticas"
+                  : viewMode === "PENDIENTES"
+                  ? "Sin solicitudes por aprobar"
+                  : "No hay historial de solicitudes con este filtro"
               }
               description={
                 filterUrgentesOnly
-                  ? "No hay solicitudes con prioridad Alta o Urgente pendientes."
-                  : "No tienes solicitudes de mantenimiento pendientes de aprobación."
+                  ? "No hay solicitudes con prioridad Alta o Urgente con el filtro activo."
+                  : viewMode === "PENDIENTES"
+                  ? "¡Excelente! No tienes solicitudes pendientes de aprobación en este momento."
+                  : "No se encontraron solicitudes evaluadas previamente en esta categoría."
               }
               action={
                 filterUrgentesOnly ? (
@@ -239,7 +319,7 @@ export function AprobacionesPage() {
                     onClick={() => setFilterUrgentesOnly(false)}
                     className="text-xs text-primary underline"
                   >
-                    Ver todas las pendientes
+                    Ver todas las solicitudes
                   </button>
                 ) : null
               }
@@ -255,11 +335,13 @@ export function AprobacionesPage() {
                 <WorkflowListView>
                   {solicitudes.map((solicitud) => {
                     const adjuntosCount = solicitud.adjuntos?.length ?? 0
+                    const isPendiente = (solicitud.estado ?? "").toLowerCase().trim() === "solicitado"
 
                     return (
                       <SolicitudWorkflowListItem
                         key={solicitud.id}
                         solicitud={solicitud}
+                        showWorkflowTrigger={isPendiente}
                         badges={
                           <>
                             {solicitud.tipoMantenimiento && (
@@ -332,6 +414,25 @@ export function AprobacionesPage() {
                             )}
                           </>
                         }
+                        extraActions={
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => setQuickView(solicitud)}
+                            className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
+                            title="Ver detalles completos de la solicitud"
+                          >
+                            <Eye className="size-3 text-primary" />
+                            <span>Detalles</span>
+                          </Button>
+                        }
+                        onTraceability={
+                          solicitud.processInstanceId
+                            ? () => setTrazabilidadSolicitud(solicitud)
+                            : undefined
+                        }
+                        onQuickView={() => setQuickView(solicitud)}
                         onActionSelect={(action, taskName, fields) =>
                           handleActionSelect(solicitud, action, taskName, fields)
                         }
@@ -352,6 +453,13 @@ export function AprobacionesPage() {
           )}
         </div>
       </div>
+
+      {/* Sheet de Detalles de Solicitud (Solo Lectura) */}
+      <SolicitudQuickViewSheet
+        solicitud={quickView}
+        open={Boolean(quickView)}
+        onOpenChange={(open) => !open && setQuickView(null)}
+      />
 
       {/* Modal de Trazabilidad y Línea de Tiempo del Workflow */}
       <SolicitudTrazabilidadModal
@@ -379,6 +487,8 @@ export function AprobacionesPage() {
         }}
         onSuccess={() => {
           solicitudesQuery.refetch()
+          pendientesCountQuery.refetch()
+          setQuickView(null)
         }}
       />
     </PageShell>

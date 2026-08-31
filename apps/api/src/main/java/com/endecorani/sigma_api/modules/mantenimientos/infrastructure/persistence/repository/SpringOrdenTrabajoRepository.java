@@ -16,6 +16,11 @@ public interface SpringOrdenTrabajoRepository
 
     boolean existsBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
 
+    Page<OrdenTrabajoEntity> findBySolicitudMantenimientoId(
+            UUID solicitudMantenimientoId,
+            Pageable pageable
+    );
+
     boolean existsBySolicitudMantenimientoIdAndIdNot(
             UUID solicitudMantenimientoId,
             UUID id

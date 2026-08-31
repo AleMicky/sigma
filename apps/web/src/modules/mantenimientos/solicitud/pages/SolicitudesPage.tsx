@@ -48,6 +48,7 @@ import {
   SolicitudFilterToolbar,
   SolicitudQuickViewSheet,
   SolicitudStats,
+  SolicitudTrazabilidadModal,
   SolicitudWorkflowListItem,
 } from "../components"
 import {
@@ -77,6 +78,8 @@ export function SolicitudesPage() {
   const deleteMutation = useDeleteSolicitud()
   const completeWorkflowMutation = useCompleteWorkflowTask()
   const workflowAction = useWorkflowActionTarget<SolicitudMantenimiento>()
+  const [trazabilidadSolicitud, setTrazabilidadSolicitud] =
+    useState<SolicitudMantenimiento | null>(null)
 
   const handleStatusSelect = (status: string) => {
     setStatusFilter(status)
@@ -396,7 +399,7 @@ export function SolicitudesPage() {
                   const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
                   const isBorrador = estadoNorm === "borrador"
                   const isObservado = estadoNorm === "observado"
-                  const isSolicitado = estadoNorm === "solicitado" || estadoNorm === "pendiente"
+                  const isValidado = estadoNorm === "validado"
                   const isEditable = isBorrador || isObservado
                   const isTrabajoRealizado = estadoNorm === "trabajo_realizado"
                   const placa = extractPlaca(solicitud.activo)
@@ -406,7 +409,7 @@ export function SolicitudesPage() {
                     <SolicitudWorkflowListItem
                       key={solicitud.id}
                       solicitud={solicitud}
-                      showWorkflowTrigger={!isSolicitado}
+                      showWorkflowTrigger={isBorrador || isValidado}
                       badges={
                         <>
                           {solicitud.tipoMantenimiento && (
@@ -531,6 +534,11 @@ export function SolicitudesPage() {
                           )}
                         </div>
                       }
+                      onTraceability={
+                        solicitud.processInstanceId
+                          ? () => setTrazabilidadSolicitud(solicitud)
+                          : undefined
+                      }
                       onQuickView={() => setQuickView(solicitud)}
                       onActionSelect={(action, taskName, fields) => {
                         workflowAction.openAction(solicitud, action, taskName, fields)
@@ -557,6 +565,13 @@ export function SolicitudesPage() {
         solicitud={quickView}
         open={Boolean(quickView)}
         onOpenChange={(open) => !open && setQuickView(null)}
+      />
+
+      {/* Modal de Trazabilidad e Historial de Workflow */}
+      <SolicitudTrazabilidadModal
+        solicitud={trazabilidadSolicitud}
+        open={Boolean(trazabilidadSolicitud)}
+        onOpenChange={(open) => !open && setTrazabilidadSolicitud(null)}
       />
 
       {/* Delete Confirmation Dialog */}

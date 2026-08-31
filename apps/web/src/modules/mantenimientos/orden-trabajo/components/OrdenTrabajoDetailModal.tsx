@@ -140,8 +140,9 @@ export function OrdenTrabajoDetailModal({
     estadoSolicitudNorm === "CANCELADO" ||
     estadoSolicitudNorm === "RECHAZADO"
 
-  // Modo planificación solo si aún está en SOLICITADO antes de asignar
-  const isEnPlanificacion = estadoSolicitudNorm === "SOLICITADO"
+  // Modo planificación: en SOLICITADO o ASIGNADO (la ejecución con checks/subidas se desbloquea en EN_MANTENIMIENTO)
+  const isEnPlanificacion =
+    estadoSolicitudNorm === "SOLICITADO" || estadoSolicitudNorm === "ASIGNADO"
 
   // Mutations
   const toggleActividadMutation = useToggleOrdenTrabajoActividadRealizado()

@@ -6,6 +6,7 @@ import {
   Flame,
   GitBranch,
   Hash,
+  History,
   Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -104,6 +105,10 @@ export type WorkflowListItemProps = {
    */
   onQuickView?: () => void
   /**
+   * Callback opcional para abrir el modal de trazabilidad e historial de tareas
+   */
+  onTraceability?: () => void
+  /**
    * Clases CSS adicionales para el contenedor <li>
    */
   className?: string
@@ -113,6 +118,7 @@ export function WorkflowListItem({
   code,
   status,
   statusLabel,
+  processInstanceId,
   title,
   description,
   priority,
@@ -128,6 +134,7 @@ export function WorkflowListItem({
   showWorkflowTrigger = true,
   onWorkflowTrigger,
   onQuickView,
+  onTraceability,
   className,
 }: WorkflowListItemProps) {
   const [copied, setCopied] = useState(false)
@@ -144,7 +151,7 @@ export function WorkflowListItem({
     if (!code) return
     navigator.clipboard.writeText(code)
     setCopied(true)
-    toast.success(`Folio "${code}" copiado`)
+    toast.success("Código copiado al portapapeles", { duration: 1500 })
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -241,14 +248,32 @@ export function WorkflowListItem({
       </div>
 
       {/* Columna Derecha: Acciones Rápidas (Arriba) y Acciones Workflow (Abajo) */}
-      {(extraActions || hasWorkflowElements) && (
+      {(extraActions || onTraceability || processInstanceId || hasWorkflowElements) && (
         <div
           onClick={(e) => e.stopPropagation()}
           className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-between gap-2 shrink-0 sm:pl-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40"
         >
-          {/* Fila de Botones Extras (Borde superior derecho) */}
+          {/* Fila de Botones Extras y Trazabilidad (Borde superior derecho) */}
           <div className="flex items-center gap-1 shrink-0">
             {extraActions}
+
+            {/* Botón Trazabilidad de Tareas / Historial */}
+            {onTraceability && (
+              <Button
+                type="button"
+                size="xs"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onTraceability()
+                }}
+                className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/80 hover:bg-muted/80 text-foreground border-border/80 shadow-2xs cursor-pointer"
+                title="Ver historial de tareas y trazabilidad de workflow"
+              >
+                <History className="size-3 text-primary" />
+                <span>Trazabilidad</span>
+              </Button>
+            )}
           </div>
 
           {/* Fila de Botones de Workflow (Borde inferior derecho) */}

@@ -24,6 +24,11 @@ public interface OrdenTrabajoRepository {
 
     boolean existsBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
 
+    Page<OrdenTrabajo> findBySolicitudMantenimientoId(
+            UUID solicitudMantenimientoId,
+            Pageable pageable
+    );
+
     boolean existsBySolicitudMantenimientoIdAndIdNot(
             UUID solicitudMantenimientoId,
             UUID id

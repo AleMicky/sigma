@@ -12,6 +12,7 @@ export type SolicitudWorkflowListItemProps = {
   extraActions?: ReactNode
   showWorkflowTrigger?: boolean
   onQuickView?: () => void
+  onTraceability?: () => void
   onActionSelect?: (
     action: WorkflowAction,
     taskName?: string,
@@ -27,6 +28,7 @@ export function SolicitudWorkflowListItem({
   extraActions,
   showWorkflowTrigger = true,
   onQuickView,
+  onTraceability,
   onActionSelect,
   className,
 }: SolicitudWorkflowListItemProps) {
@@ -65,6 +67,7 @@ export function SolicitudWorkflowListItem({
       showWorkflowTrigger={showWorkflowTrigger}
       onActionSelect={onActionSelect}
       onQuickView={onQuickView}
+      onTraceability={onTraceability}
       className={className}
     />
   )

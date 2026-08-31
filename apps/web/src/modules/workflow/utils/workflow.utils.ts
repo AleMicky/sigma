@@ -31,9 +31,9 @@ export type ActionVisuals = {
   btnClass: string
 }
 
-export function getWorkflowActionVisuals(action: WorkflowAction): ActionVisuals {
-  const name = fixWorkflowEncoding(action.name ?? "").toLowerCase()
-  const val = (action.value ?? "").toUpperCase()
+export function getWorkflowActionVisuals(action?: WorkflowAction | null): ActionVisuals {
+  const name = fixWorkflowEncoding(action?.name ?? "").toLowerCase()
+  const val = String(action?.value ?? "").toUpperCase()
 
   if (val.includes("APROB") || name.includes("aprobar")) {
     return {
