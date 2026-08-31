@@ -3,9 +3,18 @@ import { useQuery } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import {
   AlertCircle,
+  AlertTriangle,
+  Box,
+  CheckCircle2,
+  ClipboardCheck,
+  Eye,
+  Pencil,
   Plus,
+  SendHorizontal,
   Shield,
+  Trash2,
   User,
+  Wrench,
 } from "lucide-react"
 
 import { appConfig } from "@/app/config"
@@ -29,19 +38,26 @@ import { toast } from "sonner"
 import {
   useWorkflowActionTarget,
   WorkflowActionDialog,
+  WorkflowListView,
 } from "@/modules/workflow"
 import {
   useCompleteWorkflowTask,
   useDeleteSolicitud,
+  useEnviarSolicitud,
 } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
 import {
+  ConfirmEnviarDialog,
   SolicitudFilterToolbar,
-  SolicitudListView,
   SolicitudQuickViewSheet,
   SolicitudStats,
+  SolicitudWorkflowListItem,
 } from "../components"
+import {
+  extractPlaca,
+  getTipoMantenimientoBadgeClass,
+} from "../lib/solicitud.utils"
 import { useSolicitudRoleScope } from "../hooks/use-solicitud-role-scope"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
@@ -51,6 +67,7 @@ export function SolicitudesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("")
   const [quickView, setQuickView] = useState<SolicitudMantenimiento | null>(null)
   const [deleting, setDeleting] = useState<SolicitudMantenimiento | null>(null)
+  const [enviando, setEnviando] = useState<SolicitudMantenimiento | null>(null)
 
   const {
     isAdmin,
@@ -63,6 +80,7 @@ export function SolicitudesPage() {
 
   const search = usePaginatedSearch()
   const deleteMutation = useDeleteSolicitud()
+  const enviarMutation = useEnviarSolicitud()
   const completeWorkflowMutation = useCompleteWorkflowTask()
   const workflowAction = useWorkflowActionTarget<SolicitudMantenimiento>()
 
@@ -342,15 +360,167 @@ export function SolicitudesPage() {
                 solicitudesQuery.isFetching && "opacity-70",
               )}
             >
-              <SolicitudListView
-                solicitudes={solicitudes}
-                onEdit={openEdit}
-                onQuickView={setQuickView}
-                onDelete={setDeleting}
-                onWorkflowAction={(sol, action, taskName, fields) => {
-                  workflowAction.openAction(sol, action, taskName, fields)
-                }}
-              />
+              <WorkflowListView>
+                {solicitudes.map((solicitud) => {
+                  const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
+                  const isBorrador = estadoNorm === "borrador"
+                  const isObservado = estadoNorm === "observado"
+                  const isEditable = isBorrador || isObservado
+                  const isTrabajoRealizado = estadoNorm === "trabajo_realizado"
+                  const placa = extractPlaca(solicitud.activo)
+                  const adjuntosCount = solicitud.adjuntos?.length ?? 0
+
+                  return (
+                    <SolicitudWorkflowListItem
+                      key={solicitud.id}
+                      solicitud={solicitud}
+                      badges={
+                        <>
+                          {solicitud.tipoMantenimiento && (
+                            <span
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10.5px] font-semibold border shrink-0 ${getTipoMantenimientoBadgeClass(
+                                solicitud.tipoMantenimiento.nombre,
+                                false,
+                              )}`}
+                            >
+                              <Wrench className="size-2.5 shrink-0" />
+                              <span>{solicitud.tipoMantenimiento.nombre}</span>
+                            </span>
+                          )}
+                          {solicitud.tipoFallas && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10.5px] font-medium bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 truncate max-w-55 shrink-0">
+                              <AlertTriangle className="size-2.5 shrink-0" />
+                              <span className="truncate">{solicitud.tipoFallas}</span>
+                            </span>
+                          )}
+                        </>
+                      }
+                      extraContent={
+                        <>
+                          {solicitud.activo && (
+                            <div className="inline-flex items-center gap-1.5 truncate max-w-sm">
+                              <Box className="size-3 shrink-0 text-primary opacity-90" />
+                              <span className="font-mono font-bold text-primary text-[11px]">
+                                {solicitud.activo.codigo}
+                              </span>
+                              <span className="truncate text-foreground/90 font-medium">
+                                {solicitud.activo.nombre}
+                              </span>
+                              {placa ? (
+                                <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded shrink-0">
+                                  {placa}
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
+                          {solicitud.solicitante && (
+                            <div className="flex items-center gap-1 truncate max-w-[200px]">
+                              <User className="size-3 text-muted-foreground/70 shrink-0" />
+                              <span className="text-muted-foreground/80">Solicita:</span>
+                              <strong className="truncate font-semibold text-foreground/90">
+                                {solicitud.solicitante.nombre}
+                              </strong>
+                            </div>
+                          )}
+                          {adjuntosCount > 0 && (
+                            <div className="inline-flex items-center gap-1 font-semibold text-primary bg-primary/10 px-1.5 py-0.2 rounded-md border border-primary/20 text-[10px] shrink-0">
+                              <span>
+                                {adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      }
+                      extraActions={
+                        <div className="flex items-center gap-1">
+                          {/* Botón Enviar (Solo en Borrador) */}
+                          {isBorrador && (
+                            <Button
+                              type="button"
+                              size="xs"
+                              variant="outline"
+                              onClick={() => setEnviando(solicitud)}
+                              className="h-6.5 gap-1 px-2 text-[11px] font-semibold text-primary border-primary/40 bg-primary/10 hover:bg-primary/20 shadow-2xs cursor-pointer"
+                              title="Enviar solicitud para aprobación"
+                            >
+                              <SendHorizontal className="size-3" />
+                              <span>Enviar</span>
+                            </Button>
+                          )}
+
+                          {/* Botón Registrar Devolución si está en TRABAJO_REALIZADO */}
+                          {isTrabajoRealizado && (
+                            <Link
+                              to="/mantenimientos/controles-activos/nuevo"
+                              search={{
+                                solicitudId: solicitud.id,
+                                tipo: "DEVOLUCION",
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                type="button"
+                                size="xs"
+                                className="h-6.5 gap-1 px-2 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-md shadow-2xs cursor-pointer"
+                                title="Registrar Devolución de Activo"
+                              >
+                                <ClipboardCheck className="size-3" />
+                                <span>Devolución</span>
+                              </Button>
+                            </Link>
+                          )}
+
+                          {/* Botón Ver Detalles */}
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => setQuickView(solicitud)}
+                            className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
+                            title="Ver detalles completos"
+                          >
+                            <Eye className="size-3 text-primary" />
+                            <span>Detalles</span>
+                          </Button>
+
+                          {/* Botón Editar (En Borrador u Observado) */}
+                          {isEditable && (
+                            <Button
+                              type="button"
+                              size="xs"
+                              variant="ghost"
+                              onClick={() => openEdit(solicitud)}
+                              className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
+                              title="Editar solicitud"
+                            >
+                              <Pencil className="size-3 text-muted-foreground" />
+                              <span>Editar</span>
+                            </Button>
+                          )}
+
+                          {/* Botón Eliminar (Solo en Borrador) */}
+                          {isBorrador && (
+                            <Button
+                              type="button"
+                              size="icon-xs"
+                              variant="ghost"
+                              onClick={() => setDeleting(solicitud)}
+                              className="size-6.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                              title="Eliminar solicitud"
+                            >
+                              <Trash2 className="size-3 text-destructive/80" />
+                            </Button>
+                          )}
+                        </div>
+                      }
+                      onQuickView={() => setQuickView(solicitud)}
+                      onActionSelect={(action, taskName, fields) => {
+                        workflowAction.openAction(solicitud, action, taskName, fields)
+                      }}
+                    />
+                  )
+                })}
+              </WorkflowListView>
             </div>
 
             {solicitudesQuery.data ? (
@@ -403,6 +573,23 @@ export function SolicitudesPage() {
         onSuccess={() => {
           solicitudesQuery.refetch()
           setQuickView(null)
+        }}
+      />
+
+      {/* Confirm Enviar Dialog */}
+      <ConfirmEnviarDialog
+        open={Boolean(enviando)}
+        onOpenChange={(open) => !open && setEnviando(null)}
+        solicitud={enviando}
+        isPending={enviarMutation.isPending}
+        onConfirm={async () => {
+          if (!enviando) return
+          try {
+            await enviarMutation.mutateAsync(enviando.id)
+            setEnviando(null)
+          } catch {
+            // Handled in mutation toast
+          }
         }}
       />
     </PageShell>

@@ -243,22 +243,18 @@ export function WorkflowListItem({
       {(extraActions || hasWorkflowElements) && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 shrink-0 self-end md:self-center pt-1 md:pt-0"
+          className="flex flex-col items-end justify-between gap-1.5 shrink-0 self-stretch pt-0.5"
         >
-          {/* Botones extras flotantes al hacer hover */}
-          {extraActions && (
-            <div
-              className={cn(
-                "flex items-center gap-1.5 transition-all duration-150 ease-out",
-                "md:opacity-0 md:group-hover:opacity-100 md:-translate-x-1 md:group-hover:translate-x-0",
-                "md:pointer-events-none md:group-hover:pointer-events-auto",
-              )}
-            >
+          {/* Botones extras (en el borde superior derecho) */}
+          {extraActions ? (
+            <div className="flex items-center gap-1 shrink-0">
               {extraActions}
             </div>
+          ) : (
+            <div className="h-0" />
           )}
 
-          {/* Botones de acción directos de Workflow (siempre visibles) */}
+          {/* Botones de acción directos de Workflow (en la parte inferior derecha) */}
           {showWorkflowTrigger && (
             isWorkflowLoading ? (
               <div className="h-7 px-2.5 flex items-center justify-center rounded-lg bg-muted/50 border border-border/40">
