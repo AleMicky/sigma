@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  Edit2,
   History,
   Loader2,
   Package,
@@ -36,7 +37,13 @@ type ControlActivoHistorialModalProps = {
   solicitudNumero?: string | null
 }
 
-function ControlItemCard({ control }: { control: ControlActivo }) {
+function ControlItemCard({
+  control,
+  onCloseModal,
+}: {
+  control: ControlActivo
+  onCloseModal?: () => void
+}) {
   const [expanded, setExpanded] = useState(false)
 
   const detallesQuery = useQuery({
@@ -50,8 +57,7 @@ function ControlItemCard({ control }: { control: ControlActivo }) {
   return (
     <div className="rounded-xl border bg-card shadow-2xs overflow-hidden transition-all">
       <div
-        onClick={() => setExpanded((prev) => !prev)}
-        className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-muted/30 select-none"
+        className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none"
       >
         <div className="flex items-start sm:items-center gap-3 min-w-0">
           <div
@@ -108,11 +114,34 @@ function ControlItemCard({ control }: { control: ControlActivo }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+        <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0 flex-wrap justify-end">
+          {/* Botón Editar Acta */}
+          <Link
+            to="/mantenimientos/controles-activos/nuevo"
+            search={{
+              solicitudId: control.solicitudMantenimientoId,
+              id: control.id,
+              tipo: control.tipo,
+            }}
+            onClick={() => onCloseModal?.()}
+          >
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs font-semibold gap-1 hover:bg-muted cursor-pointer"
+              title="Editar Acta de Control"
+            >
+              <Edit2 className="size-3 text-muted-foreground" />
+              <span>Editar Acta</span>
+            </Button>
+          </Link>
+
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 text-xs font-semibold gap-1"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="h-7 text-xs font-semibold gap-1 cursor-pointer"
           >
             <span>{expanded ? "Ocultar accesorios" : "Ver accesorios"}</span>
             {expanded ? (
@@ -295,7 +324,11 @@ export function ControlActivoHistorialModal({
             </div>
           ) : (
             controles.map((control) => (
-              <ControlItemCard key={control.id} control={control} />
+              <ControlItemCard
+                key={control.id}
+                control={control}
+                onCloseModal={() => onOpenChange(false)}
+              />
             ))
           )}
         </div>

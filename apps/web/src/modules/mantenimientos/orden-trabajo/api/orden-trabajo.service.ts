@@ -57,6 +57,7 @@ export type OrdenTrabajoPayload = {
 
 export type OrdenTrabajoFilters = PageParams & {
   q?: string
+  solicitudMantenimientoId?: string
 }
 
 export type OrdenTrabajoAdjunto = AuditableEntity & {

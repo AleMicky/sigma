@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
 import {
   AlertCircle,
   Box,
@@ -13,6 +14,7 @@ import {
   FileCheck2,
   FileText,
   Image as ImageIcon,
+  Loader2,
   Paperclip,
   Plus,
   RefreshCw,
@@ -53,7 +55,9 @@ import { OrdenTrabajoEvidenciaDialog } from "./OrdenTrabajoEvidenciaDialog"
 import { OrdenTrabajoFormDialog } from "./OrdenTrabajoFormDialog"
 
 type OrdenTrabajoDetailModalProps = {
-  ordenTrabajo: OrdenTrabajo | null
+  ordenTrabajo?: OrdenTrabajo | null
+  solicitudId?: string | null
+  solicitudNumero?: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onUpdated?: () => void
@@ -61,6 +65,8 @@ type OrdenTrabajoDetailModalProps = {
 
 export function OrdenTrabajoDetailModal({
   ordenTrabajo,
+  solicitudId,
+  solicitudNumero,
   open,
   onOpenChange,
   onUpdated,
@@ -86,14 +92,27 @@ export function OrdenTrabajoDetailModal({
     evidenciaToReplace?: OrdenTrabajoActividadEvidencia | null
   }>({ open: false, actividadId: "" })
 
-  const otId = ordenTrabajo?.id ?? ""
+  // Si se pasa solicitudId y no ordenTrabajo, consultar la OT directamente
+  const otsForSolicitudQuery = useQuery({
+    ...ordenTrabajoQueries.list({
+      solicitudMantenimientoId: solicitudId ?? undefined,
+      size: 1,
+      sortBy: "createdAt",
+      direction: "DESC",
+    }),
+    enabled: Boolean(solicitudId && !ordenTrabajo?.id && open),
+  })
+
+  const fetchedOT = otsForSolicitudQuery.data?.content?.[0] ?? null
+  const targetOT = ordenTrabajo ?? fetchedOT
+  const otId = targetOT?.id ?? ""
 
   // Queries
   const otQuery = useQuery({
     ...ordenTrabajoQueries.detail(otId),
     enabled: Boolean(otId && open),
   })
-  const currentOT = otQuery.data ?? ordenTrabajo
+  const currentOT = otQuery.data ?? targetOT
 
   const actividadesQuery = useQuery({
     ...ordenTrabajoQueries.actividadesByOT(otId),
@@ -107,17 +126,22 @@ export function OrdenTrabajoDetailModal({
   })
   const adjuntos = adjuntosQuery.data?.content ?? []
 
-  // Check solicitud estado to determine if OT is in planning phase (ASIGNADO)
+  // Check solicitud estado to determine if OT is in read-only phase (FINALIZADO / CANCELADO)
+  const currentSolicitudId =
+    currentOT?.solicitudMantenimientoId || solicitudId || ""
   const solicitudQuery = useQuery({
-    ...solicitudQueries.detail(currentOT?.solicitudMantenimientoId ?? ""),
-    enabled: Boolean(currentOT?.solicitudMantenimientoId && open),
+    ...solicitudQueries.detail(currentSolicitudId),
+    enabled: Boolean(currentSolicitudId && open),
   })
   const solicitud = solicitudQuery.data
   const estadoSolicitudNorm = (solicitud?.estado ?? "").toUpperCase().trim()
-  const isEnPlanificacion =
-    estadoSolicitudNorm === "ASIGNADO" ||
-    estadoSolicitudNorm === "SOLICITADO" ||
-    !estadoSolicitudNorm
+  const isReadOnly =
+    estadoSolicitudNorm === "FINALIZADO" ||
+    estadoSolicitudNorm === "CANCELADO" ||
+    estadoSolicitudNorm === "RECHAZADO"
+
+  // Modo planificación solo si aún está en SOLICITADO antes de asignar
+  const isEnPlanificacion = estadoSolicitudNorm === "SOLICITADO"
 
   // Mutations
   const toggleActividadMutation = useToggleOrdenTrabajoActividadRealizado()
@@ -125,7 +149,8 @@ export function OrdenTrabajoDetailModal({
   const deleteAdjuntoMutation = useDeleteOrdenTrabajoAdjunto()
   const deleteEvidenciaMutation = useDeleteOrdenTrabajoActividadEvidencia()
 
-  if (!currentOT) return null
+  const isInitialLoading =
+    Boolean(solicitudId && !ordenTrabajo?.id && otsForSolicitudQuery.isLoading)
 
   const totalActividades = actividades.length
   const completadasCount = actividades.filter((a) => a.realizado).length
@@ -135,7 +160,7 @@ export function OrdenTrabajoDetailModal({
       : 0
 
   function handleToggleRealizado(act: OrdenTrabajoActividad) {
-    if (isEnPlanificacion) return
+    if (isReadOnly) return
     toggleActividadMutation.mutate({
       id: act.id,
       payload: {
@@ -155,60 +180,102 @@ export function OrdenTrabajoDetailModal({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl">
-          {/* Header */}
-          <DialogHeader className="px-5 pt-4 pb-3 border-b shrink-0 bg-muted/20">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 min-w-0">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
-                  <Wrench className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <DialogTitle className="text-base sm:text-lg font-bold">
-                      {currentOT.numero || "Orden de Trabajo"}
-                    </DialogTitle>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide",
-                        progressPercent === 100
-                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-                          : progressPercent > 0
-                            ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
-                            : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      {progressPercent === 100
-                        ? "Completada"
-                        : progressPercent > 0
-                          ? `En Ejecución (${progressPercent}%)`
-                          : "Pendiente"}
-                    </Badge>
-                  </div>
-                  <DialogDescription className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5 truncate">
-                    <span>
-                      Activo: <strong className="text-foreground">{currentOT.activo?.codigo} - {currentOT.activo?.nombre}</strong>
-                    </span>
-                    {currentOT.responsable?.nombre && (
-                      <>
-                        <span>•</span>
-                        <span>Resp: <strong className="text-foreground">{currentOT.responsable.nombre}</strong></span>
-                      </>
-                    )}
-                  </DialogDescription>
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditDialogOpen(true)}
-                className="h-7 text-xs gap-1 px-2.5 shrink-0"
-              >
-                <Edit2 className="size-3" />
-                <span>Editar</span>
-              </Button>
+          {isInitialLoading ? (
+            <div className="flex flex-col items-center justify-center p-16 gap-3 text-muted-foreground">
+              <Loader2 className="size-8 animate-spin text-sky-600" />
+              <p className="text-xs font-semibold">Cargando orden de trabajo...</p>
             </div>
+          ) : !currentOT ? (
+            <div className="flex flex-col items-center justify-center p-12 text-center gap-3">
+              <div className="size-12 rounded-2xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
+                <Wrench className="size-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-foreground">
+                  Sin Orden de Trabajo
+                </p>
+                <p className="text-xs text-muted-foreground max-w-sm">
+                  Esta solicitud no tiene una orden de trabajo asociada aún.
+                </p>
+              </div>
+              {solicitudId && (
+                <Link
+                  to="/mantenimientos/ordenes-trabajo/nuevo"
+                  search={{ solicitudId }}
+                  onClick={() => onOpenChange(false)}
+                >
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer mt-1 shadow-xs"
+                  >
+                    <Plus className="size-3.5" />
+                    <span>Crear Orden de Trabajo</span>
+                  </Button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Header */}
+              <DialogHeader className="px-5 pt-4 pb-3 border-b shrink-0 bg-muted/20">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
+                      <Wrench className="size-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <DialogTitle className="text-base sm:text-lg font-bold">
+                          {currentOT.numero || "Orden de Trabajo"}
+                        </DialogTitle>
+                        {(solicitudNumero || solicitud?.numero) && (
+                          <span className="text-[10px] font-mono font-bold bg-muted px-1.5 py-0.5 rounded border border-border">
+                            Folio: {solicitudNumero || solicitud?.numero}
+                          </span>
+                        )}
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide",
+                            progressPercent === 100
+                              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                              : progressPercent > 0
+                                ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                                : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {progressPercent === 100
+                            ? "Completada"
+                            : progressPercent > 0
+                              ? `En Ejecución (${progressPercent}%)`
+                              : "Pendiente"}
+                        </Badge>
+                      </div>
+                      <DialogDescription className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5 truncate">
+                        <span>
+                          Activo: <strong className="text-foreground">{currentOT.activo?.codigo} - {currentOT.activo?.nombre}</strong>
+                        </span>
+                        {currentOT.responsable?.nombre && (
+                          <>
+                            <span>•</span>
+                            <span>Resp: <strong className="text-foreground">{currentOT.responsable.nombre}</strong></span>
+                          </>
+                        )}
+                      </DialogDescription>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditDialogOpen(true)}
+                    className="h-7 text-xs gap-1 px-2.5 shrink-0"
+                  >
+                    <Edit2 className="size-3" />
+                    <span>Editar</span>
+                  </Button>
+                </div>
 
             {/* Progress bar */}
             {totalActividades > 0 && (
@@ -587,6 +654,8 @@ export function OrdenTrabajoDetailModal({
               )}
             </TabsContent>
           </Tabs>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -683,17 +752,13 @@ function ActividadItemCard({
             disabled={isEnPlanificacion}
             onChange={onToggleRealizado}
             className={cn(
-              "size-4 mt-0.5 rounded border-border text-emerald-600 focus:ring-emerald-500 shrink-0",
-              isEnPlanificacion
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer",
+              "size-4 mt-0.5 rounded border-border text-emerald-600 focus:ring-emerald-500 shrink-0 cursor-pointer",
+              isEnPlanificacion && "opacity-50 cursor-not-allowed",
             )}
             title={
-              isEnPlanificacion
-                ? "Primero debes iniciar el mantenimiento en la solicitud para marcar tareas como realizadas"
-                : actividad.realizado
-                  ? "Marcar como pendiente"
-                  : "Marcar como realizada"
+              actividad.realizado
+                ? "Marcar como pendiente"
+                : "Marcar como realizada"
             }
           />
           <div className="min-w-0 flex-1">
@@ -738,14 +803,10 @@ function ActividadItemCard({
             disabled={isEnPlanificacion}
             onClick={onAddEvidencia}
             className={cn(
-              "size-6 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-md",
+              "size-6 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-md cursor-pointer",
               isEnPlanificacion && "opacity-40 cursor-not-allowed",
             )}
-            title={
-              isEnPlanificacion
-                ? "Solo puedes subir evidencias cuando la orden esté en ejecución (En Mantenimiento)"
-                : "Adjuntar evidencia fotográfica"
-            }
+            title="Adjuntar evidencia fotográfica"
           >
             <Camera className="size-3.5" />
           </Button>

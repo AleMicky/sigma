@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
 import {
   Activity,
   AlertTriangle,
@@ -44,12 +43,14 @@ export function EncargadoMantenimientoPage() {
   const completeWorkflowMutation = useCompleteWorkflowTask()
   const [modalSolicitud, setModalSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
-  const [filterUrgentesOnly, setFilterUrgentesOnly] = useState<boolean>(false)
+  const [filterUrgentesOnly, setFilterUrgentesOnly] = useState(false)
   const [estadoFilter, setEstadoFilter] = useState<
     "ALL" | "ASIGNADO" | "EN_MANTENIMIENTO" | "VALIDADO"
   >("ALL")
 
   const [controlActivoTarget, setControlActivoTarget] =
+    useState<SolicitudMantenimiento | null>(null)
+  const [ordenTrabajoTarget, setOrdenTrabajoTarget] =
     useState<SolicitudMantenimiento | null>(null)
   const [selectedOT, setSelectedOT] = useState<OrdenTrabajo | null>(null)
 
@@ -539,22 +540,20 @@ export function EncargadoMantenimientoPage() {
                             </Button>
 
                             {/* Botón OT (Orden de Trabajo) */}
-                            <Link
-                              to="/mantenimientos/ordenes-trabajo/nuevo"
-                              search={{ solicitudId: solicitud.id }}
-                              onClick={(e) => e.stopPropagation()}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setOrdenTrabajoTarget(solicitud)
+                              }}
+                              className="h-7 px-2 rounded-lg text-xs font-medium inline-flex items-center gap-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/30 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98"
+                              title="Ver / Gestionar Órdenes de Trabajo"
                             >
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 rounded-lg text-xs font-medium inline-flex items-center gap-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/30 cursor-pointer shadow-2xs transition-all hover:scale-102 active:scale-98"
-                                title="Crear / Gestionar Orden de Trabajo"
-                              >
-                                <Wrench className="size-3.5 text-sky-600 dark:text-sky-400" />
-                                <span>OT</span>
-                              </Button>
-                            </Link>
+                              <Wrench className="size-3.5 text-sky-600 dark:text-sky-400" />
+                              <span>OT</span>
+                            </Button>
                           </div>
                         }
                         onQuickView={() => handleOpenModal(solicitud)}
@@ -617,11 +616,18 @@ export function EncargadoMantenimientoPage() {
         onOpenChange={(open) => !open && setControlActivoTarget(null)}
       />
 
-      {/* Modal Workbench Detalle de Orden de Trabajo */}
+      {/* Modal Detalle de Orden de Trabajo DIRECTO */}
       <OrdenTrabajoDetailModal
+        solicitudId={ordenTrabajoTarget?.id ?? null}
+        solicitudNumero={ordenTrabajoTarget?.numero ?? null}
         ordenTrabajo={selectedOT}
-        open={Boolean(selectedOT)}
-        onOpenChange={(open) => !open && setSelectedOT(null)}
+        open={Boolean(ordenTrabajoTarget || selectedOT)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setOrdenTrabajoTarget(null)
+            setSelectedOT(null)
+          }
+        }}
         onUpdated={() => {
           solicitudesQuery.refetch()
         }}

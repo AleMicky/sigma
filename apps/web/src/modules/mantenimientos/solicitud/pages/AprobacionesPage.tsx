@@ -55,7 +55,7 @@ export function AprobacionesPage() {
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC",
-      estado: "EN_REVISION",
+      estado: "SOLICITADO",
     }),
   )
 
