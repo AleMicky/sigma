@@ -229,7 +229,7 @@ export function OrdenTrabajoFormPage({
   }
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-y-auto px-2 sm:px-4 md:px-6 py-2 pb-24 sm:pb-20">
+    <PageShell size="full" padding="none" layout="auto" className="w-full max-w-5xl mx-auto space-y-3 pb-10">
       {/* Top Header Compacto */}
       <header className="flex shrink-0 items-center justify-between gap-2 border-b pb-2 pt-0.5">
         <div className="flex items-center gap-2 min-w-0">
@@ -272,7 +272,7 @@ export function OrdenTrabajoFormPage({
       </header>
 
       {/* Main Form Body */}
-      <form onSubmit={handleSubmit} className="mt-3 space-y-3 max-w-5xl mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-3">
         {/* Banner Superior: Activo & Solicitud Resumen */}
         <Card className="p-3 border bg-card shadow-2xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -627,16 +627,16 @@ export function OrdenTrabajoFormPage({
           )}
         </Card>
 
-        {/* Bottom Sticky Action Bar */}
-        <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 p-3 rounded-2xl border bg-background/95 backdrop-blur-md shadow-lg">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground truncate">
-            <Info className="size-4 text-primary shrink-0 hidden sm:block" />
+        {/* Bottom Action Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border bg-card shadow-2xs">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Info className="size-4 text-primary shrink-0" />
             <span>
               Orden de Trabajo • <strong>{actividades.length}</strong> {actividades.length === 1 ? "tarea planificada" : "tareas planificadas"}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center justify-end gap-2 shrink-0">
             <Button
               type="button"
               variant="outline"
