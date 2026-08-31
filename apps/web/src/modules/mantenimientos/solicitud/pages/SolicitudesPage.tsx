@@ -5,12 +5,10 @@ import {
   AlertCircle,
   AlertTriangle,
   Box,
-  CheckCircle2,
   ClipboardCheck,
   Eye,
   Pencil,
   Plus,
-  SendHorizontal,
   Shield,
   Trash2,
   User,
@@ -43,12 +41,10 @@ import {
 import {
   useCompleteWorkflowTask,
   useDeleteSolicitud,
-  useEnviarSolicitud,
 } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type { SolicitudMantenimiento } from "../api/solicitud.service"
 import {
-  ConfirmEnviarDialog,
   SolicitudFilterToolbar,
   SolicitudQuickViewSheet,
   SolicitudStats,
@@ -67,7 +63,6 @@ export function SolicitudesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("")
   const [quickView, setQuickView] = useState<SolicitudMantenimiento | null>(null)
   const [deleting, setDeleting] = useState<SolicitudMantenimiento | null>(null)
-  const [enviando, setEnviando] = useState<SolicitudMantenimiento | null>(null)
 
   const {
     isAdmin,
@@ -80,9 +75,38 @@ export function SolicitudesPage() {
 
   const search = usePaginatedSearch()
   const deleteMutation = useDeleteSolicitud()
-  const enviarMutation = useEnviarSolicitud()
   const completeWorkflowMutation = useCompleteWorkflowTask()
   const workflowAction = useWorkflowActionTarget<SolicitudMantenimiento>()
+
+  const handleStatusSelect = (status: string) => {
+    setStatusFilter(status)
+    search.setPage(0)
+  }
+
+  // Base list for counting all categories regardless of current status filter
+  const allSolicitudesQuery = useQuery(
+    solicitudQueries.list({
+      page: 0,
+      size: 100,
+      sortBy: "createdAt",
+      direction: "DESC",
+      ...(search.query ? { q: search.query } : {}),
+      ...(isMineOnly && currentEmpleado?.id
+        ? { solicitanteId: currentEmpleado.id }
+        : {}),
+    }),
+  )
+
+  const rawAllSolicitudes = useMemo(
+    () => allSolicitudesQuery.data?.content ?? [],
+    [allSolicitudesQuery.data?.content],
+  )
+
+  const allSolicitudes = useMemo(() => {
+    if (!isMineOnly) return rawAllSolicitudes
+    if (currentEmpleado?.id) return rawAllSolicitudes
+    return rawAllSolicitudes.filter(isSolicitantePropio)
+  }, [rawAllSolicitudes, isMineOnly, currentEmpleado?.id, isSolicitantePropio])
 
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
@@ -110,45 +134,52 @@ export function SolicitudesPage() {
     return rawSolicitudes.filter(isSolicitantePropio)
   }, [rawSolicitudes, isMineOnly, currentEmpleado?.id, isSolicitantePropio])
 
+  const totalCount = useMemo(
+    () => (statusFilter ? (allSolicitudesQuery.data?.totalElements ?? allSolicitudes.length) : (solicitudesQuery.data?.totalElements ?? solicitudes.length)),
+    [statusFilter, allSolicitudesQuery.data?.totalElements, allSolicitudes.length, solicitudesQuery.data?.totalElements, solicitudes.length],
+  )
+
   const enviadasCount = useMemo(
     () =>
-      solicitudes.filter((s) => {
-        const est = (s.estado ?? "").toLowerCase()
-        return est === "solicitado"
+      allSolicitudes.filter((s) => {
+        const est = (s.estado ?? "").toLowerCase().trim()
+        return est === "solicitado" || est === "pendiente"
       }).length,
-    [solicitudes],
+    [allSolicitudes],
   )
 
   const borradorCount = useMemo(
     () =>
-      solicitudes.filter((s) => {
-        const est = (s.estado ?? "").toLowerCase()
+      allSolicitudes.filter((s) => {
+        const est = (s.estado ?? "").toLowerCase().trim()
         return est === "borrador"
       }).length,
-    [solicitudes],
+    [allSolicitudes],
   )
 
   const enProcesoCount = useMemo(
     () =>
-      solicitudes.filter((s) => {
-        const est = (s.estado ?? "").toLowerCase()
+      allSolicitudes.filter((s) => {
+        const est = (s.estado ?? "").toLowerCase().trim()
         return (
           est === "en_proceso" ||
           est === "en proceso" ||
+          est === "en_mantenimiento" ||
+          est === "en mantenimiento" ||
           est === "aprobado" ||
           est === "asignado"
         )
       }).length,
-    [solicitudes],
+    [allSolicitudes],
   )
 
   const finalizadoCount = useMemo(
     () =>
-      solicitudes.filter((s) => {
-        const est = (s.estado ?? "").toLowerCase()
-        return est === "finalizado" || est === "completado"
+      allSolicitudes.filter((s) => {
+        const est = (s.estado ?? "").toLowerCase().trim()
+        return est === "finalizado" || est === "completado" || est === "validado" || est === "trabajo_realizado"
       }).length,
-    [solicitudes],
+    [allSolicitudes],
   )
 
   useClampPage(
@@ -284,14 +315,14 @@ export function SolicitudesPage() {
       {/* Stats Section */}
       <div className="shrink-0 pt-2.5 pb-1">
         <SolicitudStats
-          totalCount={solicitudesQuery.data?.totalElements}
+          totalCount={totalCount}
           borradorCount={borradorCount}
           enviadasCount={enviadasCount}
           enProcesoCount={enProcesoCount}
           finalizadoCount={finalizadoCount}
-          isLoading={solicitudesQuery.isLoading}
+          isLoading={solicitudesQuery.isLoading || allSolicitudesQuery.isLoading}
           activeStatus={statusFilter}
-          onSelectStatus={setStatusFilter}
+          onSelectStatus={handleStatusSelect}
         />
       </div>
 
@@ -365,6 +396,7 @@ export function SolicitudesPage() {
                   const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
                   const isBorrador = estadoNorm === "borrador"
                   const isObservado = estadoNorm === "observado"
+                  const isSolicitado = estadoNorm === "solicitado" || estadoNorm === "pendiente"
                   const isEditable = isBorrador || isObservado
                   const isTrabajoRealizado = estadoNorm === "trabajo_realizado"
                   const placa = extractPlaca(solicitud.activo)
@@ -374,6 +406,7 @@ export function SolicitudesPage() {
                     <SolicitudWorkflowListItem
                       key={solicitud.id}
                       solicitud={solicitud}
+                      showWorkflowTrigger={!isSolicitado}
                       badges={
                         <>
                           {solicitud.tipoMantenimiento && (
@@ -414,7 +447,7 @@ export function SolicitudesPage() {
                             </div>
                           )}
                           {solicitud.solicitante && (
-                            <div className="flex items-center gap-1 truncate max-w-[200px]">
+                            <div className="flex items-center gap-1 truncate max-w-50">
                               <User className="size-3 text-muted-foreground/70 shrink-0" />
                               <span className="text-muted-foreground/80">Solicita:</span>
                               <strong className="truncate font-semibold text-foreground/90">
@@ -433,21 +466,6 @@ export function SolicitudesPage() {
                       }
                       extraActions={
                         <div className="flex items-center gap-1">
-                          {/* Botón Enviar (Solo en Borrador) */}
-                          {isBorrador && (
-                            <Button
-                              type="button"
-                              size="xs"
-                              variant="outline"
-                              onClick={() => setEnviando(solicitud)}
-                              className="h-6.5 gap-1 px-2 text-[11px] font-semibold text-primary border-primary/40 bg-primary/10 hover:bg-primary/20 shadow-2xs cursor-pointer"
-                              title="Enviar solicitud para aprobación"
-                            >
-                              <SendHorizontal className="size-3" />
-                              <span>Enviar</span>
-                            </Button>
-                          )}
-
                           {/* Botón Registrar Devolución si está en TRABAJO_REALIZADO */}
                           {isTrabajoRealizado && (
                             <Link
@@ -539,9 +557,6 @@ export function SolicitudesPage() {
         solicitud={quickView}
         open={Boolean(quickView)}
         onOpenChange={(open) => !open && setQuickView(null)}
-        onWorkflowAction={(sol, action, taskName, fields) => {
-          workflowAction.openAction(sol, action, taskName, fields)
-        }}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -572,24 +587,8 @@ export function SolicitudesPage() {
         }}
         onSuccess={() => {
           solicitudesQuery.refetch()
+          allSolicitudesQuery.refetch()
           setQuickView(null)
-        }}
-      />
-
-      {/* Confirm Enviar Dialog */}
-      <ConfirmEnviarDialog
-        open={Boolean(enviando)}
-        onOpenChange={(open) => !open && setEnviando(null)}
-        solicitud={enviando}
-        isPending={enviarMutation.isPending}
-        onConfirm={async () => {
-          if (!enviando) return
-          try {
-            await enviarMutation.mutateAsync(enviando.id)
-            setEnviando(null)
-          } catch {
-            // Handled in mutation toast
-          }
         }}
       />
     </PageShell>

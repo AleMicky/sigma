@@ -35,13 +35,10 @@ import {
 import { cn } from "@/shared/lib/utils"
 import { formatDate, formatDateTime } from "@/shared/utils/date.utils"
 
-import { WorkflowPanel } from "@/modules/workflow"
 import { solicitudQueries } from "../../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
   SolicitudMantenimientoAdjunto,
-  WorkflowAction,
-  WorkflowField,
 } from "../../api/solicitud.service"
 import {
   getPrioridadBadgeStyles,
@@ -52,12 +49,6 @@ type SolicitudQuickViewSheetProps = {
   solicitud: SolicitudMantenimiento | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onWorkflowAction?: (
-    solicitud: SolicitudMantenimiento,
-    action: WorkflowAction,
-    taskName?: string,
-    fields?: WorkflowField[],
-  ) => void
 }
 
 function formatFileSize(bytes?: number): string {
@@ -99,7 +90,6 @@ export function SolicitudQuickViewSheet({
   solicitud: initialSolicitud,
   open,
   onOpenChange,
-  onWorkflowAction,
 }: SolicitudQuickViewSheetProps) {
   const [copied, setCopied] = useState(false)
   const [selectedPreviewImage, setSelectedPreviewImage] = useState<{
@@ -122,11 +112,6 @@ export function SolicitudQuickViewSheet({
   })
 
   const solicitud = detailQuery.data ?? initialSolicitud
-
-  const actionsQuery = useQuery({
-    ...solicitudQueries.workflowActions(solicitud?.processInstanceId),
-    enabled: open && Boolean(solicitud?.processInstanceId && onWorkflowAction),
-  })
 
   const adjuntos = useMemo(() => {
     if (adjuntosQuery.data?.content && adjuntosQuery.data.content.length > 0) {
@@ -261,29 +246,6 @@ export function SolicitudQuickViewSheet({
 
         {/* ======================= SCROLLABLE CLEAN BODY ======================= */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* Action Bar (Si hay acciones de workflow) */}
-          {onWorkflowAction && (
-            <div className="rounded-xl overflow-hidden border border-border/80 shadow-2xs">
-              <WorkflowPanel
-                processInstanceId={solicitud.processInstanceId}
-                status={solicitud.estado}
-                taskName={actionsQuery.data?.taskName}
-                actions={actionsQuery.data?.actions}
-                fields={actionsQuery.data?.fields}
-                isLoading={actionsQuery.isLoading}
-                responsable={solicitud.responsable}
-                observacion={
-                  solicitud.observacionValidacion ||
-                  solicitud.observacionAprobacion ||
-                  solicitud.observacionCierre
-                }
-                onActionSelect={(action, tName, flds) =>
-                  onWorkflowAction(solicitud, action, tName, flds)
-                }
-              />
-            </div>
-          )}
-
           {/* 1. INFORMACIÓN PRINCIPAL (Diseño limpio en lista de filas) */}
           <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-2xs">
             <div className="px-4 py-2.5 bg-muted/30 border-b border-border/50 flex items-center justify-between">

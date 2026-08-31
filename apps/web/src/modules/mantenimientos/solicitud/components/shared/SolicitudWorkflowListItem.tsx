@@ -10,6 +10,7 @@ export type SolicitudWorkflowListItemProps = {
   badges?: ReactNode
   extraContent?: ReactNode
   extraActions?: ReactNode
+  showWorkflowTrigger?: boolean
   onQuickView?: () => void
   onActionSelect?: (
     action: WorkflowAction,
@@ -24,6 +25,7 @@ export function SolicitudWorkflowListItem({
   badges,
   extraContent,
   extraActions,
+  showWorkflowTrigger = true,
   onQuickView,
   onActionSelect,
   className,
@@ -33,7 +35,7 @@ export function SolicitudWorkflowListItem({
   // Consulta automática y dinámica de las acciones reales del proceso de Camunda
   const { data: wfData, isLoading: isWorkflowLoading } = useQuery({
     ...solicitudQueries.workflowActions(solicitud.processInstanceId),
-    enabled: Boolean(solicitud.processInstanceId),
+    enabled: Boolean(solicitud.processInstanceId && showWorkflowTrigger),
   })
 
   return (
@@ -56,10 +58,11 @@ export function SolicitudWorkflowListItem({
       badges={badges}
       extraContent={extraContent}
       extraActions={extraActions}
-      actions={wfData?.actions ?? []}
-      taskName={wfData?.taskName}
-      fields={wfData?.fields ?? []}
-      isWorkflowLoading={isWorkflowLoading}
+      actions={showWorkflowTrigger ? (wfData?.actions ?? []) : []}
+      taskName={showWorkflowTrigger ? wfData?.taskName : undefined}
+      fields={showWorkflowTrigger ? (wfData?.fields ?? []) : []}
+      isWorkflowLoading={showWorkflowTrigger ? isWorkflowLoading : false}
+      showWorkflowTrigger={showWorkflowTrigger}
       onActionSelect={onActionSelect}
       onQuickView={onQuickView}
       className={className}

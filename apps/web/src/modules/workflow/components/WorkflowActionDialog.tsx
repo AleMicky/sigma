@@ -148,7 +148,18 @@ function WorkflowActionDialogContent({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const formId = useId()
 
-  const [formValues, setFormValues] = useState<Record<string, any>>({})
+  const [formValues, setFormValues] = useState<Record<string, any>>(() => {
+    const initial: Record<string, any> = {}
+    if (Array.isArray(fields)) {
+      for (const field of fields) {
+        const val = (field as any).defaultValue ?? (field as any).value
+        if (val !== undefined && val !== null) {
+          initial[field.id] = val
+        }
+      }
+    }
+    return initial
+  })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   const cleanActionName = fixWorkflowEncoding(action.name || action.value)
