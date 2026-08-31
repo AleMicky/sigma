@@ -5,8 +5,10 @@ import {
   AlertCircle,
   AlertTriangle,
   Box,
+  CheckCircle2,
   ClipboardCheck,
   Eye,
+  FileCheck2,
   Pencil,
   Plus,
   Shield,
@@ -33,6 +35,8 @@ import { cn } from "@/shared/lib/utils"
 
 import { toast } from "sonner"
 
+import { ControlActivoHistorialModal } from "@/modules/mantenimientos/control-activo/components/ControlActivoHistorialModal"
+import { controlActivoQueries } from "@/modules/mantenimientos/control-activo/api/control-activo.queries"
 import {
   useWorkflowActionTarget,
   WorkflowActionDialog,
@@ -59,6 +63,227 @@ import { useSolicitudRoleScope } from "../hooks/use-solicitud-role-scope"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
+function SolicitudSolicitanteListItem({
+  solicitud,
+  onOpenEdit,
+  onDeleting,
+  onQuickView,
+  onControlActivo,
+  onTraceability,
+  onActionSelect,
+}: {
+  solicitud: SolicitudMantenimiento
+  onOpenEdit: (s: SolicitudMantenimiento) => void
+  onDeleting: (s: SolicitudMantenimiento) => void
+  onQuickView: (s: SolicitudMantenimiento) => void
+  onControlActivo: (s: SolicitudMantenimiento) => void
+  onTraceability?: () => void
+  onActionSelect?: (
+    action: any,
+    taskName?: string,
+    fields?: any[],
+  ) => void
+}) {
+  const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
+  const isBorrador = estadoNorm === "borrador"
+  const isObservado = estadoNorm === "observado"
+  const isValidado = estadoNorm === "validado"
+  const isEditable = isBorrador || isObservado
+  const isTrabajoRealizado = estadoNorm === "trabajo_realizado"
+  const placa = extractPlaca(solicitud.activo)
+  const adjuntosCount = solicitud.adjuntos?.length ?? 0
+
+  // Consultar actas existentes de esta solicitud
+  const controlesQuery = useQuery({
+    ...controlActivoQueries.list({
+      solicitudMantenimientoId: solicitud.id,
+      size: 50,
+    }),
+  })
+  const controles = controlesQuery.data?.content ?? []
+  const hasEntrega = controles.some((c) => c.tipo === "ENTREGA")
+  const hasDevolucion = controles.some((c) => c.tipo === "DEVOLUCION")
+  const totalActas = controles.length
+
+  return (
+    <SolicitudWorkflowListItem
+      key={solicitud.id}
+      solicitud={solicitud}
+      showWorkflowTrigger={isBorrador || isValidado || isTrabajoRealizado}
+      badges={
+        <>
+          {solicitud.tipoMantenimiento && (
+            <span
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10.5px] font-semibold border shrink-0 ${getTipoMantenimientoBadgeClass(
+                solicitud.tipoMantenimiento.nombre,
+                false,
+              )}`}
+            >
+              <Wrench className="size-2.5 shrink-0" />
+              <span>{solicitud.tipoMantenimiento.nombre}</span>
+            </span>
+          )}
+          {solicitud.tipoFallas && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10.5px] font-medium bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 truncate max-w-55 shrink-0">
+              <AlertTriangle className="size-2.5 shrink-0" />
+              <span className="truncate">{solicitud.tipoFallas}</span>
+            </span>
+          )}
+          {hasEntrega && hasDevolucion && (
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                onControlActivo(solicitud)
+              }}
+              className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10.5px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 shrink-0 cursor-pointer hover:bg-emerald-500/20"
+              title="Actas de entrega y devolución completadas"
+            >
+              <CheckCircle2 className="size-2.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Actas completadas</span>
+            </span>
+          )}
+        </>
+      }
+      extraContent={
+        <>
+          {solicitud.activo && (
+            <div className="inline-flex items-center gap-1.5 truncate max-w-sm">
+              <Box className="size-3 shrink-0 text-primary opacity-90" />
+              <span className="font-mono font-bold text-primary text-[11px]">
+                {solicitud.activo.codigo}
+              </span>
+              <span className="truncate text-foreground/90 font-medium">
+                {solicitud.activo.nombre}
+              </span>
+              {placa ? (
+                <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded shrink-0">
+                  {placa}
+                </span>
+              ) : null}
+            </div>
+          )}
+          {solicitud.solicitante && (
+            <div className="flex items-center gap-1 truncate max-w-50">
+              <User className="size-3 text-muted-foreground/70 shrink-0" />
+              <span className="text-muted-foreground/80">Solicita:</span>
+              <strong className="truncate font-semibold text-foreground/90">
+                {solicitud.solicitante.nombre}
+              </strong>
+            </div>
+          )}
+          {adjuntosCount > 0 && (
+            <div className="inline-flex items-center gap-1 font-semibold text-primary bg-primary/10 px-1.5 py-0.2 rounded-md border border-primary/20 text-[10px] shrink-0">
+              <span>
+                {adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}
+              </span>
+            </div>
+          )}
+        </>
+      }
+      extraActions={
+        <div className="flex items-center gap-1">
+          {/* Botón Inteligente de Actas: Si ya tiene ambas actas (o solo consulta) muestra "Ver Actas", si está en TRABAJO_REALIZADO y falta devolución muestra "Devolución" */}
+          {hasEntrega && hasDevolucion ? (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onControlActivo(solicitud)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/30 rounded-md shadow-2xs cursor-pointer"
+              title="Ver actas de entrega y devolución registradas"
+            >
+              <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+              <span>Ver Actas</span>
+            </Button>
+          ) : isTrabajoRealizado && !hasDevolucion ? (
+            <Link
+              to="/mantenimientos/controles-activos/nuevo"
+              search={{
+                solicitudId: solicitud.id,
+                tipo: "DEVOLUCION",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                type="button"
+                size="xs"
+                className="h-6.5 gap-1 px-2 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-md shadow-2xs cursor-pointer"
+                title="Registrar Devolución de Activo"
+              >
+                <ClipboardCheck className="size-3" />
+                <span>Devolución</span>
+              </Button>
+            </Link>
+          ) : totalActas > 0 ? (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onControlActivo(solicitud)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/30 rounded-md shadow-2xs cursor-pointer"
+              title="Ver historial de actas registradas"
+            >
+              <FileCheck2 className="size-3 text-amber-600 dark:text-amber-400" />
+              <span>Ver Actas ({totalActas})</span>
+            </Button>
+          ) : null}
+
+          {/* Botón Ver Detalles */}
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            onClick={() => onQuickView(solicitud)}
+            className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
+            title="Ver detalles completos"
+          >
+            <Eye className="size-3 text-primary" />
+            <span>Detalles</span>
+          </Button>
+
+          {/* Botón Editar (En Borrador u Observado) */}
+          {isEditable && (
+            <Button
+              type="button"
+              size="xs"
+              variant="ghost"
+              onClick={() => onOpenEdit(solicitud)}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
+              title="Editar solicitud"
+            >
+              <Pencil className="size-3 text-muted-foreground" />
+              <span>Editar</span>
+            </Button>
+          )}
+
+          {/* Botón Eliminar (Solo en Borrador) */}
+          {isBorrador && (
+            <Button
+              type="button"
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => onDeleting(solicitud)}
+              className="size-6.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+              title="Eliminar solicitud"
+            >
+              <Trash2 className="size-3 text-destructive/80" />
+            </Button>
+          )}
+        </div>
+      }
+      onTraceability={onTraceability}
+      onQuickView={() => onQuickView(solicitud)}
+      onActionSelect={onActionSelect}
+    />
+  )
+}
+
 export function SolicitudesPage() {
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState<string>("")
@@ -79,6 +304,8 @@ export function SolicitudesPage() {
   const completeWorkflowMutation = useCompleteWorkflowTask()
   const workflowAction = useWorkflowActionTarget<SolicitudMantenimiento>()
   const [trazabilidadSolicitud, setTrazabilidadSolicitud] =
+    useState<SolicitudMantenimiento | null>(null)
+  const [controlActivoTarget, setControlActivoTarget] =
     useState<SolicitudMantenimiento | null>(null)
 
   const handleStatusSelect = (status: string) => {
@@ -395,159 +622,24 @@ export function SolicitudesPage() {
               )}
             >
               <WorkflowListView>
-                {solicitudes.map((solicitud) => {
-                  const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
-                  const isBorrador = estadoNorm === "borrador"
-                  const isObservado = estadoNorm === "observado"
-                  const isValidado = estadoNorm === "validado"
-                  const isEditable = isBorrador || isObservado
-                  const isTrabajoRealizado = estadoNorm === "trabajo_realizado"
-                  const placa = extractPlaca(solicitud.activo)
-                  const adjuntosCount = solicitud.adjuntos?.length ?? 0
-
-                  return (
-                    <SolicitudWorkflowListItem
-                      key={solicitud.id}
-                      solicitud={solicitud}
-                      showWorkflowTrigger={
-                        isBorrador || isValidado || isTrabajoRealizado
-                      }
-                      badges={
-                        <>
-                          {solicitud.tipoMantenimiento && (
-                            <span
-                              className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10.5px] font-semibold border shrink-0 ${getTipoMantenimientoBadgeClass(
-                                solicitud.tipoMantenimiento.nombre,
-                                false,
-                              )}`}
-                            >
-                              <Wrench className="size-2.5 shrink-0" />
-                              <span>{solicitud.tipoMantenimiento.nombre}</span>
-                            </span>
-                          )}
-                          {solicitud.tipoFallas && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10.5px] font-medium bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 truncate max-w-55 shrink-0">
-                              <AlertTriangle className="size-2.5 shrink-0" />
-                              <span className="truncate">{solicitud.tipoFallas}</span>
-                            </span>
-                          )}
-                        </>
-                      }
-                      extraContent={
-                        <>
-                          {solicitud.activo && (
-                            <div className="inline-flex items-center gap-1.5 truncate max-w-sm">
-                              <Box className="size-3 shrink-0 text-primary opacity-90" />
-                              <span className="font-mono font-bold text-primary text-[11px]">
-                                {solicitud.activo.codigo}
-                              </span>
-                              <span className="truncate text-foreground/90 font-medium">
-                                {solicitud.activo.nombre}
-                              </span>
-                              {placa ? (
-                                <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded shrink-0">
-                                  {placa}
-                                </span>
-                              ) : null}
-                            </div>
-                          )}
-                          {solicitud.solicitante && (
-                            <div className="flex items-center gap-1 truncate max-w-50">
-                              <User className="size-3 text-muted-foreground/70 shrink-0" />
-                              <span className="text-muted-foreground/80">Solicita:</span>
-                              <strong className="truncate font-semibold text-foreground/90">
-                                {solicitud.solicitante.nombre}
-                              </strong>
-                            </div>
-                          )}
-                          {adjuntosCount > 0 && (
-                            <div className="inline-flex items-center gap-1 font-semibold text-primary bg-primary/10 px-1.5 py-0.2 rounded-md border border-primary/20 text-[10px] shrink-0">
-                              <span>
-                                {adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}
-                              </span>
-                            </div>
-                          )}
-                        </>
-                      }
-                      extraActions={
-                        <div className="flex items-center gap-1">
-                          {/* Botón Registrar Devolución si está en TRABAJO_REALIZADO */}
-                          {isTrabajoRealizado && (
-                            <Link
-                              to="/mantenimientos/controles-activos/nuevo"
-                              search={{
-                                solicitudId: solicitud.id,
-                                tipo: "DEVOLUCION",
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Button
-                                type="button"
-                                size="xs"
-                                className="h-6.5 gap-1 px-2 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-md shadow-2xs cursor-pointer"
-                                title="Registrar Devolución de Activo"
-                              >
-                                <ClipboardCheck className="size-3" />
-                                <span>Devolución</span>
-                              </Button>
-                            </Link>
-                          )}
-
-                          {/* Botón Ver Detalles */}
-                          <Button
-                            type="button"
-                            size="xs"
-                            variant="ghost"
-                            onClick={() => setQuickView(solicitud)}
-                            className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
-                            title="Ver detalles completos"
-                          >
-                            <Eye className="size-3 text-primary" />
-                            <span>Detalles</span>
-                          </Button>
-
-                          {/* Botón Editar (En Borrador u Observado) */}
-                          {isEditable && (
-                            <Button
-                              type="button"
-                              size="xs"
-                              variant="ghost"
-                              onClick={() => openEdit(solicitud)}
-                              className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
-                              title="Editar solicitud"
-                            >
-                              <Pencil className="size-3 text-muted-foreground" />
-                              <span>Editar</span>
-                            </Button>
-                          )}
-
-                          {/* Botón Eliminar (Solo en Borrador) */}
-                          {isBorrador && (
-                            <Button
-                              type="button"
-                              size="icon-xs"
-                              variant="ghost"
-                              onClick={() => setDeleting(solicitud)}
-                              className="size-6.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                              title="Eliminar solicitud"
-                            >
-                              <Trash2 className="size-3 text-destructive/80" />
-                            </Button>
-                          )}
-                        </div>
-                      }
-                      onTraceability={
-                        solicitud.processInstanceId
-                          ? () => setTrazabilidadSolicitud(solicitud)
-                          : undefined
-                      }
-                      onQuickView={() => setQuickView(solicitud)}
-                      onActionSelect={(action, taskName, fields) => {
-                        workflowAction.openAction(solicitud, action, taskName, fields)
-                      }}
-                    />
-                  )
-                })}
+                {solicitudes.map((solicitud) => (
+                  <SolicitudSolicitanteListItem
+                    key={solicitud.id}
+                    solicitud={solicitud}
+                    onOpenEdit={openEdit}
+                    onDeleting={setDeleting}
+                    onQuickView={setQuickView}
+                    onControlActivo={setControlActivoTarget}
+                    onTraceability={
+                      solicitud.processInstanceId
+                        ? () => setTrazabilidadSolicitud(solicitud)
+                        : undefined
+                    }
+                    onActionSelect={(action, taskName, fields) => {
+                      workflowAction.openAction(solicitud, action, taskName, fields)
+                    }}
+                  />
+                ))}
               </WorkflowListView>
             </div>
 
@@ -567,6 +659,16 @@ export function SolicitudesPage() {
         solicitud={quickView}
         open={Boolean(quickView)}
         onOpenChange={(open) => !open && setQuickView(null)}
+      />
+
+      {/* Modal Historial / Consulta de Actas */}
+      <ControlActivoHistorialModal
+        key={`actas-${controlActivoTarget?.id}`}
+        solicitudId={controlActivoTarget?.id ?? null}
+        solicitudNumero={controlActivoTarget?.numero ?? null}
+        readOnly={true}
+        open={Boolean(controlActivoTarget)}
+        onOpenChange={(open) => !open && setControlActivoTarget(null)}
       />
 
       {/* Modal de Trazabilidad e Historial de Workflow */}

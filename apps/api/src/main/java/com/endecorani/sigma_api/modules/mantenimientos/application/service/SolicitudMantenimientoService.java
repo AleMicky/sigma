@@ -254,29 +254,75 @@ public class SolicitudMantenimientoService {
                 solicitud.getProcessInstanceId(),
                 effectiveRequest);
 
-        if (resultado.status() != null) {
-            solicitud.setEstado(
-                    resultado.status().toLowerCase());
+        String nuevoEstado = resultado.status() != null ? resultado.status().toLowerCase().trim() : null;
+        if (nuevoEstado != null) {
+            solicitud.setEstado(nuevoEstado);
         }
 
+        LocalDateTime ahora = LocalDateTime.now();
+
+        // 1. Extraer variables enviadas desde el formulario/decisión del BPMN
         if (request != null && request.variables() != null) {
+            // Aprobador / Coordinador
+            Object aprobadorIdObj = request.variables().get("aprobadorId");
+            if (aprobadorIdObj != null && !aprobadorIdObj.toString().isBlank()) {
+                try {
+                    solicitud.setAprobadoPorId(UUID.fromString(aprobadorIdObj.toString().trim()));
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Responsable / Encargado de mantenimiento
             Object responsableIdObj = request.variables().get("responsableId");
             if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
                 try {
                     solicitud.setResponsableId(UUID.fromString(responsableIdObj.toString().trim()));
                     if (solicitud.getFechaAsignacion() == null) {
-                        solicitud.setFechaAsignacion(LocalDateTime.now());
+                        solicitud.setFechaAsignacion(ahora);
                     }
                 } catch (Exception ignored) {
                 }
             }
+
+            // Supervisor de mantenimiento
+            Object supervisorIdObj = request.variables().get("supervisorId");
+            if (supervisorIdObj != null && !supervisorIdObj.toString().isBlank()) {
+                try {
+                    solicitud.setSupervisorId(UUID.fromString(supervisorIdObj.toString().trim()));
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Recibido por / Solicitante de cierre
+            Object recibidoPorIdObj = request.variables().get("recibidoPorId");
+            if (recibidoPorIdObj != null && !recibidoPorIdObj.toString().isBlank()) {
+                try {
+                    solicitud.setRecibidoPorId(UUID.fromString(recibidoPorIdObj.toString().trim()));
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Observaciones y comentarios
+            Object comentarioObj = request.variables().get("comentario");
+            String comentario = (comentarioObj != null && !comentarioObj.toString().isBlank())
+                    ? comentarioObj.toString().trim()
+                    : null;
+
             Object obsAprob = request.variables().get("observacionAprobacion");
             if (obsAprob != null && !obsAprob.toString().isBlank()) {
                 solicitud.setObservacionAprobacion(obsAprob.toString().trim());
-                if (solicitud.getFechaAprobacion() == null) {
-                    solicitud.setFechaAprobacion(LocalDateTime.now());
-                }
             }
+
+            Object obsVal = request.variables().get("observacionValidacion");
+            if (obsVal != null && !obsVal.toString().isBlank()) {
+                solicitud.setObservacionValidacion(obsVal.toString().trim());
+            }
+
+            Object obsCierre = request.variables().get("observacionCierre");
+            if (obsCierre != null && !obsCierre.toString().isBlank()) {
+                solicitud.setObservacionCierre(obsCierre.toString().trim());
+            }
+
             Object fechaEstimadaOtObj = request.variables().get("fechaEstimadaOt");
             if (fechaEstimadaOtObj != null && !fechaEstimadaOtObj.toString().isBlank()) {
                 try {
@@ -284,19 +330,57 @@ public class SolicitudMantenimientoService {
                 } catch (Exception ignored) {
                 }
             }
-            Object obsVal = request.variables().get("observacionValidacion");
-            if (obsVal != null && !obsVal.toString().isBlank()) {
-                solicitud.setObservacionValidacion(obsVal.toString().trim());
-                if (solicitud.getFechaValidacion() == null) {
-                    solicitud.setFechaValidacion(LocalDateTime.now());
-                }
+
+            // 2. Mapeo contextual del comentario según el estado o decisión
+            Object decisionCoord = request.variables().get("decisionCoordinador");
+            if ("APROBAR".equalsIgnoreCase(String.valueOf(decisionCoord)) && comentario != null && solicitud.getObservacionAprobacion() == null) {
+                solicitud.setObservacionAprobacion(comentario);
             }
-            Object obsCierre = request.variables().get("observacionCierre");
-            if (obsCierre != null && !obsCierre.toString().isBlank()) {
-                solicitud.setObservacionCierre(obsCierre.toString().trim());
-                if (solicitud.getFechaFinalizacion() == null) {
-                    solicitud.setFechaFinalizacion(LocalDateTime.now());
-                }
+
+            Object decisionSup = request.variables().get("decisionSupervisor");
+            if ("VALIDAR".equalsIgnoreCase(String.valueOf(decisionSup)) && comentario != null && solicitud.getObservacionValidacion() == null) {
+                solicitud.setObservacionValidacion(comentario);
+            }
+        }
+
+        // 3. Establecer fechas y auditoría automáticamente según el estado al que avanza
+        if (nuevoEstado != null) {
+            switch (nuevoEstado.toUpperCase()) {
+                case "ASIGNADO":
+                    if (solicitud.getFechaAprobacion() == null) {
+                        solicitud.setFechaAprobacion(ahora);
+                    }
+                    if (solicitud.getFechaAsignacion() == null) {
+                        solicitud.setFechaAsignacion(ahora);
+                    }
+                    break;
+
+                case "EN_MANTENIMIENTO":
+                    if (solicitud.getFechaInicioMantenimiento() == null) {
+                        solicitud.setFechaInicioMantenimiento(ahora);
+                    }
+                    break;
+
+                case "EN_REVISION":
+                    if (solicitud.getFechaFinMantenimiento() == null) {
+                        solicitud.setFechaFinMantenimiento(ahora);
+                    }
+                    break;
+
+                case "VALIDADO":
+                    if (solicitud.getFechaValidacion() == null) {
+                        solicitud.setFechaValidacion(ahora);
+                    }
+                    break;
+
+                case "FINALIZADO":
+                    if (solicitud.getFechaFinalizacion() == null) {
+                        solicitud.setFechaFinalizacion(ahora);
+                    }
+                    if (solicitud.getRecibidoPorId() == null) {
+                        solicitud.setRecibidoPorId(solicitud.getSolicitanteId());
+                    }
+                    break;
             }
         }
 

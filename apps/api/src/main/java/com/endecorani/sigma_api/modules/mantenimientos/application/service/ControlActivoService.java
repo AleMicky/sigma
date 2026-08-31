@@ -1,16 +1,13 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
-import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.ControlActivoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.ControlActivoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ControlActivo;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ControlActivoRepository;
-import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
-import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -35,8 +32,7 @@ public class ControlActivoService {
             "tipo",
             "conforme",
             "createdAt",
-            "updatedAt"
-    );
+            "updatedAt");
 
     private final ControlActivoRepository controlActivoRepository;
     private final ActivoRepository activoRepository;
@@ -67,24 +63,19 @@ public class ControlActivoService {
     public PageResponse<ControlActivoResponse> findAll(PageRequestDto pageRequest) {
         return PageResponse.from(
                 controlActivoRepository.findAll(
-                        pageRequest.toPageable(SORT_FIELDS)
-                ),
-                this::toResponse
-        );
+                        pageRequest.toPageable(SORT_FIELDS)),
+                this::toResponse);
     }
 
     @Transactional(readOnly = true)
     public PageResponse<ControlActivoResponse> findAll(
             UUID solicitudMantenimientoId,
-            PageRequestDto pageRequest
-    ) {
+            PageRequestDto pageRequest) {
         return PageResponse.from(
                 controlActivoRepository.findBySolicitudMantenimientoId(
                         solicitudMantenimientoId,
-                        pageRequest.toPageable(SORT_FIELDS)
-                ),
-                this::toResponse
-        );
+                        pageRequest.toPageable(SORT_FIELDS)),
+                this::toResponse);
     }
 
     @Transactional
@@ -96,12 +87,9 @@ public class ControlActivoService {
     private ControlActivo findDomainById(UUID id) {
         return controlActivoRepository
                 .findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "ControlActivo",
-                                id
-                        )
-                );
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "ControlActivo",
+                        id));
     }
 
     private ControlActivo toDomain(ControlActivoRequest request) {
@@ -120,8 +108,7 @@ public class ControlActivoService {
 
     private void updateDomain(
             ControlActivo domain,
-            ControlActivoRequest request
-    ) {
+            ControlActivoRequest request) {
         domain.setSolicitudMantenimientoId(request.solicitudMantenimientoId());
         domain.setOrdenTrabajoId(request.ordenTrabajoId());
         domain.setActivoId(request.activoId());
@@ -136,12 +123,11 @@ public class ControlActivoService {
     private ControlActivoResponse toResponse(ControlActivo domain) {
         var activoInfo = domain.getActivoId() != null
                 ? activoRepository.findById(domain.getActivoId())
-                .map(a -> new ControlActivoResponse.ActivoInfo(
-                        a.getId(),
-                        a.getCodigo(),
-                        a.getNombre()
-                ))
-                .orElse(null)
+                        .map(a -> new ControlActivoResponse.ActivoInfo(
+                                a.getId(),
+                                a.getCodigo(),
+                                a.getNombre()))
+                        .orElse(null)
                 : null;
 
         var entregadoPorInfo = buildUserInfo(domain.getEntregadoPorId());
@@ -158,8 +144,7 @@ public class ControlActivoService {
                 domain.getFecha(),
                 domain.isConforme(),
                 domain.getObservacion(),
-                AuditoriaMapper.from(domain)
-        );
+                AuditoriaMapper.from(domain));
     }
 
     private ControlActivoResponse.UserInfo buildUserInfo(UUID empleadoId) {
@@ -175,8 +160,7 @@ public class ControlActivoService {
                     }
                     return new ControlActivoResponse.UserInfo(
                             empleado.getId(),
-                            nombre
-                    );
+                            nombre);
                 })
                 .orElse(null);
     }
@@ -193,10 +177,9 @@ public class ControlActivoService {
 
     private String buildNombreCompleto(Persona persona) {
         return Stream.of(
-                        persona.getNombres(),
-                        persona.getPrimerApellido(),
-                        persona.getSegundoApellido()
-                )
+                persona.getNombres(),
+                persona.getPrimerApellido(),
+                persona.getSegundoApellido())
                 .filter(value -> value != null && !value.isBlank())
                 .map(String::trim)
                 .collect(Collectors.joining(" "));
