@@ -8,7 +8,6 @@ import {
   Camera,
   CheckCircle2,
   CheckSquare,
-  Download,
   Edit2,
   Eye,
   FileCheck2,
@@ -620,18 +619,18 @@ export function OrdenTrabajoDetailModal({
                         <div className="min-w-0 flex-1">
                           <p
                             className="text-xs font-bold text-foreground truncate"
-                            title={adj.nombreOriginal}
+                            title={adj.nombreArchivo}
                           >
-                            {adj.nombreOriginal}
+                            {adj.nombreArchivo}
                           </p>
                           <div className="flex items-center gap-2 text-[10.5px] text-muted-foreground">
-                            {adj.tipoDocumento && (
+                            {adj.descripcion && (
                               <span className="font-medium text-foreground">
-                                {adj.tipoDocumento}
+                                {adj.descripcion}
                               </span>
                             )}
-                            {adj.pesoBytes && (
-                              <span>{(adj.pesoBytes / 1024).toFixed(0)} KB</span>
+                            {adj.tamanio && (
+                              <span>{(adj.tamanio / 1024).toFixed(0)} KB</span>
                             )}
                           </div>
                         </div>

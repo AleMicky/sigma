@@ -26,7 +26,6 @@ import { cn } from "@/shared/lib/utils"
 
 import { ControlActivoHistorialModal } from "@/modules/mantenimientos/control-activo/components/ControlActivoHistorialModal"
 import { OrdenTrabajoDetailModal } from "@/modules/mantenimientos/orden-trabajo/components/OrdenTrabajoDetailModal"
-import type { OrdenTrabajo } from "@/modules/mantenimientos/orden-trabajo/api/orden-trabajo.service"
 import {
   WorkflowActionDialog,
   WorkflowListView,
@@ -644,7 +643,7 @@ export function SupervisorMantenimientoPage() {
         }}
         onSuccess={() => {
           solicitudesQuery.refetch()
-          setModalSolicitud(null)
+          setWorkflowActionTarget(null)
         }}
       />
     </PageShell>
