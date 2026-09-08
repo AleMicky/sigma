@@ -15,7 +15,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -23,84 +22,66 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.API_V1 + "/controles-activos")
 @RequiredArgsConstructor
-@Tag(
-        name = "Controles de Activos",
-        description = "Administración de controles de activos (entrega y devolución)"
-)
+@Tag(name = "Controles de Activos", description = "Administración de controles de activos (entrega y devolución)")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class ControlActivoController {
 
-    private final ControlActivoService controlActivoService;
+        private final ControlActivoService controlActivoService;
 
-    @PostMapping
-    @Operation(summary = "Crear un control de activo")
-    public ResponseEntity<ApiResponse<ControlActivoResponse>> create(
-            @Valid @RequestBody ControlActivoRequest request
-    ) {
-        ControlActivoResponse response = controlActivoService.create(request);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(
-                        ApiResponse.success(
-                                "Registro creado correctamente",
-                                response
-                        )
-                );
-    }
+        @PostMapping
+        @Operation(summary = "Crear un control de activo")
+        public ResponseEntity<ApiResponse<ControlActivoResponse>> create(
+                        @Valid @RequestBody ControlActivoRequest request) {
+                ControlActivoResponse response = controlActivoService.create(request);
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(
+                                                ApiResponse.success(
+                                                                "Registro creado correctamente",
+                                                                response));
+        }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Actualizar un control de activo")
-    public ResponseEntity<ApiResponse<ControlActivoResponse>> update(
-            @PathVariable UUID id,
-            @Valid @RequestBody ControlActivoRequest request
-    ) {
-        ControlActivoResponse response = controlActivoService.update(id, request);
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Registro actualizado correctamente",
-                        response
-                )
-        );
-    }
+        @PutMapping("/{id}")
+        @Operation(summary = "Actualizar un control de activo")
+        public ResponseEntity<ApiResponse<ControlActivoResponse>> update(
+                        @PathVariable UUID id,
+                        @Valid @RequestBody ControlActivoRequest request) {
+                ControlActivoResponse response = controlActivoService.update(id, request);
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Registro actualizado correctamente",
+                                                response));
+        }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Obtener un control de activo por ID")
-    public ResponseEntity<ApiResponse<ControlActivoResponse>> findById(
-            @PathVariable UUID id
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        controlActivoService.findById(id)
-                )
-        );
-    }
+        @GetMapping("/{id}")
+        @Operation(summary = "Obtener un control de activo por ID")
+        public ResponseEntity<ApiResponse<ControlActivoResponse>> findById(
+                        @PathVariable UUID id) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                controlActivoService.findById(id)));
+        }
 
-    @GetMapping
-    @Operation(summary = "Listar controles de activos de forma paginada")
-    public ResponseEntity<ApiResponse<PageResponse<ControlActivoResponse>>> findAll(
-            @RequestParam(required = false) UUID solicitudMantenimientoId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        PageResponse<ControlActivoResponse> response =
-                solicitudMantenimientoId != null
-                        ? controlActivoService.findAll(solicitudMantenimientoId, pageRequest)
-                        : controlActivoService.findAll(pageRequest);
+        @GetMapping
+        @Operation(summary = "Listar controles de activos de forma paginada")
+        public ResponseEntity<ApiResponse<PageResponse<ControlActivoResponse>>> findAll(
+                        @RequestParam(required = false) UUID solicitudMantenimientoId,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                PageResponse<ControlActivoResponse> response = solicitudMantenimientoId != null
+                                ? controlActivoService.findAll(solicitudMantenimientoId, pageRequest)
+                                : controlActivoService.findAll(pageRequest);
 
-        return ResponseEntity.ok(
-                ApiResponse.success(response)
-        );
-    }
+                return ResponseEntity.ok(
+                                ApiResponse.success(response));
+        }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar un control de activo")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable UUID id
-    ) {
-        controlActivoService.delete(id);
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Registro eliminado correctamente"
-                )
-        );
-    }
+        @DeleteMapping("/{id}")
+        @Operation(summary = "Eliminar un control de activo")
+        public ResponseEntity<ApiResponse<Void>> delete(
+                        @PathVariable UUID id) {
+                controlActivoService.delete(id);
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Registro eliminado correctamente"));
+        }
 }

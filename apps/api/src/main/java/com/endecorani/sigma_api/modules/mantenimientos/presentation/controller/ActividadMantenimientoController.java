@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,39 +27,25 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.API_V1 + "/actividades-mantenimiento")
 @RequiredArgsConstructor
-@Tag(
-        name = "Actividades de Mantenimiento",
-        description = "Administración del catálogo de actividades de mantenimiento"
-)
+@Tag(name = "Actividades de Mantenimiento", description = "Administración del catálogo de actividades de mantenimiento")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class ActividadMantenimientoController
-        extends AbstractCrudController<
-        ActividadMantenimientoRequest,
-        ActividadMantenimientoResponse,
-        UUID
-        > {
+                extends AbstractCrudController<ActividadMantenimientoRequest, ActividadMantenimientoResponse, UUID> {
 
-    private final ActividadMantenimientoService actividadMantenimientoService;
+        private final ActividadMantenimientoService actividadMantenimientoService;
 
-    @Override
-    protected CrudService<
-            ActividadMantenimientoRequest,
-            ActividadMantenimientoResponse,
-            UUID
-            > service() {
-        return actividadMantenimientoService;
-    }
+        @Override
+        protected CrudService<ActividadMantenimientoRequest, ActividadMantenimientoResponse, UUID> service() {
+                return actividadMantenimientoService;
+        }
 
-    @GetMapping(params = "q")
-    @Operation(summary = "Buscar actividades de mantenimiento por código o nombre")
-    public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoResponse>>> search(
-            @RequestParam String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        actividadMantenimientoService.search(q, pageRequest)
-                )
-        );
-    }
+        @GetMapping(params = "q")
+        @Operation(summary = "Buscar actividades de mantenimiento por código o nombre")
+        public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoResponse>>> search(
+                        @RequestParam String q,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                actividadMantenimientoService.search(q, pageRequest)));
+        }
 }

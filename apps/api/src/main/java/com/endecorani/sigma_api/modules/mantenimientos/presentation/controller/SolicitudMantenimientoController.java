@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,116 +33,103 @@ import java.util.UUID;
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class SolicitudMantenimientoController {
 
-    private final SolicitudMantenimientoService service;
+        private final SolicitudMantenimientoService service;
 
-    @GetMapping("/resumen")
-    @Operation(summary = "Obtener resumen y conteo de solicitudes por estado")
-    public ResponseEntity<ApiResponse<SolicitudMantenimientoResumenResponse>> obtenerResumen(
-            @RequestParam(required = false) UUID solicitanteId
-    ) {
-        return ResponseEntity.ok(ApiResponse.success(service.obtenerResumen(solicitanteId)));
-    }
+        @GetMapping("/resumen")
+        @Operation(summary = "Obtener resumen y conteo de solicitudes por estado")
+        public ResponseEntity<ApiResponse<SolicitudMantenimientoResumenResponse>> obtenerResumen(
+                        @RequestParam(required = false) UUID solicitanteId) {
+                return ResponseEntity.ok(ApiResponse.success(service.obtenerResumen(solicitanteId)));
+        }
 
-    @PostMapping
-    @Operation(summary = "Registrar una solicitud de mantenimiento")
-    public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> create(
-            @Valid @RequestBody SolicitudMantenimientoRequest request
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Registro creado correctamente", service.create(request)));
-    }
+        @PostMapping
+        @Operation(summary = "Registrar una solicitud de mantenimiento")
+        public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> create(
+                        @Valid @RequestBody SolicitudMantenimientoRequest request) {
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(ApiResponse.success("Registro creado correctamente", service.create(request)));
+        }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Registrar una solicitud de mantenimiento con archivos adjuntos")
-    public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> createWithFiles(
-            @Valid @RequestPart("data") SolicitudMantenimientoRequest request,
-            @RequestPart(value = "files", required = false) List<MultipartFile> files
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Registro creado correctamente", service.createWithFiles(request, files)));
-    }
+        @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        @Operation(summary = "Registrar una solicitud de mantenimiento con archivos adjuntos")
+        public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> createWithFiles(
+                        @Valid @RequestPart("data") SolicitudMantenimientoRequest request,
+                        @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(ApiResponse.success("Registro creado correctamente",
+                                                service.createWithFiles(request, files)));
+        }
 
-    @PostMapping("/{id}/enviar")
-    @Operation(summary = "Enviar solicitud e iniciar flujo de trabajo")
-    public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> enviar(
-            @PathVariable UUID id,
-            @Valid @RequestBody EnviarSolicitudMantenimientoRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Solicitud enviada correctamente",
-                        service.enviar(
-                                id,
-                                request
-                        )
-                )
-        );
-    }
-    @PostMapping("/{id}/workflow/complete")
-    @Operation(summary = "Completar tarea de workflow para una solicitud")
-    public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> completarWorkflow(
-            @PathVariable UUID id,
-            @RequestBody CompleteWorkflowTaskRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Tarea de workflow completada correctamente",
-                        service.completarWorkflow(id, request)
-                )
-        );
-    }
+        @PostMapping("/{id}/enviar")
+        @Operation(summary = "Enviar solicitud e iniciar flujo de trabajo")
+        public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> enviar(
+                        @PathVariable UUID id,
+                        @Valid @RequestBody EnviarSolicitudMantenimientoRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Solicitud enviada correctamente",
+                                                service.enviar(
+                                                                id,
+                                                                request)));
+        }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Actualizar una solicitud de mantenimiento")
-    public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> update(
-            @PathVariable UUID id,
-            @Valid @RequestBody SolicitudMantenimientoRequest request
-    ) {
-        return ResponseEntity.ok(ApiResponse.success("Registro actualizado correctamente", service.update(id, request)));
-    }
+        @PostMapping("/{id}/workflow/complete")
+        @Operation(summary = "Completar tarea de workflow para una solicitud")
+        public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> completarWorkflow(
+                        @PathVariable UUID id,
+                        @RequestBody CompleteWorkflowTaskRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Tarea de workflow completada correctamente",
+                                                service.completarWorkflow(id, request)));
+        }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Obtener una solicitud por id")
-    public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success(service.findById(id)));
-    }
+        @PutMapping("/{id}")
+        @Operation(summary = "Actualizar una solicitud de mantenimiento")
+        public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> update(
+                        @PathVariable UUID id,
+                        @Valid @RequestBody SolicitudMantenimientoRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success("Registro actualizado correctamente", service.update(id, request)));
+        }
 
-    @GetMapping
-    @Operation(summary = "Listar solicitudes con filtros combinados (estado, solicitante, responsable, supervisor, activo, prioridad, búsqueda)")
-    public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findAll(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String estado,
-            @RequestParam(required = false) UUID solicitanteId,
-            @RequestParam(required = false) UUID responsableId,
-            @RequestParam(required = false) UUID supervisorId,
-            @RequestParam(required = false) UUID activoId,
-            @RequestParam(required = false) UUID prioridadId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        service.findAll(
-                                new SolicitudMantenimientoSearchCriteria(
-                                        q,
-                                        estado,
-                                        solicitanteId,
-                                        responsableId,
-                                        supervisorId,
-                                        activoId,
-                                        prioridadId
-                                ),
-                                pageRequest
-                        )
-                )
-        );
-    }
+        @GetMapping("/{id}")
+        @Operation(summary = "Obtener una solicitud por id")
+        public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> findById(@PathVariable UUID id) {
+                return ResponseEntity.ok(ApiResponse.success(service.findById(id)));
+        }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar una solicitud de mantenimiento")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
-        service.delete(id);
-        return ResponseEntity.ok(ApiResponse.success("Registro eliminado correctamente"));
-    }
+        @GetMapping
+        @Operation(summary = "Listar solicitudes con filtros combinados (estado, solicitante, responsable, supervisor, activo, prioridad, búsqueda)")
+        public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findAll(
+                        @RequestParam(required = false) String q,
+                        @RequestParam(required = false) String estado,
+                        @RequestParam(required = false) UUID solicitanteId,
+                        @RequestParam(required = false) UUID responsableId,
+                        @RequestParam(required = false) UUID supervisorId,
+                        @RequestParam(required = false) UUID activoId,
+                        @RequestParam(required = false) UUID prioridadId,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                service.findAll(
+                                                                new SolicitudMantenimientoSearchCriteria(
+                                                                                q,
+                                                                                estado,
+                                                                                solicitanteId,
+                                                                                responsableId,
+                                                                                supervisorId,
+                                                                                activoId,
+                                                                                prioridadId),
+                                                                pageRequest)));
+        }
+
+        @DeleteMapping("/{id}")
+        @Operation(summary = "Eliminar una solicitud de mantenimiento")
+        public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+                service.delete(id);
+                return ResponseEntity.ok(ApiResponse.success("Registro eliminado correctamente"));
+        }
 }

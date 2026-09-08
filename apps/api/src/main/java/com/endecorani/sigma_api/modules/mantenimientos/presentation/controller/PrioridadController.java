@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,39 +27,25 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.API_V1 + "/prioridades")
 @RequiredArgsConstructor
-@Tag(
-        name = "Prioridades",
-        description = "Administración del catálogo de prioridades de mantenimiento"
-)
+@Tag(name = "Prioridades", description = "Administración del catálogo de prioridades de mantenimiento")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class PrioridadController
-        extends AbstractCrudController<
-        PrioridadRequest,
-        PrioridadResponse,
-        UUID
-        > {
+                extends AbstractCrudController<PrioridadRequest, PrioridadResponse, UUID> {
 
-    private final PrioridadService prioridadService;
+        private final PrioridadService prioridadService;
 
-    @Override
-    protected CrudService<
-            PrioridadRequest,
-            PrioridadResponse,
-            UUID
-            > service() {
-        return prioridadService;
-    }
+        @Override
+        protected CrudService<PrioridadRequest, PrioridadResponse, UUID> service() {
+                return prioridadService;
+        }
 
-    @GetMapping(params = "q")
-    @Operation(summary = "Buscar prioridades por código o nombre")
-    public ResponseEntity<ApiResponse<PageResponse<PrioridadResponse>>> search(
-            @RequestParam String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        prioridadService.search(q, pageRequest)
-                )
-        );
-    }
+        @GetMapping(params = "q")
+        @Operation(summary = "Buscar prioridades por código o nombre")
+        public ResponseEntity<ApiResponse<PageResponse<PrioridadResponse>>> search(
+                        @RequestParam String q,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                prioridadService.search(q, pageRequest)));
+        }
 }

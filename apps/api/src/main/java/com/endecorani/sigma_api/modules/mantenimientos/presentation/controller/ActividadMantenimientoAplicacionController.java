@@ -15,7 +15,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -32,134 +31,83 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.API_V1 + "/actividad-mantenimiento-aplicaciones")
 @RequiredArgsConstructor
-@Tag(
-        name = "Actividad Mantenimiento Aplicaciones",
-        description = "Administración de aplicaciones de actividades de mantenimiento a tipos de activo"
-)
+@Tag(name = "Actividad Mantenimiento Aplicaciones", description = "Administración de aplicaciones de actividades de mantenimiento a tipos de activo")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class ActividadMantenimientoAplicacionController {
 
-    private final ActividadMantenimientoAplicacionService service;
+        private final ActividadMantenimientoAplicacionService service;
 
-    @PostMapping
-    @Operation(summary = "Registrar una aplicación de actividad de mantenimiento")
-    public ResponseEntity<
-            ApiResponse<ActividadMantenimientoAplicacionResponse>
-            > create(
-            @Valid @RequestBody
-            ActividadMantenimientoAplicacionRequest request
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(
-                        ApiResponse.success(
-                                "Registro creado correctamente",
-                                service.create(request)
-                        )
-                );
-    }
+        @PostMapping
+        @Operation(summary = "Registrar una aplicación de actividad de mantenimiento")
+        public ResponseEntity<ApiResponse<ActividadMantenimientoAplicacionResponse>> create(
+                        @Valid @RequestBody ActividadMantenimientoAplicacionRequest request) {
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(
+                                                ApiResponse.success(
+                                                                "Registro creado correctamente",
+                                                                service.create(request)));
+        }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Actualizar una aplicación de actividad de mantenimiento")
-    public ResponseEntity<
-            ApiResponse<ActividadMantenimientoAplicacionResponse>
-            > update(
-            @PathVariable UUID id,
-            @Valid @RequestBody
-            ActividadMantenimientoAplicacionRequest request
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Registro actualizado correctamente",
-                        service.update(id, request)
-                )
-        );
-    }
+        @PutMapping("/{id}")
+        @Operation(summary = "Actualizar una aplicación de actividad de mantenimiento")
+        public ResponseEntity<ApiResponse<ActividadMantenimientoAplicacionResponse>> update(
+                        @PathVariable UUID id,
+                        @Valid @RequestBody ActividadMantenimientoAplicacionRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Registro actualizado correctamente",
+                                                service.update(id, request)));
+        }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Obtener una aplicación por id")
-    public ResponseEntity<
-            ApiResponse<ActividadMantenimientoAplicacionResponse>
-            > findById(
-            @PathVariable UUID id
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(service.findById(id))
-        );
-    }
+        @GetMapping("/{id}")
+        @Operation(summary = "Obtener una aplicación por id")
+        public ResponseEntity<ApiResponse<ActividadMantenimientoAplicacionResponse>> findById(
+                        @PathVariable UUID id) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(service.findById(id)));
+        }
 
-    @GetMapping(params = "actividadMantenimientoId")
-    @Operation(summary = "Listar aplicaciones por actividad de mantenimiento")
-    public ResponseEntity<
-            ApiResponse<
-                    PageResponse<
-                            ActividadMantenimientoAplicacionResponse
-                            >
-                    >
-            > findByActividadMantenimientoId(
-            @RequestParam UUID actividadMantenimientoId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        service.findByActividadMantenimientoId(
-                                actividadMantenimientoId,
-                                pageRequest
-                        )
-                )
-        );
-    }
+        @GetMapping(params = "actividadMantenimientoId")
+        @Operation(summary = "Listar aplicaciones por actividad de mantenimiento")
+        public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoAplicacionResponse>>> findByActividadMantenimientoId(
+                        @RequestParam UUID actividadMantenimientoId,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                service.findByActividadMantenimientoId(
+                                                                actividadMantenimientoId,
+                                                                pageRequest)));
+        }
 
-    @GetMapping(params = "tipoActivoId")
-    @Operation(summary = "Listar aplicaciones por tipo de activo")
-    public ResponseEntity<
-            ApiResponse<
-                    PageResponse<
-                            ActividadMantenimientoAplicacionResponse
-                            >
-                    >
-            > findByTipoActivoId(
-            @RequestParam UUID tipoActivoId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        service.findByTipoActivoId(
-                                tipoActivoId,
-                                pageRequest
-                        )
-                )
-        );
-    }
+        @GetMapping(params = "tipoActivoId")
+        @Operation(summary = "Listar aplicaciones por tipo de activo")
+        public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoAplicacionResponse>>> findByTipoActivoId(
+                        @RequestParam UUID tipoActivoId,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                service.findByTipoActivoId(
+                                                                tipoActivoId,
+                                                                pageRequest)));
+        }
 
-    @GetMapping
-    @Operation(summary = "Listar todas las aplicaciones")
-    public ResponseEntity<
-            ApiResponse<
-                    PageResponse<
-                            ActividadMantenimientoAplicacionResponse
-                            >
-                    >
-            > findAll(
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        service.findAll(pageRequest)
-                )
-        );
-    }
+        @GetMapping
+        @Operation(summary = "Listar todas las aplicaciones")
+        public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoAplicacionResponse>>> findAll(
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                service.findAll(pageRequest)));
+        }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar una aplicación de actividad de mantenimiento")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable UUID id
-    ) {
-        service.delete(id);
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Registro eliminado correctamente"
-                )
-        );
-    }
+        @DeleteMapping("/{id}")
+        @Operation(summary = "Eliminar una aplicación de actividad de mantenimiento")
+        public ResponseEntity<ApiResponse<Void>> delete(
+                        @PathVariable UUID id) {
+                service.delete(id);
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Registro eliminado correctamente"));
+        }
 }
