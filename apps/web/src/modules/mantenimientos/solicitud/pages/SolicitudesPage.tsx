@@ -313,30 +313,8 @@ export function SolicitudesPage() {
     search.setPage(0)
   }
 
-  // Base list for counting all categories regardless of current status filter
-  const allSolicitudesQuery = useQuery(
-    solicitudQueries.list({
-      page: 0,
-      size: 100,
-      sortBy: "createdAt",
-      direction: "DESC",
-      ...(search.query ? { q: search.query } : {}),
-      ...(isMineOnly && currentEmpleado?.id
-        ? { solicitanteId: currentEmpleado.id }
-        : {}),
-    }),
-  )
-
-  const rawAllSolicitudes = useMemo(
-    () => allSolicitudesQuery.data?.content ?? [],
-    [allSolicitudesQuery.data?.content],
-  )
-
-  const allSolicitudes = useMemo(() => {
-    if (!isMineOnly) return rawAllSolicitudes
-    if (currentEmpleado?.id) return rawAllSolicitudes
-    return rawAllSolicitudes.filter(isSolicitantePropio)
-  }, [rawAllSolicitudes, isMineOnly, currentEmpleado?.id, isSolicitantePropio])
+  const resumenQuery = useQuery(solicitudQueries.resumen())
+  const resumen = resumenQuery.data
 
   const solicitudesQuery = useQuery(
     solicitudQueries.list({
@@ -363,54 +341,6 @@ export function SolicitudesPage() {
     if (currentEmpleado?.id) return rawSolicitudes
     return rawSolicitudes.filter(isSolicitantePropio)
   }, [rawSolicitudes, isMineOnly, currentEmpleado?.id, isSolicitantePropio])
-
-  const totalCount = useMemo(
-    () => (statusFilter ? (allSolicitudesQuery.data?.totalElements ?? allSolicitudes.length) : (solicitudesQuery.data?.totalElements ?? solicitudes.length)),
-    [statusFilter, allSolicitudesQuery.data?.totalElements, allSolicitudes.length, solicitudesQuery.data?.totalElements, solicitudes.length],
-  )
-
-  const enviadasCount = useMemo(
-    () =>
-      allSolicitudes.filter((s) => {
-        const est = (s.estado ?? "").toLowerCase().trim()
-        return est === "solicitado" || est === "pendiente"
-      }).length,
-    [allSolicitudes],
-  )
-
-  const borradorCount = useMemo(
-    () =>
-      allSolicitudes.filter((s) => {
-        const est = (s.estado ?? "").toLowerCase().trim()
-        return est === "borrador"
-      }).length,
-    [allSolicitudes],
-  )
-
-  const enProcesoCount = useMemo(
-    () =>
-      allSolicitudes.filter((s) => {
-        const est = (s.estado ?? "").toLowerCase().trim()
-        return (
-          est === "en_proceso" ||
-          est === "en proceso" ||
-          est === "en_mantenimiento" ||
-          est === "en mantenimiento" ||
-          est === "aprobado" ||
-          est === "asignado"
-        )
-      }).length,
-    [allSolicitudes],
-  )
-
-  const finalizadoCount = useMemo(
-    () =>
-      allSolicitudes.filter((s) => {
-        const est = (s.estado ?? "").toLowerCase().trim()
-        return est === "finalizado" || est === "completado" || est === "validado" || est === "trabajo_realizado"
-      }).length,
-    [allSolicitudes],
-  )
 
   useClampPage(
     search.page,
@@ -503,7 +433,7 @@ export function SolicitudesPage() {
             </div>
             <div className="flex items-center gap-1 shrink-0 md:hidden">
               <RefreshButton
-                queries={solicitudesQuery}
+                queries={[solicitudesQuery, resumenQuery]}
                 size="sm"
                 className="h-7 px-2"
               />
@@ -525,7 +455,7 @@ export function SolicitudesPage() {
 
         <div className="hidden shrink-0 md:flex md:items-center md:gap-1.5">
           <RefreshButton
-            queries={solicitudesQuery}
+            queries={[solicitudesQuery, resumenQuery]}
             size="sm"
             className="h-8 gap-1.5 px-2.5 text-xs"
           />
@@ -545,12 +475,12 @@ export function SolicitudesPage() {
       {/* Stats Section */}
       <div className="shrink-0 pt-2.5 pb-1">
         <SolicitudStats
-          totalCount={totalCount}
-          borradorCount={borradorCount}
-          enviadasCount={enviadasCount}
-          enProcesoCount={enProcesoCount}
-          finalizadoCount={finalizadoCount}
-          isLoading={solicitudesQuery.isLoading || allSolicitudesQuery.isLoading}
+          totalCount={resumen?.total ?? 0}
+          borradorCount={resumen?.borradores ?? 0}
+          enviadasCount={resumen?.enRevision ?? 0}
+          enProcesoCount={resumen?.enProceso ?? 0}
+          finalizadoCount={resumen?.finalizadas ?? 0}
+          isLoading={resumenQuery.isLoading}
           activeStatus={statusFilter}
           onSelectStatus={handleStatusSelect}
         />
@@ -706,7 +636,7 @@ export function SolicitudesPage() {
         }}
         onSuccess={() => {
           solicitudesQuery.refetch()
-          allSolicitudesQuery.refetch()
+          resumenQuery.refetch()
           setQuickView(null)
         }}
       />

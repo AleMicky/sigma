@@ -6,12 +6,12 @@ import { ControlActivoFormPage } from "@/modules/mantenimientos/control-activo/p
 const searchSchema = z.object({
   id: z.string().optional(),
   solicitudId: z.string().optional(),
-  tipo: z.enum(["ENTREGA", "DEVOLUCION"]).optional(),
+  tipo: z.string().optional(),
 })
 
 export const Route = createFileRoute(
   "/_dashboard/mantenimientos/controles-activos/nuevo",
 )({
-  validateSearch: (search) => searchSchema.parse(search),
+  validateSearch: searchSchema,
   component: ControlActivoFormPage,
 })

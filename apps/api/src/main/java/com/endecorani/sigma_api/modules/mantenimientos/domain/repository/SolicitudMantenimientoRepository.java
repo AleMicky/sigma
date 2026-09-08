@@ -56,4 +56,6 @@ public interface SolicitudMantenimientoRepository {
             String query,
             Pageable pageable
     );
+
+    SolicitudMantenimientoResumenProjection obtenerResumen(UUID solicitanteId);
 }

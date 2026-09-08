@@ -6,6 +6,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public final class SolicitudMantenimientoSpecifications {
@@ -33,7 +34,30 @@ public final class SolicitudMantenimientoSpecifications {
             }
 
             if (criteria.estado() != null && !criteria.estado().isBlank()) {
-                predicates.add(cb.equal(cb.lower(root.get("estado")), criteria.estado().trim().toLowerCase()));
+                String raw = criteria.estado().trim().toUpperCase();
+                if (raw.contains(",")) {
+                    List<String> list = Arrays.stream(raw.split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isBlank())
+                            .toList();
+                    predicates.add(cb.upper(root.get("estado")).in(list));
+                } else if ("EN_REVISION".equals(raw) || "EN-REVISION".equals(raw) || "REVISION".equals(raw)) {
+                    predicates.add(cb.upper(root.get("estado")).in(List.of("SOLICITADO", "OBSERVADO")));
+                } else if ("EN_PROCESO".equals(raw) || "EN-PROCESO".equals(raw) || "PROCESO".equals(raw)) {
+                    predicates.add(cb.upper(root.get("estado")).in(List.of(
+                            "ASIGNADO",
+                            "EN_MANTENIMIENTO",
+                            "EN_REVISION",
+                            "OBSERVADO_MANTENIMIENTO",
+                            "VALIDADO"
+                    )));
+                } else if ("FINALIZADAS".equals(raw) || "FINALIZADO".equals(raw) || "FINALIZADA".equals(raw) || "CERRADO".equals(raw)) {
+                    predicates.add(cb.upper(root.get("estado")).in(List.of("TRABAJO_REALIZADO", "FINALIZADO", "CERRADO")));
+                } else if ("BORRADOR".equals(raw) || "BORRADORES".equals(raw)) {
+                    predicates.add(cb.equal(cb.upper(root.get("estado")), "BORRADOR"));
+                } else {
+                    predicates.add(cb.equal(cb.upper(root.get("estado")), raw));
+                }
             }
 
             if (criteria.solicitanteId() != null) {

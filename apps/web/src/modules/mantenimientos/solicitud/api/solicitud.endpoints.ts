@@ -2,6 +2,7 @@ import { createResourceEndpoints } from "@/shared/api"
 
 export const solicitudEndpoints = {
   ...createResourceEndpoints("/solicitudes-mantenimiento"),
+  resumen: "/solicitudes-mantenimiento/resumen",
   enviar: (id: string) => `/solicitudes-mantenimiento/${id}/enviar`,
   workflow: {
     actions: (processInstanceId: string) =>

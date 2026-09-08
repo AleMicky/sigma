@@ -5,12 +5,14 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.E
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.SolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoAdjuntoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResumenResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoAdjunto;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.PrioridadRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoAdjuntoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMantenimientoRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
@@ -601,5 +603,11 @@ public class SolicitudMantenimientoService {
                 domain.getId(), domain.getSolicitudMantenimientoId(), domain.getNombreArchivo(),
                 domain.getTipoContenido(), domain.getSize(), domain.getUrl(), domain.getDescripcion(),
                 AuditoriaMapper.from(domain));
+    }
+
+    @Transactional(readOnly = true)
+    public SolicitudMantenimientoResumenResponse obtenerResumen(UUID solicitanteId) {
+        SolicitudMantenimientoResumenProjection resumen = repository.obtenerResumen(solicitanteId);
+        return SolicitudMantenimientoResumenResponse.from(resumen);
     }
 }

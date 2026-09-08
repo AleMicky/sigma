@@ -49,11 +49,29 @@ export function SolicitudStats({
     )
   }
 
-  const isAllActive = !activeStatus
-  const isBorradorActive = activeStatus === "borrador"
-  const isEnviadasActive = activeStatus === "solicitado"
-  const isEnProcesoActive = activeStatus === "en_proceso" || activeStatus === "aprobado"
-  const isFinalizadoActive = activeStatus === "finalizado"
+  const normStatus = (activeStatus ?? "").trim().toUpperCase()
+  const isAllActive = !normStatus
+  const isBorradorActive = normStatus === "BORRADOR" || normStatus === "BORRADORES"
+  const isEnRevisionActive =
+    normStatus === "EN_REVISION" ||
+    normStatus === "EN-REVISION" ||
+    normStatus === "SOLICITADO" ||
+    normStatus === "OBSERVADO" ||
+    normStatus === "SOLICITADO,OBSERVADO"
+  const isEnProcesoActive =
+    normStatus === "EN_PROCESO" ||
+    normStatus === "EN-PROCESO" ||
+    normStatus === "PROCESO" ||
+    normStatus === "ASIGNADO" ||
+    normStatus === "EN_MANTENIMIENTO" ||
+    normStatus === "VALIDADO" ||
+    normStatus === "OBSERVADO_MANTENIMIENTO"
+  const isFinalizadoActive =
+    normStatus === "FINALIZADAS" ||
+    normStatus === "FINALIZADO" ||
+    normStatus === "FINALIZADA" ||
+    normStatus === "TRABAJO_REALIZADO" ||
+    normStatus === "CERRADO"
 
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -91,7 +109,7 @@ export function SolicitudStats({
       {/* Borradores */}
       <button
         type="button"
-        onClick={() => onSelectStatus?.(isBorradorActive ? "" : "borrador")}
+        onClick={() => onSelectStatus?.(isBorradorActive ? "" : "BORRADOR")}
         className={cn(
           "group flex items-center gap-2.5 rounded-xl border p-2.5 sm:p-3 text-left transition-all shadow-2xs hover:shadow-xs cursor-pointer",
           isBorradorActive
@@ -122,10 +140,10 @@ export function SolicitudStats({
       {/* Enviadas (En Revisión) */}
       <button
         type="button"
-        onClick={() => onSelectStatus?.(isEnviadasActive ? "" : "solicitado")}
+        onClick={() => onSelectStatus?.(isEnRevisionActive ? "" : "EN_REVISION")}
         className={cn(
           "group relative flex items-center gap-2.5 rounded-xl border p-2.5 sm:p-3 text-left transition-all shadow-2xs hover:shadow-xs cursor-pointer",
-          isEnviadasActive
+          isEnRevisionActive
             ? "border-amber-500/60 bg-amber-500/15 ring-1 ring-amber-500/40"
             : "border-border/70 bg-card hover:border-amber-500/40 hover:bg-amber-500/5",
         )}
@@ -133,7 +151,7 @@ export function SolicitudStats({
         <span
           className={cn(
             "flex size-8.5 sm:size-9 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105",
-            isEnviadasActive
+            isEnRevisionActive
               ? "bg-amber-600 text-white shadow-2xs"
               : "bg-amber-500/15 text-amber-600 dark:text-amber-400",
           )}
@@ -153,7 +171,7 @@ export function SolicitudStats({
       {/* En Proceso */}
       <button
         type="button"
-        onClick={() => onSelectStatus?.(isEnProcesoActive ? "" : "en_proceso")}
+        onClick={() => onSelectStatus?.(isEnProcesoActive ? "" : "EN_PROCESO")}
         className={cn(
           "group flex items-center gap-2.5 rounded-xl border p-2.5 sm:p-3 text-left transition-all shadow-2xs hover:shadow-xs cursor-pointer",
           isEnProcesoActive
@@ -184,7 +202,7 @@ export function SolicitudStats({
       {/* Finalizadas */}
       <button
         type="button"
-        onClick={() => onSelectStatus?.(isFinalizadoActive ? "" : "finalizado")}
+        onClick={() => onSelectStatus?.(isFinalizadoActive ? "" : "FINALIZADAS")}
         className={cn(
           "group flex items-center gap-2.5 rounded-xl border p-2.5 sm:p-3 text-left transition-all shadow-2xs hover:shadow-xs cursor-pointer col-span-2 sm:col-span-1",
           isFinalizadoActive

@@ -230,3 +230,15 @@ export async function getWorkflowHistory(
   )
 }
 
+export type SolicitudMantenimientoResumen = {
+  total: number
+  borradores: number
+  enRevision: number
+  enProceso: number
+  finalizadas: number
+}
+
+export async function getSolicitudResumen(): Promise<SolicitudMantenimientoResumen> {
+  return http.get<SolicitudMantenimientoResumen>(solicitudEndpoints.resumen)
+}
+

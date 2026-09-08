@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository;
 
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.SolicitudMantenimientoEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -56,4 +57,58 @@ public interface SpringSolicitudMantenimientoRepository
             @Param("query") String query,
             Pageable pageable
     );
+
+    @Query("""
+            select
+                count(s) as total,
+
+                coalesce(sum(
+                    case
+                        when upper(s.estado) = 'BORRADOR'
+                        then 1
+                        else 0
+                    end
+                ), 0) as borradores,
+
+                coalesce(sum(
+                    case
+                        when upper(s.estado) in (
+                            'SOLICITADO',
+                            'OBSERVADO'
+                        )
+                        then 1
+                        else 0
+                    end
+                ), 0) as enRevision,
+
+                coalesce(sum(
+                    case
+                        when upper(s.estado) in (
+                            'ASIGNADO',
+                            'EN_MANTENIMIENTO',
+                            'EN_REVISION',
+                            'OBSERVADO_MANTENIMIENTO',
+                            'VALIDADO'
+                        )
+                        then 1
+                        else 0
+                    end
+                ), 0) as enProceso,
+
+                coalesce(sum(
+                    case
+                        when upper(s.estado) in (
+                            'TRABAJO_REALIZADO',
+                            'FINALIZADO',
+                            'CERRADO'
+                        )
+                        then 1
+                        else 0
+                    end
+                ), 0) as finalizadas
+
+            from SolicitudMantenimientoEntity s
+            where (:solicitanteId is null or s.solicitanteId = :solicitanteId)
+            """)
+    SolicitudMantenimientoResumenProjection obtenerResumen(@Param("solicitanteId") UUID solicitanteId);
 }

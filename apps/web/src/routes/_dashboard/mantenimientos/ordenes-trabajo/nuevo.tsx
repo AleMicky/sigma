@@ -12,6 +12,6 @@ const searchSchema = z.object({
 export const Route = createFileRoute(
   "/_dashboard/mantenimientos/ordenes-trabajo/nuevo",
 )({
-  validateSearch: (search) => searchSchema.parse(search),
+  validateSearch: searchSchema,
   component: OrdenTrabajoFormPage,
 })

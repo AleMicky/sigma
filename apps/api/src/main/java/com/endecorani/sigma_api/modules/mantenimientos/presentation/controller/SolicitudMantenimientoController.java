@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.EnviarSolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.SolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResumenResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.SolicitudMantenimientoService;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
@@ -34,6 +35,14 @@ import java.util.UUID;
 public class SolicitudMantenimientoController {
 
     private final SolicitudMantenimientoService service;
+
+    @GetMapping("/resumen")
+    @Operation(summary = "Obtener resumen y conteo de solicitudes por estado")
+    public ResponseEntity<ApiResponse<SolicitudMantenimientoResumenResponse>> obtenerResumen(
+            @RequestParam(required = false) UUID solicitanteId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(service.obtenerResumen(solicitanteId)));
+    }
 
     @PostMapping
     @Operation(summary = "Registrar una solicitud de mantenimiento")

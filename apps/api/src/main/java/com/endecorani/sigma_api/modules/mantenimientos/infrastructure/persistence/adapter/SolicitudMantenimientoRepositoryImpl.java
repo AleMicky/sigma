@@ -3,6 +3,7 @@ package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persisten
 import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.SolicitudMantenimientoEntity;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.mapper.SolicitudMantenimientoPersistenceMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository.SpringSolicitudMantenimientoRepository;
@@ -135,5 +136,10 @@ public class SolicitudMantenimientoRepositoryImpl
         return springRepository
                 .search(query, pageable)
                 .map(mapper::toDomain);
+    }
+
+    @Override
+    public SolicitudMantenimientoResumenProjection obtenerResumen(UUID solicitanteId) {
+        return springRepository.obtenerResumen(solicitanteId);
     }
 }

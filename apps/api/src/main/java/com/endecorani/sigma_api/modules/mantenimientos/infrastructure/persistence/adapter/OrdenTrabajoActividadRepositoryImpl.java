@@ -16,8 +16,7 @@ import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
-public class OrdenTrabajoActividadRepositoryImpl
-        implements OrdenTrabajoActividadRepository {
+public class OrdenTrabajoActividadRepositoryImpl implements OrdenTrabajoActividadRepository {
 
     private final SpringOrdenTrabajoActividadRepository springRepository;
     private final OrdenTrabajoActividadPersistenceMapper mapper;

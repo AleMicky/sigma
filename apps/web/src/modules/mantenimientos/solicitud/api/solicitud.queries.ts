@@ -5,6 +5,7 @@ import type { PageParams } from "@/shared/types/api.types"
 import { solicitudKeys } from "./solicitud.keys"
 import {
   getSolicitud,
+  getSolicitudResumen,
   getWorkflowActions,
   getWorkflowHistory,
   listAdjuntos,
@@ -13,6 +14,12 @@ import {
 } from "./solicitud.service"
 
 export const solicitudQueries = {
+  resumen: () =>
+    queryOptions({
+      queryKey: solicitudKeys.resumen(),
+      queryFn: () => getSolicitudResumen(),
+    }),
+
   list: (filters?: SolicitudListParams) =>
     queryOptions({
       queryKey: solicitudKeys.list(filters),
