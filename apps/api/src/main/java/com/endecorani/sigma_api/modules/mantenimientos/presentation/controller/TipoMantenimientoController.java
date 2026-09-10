@@ -5,15 +5,17 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.tipo.requ
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.tipo.request.TipoMantenimientoUpdate;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.tipo.response.TipoMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.TipoMantenimientoService;
+import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
+import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.application.response.ApiResponse;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -32,45 +34,56 @@ public class TipoMantenimientoController {
 
     @GetMapping
     @Operation(summary = "Listar tipos de mantenimiento con paginación y búsqueda opcional")
-    public Page<TipoMantenimientoResponse> listar(
+    public ResponseEntity<ApiResponse<PageResponse<TipoMantenimientoResponse>>> listar(
             @RequestParam(required = false) String search,
-            Pageable pageable
+            @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
-        return service.listar(search, pageable);
+        return ResponseEntity.ok(
+                ApiResponse.success(service.listar(search, pageRequest))
+        );
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener un tipo de mantenimiento por ID")
-    public TipoMantenimientoResponse buscarPorId(
+    public ResponseEntity<ApiResponse<TipoMantenimientoResponse>> buscarPorId(
             @PathVariable UUID id
     ) {
-        return service.buscarPorId(id);
+        return ResponseEntity.ok(
+                ApiResponse.success(service.buscarPorId(id))
+        );
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Crear un nuevo tipo de mantenimiento")
-    public TipoMantenimientoResponse crear(
+    public ResponseEntity<ApiResponse<TipoMantenimientoResponse>> crear(
             @Valid @RequestBody TipoMantenimientoRequest dto
     ) {
-        return service.crear(dto);
+        TipoMantenimientoResponse response = service.crear(dto);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Tipo de mantenimiento creado correctamente", response));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar un tipo de mantenimiento existente")
-    public TipoMantenimientoResponse actualizar(
+    public ResponseEntity<ApiResponse<TipoMantenimientoResponse>> actualizar(
             @PathVariable UUID id,
             @Valid @RequestBody TipoMantenimientoUpdate dto
     ) {
-        return service.actualizar(id, dto);
+        TipoMantenimientoResponse response = service.actualizar(id, dto);
+        return ResponseEntity.ok(
+                ApiResponse.success("Tipo de mantenimiento actualizado correctamente", response)
+        );
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Eliminar un tipo de mantenimiento")
-    public void eliminar(
+    public ResponseEntity<ApiResponse<Void>> eliminar(
             @PathVariable UUID id
     ) {
         service.eliminar(id);
+        return ResponseEntity.ok(
+                ApiResponse.success("Tipo de mantenimiento eliminado correctamente")
+        );
     }
 }

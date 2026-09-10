@@ -6,6 +6,8 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.tipo.resp
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.TipoMantenimientoMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.TipoMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMantenimientoRepository;
+import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
+import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
@@ -15,21 +17,29 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class TipoMantenimientoService {
 
+    private static final Set<String> SORT_FIELDS = Set.of(
+            "id",
+            "codigo",
+            "nombre",
+            "descripcion",
+            "createdAt",
+            "updatedAt"
+    );
+
     private final TipoMantenimientoRepository repository;
     private final TipoMantenimientoMapper mapper;
 
     @Transactional(readOnly = true)
-    public Page<TipoMantenimientoResponse> listar(
-            String search,
-            Pageable pageable
-    ) {
+    public PageResponse<TipoMantenimientoResponse> listar(String search, PageRequestDto pageRequest) {
         String normalized = StringUtils.normalize(search);
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Page<TipoMantenimiento> resultado;
 
         if (normalized == null || normalized.isBlank()) {
@@ -38,7 +48,7 @@ public class TipoMantenimientoService {
             resultado = repository.search(normalized, pageable);
         }
 
-        return resultado.map(mapper::toResponse);
+        return PageResponse.from(resultado, mapper::toResponse);
     }
 
     @Transactional(readOnly = true)

@@ -47,9 +47,10 @@ public record PageRequestDto(
 
     public Pageable toPageable(Set<String> allowedSortFields) {
         if (allowedSortFields == null || !allowedSortFields.contains(sortBy)) {
+            String allowed = allowedSortFields != null ? String.join(", ", allowedSortFields) : "";
             throw new BusinessException(
                     "INVALID_SORT_FIELD",
-                    "El campo de ordenación '%s' no es válido".formatted(sortBy)
+                    "El campo de ordenación '%s' no es válido. Campos permitidos: [%s]".formatted(sortBy, allowed)
             );
         }
 
