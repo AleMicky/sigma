@@ -12,7 +12,7 @@ import java.util.UUID;
 @Entity
 @Table(
         schema = "mantenimientos",
-        name = "solicitudes_mantenimiento_adjuntos",
+        name = "solicitud_mantenimiento_adjuntos",
         indexes = {
                 @Index(name = "idx_solicitud_adjunto_solicitud", columnList = "solicitud_mantenimiento_id")
         }

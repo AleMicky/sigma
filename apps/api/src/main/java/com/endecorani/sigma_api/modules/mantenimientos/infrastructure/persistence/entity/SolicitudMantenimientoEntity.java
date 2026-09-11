@@ -4,13 +4,23 @@ import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEnti
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.CascadeType;
+
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.EmpleadoEntity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -31,22 +41,26 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
         @Column(name = "numero", nullable = false, length = 30)
         private String numero;
 
-        @Column(name = "activo_id", nullable = false)
-        private UUID activoId;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "activo_id", nullable = false)
+        private ActivoEntity activo;
 
         // Clasificación
-        @Column(name = "tipo_mantenimiento_id", nullable = false)
-        private UUID tipoMantenimientoId;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "tipo_mantenimiento_id", nullable = false)
+        private TipoMantenimientoEntity tipoMantenimiento;
 
-        @Column(name = "tipo_falla_id", nullable = false)
-        private UUID tipoFallaId;
+        @Column(name = "tipo_fallas", length = 200)
+        private String tipoFallas;
 
-        @Column(name = "prioridad_id", nullable = false)
-        private UUID prioridadId;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "prioridad_id", nullable = false)
+        private PrioridadEntity prioridad;
 
         // Solicitud
-        @Column(name = "solicitante_id", nullable = false)
-        private UUID solicitanteId;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "solicitante_id", nullable = false)
+        private EmpleadoEntity solicitante;
 
         @Column(name = "titulo", nullable = false, length = 150)
         private String titulo;
@@ -58,14 +72,17 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
         private LocalDateTime fechaSolicitud;
 
         // Datos actuales del proceso
-        @Column(name = "aprobador_id")
-        private UUID aprobadorId;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "aprobador_id")
+        private EmpleadoEntity aprobador;
 
-        @Column(name = "responsable_id")
-        private UUID responsableId;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "responsable_id")
+        private EmpleadoEntity responsable;
 
-        @Column(name = "supervisor_id")
-        private UUID supervisorId;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "supervisor_id")
+        private EmpleadoEntity supervisor;
 
         // Ejecución
         @Column(name = "fecha_inicio_mantenimiento")
@@ -84,4 +101,8 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
 
         @Column(name = "estado", nullable = false, length = 50)
         private String estado;
+
+        @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+        @JoinColumn(name = "solicitud_mantenimiento_id")
+        private List<SolicitudMantenimientoAdjuntoEntity> adjuntos = new ArrayList<>();
 }

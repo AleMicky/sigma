@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record SolicitudMantenimientoUpdate(
@@ -14,8 +15,7 @@ public record SolicitudMantenimientoUpdate(
         @NotNull(message = "El tipo de mantenimiento es obligatorio")
         UUID tipoMantenimientoId,
 
-        @NotNull(message = "El tipo de falla es obligatorio")
-        UUID tipoFallaId,
+        String tipoFallas,
 
         @NotNull(message = "La prioridad es obligatoria")
         UUID prioridadId,
@@ -35,6 +35,8 @@ public record SolicitudMantenimientoUpdate(
         LocalDateTime fechaInicioMantenimiento,
         LocalDateTime fechaFinMantenimiento,
         LocalDateTime fechaCierre,
-        String estado
+        String estado,
+        
+        List<SolicitudMantenimientoAdjuntoUpdate> adjuntos
 ) {
 }
