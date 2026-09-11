@@ -23,4 +23,80 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
            OR LOWER(s.estado) LIKE LOWER(CONCAT('%', :search, '%'))
     """)
     Page<SolicitudMantenimientoEntity> search(@Param("search") String search, Pageable pageable);
+
+    @Query("""
+        SELECT s
+        FROM SolicitudMantenimientoEntity s
+        WHERE (:hasQ = false OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%')))
+          AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
+          AND (:hasSolicitante = false OR s.solicitante.id = :solicitanteId)
+          AND (:hasResponsable = false OR s.responsable.id = :responsableId)
+          AND (:hasSupervisor = false OR s.supervisor.id = :supervisorId)
+          AND (:hasActivo = false OR s.activo.id = :activoId)
+          AND (:hasAprobador = false OR s.aprobador.id = :aprobadorId)
+    """)
+    Page<SolicitudMantenimientoEntity> searchWithCriteria(
+            @Param("hasQ") boolean hasQ, @Param("q") String q,
+            @Param("hasEstado") boolean hasEstado, @Param("estado") String estado,
+            @Param("hasSolicitante") boolean hasSolicitante, @Param("solicitanteId") UUID solicitanteId,
+            @Param("hasResponsable") boolean hasResponsable, @Param("responsableId") UUID responsableId,
+            @Param("hasSupervisor") boolean hasSupervisor, @Param("supervisorId") UUID supervisorId,
+            @Param("hasActivo") boolean hasActivo, @Param("activoId") UUID activoId,
+            @Param("hasAprobador") boolean hasAprobador, @Param("aprobadorId") UUID aprobadorId,
+            Pageable pageable
+    );
+
+    @Query("""
+            select
+                count(s) as total,
+
+                coalesce(sum(
+                    case
+                        when upper(s.estado) = 'BORRADOR'
+                        then 1
+                        else 0
+                    end
+                ), 0) as borradores,
+
+                coalesce(sum(
+                    case
+                        when upper(s.estado) in (
+                            'SOLICITADO',
+                            'OBSERVADO'
+                        )
+                        then 1
+                        else 0
+                    end
+                ), 0) as enRevision,
+
+                coalesce(sum(
+                    case
+                        when upper(s.estado) in (
+                            'ASIGNADO',
+                            'EN_MANTENIMIENTO',
+                            'EN_REVISION',
+                            'OBSERVADO_MANTENIMIENTO',
+                            'VALIDADO'
+                        )
+                        then 1
+                        else 0
+                    end
+                ), 0) as enProceso,
+
+                coalesce(sum(
+                    case
+                        when upper(s.estado) in (
+                            'TRABAJO_REALIZADO',
+                            'FINALIZADO',
+                            'CERRADO'
+                        )
+                        then 1
+                        else 0
+                    end
+                ), 0) as finalizadas
+
+            from SolicitudMantenimientoEntity s
+            where (:hasSolicitante = false or s.solicitante.id = :solicitanteId)
+            """)
+    com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection obtenerResumen(@Param("hasSolicitante") boolean hasSolicitante, @Param("solicitanteId") UUID solicitanteId);
 }

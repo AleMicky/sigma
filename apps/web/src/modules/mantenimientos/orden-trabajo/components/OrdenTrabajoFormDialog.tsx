@@ -222,7 +222,7 @@ export function OrdenTrabajoFormDialog({
           {/* Diagnóstico */}
           <div className="space-y-1.5">
             <Label htmlFor="diagnostico" className="text-xs font-semibold">
-              Diagnóstico Técnico Inicial
+              Descripcion
             </Label>
             <Textarea
               id="diagnostico"

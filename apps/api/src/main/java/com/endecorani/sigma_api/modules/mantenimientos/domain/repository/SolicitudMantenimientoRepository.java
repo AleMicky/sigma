@@ -22,4 +22,8 @@ public interface SolicitudMantenimientoRepository {
     boolean existsByNumeroIgnoreCase(String numero);
 
     boolean existsByNumeroIgnoreCaseAndIdNot(String numero, UUID id);
+
+    SolicitudMantenimientoResumenProjection obtenerResumen(UUID solicitanteId);
+    
+    Page<SolicitudMantenimiento> findAll(com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria criteria, Pageable pageable);
 }

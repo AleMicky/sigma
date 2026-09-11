@@ -433,7 +433,7 @@ export function OrdenTrabajoFormPage({
           <div className="flex items-center gap-1.5 border-b pb-1.5">
             <FileText className="size-3.5 text-primary" />
             <h2 className="font-heading text-xs sm:text-[13px] font-bold text-foreground">
-              Diagnóstico y Observaciones
+              Descripcion y Observaciones
             </h2>
           </div>
 
@@ -441,7 +441,7 @@ export function OrdenTrabajoFormPage({
             {/* Diagnóstico */}
             <div className="space-y-1">
               <Label htmlFor="diagnostico" className="text-[11px] font-semibold text-foreground">
-                Diagnóstico Preliminar / Alcance
+                Descripcion
               </Label>
               <Textarea
                 id="diagnostico"

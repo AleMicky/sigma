@@ -7,6 +7,7 @@ import {
   FileCheck2,
   Layers,
   Shield,
+  Trash2,
   User,
   UserCheck,
   Wrench,
@@ -22,6 +23,7 @@ import { Pagination } from "@/shared/components/pagination"
 import { RefreshButton } from "@/shared/components/refresh-button"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
+import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 
 import { ControlActivoHistorialModal } from "@/modules/mantenimientos/control-activo/components/ControlActivoHistorialModal"
 import { controlActivoQueries } from "@/modules/mantenimientos/control-activo/api/control-activo.queries"
@@ -32,7 +34,7 @@ import {
   WorkflowActionDialog,
   WorkflowListView,
 } from "@/modules/workflow"
-import { useCompleteWorkflowTask } from "../api/solicitud.mutations"
+import { useCompleteWorkflowTask, useDeleteSolicitud } from "../api/solicitud.mutations"
 import { solicitudQueries } from "../api/solicitud.queries"
 import type {
   SolicitudMantenimiento,
@@ -63,6 +65,7 @@ function SolicitudEncargadoListItem({
     taskName?: string,
     fields?: WorkflowField[],
   ) => void
+  onDelete?: (s: SolicitudMantenimiento) => void
 }) {
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
   const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
@@ -164,6 +167,22 @@ function SolicitudEncargadoListItem({
       }
       extraActions={
         <div className="flex items-center gap-1.5">
+          {onDelete && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(solicitud)
+              }}
+              className="h-6.5 px-2 rounded-md text-[11px] font-medium inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-all hover:bg-destructive/10 text-destructive border-destructive/30 hover:scale-102 active:scale-98"
+              title="Eliminar Solicitud"
+            >
+              <Trash2 className="size-3" />
+            </Button>
+          )}
+
           {/* Botón Acta (Control de Activo) */}
           <Button
             type="button"
@@ -247,8 +266,11 @@ function SolicitudEncargadoListItem({
 
 export function EncargadoMantenimientoPage() {
   const completeWorkflowMutation = useCompleteWorkflowTask()
+  const deleteSolicitudMutation = useDeleteSolicitud()
+
   const [trazabilidadSolicitud, setTrazabilidadSolicitud] =
     useState<SolicitudMantenimiento | null>(null)
+  const [solicitudToDelete, setSolicitudToDelete] = useState<SolicitudMantenimiento | null>(null)
   const [filterUrgentesOnly, setFilterUrgentesOnly] = useState(false)
   const [estadoFilter, setEstadoFilter] = useState<
     "ALL" | "ASIGNADO" | "EN_MANTENIMIENTO" | "VALIDADO"
@@ -734,6 +756,7 @@ export function EncargadoMantenimientoPage() {
                       onActionSelect={(action, taskName, fields) =>
                         handleActionSelect(solicitud, action, taskName, fields)
                       }
+                      onDelete={(s) => setSolicitudToDelete(s)}
                     />
                   ))}
                 </WorkflowListView>
@@ -786,6 +809,7 @@ export function EncargadoMantenimientoPage() {
         solicitudNumero={controlActivoTarget?.numero ?? null}
         open={Boolean(controlActivoTarget)}
         onOpenChange={(open) => !open && setControlActivoTarget(null)}
+        readOnly={!["ASIGNADO", "EN_MANTENIMIENTO", "VALIDADO"].includes((controlActivoTarget?.estado ?? "").toUpperCase())}
       />
 
       {/* Modal Detalle de Orden de Trabajo DIRECTO */}
@@ -803,6 +827,22 @@ export function EncargadoMantenimientoPage() {
         onUpdated={() => {
           solicitudesQuery.refetch()
         }}
+        readOnly={!["ASIGNADO", "EN_MANTENIMIENTO", "VALIDADO"].includes((ordenTrabajoTarget?.estado ?? "").toUpperCase())}
+      />
+
+      {/* Modal Confirmar Eliminación */}
+      <ConfirmDeleteDialog
+        open={Boolean(solicitudToDelete)}
+        onOpenChange={(open) => !open && setSolicitudToDelete(null)}
+        title="Eliminar Solicitud"
+        description={`¿Estás seguro de que deseas eliminar la solicitud ${solicitudToDelete?.numero}? Esta acción no se puede deshacer.`}
+        onConfirm={async () => {
+          if (!solicitudToDelete) return
+          await deleteSolicitudMutation.mutateAsync(solicitudToDelete.id)
+          solicitudesQuery.refetch()
+          setSolicitudToDelete(null)
+        }}
+        isDeleting={deleteSolicitudMutation.isPending}
       />
     </PageShell>
   )

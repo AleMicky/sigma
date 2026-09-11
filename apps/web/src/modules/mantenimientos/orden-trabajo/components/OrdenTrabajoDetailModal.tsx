@@ -142,10 +142,8 @@ export function OrdenTrabajoDetailModal({
     estadoSolicitudNorm === "CANCELADO" ||
     estadoSolicitudNorm === "RECHAZADO"
 
-  // Modo planificación: en SOLICITADO o ASIGNADO (la ejecución con checks/subidas se desbloquea en EN_MANTENIMIENTO y VALIDADO)
-  const isEnPlanificacion =
-    !isReadOnly &&
-    (estadoSolicitudNorm === "SOLICITADO" || estadoSolicitudNorm === "ASIGNADO")
+  // Se eliminó el modo planificación para que en estado ASIGNADO se pueda marcar tareas y subir adjuntos
+  const isEnPlanificacion = false
 
   // Mutations
   const toggleActividadMutation = useToggleOrdenTrabajoActividadRealizado()

@@ -165,6 +165,7 @@ public class SolicitudMantenimientoPersistenceMapper {
         entity.setTipoContenido(domain.getTipoContenido());
         entity.setSize(domain.getSize());
         entity.setDescripcion(domain.getDescripcion());
+        entity.setSolicitudMantenimientoId(domain.getSolicitudMantenimientoId());
         return entity;
     }
 
@@ -177,6 +178,7 @@ public class SolicitudMantenimientoPersistenceMapper {
                 .tipoContenido(entity.getTipoContenido())
                 .size(entity.getSize())
                 .descripcion(entity.getDescripcion())
+                .solicitudMantenimientoId(entity.getSolicitudMantenimientoId())
                 .build();
     }
 }

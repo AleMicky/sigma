@@ -4,7 +4,7 @@ import { SolicitudFormPage } from "@/modules/mantenimientos/solicitud/pages/Soli
 
 const searchSchema = z.object({
   solicitudId: z.string().optional(),
-  tipo: z.string(),
+  tipo: z.string().optional(),
 })
 
 export const Route = createFileRoute(
