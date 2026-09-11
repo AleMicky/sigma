@@ -6,6 +6,8 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.SolicitudMantenimientoMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
+import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
+import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
@@ -36,6 +38,7 @@ public class SolicitudMantenimientoService {
 
     private final SolicitudMantenimientoRepository repository;
     private final SolicitudMantenimientoMapper mapper;
+    private final CorrelativoService correlativoService;
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudMantenimientoResponse> listar(String search, PageRequestDto pageRequest) {
@@ -60,12 +63,17 @@ public class SolicitudMantenimientoService {
 
     @Transactional
     public SolicitudMantenimientoResponse crear(SolicitudMantenimientoRequest dto) {
+
+        String numero = correlativoService.generar(CorrelativoCodigo.SOLICITUD_MANTENIMIENTO,
+                LocalDateTime.now().getYear());
+
+
         SolicitudMantenimiento solicitud = mapper.toDomain(dto);
         
         // Asignación de valores por defecto al crear
-        solicitud.setNumero(generarNumeroSolicitud());
+        solicitud.setNumero(numero);
         solicitud.setFechaSolicitud(LocalDateTime.now());
-        solicitud.setEstado("NUEVA"); // Estado inicial
+        solicitud.setEstado("ESTADO_BORRADOR"); // Estado inicial
         
         SolicitudMantenimiento guardado = repository.save(solicitud);
         return mapper.toResponse(guardado);
@@ -95,10 +103,5 @@ public class SolicitudMantenimientoService {
     private SolicitudMantenimiento obtenerPorId(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitud de mantenimiento", id));
-    }
-    
-    private String generarNumeroSolicitud() {
-        // Generador temporal, idealmente esto vendría de una secuencia en la BD
-        return "SM-" + System.currentTimeMillis();
     }
 }

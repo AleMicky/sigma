@@ -1,6 +1,5 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response;
 
-import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 
 import java.time.LocalDateTime;
