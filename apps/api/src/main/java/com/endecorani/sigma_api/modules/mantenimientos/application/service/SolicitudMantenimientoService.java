@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.mantenimientos.application.service.solicitud;
+package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
 import com.endecorani.sigma_api.config.security.SecurityUtils;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.EnviarSolicitudMantenimientoRequest;
@@ -14,11 +14,9 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMan
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoTrazabilidadRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
-import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
-import com.endecorani.sigma_api.modules.organizacion.domain.model.Cargo;
-import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
-import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
@@ -50,7 +48,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -74,8 +71,7 @@ public class SolicitudMantenimientoService {
     private final SolicitudMantenimientoRepository repository;
     private final SolicitudMantenimientoTrazabilidadRepository trazabilidadRepository;
     private final EmpleadoRepository empleadoRepository;
-    private final PersonaRepository personaRepository;
-    private final CargoRepository cargoRepository;
+    private final SpringVEmpleadoRepository vEmpleadoRepository;
     private final UsuarioRepository usuarioRepository;
     private final SecurityUtils securityUtils;
     private final SolicitudMantenimientoMapper mapper;
@@ -93,7 +89,7 @@ public class SolicitudMantenimientoService {
             PageRequestDto pageRequest) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Page<SolicitudMantenimiento> resultado = repository.findAll(criteria, pageable);
-        return toPageResponse(resultado);
+        return PageResponse.from(resultado, mapper::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -108,13 +104,13 @@ public class SolicitudMantenimientoService {
             resultado = repository.search(normalized, pageable);
         }
 
-        return toPageResponse(resultado);
+        return PageResponse.from(resultado, mapper::toResponse);
     }
 
     @Transactional(readOnly = true)
     public SolicitudMantenimientoResponse findById(UUID id) {
         SolicitudMantenimiento solicitud = obtenerPorId(id);
-        return toResponse(solicitud);
+        return mapper.toResponse(solicitud);
     }
 
     @Transactional
@@ -423,41 +419,27 @@ public class SolicitudMantenimientoService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<UUID, Empleado> empleadosMap = empleadoIds.isEmpty()
+        Map<UUID, VEmpleadoEntity> vEmpleadosMap = empleadoIds.isEmpty()
                 ? Collections.emptyMap()
-                : empleadoRepository.findAllById(empleadoIds).stream()
-                        .collect(Collectors.toMap(Empleado::getId, e -> e, (a, b) -> a));
-
-        Set<UUID> personaIds = empleadosMap.values().stream()
-                .map(Empleado::getPersonaId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Set<UUID> cargoIds = empleadosMap.values().stream()
-                .map(Empleado::getCargoId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Map<UUID, Persona> personasMap = personaIds.isEmpty()
-                ? Collections.emptyMap()
-                : personaRepository.findAllById(personaIds).stream()
-                        .collect(Collectors.toMap(Persona::getId, p -> p, (a, b) -> a));
-
-        Map<UUID, Cargo> cargosMap = cargoIds.isEmpty()
-                ? Collections.emptyMap()
-                : cargoRepository.findAllById(cargoIds).stream()
-                        .collect(Collectors.toMap(Cargo::getId, c -> c, (a, b) -> a));
+                : vEmpleadoRepository.findAllById(empleadoIds).stream()
+                        .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, e -> e, (a, b) -> a));
 
         return trazabilidades.stream()
-                .map(t -> new SolicitudMantenimientoTrazabilidadResponse(
-                        t.getId(),
-                        t.getSolicitudMantenimientoId(),
-                        t.getEstadoAnterior(),
-                        t.getEstadoNuevo(),
-                        t.getComentario(),
-                        t.getEmpleadoId(),
-                        resolveEmpleadoInfo(t.getEmpleadoId(), empleadosMap, personasMap, cargosMap),
-                        t.getFecha()))
+                .map(t -> {
+                    VEmpleadoEntity ve = vEmpleadosMap.get(t.getEmpleadoId());
+                    SolicitudMantenimientoResponse.EmpleadoInfo info = ve != null
+                            ? new SolicitudMantenimientoResponse.EmpleadoInfo(ve.getEmpleadoId(), ve.getNombreCompleto(), ve.getCargo())
+                            : new SolicitudMantenimientoResponse.EmpleadoInfo(t.getEmpleadoId(), null, null);
+                    return new SolicitudMantenimientoTrazabilidadResponse(
+                            t.getId(),
+                            t.getSolicitudMantenimientoId(),
+                            t.getEstadoAnterior(),
+                            t.getEstadoNuevo(),
+                            t.getComentario(),
+                            t.getEmpleadoId(),
+                            info,
+                            t.getFecha());
+                })
                 .toList();
     }
 
@@ -565,134 +547,13 @@ public class SolicitudMantenimientoService {
         return null;
     }
 
-    private PageResponse<SolicitudMantenimientoResponse> toPageResponse(Page<SolicitudMantenimiento> page) {
-        List<SolicitudMantenimientoResponse> content = toResponseList(page.getContent());
-        return new PageResponse<>(
-                content,
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isFirst(),
-                page.isLast(),
-                page.isEmpty()
-        );
-    }
-
-    public List<SolicitudMantenimientoResponse> toResponseList(List<SolicitudMantenimiento> solicitudes) {
-        if (solicitudes == null || solicitudes.isEmpty()) {
-            return List.of();
-        }
-
-        Set<UUID> empleadoIds = solicitudes.stream()
-                .flatMap(s -> Stream.of(
-                        s.getSolicitante() != null ? s.getSolicitante().getId() : null,
-                        s.getAprobador() != null ? s.getAprobador().getId() : null,
-                        s.getResponsable() != null ? s.getResponsable().getId() : null,
-                        s.getSupervisor() != null ? s.getSupervisor().getId() : null
-                ))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Map<UUID, Empleado> empleadosMap = empleadoIds.isEmpty()
-                ? Collections.emptyMap()
-                : empleadoRepository.findAllById(empleadoIds).stream()
-                        .collect(Collectors.toMap(Empleado::getId, e -> e, (a, b) -> a));
-
-        Set<UUID> personaIds = empleadosMap.values().stream()
-                .map(Empleado::getPersonaId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Set<UUID> cargoIds = empleadosMap.values().stream()
-                .map(Empleado::getCargoId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Map<UUID, Persona> personasMap = personaIds.isEmpty()
-                ? Collections.emptyMap()
-                : personaRepository.findAllById(personaIds).stream()
-                        .collect(Collectors.toMap(Persona::getId, p -> p, (a, b) -> a));
-
-        Map<UUID, Cargo> cargosMap = cargoIds.isEmpty()
-                ? Collections.emptyMap()
-                : cargoRepository.findAllById(cargoIds).stream()
-                        .collect(Collectors.toMap(Cargo::getId, c -> c, (a, b) -> a));
-
-        return solicitudes.stream()
-                .map(s -> mapToResponse(s, empleadosMap, personasMap, cargosMap))
-                .toList();
-    }
-
     public SolicitudMantenimientoResponse toResponse(SolicitudMantenimiento domain) {
         if (domain == null) {
             return null;
         }
-        return toResponseList(List.of(domain)).get(0);
-    }
-
-    private SolicitudMantenimientoResponse mapToResponse(
-            SolicitudMantenimiento domain,
-            Map<UUID, Empleado> empleadosMap,
-            Map<UUID, Persona> personasMap,
-            Map<UUID, Cargo> cargosMap
-    ) {
-        SolicitudMantenimientoResponse base = mapper.toResponse(domain);
-        return new SolicitudMantenimientoResponse(
-                base.id(),
-                base.numero(),
-                base.activo(),
-                base.tipoMantenimiento(),
-                base.tipoFallas(),
-                base.prioridad(),
-                resolveEmpleadoInfo(domain.getSolicitante() != null ? domain.getSolicitante().getId() : null, empleadosMap, personasMap, cargosMap),
-                base.titulo(),
-                base.descripcion(),
-                base.fechaSolicitud(),
-                resolveEmpleadoInfo(domain.getAprobador() != null ? domain.getAprobador().getId() : null, empleadosMap, personasMap, cargosMap),
-                resolveEmpleadoInfo(domain.getResponsable() != null ? domain.getResponsable().getId() : null, empleadosMap, personasMap, cargosMap),
-                resolveEmpleadoInfo(domain.getSupervisor() != null ? domain.getSupervisor().getId() : null, empleadosMap, personasMap, cargosMap),
-                base.fechaInicioMantenimiento(),
-                base.fechaFinMantenimiento(),
-                base.fechaCierre(),
-                base.processInstanceId(),
-                base.estado(),
-                base.adjuntos(),
-                base.auditoria()
-        );
-    }
-
-    private SolicitudMantenimientoResponse.EmpleadoInfo resolveEmpleadoInfo(
-            UUID empleadoId,
-            Map<UUID, Empleado> empleadosMap,
-            Map<UUID, Persona> personasMap,
-            Map<UUID, Cargo> cargosMap
-    ) {
-        if (empleadoId == null) {
-            return null;
+        if (domain.getId() != null && (domain.getSolicitante() == null || domain.getSolicitante().getNombreCompleto() == null)) {
+            return repository.findById(domain.getId()).map(mapper::toResponse).orElseGet(() -> mapper.toResponse(domain));
         }
-        Empleado empleado = empleadosMap.get(empleadoId);
-        if (empleado == null) {
-            return new SolicitudMantenimientoResponse.EmpleadoInfo(empleadoId, null, null);
-        }
-        Persona persona = empleado.getPersonaId() != null ? personasMap.get(empleado.getPersonaId()) : null;
-        Cargo cargo = empleado.getCargoId() != null ? cargosMap.get(empleado.getCargoId()) : null;
-
-        String nombreCompleto = persona != null ? buildNombreCompleto(persona) : null;
-        String cargoNombre = cargo != null ? cargo.getNombre() : null;
-
-        return new SolicitudMantenimientoResponse.EmpleadoInfo(
-                empleado.getId(),
-                nombreCompleto,
-                cargoNombre
-        );
-    }
-
-    private String buildNombreCompleto(Persona persona) {
-        if (persona == null) return null;
-        return Stream.of(persona.getNombres(), persona.getPrimerApellido(), persona.getSegundoApellido())
-                .filter(v -> v != null && !v.isBlank())
-                .map(String::trim)
-                .collect(Collectors.joining(" "));
+        return mapper.toResponse(domain);
     }
 }

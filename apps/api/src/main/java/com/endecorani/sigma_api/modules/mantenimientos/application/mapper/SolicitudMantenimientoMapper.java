@@ -33,7 +33,6 @@ public interface SolicitudMantenimientoMapper {
     SolicitudMantenimiento toDomain(SolicitudMantenimientoRequest dto);
 
     @Mapping(target = "auditoria", source = ".")
-    @Mapping(target = "responsab", source = "responsable")
     SolicitudMantenimientoResponse toResponse(SolicitudMantenimiento domain);
 
     @Mapping(target = "id", ignore = true)

@@ -12,6 +12,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistenc
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.TipoMantenimientoEntity;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.EmpleadoEntity;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -68,13 +69,13 @@ public class SolicitudMantenimientoPersistenceMapper {
                 .tipoMantenimiento(toTipoMantenimientoDomain(entity.getTipoMantenimiento()))
                 .tipoFallas(entity.getTipoFallas())
                 .prioridad(toPrioridadDomain(entity.getPrioridad()))
-                .solicitante(toEmpleadoDomain(entity.getSolicitante()))
+                .solicitante(toEmpleadoDomain(entity.getSolicitante(), entity.getSolicitanteView()))
                 .titulo(entity.getTitulo())
                 .descripcion(entity.getDescripcion())
                 .fechaSolicitud(entity.getFechaSolicitud())
-                .aprobador(toEmpleadoDomain(entity.getAprobador()))
-                .responsable(toEmpleadoDomain(entity.getResponsable()))
-                .supervisor(toEmpleadoDomain(entity.getSupervisor()))
+                .aprobador(toEmpleadoDomain(entity.getAprobador(), entity.getAprobadorView()))
+                .responsable(toEmpleadoDomain(entity.getResponsable(), entity.getResponsableView()))
+                .supervisor(toEmpleadoDomain(entity.getSupervisor(), entity.getSupervisorView()))
                 .fechaInicioMantenimiento(entity.getFechaInicioMantenimiento())
                 .fechaFinMantenimiento(entity.getFechaFinMantenimiento())
                 .fechaCierre(entity.getFechaCierre())
@@ -148,11 +149,26 @@ public class SolicitudMantenimientoPersistenceMapper {
         return entity;
     }
 
-    private Empleado toEmpleadoDomain(EmpleadoEntity entity) {
-        if (entity == null) return null;
+    private Empleado toEmpleadoDomain(EmpleadoEntity entity, VEmpleadoEntity view) {
+        if (entity == null && view == null) return null;
+        UUID id = entity != null ? entity.getId() : (view != null ? view.getEmpleadoId() : null);
+        String codigo = entity != null ? entity.getCodigo() : (view != null ? view.getCodigo() : null);
+        UUID personaId = entity != null ? entity.getPersonaId() : null;
+        UUID cargoId = entity != null ? entity.getCargoId() : null;
+        UUID areaId = entity != null ? entity.getAreaId() : null;
+        String nombreCompleto = view != null ? view.getNombreCompleto() : null;
+        String cargo = view != null ? view.getCargo() : null;
+        String area = view != null ? view.getArea() : null;
+
         return Empleado.builder()
-                .id(entity.getId())
-                .codigo(entity.getCodigo())
+                .id(id)
+                .personaId(personaId)
+                .cargoId(cargoId)
+                .areaId(areaId)
+                .codigo(codigo)
+                .nombreCompleto(nombreCompleto)
+                .cargo(cargo)
+                .area(area)
                 .build();
     }
 

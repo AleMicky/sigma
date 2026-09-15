@@ -14,6 +14,7 @@ import jakarta.persistence.CascadeType;
 
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.EmpleadoEntity;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -61,6 +62,10 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
         @JoinColumn(name = "solicitante_id", nullable = false)
         private EmpleadoEntity solicitante;
 
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "solicitante_id", insertable = false, updatable = false)
+        private VEmpleadoEntity solicitanteView;
+
         @Column(name = "titulo", nullable = false, length = 150)
         private String titulo;
 
@@ -76,12 +81,24 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
         private EmpleadoEntity aprobador;
 
         @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "aprobador_id", insertable = false, updatable = false)
+        private VEmpleadoEntity aprobadorView;
+
+        @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "responsable_id")
         private EmpleadoEntity responsable;
 
         @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "responsable_id", insertable = false, updatable = false)
+        private VEmpleadoEntity responsableView;
+
+        @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "supervisor_id")
         private EmpleadoEntity supervisor;
+
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "supervisor_id", insertable = false, updatable = false)
+        private VEmpleadoEntity supervisorView;
 
         // Ejecución
         @Column(name = "fecha_inicio_mantenimiento")

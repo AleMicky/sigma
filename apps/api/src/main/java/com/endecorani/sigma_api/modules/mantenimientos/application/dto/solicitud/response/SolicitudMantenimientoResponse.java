@@ -18,7 +18,7 @@ public record SolicitudMantenimientoResponse(
         String descripcion,
         LocalDateTime fechaSolicitud,
         EmpleadoInfo aprobador,
-        EmpleadoInfo responsab,
+        EmpleadoInfo responsable,
         EmpleadoInfo supervisor,
         LocalDateTime fechaInicioMantenimiento,
         LocalDateTime fechaFinMantenimiento,
@@ -53,8 +53,7 @@ public record SolicitudMantenimientoResponse(
     public record EmpleadoInfo(
             UUID id,
             String nombreCompleto,
-            String cargo,
-            String area
+            String cargo
     ) {
     }
 }

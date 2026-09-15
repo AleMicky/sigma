@@ -25,7 +25,7 @@ public class SolicitudMantenimientoRepositoryAdapter implements SolicitudManteni
 
     @Override
     public Page<SolicitudMantenimiento> findAll(Pageable pageable) {
-        return springRepository.findAll(pageable).map(mapper::toDomain);
+        return springRepository.findAllWithDetails(pageable).map(mapper::toDomain);
     }
 
     @Override
@@ -35,7 +35,7 @@ public class SolicitudMantenimientoRepositoryAdapter implements SolicitudManteni
 
     @Override
     public Optional<SolicitudMantenimiento> findById(UUID id) {
-        return springRepository.findById(id).map(mapper::toDomain);
+        return springRepository.findByIdWithDetails(id).or(() -> springRepository.findById(id)).map(mapper::toDomain);
     }
 
     @Override

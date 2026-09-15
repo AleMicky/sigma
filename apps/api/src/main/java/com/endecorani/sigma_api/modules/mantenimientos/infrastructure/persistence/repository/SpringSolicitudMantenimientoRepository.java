@@ -15,8 +15,22 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
 
     boolean existsByNumeroIgnoreCaseAndIdNot(String numero, UUID id);
 
-    @Query("""
+    @Query(value = """
         SELECT s
+        FROM SolicitudMantenimientoEntity s
+        LEFT JOIN FETCH s.solicitanteView
+        LEFT JOIN FETCH s.aprobadorView
+        LEFT JOIN FETCH s.responsableView
+        LEFT JOIN FETCH s.supervisorView
+        LEFT JOIN FETCH s.activo
+        LEFT JOIN FETCH s.tipoMantenimiento
+        LEFT JOIN FETCH s.prioridad
+        WHERE LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(s.estado) LIKE LOWER(CONCAT('%', :search, '%'))
+    """,
+    countQuery = """
+        SELECT count(s)
         FROM SolicitudMantenimientoEntity s
         WHERE LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :search, '%'))
@@ -24,8 +38,57 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
     """)
     Page<SolicitudMantenimientoEntity> search(@Param("search") String search, Pageable pageable);
 
+    @Query(value = """
+        SELECT s
+        FROM SolicitudMantenimientoEntity s
+        LEFT JOIN FETCH s.solicitanteView
+        LEFT JOIN FETCH s.aprobadorView
+        LEFT JOIN FETCH s.responsableView
+        LEFT JOIN FETCH s.supervisorView
+        LEFT JOIN FETCH s.activo
+        LEFT JOIN FETCH s.tipoMantenimiento
+        LEFT JOIN FETCH s.prioridad
+    """,
+    countQuery = """
+        SELECT count(s)
+        FROM SolicitudMantenimientoEntity s
+    """)
+    Page<SolicitudMantenimientoEntity> findAllWithDetails(Pageable pageable);
+
     @Query("""
         SELECT s
+        FROM SolicitudMantenimientoEntity s
+        LEFT JOIN FETCH s.solicitanteView
+        LEFT JOIN FETCH s.aprobadorView
+        LEFT JOIN FETCH s.responsableView
+        LEFT JOIN FETCH s.supervisorView
+        LEFT JOIN FETCH s.activo
+        LEFT JOIN FETCH s.tipoMantenimiento
+        LEFT JOIN FETCH s.prioridad
+        WHERE s.id = :id
+    """)
+    java.util.Optional<SolicitudMantenimientoEntity> findByIdWithDetails(@Param("id") UUID id);
+
+    @Query(value = """
+        SELECT s
+        FROM SolicitudMantenimientoEntity s
+        LEFT JOIN FETCH s.solicitanteView
+        LEFT JOIN FETCH s.aprobadorView
+        LEFT JOIN FETCH s.responsableView
+        LEFT JOIN FETCH s.supervisorView
+        LEFT JOIN FETCH s.activo
+        LEFT JOIN FETCH s.tipoMantenimiento
+        LEFT JOIN FETCH s.prioridad
+        WHERE (:hasQ = false OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%')))
+          AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
+          AND (:hasSolicitante = false OR s.solicitante.id = :solicitanteId)
+          AND (:hasResponsable = false OR s.responsable.id = :responsableId)
+          AND (:hasSupervisor = false OR s.supervisor.id = :supervisorId)
+          AND (:hasActivo = false OR s.activo.id = :activoId)
+          AND (:hasAprobador = false OR s.aprobador.id = :aprobadorId)
+    """,
+    countQuery = """
+        SELECT count(s)
         FROM SolicitudMantenimientoEntity s
         WHERE (:hasQ = false OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%')))
           AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
