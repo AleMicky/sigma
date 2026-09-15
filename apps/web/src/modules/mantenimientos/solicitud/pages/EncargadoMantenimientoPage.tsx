@@ -55,6 +55,7 @@ function SolicitudEncargadoListItem({
   onOrdenTrabajo,
   onTraceability,
   onActionSelect,
+  onDelete,
 }: {
   solicitud: SolicitudMantenimiento
   onControlActivo: (s: SolicitudMantenimiento) => void
