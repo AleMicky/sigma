@@ -20,7 +20,6 @@ CREATE TABLE mantenimientos.checklist_items (
     nombre                                  VARCHAR(200) NOT NULL,
     descripcion                             VARCHAR(500),
     orden                                   INTEGER NOT NULL DEFAULT 0,
-    obligatorio                             BOOLEAN NOT NULL DEFAULT FALSE,
     created_at                              TIMESTAMPTZ NOT NULL,
     updated_at                              TIMESTAMPTZ,
     created_by                              VARCHAR(100),

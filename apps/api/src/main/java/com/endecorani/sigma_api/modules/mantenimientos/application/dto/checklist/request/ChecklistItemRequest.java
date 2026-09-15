@@ -19,8 +19,6 @@ public record ChecklistItemRequest(
 
         @NotNull(message = "El orden es obligatorio")
         @Min(value = 0, message = "El orden debe ser mayor o igual a 0")
-        Integer orden,
-
-        Boolean obligatorio
+        Integer orden
 ) {
 }

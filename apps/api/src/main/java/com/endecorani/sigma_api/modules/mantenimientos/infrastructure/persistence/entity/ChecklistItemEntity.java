@@ -57,11 +57,4 @@ public class ChecklistItemEntity extends BaseEntity {
     )
     @Builder.Default
     private Integer orden = 0;
-
-    @Column(
-            name = "obligatorio",
-            nullable = false
-    )
-    @Builder.Default
-    private Boolean obligatorio = false;
 }

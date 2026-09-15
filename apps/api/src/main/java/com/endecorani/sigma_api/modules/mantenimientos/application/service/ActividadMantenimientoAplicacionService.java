@@ -1,7 +1,6 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
 import com.endecorani.sigma_api.modules.activos.domain.model.Componente;
-import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ComponenteRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad.request.ActividadMantenimientoAplicacionRequest;
@@ -141,7 +140,8 @@ public class ActividadMantenimientoAplicacionService {
         ActividadMantenimientoAplicacionResponse.ComponenteInfo componente = null;
         if (domain.getComponenteId() != null) {
             Optional<Componente> comp = componenteRepository.findById(domain.getComponenteId());
-            componente = comp.map(c -> new ActividadMantenimientoAplicacionResponse.ComponenteInfo(c.getId(), c.getNombre()))
+            componente = comp
+                    .map(c -> new ActividadMantenimientoAplicacionResponse.ComponenteInfo(c.getId(), c.getNombre()))
                     .orElse(null);
         }
 
@@ -154,7 +154,6 @@ public class ActividadMantenimientoAplicacionService {
                 domain.getActividadMantenimientoId(),
                 tipoActivo,
                 componente,
-                checklist
-        );
+                checklist);
     }
 }

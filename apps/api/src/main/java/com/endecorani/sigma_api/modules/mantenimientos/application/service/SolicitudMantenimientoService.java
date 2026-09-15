@@ -3,8 +3,6 @@ package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 import com.endecorani.sigma_api.config.security.SecurityUtils;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.EnviarSolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.SolicitudMantenimientoRequest;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.SolicitudMantenimientoUpdate;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoAdjuntoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResumenResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoTrazabilidadResponse;
@@ -68,8 +66,7 @@ public class SolicitudMantenimientoService {
             "fechaSolicitud",
             "estado",
             "createdAt",
-            "updatedAt"
-    );
+            "updatedAt");
 
     private final SolicitudMantenimientoRepository repository;
     private final SolicitudMantenimientoTrazabilidadRepository trazabilidadRepository;
@@ -90,7 +87,8 @@ public class SolicitudMantenimientoService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<SolicitudMantenimientoResponse> findAll(SolicitudMantenimientoSearchCriteria criteria, PageRequestDto pageRequest) {
+    public PageResponse<SolicitudMantenimientoResponse> findAll(SolicitudMantenimientoSearchCriteria criteria,
+            PageRequestDto pageRequest) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Page<SolicitudMantenimiento> resultado = repository.findAll(criteria, pageable);
         return PageResponse.from(resultado, mapper::toResponse);
@@ -124,11 +122,11 @@ public class SolicitudMantenimientoService {
                 LocalDateTime.now().getYear());
 
         SolicitudMantenimiento solicitud = mapper.toDomain(dto);
-        
+
         solicitud.setNumero(numero);
         solicitud.setFechaSolicitud(LocalDateTime.now());
         solicitud.setEstado(ESTADO_BORRADOR);
-        
+
         SolicitudMantenimiento guardado = repository.save(solicitud);
 
         if (guardado.getId() != null) {
@@ -156,20 +154,20 @@ public class SolicitudMantenimientoService {
                 null,
                 guardado.getEstado(),
                 "Creación de la solicitud en borrador",
-                creadorEmpleadoId
-        );
+                creadorEmpleadoId);
 
         return mapper.toResponse(guardado);
     }
 
     @Transactional
-    public SolicitudMantenimientoResponse createWithFiles(SolicitudMantenimientoRequest request, List<MultipartFile> files) {
+    public SolicitudMantenimientoResponse createWithFiles(SolicitudMantenimientoRequest request,
+            List<MultipartFile> files) {
         SolicitudMantenimientoResponse response = create(request);
 
         if (files == null || files.isEmpty()) {
             return response;
         }
-        
+
         SolicitudMantenimiento solicitud = obtenerPorId(response.id());
 
         files.forEach(file -> {
@@ -191,14 +189,15 @@ public class SolicitudMantenimientoService {
     @Transactional
     public SolicitudMantenimientoResponse update(UUID id, SolicitudMantenimientoRequest dto) {
         SolicitudMantenimiento actual = obtenerPorId(id);
-        
-        // El mapper updateDomain de Request no existe, usualmente es de SolicitudMantenimientoUpdate, 
+
+        // El mapper updateDomain de Request no existe, usualmente es de
+        // SolicitudMantenimientoUpdate,
         // pero podemos crear uno nuevo de Request a Model, o simplemente usar toDomain.
         // Dado que solo queremos mapear:
         actual.setTitulo(dto.titulo());
         actual.setDescripcion(dto.descripcion());
         actual.setTipoFallas(dto.tipoFallas());
-        // Map other relationships if you want. 
+        // Map other relationships if you want.
 
         SolicitudMantenimiento actualizado = repository.save(actual);
         return mapper.toResponse(actualizado);
@@ -224,16 +223,19 @@ public class SolicitudMantenimientoService {
                     "Debe seleccionar un aprobador");
         }
 
-        Empleado aprobador = empleadoRepository.findById(aprobadorId).orElseThrow(() -> new ResourceNotFoundException("Empleado", aprobadorId));
+        Empleado aprobador = empleadoRepository.findById(aprobadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Empleado", aprobadorId));
         solicitud.setAprobador(aprobador);
 
         if (request.responsableId() != null) {
-            Empleado responsable = empleadoRepository.findById(request.responsableId()).orElseThrow(() -> new ResourceNotFoundException("Empleado responsable", request.responsableId()));
+            Empleado responsable = empleadoRepository.findById(request.responsableId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Empleado responsable", request.responsableId()));
             solicitud.setResponsable(responsable);
         }
 
         if (request.supervisorId() != null) {
-            Empleado supervisor = empleadoRepository.findById(request.supervisorId()).orElseThrow(() -> new ResourceNotFoundException("Empleado supervisor", request.supervisorId()));
+            Empleado supervisor = empleadoRepository.findById(request.supervisorId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Empleado supervisor", request.supervisorId()));
             solicitud.setSupervisor(supervisor);
         }
 
@@ -243,7 +245,7 @@ public class SolicitudMantenimientoService {
             variables.put("solicitanteId", solicitud.getSolicitante().getId().toString());
         }
         variables.put("aprobadorId", aprobadorId.toString());
-        
+
         if (request.responsableId() != null) {
             variables.put("responsableId", request.responsableId().toString());
         }
@@ -279,8 +281,7 @@ public class SolicitudMantenimientoService {
                 estadoAnterior,
                 ESTADO_SOLICITADO,
                 "Envío de la solicitud para aprobación",
-                actorEmpleadoId
-        );
+                actorEmpleadoId);
 
         return mapper.toResponse(actualizado);
     }
@@ -311,7 +312,8 @@ public class SolicitudMantenimientoService {
             }
         }
 
-        if (!effectiveVariables.containsKey("responsableId") && solicitud.getResponsable() != null && solicitud.getResponsable().getId() != null) {
+        if (!effectiveVariables.containsKey("responsableId") && solicitud.getResponsable() != null
+                && solicitud.getResponsable().getId() != null) {
             effectiveVariables.put("responsableId", solicitud.getResponsable().getId().toString());
         }
 
@@ -382,11 +384,14 @@ public class SolicitudMantenimientoService {
         if (nuevoEstado != null && !nuevoEstado.equalsIgnoreCase(estadoAnterior)) {
             String comentario = "Cambio de estado en el flujo de trabajo";
             if (request != null && request.variables() != null) {
-                if (request.variables().get("comentario") != null && !request.variables().get("comentario").toString().isBlank()) {
+                if (request.variables().get("comentario") != null
+                        && !request.variables().get("comentario").toString().isBlank()) {
                     comentario = request.variables().get("comentario").toString().trim();
-                } else if (request.variables().get("observacion") != null && !request.variables().get("observacion").toString().isBlank()) {
+                } else if (request.variables().get("observacion") != null
+                        && !request.variables().get("observacion").toString().isBlank()) {
                     comentario = request.variables().get("observacion").toString().trim();
-                } else if (request.variables().get("motivo") != null && !request.variables().get("motivo").toString().isBlank()) {
+                } else if (request.variables().get("motivo") != null
+                        && !request.variables().get("motivo").toString().isBlank()) {
                     comentario = request.variables().get("motivo").toString().trim();
                 }
             }
@@ -396,8 +401,7 @@ public class SolicitudMantenimientoService {
                     estadoAnterior,
                     nuevoEstado,
                     comentario,
-                    actorEmpleadoId
-            );
+                    actorEmpleadoId);
         }
 
         return mapper.toResponse(guardado);
@@ -423,7 +427,8 @@ public class SolicitudMantenimientoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitud de mantenimiento", id));
     }
 
-    private void registrarTrazabilidad(UUID solicitudId, String estadoAnterior, String estadoNuevo, String comentario, UUID empleadoId) {
+    private void registrarTrazabilidad(UUID solicitudId, String estadoAnterior, String estadoNuevo, String comentario,
+            UUID empleadoId) {
         if (solicitudId == null || estadoNuevo == null) {
             return;
         }
@@ -436,7 +441,8 @@ public class SolicitudMantenimientoService {
         }
 
         if (empleadoId == null) {
-            log.warn("No se pudo registrar trazabilidad para solicitud {} porque no se encontró empleadoId asociado", solicitudId);
+            log.warn("No se pudo registrar trazabilidad para solicitud {} porque no se encontró empleadoId asociado",
+                    solicitudId);
             return;
         }
 
@@ -514,7 +520,8 @@ public class SolicitudMantenimientoService {
         return null;
     }
 
-    private SolicitudMantenimientoTrazabilidadResponse toTrazabilidadResponse(SolicitudMantenimientoTrazabilidad domain) {
+    private SolicitudMantenimientoTrazabilidadResponse toTrazabilidadResponse(
+            SolicitudMantenimientoTrazabilidad domain) {
         SolicitudMantenimientoResponse.EmpleadoInfo empleadoInfo = buildEmpleadoInfo(domain.getEmpleadoId());
         return new SolicitudMantenimientoTrazabilidadResponse(
                 domain.getId(),
@@ -524,8 +531,7 @@ public class SolicitudMantenimientoService {
                 domain.getComentario(),
                 domain.getEmpleadoId(),
                 empleadoInfo,
-                domain.getFecha()
-        );
+                domain.getFecha());
     }
 
     private SolicitudMantenimientoResponse.EmpleadoInfo buildEmpleadoInfo(UUID empleadoId) {
@@ -542,8 +548,7 @@ public class SolicitudMantenimientoService {
                             empleado.getId(),
                             nombreCompleto,
                             cargo,
-                            area
-                    );
+                            area);
                 })
                 .orElse(null);
     }

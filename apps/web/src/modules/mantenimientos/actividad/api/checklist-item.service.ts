@@ -9,7 +9,6 @@ export type ChecklistItem = AuditableEntity & {
   nombre: string
   descripcion: string | null
   orden: number
-  obligatorio: boolean
 }
 
 export type ChecklistItemPayload = {
@@ -17,7 +16,6 @@ export type ChecklistItemPayload = {
   nombre: string
   descripcion?: string | null
   orden: number
-  obligatorio?: boolean
 }
 
 const crud = createCrudService<

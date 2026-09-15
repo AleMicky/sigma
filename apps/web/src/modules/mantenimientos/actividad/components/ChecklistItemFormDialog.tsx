@@ -45,7 +45,6 @@ export function ChecklistItemFormDialog({
   const [nombre, setNombre] = useState("")
   const [descripcion, setDescripcion] = useState("")
   const [orden, setOrden] = useState(nextOrder)
-  const [obligatorio, setObligatorio] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
   const createMutation = useCreateChecklistItem()
@@ -59,12 +58,10 @@ export function ChecklistItemFormDialog({
         setNombre(item.nombre)
         setDescripcion(item.descripcion ?? "")
         setOrden(item.orden)
-        setObligatorio(item.obligatorio)
       } else {
         setNombre("")
         setDescripcion("")
         setOrden(nextOrder)
-        setObligatorio(false)
       }
       setFormError(null)
     }
@@ -89,7 +86,6 @@ export function ChecklistItemFormDialog({
             nombre: nombre.trim(),
             descripcion: descripcion.trim() || null,
             orden: Number(orden) || 0,
-            obligatorio,
           },
         })
       } else {
@@ -98,7 +94,6 @@ export function ChecklistItemFormDialog({
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           orden: Number(orden) || 0,
-          obligatorio,
         })
       }
 
@@ -177,42 +172,18 @@ export function ChecklistItemFormDialog({
               />
             </Field>
 
-            <div className="grid grid-cols-2 gap-3 items-center">
-              <Field>
-                <FieldLabel htmlFor="checklist-orden">Orden</FieldLabel>
-                <Input
-                  id="checklist-orden"
-                  type="number"
-                  min={0}
-                  value={orden}
-                  onChange={(e) => setOrden(Number(e.target.value))}
-                  className="text-xs"
-                  disabled={isPending}
-                />
-              </Field>
-
-              <div className="pt-5">
-                <label
-                  htmlFor="checklist-obligatorio"
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg border p-2 cursor-pointer transition-all select-none",
-                    obligatorio
-                      ? "border-destructive/40 bg-destructive/5 text-destructive font-medium"
-                      : "border-border/80 hover:bg-muted/30 text-foreground",
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    id="checklist-obligatorio"
-                    checked={obligatorio}
-                    onChange={(e) => setObligatorio(e.target.checked)}
-                    disabled={isPending}
-                    className="size-3.5 rounded border-border text-destructive focus:ring-destructive"
-                  />
-                  <span className="text-xs">Obligatorio</span>
-                </label>
-              </div>
-            </div>
+            <Field>
+              <FieldLabel htmlFor="checklist-orden">Orden</FieldLabel>
+              <Input
+                id="checklist-orden"
+                type="number"
+                min={0}
+                value={orden}
+                onChange={(e) => setOrden(Number(e.target.value))}
+                className="text-xs"
+                disabled={isPending}
+              />
+            </Field>
           </div>
 
           <DialogFooter className="border-t pt-4">

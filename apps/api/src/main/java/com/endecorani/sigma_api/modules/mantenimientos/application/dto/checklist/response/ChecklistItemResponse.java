@@ -10,7 +10,6 @@ public record ChecklistItemResponse(
         String nombre,
         String descripcion,
         Integer orden,
-        Boolean obligatorio,
         AuditoriaResponse auditoria
 ) {
 }

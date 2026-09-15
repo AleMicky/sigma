@@ -5,7 +5,6 @@ export const checklistItemSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio").max(200, "Máximo 200 caracteres"),
   descripcion: z.string().max(500, "Máximo 500 caracteres").optional().nullable(),
   orden: z.number().int().min(0, "El orden debe ser mayor o igual a 0"),
-  obligatorio: z.boolean(),
 })
 
 export type ChecklistItemFormValues = z.infer<typeof checklistItemSchema>

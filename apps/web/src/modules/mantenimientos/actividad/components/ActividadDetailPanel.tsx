@@ -659,21 +659,6 @@ function AplicacionItemCard({
                         <span className="font-semibold text-xs text-foreground">
                           {item.nombre}
                         </span>
-                        {item.obligatorio ? (
-                          <Badge
-                            variant="destructive"
-                            className="text-[9px] font-semibold px-1.5 py-0 h-4 bg-destructive/10 text-destructive border-destructive/20"
-                          >
-                            Obligatorio
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="secondary"
-                            className="text-[9px] text-muted-foreground font-normal px-1.5 py-0 h-4"
-                          >
-                            Opcional
-                          </Badge>
-                        )}
                       </div>
                       {item.descripcion && (
                         <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">

@@ -99,7 +99,6 @@ public class ActividadMantenimientoPersistenceMapper {
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
         entity.setOrden(domain.getOrden() != null ? domain.getOrden() : 0);
-        entity.setObligatorio(domain.getObligatorio() != null ? domain.getObligatorio() : false);
         return entity;
     }
 
@@ -112,7 +111,6 @@ public class ActividadMantenimientoPersistenceMapper {
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
                 .orden(entity.getOrden())
-                .obligatorio(entity.getObligatorio())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())

@@ -21,7 +21,4 @@ public class ChecklistItem extends AuditableModel {
     private String descripcion;
 
     private Integer orden;
-
-    @Builder.Default
-    private Boolean obligatorio = false;
 }
