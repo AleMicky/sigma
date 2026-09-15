@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Link } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
   Box,
@@ -106,6 +106,7 @@ export function SolicitudDetalleModal({
   onOpenChange,
   onWorkflowAction,
 }: SolicitudDetalleModalProps) {
+  const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
   const [showTrazabilidad, setShowTrazabilidad] = useState(false)
   const [selectedPreviewImage, setSelectedPreviewImage] = useState<{
@@ -251,21 +252,22 @@ export function SolicitudDetalleModal({
 
               <div className="flex items-center gap-1.5 shrink-0">
                 {/* Botón Control de Activo */}
-                <Link
-                  to="/mantenimientos/controles-activos/nuevo"
-                  search={{ solicitudId: solicitud.id }}
-                  onClick={() => onOpenChange(false)}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onOpenChange(false)
+                    navigate({
+                      to: "/mantenimientos/controles-activos/nuevo",
+                      search: { solicitudId: solicitud.id },
+                    })
+                  }}
+                  className="h-7 gap-1 px-2.5 text-[11px] font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20 hover:border-sky-500/50 rounded-lg shrink-0 cursor-pointer shadow-2xs"
                 >
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 gap-1 px-2.5 text-[11px] font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20 hover:border-sky-500/50 rounded-lg shrink-0 cursor-pointer shadow-2xs"
-                  >
-                    <ClipboardCheck className="size-3 text-sky-600 dark:text-sky-400" />
-                    <span>Control de Activo</span>
-                  </Button>
-                </Link>
+                  <ClipboardCheck className="size-3 text-sky-600 dark:text-sky-400" />
+                  <span>Control de Activo</span>
+                </Button>
 
                 {/* Botón de Trazabilidad */}
                 <Button

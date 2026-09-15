@@ -8,7 +8,6 @@ export const router = createRouter({
   routeTree,
   context: {
     queryClient,
-    // Se inyecta desde RouterApp con el estado real de auth
     auth: undefined!,
   } satisfies RouterContext,
   defaultPreload: "intent",

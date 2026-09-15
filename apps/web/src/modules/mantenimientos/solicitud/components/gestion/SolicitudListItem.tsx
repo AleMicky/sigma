@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import {
   AlertTriangle,
   Box,
@@ -68,6 +68,7 @@ export function SolicitudListItem({
   onWorkflowAction,
 }: SolicitudListItemProps) {
   const [copied, setCopied] = useState(false)
+  const navigate = useNavigate()
 
   const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
   const isBorrador = estadoNorm === "borrador"
@@ -188,25 +189,25 @@ export function SolicitudListItem({
               <span>Devolución Lista</span>
             </span>
           ) : (
-            <Link
-              to="/mantenimientos/controles-activos/nuevo"
-              search={{
-                solicitudId: solicitud.id,
-                tipo: "DEVOLUCION",
+            <Button
+              type="button"
+              size="xs"
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate({
+                  to: "/mantenimientos/controles-activos/nuevo",
+                  search: {
+                    solicitudId: solicitud.id,
+                    tipo: "DEVOLUCION",
+                  },
+                })
               }}
-              onClick={(e) => e.stopPropagation()}
+              className="h-6.5 gap-1 px-2 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-md shadow-2xs cursor-pointer"
+              title="Registrar Devolución de Activo para cerrar el mantenimiento"
             >
-
-              <Button
-                type="button"
-                size="xs"
-                className="h-6.5 gap-1 px-2 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-md shadow-2xs cursor-pointer"
-                title="Registrar Devolución de Activo para cerrar el mantenimiento"
-              >
-                <ClipboardCheck className="size-3" />
-                <span>Devolución</span>
-              </Button>
-            </Link>
+              <ClipboardCheck className="size-3" />
+              <span>Devolución</span>
+            </Button>
           )
         )}
 
@@ -405,14 +406,14 @@ export function SolicitudListItem({
               ) : null}
               {isTrabajoRealizado && !hasDevolucion && (
                 <DropdownMenuItem
-                  render={
-                    <Link
-                      to="/mantenimientos/controles-activos/nuevo"
-                      search={{
+                  onClick={() =>
+                    navigate({
+                      to: "/mantenimientos/controles-activos/nuevo",
+                      search: {
                         solicitudId: solicitud.id,
                         tipo: "DEVOLUCION",
-                      }}
-                    />
+                      },
+                    })
                   }
                   className="text-xs text-amber-600 focus:text-amber-600 cursor-pointer py-1.5 font-medium"
                 >
