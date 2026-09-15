@@ -31,11 +31,14 @@ public interface ControlActivoMapper {
     void updateDomain(ControlActivoUpdate dto, @MappingTarget ControlActivo domain);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "controlActivoId", ignore = true)
     ControlActivoDetalle toDetalleDomain(ControlActivoDetalleRequest dto);
 
     @Mapping(target = "controlActivoId", ignore = true)
     void updateDetalleDomain(ControlActivoDetalleUpdate dto, @MappingTarget ControlActivoDetalle domain);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "controlActivoId", ignore = true)
+    void updateDetalleFromRequest(ControlActivoDetalleRequest dto, @MappingTarget ControlActivoDetalle domain);
 
     ControlActivoDetalleResponse toDetalleResponse(ControlActivoDetalle domain);
 }

@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 public record ControlActivoDetalleRequest(
+        UUID controlActivoId,
+
         @NotNull(message = "El accesorio es obligatorio")
         UUID accesorioId,
 
@@ -24,3 +26,4 @@ public record ControlActivoDetalleRequest(
         String observacion
 ) {
 }
+
