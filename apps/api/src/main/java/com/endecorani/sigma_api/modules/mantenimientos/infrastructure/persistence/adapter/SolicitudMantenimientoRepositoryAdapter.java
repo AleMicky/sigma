@@ -71,21 +71,30 @@ public class SolicitudMantenimientoRepositoryAdapter implements SolicitudManteni
     @Override
     public Page<SolicitudMantenimiento> findAll(SolicitudMantenimientoSearchCriteria criteria, Pageable pageable) {
         return springRepository.searchWithCriteria(
-                criteria.q() != null && !criteria.q().isBlank(),
-                criteria.q() != null ? criteria.q() : "",
-                criteria.estado() != null && !criteria.estado().isBlank(),
-                criteria.estado() != null ? criteria.estado() : "",
-                criteria.solicitanteId() != null,
-                criteria.solicitanteId() != null ? criteria.solicitanteId() : NULL_UUID,
-                criteria.responsableId() != null,
-                criteria.responsableId() != null ? criteria.responsableId() : NULL_UUID,
-                criteria.supervisorId() != null,
-                criteria.supervisorId() != null ? criteria.supervisorId() : NULL_UUID,
-                criteria.activoId() != null,
-                criteria.activoId() != null ? criteria.activoId() : NULL_UUID,
-                criteria.aprobadorId() != null,
-                criteria.aprobadorId() != null ? criteria.aprobadorId() : NULL_UUID,
+                hasText(criteria.q()), textOrEmpty(criteria.q()),
+                hasText(criteria.estado()), textOrEmpty(criteria.estado()),
+                hasId(criteria.solicitanteId()), idOrDefault(criteria.solicitanteId()),
+                hasId(criteria.responsableId()), idOrDefault(criteria.responsableId()),
+                hasId(criteria.supervisorId()), idOrDefault(criteria.supervisorId()),
+                hasId(criteria.activoId()), idOrDefault(criteria.activoId()),
+                hasId(criteria.aprobadorId()), idOrDefault(criteria.aprobadorId()),
                 pageable
         ).map(mapper::toDomain);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private String textOrEmpty(String value) {
+        return value != null ? value : "";
+    }
+
+    private boolean hasId(UUID id) {
+        return id != null;
+    }
+
+    private UUID idOrDefault(UUID id) {
+        return id != null ? id : NULL_UUID;
     }
 }
