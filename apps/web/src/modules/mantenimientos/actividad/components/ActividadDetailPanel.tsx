@@ -17,7 +17,6 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-import { appConfig } from "@/app/config"
 import { componenteQueries } from "@/modules/activos/componente/api/componente.queries"
 import type { Componente } from "@/modules/activos/componente/api/componente.service"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
@@ -34,7 +33,6 @@ import {
 } from "@/shared/components/master-detail"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
-import { useClampPage } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
 import { useDeleteActividad } from "../api/actividad.mutations"
@@ -48,8 +46,6 @@ import type { ActividadMantenimiento } from "../api/actividad.service"
 import { ActividadAplicacionFormDialog } from "./ActividadAplicacionFormDialog"
 import { ChecklistItemFormDialog } from "./ChecklistItemFormDialog"
 
-const PAGE_SIZE = appConfig.pagination.defaultPageSize
-
 type EnrichedAplicacion = ActividadAplicacion & {
   tipoActivo?: TipoActivo
   componente?: Componente | null
@@ -57,22 +53,13 @@ type EnrichedAplicacion = ActividadAplicacion & {
 
 type ActividadDetailPanelProps = {
   actividad: ActividadMantenimiento | null
-  page: number
-  search: string
-  searchQuery: string
   hidePrimaryAction?: boolean
-  onSearchChange: (value: string) => void
-  onPageChange: (page: number) => void
   onEdit?: (actividad: ActividadMantenimiento) => void
 }
 
 export function ActividadDetailPanel({
   actividad,
-  page,
-  search,
-  searchQuery,
   hidePrimaryAction = false,
-  onPageChange,
   onEdit,
 }: ActividadDetailPanelProps) {
   const [showAddAplicacionDialog, setShowAddAplicacionDialog] = useState(false)
@@ -115,20 +102,13 @@ export function ActividadDetailPanel({
 
   // Consulta de aplicaciones
   const aplicacionesQuery = useQuery({
-    ...actividadAplicacionQueries.byActividad(actividad?.id ?? "", {
-      page,
-      size: PAGE_SIZE,
-      sortBy: "createdAt",
-      direction: "DESC",
-    }),
+    ...actividadAplicacionQueries.byActividad(actividad?.id ?? ""),
     enabled: Boolean(actividad?.id),
   })
 
-  useClampPage(page, onPageChange, aplicacionesQuery.data?.totalPages)
-
   const rawAplicaciones = aplicacionesQuery.data?.content ?? []
 
-  const enrichedAplicaciones = useMemo<EnrichedAplicacion[]>(() => {
+  const aplicaciones = useMemo<EnrichedAplicacion[]>(() => {
     return rawAplicaciones.map((app) => {
       const tipoId = app.tipoActivo?.id
       const compId = app.componente?.id
@@ -164,17 +144,6 @@ export function ActividadDetailPanel({
       }
     })
   }, [rawAplicaciones, tiposActivoMap, componentesMap])
-
-  const aplicaciones = useMemo(() => {
-    if (!searchQuery.trim()) return enrichedAplicaciones
-    const term = searchQuery.trim().toLowerCase()
-    return enrichedAplicaciones.filter(
-      (a) =>
-        (a.tipoActivo?.nombre?.toLowerCase().includes(term) ?? false) ||
-        (a.componente?.nombre?.toLowerCase().includes(term) ?? false) ||
-        (a.componente?.codigo?.toLowerCase().includes(term) ?? false),
-    )
-  }, [enrichedAplicaciones, searchQuery])
 
   const totalAplicaciones =
     aplicacionesQuery.data?.totalElements ?? rawAplicaciones.length
@@ -404,8 +373,7 @@ export function ActividadDetailPanel({
                     ? getErrorMessage(aplicacionesQuery.error)
                     : null
                 }
-                hasSearch={search.trim().length > 0}
-                onPageChange={onPageChange}
+                onPageChange={() => {}}
                 getKey={(app) => app.id}
                 skeletonRowClassName="h-16"
                 listClassName="p-2.5 space-y-2.5"
