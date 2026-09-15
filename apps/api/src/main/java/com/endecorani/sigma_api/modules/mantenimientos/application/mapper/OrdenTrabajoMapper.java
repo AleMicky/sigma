@@ -31,11 +31,14 @@ public interface OrdenTrabajoMapper {
     void updateDomain(OrdenTrabajoUpdate dto, @MappingTarget OrdenTrabajo domain);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "ordenTrabajoId", ignore = true)
     OrdenTrabajoActividad toActividadDomain(OrdenTrabajoActividadRequest dto);
 
     @Mapping(target = "ordenTrabajoId", ignore = true)
     void updateActividadDomain(OrdenTrabajoActividadUpdate dto, @MappingTarget OrdenTrabajoActividad domain);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "ordenTrabajoId", ignore = true)
+    void updateActividadFromRequest(OrdenTrabajoActividadRequest dto, @MappingTarget OrdenTrabajoActividad domain);
 
     OrdenTrabajoActividadResponse toActividadResponse(OrdenTrabajoActividad domain);
 

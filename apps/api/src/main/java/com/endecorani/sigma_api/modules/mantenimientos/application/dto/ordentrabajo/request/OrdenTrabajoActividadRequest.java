@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.UUID;
 
 public record OrdenTrabajoActividadRequest(
+        UUID ordenTrabajoId,
+
         UUID actividadMantenimientoId,
 
         @NotBlank(message = "La descripción de la actividad es obligatoria")
@@ -26,3 +28,4 @@ public record OrdenTrabajoActividadRequest(
         List<OrdenTrabajoActividadEvidenciaRequest> evidencias
 ) {
 }
+
