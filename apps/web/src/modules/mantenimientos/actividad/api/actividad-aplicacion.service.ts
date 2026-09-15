@@ -3,21 +3,20 @@ import type { PageParams, PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
 import { actividadAplicacionEndpoints } from "./actividad-aplicacion.endpoints"
+import type { ChecklistItem } from "./checklist-item.service"
 
 export type ActividadAplicacion = AuditableEntity & {
-  actividadMantenimiento: {
-    id: string
-    codigo: string
-    nombre: string
-  }
-  tipoActivo: {
+  id: string
+  actividadMantenimientoId: string
+  tipoActivo?: {
     id: string
     nombre: string
-  }
+  } | null
   componente?: {
     id: string
     nombre: string
   } | null
+  checklist?: ChecklistItem[]
 }
 
 export type ActividadAplicacionPayload = {

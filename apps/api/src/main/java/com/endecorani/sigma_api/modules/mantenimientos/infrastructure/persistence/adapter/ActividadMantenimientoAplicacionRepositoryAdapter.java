@@ -64,6 +64,11 @@ public class ActividadMantenimientoAplicacionRepositoryAdapter implements Activi
     }
 
     @Override
+    public boolean existsByActividadMantenimientoId(UUID actividadMantenimientoId) {
+        return springRepository.existsByActividadMantenimientoId(actividadMantenimientoId);
+    }
+
+    @Override
     public boolean existsByActividadMantenimientoIdAndTipoActivoIdAndComponenteId(UUID actividadMantenimientoId, UUID tipoActivoId, UUID componenteId) {
         return springRepository.existsByActividadMantenimientoIdAndTipoActivoIdAndComponenteId(actividadMantenimientoId, tipoActivoId, componenteId);
     }

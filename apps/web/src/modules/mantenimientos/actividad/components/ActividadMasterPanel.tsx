@@ -102,25 +102,29 @@ export function ActividadMasterPanel({
               active={isSelected}
               onSelect={() => onSelect(actividad.id)}
               title={
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <code className="shrink-0 rounded bg-muted/90 px-1 py-0.5 font-mono text-[10px] font-bold text-foreground border border-border/60">
-                    {actividad.codigo}
-                  </code>
-                  <span className="truncate font-semibold text-xs text-foreground">
-                    {actividad.nombre}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary border border-primary/20 shadow-2xs">
+                    <Wrench className="size-3.5" />
                   </span>
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <code className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-bold text-foreground border border-border/70">
+                      {actividad.codigo}
+                    </code>
+                    <span className="truncate font-semibold text-xs text-foreground">
+                      {actividad.nombre}
+                    </span>
+                  </div>
                 </div>
               }
               subtitle={
                 actividad.descripcion ? (
-                  <p className="truncate text-[10px] text-muted-foreground/70 mt-0.5">
+                  <p className="truncate text-[11px] text-muted-foreground mt-1 pl-8">
                     {actividad.descripcion}
                   </p>
                 ) : null
               }
               actions={
                 <RowActions
-                  className="opacity-100 md:opacity-100"
                   editLabel="Editar actividad"
                   deleteLabel="Eliminar actividad"
                   deleteDisabled={deleteMutation.isPending}

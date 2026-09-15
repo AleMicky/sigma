@@ -24,5 +24,7 @@ public interface ActividadMantenimientoAplicacionRepository {
 
     void deleteById(UUID id);
 
+    boolean existsByActividadMantenimientoId(UUID actividadMantenimientoId);
+
     boolean existsByActividadMantenimientoIdAndTipoActivoIdAndComponenteId(UUID actividadMantenimientoId, UUID tipoActivoId, UUID componenteId);
 }

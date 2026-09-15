@@ -16,5 +16,7 @@ public interface SpringActividadMantenimientoAplicacionRepository extends JpaRep
 
     List<ActividadMantenimientoAplicacionEntity> findByTipoActivoId(UUID tipoActivoId);
 
+    boolean existsByActividadMantenimientoId(UUID actividadMantenimientoId);
+
     boolean existsByActividadMantenimientoIdAndTipoActivoIdAndComponenteId(UUID actividadMantenimientoId, UUID tipoActivoId, UUID componenteId);
 }

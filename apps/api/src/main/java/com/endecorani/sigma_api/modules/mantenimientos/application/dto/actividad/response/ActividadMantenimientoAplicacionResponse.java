@@ -8,8 +8,19 @@ import java.util.UUID;
 public record ActividadMantenimientoAplicacionResponse(
         UUID id,
         UUID actividadMantenimientoId,
-        UUID tipoActivoId,
-        UUID componenteId,
+        TipoActivoInfo tipoActivo,
+        ComponenteInfo componente,
         List<ChecklistItemResponse> checklist
 ) {
+
+    public record ComponenteInfo(
+            UUID id,
+            String nombre
+    ) {
+    }
+    public record TipoActivoInfo(
+            UUID id,
+            String nombre
+    ) {
+    }
 }
