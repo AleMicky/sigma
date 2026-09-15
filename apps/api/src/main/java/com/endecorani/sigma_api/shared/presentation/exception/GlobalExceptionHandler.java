@@ -27,14 +27,18 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ResourceNotFoundException.class)
+    @ExceptionHandler({
+            ResourceNotFoundException.class,
+            org.springframework.web.servlet.resource.NoResourceFoundException.class
+    })
     public ResponseEntity<ApiErrorResponse> handleNotFound(
-            ResourceNotFoundException exception,
+            Exception exception,
             HttpServletRequest request
     ) {
+        String code = (exception instanceof ResourceNotFoundException rnfe) ? rnfe.getCode() : "RESOURCE_NOT_FOUND";
         return buildResponse(
                 HttpStatus.NOT_FOUND,
-                exception.getCode(),
+                code,
                 exception.getMessage(),
                 request.getRequestURI()
         );
