@@ -1,20 +1,29 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
+import com.endecorani.sigma_api.config.security.SecurityUtils;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.EnviarSolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.SolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.SolicitudMantenimientoUpdate;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoAdjuntoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResumenResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoTrazabilidadResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.SolicitudMantenimientoMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoAdjunto;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoTrazabilidad;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoTrazabilidadRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.AreaRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.CargoRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
+import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
+import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
@@ -26,6 +35,7 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -39,7 +49,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SolicitudMantenimientoService {
@@ -60,7 +72,13 @@ public class SolicitudMantenimientoService {
     );
 
     private final SolicitudMantenimientoRepository repository;
+    private final SolicitudMantenimientoTrazabilidadRepository trazabilidadRepository;
     private final EmpleadoRepository empleadoRepository;
+    private final PersonaRepository personaRepository;
+    private final AreaRepository areaRepository;
+    private final CargoRepository cargoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final SecurityUtils securityUtils;
     private final SolicitudMantenimientoMapper mapper;
     private final CorrelativoService correlativoService;
     private final WorkflowApplicationService workflowApplicationService;
@@ -129,6 +147,18 @@ public class SolicitudMantenimientoService {
             guardado = repository.save(guardado);
         }
 
+        UUID creadorEmpleadoId = obtenerEmpleadoIdActual();
+        if (creadorEmpleadoId == null && guardado.getSolicitante() != null) {
+            creadorEmpleadoId = guardado.getSolicitante().getId();
+        }
+        registrarTrazabilidad(
+                guardado.getId(),
+                null,
+                guardado.getEstado(),
+                "Creación de la solicitud en borrador",
+                creadorEmpleadoId
+        );
+
         return mapper.toResponse(guardado);
     }
 
@@ -185,6 +215,8 @@ public class SolicitudMantenimientoService {
                     "Solo se puede enviar una solicitud en estado BORRADOR");
         }
 
+        String estadoAnterior = solicitud.getEstado();
+
         UUID aprobadorId = request.aprobadorId();
         if (aprobadorId == null) {
             throw new BusinessException(
@@ -236,7 +268,21 @@ public class SolicitudMantenimientoService {
 
         solicitud.setEstado(ESTADO_SOLICITADO);
 
-        return mapper.toResponse(repository.save(solicitud));
+        SolicitudMantenimiento actualizado = repository.save(solicitud);
+
+        UUID actorEmpleadoId = obtenerEmpleadoIdActual();
+        if (actorEmpleadoId == null && actualizado.getSolicitante() != null) {
+            actorEmpleadoId = actualizado.getSolicitante().getId();
+        }
+        registrarTrazabilidad(
+                actualizado.getId(),
+                estadoAnterior,
+                ESTADO_SOLICITADO,
+                "Envío de la solicitud para aprobación",
+                actorEmpleadoId
+        );
+
+        return mapper.toResponse(actualizado);
     }
 
     @Transactional
@@ -249,6 +295,8 @@ public class SolicitudMantenimientoService {
                     "SOLICITUD_SIN_WORKFLOW",
                     "La solicitud no tiene workflow iniciado");
         }
+
+        String estadoAnterior = solicitud.getEstado();
 
         Map<String, Object> effectiveVariables = new HashMap<>();
         if (request != null && request.variables() != null) {
@@ -329,7 +377,39 @@ public class SolicitudMantenimientoService {
             }
         }
 
-        return mapper.toResponse(repository.save(solicitud));
+        SolicitudMantenimiento guardado = repository.save(solicitud);
+
+        if (nuevoEstado != null && !nuevoEstado.equalsIgnoreCase(estadoAnterior)) {
+            String comentario = "Cambio de estado en el flujo de trabajo";
+            if (request != null && request.variables() != null) {
+                if (request.variables().get("comentario") != null && !request.variables().get("comentario").toString().isBlank()) {
+                    comentario = request.variables().get("comentario").toString().trim();
+                } else if (request.variables().get("observacion") != null && !request.variables().get("observacion").toString().isBlank()) {
+                    comentario = request.variables().get("observacion").toString().trim();
+                } else if (request.variables().get("motivo") != null && !request.variables().get("motivo").toString().isBlank()) {
+                    comentario = request.variables().get("motivo").toString().trim();
+                }
+            }
+            UUID actorEmpleadoId = resolverEmpleadoIdParaWorkflow(request, guardado);
+            registrarTrazabilidad(
+                    guardado.getId(),
+                    estadoAnterior,
+                    nuevoEstado,
+                    comentario,
+                    actorEmpleadoId
+            );
+        }
+
+        return mapper.toResponse(guardado);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SolicitudMantenimientoTrazabilidadResponse> obtenerTrazabilidad(UUID solicitudId) {
+        obtenerPorId(solicitudId);
+        return trazabilidadRepository.findBySolicitudMantenimientoId(solicitudId)
+                .stream()
+                .map(this::toTrazabilidadResponse)
+                .toList();
     }
 
     @Transactional
@@ -341,5 +421,157 @@ public class SolicitudMantenimientoService {
     private SolicitudMantenimiento obtenerPorId(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitud de mantenimiento", id));
+    }
+
+    private void registrarTrazabilidad(UUID solicitudId, String estadoAnterior, String estadoNuevo, String comentario, UUID empleadoId) {
+        if (solicitudId == null || estadoNuevo == null) {
+            return;
+        }
+
+        if (empleadoId == null) {
+            SolicitudMantenimiento s = repository.findById(solicitudId).orElse(null);
+            if (s != null && s.getSolicitante() != null && s.getSolicitante().getId() != null) {
+                empleadoId = s.getSolicitante().getId();
+            }
+        }
+
+        if (empleadoId == null) {
+            log.warn("No se pudo registrar trazabilidad para solicitud {} porque no se encontró empleadoId asociado", solicitudId);
+            return;
+        }
+
+        SolicitudMantenimientoTrazabilidad trazabilidad = SolicitudMantenimientoTrazabilidad.builder()
+                .solicitudMantenimientoId(solicitudId)
+                .estadoAnterior(estadoAnterior)
+                .estadoNuevo(estadoNuevo)
+                .comentario(comentario)
+                .empleadoId(empleadoId)
+                .fecha(LocalDateTime.now())
+                .build();
+
+        trazabilidadRepository.save(trazabilidad);
+    }
+
+    private UUID obtenerEmpleadoIdActual() {
+        return securityUtils.getCurrentUserId()
+                .flatMap(usuarioRepository::findById)
+                .map(Usuario::getPersonaId)
+                .flatMap(empleadoRepository::findFirstByPersonaId)
+                .map(Empleado::getId)
+                .orElse(null);
+    }
+
+    private UUID resolverEmpleadoIdParaWorkflow(CompleteWorkflowTaskRequest request, SolicitudMantenimiento solicitud) {
+        UUID currentEmpId = obtenerEmpleadoIdActual();
+        if (currentEmpId != null) {
+            return currentEmpId;
+        }
+
+        if (request != null && request.variables() != null) {
+            Object empIdObj = request.variables().get("empleadoId");
+            if (empIdObj != null && !empIdObj.toString().isBlank()) {
+                try {
+                    return UUID.fromString(empIdObj.toString().trim());
+                } catch (Exception ignored) {
+                }
+            }
+            Object responsableIdObj = request.variables().get("responsableId");
+            if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
+                try {
+                    return UUID.fromString(responsableIdObj.toString().trim());
+                } catch (Exception ignored) {
+                }
+            }
+            Object supervisorIdObj = request.variables().get("supervisorId");
+            if (supervisorIdObj != null && !supervisorIdObj.toString().isBlank()) {
+                try {
+                    return UUID.fromString(supervisorIdObj.toString().trim());
+                } catch (Exception ignored) {
+                }
+            }
+            Object aprobadorIdObj = request.variables().get("aprobadorId");
+            if (aprobadorIdObj != null && !aprobadorIdObj.toString().isBlank()) {
+                try {
+                    return UUID.fromString(aprobadorIdObj.toString().trim());
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
+        if (solicitud.getResponsable() != null && solicitud.getResponsable().getId() != null) {
+            return solicitud.getResponsable().getId();
+        }
+        if (solicitud.getSupervisor() != null && solicitud.getSupervisor().getId() != null) {
+            return solicitud.getSupervisor().getId();
+        }
+        if (solicitud.getAprobador() != null && solicitud.getAprobador().getId() != null) {
+            return solicitud.getAprobador().getId();
+        }
+        if (solicitud.getSolicitante() != null && solicitud.getSolicitante().getId() != null) {
+            return solicitud.getSolicitante().getId();
+        }
+
+        return null;
+    }
+
+    private SolicitudMantenimientoTrazabilidadResponse toTrazabilidadResponse(SolicitudMantenimientoTrazabilidad domain) {
+        SolicitudMantenimientoResponse.EmpleadoInfo empleadoInfo = buildEmpleadoInfo(domain.getEmpleadoId());
+        return new SolicitudMantenimientoTrazabilidadResponse(
+                domain.getId(),
+                domain.getSolicitudMantenimientoId(),
+                domain.getEstadoAnterior(),
+                domain.getEstadoNuevo(),
+                domain.getComentario(),
+                domain.getEmpleadoId(),
+                empleadoInfo,
+                domain.getFecha()
+        );
+    }
+
+    private SolicitudMantenimientoResponse.EmpleadoInfo buildEmpleadoInfo(UUID empleadoId) {
+        if (empleadoId == null) {
+            return null;
+        }
+
+        return empleadoRepository.findById(empleadoId)
+                .map(empleado -> {
+                    String nombreCompleto = buildNombreCompleto(empleado.getPersonaId());
+                    String cargo = buildCargoNombre(empleado.getCargoId());
+                    String area = buildAreaNombre(empleado.getAreaId());
+                    return new SolicitudMantenimientoResponse.EmpleadoInfo(
+                            empleado.getId(),
+                            nombreCompleto,
+                            cargo,
+                            area
+                    );
+                })
+                .orElse(null);
+    }
+
+    private String buildNombreCompleto(UUID personaId) {
+        if (personaId == null) {
+            return null;
+        }
+
+        return personaRepository.findById(personaId)
+                .map(p -> Stream.of(p.getNombres(), p.getPrimerApellido(), p.getSegundoApellido())
+                        .filter(v -> v != null && !v.isBlank())
+                        .map(String::trim)
+                        .collect(Collectors.joining(" ")))
+                .orElse(null);
+    }
+
+    private String buildCargoNombre(UUID cargoId) {
+        if (cargoId == null) {
+            return null;
+        }
+        return cargoRepository.findById(cargoId).map(c -> c.getNombre()).orElse(null);
+    }
+
+    private String buildAreaNombre(UUID areaId) {
+        if (areaId == null) {
+            return null;
+        }
+        return areaRepository.findById(areaId).map(a -> a.getNombre()).orElse(null);
     }
 }
