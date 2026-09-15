@@ -31,4 +31,6 @@ public interface EmpleadoRepository {
             EmpleadoSearchCriteria criteria,
             Pageable pageable
     );
+
+    Optional<Empleado> findFirstByPersonaId(UUID personaId);
 }

@@ -10,17 +10,17 @@ import java.util.UUID;
 
 public interface ControlActivoRepository {
 
-    ControlActivo save(ControlActivo entity);
+    Page<ControlActivo> findAll(Pageable pageable);
 
     Optional<ControlActivo> findById(UUID id);
 
-    List<ControlActivo> findAll();
+    List<ControlActivo> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
 
-    Page<ControlActivo> findAll(Pageable pageable);
+    List<ControlActivo> findByOrdenTrabajoId(UUID ordenTrabajoId);
 
-    Page<ControlActivo> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId, Pageable pageable);
+    List<ControlActivo> findByActivoId(UUID activoId);
 
-    boolean existsById(UUID id);
+    ControlActivo save(ControlActivo controlActivo);
 
     void deleteById(UUID id);
 }

@@ -8,20 +8,17 @@ import org.springframework.stereotype.Component;
 public class PrioridadPersistenceMapper {
 
     public PrioridadEntity toEntity(Prioridad domain) {
-
         if (domain == null) {
             return null;
         }
 
         PrioridadEntity entity = new PrioridadEntity();
-
         entity.setId(domain.getId());
         entity.setCodigo(domain.getCodigo());
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
         entity.setNivel(domain.getNivel());
-        entity.setPorDefecto(Boolean.TRUE.equals(domain.getPorDefecto()));
-
+        entity.setPorDefecto(domain.getPorDefecto());
         return entity;
     }
 
@@ -36,7 +33,7 @@ public class PrioridadPersistenceMapper {
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
                 .nivel(entity.getNivel())
-                .porDefecto(Boolean.TRUE.equals(entity.getPorDefecto()))
+                .porDefecto(entity.getPorDefecto())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())
@@ -45,5 +42,4 @@ public class PrioridadPersistenceMapper {
                 .updatedById(entity.getUpdatedById())
                 .build();
     }
-
 }

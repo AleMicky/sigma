@@ -15,7 +15,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 public class TipoMantenimiento extends AuditableModel {
-
     private UUID id;
 
     private String codigo;

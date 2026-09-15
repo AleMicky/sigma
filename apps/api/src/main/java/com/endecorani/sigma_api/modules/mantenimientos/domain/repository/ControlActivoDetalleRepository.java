@@ -10,31 +10,15 @@ import java.util.UUID;
 
 public interface ControlActivoDetalleRepository {
 
-    ControlActivoDetalle save(ControlActivoDetalle entity);
-
     Optional<ControlActivoDetalle> findById(UUID id);
-
-    List<ControlActivoDetalle> findAll();
 
     Page<ControlActivoDetalle> findAll(Pageable pageable);
 
-    boolean existsById(UUID id);
+    Page<ControlActivoDetalle> findByControlActivoId(UUID controlActivoId, Pageable pageable);
+
+    List<ControlActivoDetalle> findByControlActivoId(UUID controlActivoId);
+
+    ControlActivoDetalle save(ControlActivoDetalle detalle);
 
     void deleteById(UUID id);
-
-    boolean existsByControlActivoIdAndAccesorioId(
-            UUID controlActivoId,
-            UUID accesorioId
-    );
-
-    boolean existsByControlActivoIdAndAccesorioIdAndIdNot(
-            UUID controlActivoId,
-            UUID accesorioId,
-            UUID id
-    );
-
-    Page<ControlActivoDetalle> findByControlActivoId(
-            UUID controlActivoId,
-            Pageable pageable
-    );
 }

@@ -1,10 +1,7 @@
 package com.endecorani.sigma_api.modules.mantenimientos.domain.model;
 
 import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
@@ -15,17 +12,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 public class SolicitudMantenimientoAdjunto extends AuditableModel {
+
     private UUID id;
-
     private UUID solicitudMantenimientoId;
-
     private String nombreArchivo;
-
     private String url;
-
     private String tipoContenido;
-
     private Long size;
-
     private String descripcion;
 }

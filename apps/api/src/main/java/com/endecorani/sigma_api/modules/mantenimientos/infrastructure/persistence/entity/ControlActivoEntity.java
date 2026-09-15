@@ -4,12 +4,15 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.enums.TipoControlA
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -90,4 +93,9 @@ public class ControlActivoEntity extends BaseEntity {
             length = 500
     )
     private String observacion;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "control_activo_id")
+    @Builder.Default
+    private List<ControlActivoDetalleEntity> detalles = new ArrayList<>();
 }

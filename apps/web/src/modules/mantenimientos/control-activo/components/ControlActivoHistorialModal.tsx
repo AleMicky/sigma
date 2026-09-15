@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import {
   AlertTriangle,
   Calendar,
@@ -47,6 +47,7 @@ function ControlItemCard({
   onCloseModal?: () => void
   readOnly?: boolean
 }) {
+  const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
 
   const detallesQuery = useQuery({
@@ -120,26 +121,26 @@ function ControlItemCard({
         <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0 flex-wrap justify-end">
           {/* Botón Editar Acta (Oculto en modo solo consulta / supervisión) */}
           {!readOnly && (
-            <Link
-              to="/mantenimientos/controles-activos/nuevo"
-              search={{
-                solicitudId: control.solicitudMantenimientoId,
-                id: control.id,
-                tipo: control.tipo,
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                onCloseModal?.()
+
+                navigate({
+                  to: "/mantenimientos/controles-activos/nuevo",
+                  search: {
+                    solicitudId: control.solicitudMantenimientoId,
+                    id: control.id,
+                    tipo: control.tipo,
+                  },
+                })
               }}
-              onClick={() => onCloseModal?.()}
             >
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs font-semibold gap-1 hover:bg-muted cursor-pointer"
-                title="Editar Acta de Control"
-              >
-                <Edit2 className="size-3 text-muted-foreground" />
-                <span>Editar Acta</span>
-              </Button>
-            </Link>
+              <Edit2 className="size-3" />
+              <span>Editar Acta</span>
+            </Button>
           )}
 
           <Button
@@ -240,6 +241,7 @@ export function ControlActivoHistorialModal({
   solicitudNumero,
   readOnly = false,
 }: ControlActivoHistorialModalProps) {
+  const navigate = useNavigate()
   const controlesQuery = useQuery({
     ...controlActivoQueries.list({
       solicitudMantenimientoId: solicitudId ?? undefined,
@@ -254,15 +256,15 @@ export function ControlActivoHistorialModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="p-4 sm:p-5 border-b bg-muted/20 shrink-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-4 sm:p-5 border-b bg-muted/20">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
-                <History className="size-5" />
+              <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <History className="size-4.5" />
               </div>
               <div>
-                <DialogTitle className="text-base sm:text-lg font-bold">
+                <DialogTitle className="text-base font-bold">
                   Historial de Controles de Activo
                 </DialogTitle>
                 <DialogDescription className="text-xs">
@@ -275,21 +277,21 @@ export function ControlActivoHistorialModal({
             </div>
 
             {solicitudId && !readOnly && (
-              <Link
-                to="/mantenimientos/controles-activos/nuevo"
-                search={{ solicitudId }}
-                onClick={() => onOpenChange(false)}
-                className="shrink-0"
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  onOpenChange(false)
+                  navigate({
+                    to: "/mantenimientos/controles-activos/nuevo",
+                    search: { solicitudId },
+                  })
+                }}
+                className="h-8 px-3 rounded-lg text-xs font-semibold gap-1.5 cursor-pointer shadow-sm shrink-0"
               >
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-8 px-3 rounded-lg text-xs font-semibold gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <Plus className="size-3.5" />
-                  <span>Registrar Acta</span>
-                </Button>
-              </Link>
+                <Plus className="size-3.5" />
+                <span>Registrar Acta</span>
+              </Button>
             )}
           </div>
         </DialogHeader>
@@ -313,20 +315,21 @@ export function ControlActivoHistorialModal({
                     : "Aún no se han generado actas de entrega o devolución de activo para esta solicitud."}
                 </p>
                 {solicitudId && !readOnly && (
-                  <Link
-                    to="/mantenimientos/controles-activos/nuevo"
-                    search={{ solicitudId }}
-                    onClick={() => onOpenChange(false)}
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      onOpenChange(false)
+                      navigate({
+                        to: "/mantenimientos/controles-activos/nuevo",
+                        search: { solicitudId },
+                      })
+                    }}
+                    className="h-8 px-3 rounded-lg text-xs font-semibold gap-1.5 cursor-pointer shadow-sm mt-2"
                   >
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="h-8 px-3 rounded-lg text-xs font-semibold gap-1.5 cursor-pointer shadow-sm mt-2"
-                    >
-                      <Plus className="size-3.5" />
-                      <span>Crear Acta Ahora</span>
-                    </Button>
-                  </Link>
+                    <Plus className="size-3.5" />
+                    <span>Crear Acta Ahora</span>
+                  </Button>
                 )}
               </div>
             </div>

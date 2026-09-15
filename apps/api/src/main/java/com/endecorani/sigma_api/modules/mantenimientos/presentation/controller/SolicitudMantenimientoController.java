@@ -1,10 +1,11 @@
 package com.endecorani.sigma_api.modules.mantenimientos.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.EnviarSolicitudMantenimientoRequest;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.SolicitudMantenimientoRequest;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResponse;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResumenResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.EnviarSolicitudMantenimientoRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.SolicitudMantenimientoRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResumenResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoTrazabilidadResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.SolicitudMantenimientoService;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
@@ -99,6 +100,13 @@ public class SolicitudMantenimientoController {
         @Operation(summary = "Obtener una solicitud por id")
         public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> findById(@PathVariable UUID id) {
                 return ResponseEntity.ok(ApiResponse.success(service.findById(id)));
+        }
+
+        @GetMapping("/{id}/trazabilidad")
+        @Operation(summary = "Obtener historial de trazabilidad de una solicitud de mantenimiento")
+        public ResponseEntity<ApiResponse<List<SolicitudMantenimientoTrazabilidadResponse>>> obtenerTrazabilidad(
+                        @PathVariable UUID id) {
+                return ResponseEntity.ok(ApiResponse.success(service.obtenerTrazabilidad(id)));
         }
 
         @GetMapping

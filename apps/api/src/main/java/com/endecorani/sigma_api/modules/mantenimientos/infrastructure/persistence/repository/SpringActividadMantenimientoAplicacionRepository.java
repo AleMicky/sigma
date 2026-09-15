@@ -4,39 +4,19 @@ import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistenc
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
-@Repository
-public interface SpringActividadMantenimientoAplicacionRepository
-        extends JpaRepository<
-        ActividadMantenimientoAplicacionEntity,
-        UUID
-        > {
+public interface SpringActividadMantenimientoAplicacionRepository extends JpaRepository<ActividadMantenimientoAplicacionEntity, UUID> {
 
-    Page<ActividadMantenimientoAplicacionEntity>
-    findByActividadMantenimientoId(
-            UUID actividadMantenimientoId,
-            Pageable pageable
-    );
+    Page<ActividadMantenimientoAplicacionEntity> findByActividadMantenimientoId(UUID actividadMantenimientoId, Pageable pageable);
 
-    Page<ActividadMantenimientoAplicacionEntity>
-    findByTipoActivoId(
-            UUID tipoActivoId,
-            Pageable pageable
-    );
+    List<ActividadMantenimientoAplicacionEntity> findByActividadMantenimientoId(UUID actividadMantenimientoId);
 
-    boolean existsByActividadMantenimientoIdAndTipoActivoIdAndComponenteId(
-            UUID actividadMantenimientoId,
-            UUID tipoActivoId,
-            UUID componenteId
-    );
+    List<ActividadMantenimientoAplicacionEntity> findByTipoActivoId(UUID tipoActivoId);
 
-    boolean existsByActividadMantenimientoIdAndTipoActivoIdAndComponenteIdAndIdNot(
-            UUID actividadMantenimientoId,
-            UUID tipoActivoId,
-            UUID componenteId,
-            UUID id
-    );
+    boolean existsByActividadMantenimientoId(UUID actividadMantenimientoId);
+
+    boolean existsByActividadMantenimientoIdAndTipoActivoIdAndComponenteId(UUID actividadMantenimientoId, UUID tipoActivoId, UUID componenteId);
 }

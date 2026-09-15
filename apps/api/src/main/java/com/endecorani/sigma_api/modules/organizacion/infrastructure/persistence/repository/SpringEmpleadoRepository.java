@@ -18,4 +18,6 @@ public interface SpringEmpleadoRepository
             String codigo,
             UUID id
     );
+
+    java.util.Optional<EmpleadoEntity> findFirstByPersonaId(UUID personaId);
 }

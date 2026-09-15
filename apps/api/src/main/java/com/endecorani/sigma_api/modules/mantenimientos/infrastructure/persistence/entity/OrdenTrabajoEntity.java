@@ -2,16 +2,23 @@ package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persisten
 
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 @Entity
 @Table(
         schema = "mantenimientos",
@@ -91,4 +98,14 @@ public class OrdenTrabajoEntity extends BaseEntity {
             length = 2000
     )
     private String observacion;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "orden_trabajo_id")
+    @Builder.Default
+    private List<OrdenTrabajoActividadEntity> actividades = new ArrayList<>();
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "orden_trabajo_id")
+    @Builder.Default
+    private List<OrdenTrabajoAdjuntoEntity> adjuntos = new ArrayList<>();
 }

@@ -10,20 +10,15 @@ import java.util.UUID;
 
 public interface OrdenTrabajoActividadRepository {
 
-    OrdenTrabajoActividad save(OrdenTrabajoActividad entity);
-
     Optional<OrdenTrabajoActividad> findById(UUID id);
-
-    List<OrdenTrabajoActividad> findAll();
 
     Page<OrdenTrabajoActividad> findAll(Pageable pageable);
 
-    boolean existsById(UUID id);
+    Page<OrdenTrabajoActividad> findByOrdenTrabajoId(UUID ordenTrabajoId, Pageable pageable);
+
+    List<OrdenTrabajoActividad> findByOrdenTrabajoId(UUID ordenTrabajoId);
+
+    OrdenTrabajoActividad save(OrdenTrabajoActividad actividad);
 
     void deleteById(UUID id);
-
-    Page<OrdenTrabajoActividad> findByOrdenTrabajoId(
-            UUID ordenTrabajoId,
-            Pageable pageable
-    );
 }

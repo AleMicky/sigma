@@ -1,17 +1,17 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
-import com.endecorani.sigma_api.modules.activos.domain.repository.AccesorioRepository;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.ControlActivoDetalleRequest;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.ControlActivoDetalleResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.controlactivo.request.ControlActivoDetalleRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.controlactivo.response.ControlActivoDetalleResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ControlActivoMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ControlActivoDetalle;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ControlActivoDetalleRepository;
-import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ControlActivoRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
-import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
-import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,145 +22,74 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ControlActivoDetalleService {
 
-        private static final Set<String> SORT_FIELDS = Set.of(
-                        "id",
-                        "cantidadEsperada",
-                        "cantidadEncontrada",
-                        "conforme",
-                        "createdAt",
-                        "updatedAt");
+    private static final Set<String> SORT_FIELDS = Set.of(
+            "id",
+            "cantidadEsperada",
+            "cantidadEncontrada",
+            "conforme",
+            "createdAt",
+            "updatedAt"
+    );
 
-        private final ControlActivoDetalleRepository controlActivoDetalleRepository;
-        private final AccesorioRepository accesorioRepository;
+    private final ControlActivoDetalleRepository repository;
+    private final ControlActivoRepository controlActivoRepository;
+    private final ControlActivoMapper mapper;
 
-        @Transactional
-        public ControlActivoDetalleResponse create(ControlActivoDetalleRequest request) {
-                validateUniqueAccesorioForCreate(
-                                request.controlActivoId(),
-                                request.accesorioId());
-                ControlActivoDetalle domain = toDomain(request);
-                ControlActivoDetalle saved = controlActivoDetalleRepository.save(domain);
-                return toResponse(saved);
+    @Transactional
+    public ControlActivoDetalleResponse create(ControlActivoDetalleRequest request) {
+        if (request.controlActivoId() != null && !controlActivoRepository.findById(request.controlActivoId()).isPresent()) {
+            throw new ResourceNotFoundException("Control de activo", request.controlActivoId());
         }
 
-        @Transactional
-        public ControlActivoDetalleResponse update(UUID id, ControlActivoDetalleRequest request) {
-                ControlActivoDetalle domain = findDomainById(id);
-                validateUniqueAccesorioForUpdate(
-                                request.controlActivoId(),
-                                request.accesorioId(),
-                                domain.getId());
-                updateDomain(domain, request);
-                ControlActivoDetalle updated = controlActivoDetalleRepository.save(domain);
-                return toResponse(updated);
+        ControlActivoDetalle domain = mapper.toDetalleDomain(request);
+        return mapper.toDetalleResponse(repository.save(domain));
+    }
+
+    @Transactional
+    public ControlActivoDetalleResponse update(UUID id, ControlActivoDetalleRequest request) {
+        ControlActivoDetalle domain = obtenerPorId(id);
+
+        if (request.controlActivoId() != null && !controlActivoRepository.findById(request.controlActivoId()).isPresent()) {
+            throw new ResourceNotFoundException("Control de activo", request.controlActivoId());
         }
 
-        @Transactional(readOnly = true)
-        public ControlActivoDetalleResponse findById(UUID id) {
-                return toResponse(findDomainById(id));
+        mapper.updateDetalleFromRequest(request, domain);
+
+        if (request.controlActivoId() != null) {
+            domain.setControlActivoId(request.controlActivoId());
         }
 
-        @Transactional(readOnly = true)
-        public PageResponse<ControlActivoDetalleResponse> findAll(PageRequestDto pageRequest) {
-                return PageResponse.from(
-                                controlActivoDetalleRepository.findAll(
-                                                pageRequest.toPageable(SORT_FIELDS)),
-                                this::toResponse);
-        }
+        return mapper.toDetalleResponse(repository.save(domain));
+    }
 
-        @Transactional(readOnly = true)
-        public PageResponse<ControlActivoDetalleResponse> findAll(
-                        UUID controlActivoId,
-                        PageRequestDto pageRequest) {
-                return PageResponse.from(
-                                controlActivoDetalleRepository.findByControlActivoId(
-                                                controlActivoId,
-                                                pageRequest.toPageable(SORT_FIELDS)),
-                                this::toResponse);
-        }
+    @Transactional(readOnly = true)
+    public ControlActivoDetalleResponse findById(UUID id) {
+        ControlActivoDetalle domain = obtenerPorId(id);
+        return mapper.toDetalleResponse(domain);
+    }
 
-        @Transactional
-        public void delete(UUID id) {
-                findDomainById(id);
-                controlActivoDetalleRepository.deleteById(id);
-        }
+    @Transactional(readOnly = true)
+    public PageResponse<ControlActivoDetalleResponse> findAll(PageRequestDto pageRequest) {
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+        Page<ControlActivoDetalle> resultado = repository.findAll(pageable);
+        return PageResponse.from(resultado, mapper::toDetalleResponse);
+    }
 
-        private ControlActivoDetalle findDomainById(UUID id) {
-                return controlActivoDetalleRepository
-                                .findById(id)
-                                .orElseThrow(() -> new ResourceNotFoundException(
-                                                "ControlActivoDetalle",
-                                                id));
-        }
+    @Transactional(readOnly = true)
+    public PageResponse<ControlActivoDetalleResponse> findAll(UUID controlActivoId, PageRequestDto pageRequest) {
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+        Page<ControlActivoDetalle> resultado = repository.findByControlActivoId(controlActivoId, pageable);
+        return PageResponse.from(resultado, mapper::toDetalleResponse);
+    }
 
-        private void validateUniqueAccesorioForCreate(
-                        UUID controlActivoId,
-                        UUID accesorioId) {
-                if (controlActivoDetalleRepository.existsByControlActivoIdAndAccesorioId(
-                                controlActivoId,
-                                accesorioId)) {
-                        throw new ConflictException(
-                                        "CONTROL_ACTIVO_DETALLE_ALREADY_EXISTS",
-                                        "Ya existe un detalle con el accesorio '%s' para el control de activo '%s'"
-                                                        .formatted(accesorioId, controlActivoId));
-                }
-        }
+    @Transactional
+    public void delete(UUID id) {
+        obtenerPorId(id);
+        repository.deleteById(id);
+    }
 
-        private void validateUniqueAccesorioForUpdate(
-                        UUID controlActivoId,
-                        UUID accesorioId,
-                        UUID currentId) {
-                if (controlActivoDetalleRepository.existsByControlActivoIdAndAccesorioIdAndIdNot(
-                                controlActivoId,
-                                accesorioId,
-                                currentId)) {
-                        throw new ConflictException(
-                                        "CONTROL_ACTIVO_DETALLE_ALREADY_EXISTS",
-                                        "Ya existe otro detalle con el accesorio '%s' para el control de activo '%s'"
-                                                        .formatted(accesorioId, controlActivoId));
-                }
-        }
-
-        private ControlActivoDetalle toDomain(ControlActivoDetalleRequest request) {
-                return ControlActivoDetalle.builder()
-                                .controlActivoId(request.controlActivoId())
-                                .accesorioId(request.accesorioId())
-                                .cantidadEsperada(request.cantidadEsperada())
-                                .cantidadEncontrada(request.cantidadEncontrada())
-                                .conforme(request.conforme())
-                                .observacion(StringUtils.normalize(request.observacion()))
-                                .build();
-        }
-
-        private void updateDomain(
-                        ControlActivoDetalle domain,
-                        ControlActivoDetalleRequest request) {
-                domain.setControlActivoId(request.controlActivoId());
-                domain.setAccesorioId(request.accesorioId());
-                domain.setCantidadEsperada(request.cantidadEsperada());
-                domain.setCantidadEncontrada(request.cantidadEncontrada());
-                domain.setConforme(request.conforme());
-                domain.setObservacion(StringUtils.normalize(request.observacion()));
-        }
-
-        private ControlActivoDetalleResponse toResponse(ControlActivoDetalle domain) {
-                var accesorioInfo = domain.getAccesorioId() != null
-                                ? accesorioRepository.findById(domain.getAccesorioId())
-                                                .map(a -> new ControlActivoDetalleResponse.AccesorioInfo(
-                                                                a.getId(),
-                                                                a.getCodigo(),
-                                                                a.getNombre()))
-                                                .orElse(null)
-                                : null;
-
-                return new ControlActivoDetalleResponse(
-                                domain.getId(),
-                                domain.getControlActivoId(),
-                                accesorioInfo,
-                                domain.getCantidadEsperada(),
-                                domain.getCantidadEncontrada(),
-                                domain.isConforme(),
-                                domain.getObservacion(),
-                                AuditoriaMapper.from(domain));
-        }
+    private ControlActivoDetalle obtenerPorId(UUID id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Detalle de control de activo", id));
+    }
 }

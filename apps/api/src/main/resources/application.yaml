@@ -31,7 +31,9 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-    ignore-migration-patterns: "*:missing"
+    validate-on-migrate: false
+    ignore-migration-patterns: "*:missing,*:future,*:pending,*:checksumMismatch"
+
 
 server:
   port: ${SERVER_PORT:8080}

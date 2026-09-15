@@ -4,7 +4,11 @@ import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEnti
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(schema = "mantenimientos", name = "tipos_mantenimiento")
@@ -12,7 +16,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class TipoMantenimientoEntity extends BaseEntity {
     @Column(nullable = false, unique = true, length = 30)
     private String codigo;

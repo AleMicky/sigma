@@ -3,15 +3,12 @@ package com.endecorani.sigma_api.modules.mantenimientos.domain.criteria;
 import java.util.UUID;
 
 public record SolicitudMantenimientoSearchCriteria(
-        String query,
+        String q,
         String estado,
         UUID solicitanteId,
         UUID responsableId,
         UUID supervisorId,
         UUID activoId,
-        UUID prioridadId
+        UUID aprobadorId
 ) {
-    public SolicitudMantenimientoSearchCriteria(String query) {
-        this(query, null, null, null, null, null, null);
-    }
 }

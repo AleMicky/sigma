@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CheckSquare, Globe2, Layers, Wrench } from "lucide-react"
+import { Wrench } from "lucide-react"
 
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import {
@@ -8,7 +8,6 @@ import {
   SelectableListItem,
 } from "@/shared/components/master-detail"
 import { RowActions } from "@/shared/components/row-actions"
-import { Badge } from "@/shared/components/ui/badge"
 import type { PageResponse } from "@/shared/types/api.types"
 
 import { useDeleteActividad } from "../api/actividad.mutations"
@@ -103,57 +102,26 @@ export function ActividadMasterPanel({
               active={isSelected}
               onSelect={() => onSelect(actividad.id)}
               title={
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary border border-primary/20 shadow-2xs">
                     <Wrench className="size-3.5" />
                   </span>
-                  <span className="truncate font-semibold text-foreground">
-                    {actividad.nombre}
-                  </span>
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <code className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-bold text-foreground border border-border/70">
+                      {actividad.codigo}
+                    </code>
+                    <span className="truncate font-semibold text-xs text-foreground">
+                      {actividad.nombre}
+                    </span>
+                  </div>
                 </div>
               }
               subtitle={
-                <div className="flex flex-col gap-1 mt-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
-                      {actividad.codigo}
-                    </code>
-
-                    {actividad.aplicaTodosTiposActivo ? (
-                      <Badge
-                        variant="outline"
-                        className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] font-normal gap-1 px-1.5 py-0"
-                      >
-                        <Globe2 className="size-2.5" />
-                        <span>Todos</span>
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] text-muted-foreground font-normal gap-1 px-1.5 py-0"
-                      >
-                        <Layers className="size-2.5" />
-                        <span>Por Tipo</span>
-                      </Badge>
-                    )}
-
-                    {actividad.requiereChecklist && (
-                      <Badge
-                        variant="outline"
-                        className="border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300 text-[10px] font-normal gap-1 px-1.5 py-0"
-                      >
-                        <CheckSquare className="size-2.5" />
-                        <span>Checklist</span>
-                      </Badge>
-                    )}
-                  </div>
-
-                  {actividad.descripcion ? (
-                    <span className="line-clamp-1 text-[11px] text-muted-foreground/80">
-                      {actividad.descripcion}
-                    </span>
-                  ) : null}
-                </div>
+                actividad.descripcion ? (
+                  <p className="truncate text-[11px] text-muted-foreground mt-1 pl-8">
+                    {actividad.descripcion}
+                  </p>
+                ) : null
               }
               actions={
                 <RowActions

@@ -1,40 +1,38 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository;
 
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.ActividadMantenimientoEntity;
-import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-@Repository
-public interface SpringActividadMantenimientoRepository
-        extends BaseJpaRepository<
-        ActividadMantenimientoEntity,
-        UUID
-        > {
+public interface SpringActividadMantenimientoRepository extends JpaRepository<ActividadMantenimientoEntity, UUID> {
 
-    boolean existsByCodigoIgnoreCase(
-            String codigo
-    );
+    boolean existsByCodigoIgnoreCase(String codigo);
 
-    boolean existsByCodigoIgnoreCaseAndIdNot(
-            String codigo,
-            UUID id
-    );
+    boolean existsByCodigoIgnoreCaseAndIdNot(String codigo, UUID id);
+
+    Optional<ActividadMantenimientoEntity> findByCodigoIgnoreCase(String codigo);
 
     @Query("""
-            select actividad
-            from ActividadMantenimientoEntity actividad
-            where lower(actividad.codigo) like lower(concat('%', :query, '%'))
-               or lower(actividad.nombre) like lower(concat('%', :query, '%'))
-            """)
-    Page<ActividadMantenimientoEntity> search(
-            @Param("query") String query,
-            Pageable pageable
-    );
+        SELECT a
+        FROM ActividadMantenimientoEntity a
+        WHERE LOWER(a.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(a.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))
+    """)
+    Page<ActividadMantenimientoEntity> search(@Param("search") String search, Pageable pageable);
 
+    @Query("""
+        SELECT DISTINCT a
+        FROM ActividadMantenimientoEntity a
+        JOIN a.aplicaciones ap
+        WHERE ap.tipoActivoId = :tipoActivoId
+    """)
+    List<ActividadMantenimientoEntity> findByTipoActivoId(@Param("tipoActivoId") UUID tipoActivoId);
 }

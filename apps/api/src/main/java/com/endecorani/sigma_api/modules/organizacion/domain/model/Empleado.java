@@ -36,4 +36,7 @@ public class Empleado extends AuditableModel {
     private String codigoExterno;
 
     private Boolean activo;
+    private String nombreCompleto;
+    private String cargo;
+    private String area;
 }

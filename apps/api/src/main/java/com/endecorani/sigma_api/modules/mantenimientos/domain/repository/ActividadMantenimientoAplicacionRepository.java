@@ -10,38 +10,21 @@ import java.util.UUID;
 
 public interface ActividadMantenimientoAplicacionRepository {
 
-    ActividadMantenimientoAplicacion save(ActividadMantenimientoAplicacion domain);
-
     Optional<ActividadMantenimientoAplicacion> findById(UUID id);
-
-    List<ActividadMantenimientoAplicacion> findAll();
 
     Page<ActividadMantenimientoAplicacion> findAll(Pageable pageable);
 
-    Page<ActividadMantenimientoAplicacion> findByActividadMantenimientoId(
-            UUID actividadMantenimientoId,
-            Pageable pageable
-    );
+    Page<ActividadMantenimientoAplicacion> findByActividadMantenimientoId(UUID actividadMantenimientoId, Pageable pageable);
 
-    Page<ActividadMantenimientoAplicacion> findByTipoActivoId(
-            UUID tipoActivoId,
-            Pageable pageable
-    );
+    List<ActividadMantenimientoAplicacion> findByActividadMantenimientoId(UUID actividadMantenimientoId);
 
-    boolean existsById(UUID id);
+    List<ActividadMantenimientoAplicacion> findByTipoActivoId(UUID tipoActivoId);
+
+    ActividadMantenimientoAplicacion save(ActividadMantenimientoAplicacion aplicacion);
 
     void deleteById(UUID id);
 
-    boolean existsByActividadMantenimientoIdAndTipoActivoIdAndComponenteId(
-            UUID actividadMantenimientoId,
-            UUID tipoActivoId,
-            UUID componenteId
-    );
+    boolean existsByActividadMantenimientoId(UUID actividadMantenimientoId);
 
-    boolean existsByActividadMantenimientoIdAndTipoActivoIdAndComponenteIdAndIdNot(
-            UUID actividadMantenimientoId,
-            UUID tipoActivoId,
-            UUID componenteId,
-            UUID id
-    );
+    boolean existsByActividadMantenimientoIdAndTipoActivoIdAndComponenteId(UUID actividadMantenimientoId, UUID tipoActivoId, UUID componenteId);
 }

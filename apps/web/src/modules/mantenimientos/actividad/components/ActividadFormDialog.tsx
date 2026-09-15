@@ -43,12 +43,10 @@ export function ActividadFormDialog({
   const form = useForm({
     defaultValues: actividad
       ? {
-          codigo: actividad.codigo,
-          nombre: actividad.nombre,
-          descripcion: actividad.descripcion ?? "",
-          aplicaTodosTiposActivo: actividad.aplicaTodosTiposActivo ?? false,
-          requiereChecklist: actividad.requiereChecklist ?? false,
-        }
+        codigo: actividad.codigo,
+        nombre: actividad.nombre,
+        descripcion: actividad.descripcion ?? "",
+      }
       : defaultActividadValues,
     validators: {
       onSubmit: actividadSchema,
@@ -61,16 +59,14 @@ export function ActividadFormDialog({
           codigo: value.codigo.trim(),
           nombre: value.nombre.trim(),
           descripcion: (value.descripcion ?? "").trim() || null,
-          aplicaTodosTiposActivo: value.aplicaTodosTiposActivo,
-          requiereChecklist: value.requiereChecklist,
         }
 
         const saved =
           isEditing && actividad
             ? await updateMutation.mutateAsync({
-                id: actividad.id,
-                payload,
-              })
+              id: actividad.id,
+              payload,
+            })
             : await createMutation.mutateAsync(payload)
 
         onSuccess?.(saved)
@@ -94,7 +90,7 @@ export function ActividadFormDialog({
       description={
         isEditing
           ? "Actualiza los parámetros de esta actividad de mantenimiento."
-          : "Define una nueva actividad en el catálogo maestro para asociarla a planes y checklists."
+          : "Define una nueva actividad en el catálogo maestro."
       }
       formError={formError}
       onCancel={() => {
@@ -140,7 +136,7 @@ export function ActividadFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="EJ: ACT-001, CAMBIO_ACEITE"
+                placeholder="EJ: ACT-001"
                 className="font-mono uppercase"
               />
               <p className="text-[11px] text-muted-foreground">
@@ -171,7 +167,7 @@ export function ActividadFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Ej. Cambio de Aceite y Filtro"
+                placeholder="Ej. Cambio de Aceite"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -202,50 +198,6 @@ export function ActividadFormDialog({
           )
         }}
       </form.Field>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-        <form.Field name="aplicaTodosTiposActivo">
-          {(field) => (
-            <label className="flex items-start gap-2.5 rounded-lg border border-border/80 p-3 hover:bg-muted/30 cursor-pointer transition-colors">
-              <input
-                type="checkbox"
-                checked={field.state.value}
-                onChange={(e) => field.handleChange(e.target.checked)}
-                className="size-4 mt-0.5 rounded border-border text-primary focus:ring-primary"
-              />
-              <div className="text-xs">
-                <span className="font-semibold text-foreground block">
-                  Aplica a todos los activos
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  Habilita esta actividad universalmente para cualquier tipo de activo.
-                </span>
-              </div>
-            </label>
-          )}
-        </form.Field>
-
-        <form.Field name="requiereChecklist">
-          {(field) => (
-            <label className="flex items-start gap-2.5 rounded-lg border border-border/80 p-3 hover:bg-muted/30 cursor-pointer transition-colors">
-              <input
-                type="checkbox"
-                checked={field.state.value}
-                onChange={(e) => field.handleChange(e.target.checked)}
-                className="size-4 mt-0.5 rounded border-border text-primary focus:ring-primary"
-              />
-              <div className="text-xs">
-                <span className="font-semibold text-foreground block">
-                  Requiere Checklist
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  Exige completar un checklist de pasos de verificación al ejecutarse.
-                </span>
-              </div>
-            </label>
-          )}
-        </form.Field>
-      </div>
 
       {/* Audit info in edit mode */}
       {isEditing && actividad ? (

@@ -84,6 +84,7 @@ function SolicitudSolicitanteListItem({
     fields?: any[],
   ) => void
 }) {
+  const navigate = useNavigate()
   const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
   const isBorrador = estadoNorm === "borrador"
   const isObservado = estadoNorm === "observado"
@@ -199,24 +200,25 @@ function SolicitudSolicitanteListItem({
               <span>Ver Actas</span>
             </Button>
           ) : isTrabajoRealizado && !hasDevolucion ? (
-            <Link
-              to="/mantenimientos/controles-activos/nuevo"
-              search={{
-                solicitudId: solicitud.id,
-                tipo: "DEVOLUCION",
+            <Button
+              type="button"
+              size="xs"
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate({
+                  to: routes.mantenimientos.controlesActivos.nuevo,
+                  search: {
+                    solicitudId: solicitud.id,
+                    tipo: "DEVOLUCION",
+                  },
+                })
               }}
-              onClick={(e) => e.stopPropagation()}
+              className="h-6.5 gap-1 px-2 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-md shadow-2xs cursor-pointer"
+              title="Registrar Devolución de Activo"
             >
-              <Button
-                type="button"
-                size="xs"
-                className="h-6.5 gap-1 px-2 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-md shadow-2xs cursor-pointer"
-                title="Registrar Devolución de Activo"
-              >
-                <ClipboardCheck className="size-3" />
-                <span>Devolución</span>
-              </Button>
-            </Link>
+              <ClipboardCheck className="size-3" />
+              <span>Devolución</span>
+            </Button>
           ) : totalActas > 0 ? (
             <Button
               type="button"

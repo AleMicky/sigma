@@ -1,10 +1,9 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity;
 
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(schema = "mantenimientos", name = "prioridades")
@@ -12,7 +11,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class PrioridadEntity extends BaseEntity {
     @Column(nullable = false, unique = true, length = 30)
     private String codigo;

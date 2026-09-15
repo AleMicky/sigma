@@ -1,8 +1,8 @@
 package com.endecorani.sigma_api.modules.mantenimientos.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.ControlActivoDetalleRequest;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.ControlActivoDetalleResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.controlactivo.request.ControlActivoDetalleRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.controlactivo.response.ControlActivoDetalleResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.ControlActivoDetalleService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;

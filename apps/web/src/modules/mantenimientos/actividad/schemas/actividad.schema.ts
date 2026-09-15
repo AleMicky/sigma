@@ -18,8 +18,6 @@ export const actividadSchema = z.object({
     .max(500, "La descripción no puede superar los 500 caracteres")
     .optional()
     .or(z.literal("")),
-  aplicaTodosTiposActivo: z.boolean(),
-  requiereChecklist: z.boolean(),
 })
 
 export type ActividadFormValues = z.infer<typeof actividadSchema>
@@ -28,6 +26,4 @@ export const defaultActividadValues: ActividadFormValues = {
   codigo: "",
   nombre: "",
   descripcion: "",
-  aplicaTodosTiposActivo: false,
-  requiereChecklist: false,
 }

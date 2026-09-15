@@ -6,8 +6,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import lombok.Builder;
+
+import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
+import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -19,44 +25,35 @@ public class SolicitudMantenimiento extends AuditableModel {
 
     private UUID id;
     private String numero;
-    private UUID activoId;
+    private Activo activo;
 
     // Clasificación
-    private UUID tipoMantenimientoId;
+    private TipoMantenimiento tipoMantenimiento;
     private String tipoFallas;
-    private UUID prioridadId;
+    private Prioridad prioridad;
 
     // Solicitud
-    private UUID solicitanteId;
+    private Empleado solicitante;
     private String titulo;
     private String descripcion;
     private LocalDateTime fechaSolicitud;
 
-    // Aprobación
-    private UUID aprobadoPorId;
-    private LocalDateTime fechaAprobacion;
-    private LocalDateTime fechaEstimadaOt;
-    private String observacionAprobacion;
-
-    // Asignación
-    private UUID responsableId;
-    private LocalDateTime fechaAsignacion;
+    // Datos actuales del proceso
+    private Empleado aprobador;
+    private Empleado responsable;
+    private Empleado supervisor;
 
     // Ejecución
     private LocalDateTime fechaInicioMantenimiento;
     private LocalDateTime fechaFinMantenimiento;
 
-    // Validación
-    private UUID supervisorId;
-    private LocalDateTime fechaValidacion;
-    private String observacionValidacion;
-
     // Cierre
-    private LocalDateTime fechaFinalizacion;
-    private UUID recibidoPorId;
-    private String observacionCierre;
+    private LocalDateTime fechaCierre;
 
-    // Workflow
-    private String estado;
+    // Flowable
     private String processInstanceId;
+    private String estado;
+
+    @Builder.Default
+    private List<SolicitudMantenimientoAdjunto> adjuntos = new ArrayList<>();
 }

@@ -1,53 +1,30 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository;
 
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.PrioridadEntity;
-import com.endecorani.sigma_api.shared.infrastructure.persistence.BaseJpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
 import java.util.UUID;
 
-@Repository
-public interface SpringPrioridadRepository
-        extends BaseJpaRepository<
-        PrioridadEntity,
-        UUID
-        > {
+public interface SpringPrioridadRepository extends JpaRepository<PrioridadEntity, UUID> {
 
-    boolean existsByCodigoIgnoreCase(
-            String codigo
-    );
+    boolean existsByCodigoIgnoreCase(String codigo);
 
-    boolean existsByCodigoIgnoreCaseAndIdNot(
-            String codigo,
-            UUID id
-    );
+    boolean existsByCodigoIgnoreCaseAndIdNot(String codigo, UUID id);
 
-    Optional<PrioridadEntity> findByPorDefectoTrue();
+    boolean existsByPorDefectoTrue();
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-            update PrioridadEntity prioridad
-            set prioridad.porDefecto = false
-            where prioridad.porDefecto = true
-              and (:excludeId is null or prioridad.id <> :excludeId)
-            """)
-    void clearPorDefecto(@Param("excludeId") UUID excludeId);
+    boolean existsByPorDefectoTrueAndIdNot(UUID id);
 
     @Query("""
-            select prioridad
-            from PrioridadEntity prioridad
-            where lower(prioridad.codigo) like lower(concat('%', :query, '%'))
-               or lower(prioridad.nombre) like lower(concat('%', :query, '%'))
-            """)
-    Page<PrioridadEntity> search(
-            @Param("query") String query,
-            Pageable pageable
-    );
-
+        SELECT p
+        FROM PrioridadEntity p
+        WHERE LOWER(p.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))
+    """)
+    Page<PrioridadEntity> search(@Param("search") String search, Pageable pageable);
 }

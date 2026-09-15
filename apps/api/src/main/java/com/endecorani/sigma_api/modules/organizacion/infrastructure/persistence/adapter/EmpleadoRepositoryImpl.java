@@ -75,4 +75,11 @@ public class EmpleadoRepositoryImpl implements EmpleadoRepository {
                 .findAll(EmpleadoSpecifications.withCriteria(criteria), pageable)
                 .map(mapper::toDomain);
     }
+
+    @Override
+    public Optional<Empleado> findFirstByPersonaId(UUID personaId) {
+        return springRepository
+                .findFirstByPersonaId(personaId)
+                .map(mapper::toDomain);
+    }
 }

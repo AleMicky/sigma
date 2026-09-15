@@ -4,16 +4,13 @@ import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistenc
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
-@Repository
-public interface SpringOrdenTrabajoAdjuntoRepository
-        extends JpaRepository<OrdenTrabajoAdjuntoEntity, UUID> {
+public interface SpringOrdenTrabajoAdjuntoRepository extends JpaRepository<OrdenTrabajoAdjuntoEntity, UUID> {
 
-    Page<OrdenTrabajoAdjuntoEntity> findByOrdenTrabajoId(
-            UUID ordenTrabajoId,
-            Pageable pageable
-    );
+    Page<OrdenTrabajoAdjuntoEntity> findByOrdenTrabajoId(UUID ordenTrabajoId, Pageable pageable);
+
+    List<OrdenTrabajoAdjuntoEntity> findByOrdenTrabajoId(UUID ordenTrabajoId);
 }

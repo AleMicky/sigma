@@ -14,6 +14,7 @@ export function RouterApp() {
       isAuthenticated: state.isAuthenticated,
     })),
   )
+
   const [hydrated, setHydrated] = useState(() =>
     useAuthStore.persist.hasHydrated(),
   )
@@ -34,7 +35,9 @@ export function RouterApp() {
     if (auth.user) {
       queryClient.setQueryData(authKeys.me(), auth.user)
     } else {
-      queryClient.removeQueries({ queryKey: authKeys.all })
+      queryClient.removeQueries({
+        queryKey: authKeys.all,
+      })
     }
 
     void router.invalidate()
@@ -44,5 +47,13 @@ export function RouterApp() {
     return null
   }
 
-  return <RouterProvider router={router} context={{ auth }} />
+  return (
+    <RouterProvider
+      router={router}
+      context={{
+        queryClient,
+        auth,
+      }}
+    />
+  )
 }

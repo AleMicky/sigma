@@ -4,38 +4,30 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.model.OrdenTrabajo
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface OrdenTrabajoRepository {
 
-    OrdenTrabajo save(OrdenTrabajo entity);
+    Page<OrdenTrabajo> findAll(Pageable pageable);
+
+    Page<OrdenTrabajo> search(String search, Pageable pageable);
 
     Optional<OrdenTrabajo> findById(UUID id);
 
-    List<OrdenTrabajo> findAll();
+    Optional<OrdenTrabajo> findByNumero(String numero);
 
-    Page<OrdenTrabajo> findAll(Pageable pageable);
+    Optional<OrdenTrabajo> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
 
-    boolean existsById(UUID id);
+    OrdenTrabajo save(OrdenTrabajo ordenTrabajo);
 
     void deleteById(UUID id);
 
+    boolean existsByNumeroIgnoreCase(String numero);
+
+    boolean existsByNumeroIgnoreCaseAndIdNot(String numero, UUID id);
+
     boolean existsBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
 
-    Page<OrdenTrabajo> findBySolicitudMantenimientoId(
-            UUID solicitudMantenimientoId,
-            Pageable pageable
-    );
-
-    boolean existsBySolicitudMantenimientoIdAndIdNot(
-            UUID solicitudMantenimientoId,
-            UUID id
-    );
-
-    Page<OrdenTrabajo> search(
-            String query,
-            Pageable pageable
-    );
+    boolean existsBySolicitudMantenimientoIdAndIdNot(UUID solicitudMantenimientoId, UUID id);
 }

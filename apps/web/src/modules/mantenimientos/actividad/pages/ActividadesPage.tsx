@@ -47,9 +47,6 @@ export function ActividadesPage() {
   )
 
   const masterDetail = useMasterDetail(actividades)
-  const aplicacionSearch = usePaginatedSearch({
-    resetKey: masterDetail.selectedId,
-  })
 
   function openCreateActividad() {
     setEditingActividad(null)
@@ -117,14 +114,10 @@ export function ActividadesPage() {
         detail={
           <ActividadDetailPanel
             actividad={masterDetail.selected}
-            page={aplicacionSearch.page}
-            search={aplicacionSearch.search}
-            searchQuery={aplicacionSearch.debouncedSearch}
             hidePrimaryAction={
               masterDetail.isMobile && masterDetail.mobileShowDetail
             }
-            onSearchChange={aplicacionSearch.setSearch}
-            onPageChange={aplicacionSearch.setPage}
+            onEdit={openEditActividad}
           />
         }
       />

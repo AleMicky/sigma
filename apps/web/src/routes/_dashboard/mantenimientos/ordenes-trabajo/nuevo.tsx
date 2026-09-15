@@ -9,9 +9,13 @@ const searchSchema = z.object({
   responsableId: z.string().optional(),
 })
 
+export type OrdenTrabajoSearch = z.infer<typeof searchSchema>
+
 export const Route = createFileRoute(
   "/_dashboard/mantenimientos/ordenes-trabajo/nuevo",
 )({
-  validateSearch: searchSchema,
+  validateSearch: (search: Record<string, unknown>): OrdenTrabajoSearch =>
+    searchSchema.parse(search),
   component: OrdenTrabajoFormPage,
 })
+

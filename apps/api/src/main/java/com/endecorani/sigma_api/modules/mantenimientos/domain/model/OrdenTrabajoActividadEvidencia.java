@@ -15,16 +15,10 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 public class OrdenTrabajoActividadEvidencia extends AuditableModel {
-
     private UUID id;
-
     private UUID ordenTrabajoActividadId;
-
     private String nombreArchivo;
-
     private String tipoMime;
-
     private Long tamanio;
-
     private String url;
 }

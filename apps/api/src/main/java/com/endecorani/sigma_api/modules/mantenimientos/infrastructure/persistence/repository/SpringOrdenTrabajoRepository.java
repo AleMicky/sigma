@@ -6,33 +6,31 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
-@Repository
-public interface SpringOrdenTrabajoRepository
-        extends JpaRepository<OrdenTrabajoEntity, UUID> {
+public interface SpringOrdenTrabajoRepository extends JpaRepository<OrdenTrabajoEntity, UUID> {
+
+    boolean existsByNumeroIgnoreCase(String numero);
+
+    boolean existsByNumeroIgnoreCaseAndIdNot(String numero, UUID id);
 
     boolean existsBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
 
-    Page<OrdenTrabajoEntity> findBySolicitudMantenimientoId(
-            UUID solicitudMantenimientoId,
-            Pageable pageable
-    );
+    boolean existsBySolicitudMantenimientoIdAndIdNot(UUID solicitudMantenimientoId, UUID id);
 
-    boolean existsBySolicitudMantenimientoIdAndIdNot(
-            UUID solicitudMantenimientoId,
-            UUID id
-    );
+    Optional<OrdenTrabajoEntity> findByNumeroIgnoreCase(String numero);
+
+    Optional<OrdenTrabajoEntity> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
 
     @Query("""
-            select o
-            from OrdenTrabajoEntity o
-            where lower(o.numero) like lower(concat('%', :query, '%'))
-            """)
-    Page<OrdenTrabajoEntity> search(
-            @Param("query") String query,
-            Pageable pageable
-    );
+        SELECT ot
+        FROM OrdenTrabajoEntity ot
+        WHERE LOWER(ot.numero) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(ot.diagnostico) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(ot.trabajoRealizado) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(ot.observacion) LIKE LOWER(CONCAT('%', :search, '%'))
+    """)
+    Page<OrdenTrabajoEntity> search(@Param("search") String search, Pageable pageable);
 }

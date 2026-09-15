@@ -1,60 +1,111 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository;
 
-import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.SolicitudMantenimientoEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 
-@Repository
-public interface SpringSolicitudMantenimientoRepository
-        extends JpaRepository<
-        SolicitudMantenimientoEntity,
-        UUID
-        >,
-        JpaSpecificationExecutor<SolicitudMantenimientoEntity> {
+public interface SpringSolicitudMantenimientoRepository extends JpaRepository<SolicitudMantenimientoEntity, UUID> {
 
     boolean existsByNumeroIgnoreCase(String numero);
 
-    boolean existsByNumeroIgnoreCaseAndIdNot(
-            String numero,
-            UUID id
-    );
+    boolean existsByNumeroIgnoreCaseAndIdNot(String numero, UUID id);
 
-    Page<SolicitudMantenimientoEntity> findByActivoId(
-            UUID activoId,
-            Pageable pageable
-    );
+    @Query(value = """
+        SELECT s
+        FROM SolicitudMantenimientoEntity s
+        LEFT JOIN FETCH s.solicitanteView
+        LEFT JOIN FETCH s.aprobadorView
+        LEFT JOIN FETCH s.responsableView
+        LEFT JOIN FETCH s.supervisorView
+        LEFT JOIN FETCH s.activo
+        LEFT JOIN FETCH s.tipoMantenimiento
+        LEFT JOIN FETCH s.prioridad
+        WHERE LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(s.estado) LIKE LOWER(CONCAT('%', :search, '%'))
+    """,
+    countQuery = """
+        SELECT count(s)
+        FROM SolicitudMantenimientoEntity s
+        WHERE LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(s.estado) LIKE LOWER(CONCAT('%', :search, '%'))
+    """)
+    Page<SolicitudMantenimientoEntity> search(@Param("search") String search, Pageable pageable);
 
-    Page<SolicitudMantenimientoEntity> findByEstadoIgnoreCase(
-            String estado,
-            Pageable pageable
-    );
-
-    Page<SolicitudMantenimientoEntity> findBySolicitanteId(
-            UUID solicitanteId,
-            Pageable pageable
-    );
-
-    Page<SolicitudMantenimientoEntity> findByResponsableId(
-            UUID responsableId,
-            Pageable pageable
-    );
+    @Query(value = """
+        SELECT s
+        FROM SolicitudMantenimientoEntity s
+        LEFT JOIN FETCH s.solicitanteView
+        LEFT JOIN FETCH s.aprobadorView
+        LEFT JOIN FETCH s.responsableView
+        LEFT JOIN FETCH s.supervisorView
+        LEFT JOIN FETCH s.activo
+        LEFT JOIN FETCH s.tipoMantenimiento
+        LEFT JOIN FETCH s.prioridad
+    """,
+    countQuery = """
+        SELECT count(s)
+        FROM SolicitudMantenimientoEntity s
+    """)
+    Page<SolicitudMantenimientoEntity> findAllWithDetails(Pageable pageable);
 
     @Query("""
-            select s
-            from SolicitudMantenimientoEntity s
-            where lower(s.numero) like lower(concat('%', :query, '%'))
-               or lower(s.titulo) like lower(concat('%', :query, '%'))
-            """)
-    Page<SolicitudMantenimientoEntity> search(
-            @Param("query") String query,
+        SELECT s
+        FROM SolicitudMantenimientoEntity s
+        LEFT JOIN FETCH s.solicitanteView
+        LEFT JOIN FETCH s.aprobadorView
+        LEFT JOIN FETCH s.responsableView
+        LEFT JOIN FETCH s.supervisorView
+        LEFT JOIN FETCH s.activo
+        LEFT JOIN FETCH s.tipoMantenimiento
+        LEFT JOIN FETCH s.prioridad
+        WHERE s.id = :id
+    """)
+    java.util.Optional<SolicitudMantenimientoEntity> findByIdWithDetails(@Param("id") UUID id);
+
+    @Query(value = """
+        SELECT s
+        FROM SolicitudMantenimientoEntity s
+        LEFT JOIN FETCH s.solicitanteView
+        LEFT JOIN FETCH s.aprobadorView
+        LEFT JOIN FETCH s.responsableView
+        LEFT JOIN FETCH s.supervisorView
+        LEFT JOIN FETCH s.activo
+        LEFT JOIN FETCH s.tipoMantenimiento
+        LEFT JOIN FETCH s.prioridad
+        WHERE (:hasQ = false OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%')))
+          AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
+          AND (:hasSolicitante = false OR s.solicitante.id = :solicitanteId)
+          AND (:hasResponsable = false OR s.responsable.id = :responsableId)
+          AND (:hasSupervisor = false OR s.supervisor.id = :supervisorId)
+          AND (:hasActivo = false OR s.activo.id = :activoId)
+          AND (:hasAprobador = false OR s.aprobador.id = :aprobadorId)
+    """,
+    countQuery = """
+        SELECT count(s)
+        FROM SolicitudMantenimientoEntity s
+        WHERE (:hasQ = false OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%')))
+          AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
+          AND (:hasSolicitante = false OR s.solicitante.id = :solicitanteId)
+          AND (:hasResponsable = false OR s.responsable.id = :responsableId)
+          AND (:hasSupervisor = false OR s.supervisor.id = :supervisorId)
+          AND (:hasActivo = false OR s.activo.id = :activoId)
+          AND (:hasAprobador = false OR s.aprobador.id = :aprobadorId)
+    """)
+    Page<SolicitudMantenimientoEntity> searchWithCriteria(
+            @Param("hasQ") boolean hasQ, @Param("q") String q,
+            @Param("hasEstado") boolean hasEstado, @Param("estado") String estado,
+            @Param("hasSolicitante") boolean hasSolicitante, @Param("solicitanteId") UUID solicitanteId,
+            @Param("hasResponsable") boolean hasResponsable, @Param("responsableId") UUID responsableId,
+            @Param("hasSupervisor") boolean hasSupervisor, @Param("supervisorId") UUID supervisorId,
+            @Param("hasActivo") boolean hasActivo, @Param("activoId") UUID activoId,
+            @Param("hasAprobador") boolean hasAprobador, @Param("aprobadorId") UUID aprobadorId,
             Pageable pageable
     );
 
@@ -108,7 +159,7 @@ public interface SpringSolicitudMantenimientoRepository
                 ), 0) as finalizadas
 
             from SolicitudMantenimientoEntity s
-            where (:solicitanteId is null or s.solicitanteId = :solicitanteId)
+            where (:hasSolicitante = false or s.solicitante.id = :solicitanteId)
             """)
-    SolicitudMantenimientoResumenProjection obtenerResumen(@Param("solicitanteId") UUID solicitanteId);
+    com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection obtenerResumen(@Param("hasSolicitante") boolean hasSolicitante, @Param("solicitanteId") UUID solicitanteId);
 }

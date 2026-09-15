@@ -1,28 +1,29 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
-import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.EnviarSolicitudMantenimientoRequest;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.SolicitudMantenimientoRequest;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoAdjuntoResponse;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResponse;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.SolicitudMantenimientoResumenResponse;
+import com.endecorani.sigma_api.config.security.SecurityUtils;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.EnviarSolicitudMantenimientoRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.SolicitudMantenimientoRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResumenResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoTrazabilidadResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.SolicitudMantenimientoMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoAdjunto;
-import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.PrioridadRepository;
-import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoAdjuntoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoTrazabilidad;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
-import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection;
-import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.TipoMantenimientoRepository;
-import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoTrazabilidadRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
-import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
+import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
+import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
-import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.storage.DocumentStorageService;
@@ -31,85 +32,129 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SolicitudMantenimientoService {
 
-    private static final int TITULO_MIN_LENGTH = 1;
-    private static final int TITULO_MAX_LENGTH = 150;
-    private static final int DESCRIPCION_MAX_LENGTH = 2000;
     private static final String ESTADO_BORRADOR = "borrador";
     private static final String ESTADO_SOLICITADO = "solicitado";
     private static final String WORKFLOW_CODIGO = "SOLICITUD_MANTENIMIENTO";
     private static final String ADJUNTO_FOLDER = "solicitud_mantenimiento_adjuntos";
 
-    private static final Set<String> SORT_FIELDS = Set.copyOf(Arrays.asList(
-            "id", "numero", "activoId", "tipoMantenimientoId", "prioridadId",
-            "solicitanteId", "estado", "fechaSolicitud", "fechaEstimadaOt", "createdAt", "updatedAt"));
+    private static final Set<String> SORT_FIELDS = Set.of(
+            "id",
+            "numero",
+            "titulo",
+            "fechaSolicitud",
+            "estado",
+            "createdAt",
+            "updatedAt");
 
     private final SolicitudMantenimientoRepository repository;
-    private final ActivoRepository activoRepository;
-    private final TipoMantenimientoRepository tipoMantenimientoRepository;
-    private final PrioridadRepository prioridadRepository;
+    private final SolicitudMantenimientoTrazabilidadRepository trazabilidadRepository;
     private final EmpleadoRepository empleadoRepository;
-    private final PersonaRepository personaRepository;
-    private final SolicitudMantenimientoAdjuntoRepository adjuntoRepository;
-    private final DocumentStorageService documentStorageService;
+    private final SpringVEmpleadoRepository vEmpleadoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final SecurityUtils securityUtils;
+    private final SolicitudMantenimientoMapper mapper;
     private final CorrelativoService correlativoService;
     private final WorkflowApplicationService workflowApplicationService;
+    private final DocumentStorageService documentStorageService;
+
+    @Transactional(readOnly = true)
+    public SolicitudMantenimientoResumenResponse obtenerResumen(UUID solicitanteId) {
+        return SolicitudMantenimientoResumenResponse.from(repository.obtenerResumen(solicitanteId));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SolicitudMantenimientoResponse> findAll(SolicitudMantenimientoSearchCriteria criteria,
+            PageRequestDto pageRequest) {
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+        Page<SolicitudMantenimiento> resultado = repository.findAll(criteria, pageable);
+        return PageResponse.from(resultado, mapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SolicitudMantenimientoResponse> listar(String search, PageRequestDto pageRequest) {
+        String normalized = StringUtils.normalize(search);
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+        Page<SolicitudMantenimiento> resultado;
+
+        if (normalized == null || normalized.isBlank()) {
+            resultado = repository.findAll(pageable);
+        } else {
+            resultado = repository.search(normalized, pageable);
+        }
+
+        return PageResponse.from(resultado, mapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public SolicitudMantenimientoResponse findById(UUID id) {
+        SolicitudMantenimiento solicitud = obtenerPorId(id);
+        return mapper.toResponse(solicitud);
+    }
 
     @Transactional
-    public SolicitudMantenimientoResponse create(SolicitudMantenimientoRequest request) {
-        validateForeignEntities(request.activoId(), request.tipoMantenimientoId(), request.prioridadId());
+    public SolicitudMantenimientoResponse create(SolicitudMantenimientoRequest dto) {
 
         String numero = correlativoService.generar(CorrelativoCodigo.SOLICITUD_MANTENIMIENTO,
                 LocalDateTime.now().getYear());
 
-        SolicitudMantenimiento domain = SolicitudMantenimiento.builder()
-                .numero(numero)
-                .activoId(request.activoId())
-                .tipoMantenimientoId(request.tipoMantenimientoId())
-                .tipoFallas(request.tipoFallas())
-                .prioridadId(request.prioridadId())
-                .solicitanteId(request.solicitanteId())
-                .titulo(requireNormalizedTitulo(request.titulo()))
-                .descripcion(requireNormalizedDescripcion(request.descripcion()))
-                .estado(ESTADO_BORRADOR)
-                .fechaSolicitud(request.fechaSolicitud() != null ? request.fechaSolicitud() : LocalDateTime.now())
-                .fechaEstimadaOt(request.fechaEstimadaOt())
-                .build();
+        SolicitudMantenimiento solicitud = mapper.toDomain(dto);
 
-        SolicitudMantenimiento saved = repository.save(domain);
+        solicitud.setNumero(numero);
+        solicitud.setFechaSolicitud(LocalDateTime.now());
+        solicitud.setEstado(ESTADO_BORRADOR);
 
-        // Iniciar workflow en estado BORRADOR
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("solicitudId", saved.getId().toString());
-        variables.put("solicitanteId", saved.getSolicitanteId().toString());
+        SolicitudMantenimiento guardado = repository.save(solicitud);
 
-        String processInstanceId = workflowApplicationService.iniciar(
-                WORKFLOW_CODIGO,
-                saved.getId().toString(),
-                variables);
+        if (guardado.getId() != null) {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("solicitudId", guardado.getId().toString());
+            if (guardado.getSolicitante() != null && guardado.getSolicitante().getId() != null) {
+                variables.put("solicitanteId", guardado.getSolicitante().getId().toString());
+            }
 
-        saved.setProcessInstanceId(processInstanceId);
+            String processInstanceId = workflowApplicationService.iniciar(
+                    WORKFLOW_CODIGO,
+                    guardado.getId().toString(),
+                    variables);
 
-        return toResponse(repository.save(saved));
+            guardado.setProcessInstanceId(processInstanceId);
+            guardado = repository.save(guardado);
+        }
+
+        UUID creadorEmpleadoId = obtenerEmpleadoIdActual();
+        if (creadorEmpleadoId == null && guardado.getSolicitante() != null) {
+            creadorEmpleadoId = guardado.getSolicitante().getId();
+        }
+        registrarTrazabilidad(
+                guardado.getId(),
+                null,
+                guardado.getEstado(),
+                "Creación de la solicitud en borrador",
+                creadorEmpleadoId);
+
+        return toResponse(guardado);
     }
 
     @Transactional
@@ -121,63 +166,93 @@ public class SolicitudMantenimientoService {
             return response;
         }
 
-        List<SolicitudMantenimientoAdjuntoResponse> adjuntos = files.stream()
-                .map(file -> {
-                    DocumentStorageService.StoredFile stored = documentStorageService.store(ADJUNTO_FOLDER,
-                            UUID.randomUUID(), file);
-                    SolicitudMantenimientoAdjunto adjunto = SolicitudMantenimientoAdjunto.builder()
-                            .solicitudMantenimientoId(response.id())
-                            .nombreArchivo(stored.nombreOriginal())
-                            .tipoContenido(stored.mimeType())
-                            .size(stored.tamanoBytes())
-                            .url(stored.publicUrl())
-                            .build();
-                    return toAdjuntoResponse(adjuntoRepository.save(adjunto));
-                })
-                .toList();
+        SolicitudMantenimiento solicitud = obtenerPorId(response.id());
 
-        return toResponse(findDomainById(response.id()), adjuntos);
+        files.forEach(file -> {
+            DocumentStorageService.StoredFile stored = documentStorageService.store(ADJUNTO_FOLDER,
+                    UUID.randomUUID(), file);
+            SolicitudMantenimientoAdjunto adjunto = SolicitudMantenimientoAdjunto.builder()
+                    .solicitudMantenimientoId(response.id())
+                    .nombreArchivo(stored.nombreOriginal())
+                    .tipoContenido(stored.mimeType())
+                    .size(stored.tamanoBytes())
+                    .url(stored.publicUrl())
+                    .build();
+            solicitud.getAdjuntos().add(adjunto);
+        });
+
+        return toResponse(repository.save(solicitud));
     }
 
     @Transactional
-    public SolicitudMantenimientoResponse enviar(
-            UUID id,
-            EnviarSolicitudMantenimientoRequest request) {
+    public SolicitudMantenimientoResponse update(UUID id, SolicitudMantenimientoRequest dto) {
+        SolicitudMantenimiento actual = obtenerPorId(id);
 
-        SolicitudMantenimiento solicitud = findDomainById(id);
+        // El mapper updateDomain de Request no existe, usualmente es de
+        // SolicitudMantenimientoUpdate,
+        // pero podemos crear uno nuevo de Request a Model, o simplemente usar toDomain.
+        // Dado que solo queremos mapear:
+        actual.setTitulo(dto.titulo());
+        actual.setDescripcion(dto.descripcion());
+        actual.setTipoFallas(dto.tipoFallas());
+        // Map other relationships if you want.
 
-        if (!ESTADO_BORRADOR.equalsIgnoreCase(
-                solicitud.getEstado())) {
+        SolicitudMantenimiento actualizado = repository.save(actual);
+        return toResponse(actualizado);
+    }
+
+    @Transactional
+    public SolicitudMantenimientoResponse enviar(UUID id, EnviarSolicitudMantenimientoRequest request) {
+
+        SolicitudMantenimiento solicitud = obtenerPorId(id);
+
+        if (!ESTADO_BORRADOR.equalsIgnoreCase(solicitud.getEstado())) {
             throw new ConflictException(
                     "SOLICITUD_ESTADO_INVALIDO",
                     "Solo se puede enviar una solicitud en estado BORRADOR");
         }
 
-        UUID aprobadorId = request.getEffectiveAprobadorId();
+        String estadoAnterior = solicitud.getEstado();
+
+        UUID aprobadorId = request.aprobadorId();
         if (aprobadorId == null) {
             throw new BusinessException(
                     "APROBADOR_REQUERIDO",
                     "Debe seleccionar un aprobador");
         }
 
-        // 1. Guardar responsables designados
-        solicitud.setAprobadoPorId(aprobadorId);
+        Empleado aprobador = empleadoRepository.findById(aprobadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Empleado", aprobadorId));
+        solicitud.setAprobador(aprobador);
 
-        if (request.supervisorId() != null) {
-            solicitud.setSupervisorId(request.supervisorId());
+        if (request.responsableId() != null) {
+            Empleado responsable = empleadoRepository.findById(request.responsableId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Empleado responsable", request.responsableId()));
+            solicitud.setResponsable(responsable);
         }
 
-        // 2. Variables que necesita Flowable
+        if (request.supervisorId() != null) {
+            Empleado supervisor = empleadoRepository.findById(request.supervisorId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Empleado supervisor", request.supervisorId()));
+            solicitud.setSupervisor(supervisor);
+        }
+
         Map<String, Object> variables = new HashMap<>();
         variables.put("solicitudId", solicitud.getId().toString());
-        variables.put("solicitanteId", solicitud.getSolicitanteId().toString());
+        if (solicitud.getSolicitante() != null && solicitud.getSolicitante().getId() != null) {
+            variables.put("solicitanteId", solicitud.getSolicitante().getId().toString());
+        }
         variables.put("aprobadorId", aprobadorId.toString());
-        String supervisor = solicitud.getSupervisorId() != null
-                ? solicitud.getSupervisorId().toString()
-                : aprobadorId.toString();
-        variables.put("supervisorId", supervisor);
 
-        // 3. Avanzar o iniciar workflow
+        if (request.responsableId() != null) {
+            variables.put("responsableId", request.responsableId().toString());
+        }
+
+        String supervisorIdStr = solicitud.getSupervisor() != null && solicitud.getSupervisor().getId() != null
+                ? solicitud.getSupervisor().getId().toString()
+                : aprobadorId.toString();
+        variables.put("supervisorId", supervisorIdStr);
+
         if (solicitud.getProcessInstanceId() == null) {
             String processInstanceId = workflowApplicationService.iniciar(
                     WORKFLOW_CODIGO,
@@ -191,41 +266,28 @@ public class SolicitudMantenimientoService {
                     taskRequest);
         }
 
-        // 4. Guardar estado
-        solicitud.setEstado(
-                ESTADO_SOLICITADO);
+        solicitud.setEstado(ESTADO_SOLICITADO);
 
-        return toResponse(
-                repository.save(solicitud));
-    }
+        SolicitudMantenimiento actualizado = repository.save(solicitud);
 
-    @Transactional
-    public SolicitudMantenimientoResponse update(UUID id, SolicitudMantenimientoRequest request) {
-        validateForeignEntities(request.activoId(), request.tipoMantenimientoId(), request.prioridadId());
-
-        SolicitudMantenimiento domain = findDomainById(id);
-        domain.setActivoId(request.activoId());
-        domain.setTipoMantenimientoId(request.tipoMantenimientoId());
-        domain.setTipoFallas(request.tipoFallas());
-        domain.setPrioridadId(request.prioridadId());
-        domain.setSolicitanteId(request.solicitanteId());
-        domain.setTitulo(requireNormalizedTitulo(request.titulo()));
-        domain.setDescripcion(requireNormalizedDescripcion(request.descripcion()));
-        domain.setFechaEstimadaOt(request.fechaEstimadaOt());
-
-        if (request.fechaSolicitud() != null) {
-            domain.setFechaSolicitud(request.fechaSolicitud());
+        UUID actorEmpleadoId = obtenerEmpleadoIdActual();
+        if (actorEmpleadoId == null && actualizado.getSolicitante() != null) {
+            actorEmpleadoId = actualizado.getSolicitante().getId();
         }
+        registrarTrazabilidad(
+                actualizado.getId(),
+                estadoAnterior,
+                ESTADO_SOLICITADO,
+                "Envío de la solicitud para aprobación",
+                actorEmpleadoId);
 
-        return toResponse(repository.save(domain));
+        return toResponse(actualizado);
     }
 
     @Transactional
-    public SolicitudMantenimientoResponse completarWorkflow(
-            UUID solicitudId,
-            CompleteWorkflowTaskRequest request) {
+    public SolicitudMantenimientoResponse completarWorkflow(UUID solicitudId, CompleteWorkflowTaskRequest request) {
 
-        SolicitudMantenimiento solicitud = findDomainById(solicitudId);
+        SolicitudMantenimiento solicitud = obtenerPorId(solicitudId);
 
         if (solicitud.getProcessInstanceId() == null) {
             throw new ConflictException(
@@ -233,21 +295,24 @@ public class SolicitudMantenimientoService {
                     "La solicitud no tiene workflow iniciado");
         }
 
+        String estadoAnterior = solicitud.getEstado();
+
         Map<String, Object> effectiveVariables = new HashMap<>();
         if (request != null && request.variables() != null) {
             effectiveVariables.putAll(request.variables());
         }
 
         if (!effectiveVariables.containsKey("supervisorId")) {
-            if (solicitud.getSupervisorId() != null) {
-                effectiveVariables.put("supervisorId", solicitud.getSupervisorId().toString());
-            } else if (solicitud.getAprobadoPorId() != null) {
-                effectiveVariables.put("supervisorId", solicitud.getAprobadoPorId().toString());
+            if (solicitud.getSupervisor() != null && solicitud.getSupervisor().getId() != null) {
+                effectiveVariables.put("supervisorId", solicitud.getSupervisor().getId().toString());
+            } else if (solicitud.getAprobador() != null && solicitud.getAprobador().getId() != null) {
+                effectiveVariables.put("supervisorId", solicitud.getAprobador().getId().toString());
             }
         }
 
-        if (!effectiveVariables.containsKey("responsableId") && solicitud.getResponsableId() != null) {
-            effectiveVariables.put("responsableId", solicitud.getResponsableId().toString());
+        if (!effectiveVariables.containsKey("responsableId") && solicitud.getResponsable() != null
+                && solicitud.getResponsable().getId() != null) {
+            effectiveVariables.put("responsableId", solicitud.getResponsable().getId().toString());
         }
 
         CompleteWorkflowTaskRequest effectiveRequest = new CompleteWorkflowTaskRequest(effectiveVariables);
@@ -263,351 +328,232 @@ public class SolicitudMantenimientoService {
 
         LocalDateTime ahora = LocalDateTime.now();
 
-        // 1. Extraer variables enviadas desde el formulario/decisión del BPMN
         if (request != null && request.variables() != null) {
-            // Aprobador / Coordinador
             Object aprobadorIdObj = request.variables().get("aprobadorId");
             if (aprobadorIdObj != null && !aprobadorIdObj.toString().isBlank()) {
                 try {
-                    solicitud.setAprobadoPorId(UUID.fromString(aprobadorIdObj.toString().trim()));
+                    empleadoRepository.findById(UUID.fromString(aprobadorIdObj.toString().trim()))
+                            .ifPresent(solicitud::setAprobador);
                 } catch (Exception ignored) {
                 }
             }
 
-            // Responsable / Encargado de mantenimiento
             Object responsableIdObj = request.variables().get("responsableId");
             if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
                 try {
-                    solicitud.setResponsableId(UUID.fromString(responsableIdObj.toString().trim()));
-                    if (solicitud.getFechaAsignacion() == null) {
-                        solicitud.setFechaAsignacion(ahora);
-                    }
+                    empleadoRepository.findById(UUID.fromString(responsableIdObj.toString().trim()))
+                            .ifPresent(solicitud::setResponsable);
                 } catch (Exception ignored) {
                 }
             }
 
-            // Supervisor de mantenimiento
             Object supervisorIdObj = request.variables().get("supervisorId");
             if (supervisorIdObj != null && !supervisorIdObj.toString().isBlank()) {
                 try {
-                    solicitud.setSupervisorId(UUID.fromString(supervisorIdObj.toString().trim()));
+                    empleadoRepository.findById(UUID.fromString(supervisorIdObj.toString().trim()))
+                            .ifPresent(solicitud::setSupervisor);
                 } catch (Exception ignored) {
                 }
-            }
-
-            // Recibido por / Solicitante de cierre
-            Object recibidoPorIdObj = request.variables().get("recibidoPorId");
-            if (recibidoPorIdObj != null && !recibidoPorIdObj.toString().isBlank()) {
-                try {
-                    solicitud.setRecibidoPorId(UUID.fromString(recibidoPorIdObj.toString().trim()));
-                } catch (Exception ignored) {
-                }
-            }
-
-            // Observaciones y comentarios
-            Object comentarioObj = request.variables().get("comentario");
-            String comentario = (comentarioObj != null && !comentarioObj.toString().isBlank())
-                    ? comentarioObj.toString().trim()
-                    : null;
-
-            Object obsAprob = request.variables().get("observacionAprobacion");
-            if (obsAprob != null && !obsAprob.toString().isBlank()) {
-                solicitud.setObservacionAprobacion(obsAprob.toString().trim());
-            }
-
-            Object obsVal = request.variables().get("observacionValidacion");
-            if (obsVal != null && !obsVal.toString().isBlank()) {
-                solicitud.setObservacionValidacion(obsVal.toString().trim());
-            }
-
-            Object obsCierre = request.variables().get("observacionCierre");
-            if (obsCierre != null && !obsCierre.toString().isBlank()) {
-                solicitud.setObservacionCierre(obsCierre.toString().trim());
-            }
-
-            Object fechaEstimadaOtObj = request.variables().get("fechaEstimadaOt");
-            if (fechaEstimadaOtObj != null && !fechaEstimadaOtObj.toString().isBlank()) {
-                try {
-                    solicitud.setFechaEstimadaOt(LocalDateTime.parse(fechaEstimadaOtObj.toString().trim()));
-                } catch (Exception ignored) {
-                }
-            }
-
-            // 2. Mapeo contextual del comentario según el estado o decisión
-            Object decisionCoord = request.variables().get("decisionCoordinador");
-            if ("APROBAR".equalsIgnoreCase(String.valueOf(decisionCoord)) && comentario != null && solicitud.getObservacionAprobacion() == null) {
-                solicitud.setObservacionAprobacion(comentario);
-            }
-
-            Object decisionSup = request.variables().get("decisionSupervisor");
-            if ("VALIDAR".equalsIgnoreCase(String.valueOf(decisionSup)) && comentario != null && solicitud.getObservacionValidacion() == null) {
-                solicitud.setObservacionValidacion(comentario);
             }
         }
 
-        // 3. Establecer fechas y auditoría automáticamente según el estado al que avanza
         if (nuevoEstado != null) {
             switch (nuevoEstado.toUpperCase()) {
-                case "ASIGNADO":
-                    if (solicitud.getFechaAprobacion() == null) {
-                        solicitud.setFechaAprobacion(ahora);
-                    }
-                    if (solicitud.getFechaAsignacion() == null) {
-                        solicitud.setFechaAsignacion(ahora);
-                    }
-                    break;
-
                 case "EN_MANTENIMIENTO":
                     if (solicitud.getFechaInicioMantenimiento() == null) {
                         solicitud.setFechaInicioMantenimiento(ahora);
                     }
                     break;
-
                 case "EN_REVISION":
                     if (solicitud.getFechaFinMantenimiento() == null) {
                         solicitud.setFechaFinMantenimiento(ahora);
                     }
                     break;
-
-                case "VALIDADO":
-                    if (solicitud.getFechaValidacion() == null) {
-                        solicitud.setFechaValidacion(ahora);
-                    }
-                    break;
-
                 case "FINALIZADO":
-                    if (solicitud.getFechaFinalizacion() == null) {
-                        solicitud.setFechaFinalizacion(ahora);
-                    }
-                    if (solicitud.getRecibidoPorId() == null) {
-                        solicitud.setRecibidoPorId(solicitud.getSolicitanteId());
+                    if (solicitud.getFechaCierre() == null) {
+                        solicitud.setFechaCierre(ahora);
                     }
                     break;
             }
         }
 
-        return toResponse(
-                repository.save(solicitud));
+        SolicitudMantenimiento guardado = repository.save(solicitud);
+
+        if (nuevoEstado != null && !nuevoEstado.equalsIgnoreCase(estadoAnterior)) {
+            String comentario = "Cambio de estado en el flujo de trabajo";
+            if (request != null && request.variables() != null) {
+                if (request.variables().get("comentario") != null
+                        && !request.variables().get("comentario").toString().isBlank()) {
+                    comentario = request.variables().get("comentario").toString().trim();
+                } else if (request.variables().get("observacion") != null
+                        && !request.variables().get("observacion").toString().isBlank()) {
+                    comentario = request.variables().get("observacion").toString().trim();
+                } else if (request.variables().get("motivo") != null
+                        && !request.variables().get("motivo").toString().isBlank()) {
+                    comentario = request.variables().get("motivo").toString().trim();
+                }
+            }
+            UUID actorEmpleadoId = resolverEmpleadoIdParaWorkflow(request, guardado);
+            registrarTrazabilidad(
+                    guardado.getId(),
+                    estadoAnterior,
+                    nuevoEstado,
+                    comentario,
+                    actorEmpleadoId);
+        }
+
+        return toResponse(guardado);
     }
 
     @Transactional(readOnly = true)
-    public SolicitudMantenimientoResponse findById(UUID id) {
-        return toResponse(findDomainById(id));
-    }
+    public List<SolicitudMantenimientoTrazabilidadResponse> obtenerTrazabilidad(UUID solicitudId) {
+        obtenerPorId(solicitudId);
+        List<SolicitudMantenimientoTrazabilidad> trazabilidades = trazabilidadRepository
+                .findBySolicitudMantenimientoId(solicitudId);
+        if (trazabilidades.isEmpty()) {
+            return List.of();
+        }
 
-    @Transactional(readOnly = true)
-    public PageResponse<SolicitudMantenimientoResponse> findAll(
-            SolicitudMantenimientoSearchCriteria criteria,
-            PageRequestDto pageRequest
-    ) {
-        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
-        return PageResponse.from(
-                repository.findAll(criteria, pageable),
-                this::toResponse
-        );
-    }
+        Set<UUID> empleadoIds = trazabilidades.stream()
+                .map(SolicitudMantenimientoTrazabilidad::getEmpleadoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-    @Transactional(readOnly = true)
-    public PageResponse<SolicitudMantenimientoResponse> findAll(String query, PageRequestDto pageRequest) {
-        String normalized = StringUtils.normalize(query);
-        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+        Map<UUID, VEmpleadoEntity> vEmpleadosMap = empleadoIds.isEmpty()
+                ? Collections.emptyMap()
+                : vEmpleadoRepository.findAllById(empleadoIds).stream()
+                        .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, e -> e, (a, b) -> a));
 
-        return PageResponse.from(
-                normalized == null ? repository.findAll(pageable) : repository.search(normalized, pageable),
-                this::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<SolicitudMantenimientoResponse> findByActivoId(UUID activoId, PageRequestDto pageRequest) {
-        requireActivoExists(activoId);
-        return PageResponse.from(repository.findByActivoId(activoId, pageRequest.toPageable(SORT_FIELDS)),
-                this::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<SolicitudMantenimientoResponse> findByEstado(String estado, PageRequestDto pageRequest) {
-        String normalized = requireNormalizedEstado(estado);
-        return PageResponse.from(repository.findByEstado(normalized, pageRequest.toPageable(SORT_FIELDS)),
-                this::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<SolicitudMantenimientoResponse> findBySolicitanteId(UUID solicitanteId,
-            PageRequestDto pageRequest) {
-        return PageResponse.from(repository.findBySolicitanteId(solicitanteId, pageRequest.toPageable(SORT_FIELDS)),
-                this::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<SolicitudMantenimientoResponse> findByResponsableId(UUID responsableId,
-            PageRequestDto pageRequest) {
-        return PageResponse.from(repository.findByResponsableId(responsableId, pageRequest.toPageable(SORT_FIELDS)),
-                this::toResponse);
+        return trazabilidades.stream()
+                .map(t -> {
+                    VEmpleadoEntity ve = vEmpleadosMap.get(t.getEmpleadoId());
+                    SolicitudMantenimientoResponse.EmpleadoInfo info = ve != null
+                            ? new SolicitudMantenimientoResponse.EmpleadoInfo(ve.getEmpleadoId(), ve.getNombreCompleto(), ve.getCargo())
+                            : new SolicitudMantenimientoResponse.EmpleadoInfo(t.getEmpleadoId(), null, null);
+                    return new SolicitudMantenimientoTrazabilidadResponse(
+                            t.getId(),
+                            t.getSolicitudMantenimientoId(),
+                            t.getEstadoAnterior(),
+                            t.getEstadoNuevo(),
+                            t.getComentario(),
+                            t.getEmpleadoId(),
+                            info,
+                            t.getFecha());
+                })
+                .toList();
     }
 
     @Transactional
     public void delete(UUID id) {
-        findDomainById(id);
+        obtenerPorId(id);
         repository.deleteById(id);
     }
 
-    // --- Métodos de apoyo y validaciones ---
-
-    private SolicitudMantenimiento findDomainById(UUID id) {
+    private SolicitudMantenimiento obtenerPorId(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitud de mantenimiento", id));
     }
 
-    private void validateForeignEntities(UUID activoId, UUID tipoMantenimientoId, UUID prioridadId) {
-        requireActivoExists(activoId);
-        requireTipoMantenimientoExists(tipoMantenimientoId);
-        requirePrioridadExists(prioridadId);
-    }
-
-    private void requireActivoExists(UUID id) {
-        if (!activoRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Activo", id);
+    private void registrarTrazabilidad(UUID solicitudId, String estadoAnterior, String estadoNuevo, String comentario,
+            UUID empleadoId) {
+        if (solicitudId == null || estadoNuevo == null) {
+            return;
         }
-    }
 
-    private void requireTipoMantenimientoExists(UUID id) {
-        if (!tipoMantenimientoRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Tipo de mantenimiento", id);
-        }
-    }
-
-    private void requirePrioridadExists(UUID id) {
-        if (!prioridadRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Prioridad", id);
-        }
-    }
-
-    private String requireNormalizedTitulo(String value) {
-        String normalized = StringUtils.normalize(value);
-        if (normalized == null || normalized.length() < TITULO_MIN_LENGTH || normalized.length() > TITULO_MAX_LENGTH) {
-            throw new BusinessException("INVALID_SOLICITUD_TITULO",
-                    "El título debe tener entre %d y %d caracteres".formatted(TITULO_MIN_LENGTH, TITULO_MAX_LENGTH));
-        }
-        return normalized;
-    }
-
-    private String requireNormalizedDescripcion(String value) {
-        String normalized = StringUtils.normalize(value);
-        if (normalized == null || normalized.length() > DESCRIPCION_MAX_LENGTH) {
-            throw new BusinessException("INVALID_SOLICITUD_DESCRIPCION",
-                    "La descripción no puede superar los %d caracteres".formatted(DESCRIPCION_MAX_LENGTH));
-        }
-        return normalized;
-    }
-
-    private String requireNormalizedEstado(String value) {
-        String normalized = StringUtils.normalize(value);
-        if (normalized == null || normalized.length() > 50) {
-            throw new BusinessException("INVALID_SOLICITUD_ESTADO", "El estado debe tener entre 1 y 50 caracteres");
-        }
-        return normalized;
-    }
-
-    // --- Mappings ---
-
-    private SolicitudMantenimientoResponse toResponse(SolicitudMantenimiento domain) {
-        List<SolicitudMantenimientoAdjuntoResponse> adjuntos = domain.getId() != null
-                ? adjuntoRepository.findBySolicitudMantenimientoId(domain.getId())
-                        .stream()
-                        .map(this::toAdjuntoResponse)
-                        .toList()
-                : Collections.emptyList();
-
-        return toResponse(domain, adjuntos);
-    }
-
-    private SolicitudMantenimientoResponse toResponse(SolicitudMantenimiento domain,
-            List<SolicitudMantenimientoAdjuntoResponse> adjuntos) {
-        var activoInfo = domain.getActivoId() != null
-                ? activoRepository.findById(domain.getActivoId())
-                        .map(a -> new SolicitudMantenimientoResponse.ActivoInfo(a.getId(), a.getCodigo(),
-                                a.getNombre()))
-                        .orElse(null)
-                : null;
-
-        var tipoInfo = domain.getTipoMantenimientoId() != null
-                ? tipoMantenimientoRepository.findById(domain.getTipoMantenimientoId())
-                        .map(t -> new SolicitudMantenimientoResponse.TipoMantenimientoInfo(t.getId(), t.getCodigo(),
-                                t.getNombre()))
-                        .orElse(null)
-                : null;
-
-        var prioridadInfo = domain.getPrioridadId() != null
-                ? prioridadRepository.findById(domain.getPrioridadId())
-                        .map(p -> new SolicitudMantenimientoResponse.PrioridadInfo(p.getId(), p.getCodigo(),
-                                p.getNombre(), p.getNivel()))
-                        .orElse(null)
-                : null;
-
-        var solicitanteInfo = buildUserInfo(domain.getSolicitanteId());
-        var aprobadoPorInfo = buildUserInfo(domain.getAprobadoPorId());
-        var responsableInfo = buildUserInfo(domain.getResponsableId());
-        var supervisorInfo = buildUserInfo(domain.getSupervisorId());
-        var recibidoPorInfo = buildUserInfo(domain.getRecibidoPorId());
-
-        return new SolicitudMantenimientoResponse(
-                domain.getId(), domain.getNumero(), activoInfo, tipoInfo,
-                domain.getTipoFallas(), prioridadInfo, solicitanteInfo, domain.getTitulo(),
-                domain.getDescripcion(), domain.getFechaSolicitud(), aprobadoPorInfo, domain.getFechaAprobacion(),
-                domain.getFechaEstimadaOt(), domain.getObservacionAprobacion(), responsableInfo,
-                domain.getFechaAsignacion(),
-                domain.getFechaInicioMantenimiento(), domain.getFechaFinMantenimiento(), supervisorInfo,
-                domain.getFechaValidacion(), domain.getObservacionValidacion(), domain.getFechaFinalizacion(),
-                recibidoPorInfo, domain.getObservacionCierre(), domain.getEstado(), domain.getProcessInstanceId(),
-                adjuntos != null ? adjuntos : Collections.emptyList(), AuditoriaMapper.from(domain));
-    }
-
-    private SolicitudMantenimientoResponse.UserInfo buildUserInfo(UUID empleadoId) {
         if (empleadoId == null) {
-            return null;
+            SolicitudMantenimiento s = repository.findById(solicitudId).orElse(null);
+            if (s != null && s.getSolicitante() != null && s.getSolicitante().getId() != null) {
+                empleadoId = s.getSolicitante().getId();
+            }
         }
 
-        return empleadoRepository.findById(empleadoId)
-                .map(empleado -> {
-                    String nombre = buildNombreCompleto(empleado.getPersonaId());
-                    if (nombre == null || nombre.isBlank()) {
-                        nombre = empleado.getCodigo();
-                    }
-                    return new SolicitudMantenimientoResponse.UserInfo(empleado.getId(), nombre);
-                })
+        if (empleadoId == null) {
+            log.warn("No se pudo registrar trazabilidad para solicitud {} porque no se encontró empleadoId asociado",
+                    solicitudId);
+            return;
+        }
+
+        SolicitudMantenimientoTrazabilidad trazabilidad = SolicitudMantenimientoTrazabilidad.builder()
+                .solicitudMantenimientoId(solicitudId)
+                .estadoAnterior(estadoAnterior)
+                .estadoNuevo(estadoNuevo)
+                .comentario(comentario)
+                .empleadoId(empleadoId)
+                .fecha(LocalDateTime.now())
+                .build();
+
+        trazabilidadRepository.save(trazabilidad);
+    }
+
+    private UUID obtenerEmpleadoIdActual() {
+        return securityUtils.getCurrentUserId()
+                .flatMap(usuarioRepository::findById)
+                .map(Usuario::getPersonaId)
+                .flatMap(empleadoRepository::findFirstByPersonaId)
+                .map(Empleado::getId)
                 .orElse(null);
     }
 
-    private String buildNombreCompleto(UUID personaId) {
-        if (personaId == null) {
-            return null;
+    private UUID resolverEmpleadoIdParaWorkflow(CompleteWorkflowTaskRequest request, SolicitudMantenimiento solicitud) {
+        UUID currentEmpId = obtenerEmpleadoIdActual();
+        if (currentEmpId != null) {
+            return currentEmpId;
         }
 
-        return personaRepository.findById(personaId)
-                .map(this::buildNombreCompleto)
-                .orElse(null);
+        if (request != null && request.variables() != null) {
+            Object empIdObj = request.variables().get("empleadoId");
+            if (empIdObj != null && !empIdObj.toString().isBlank()) {
+                try {
+                    return UUID.fromString(empIdObj.toString().trim());
+                } catch (Exception ignored) {
+                }
+            }
+            Object responsableIdObj = request.variables().get("responsableId");
+            if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
+                try {
+                    return UUID.fromString(responsableIdObj.toString().trim());
+                } catch (Exception ignored) {
+                }
+            }
+            Object supervisorIdObj = request.variables().get("supervisorId");
+            if (supervisorIdObj != null && !supervisorIdObj.toString().isBlank()) {
+                try {
+                    return UUID.fromString(supervisorIdObj.toString().trim());
+                } catch (Exception ignored) {
+                }
+            }
+            Object aprobadorIdObj = request.variables().get("aprobadorId");
+            if (aprobadorIdObj != null && !aprobadorIdObj.toString().isBlank()) {
+                try {
+                    return UUID.fromString(aprobadorIdObj.toString().trim());
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
+        if (solicitud.getResponsable() != null && solicitud.getResponsable().getId() != null) {
+            return solicitud.getResponsable().getId();
+        }
+        if (solicitud.getSupervisor() != null && solicitud.getSupervisor().getId() != null) {
+            return solicitud.getSupervisor().getId();
+        }
+        if (solicitud.getAprobador() != null && solicitud.getAprobador().getId() != null) {
+            return solicitud.getAprobador().getId();
+        }
+        if (solicitud.getSolicitante() != null && solicitud.getSolicitante().getId() != null) {
+            return solicitud.getSolicitante().getId();
+        }
+
+        return null;
     }
 
-    private String buildNombreCompleto(Persona persona) {
-        return Stream.of(
-                persona.getNombres(),
-                persona.getPrimerApellido(),
-                persona.getSegundoApellido())
-                .filter(value -> value != null && !value.isBlank())
-                .map(String::trim)
-                .collect(Collectors.joining(" "));
-    }
-
-    private SolicitudMantenimientoAdjuntoResponse toAdjuntoResponse(SolicitudMantenimientoAdjunto domain) {
-        return new SolicitudMantenimientoAdjuntoResponse(
-                domain.getId(), domain.getSolicitudMantenimientoId(), domain.getNombreArchivo(),
-                domain.getTipoContenido(), domain.getSize(), domain.getUrl(), domain.getDescripcion(),
-                AuditoriaMapper.from(domain));
-    }
-
-    @Transactional(readOnly = true)
-    public SolicitudMantenimientoResumenResponse obtenerResumen(UUID solicitanteId) {
-        SolicitudMantenimientoResumenProjection resumen = repository.obtenerResumen(solicitanteId);
-        return SolicitudMantenimientoResumenResponse.from(resumen);
+    public SolicitudMantenimientoResponse toResponse(SolicitudMantenimiento domain) {
+        if (domain == null) {
+            return null;
+        }
+        if (domain.getId() != null && (domain.getSolicitante() == null || domain.getSolicitante().getNombreCompleto() == null)) {
+            return repository.findById(domain.getId()).map(mapper::toResponse).orElseGet(() -> mapper.toResponse(domain));
+        }
+        return mapper.toResponse(domain);
     }
 }

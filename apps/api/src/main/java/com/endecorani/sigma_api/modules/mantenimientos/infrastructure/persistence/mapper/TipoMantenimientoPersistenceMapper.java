@@ -8,18 +8,15 @@ import org.springframework.stereotype.Component;
 public class TipoMantenimientoPersistenceMapper {
 
     public TipoMantenimientoEntity toEntity(TipoMantenimiento domain) {
-
         if (domain == null) {
             return null;
         }
 
         TipoMantenimientoEntity entity = new TipoMantenimientoEntity();
-
         entity.setId(domain.getId());
         entity.setCodigo(domain.getCodigo());
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
-
         return entity;
     }
 
@@ -41,5 +38,4 @@ public class TipoMantenimientoPersistenceMapper {
                 .updatedById(entity.getUpdatedById())
                 .build();
     }
-
 }

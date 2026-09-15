@@ -1,8 +1,8 @@
 package com.endecorani.sigma_api.modules.mantenimientos.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.OrdenTrabajoAdjuntoRequest;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.OrdenTrabajoAdjuntoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.request.OrdenTrabajoAdjuntoRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.response.OrdenTrabajoAdjuntoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.OrdenTrabajoAdjuntoService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;

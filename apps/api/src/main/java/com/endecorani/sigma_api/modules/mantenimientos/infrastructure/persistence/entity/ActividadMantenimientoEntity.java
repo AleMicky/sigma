@@ -1,17 +1,28 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity;
 
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 @Entity
 @Table(
         schema = "mantenimientos",
@@ -44,16 +55,8 @@ public class ActividadMantenimientoEntity extends BaseEntity {
     )
     private String descripcion;
 
-    @Column(
-            name = "aplica_todos_tipos_activo",
-            nullable = false
-    )
-    private Boolean aplicaTodosTiposActivo = false;
-
-    @Column(
-            name = "requiere_checklist",
-            nullable = false
-    )
-    private Boolean requiereChecklist = false;
-
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "actividad_mantenimiento_id")
+    @Builder.Default
+    private List<ActividadMantenimientoAplicacionEntity> aplicaciones = new ArrayList<>();
 }

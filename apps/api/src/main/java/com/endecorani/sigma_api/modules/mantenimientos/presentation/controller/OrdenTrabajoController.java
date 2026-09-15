@@ -1,8 +1,9 @@
 package com.endecorani.sigma_api.modules.mantenimientos.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.OrdenTrabajoRequest;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.OrdenTrabajoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.request.OrdenTrabajoRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.request.OrdenTrabajoUpdate;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.response.OrdenTrabajoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.OrdenTrabajoService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -22,67 +23,87 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.API_V1 + "/ordenes-trabajo")
 @RequiredArgsConstructor
-@Tag(name = "Órdenes de Trabajo", description = "Administración de órdenes de trabajo")
+@Tag(
+        name = "Órdenes de Trabajo",
+        description = "Administración de órdenes de trabajo de mantenimiento técnico"
+)
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class OrdenTrabajoController {
 
-        private final OrdenTrabajoService ordenTrabajoService;
+    private final OrdenTrabajoService service;
 
-        @PostMapping
-        @Operation(summary = "Crear una orden de trabajo")
-        public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> create(
-                        @Valid @RequestBody OrdenTrabajoRequest request) {
-                OrdenTrabajoResponse response = ordenTrabajoService.create(request);
-                return ResponseEntity
-                                .status(HttpStatus.CREATED)
-                                .body(
-                                                ApiResponse.success(
-                                                                "Registro creado correctamente",
-                                                                response));
-        }
+    @GetMapping
+    @Operation(summary = "Listar órdenes de trabajo con paginación y búsqueda opcional")
+    public ResponseEntity<ApiResponse<PageResponse<OrdenTrabajoResponse>>> listar(
+            @RequestParam(required = false) String search,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.listar(search, pageRequest))
+        );
+    }
 
-        @PutMapping("/{id}")
-        @Operation(summary = "Actualizar una orden de trabajo")
-        public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> update(
-                        @PathVariable UUID id,
-                        @Valid @RequestBody OrdenTrabajoRequest request) {
-                OrdenTrabajoResponse response = ordenTrabajoService.update(id, request);
-                return ResponseEntity.ok(
-                                ApiResponse.success(
-                                                "Registro actualizado correctamente",
-                                                response));
-        }
+    @GetMapping("/{id}")
+    @Operation(summary = "Obtener una orden de trabajo por ID")
+    public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> findById(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findById(id))
+        );
+    }
 
-        @GetMapping("/{id}")
-        @Operation(summary = "Obtener una orden de trabajo por ID")
-        public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> findById(
-                        @PathVariable UUID id) {
-                return ResponseEntity.ok(
-                                ApiResponse.success(
-                                                ordenTrabajoService.findById(id)));
-        }
+    @GetMapping("/numero/{numero}")
+    @Operation(summary = "Obtener una orden de trabajo por su número correlativo")
+    public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> findByNumero(
+            @PathVariable String numero
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findByNumero(numero))
+        );
+    }
 
-        @GetMapping
-        @Operation(summary = "Listar órdenes de trabajo de forma paginada")
-        public ResponseEntity<ApiResponse<PageResponse<OrdenTrabajoResponse>>> findAll(
-                        @RequestParam(required = false) UUID solicitudMantenimientoId,
-                        @RequestParam(required = false) String q,
-                        @Valid @ModelAttribute PageRequestDto pageRequest) {
-                PageResponse<OrdenTrabajoResponse> response = solicitudMantenimientoId != null
-                                ? ordenTrabajoService.findAll(solicitudMantenimientoId, pageRequest)
-                                : ordenTrabajoService.findAll(q, pageRequest);
+    @GetMapping("/solicitud/{solicitudId}")
+    @Operation(summary = "Obtener la orden de trabajo asociada a una solicitud de mantenimiento")
+    public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> findBySolicitud(
+            @PathVariable UUID solicitudId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findBySolicitudMantenimientoId(solicitudId))
+        );
+    }
 
-                return ResponseEntity.ok(
-                                ApiResponse.success(response));
-        }
+    @PostMapping
+    @Operation(summary = "Crear una nueva orden de trabajo con sus actividades y adjuntos")
+    public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> create(
+            @Valid @RequestBody OrdenTrabajoRequest dto
+    ) {
+        OrdenTrabajoResponse response = service.create(dto);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Orden de trabajo creada correctamente", response));
+    }
 
-        @DeleteMapping("/{id}")
-        @Operation(summary = "Eliminar una orden de trabajo")
-        public ResponseEntity<ApiResponse<Void>> delete(
-                        @PathVariable UUID id) {
-                ordenTrabajoService.delete(id);
-                return ResponseEntity.ok(
-                                ApiResponse.success(
-                                                "Registro eliminado correctamente"));
-        }
+    @PutMapping("/{id}")
+    @Operation(summary = "Actualizar una orden de trabajo existente")
+    public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody OrdenTrabajoUpdate dto
+    ) {
+        OrdenTrabajoResponse response = service.update(id, dto);
+        return ResponseEntity.ok(
+                ApiResponse.success("Orden de trabajo actualizada correctamente", response)
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Eliminar una orden de trabajo")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable UUID id
+    ) {
+        service.delete(id);
+        return ResponseEntity.ok(
+                ApiResponse.success("Orden de trabajo eliminada correctamente")
+        );
+    }
 }

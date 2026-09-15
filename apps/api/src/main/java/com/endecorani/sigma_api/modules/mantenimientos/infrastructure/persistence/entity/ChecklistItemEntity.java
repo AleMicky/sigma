@@ -1,51 +1,42 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity;
 
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 @Entity
 @Table(
         schema = "mantenimientos",
         name = "checklist_items",
         indexes = {
                 @Index(
-                        name = "idx_checklist_item_checklist",
-                        columnList = "checklist_mantenimiento_id"
-                )
-        },
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_checklist_item_codigo",
-                        columnNames = {
-                                "checklist_mantenimiento_id",
-                                "codigo"
-                        }
+                        name = "idx_checklist_items_aplicacion",
+                        columnList = "actividad_mantenimiento_aplicacion_id"
                 )
         }
 )
 public class ChecklistItemEntity extends BaseEntity {
-    @Column(
-            name = "checklist_mantenimiento_id",
-            nullable = false
-    )
-    private UUID checklistMantenimientoId;
 
     @Column(
-            name = "codigo",
-            nullable = false,
-            length = 50
+            name = "actividad_mantenimiento_aplicacion_id",
+            nullable = false
     )
-    private String codigo;
+    private UUID actividadMantenimientoAplicacionId;
 
     @Column(
             name = "nombre",
@@ -61,27 +52,9 @@ public class ChecklistItemEntity extends BaseEntity {
     private String descripcion;
 
     @Column(
-            name = "tipo_dato_id",
-            nullable = false
-    )
-    private UUID tipoDatoId;
-
-    @Column(
             name = "orden",
             nullable = false
     )
-    private Integer orden;
-
-    @Column(
-            name = "obligatorio",
-            nullable = false
-    )
-    private Boolean obligatorio = false;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(
-            name = "opciones",
-            columnDefinition = "jsonb"
-    )
-    private String opciones;
+    @Builder.Default
+    private Integer orden = 0;
 }

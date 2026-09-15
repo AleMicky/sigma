@@ -1,200 +1,164 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.request.ActividadMantenimientoRequest;
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.response.ActividadMantenimientoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad.request.ActividadMantenimientoRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad.request.ActividadMantenimientoUpdate;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad.response.ActividadMantenimientoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ActividadMantenimientoMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ActividadMantenimientoRepository;
-import com.endecorani.sigma_api.shared.application.crud.AbstractCrudService;
-import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
-import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
-import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
+import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ActividadMantenimientoService extends AbstractCrudService<
-        ActividadMantenimiento,
-        ActividadMantenimientoRequest,
-        ActividadMantenimientoResponse,
-        UUID
-        > {
-
-    private static final int CODIGO_MIN_LENGTH = 2;
-    private static final int CODIGO_MAX_LENGTH = 50;
-    private static final int NOMBRE_MIN_LENGTH = 2;
-    private static final int NOMBRE_MAX_LENGTH = 150;
+public class ActividadMantenimientoService {
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
             "codigo",
             "nombre",
-            "descripcion",
-            "aplicaTodosTiposActivo",
-            "requiereChecklist",
             "createdAt",
             "updatedAt"
     );
 
-    private final ActividadMantenimientoRepository actividadMantenimientoRepository;
+    private final ActividadMantenimientoRepository repository;
+    private final ActividadMantenimientoMapper mapper;
 
-    @Override
-    protected CrudRepository<ActividadMantenimiento, UUID> repository() {
-        return actividadMantenimientoRepository;
-    }
-
-    @Override
-    protected Set<String> allowedSortFields() {
-        return SORT_FIELDS;
+    @Transactional(readOnly = true)
+    public PageResponse<ActividadMantenimientoResponse> findAll(PageRequestDto pageRequest) {
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+        Page<ActividadMantenimiento> resultado = repository.findAll(pageable);
+        return PageResponse.from(resultado, mapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ActividadMantenimientoResponse> search(
-            String query,
-            PageRequestDto pageRequest
-    ) {
-        String normalized = StringUtils.normalize(query);
+    public PageResponse<ActividadMantenimientoResponse> listar(String search, PageRequestDto pageRequest) {
+        String normalized = StringUtils.normalize(search);
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+        Page<ActividadMantenimiento> resultado;
 
-        if (normalized == null) {
-            return findAll(pageRequest);
+        if (normalized == null || normalized.isBlank()) {
+            resultado = repository.findAll(pageable);
+        } else {
+            resultado = repository.search(normalized, pageable);
         }
 
-        return PageResponse.from(
-                actividadMantenimientoRepository.search(
-                        normalized,
-                        pageRequest.toPageable(allowedSortFields())
-                ),
-                this::toResponse
-        );
+        return PageResponse.from(resultado, mapper::toResponse);
     }
 
-    @Override
-    protected ActividadMantenimiento toDomain(ActividadMantenimientoRequest request) {
-        String codigo = requireNormalizedCodigo(request.codigo());
-        validateUniqueCodigoForCreate(codigo);
-
-        return ActividadMantenimiento.builder()
-                .codigo(codigo)
-                .nombre(requireNormalizedNombre(request.nombre()))
-                .descripcion(StringUtils.normalize(request.descripcion()))
-                .aplicaTodosTiposActivo(
-                        request.aplicaTodosTiposActivo() != null
-                                ? request.aplicaTodosTiposActivo()
-                                : false
-                )
-                .requiereChecklist(
-                        request.requiereChecklist() != null
-                                ? request.requiereChecklist()
-                                : false
-                )
-                .build();
+    @Transactional(readOnly = true)
+    public ActividadMantenimientoResponse findById(UUID id) {
+        ActividadMantenimiento actividad = obtenerPorId(id);
+        return mapper.toResponse(actividad);
     }
 
-    @Override
-    protected void updateDomain(
-            ActividadMantenimiento domain,
-            ActividadMantenimientoRequest request
-    ) {
-        String codigo = requireNormalizedCodigo(request.codigo());
-        validateUniqueCodigoForUpdate(codigo, domain.getId());
-
-        domain.setCodigo(codigo);
-        domain.setNombre(requireNormalizedNombre(request.nombre()));
-        domain.setDescripcion(StringUtils.normalize(request.descripcion()));
-        domain.setAplicaTodosTiposActivo(
-                request.aplicaTodosTiposActivo() != null
-                        ? request.aplicaTodosTiposActivo()
-                        : false
-        );
-        domain.setRequiereChecklist(
-                request.requiereChecklist() != null
-                        ? request.requiereChecklist()
-                        : false
-        );
+    @Transactional(readOnly = true)
+    public ActividadMantenimientoResponse findByCodigo(String codigo) {
+        ActividadMantenimiento actividad = repository.findByCodigo(codigo)
+                .orElseThrow(() -> new ResourceNotFoundException("Actividad de mantenimiento no encontrada con código: " + codigo));
+        return mapper.toResponse(actividad);
     }
 
-    @Override
-    protected ActividadMantenimientoResponse toResponse(ActividadMantenimiento domain) {
-
-        return new ActividadMantenimientoResponse(
-                domain.getId(),
-                domain.getCodigo(),
-                domain.getNombre(),
-                domain.getDescripcion(),
-                domain.getAplicaTodosTiposActivo(),
-                domain.getRequiereChecklist(),
-                AuditoriaMapper.from(domain)
-        );
+    @Transactional(readOnly = true)
+    public List<ActividadMantenimientoResponse> findByTipoActivoId(UUID tipoActivoId) {
+        return repository.findByTipoActivoId(tipoActivoId).stream()
+                .map(mapper::toResponse)
+                .collect(Collectors.toList());
     }
 
-    @Override
-    protected String resourceName() {
-        return "ActividadMantenimiento";
-    }
-
-    private void validateUniqueCodigoForCreate(String codigo) {
-        if (actividadMantenimientoRepository.existsByCodigoIgnoreCase(codigo)) {
+    @Transactional
+    public ActividadMantenimientoResponse create(ActividadMantenimientoRequest dto) {
+        if (repository.existsByCodigoIgnoreCase(dto.codigo())) {
             throw new ConflictException(
-                    "ACTIVIDAD_MANTENIMIENTO_ALREADY_EXISTS",
-                    "Ya existe una actividad de mantenimiento con el código '%s'"
-                            .formatted(codigo)
+                    "ACTIVIDAD_CODIGO_DUPLICADO",
+                    "Ya existe una actividad de mantenimiento con el código " + dto.codigo()
             );
         }
+
+        ActividadMantenimiento domain = mapper.toDomain(dto);
+        if (domain.getAplicaciones() != null) {
+            domain.getAplicaciones().forEach(aplicacion -> {
+                if (aplicacion.getActividadMantenimientoId() == null) {
+                    aplicacion.setActividadMantenimientoId(domain.getId());
+                }
+            });
+        }
+
+        ActividadMantenimiento guardado = repository.save(domain);
+        return mapper.toResponse(guardado);
     }
 
-    private void validateUniqueCodigoForUpdate(
-            String codigo,
-            UUID currentId
-    ) {
-        if (actividadMantenimientoRepository.existsByCodigoIgnoreCaseAndIdNot(
-                codigo,
-                currentId
-        )) {
+    @Transactional
+    public ActividadMantenimientoResponse update(UUID id, ActividadMantenimientoRequest dto) {
+        ActividadMantenimiento actual = obtenerPorId(id);
+
+        if (repository.existsByCodigoIgnoreCaseAndIdNot(dto.codigo(), id)) {
             throw new ConflictException(
-                    "ACTIVIDAD_MANTENIMIENTO_ALREADY_EXISTS",
-                    "Ya existe otra actividad de mantenimiento con el código '%s'"
-                            .formatted(codigo)
+                    "ACTIVIDAD_CODIGO_DUPLICADO",
+                    "Ya existe otra actividad de mantenimiento con el código " + dto.codigo()
             );
         }
+
+        mapper.updateDomainFromRequest(dto, actual);
+
+        if (actual.getAplicaciones() != null) {
+            actual.getAplicaciones().forEach(aplicacion -> {
+                if (aplicacion.getActividadMantenimientoId() == null) {
+                    aplicacion.setActividadMantenimientoId(actual.getId());
+                }
+            });
+        }
+
+        ActividadMantenimiento actualizado = repository.save(actual);
+        return mapper.toResponse(actualizado);
     }
 
-    private String requireNormalizedCodigo(String value) {
-        String normalized = StringUtils.normalize(value);
+    @Transactional
+    public ActividadMantenimientoResponse update(UUID id, ActividadMantenimientoUpdate dto) {
+        ActividadMantenimiento actual = obtenerPorId(id);
 
-        if (normalized == null
-                || normalized.length() < CODIGO_MIN_LENGTH
-                || normalized.length() > CODIGO_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_ACTIVIDAD_MANTENIMIENTO_CODIGO",
-                    "El código debe tener entre %d y %d caracteres"
-                            .formatted(CODIGO_MIN_LENGTH, CODIGO_MAX_LENGTH)
+        if (repository.existsByCodigoIgnoreCaseAndIdNot(dto.codigo(), id)) {
+            throw new ConflictException(
+                    "ACTIVIDAD_CODIGO_DUPLICADO",
+                    "Ya existe otra actividad de mantenimiento con el código " + dto.codigo()
             );
         }
 
-        return normalized;
+        mapper.updateDomain(dto, actual);
+
+        if (actual.getAplicaciones() != null) {
+            actual.getAplicaciones().forEach(aplicacion -> {
+                if (aplicacion.getActividadMantenimientoId() == null) {
+                    aplicacion.setActividadMantenimientoId(actual.getId());
+                }
+            });
+        }
+
+        ActividadMantenimiento actualizado = repository.save(actual);
+        return mapper.toResponse(actualizado);
     }
 
-    private String requireNormalizedNombre(String value) {
-        String normalized = StringUtils.normalize(value);
+    @Transactional
+    public void delete(UUID id) {
+        obtenerPorId(id);
+        repository.deleteById(id);
+    }
 
-        if (normalized == null
-                || normalized.length() < NOMBRE_MIN_LENGTH
-                || normalized.length() > NOMBRE_MAX_LENGTH) {
-            throw new BusinessException(
-                    "INVALID_ACTIVIDAD_MANTENIMIENTO_NOMBRE",
-                    "El nombre debe tener entre %d y %d caracteres"
-                            .formatted(NOMBRE_MIN_LENGTH, NOMBRE_MAX_LENGTH)
-            );
-        }
-
-        return normalized;
+    private ActividadMantenimiento obtenerPorId(UUID id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Actividad de mantenimiento", id));
     }
 }
