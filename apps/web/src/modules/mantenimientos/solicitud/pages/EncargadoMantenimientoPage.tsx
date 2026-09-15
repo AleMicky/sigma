@@ -843,7 +843,7 @@ export function EncargadoMantenimientoPage() {
           solicitudesQuery.refetch()
           setSolicitudToDelete(null)
         }}
-        isDeleting={deleteSolicitudMutation.isPending}
+        isPending={deleteSolicitudMutation.isPending}
       />
     </PageShell>
   )

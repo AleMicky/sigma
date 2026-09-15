@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query"
 import { Layers, Loader2, Plus } from "lucide-react"
 
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
+import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { componenteQueries } from "@/modules/activos/componente/api/componente.queries"
+import type { Componente } from "@/modules/activos/componente/api/componente.service"
 import { isApiError } from "@/shared/api"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -16,12 +18,13 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Field, FieldLabel } from "@/shared/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/shared/components/ui/combobox"
 
 import { useCreateActividadAplicacion } from "../api/actividad-aplicacion.mutations"
 import type { ActividadMantenimiento } from "../api/actividad.service"
@@ -68,12 +71,15 @@ export function ActividadAplicacionFormDialog({
   const componentes = componentesQuery.data?.content ?? []
 
   const selectedTipoActivo = useMemo(
-    () => tiposActivo.find((t) => t.id === tipoActivoId),
+    () => tiposActivo.find((t) => t.id === tipoActivoId) ?? null,
     [tiposActivo, tipoActivoId],
   )
 
   const selectedComponente = useMemo(
-    () => componentes.find((c) => c.id === componenteId),
+    () =>
+      componenteId && componenteId !== NONE_COMPONENTE
+        ? componentes.find((c) => c.id === componenteId) ?? null
+        : null,
     [componentes, componenteId],
   )
 
@@ -145,67 +151,133 @@ export function ActividadAplicacionFormDialog({
               </div>
             )}
 
-            {/* Tipo de Activo */}
+            {/* Tipo de Activo Autocomplete */}
             <Field>
               <FieldLabel htmlFor="tipoActivoId">
                 Tipo de Activo <span className="text-destructive">*</span>
               </FieldLabel>
-              <Select
-                value={tipoActivoId}
-                onValueChange={(val) => {
-                  setTipoActivoId(val ?? "")
+              <Combobox
+                items={tiposActivo}
+                itemToStringLabel={(item: TipoActivo) => item?.nombre ?? ""}
+                itemToStringValue={(item: TipoActivo) => item?.id ?? ""}
+                value={selectedTipoActivo}
+                onValueChange={(val: TipoActivo | null) => {
+                  setTipoActivoId(val?.id ?? "")
                   setComponenteId(NONE_COMPONENTE)
                 }}
+                disabled={tiposActivoQuery.isLoading || createMutation.isPending}
               >
-                <SelectTrigger id="tipoActivoId" className="w-full">
-                  <SelectValue>
-                    {selectedTipoActivo
-                      ? selectedTipoActivo.nombre
-                      : "Selecciona un tipo de activo…"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {tiposActivo.map((tipo) => (
-                    <SelectItem key={tipo.id} value={tipo.id}>
-                      {tipo.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <div className="relative w-full">
+                  <ComboboxInput
+                    id="tipoActivoId"
+                    placeholder={
+                      tiposActivoQuery.isLoading
+                        ? "Cargando tipos de activo..."
+                        : "Buscar tipo de activo..."
+                    }
+                    className="w-full text-xs"
+                    showClear
+                  />
+                  {tiposActivoQuery.isLoading && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <ComboboxContent className="z-50 max-h-60 min-w-[280px]">
+                  <ComboboxEmpty className="py-3 text-xs text-muted-foreground text-center">
+                    {tiposActivoQuery.isLoading
+                      ? "Cargando tipos de activo..."
+                      : "No se encontraron tipos de activo."}
+                  </ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: TipoActivo) => (
+                      <ComboboxItem
+                        key={item.id}
+                        value={item}
+                        className="cursor-pointer py-1.5 px-2 text-xs"
+                      >
+                        <span className="font-medium text-foreground">
+                          {item.nombre}
+                        </span>
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </Field>
 
-            {/* Componente (Opcional) */}
+            {/* Componente Específico (Opcional) Autocomplete */}
             <Field>
               <FieldLabel htmlFor="componenteId">
                 Componente Específico <span className="text-muted-foreground font-normal">(Opcional)</span>
               </FieldLabel>
-              <Select
-                value={componenteId}
-                onValueChange={(val) => setComponenteId(val ?? NONE_COMPONENTE)}
-                disabled={!tipoActivoId || componentes.length === 0}
+              <Combobox
+                items={componentes}
+                itemToStringLabel={(item: Componente) =>
+                  item ? `${item.codigo ? `${item.codigo} - ` : ""}${item.nombre}` : ""
+                }
+                itemToStringValue={(item: Componente) => item?.id ?? ""}
+                value={selectedComponente}
+                onValueChange={(val: Componente | null) => {
+                  setComponenteId(val?.id ?? NONE_COMPONENTE)
+                }}
+                disabled={
+                  !tipoActivoId ||
+                  componentesQuery.isLoading ||
+                  componentes.length === 0 ||
+                  createMutation.isPending
+                }
               >
-                <SelectTrigger id="componenteId" className="w-full">
-                  <SelectValue>
-                    {componenteId && componenteId !== NONE_COMPONENTE
-                      ? (selectedComponente?.nombre ?? "Componente seleccionado")
-                      : !tipoActivoId
+                <div className="relative w-full">
+                  <ComboboxInput
+                    id="componenteId"
+                    placeholder={
+                      !tipoActivoId
                         ? "Primero selecciona un tipo de activo"
-                        : componentes.length === 0
-                          ? "Sin componentes registrados para este tipo"
-                          : "Aplica a todos los componentes (toda la unidad)"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  <SelectItem value={NONE_COMPONENTE}>
-                    Aplica a toda la unidad (sin componente específico)
-                  </SelectItem>
-                  {componentes.map((comp) => (
-                    <SelectItem key={comp.id} value={comp.id}>
-                      {comp.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                        : componentesQuery.isLoading
+                          ? "Cargando componentes..."
+                          : componentes.length === 0
+                            ? "Sin componentes registrados (aplica a toda la unidad)"
+                            : "Buscar componente…"
+                    }
+                    className="w-full text-xs"
+                    showClear
+                  />
+                  {componentesQuery.isLoading && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <ComboboxContent className="z-50 max-h-60 min-w-[280px]">
+                  <ComboboxEmpty className="py-3 text-xs text-muted-foreground text-center">
+                    {componentesQuery.isLoading
+                      ? "Cargando componentes..."
+                      : "No se encontraron componentes."}
+                  </ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: Componente) => (
+                      <ComboboxItem
+                        key={item.id}
+                        value={item}
+                        className="cursor-pointer py-1.5 px-2 text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {item.codigo && (
+                            <code className="text-[10px] font-mono font-bold text-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+                              {item.codigo}
+                            </code>
+                          )}
+                          <span className="font-medium text-foreground truncate">
+                            {item.nombre}
+                          </span>
+                        </div>
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </Field>
           </div>
 
@@ -235,3 +307,4 @@ export function ActividadAplicacionFormDialog({
     </Dialog>
   )
 }
+

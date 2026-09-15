@@ -43,12 +43,12 @@ export function ActividadFormDialog({
   const form = useForm({
     defaultValues: actividad
       ? {
-          codigo: actividad.codigo,
-          nombre: actividad.nombre,
-          descripcion: actividad.descripcion ?? "",
-          aplicaTodosTiposActivo: actividad.aplicaTodosTiposActivo ?? false,
-          requiereChecklist: actividad.requiereChecklist ?? false,
-        }
+        codigo: actividad.codigo,
+        nombre: actividad.nombre,
+        descripcion: actividad.descripcion ?? "",
+        aplicaTodosTiposActivo: actividad.aplicaTodosTiposActivo ?? false,
+        requiereChecklist: actividad.requiereChecklist ?? false,
+      }
       : defaultActividadValues,
     validators: {
       onSubmit: actividadSchema,
@@ -68,9 +68,9 @@ export function ActividadFormDialog({
         const saved =
           isEditing && actividad
             ? await updateMutation.mutateAsync({
-                id: actividad.id,
-                payload,
-              })
+              id: actividad.id,
+              payload,
+            })
             : await createMutation.mutateAsync(payload)
 
         onSuccess?.(saved)
@@ -140,7 +140,7 @@ export function ActividadFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="EJ: ACT-001, CAMBIO_ACEITE"
+                placeholder="EJ: ACT-001"
                 className="font-mono uppercase"
               />
               <p className="text-[11px] text-muted-foreground">
@@ -171,7 +171,7 @@ export function ActividadFormDialog({
                 required
                 aria-required
                 aria-invalid={isInvalid}
-                placeholder="Ej. Cambio de Aceite y Filtro"
+                placeholder="Ej. Cambio de Aceite"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
