@@ -12,9 +12,9 @@ import java.util.UUID;
 @Repository
 public interface SpringChecklistItemRepository extends JpaRepository<ChecklistItemEntity, UUID> {
 
-    List<ChecklistItemEntity> findByActividadMantenimientoIdOrderByOrdenAsc(UUID actividadMantenimientoId);
+    List<ChecklistItemEntity> findByActividadMantenimientoAplicacionIdOrderByOrdenAsc(UUID actividadMantenimientoAplicacionId);
 
-    Page<ChecklistItemEntity> findByActividadMantenimientoId(UUID actividadMantenimientoId, Pageable pageable);
+    Page<ChecklistItemEntity> findByActividadMantenimientoAplicacionId(UUID actividadMantenimientoAplicacionId, Pageable pageable);
 
-    void deleteByActividadMantenimientoId(UUID actividadMantenimientoId);
+    void deleteByActividadMantenimientoAplicacionId(UUID actividadMantenimientoAplicacionId);
 }

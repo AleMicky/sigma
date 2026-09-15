@@ -5,7 +5,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.checklist
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.checklist.response.ChecklistItemResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ActividadMantenimientoMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ChecklistItem;
-import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ActividadMantenimientoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ActividadMantenimientoAplicacionRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ChecklistItemRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -35,13 +35,13 @@ public class ChecklistItemService {
     );
 
     private final ChecklistItemRepository repository;
-    private final ActividadMantenimientoRepository actividadRepository;
+    private final ActividadMantenimientoAplicacionRepository aplicacionRepository;
     private final ActividadMantenimientoMapper mapper;
 
     @Transactional
     public ChecklistItemResponse create(ChecklistItemRequest dto) {
-        if (dto.actividadMantenimientoId() != null && !actividadRepository.findById(dto.actividadMantenimientoId()).isPresent()) {
-            throw new ResourceNotFoundException("Actividad de mantenimiento", dto.actividadMantenimientoId());
+        if (dto.actividadMantenimientoAplicacionId() != null && !aplicacionRepository.findById(dto.actividadMantenimientoAplicacionId()).isPresent()) {
+            throw new ResourceNotFoundException("Aplicación de actividad de mantenimiento", dto.actividadMantenimientoAplicacionId());
         }
 
         ChecklistItem domain = mapper.toChecklistItemDomain(dto);
@@ -52,14 +52,14 @@ public class ChecklistItemService {
     public ChecklistItemResponse update(UUID id, ChecklistItemUpdate dto) {
         ChecklistItem domain = obtenerPorId(id);
 
-        if (dto.actividadMantenimientoId() != null && !actividadRepository.findById(dto.actividadMantenimientoId()).isPresent()) {
-            throw new ResourceNotFoundException("Actividad de mantenimiento", dto.actividadMantenimientoId());
+        if (dto.actividadMantenimientoAplicacionId() != null && !aplicacionRepository.findById(dto.actividadMantenimientoAplicacionId()).isPresent()) {
+            throw new ResourceNotFoundException("Aplicación de actividad de mantenimiento", dto.actividadMantenimientoAplicacionId());
         }
 
         mapper.updateChecklistItemDomain(dto, domain);
 
-        if (dto.actividadMantenimientoId() != null) {
-            domain.setActividadMantenimientoId(dto.actividadMantenimientoId());
+        if (dto.actividadMantenimientoAplicacionId() != null) {
+            domain.setActividadMantenimientoAplicacionId(dto.actividadMantenimientoAplicacionId());
         }
 
         return mapper.toChecklistItemResponse(repository.save(domain));
@@ -69,14 +69,14 @@ public class ChecklistItemService {
     public ChecklistItemResponse update(UUID id, ChecklistItemRequest dto) {
         ChecklistItem domain = obtenerPorId(id);
 
-        if (dto.actividadMantenimientoId() != null && !actividadRepository.findById(dto.actividadMantenimientoId()).isPresent()) {
-            throw new ResourceNotFoundException("Actividad de mantenimiento", dto.actividadMantenimientoId());
+        if (dto.actividadMantenimientoAplicacionId() != null && !aplicacionRepository.findById(dto.actividadMantenimientoAplicacionId()).isPresent()) {
+            throw new ResourceNotFoundException("Aplicación de actividad de mantenimiento", dto.actividadMantenimientoAplicacionId());
         }
 
         mapper.updateChecklistItemFromRequest(dto, domain);
 
-        if (dto.actividadMantenimientoId() != null) {
-            domain.setActividadMantenimientoId(dto.actividadMantenimientoId());
+        if (dto.actividadMantenimientoAplicacionId() != null) {
+            domain.setActividadMantenimientoAplicacionId(dto.actividadMantenimientoAplicacionId());
         }
 
         return mapper.toChecklistItemResponse(repository.save(domain));
@@ -89,18 +89,18 @@ public class ChecklistItemService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ChecklistItemResponse> findByActividadMantenimientoId(
-            UUID actividadMantenimientoId,
+    public PageResponse<ChecklistItemResponse> findByActividadMantenimientoAplicacionId(
+            UUID aplicacionId,
             PageRequestDto pageRequest
     ) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
-        Page<ChecklistItem> resultado = repository.findByActividadMantenimientoId(actividadMantenimientoId, pageable);
+        Page<ChecklistItem> resultado = repository.findByActividadMantenimientoAplicacionId(aplicacionId, pageable);
         return PageResponse.from(resultado, mapper::toChecklistItemResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ChecklistItemResponse> findByActividadMantenimientoId(UUID actividadMantenimientoId) {
-        return repository.findByActividadMantenimientoId(actividadMantenimientoId).stream()
+    public List<ChecklistItemResponse> findByActividadMantenimientoAplicacionId(UUID aplicacionId) {
+        return repository.findByActividadMantenimientoAplicacionId(aplicacionId).stream()
                 .map(mapper::toChecklistItemResponse)
                 .collect(Collectors.toList());
     }

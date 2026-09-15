@@ -1,6 +1,5 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad.request;
 
-import com.endecorani.sigma_api.modules.mantenimientos.application.dto.checklist.request.ChecklistItemUpdate;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -19,12 +18,7 @@ public record ActividadMantenimientoUpdate(
         @Size(max = 500, message = "La descripción no puede superar los 500 caracteres")
         String descripcion,
 
-        Boolean aplicaTodosTiposActivo,
-
         @Valid
-        List<ActividadMantenimientoAplicacionUpdate> aplicaciones,
-
-        @Valid
-        List<ChecklistItemUpdate> checklist
+        List<ActividadMantenimientoAplicacionUpdate> aplicaciones
 ) {
 }

@@ -14,7 +14,8 @@ import java.util.UUID;
 public class ChecklistItem extends AuditableModel {
 
     private UUID id;
-    private UUID actividadMantenimientoId;
+
+    private UUID actividadMantenimientoAplicacionId;
 
     private String nombre;
     private String descripcion;

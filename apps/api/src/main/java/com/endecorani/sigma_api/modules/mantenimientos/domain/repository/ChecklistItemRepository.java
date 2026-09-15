@@ -14,9 +14,9 @@ public interface ChecklistItemRepository {
 
     Page<ChecklistItem> findAll(Pageable pageable);
 
-    Page<ChecklistItem> findByActividadMantenimientoId(UUID actividadMantenimientoId, Pageable pageable);
+    Page<ChecklistItem> findByActividadMantenimientoAplicacionId(UUID aplicacionId, Pageable pageable);
 
-    List<ChecklistItem> findByActividadMantenimientoId(UUID actividadMantenimientoId);
+    List<ChecklistItem> findByActividadMantenimientoAplicacionId(UUID aplicacionId);
 
     ChecklistItem save(ChecklistItem item);
 
@@ -24,5 +24,5 @@ public interface ChecklistItemRepository {
 
     void deleteById(UUID id);
 
-    void deleteByActividadMantenimientoId(UUID actividadMantenimientoId);
+    void deleteByActividadMantenimientoAplicacionId(UUID aplicacionId);
 }

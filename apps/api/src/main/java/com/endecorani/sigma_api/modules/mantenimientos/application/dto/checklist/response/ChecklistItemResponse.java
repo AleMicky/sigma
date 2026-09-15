@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record ChecklistItemResponse(
         UUID id,
-        UUID actividadMantenimientoId,
+        UUID actividadMantenimientoAplicacionId,
         String nombre,
         String descripcion,
         Integer orden,

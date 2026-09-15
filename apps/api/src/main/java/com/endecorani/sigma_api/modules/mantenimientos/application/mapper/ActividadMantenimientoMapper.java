@@ -56,10 +56,10 @@ public interface ActividadMantenimientoMapper {
     ChecklistItemResponse toChecklistItemResponse(ChecklistItem domain);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "actividadMantenimientoId", ignore = true)
+    @Mapping(target = "actividadMantenimientoAplicacionId", ignore = true)
     void updateChecklistItemDomain(ChecklistItemUpdate dto, @MappingTarget ChecklistItem domain);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "actividadMantenimientoId", ignore = true)
+    @Mapping(target = "actividadMantenimientoAplicacionId", ignore = true)
     void updateChecklistItemFromRequest(ChecklistItemRequest dto, @MappingTarget ChecklistItem domain);
 }

@@ -47,6 +47,14 @@ public class ActividadMantenimientoAplicacionService {
         }
 
         ActividadMantenimientoAplicacion domain = mapper.toAplicacionDomain(dto);
+        if (domain.getChecklist() != null) {
+            domain.getChecklist().forEach(item -> {
+                if (item.getActividadMantenimientoAplicacionId() == null) {
+                    item.setActividadMantenimientoAplicacionId(domain.getId());
+                }
+            });
+        }
+
         return mapper.toAplicacionResponse(repository.save(domain));
     }
 
@@ -62,6 +70,14 @@ public class ActividadMantenimientoAplicacionService {
 
         if (dto.actividadMantenimientoId() != null) {
             domain.setActividadMantenimientoId(dto.actividadMantenimientoId());
+        }
+
+        if (domain.getChecklist() != null) {
+            domain.getChecklist().forEach(item -> {
+                if (item.getActividadMantenimientoAplicacionId() == null) {
+                    item.setActividadMantenimientoAplicacionId(domain.getId());
+                }
+            });
         }
 
         return mapper.toAplicacionResponse(repository.save(domain));

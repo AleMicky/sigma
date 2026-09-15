@@ -22,17 +22,10 @@ public class ActividadMantenimientoPersistenceMapper {
         entity.setCodigo(domain.getCodigo());
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
-        entity.setAplicaTodosTiposActivo(domain.getAplicaTodosTiposActivo() != null ? domain.getAplicaTodosTiposActivo() : false);
 
         if (domain.getAplicaciones() != null) {
             entity.setAplicaciones(domain.getAplicaciones().stream()
                     .map(this::toAplicacionEntity)
-                    .collect(Collectors.toList()));
-        }
-
-        if (domain.getChecklist() != null) {
-            entity.setChecklist(domain.getChecklist().stream()
-                    .map(this::toChecklistItemEntity)
                     .collect(Collectors.toList()));
         }
 
@@ -47,7 +40,6 @@ public class ActividadMantenimientoPersistenceMapper {
                 .codigo(entity.getCodigo())
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
-                .aplicaTodosTiposActivo(entity.getAplicaTodosTiposActivo())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())
@@ -56,9 +48,6 @@ public class ActividadMantenimientoPersistenceMapper {
                 .updatedById(entity.getUpdatedById())
                 .aplicaciones(entity.getAplicaciones() != null ? entity.getAplicaciones().stream()
                         .map(this::toAplicacionDomain)
-                        .collect(Collectors.toList()) : new ArrayList<>())
-                .checklist(entity.getChecklist() != null ? entity.getChecklist().stream()
-                        .map(this::toChecklistItemDomain)
                         .collect(Collectors.toList()) : new ArrayList<>())
                 .build();
     }
@@ -71,6 +60,13 @@ public class ActividadMantenimientoPersistenceMapper {
         entity.setActividadMantenimientoId(domain.getActividadMantenimientoId());
         entity.setTipoActivoId(domain.getTipoActivoId());
         entity.setComponenteId(domain.getComponenteId());
+
+        if (domain.getChecklist() != null) {
+            entity.setChecklist(domain.getChecklist().stream()
+                    .map(this::toChecklistItemEntity)
+                    .collect(Collectors.toList()));
+        }
+
         return entity;
     }
 
@@ -88,6 +84,9 @@ public class ActividadMantenimientoPersistenceMapper {
                 .updatedBy(entity.getUpdatedBy())
                 .createdById(entity.getCreatedById())
                 .updatedById(entity.getUpdatedById())
+                .checklist(entity.getChecklist() != null ? entity.getChecklist().stream()
+                        .map(this::toChecklistItemDomain)
+                        .collect(Collectors.toList()) : new ArrayList<>())
                 .build();
     }
 
@@ -96,7 +95,7 @@ public class ActividadMantenimientoPersistenceMapper {
 
         ChecklistItemEntity entity = new ChecklistItemEntity();
         entity.setId(domain.getId());
-        entity.setActividadMantenimientoId(domain.getActividadMantenimientoId());
+        entity.setActividadMantenimientoAplicacionId(domain.getActividadMantenimientoAplicacionId());
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
         entity.setOrden(domain.getOrden() != null ? domain.getOrden() : 0);
@@ -109,7 +108,7 @@ public class ActividadMantenimientoPersistenceMapper {
 
         return ChecklistItem.builder()
                 .id(entity.getId())
-                .actividadMantenimientoId(entity.getActividadMantenimientoId())
+                .actividadMantenimientoAplicacionId(entity.getActividadMantenimientoAplicacionId())
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
                 .orden(entity.getOrden())

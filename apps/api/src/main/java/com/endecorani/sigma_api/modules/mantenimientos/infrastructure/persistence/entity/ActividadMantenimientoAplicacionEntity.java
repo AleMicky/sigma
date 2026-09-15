@@ -3,13 +3,15 @@ package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persisten
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
-
 
 @Getter
 @Setter
@@ -62,4 +64,10 @@ public class ActividadMantenimientoAplicacionEntity extends BaseEntity {
             name = "componente_id"
     )
     private UUID componenteId;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "actividad_mantenimiento_aplicacion_id")
+    @OrderBy("orden ASC")
+    @Builder.Default
+    private List<ChecklistItemEntity> checklist = new ArrayList<>();
 }

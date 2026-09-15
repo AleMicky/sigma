@@ -33,13 +33,13 @@ public class ChecklistItemRepositoryAdapter implements ChecklistItemRepository {
     }
 
     @Override
-    public Page<ChecklistItem> findByActividadMantenimientoId(UUID actividadMantenimientoId, Pageable pageable) {
-        return springRepository.findByActividadMantenimientoId(actividadMantenimientoId, pageable).map(mapper::toChecklistItemDomain);
+    public Page<ChecklistItem> findByActividadMantenimientoAplicacionId(UUID aplicacionId, Pageable pageable) {
+        return springRepository.findByActividadMantenimientoAplicacionId(aplicacionId, pageable).map(mapper::toChecklistItemDomain);
     }
 
     @Override
-    public List<ChecklistItem> findByActividadMantenimientoId(UUID actividadMantenimientoId) {
-        return springRepository.findByActividadMantenimientoIdOrderByOrdenAsc(actividadMantenimientoId).stream()
+    public List<ChecklistItem> findByActividadMantenimientoAplicacionId(UUID aplicacionId) {
+        return springRepository.findByActividadMantenimientoAplicacionIdOrderByOrdenAsc(aplicacionId).stream()
                 .map(mapper::toChecklistItemDomain)
                 .collect(Collectors.toList());
     }
@@ -67,7 +67,7 @@ public class ChecklistItemRepositoryAdapter implements ChecklistItemRepository {
     }
 
     @Override
-    public void deleteByActividadMantenimientoId(UUID actividadMantenimientoId) {
-        springRepository.deleteByActividadMantenimientoId(actividadMantenimientoId);
+    public void deleteByActividadMantenimientoAplicacionId(UUID aplicacionId) {
+        springRepository.deleteByActividadMantenimientoAplicacionId(aplicacionId);
     }
 }

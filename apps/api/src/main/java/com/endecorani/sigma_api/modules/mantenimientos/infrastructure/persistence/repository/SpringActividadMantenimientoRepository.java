@@ -31,9 +31,8 @@ public interface SpringActividadMantenimientoRepository extends JpaRepository<Ac
     @Query("""
         SELECT DISTINCT a
         FROM ActividadMantenimientoEntity a
-        LEFT JOIN a.aplicaciones ap
-        WHERE a.aplicaTodosTiposActivo = true
-           OR ap.tipoActivoId = :tipoActivoId
+        JOIN a.aplicaciones ap
+        WHERE ap.tipoActivoId = :tipoActivoId
     """)
     List<ActividadMantenimientoEntity> findByTipoActivoId(@Param("tipoActivoId") UUID tipoActivoId);
 }

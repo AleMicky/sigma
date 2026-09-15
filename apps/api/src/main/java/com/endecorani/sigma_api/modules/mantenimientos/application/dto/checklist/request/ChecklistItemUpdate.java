@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 public record ChecklistItemUpdate(
-        UUID actividadMantenimientoId,
+        UUID actividadMantenimientoAplicacionId,
 
         @NotBlank(message = "El nombre es obligatorio")
         @Size(max = 200, message = "El nombre no puede superar los 200 caracteres")

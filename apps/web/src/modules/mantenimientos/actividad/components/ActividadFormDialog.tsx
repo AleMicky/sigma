@@ -1,8 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 
-import { Globe2 } from "lucide-react"
-
 import { isApiError } from "@/shared/api"
 import { AuditInfo } from "@/shared/components/audit-info"
 import {
@@ -13,7 +11,6 @@ import {
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
-import { cn } from "@/shared/lib/utils"
 
 import {
   useCreateActividad,
@@ -49,7 +46,6 @@ export function ActividadFormDialog({
         codigo: actividad.codigo,
         nombre: actividad.nombre,
         descripcion: actividad.descripcion ?? "",
-        aplicaTodosTiposActivo: actividad.aplicaTodosTiposActivo ?? false,
       }
       : defaultActividadValues,
     validators: {
@@ -63,7 +59,6 @@ export function ActividadFormDialog({
           codigo: value.codigo.trim(),
           nombre: value.nombre.trim(),
           descripcion: (value.descripcion ?? "").trim() || null,
-          aplicaTodosTiposActivo: value.aplicaTodosTiposActivo,
         }
 
         const saved =
@@ -203,37 +198,6 @@ export function ActividadFormDialog({
           )
         }}
       </form.Field>
-
-      <div className="pt-0.5">
-        <form.Field name="aplicaTodosTiposActivo">
-          {(field) => (
-            <label
-              className={cn(
-                "flex items-start gap-2.5 rounded-lg border p-2.5 cursor-pointer transition-all select-none",
-                field.state.value
-                  ? "border-emerald-500/50 bg-emerald-500/5 ring-1 ring-emerald-500/20"
-                  : "border-border/80 hover:bg-muted/30 hover:border-border",
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={field.state.value}
-                onChange={(e) => field.handleChange(e.target.checked)}
-                className="size-3.5 mt-0.5 rounded border-border text-emerald-600 focus:ring-emerald-500"
-              />
-              <div className="text-xs space-y-0.5 min-w-0">
-                <div className="flex items-center gap-1.5 font-semibold text-foreground text-xs">
-                  <Globe2 className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Aplica a todos los tipos de activo</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground leading-snug">
-                  Universal para todo tipo de activo.
-                </p>
-              </div>
-            </label>
-          )}
-        </form.Field>
-      </div>
 
       {/* Audit info in edit mode */}
       {isEditing && actividad ? (

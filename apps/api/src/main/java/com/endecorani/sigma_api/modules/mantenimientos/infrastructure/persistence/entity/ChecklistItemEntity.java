@@ -25,18 +25,18 @@ import java.util.UUID;
         name = "checklist_items",
         indexes = {
                 @Index(
-                        name = "idx_checklist_items_actividad",
-                        columnList = "actividad_mantenimiento_id"
+                        name = "idx_checklist_items_aplicacion",
+                        columnList = "actividad_mantenimiento_aplicacion_id"
                 )
         }
 )
 public class ChecklistItemEntity extends BaseEntity {
 
     @Column(
-            name = "actividad_mantenimiento_id",
+            name = "actividad_mantenimiento_aplicacion_id",
             nullable = false
     )
-    private UUID actividadMantenimientoId;
+    private UUID actividadMantenimientoAplicacionId;
 
     @Column(
             name = "nombre",

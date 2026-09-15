@@ -25,11 +25,5 @@ public class ActividadMantenimiento extends AuditableModel {
     private String descripcion;
 
     @Builder.Default
-    private Boolean aplicaTodosTiposActivo = false;
-
-    @Builder.Default
     private List<ActividadMantenimientoAplicacion> aplicaciones = new ArrayList<>();
-
-    @Builder.Default
-    private List<ChecklistItem> checklist = new ArrayList<>();
 }

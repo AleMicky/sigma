@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Globe2, Layers, Wrench } from "lucide-react"
+import { Wrench } from "lucide-react"
 
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import {
@@ -8,7 +8,6 @@ import {
   SelectableListItem,
 } from "@/shared/components/master-detail"
 import { RowActions } from "@/shared/components/row-actions"
-import { Badge } from "@/shared/components/ui/badge"
 import type { PageResponse } from "@/shared/types/api.types"
 
 import { useDeleteActividad } from "../api/actividad.mutations"
@@ -113,31 +112,11 @@ export function ActividadMasterPanel({
                 </div>
               }
               subtitle={
-                <div className="flex flex-wrap items-center gap-1 mt-0.5">
-                  {actividad.aplicaTodosTiposActivo ? (
-                    <Badge
-                      variant="outline"
-                      className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[9px] font-medium gap-0.5 px-1 py-0 h-4"
-                    >
-                      <Globe2 className="size-2" />
-                      <span>Global</span>
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="secondary"
-                      className="text-[9px] text-muted-foreground font-medium gap-0.5 px-1 py-0 h-4 border border-border/40"
-                    >
-                      <Layers className="size-2" />
-                      <span>Por tipo de activo</span>
-                    </Badge>
-                  )}
-
-                  {actividad.descripcion ? (
-                    <span className="truncate text-[10px] text-muted-foreground/70 max-w-[140px] ml-auto sm:ml-0">
-                      {actividad.descripcion}
-                    </span>
-                  ) : null}
-                </div>
+                actividad.descripcion ? (
+                  <p className="truncate text-[10px] text-muted-foreground/70 mt-0.5">
+                    {actividad.descripcion}
+                  </p>
+                ) : null
               }
               actions={
                 <RowActions
