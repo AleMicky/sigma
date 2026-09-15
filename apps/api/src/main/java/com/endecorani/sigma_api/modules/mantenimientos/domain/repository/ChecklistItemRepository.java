@@ -10,23 +10,19 @@ import java.util.UUID;
 
 public interface ChecklistItemRepository {
 
-    Page<ChecklistItem> findAll(Pageable pageable);
-
-    Page<ChecklistItem> findByChecklistMantenimientoId(UUID checklistMantenimientoId, Pageable pageable);
-
-    List<ChecklistItem> findByChecklistMantenimientoIdOrderByOrdenAsc(UUID checklistMantenimientoId);
-
     Optional<ChecklistItem> findById(UUID id);
 
-    Optional<ChecklistItem> findByChecklistMantenimientoIdAndCodigo(UUID checklistMantenimientoId, String codigo);
+    Page<ChecklistItem> findAll(Pageable pageable);
+
+    Page<ChecklistItem> findByActividadMantenimientoId(UUID actividadMantenimientoId, Pageable pageable);
+
+    List<ChecklistItem> findByActividadMantenimientoId(UUID actividadMantenimientoId);
 
     ChecklistItem save(ChecklistItem item);
 
+    List<ChecklistItem> saveAll(List<ChecklistItem> items);
+
     void deleteById(UUID id);
 
-    boolean existsById(UUID id);
-
-    boolean existsByChecklistMantenimientoIdAndCodigoIgnoreCase(UUID checklistMantenimientoId, String codigo);
-
-    boolean existsByChecklistMantenimientoIdAndCodigoIgnoreCaseAndIdNot(UUID checklistMantenimientoId, String codigo, UUID id);
+    void deleteByActividadMantenimientoId(UUID actividadMantenimientoId);
 }

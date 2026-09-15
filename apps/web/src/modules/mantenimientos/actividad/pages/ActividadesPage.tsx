@@ -125,6 +125,7 @@ export function ActividadesPage() {
             }
             onSearchChange={aplicacionSearch.setSearch}
             onPageChange={aplicacionSearch.setPage}
+            onEdit={openEditActividad}
           />
         }
       />

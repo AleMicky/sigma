@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CheckSquare, Globe2, Layers, Wrench } from "lucide-react"
+import { Globe2, Layers, Wrench } from "lucide-react"
 
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import {
@@ -103,53 +103,37 @@ export function ActividadMasterPanel({
               active={isSelected}
               onSelect={() => onSelect(actividad.id)}
               title={
-                <div className="flex items-center gap-2">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary border border-primary/20 shadow-2xs">
-                    <Wrench className="size-3.5" />
-                  </span>
-                  <span className="truncate font-semibold text-foreground">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <code className="shrink-0 rounded bg-muted/90 px-1 py-0.5 font-mono text-[10px] font-bold text-foreground border border-border/60">
+                    {actividad.codigo}
+                  </code>
+                  <span className="truncate font-semibold text-xs text-foreground">
                     {actividad.nombre}
                   </span>
                 </div>
               }
               subtitle={
-                <div className="flex flex-col gap-1 mt-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
-                      {actividad.codigo}
-                    </code>
-
-                    {actividad.aplicaTodosTiposActivo ? (
-                      <Badge
-                        variant="outline"
-                        className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] font-normal gap-1 px-1.5 py-0"
-                      >
-                        <Globe2 className="size-2.5" />
-                        <span>Todos</span>
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] text-muted-foreground font-normal gap-1 px-1.5 py-0"
-                      >
-                        <Layers className="size-2.5" />
-                        <span>Por Tipo</span>
-                      </Badge>
-                    )}
-
-                    {actividad.requiereChecklist && (
-                      <Badge
-                        variant="outline"
-                        className="border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300 text-[10px] font-normal gap-1 px-1.5 py-0"
-                      >
-                        <CheckSquare className="size-2.5" />
-                        <span>Checklist</span>
-                      </Badge>
-                    )}
-                  </div>
+                <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                  {actividad.aplicaTodosTiposActivo ? (
+                    <Badge
+                      variant="outline"
+                      className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[9px] font-medium gap-0.5 px-1 py-0 h-4"
+                    >
+                      <Globe2 className="size-2" />
+                      <span>Global</span>
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="secondary"
+                      className="text-[9px] text-muted-foreground font-medium gap-0.5 px-1 py-0 h-4 border border-border/40"
+                    >
+                      <Layers className="size-2" />
+                      <span>Por tipo de activo</span>
+                    </Badge>
+                  )}
 
                   {actividad.descripcion ? (
-                    <span className="line-clamp-1 text-[11px] text-muted-foreground/80">
+                    <span className="truncate text-[10px] text-muted-foreground/70 max-w-[140px] ml-auto sm:ml-0">
                       {actividad.descripcion}
                     </span>
                   ) : null}
@@ -157,6 +141,7 @@ export function ActividadMasterPanel({
               }
               actions={
                 <RowActions
+                  className="opacity-100 md:opacity-100"
                   editLabel="Editar actividad"
                   deleteLabel="Eliminar actividad"
                   deleteDisabled={deleteMutation.isPending}

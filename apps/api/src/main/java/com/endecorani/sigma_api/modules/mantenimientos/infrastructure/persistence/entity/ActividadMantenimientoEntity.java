@@ -6,6 +6,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -62,15 +63,14 @@ public class ActividadMantenimientoEntity extends BaseEntity {
     @Builder.Default
     private Boolean aplicaTodosTiposActivo = false;
 
-    @Column(
-            name = "requiere_checklist",
-            nullable = false
-    )
-    @Builder.Default
-    private Boolean requiereChecklist = false;
-
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "actividad_mantenimiento_id")
     @Builder.Default
     private List<ActividadMantenimientoAplicacionEntity> aplicaciones = new ArrayList<>();
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "actividad_mantenimiento_id")
+    @OrderBy("orden ASC")
+    @Builder.Default
+    private List<ChecklistItemEntity> checklist = new ArrayList<>();
 }

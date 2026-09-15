@@ -19,12 +19,17 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 public class OrdenTrabajoActividad extends AuditableModel {
+
     private UUID id;
     private UUID ordenTrabajoId;
     private UUID actividadMantenimientoId;
+
     private String descripcion;
+
     private boolean realizado;
+
     private String observacion;
+
     private LocalDateTime fechaRealizacion;
 
     @Builder.Default

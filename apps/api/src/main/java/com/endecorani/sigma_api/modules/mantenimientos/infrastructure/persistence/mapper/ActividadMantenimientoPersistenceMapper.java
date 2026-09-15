@@ -2,8 +2,10 @@ package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persisten
 
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimientoAplicacion;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ChecklistItem;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.ActividadMantenimientoAplicacionEntity;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.ActividadMantenimientoEntity;
+import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.ChecklistItemEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -21,11 +23,16 @@ public class ActividadMantenimientoPersistenceMapper {
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
         entity.setAplicaTodosTiposActivo(domain.getAplicaTodosTiposActivo() != null ? domain.getAplicaTodosTiposActivo() : false);
-        entity.setRequiereChecklist(domain.getRequiereChecklist() != null ? domain.getRequiereChecklist() : false);
 
         if (domain.getAplicaciones() != null) {
             entity.setAplicaciones(domain.getAplicaciones().stream()
                     .map(this::toAplicacionEntity)
+                    .collect(Collectors.toList()));
+        }
+
+        if (domain.getChecklist() != null) {
+            entity.setChecklist(domain.getChecklist().stream()
+                    .map(this::toChecklistItemEntity)
                     .collect(Collectors.toList()));
         }
 
@@ -41,7 +48,6 @@ public class ActividadMantenimientoPersistenceMapper {
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
                 .aplicaTodosTiposActivo(entity.getAplicaTodosTiposActivo())
-                .requiereChecklist(entity.getRequiereChecklist())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())
@@ -50,6 +56,9 @@ public class ActividadMantenimientoPersistenceMapper {
                 .updatedById(entity.getUpdatedById())
                 .aplicaciones(entity.getAplicaciones() != null ? entity.getAplicaciones().stream()
                         .map(this::toAplicacionDomain)
+                        .collect(Collectors.toList()) : new ArrayList<>())
+                .checklist(entity.getChecklist() != null ? entity.getChecklist().stream()
+                        .map(this::toChecklistItemDomain)
                         .collect(Collectors.toList()) : new ArrayList<>())
                 .build();
     }
@@ -73,6 +82,38 @@ public class ActividadMantenimientoPersistenceMapper {
                 .actividadMantenimientoId(entity.getActividadMantenimientoId())
                 .tipoActivoId(entity.getTipoActivoId())
                 .componenteId(entity.getComponenteId())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .createdBy(entity.getCreatedBy())
+                .updatedBy(entity.getUpdatedBy())
+                .createdById(entity.getCreatedById())
+                .updatedById(entity.getUpdatedById())
+                .build();
+    }
+
+    public ChecklistItemEntity toChecklistItemEntity(ChecklistItem domain) {
+        if (domain == null) return null;
+
+        ChecklistItemEntity entity = new ChecklistItemEntity();
+        entity.setId(domain.getId());
+        entity.setActividadMantenimientoId(domain.getActividadMantenimientoId());
+        entity.setNombre(domain.getNombre());
+        entity.setDescripcion(domain.getDescripcion());
+        entity.setOrden(domain.getOrden() != null ? domain.getOrden() : 0);
+        entity.setObligatorio(domain.getObligatorio() != null ? domain.getObligatorio() : false);
+        return entity;
+    }
+
+    public ChecklistItem toChecklistItemDomain(ChecklistItemEntity entity) {
+        if (entity == null) return null;
+
+        return ChecklistItem.builder()
+                .id(entity.getId())
+                .actividadMantenimientoId(entity.getActividadMantenimientoId())
+                .nombre(entity.getNombre())
+                .descripcion(entity.getDescripcion())
+                .orden(entity.getOrden())
+                .obligatorio(entity.getObligatorio())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())

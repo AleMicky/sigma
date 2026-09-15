@@ -8,6 +8,10 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad.response.ActividadMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimientoAplicacion;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.checklist.request.ChecklistItemRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.checklist.request.ChecklistItemUpdate;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.checklist.response.ChecklistItemResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ChecklistItem;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaResponseMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -44,4 +48,18 @@ public interface ActividadMantenimientoMapper {
     void updateAplicacionFromRequest(ActividadMantenimientoAplicacionRequest dto, @MappingTarget ActividadMantenimientoAplicacion domain);
 
     ActividadMantenimientoAplicacionResponse toAplicacionResponse(ActividadMantenimientoAplicacion domain);
+
+    @Mapping(target = "id", ignore = true)
+    ChecklistItem toChecklistItemDomain(ChecklistItemRequest dto);
+
+    @Mapping(target = "auditoria", source = ".")
+    ChecklistItemResponse toChecklistItemResponse(ChecklistItem domain);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "actividadMantenimientoId", ignore = true)
+    void updateChecklistItemDomain(ChecklistItemUpdate dto, @MappingTarget ChecklistItem domain);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "actividadMantenimientoId", ignore = true)
+    void updateChecklistItemFromRequest(ChecklistItemRequest dto, @MappingTarget ChecklistItem domain);
 }

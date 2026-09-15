@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad.response;
 
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.checklist.response.ChecklistItemResponse;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 
 import java.util.List;
@@ -11,8 +12,8 @@ public record ActividadMantenimientoResponse(
         String nombre,
         String descripcion,
         Boolean aplicaTodosTiposActivo,
-        Boolean requiereChecklist,
         List<ActividadMantenimientoAplicacionResponse> aplicaciones,
+        List<ChecklistItemResponse> checklist,
         AuditoriaResponse auditoria
 ) {
 }

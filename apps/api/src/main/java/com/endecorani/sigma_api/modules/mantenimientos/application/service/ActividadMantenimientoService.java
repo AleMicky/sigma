@@ -31,7 +31,6 @@ public class ActividadMantenimientoService {
             "codigo",
             "nombre",
             "aplicaTodosTiposActivo",
-            "requiereChecklist",
             "createdAt",
             "updatedAt"
     );
@@ -99,6 +98,14 @@ public class ActividadMantenimientoService {
             });
         }
 
+        if (domain.getChecklist() != null) {
+            domain.getChecklist().forEach(item -> {
+                if (item.getActividadMantenimientoId() == null) {
+                    item.setActividadMantenimientoId(domain.getId());
+                }
+            });
+        }
+
         ActividadMantenimiento guardado = repository.save(domain);
         return mapper.toResponse(guardado);
     }
@@ -124,6 +131,14 @@ public class ActividadMantenimientoService {
             });
         }
 
+        if (actual.getChecklist() != null) {
+            actual.getChecklist().forEach(item -> {
+                if (item.getActividadMantenimientoId() == null) {
+                    item.setActividadMantenimientoId(actual.getId());
+                }
+            });
+        }
+
         ActividadMantenimiento actualizado = repository.save(actual);
         return mapper.toResponse(actualizado);
     }
@@ -145,6 +160,14 @@ public class ActividadMantenimientoService {
             actual.getAplicaciones().forEach(aplicacion -> {
                 if (aplicacion.getActividadMantenimientoId() == null) {
                     aplicacion.setActividadMantenimientoId(actual.getId());
+                }
+            });
+        }
+
+        if (actual.getChecklist() != null) {
+            actual.getChecklist().forEach(item -> {
+                if (item.getActividadMantenimientoId() == null) {
+                    item.setActividadMantenimientoId(actual.getId());
                 }
             });
         }

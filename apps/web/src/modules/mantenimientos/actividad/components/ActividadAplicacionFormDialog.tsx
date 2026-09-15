@@ -184,7 +184,7 @@ export function ActividadAplicacionFormDialog({
                     </div>
                   )}
                 </div>
-                <ComboboxContent className="z-50 max-h-60 min-w-[280px]">
+                <ComboboxContent className="z-50 max-h-60 min-w-70">
                   <ComboboxEmpty className="py-3 text-xs text-muted-foreground text-center">
                     {tiposActivoQuery.isLoading
                       ? "Cargando tipos de activo..."
@@ -250,7 +250,7 @@ export function ActividadAplicacionFormDialog({
                     </div>
                   )}
                 </div>
-                <ComboboxContent className="z-50 max-h-60 min-w-[280px]">
+                <ComboboxContent className="z-50 max-h-60 min-w-70">
                   <ComboboxEmpty className="py-3 text-xs text-muted-foreground text-center">
                     {componentesQuery.isLoading
                       ? "Cargando componentes..."

@@ -24,61 +24,20 @@ import java.util.UUID;
 @RestController
 @RequestMapping({
         ApiConstants.API_V1 + "/checklist-items",
-        ApiConstants.API_V1 + "/checklists-items"
+        ApiConstants.API_V1 + "/checklist-item"
 })
 @RequiredArgsConstructor
 @Tag(
         name = "Ítems de Checklist",
-        description = "Administración de ítems y campos de los checklists de mantenimiento"
+        description = "Administración de ítems de verificación para actividades de mantenimiento"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class ChecklistItemController {
 
     private final ChecklistItemService service;
 
-    @GetMapping
-    @Operation(summary = "Listar ítems de checklist con paginación")
-    public ResponseEntity<ApiResponse<PageResponse<ChecklistItemResponse>>> findAll(
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(service.findAll(pageRequest))
-        );
-    }
-
-    @GetMapping(params = "checklistMantenimientoId")
-    @Operation(summary = "Listar ítems de un checklist de mantenimiento")
-    public ResponseEntity<ApiResponse<PageResponse<ChecklistItemResponse>>> findByChecklistMantenimientoId(
-            @RequestParam UUID checklistMantenimientoId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(service.findByChecklistMantenimientoId(checklistMantenimientoId, pageRequest))
-        );
-    }
-
-    @GetMapping("/checklist/{checklistMantenimientoId}")
-    @Operation(summary = "Listar todos los ítems ordenados de un checklist de mantenimiento")
-    public ResponseEntity<ApiResponse<List<ChecklistItemResponse>>> findItemsByChecklist(
-            @PathVariable UUID checklistMantenimientoId
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(service.findByChecklistMantenimientoId(checklistMantenimientoId))
-        );
-    }
-
-    @GetMapping("/{id}")
-    @Operation(summary = "Obtener un ítem de checklist por ID")
-    public ResponseEntity<ApiResponse<ChecklistItemResponse>> findById(
-            @PathVariable UUID id
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(service.findById(id))
-        );
-    }
-
     @PostMapping
-    @Operation(summary = "Crear un nuevo ítem de checklist")
+    @Operation(summary = "Crear un ítem de checklist")
     public ResponseEntity<ApiResponse<ChecklistItemResponse>> create(
             @Valid @RequestBody ChecklistItemRequest request
     ) {
@@ -97,6 +56,42 @@ public class ChecklistItemController {
         ChecklistItemResponse response = service.update(id, request);
         return ResponseEntity.ok(
                 ApiResponse.success("Ítem de checklist actualizado correctamente", response)
+        );
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Obtener un ítem de checklist por ID")
+    public ResponseEntity<ApiResponse<ChecklistItemResponse>> findById(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findById(id))
+        );
+    }
+
+    @GetMapping
+    @Operation(summary = "Listar ítems de checklist con filtro opcional por actividad de mantenimiento")
+    public ResponseEntity<ApiResponse<PageResponse<ChecklistItemResponse>>> findAll(
+            @RequestParam(required = false) UUID actividadMantenimientoId,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        if (actividadMantenimientoId != null) {
+            return ResponseEntity.ok(
+                    ApiResponse.success(service.findByActividadMantenimientoId(actividadMantenimientoId, pageRequest))
+            );
+        }
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findAll(pageRequest))
+        );
+    }
+
+    @GetMapping("/actividad/{actividadMantenimientoId}")
+    @Operation(summary = "Listar todos los ítems ordenados de checklist por actividad de mantenimiento")
+    public ResponseEntity<ApiResponse<List<ChecklistItemResponse>>> findListByActividadMantenimientoId(
+            @PathVariable UUID actividadMantenimientoId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findByActividadMantenimientoId(actividadMantenimientoId))
         );
     }
 

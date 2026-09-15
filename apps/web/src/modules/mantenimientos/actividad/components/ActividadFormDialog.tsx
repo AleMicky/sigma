@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 
+import { Globe2 } from "lucide-react"
+
 import { isApiError } from "@/shared/api"
 import { AuditInfo } from "@/shared/components/audit-info"
 import {
@@ -11,6 +13,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { cn } from "@/shared/lib/utils"
 
 import {
   useCreateActividad,
@@ -47,7 +50,6 @@ export function ActividadFormDialog({
         nombre: actividad.nombre,
         descripcion: actividad.descripcion ?? "",
         aplicaTodosTiposActivo: actividad.aplicaTodosTiposActivo ?? false,
-        requiereChecklist: actividad.requiereChecklist ?? false,
       }
       : defaultActividadValues,
     validators: {
@@ -62,7 +64,6 @@ export function ActividadFormDialog({
           nombre: value.nombre.trim(),
           descripcion: (value.descripcion ?? "").trim() || null,
           aplicaTodosTiposActivo: value.aplicaTodosTiposActivo,
-          requiereChecklist: value.requiereChecklist,
         }
 
         const saved =
@@ -94,7 +95,7 @@ export function ActividadFormDialog({
       description={
         isEditing
           ? "Actualiza los parámetros de esta actividad de mantenimiento."
-          : "Define una nueva actividad en el catálogo maestro para asociarla a planes y checklists."
+          : "Define una nueva actividad en el catálogo maestro."
       }
       formError={formError}
       onCancel={() => {
@@ -203,44 +204,31 @@ export function ActividadFormDialog({
         }}
       </form.Field>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+      <div className="pt-0.5">
         <form.Field name="aplicaTodosTiposActivo">
           {(field) => (
-            <label className="flex items-start gap-2.5 rounded-lg border border-border/80 p-3 hover:bg-muted/30 cursor-pointer transition-colors">
+            <label
+              className={cn(
+                "flex items-start gap-2.5 rounded-lg border p-2.5 cursor-pointer transition-all select-none",
+                field.state.value
+                  ? "border-emerald-500/50 bg-emerald-500/5 ring-1 ring-emerald-500/20"
+                  : "border-border/80 hover:bg-muted/30 hover:border-border",
+              )}
+            >
               <input
                 type="checkbox"
                 checked={field.state.value}
                 onChange={(e) => field.handleChange(e.target.checked)}
-                className="size-4 mt-0.5 rounded border-border text-primary focus:ring-primary"
+                className="size-3.5 mt-0.5 rounded border-border text-emerald-600 focus:ring-emerald-500"
               />
-              <div className="text-xs">
-                <span className="font-semibold text-foreground block">
-                  Aplica a todos los activos
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  Habilita esta actividad universalmente para cualquier tipo de activo.
-                </span>
-              </div>
-            </label>
-          )}
-        </form.Field>
-
-        <form.Field name="requiereChecklist">
-          {(field) => (
-            <label className="flex items-start gap-2.5 rounded-lg border border-border/80 p-3 hover:bg-muted/30 cursor-pointer transition-colors">
-              <input
-                type="checkbox"
-                checked={field.state.value}
-                onChange={(e) => field.handleChange(e.target.checked)}
-                className="size-4 mt-0.5 rounded border-border text-primary focus:ring-primary"
-              />
-              <div className="text-xs">
-                <span className="font-semibold text-foreground block">
-                  Requiere Checklist
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  Exige completar un checklist de pasos de verificación al ejecutarse.
-                </span>
+              <div className="text-xs space-y-0.5 min-w-0">
+                <div className="flex items-center gap-1.5 font-semibold text-foreground text-xs">
+                  <Globe2 className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Aplica a todos los tipos de activo</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  Universal para todo tipo de activo.
+                </p>
               </div>
             </label>
           )}

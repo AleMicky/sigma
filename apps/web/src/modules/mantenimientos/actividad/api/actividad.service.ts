@@ -8,7 +8,6 @@ export type ActividadMantenimiento = AuditableEntity & {
   nombre: string
   descripcion: string | null
   aplicaTodosTiposActivo: boolean
-  requiereChecklist: boolean
 }
 
 export type ActividadMantenimientoPayload = {
@@ -16,7 +15,6 @@ export type ActividadMantenimientoPayload = {
   nombre: string
   descripcion?: string | null
   aplicaTodosTiposActivo?: boolean
-  requiereChecklist?: boolean
 }
 
 const crud = createCrudService<

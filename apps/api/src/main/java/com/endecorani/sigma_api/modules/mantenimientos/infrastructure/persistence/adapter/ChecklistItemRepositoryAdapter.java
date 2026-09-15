@@ -3,7 +3,7 @@ package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persisten
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ChecklistItem;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ChecklistItemRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.ChecklistItemEntity;
-import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.mapper.ChecklistPersistenceMapper;
+import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.mapper.ActividadMantenimientoPersistenceMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository.SpringChecklistItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,42 +20,45 @@ import java.util.stream.Collectors;
 public class ChecklistItemRepositoryAdapter implements ChecklistItemRepository {
 
     private final SpringChecklistItemRepository springRepository;
-    private final ChecklistPersistenceMapper mapper;
+    private final ActividadMantenimientoPersistenceMapper mapper;
+
+    @Override
+    public Optional<ChecklistItem> findById(UUID id) {
+        return springRepository.findById(id).map(mapper::toChecklistItemDomain);
+    }
 
     @Override
     public Page<ChecklistItem> findAll(Pageable pageable) {
-        return springRepository.findAll(pageable).map(mapper::toItemDomain);
+        return springRepository.findAll(pageable).map(mapper::toChecklistItemDomain);
     }
 
     @Override
-    public Page<ChecklistItem> findByChecklistMantenimientoId(UUID checklistMantenimientoId, Pageable pageable) {
-        return springRepository.findByChecklistMantenimientoId(checklistMantenimientoId, pageable)
-                .map(mapper::toItemDomain);
+    public Page<ChecklistItem> findByActividadMantenimientoId(UUID actividadMantenimientoId, Pageable pageable) {
+        return springRepository.findByActividadMantenimientoId(actividadMantenimientoId, pageable).map(mapper::toChecklistItemDomain);
     }
 
     @Override
-    public List<ChecklistItem> findByChecklistMantenimientoIdOrderByOrdenAsc(UUID checklistMantenimientoId) {
-        return springRepository.findByChecklistMantenimientoIdOrderByOrdenAsc(checklistMantenimientoId).stream()
-                .map(mapper::toItemDomain)
+    public List<ChecklistItem> findByActividadMantenimientoId(UUID actividadMantenimientoId) {
+        return springRepository.findByActividadMantenimientoIdOrderByOrdenAsc(actividadMantenimientoId).stream()
+                .map(mapper::toChecklistItemDomain)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Optional<ChecklistItem> findById(UUID id) {
-        return springRepository.findById(id).map(mapper::toItemDomain);
-    }
-
-    @Override
-    public Optional<ChecklistItem> findByChecklistMantenimientoIdAndCodigo(UUID checklistMantenimientoId, String codigo) {
-        return springRepository.findByChecklistMantenimientoIdAndCodigoIgnoreCase(checklistMantenimientoId, codigo)
-                .map(mapper::toItemDomain);
-    }
-
-    @Override
     public ChecklistItem save(ChecklistItem item) {
-        ChecklistItemEntity entity = mapper.toItemEntity(item);
+        ChecklistItemEntity entity = mapper.toChecklistItemEntity(item);
         ChecklistItemEntity saved = springRepository.save(entity);
-        return mapper.toItemDomain(saved);
+        return mapper.toChecklistItemDomain(saved);
+    }
+
+    @Override
+    public List<ChecklistItem> saveAll(List<ChecklistItem> items) {
+        List<ChecklistItemEntity> entities = items.stream()
+                .map(mapper::toChecklistItemEntity)
+                .collect(Collectors.toList());
+        return springRepository.saveAll(entities).stream()
+                .map(mapper::toChecklistItemDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -64,17 +67,7 @@ public class ChecklistItemRepositoryAdapter implements ChecklistItemRepository {
     }
 
     @Override
-    public boolean existsById(UUID id) {
-        return springRepository.existsById(id);
-    }
-
-    @Override
-    public boolean existsByChecklistMantenimientoIdAndCodigoIgnoreCase(UUID checklistMantenimientoId, String codigo) {
-        return springRepository.existsByChecklistMantenimientoIdAndCodigoIgnoreCase(checklistMantenimientoId, codigo);
-    }
-
-    @Override
-    public boolean existsByChecklistMantenimientoIdAndCodigoIgnoreCaseAndIdNot(UUID checklistMantenimientoId, String codigo, UUID id) {
-        return springRepository.existsByChecklistMantenimientoIdAndCodigoIgnoreCaseAndIdNot(checklistMantenimientoId, codigo, id);
+    public void deleteByActividadMantenimientoId(UUID actividadMantenimientoId) {
+        springRepository.deleteByActividadMantenimientoId(actividadMantenimientoId);
     }
 }

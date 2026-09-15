@@ -18,13 +18,18 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 public class ActividadMantenimiento extends AuditableModel {
+
     private UUID id;
     private String codigo;
     private String nombre;
     private String descripcion;
-    private Boolean aplicaTodosTiposActivo;
-    private Boolean requiereChecklist;
+
+    @Builder.Default
+    private Boolean aplicaTodosTiposActivo = false;
 
     @Builder.Default
     private List<ActividadMantenimientoAplicacion> aplicaciones = new ArrayList<>();
+
+    @Builder.Default
+    private List<ChecklistItem> checklist = new ArrayList<>();
 }

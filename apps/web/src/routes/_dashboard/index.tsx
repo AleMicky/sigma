@@ -69,7 +69,7 @@ const moduleMeta: Record<
   },
   Mantenimientos: {
     description:
-      "Flujo integral de solicitudes, aprobaciones, encargados, supervisores y checklists de control.",
+      "Flujo integral de solicitudes, aprobaciones, encargados, supervisores y órdenes de trabajo.",
     color: "text-orange-500 dark:text-orange-400 bg-orange-500/10",
     badgeColor:
       "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20",

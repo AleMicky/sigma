@@ -6,29 +6,11 @@ import java.util.UUID;
 
 public record ChecklistItemResponse(
         UUID id,
-        UUID checklistMantenimientoId,
-        ChecklistInfo checklistMantenimiento,
-        String codigo,
+        UUID actividadMantenimientoId,
         String nombre,
         String descripcion,
-        UUID tipoDatoId,
-        TipoDatoInfo tipoDato,
         Integer orden,
         Boolean obligatorio,
-        String opciones,
         AuditoriaResponse auditoria
 ) {
-    public record ChecklistInfo(
-            UUID id,
-            String codigo,
-            String nombre
-    ) {
-    }
-
-    public record TipoDatoInfo(
-            UUID id,
-            String codigo,
-            String nombre
-    ) {
-    }
 }

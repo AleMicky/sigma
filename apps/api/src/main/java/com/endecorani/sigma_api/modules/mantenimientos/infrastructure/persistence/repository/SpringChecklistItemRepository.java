@@ -4,20 +4,17 @@ import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistenc
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
+@Repository
 public interface SpringChecklistItemRepository extends JpaRepository<ChecklistItemEntity, UUID> {
 
-    boolean existsByChecklistMantenimientoIdAndCodigoIgnoreCase(UUID checklistMantenimientoId, String codigo);
+    List<ChecklistItemEntity> findByActividadMantenimientoIdOrderByOrdenAsc(UUID actividadMantenimientoId);
 
-    boolean existsByChecklistMantenimientoIdAndCodigoIgnoreCaseAndIdNot(UUID checklistMantenimientoId, String codigo, UUID id);
+    Page<ChecklistItemEntity> findByActividadMantenimientoId(UUID actividadMantenimientoId, Pageable pageable);
 
-    Optional<ChecklistItemEntity> findByChecklistMantenimientoIdAndCodigoIgnoreCase(UUID checklistMantenimientoId, String codigo);
-
-    Page<ChecklistItemEntity> findByChecklistMantenimientoId(UUID checklistMantenimientoId, Pageable pageable);
-
-    List<ChecklistItemEntity> findByChecklistMantenimientoIdOrderByOrdenAsc(UUID checklistMantenimientoId);
+    void deleteByActividadMantenimientoId(UUID actividadMantenimientoId);
 }

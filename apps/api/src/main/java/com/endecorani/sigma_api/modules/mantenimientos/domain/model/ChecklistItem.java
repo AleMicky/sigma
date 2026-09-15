@@ -1,11 +1,7 @@
 package com.endecorani.sigma_api.modules.mantenimientos.domain.model;
 
 import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
@@ -16,14 +12,15 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 public class ChecklistItem extends AuditableModel {
+
     private UUID id;
-    private UUID checklistMantenimientoId;
-    private String codigo;
+    private UUID actividadMantenimientoId;
+
     private String nombre;
     private String descripcion;
-    private UUID tipoDatoId;
+
     private Integer orden;
+
     @Builder.Default
     private Boolean obligatorio = false;
-    private String opciones;
 }

@@ -59,7 +59,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   encargado: "Encargado",
   supervisor: "Supervisor",
   actividades: "Actividades",
-  checklists: "Checklists",
   "tipos-mantenimiento": "Tipos de Mantenimiento",
   prioridades: "Prioridades",
   "controles-activos": "Controles de Activos",

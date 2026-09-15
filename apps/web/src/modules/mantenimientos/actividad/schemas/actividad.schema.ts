@@ -19,7 +19,6 @@ export const actividadSchema = z.object({
     .optional()
     .or(z.literal("")),
   aplicaTodosTiposActivo: z.boolean(),
-  requiereChecklist: z.boolean(),
 })
 
 export type ActividadFormValues = z.infer<typeof actividadSchema>
@@ -29,5 +28,4 @@ export const defaultActividadValues: ActividadFormValues = {
   nombre: "",
   descripcion: "",
   aplicaTodosTiposActivo: false,
-  requiereChecklist: false,
 }
