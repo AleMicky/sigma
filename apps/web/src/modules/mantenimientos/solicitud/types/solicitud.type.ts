@@ -65,6 +65,7 @@ export type SolicitudMantenimientoFilters = PageParams & {
   q?: string
   estado?: string
   solicitanteId?: string
+  interfaz?: string
 }
 
 export type SolicitudMantenimientoResumen = {

@@ -80,7 +80,7 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
         LEFT JOIN FETCH s.tipoMantenimiento
         LEFT JOIN FETCH s.prioridad
         WHERE (:hasQ = false OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%')))
-          AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
+          AND (:hasEstados = false OR UPPER(s.estado) IN (:estados))
           AND (:hasSolicitante = false OR s.solicitante.id = :solicitanteId)
           AND (:hasResponsable = false OR s.responsable.id = :responsableId)
           AND (:hasSupervisor = false OR s.supervisor.id = :supervisorId)
@@ -91,7 +91,7 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
         SELECT count(s)
         FROM SolicitudMantenimientoEntity s
         WHERE (:hasQ = false OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%')))
-          AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
+          AND (:hasEstados = false OR UPPER(s.estado) IN (:estados))
           AND (:hasSolicitante = false OR s.solicitante.id = :solicitanteId)
           AND (:hasResponsable = false OR s.responsable.id = :responsableId)
           AND (:hasSupervisor = false OR s.supervisor.id = :supervisorId)
@@ -100,7 +100,7 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
     """)
     Page<SolicitudMantenimientoEntity> searchWithCriteria(
             @Param("hasQ") boolean hasQ, @Param("q") String q,
-            @Param("hasEstado") boolean hasEstado, @Param("estado") String estado,
+            @Param("hasEstados") boolean hasEstados, @Param("estados") java.util.Collection<String> estados,
             @Param("hasSolicitante") boolean hasSolicitante, @Param("solicitanteId") UUID solicitanteId,
             @Param("hasResponsable") boolean hasResponsable, @Param("responsableId") UUID responsableId,
             @Param("hasSupervisor") boolean hasSupervisor, @Param("supervisorId") UUID supervisorId,

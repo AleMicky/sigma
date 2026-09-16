@@ -108,13 +108,14 @@ public class SolicitudMantenimientoController {
         }
 
         @GetMapping
-        @Operation(summary = "Listar solicitudes con filtros combinados (búsqueda, estado)")
+        @Operation(summary = "Listar solicitudes con filtros combinados (búsqueda, estado, interfaz)")
         public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findAll(
                         @RequestParam(required = false) String q,
                         @RequestParam(required = false) String estado,
+                        @RequestParam(required = false) String interfaz,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
                 return ResponseEntity.ok(
-                                ApiResponse.success(service.findAll(q, estado, pageRequest)));
+                                ApiResponse.success(service.findAll(q, estado, interfaz, pageRequest)));
         }
 
         @DeleteMapping("/{id}")

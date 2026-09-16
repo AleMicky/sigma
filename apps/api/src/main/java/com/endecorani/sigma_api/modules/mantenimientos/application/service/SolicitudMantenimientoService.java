@@ -86,18 +86,94 @@ public class SolicitudMantenimientoService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<SolicitudMantenimientoResponse> findAll(String q, String estado,
+    public PageResponse<SolicitudMantenimientoResponse> findAll(String q, String estado, PageRequestDto pageRequest) {
+        return findAll(q, estado, null, pageRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SolicitudMantenimientoResponse> findAll(String q, String estado, String interfaz,
             PageRequestDto pageRequest) {
-        UUID solicitanteId = securityUtils.isAdmin() ? null : obtenerEmpleadoIdActual();
+        UUID solicitanteId = null;
+        UUID responsableId = null;
+        UUID supervisorId = null;
+        UUID aprobadorId = null;
+
+        if (!securityUtils.isAdmin()) {
+            UUID empleadoActual = obtenerEmpleadoIdActual();
+            if (interfaz == null || interfaz.isBlank() || "SolicitudesPage".equalsIgnoreCase(interfaz.trim())) {
+                solicitanteId = empleadoActual;
+            } else if ("AprobacionesPage".equalsIgnoreCase(interfaz.trim())) {
+                aprobadorId = empleadoActual;
+            } else if ("SupervisorMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+                supervisorId = empleadoActual;
+            } else if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+                responsableId = empleadoActual;
+            }
+        }
+
+        List<String> estados = resolverEstados(estado);
+
         SolicitudMantenimientoSearchCriteria criteria = new SolicitudMantenimientoSearchCriteria(
                 q,
-                estado,
+                estados,
                 solicitanteId,
+                responsableId,
+                supervisorId,
                 null,
-                null,
-                null,
-                null);
+                aprobadorId);
         return findAll(criteria, pageRequest);
+    }
+
+    // Estados del BPMN (solicitudMantenimientoProcess.bpmn20.xml)
+    public static final String ESTADO_BPMN_BORRADOR = "BORRADOR";
+    public static final String ESTADO_BPMN_SOLICITADO = "SOLICITADO";
+    public static final String ESTADO_BPMN_OBSERVADO = "OBSERVADO";
+    public static final String ESTADO_BPMN_ASIGNADO = "ASIGNADO";
+    public static final String ESTADO_BPMN_EN_MANTENIMIENTO = "EN_MANTENIMIENTO";
+    public static final String ESTADO_BPMN_EN_REVISION = "EN_REVISION";
+    public static final String ESTADO_BPMN_OBSERVADO_MANTENIMIENTO = "OBSERVADO_MANTENIMIENTO";
+    public static final String ESTADO_BPMN_VALIDADO = "VALIDADO";
+    public static final String ESTADO_BPMN_TRABAJO_REALIZADO = "TRABAJO_REALIZADO";
+    public static final String ESTADO_BPMN_FINALIZADO = "FINALIZADO";
+
+    public static List<String> resolverEstados(String estado) {
+        if (estado == null || estado.isBlank()) {
+            return Collections.emptyList();
+        }
+        String normalized = estado.trim().toUpperCase().replace("-", "_");
+        return switch (normalized) {
+            // Grupos de estados para las tarjetas de resumen y filtros
+            case "BORRADOR", "BORRADORES" -> List.of(
+                    ESTADO_BPMN_BORRADOR
+            );
+            case "EN_REVISION", "ENREVISION", "REVISION", "REVISIONES" -> List.of(
+                    ESTADO_BPMN_SOLICITADO,
+                    ESTADO_BPMN_OBSERVADO
+            );
+            case "EN_PROCESO", "ENPROCESO", "PROCESO" -> List.of(
+                    ESTADO_BPMN_ASIGNADO,
+                    ESTADO_BPMN_EN_MANTENIMIENTO,
+                    ESTADO_BPMN_EN_REVISION,
+                    ESTADO_BPMN_OBSERVADO_MANTENIMIENTO,
+                    ESTADO_BPMN_VALIDADO
+            );
+            case "FINALIZADA", "FINALIZADO", "FINALIZADAS", "FINALIZADOS" -> List.of(
+                    ESTADO_BPMN_TRABAJO_REALIZADO,
+                    ESTADO_BPMN_FINALIZADO,
+                    "CERRADO"
+            );
+
+            // Estados directos individuales del BPMN
+            case "SOLICITADO" -> List.of(ESTADO_BPMN_SOLICITADO);
+            case "OBSERVADO" -> List.of(ESTADO_BPMN_OBSERVADO);
+            case "ASIGNADO" -> List.of(ESTADO_BPMN_ASIGNADO);
+            case "EN_MANTENIMIENTO" -> List.of(ESTADO_BPMN_EN_MANTENIMIENTO);
+            case "OBSERVADO_MANTENIMIENTO" -> List.of(ESTADO_BPMN_OBSERVADO_MANTENIMIENTO);
+            case "VALIDADO" -> List.of(ESTADO_BPMN_VALIDADO);
+            case "TRABAJO_REALIZADO" -> List.of(ESTADO_BPMN_TRABAJO_REALIZADO);
+
+            default -> List.of(normalized);
+        };
     }
 
     @Transactional(readOnly = true)

@@ -20,7 +20,10 @@ import { useSolicitudes, useSolicitudResumen } from "../hooks/use-solicitudes"
 export function SolicitudesPage() {
   const [selectedEstado, setSelectedEstado] = useState<string>("")
 
-  const query = useSolicitudes(selectedEstado ? { estado: selectedEstado } : undefined)
+  const query = useSolicitudes({
+    interfaz: "SolicitudesPage",
+    ...(selectedEstado ? { estado: selectedEstado } : {}),
+  })
   const resumenQuery = useSolicitudResumen()
 
   const solicitudes = query.data?.content ?? []
