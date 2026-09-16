@@ -37,9 +37,8 @@ public class SolicitudMantenimientoController {
 
         @GetMapping("/resumen")
         @Operation(summary = "Obtener resumen y conteo de solicitudes por estado")
-        public ResponseEntity<ApiResponse<SolicitudMantenimientoResumenResponse>> obtenerResumen(
-                        @RequestParam(required = false) UUID solicitanteId) {
-                return ResponseEntity.ok(ApiResponse.success(service.obtenerResumen(solicitanteId)));
+        public ResponseEntity<ApiResponse<SolicitudMantenimientoResumenResponse>> obtenerResumen() {
+                return ResponseEntity.ok(ApiResponse.success(service.obtenerResumen()));
         }
 
         @PostMapping

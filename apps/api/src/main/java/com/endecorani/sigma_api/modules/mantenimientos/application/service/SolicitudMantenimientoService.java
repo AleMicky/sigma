@@ -80,12 +80,9 @@ public class SolicitudMantenimientoService {
     private final DocumentStorageService documentStorageService;
 
     @Transactional(readOnly = true)
-    public SolicitudMantenimientoResumenResponse obtenerResumen(UUID solicitanteId) {
-        UUID resolvedSolicitanteId = solicitanteId;
-        if (resolvedSolicitanteId == null && !securityUtils.isAdmin()) {
-            resolvedSolicitanteId = obtenerEmpleadoIdActual();
-        }
-        return SolicitudMantenimientoResumenResponse.from(repository.obtenerResumen(resolvedSolicitanteId));
+    public SolicitudMantenimientoResumenResponse obtenerResumen() {
+        UUID solicitanteId = securityUtils.isAdmin() ? null : obtenerEmpleadoIdActual();
+        return SolicitudMantenimientoResumenResponse.from(repository.obtenerResumen(solicitanteId));
     }
 
     @Transactional(readOnly = true)
