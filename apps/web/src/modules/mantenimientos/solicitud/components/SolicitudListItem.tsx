@@ -1,4 +1,4 @@
-import { Calendar, Pencil, Trash2, User, Wrench } from "lucide-react"
+import { Calendar, ClipboardCheck, Pencil, Trash2, User, Wrench } from "lucide-react"
 
 import {
   WorkflowListItem,
@@ -15,6 +15,7 @@ export type SolicitudListItemProps = {
   onEdit?: (solicitud: SolicitudMantenimiento) => void
   onDelete?: (solicitud: SolicitudMantenimiento) => void
   onTraceability?: (solicitud: SolicitudMantenimiento) => void
+  onRegistrarControlActivo?: (solicitud: SolicitudMantenimiento) => void
   onActionSelect?: (
     solicitud: SolicitudMantenimiento,
     action: WorkflowAction,
@@ -32,6 +33,7 @@ export function SolicitudListItem({
   onEdit,
   onDelete,
   onTraceability,
+  onRegistrarControlActivo,
   onActionSelect,
   onlyWorkflowActionsOnBorrador = false,
   showWorkflowActions,
@@ -123,6 +125,23 @@ export function SolicitudListItem({
             <span className="inline-flex items-center rounded-md bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground font-medium border border-border/60">
               {solicitud.tipoMantenimiento.nombre}
             </span>
+          )}
+
+          {onRegistrarControlActivo && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onRegistrarControlActivo(solicitud)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/80 hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-400 text-foreground border-border/80 shadow-2xs cursor-pointer"
+              title="Registrar Control de Activo"
+            >
+              <ClipboardCheck className="size-3 text-sky-600 dark:text-sky-400" />
+              <span>Control Activo</span>
+            </Button>
           )}
 
           {isBorrador && onEdit && (

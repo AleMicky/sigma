@@ -13,6 +13,7 @@ import { PageShell } from "@/shared/components/page-shell"
 import { Button } from "@/shared/components/ui/button"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 
+import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
 import { useCompletarWorkflowSolicitud } from "../api/solicitud.mutations"
 import {
   EncargadoResumenCards,
@@ -31,6 +32,7 @@ export function EncargadoMantenimientoPage() {
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("ASIGNADO")
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
+  const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
 
   const { target, isOpen, openAction, closeAction } =
@@ -166,6 +168,9 @@ export function EncargadoMantenimientoPage() {
                     to: routes.mantenimientos.editarSolicitud(sol.id),
                   })
                 }}
+                onRegistrarControlActivo={(sol) => {
+                  setControlActivoItem(sol)
+                }}
                 onActionSelect={(sol, action, taskName, fields) => {
                   openAction(sol, action, taskName, fields)
                 }}
@@ -211,6 +216,16 @@ export function EncargadoMantenimientoPage() {
         processInstanceId={traceabilityItem?.processInstanceId}
         entityCode={traceabilityItem?.numero}
         title="Trazabilidad de Solicitud de Mantenimiento"
+      />
+
+      {/* Diálogo para visualizar listado e historial de actas de control de activo */}
+      <ControlActivoHistorialModal
+        open={Boolean(controlActivoItem)}
+        onOpenChange={(open) => {
+          if (!open) setControlActivoItem(null)
+        }}
+        solicitudId={controlActivoItem?.id}
+        solicitudNumero={controlActivoItem?.numero}
       />
     </PageShell>
   )

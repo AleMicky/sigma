@@ -95,7 +95,7 @@ public class ControlActivoEntity extends BaseEntity {
     private String observacion;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "control_activo_id")
+    @JoinColumn(name = "control_activo_id", nullable = false)
     @Builder.Default
     private List<ControlActivoDetalleEntity> detalles = new ArrayList<>();
 }
