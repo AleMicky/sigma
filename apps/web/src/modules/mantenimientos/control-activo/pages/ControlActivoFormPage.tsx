@@ -19,11 +19,13 @@ import {
   RotateCcw,
   Save,
   Send,
+  Trash2,
   UserCheck,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { routes } from "@/app/config/routes"
+import { accesorioQueries } from "@/modules/activos/accesorio/api/accesorio.queries"
 import type { Accesorio } from "@/modules/activos/accesorio/api/accesorio.service"
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
 import { activoAccesorioQueries } from "@/modules/activos/activo-accesorio/api/activo-accesorio.queries"
@@ -90,12 +92,27 @@ export function ControlActivoFormPage({
   const isEditing = Boolean(controlActivoId)
 
   // Consulta de la cabecera si está en edición
+  // Consulta de la cabecera si está en edición
   const controlActivoQuery = useQuery({
     ...controlActivoQueries.detail(controlActivoId),
     enabled: isEditing,
   })
 
-  // Consulta de detalles/accesorios existentes si está en edición
+  // Consulta de catálogo completo de accesorios para resolver nombres y códigos
+  const allAccesoriosQuery = useQuery({
+    ...accesorioQueries.list({ size: 1000 }),
+    enabled: isEditing,
+  })
+
+  const accesorioMap = useMemo(() => {
+    const map = new Map<string, Accesorio>()
+    for (const acc of allAccesoriosQuery.data?.content ?? []) {
+      map.set(acc.id, acc)
+    }
+    return map
+  }, [allAccesoriosQuery.data])
+
+  // Consulta de detalles/accesorios existentes si está en edición (como fallback secundario)
   const controlActivoDetallesQuery = useQuery({
     ...controlActivoQueries.detallesList({
       controlActivoId,
@@ -121,7 +138,11 @@ export function ControlActivoFormPage({
   })
 
   const solicitud = solicitudQuery.data
-  const activoId = solicitud?.activo?.id || controlActivoQuery.data?.activo?.id
+  const activoId =
+    solicitud?.activo?.id ||
+    controlActivoQuery.data?.activoId ||
+    controlActivoQuery.data?.activo?.id ||
+    ""
 
   // Consulta de detalle completo del activo
   const activoDetailQuery = useQuery({
@@ -194,8 +215,8 @@ export function ControlActivoFormPage({
       if (data.fecha) {
         setFecha(data.fecha.slice(0, 16))
       }
-      setEntregadoPorId(data.entregadoPor?.id || "")
-      setRecibidoPorId(data.recibidoPor?.id || "")
+      setEntregadoPorId(data.entregadoPorId || data.entregadoPor?.id || "")
+      setRecibidoPorId(data.recibidoPorId || data.recibidoPor?.id || "")
       setConformeGeneral(data.conforme ?? true)
       setObservacionGeneral(data.observacion || "")
     }
@@ -203,21 +224,37 @@ export function ControlActivoFormPage({
 
   // Cargar items existentes cuando está en modo edición
   useEffect(() => {
-    if (isEditing && controlActivoDetallesQuery.data) {
-      const loaded: AccesorioItemState[] = (
-        controlActivoDetallesQuery.data.content ?? []
-      ).map((det) => ({
-        accesorioId: det.accesorio?.id ?? "",
-        codigo: det.accesorio?.codigo ?? "ACC",
-        nombre: det.accesorio?.nombre ?? "Accesorio",
-        cantidadEsperada: det.cantidadEsperada ?? 1,
-        cantidadEncontrada: det.cantidadEncontrada ?? 1,
-        conforme: det.conforme ?? true,
-        observacion: det.observacion ?? "",
-      }))
+    if (!isEditing || hasLoadedDefaultAccesorios) return
+
+    const rawDetalles =
+      controlActivoQuery.data?.detalles && controlActivoQuery.data.detalles.length > 0
+        ? controlActivoQuery.data.detalles
+        : (controlActivoDetallesQuery.data?.content ?? [])
+
+    if (rawDetalles.length > 0) {
+      const loaded: AccesorioItemState[] = rawDetalles.map((det) => {
+        const accId = det.accesorioId || det.accesorio?.id || ""
+        const accCatalog = accesorioMap.get(accId)
+        return {
+          accesorioId: accId,
+          codigo: det.accesorio?.codigo || accCatalog?.codigo || "ACC",
+          nombre: det.accesorio?.nombre || accCatalog?.nombre || "Accesorio",
+          cantidadEsperada: det.cantidadEsperada ?? 1,
+          cantidadEncontrada: det.cantidadEncontrada ?? 1,
+          conforme: det.conforme ?? true,
+          observacion: det.observacion ?? "",
+        }
+      })
       setItems(loaded)
+      setHasLoadedDefaultAccesorios(true)
     }
-  }, [isEditing, controlActivoDetallesQuery.data])
+  }, [
+    isEditing,
+    controlActivoQuery.data?.detalles,
+    controlActivoDetallesQuery.data,
+    accesorioMap,
+    hasLoadedDefaultAccesorios,
+  ])
 
   // Auto-cargar datos iniciales de responsables de la solicitud (solo si es nuevo)
   useEffect(() => {
@@ -372,30 +409,45 @@ export function ControlActivoFormPage({
     index: number,
     partial: Partial<AccesorioItemState>,
   ) {
-    setItems((prev) =>
-      prev.map((item, i) => {
+    setItems((prev) => {
+      const next = prev.map((item, i) => {
         if (i !== index) return item
         const updated = { ...item, ...partial }
 
-        if (partial.cantidadEncontrada !== undefined) {
-          if (partial.cantidadEncontrada === 0) {
-            updated.conforme = false
-          } else if (
-            item.cantidadEncontrada === 0 &&
-            partial.cantidadEncontrada > 0 &&
-            partial.conforme === undefined
-          ) {
-            updated.conforme = true
-          }
+        // Si se modifica la cantidad encontrada y no se especificó 'conforme' manualmente:
+        if (partial.cantidadEncontrada !== undefined && partial.conforme === undefined) {
+          // Si la cantidad encontrada es diferente a la esperada o es 0, pasa automáticamente a Observado (false)
+          updated.conforme =
+            partial.cantidadEncontrada === item.cantidadEsperada &&
+            partial.cantidadEncontrada > 0
         }
 
         return updated
-      }),
-    )
+      })
+
+      // Sincronizar automáticamente el dictamen general: si algún accesorio no está conforme o difiere en cantidad
+      const allItemsConformes =
+        next.length === 0 ||
+        next.every(
+          (i) => i.conforme && i.cantidadEncontrada === i.cantidadEsperada,
+        )
+      setConformeGeneral(allItemsConformes)
+
+      return next
+    })
   }
 
   function handleRemoveItem(index: number) {
-    setItems((prev) => prev.filter((_, idx) => idx !== index))
+    setItems((prev) => {
+      const next = prev.filter((_, idx) => idx !== index)
+      const allItemsConformes =
+        next.length === 0 ||
+        next.every(
+          (i) => i.conforme && i.cantidadEncontrada === i.cantidadEsperada,
+        )
+      setConformeGeneral(allItemsConformes)
+      return next
+    })
   }
 
   function handleAddAccesorio(accesorio: Accesorio) {
@@ -404,18 +456,25 @@ export function ControlActivoFormPage({
       return
     }
 
-    setItems((prev) => [
-      ...prev,
-      {
-        accesorioId: accesorio.id,
-        codigo: accesorio.codigo,
-        nombre: accesorio.nombre,
-        cantidadEsperada: 1,
-        cantidadEncontrada: 1,
-        conforme: true,
-        observacion: "",
-      },
-    ])
+    setItems((prev) => {
+      const next = [
+        ...prev,
+        {
+          accesorioId: accesorio.id,
+          codigo: accesorio.codigo,
+          nombre: accesorio.nombre,
+          cantidadEsperada: 1,
+          cantidadEncontrada: 1,
+          conforme: true,
+          observacion: "",
+        },
+      ]
+      const allItemsConformes = next.every(
+        (i) => i.conforme && i.cantidadEncontrada === i.cantidadEsperada,
+      )
+      setConformeGeneral(allItemsConformes)
+      return next
+    })
   }
 
   // Cálculos reactivos de métricas
@@ -747,15 +806,15 @@ export function ControlActivoFormPage({
           </div>
         </Card>
 
-        {/* Verificación de Accesorios (Tabla Estructurada Limpia) */}
-        <Card className="p-3.5 shadow-2xs space-y-3">
+        {/* Verificación de Accesorios (Tabla Compacta y Limpia) */}
+        <Card className="p-3 shadow-2xs space-y-2.5">
           <div className="flex items-center justify-between gap-2 border-b pb-2">
             <div className="flex items-center gap-2">
-              <Package className="size-4 text-primary" />
+              <Package className="size-3.5 text-primary" />
               <h2 className="font-heading text-xs sm:text-sm font-bold text-foreground">
                 Verificación de Accesorios
               </h2>
-              <span className="text-xs text-muted-foreground font-medium">
+              <span className="text-[11px] text-muted-foreground font-semibold">
                 ({itemsConformes}/{totalItems} conformes)
               </span>
             </div>
@@ -765,26 +824,33 @@ export function ControlActivoFormPage({
                 <button
                   type="button"
                   onClick={() =>
-                    setItems((prev) =>
-                      prev.map((i) => ({
+                    setItems((prev) => {
+                      const next = prev.map((i) => ({
                         ...i,
                         conforme: i.cantidadEncontrada > 0,
-                      })),
-                    )
+                      }))
+                      const allOk = next.every(
+                        (i) =>
+                          i.conforme &&
+                          i.cantidadEncontrada === i.cantidadEsperada,
+                      )
+                      setConformeGeneral(allOk)
+                      return next
+                    })
                   }
                   className="text-xs text-primary hover:underline font-semibold cursor-pointer"
                 >
-                  Marcar todos conformes
+                  Marcar conformes
                 </button>
               )}
               <Button
                 type="button"
-                size="sm"
+                size="xs"
                 variant="outline"
                 onClick={() => setSelectAccesorioOpen(true)}
-                className="h-7 gap-1 px-2.5 text-xs font-semibold rounded-lg"
+                className="h-6.5 gap-1 px-2 text-xs font-semibold rounded-lg cursor-pointer"
               >
-                <Plus className="size-3.5" />
+                <Plus className="size-3" />
                 <span>Agregar</span>
               </Button>
             </div>
@@ -792,210 +858,212 @@ export function ControlActivoFormPage({
 
           {/* Lista de Accesorios */}
           {items.length === 0 ? (
-            <div className="py-8 text-center text-xs text-muted-foreground border border-dashed rounded-xl bg-muted/10 p-4">
+            <div className="py-6 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/10 p-3">
               <p className="font-semibold text-foreground">No hay accesorios en la lista</p>
-              <p className="text-muted-foreground mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 Puede añadir accesorios del catálogo usando el botón "+ Agregar".
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {/* Encabezado de Columnas en Pantallas Medianas / Grandes */}
-              <div className="hidden md:flex items-center justify-between gap-3 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b bg-muted/20 rounded-md">
-                <div className="w-52 shrink-0">Accesorio</div>
-                <div className="flex-1 min-w-0">Observación / Estado</div>
-                <div className="w-16 text-center shrink-0">Esperada</div>
-                <div className="w-24 text-center shrink-0">Encontrada</div>
-                <div className="w-28 text-center shrink-0">Conformidad</div>
-              </div>
+            <div className="rounded-lg border bg-card overflow-hidden">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-muted/40 text-[10px] uppercase font-bold text-muted-foreground border-b select-none">
+                  <tr>
+                    <th className="px-2.5 py-1.5 min-w-[140px]">Accesorio</th>
+                    <th className="px-2 py-1.5 text-center w-14">Esp.</th>
+                    <th className="px-2 py-1.5 text-center w-24">Enc.</th>
+                    <th className="px-2 py-1.5 text-center w-26">Estado</th>
+                    <th className="px-2.5 py-1.5">Nota / Observación</th>
+                    <th className="px-1.5 py-1.5 text-center w-8"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {items.map((item, idx) => {
+                    const hasMismatch = item.cantidadEsperada !== item.cantidadEncontrada
+                    const isOk = item.conforme && !hasMismatch
 
-              {/* Filas */}
-              {items.map((item, idx) => (
-                <div
-                  key={`${item.accesorioId}-${idx}`}
-                  className={cn(
-                    "p-2.5 sm:px-3 rounded-xl border transition-all text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs",
-                    item.conforme
-                      ? "bg-card border-border/80 hover:border-primary/30"
-                      : "bg-amber-500/[0.04] border-amber-500/40 ring-1 ring-amber-500/20",
-                  )}
-                >
-                  {/* Nombre y Código */}
-                  <div className="w-full md:w-52 shrink-0 flex items-center gap-2">
-                    <span className="font-mono text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                      {item.codigo}
-                    </span>
-                    <span className="font-bold text-foreground text-xs truncate">
-                      {item.nombre}
-                    </span>
-                  </div>
+                    return (
+                      <tr
+                        key={`${item.accesorioId}-${idx}`}
+                        className={cn(
+                          "transition-colors",
+                          !isOk && "bg-amber-500/[0.04] dark:bg-amber-950/10",
+                        )}
+                      >
+                        {/* Código y Nombre */}
+                        <td className="px-2.5 py-1.5 font-medium">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 px-1 py-0.2 rounded shrink-0">
+                              {item.codigo}
+                            </span>
+                            <span
+                              className="font-semibold text-foreground text-xs truncate max-w-[160px] sm:max-w-[220px]"
+                              title={item.nombre}
+                            >
+                              {item.nombre}
+                            </span>
+                          </div>
+                        </td>
 
-                  {/* Input de Observación inline */}
-                  <div className="w-full md:flex-1 min-w-0">
-                    <Input
-                      placeholder="Nota o detalle del estado (opcional)..."
-                      value={item.observacion}
-                      onChange={(e) =>
-                        handleUpdateItem(idx, { observacion: e.target.value })
-                      }
-                      className="h-8 text-xs bg-background"
-                    />
-                  </div>
+                        {/* Cantidad Esperada */}
+                        <td className="px-2 py-1.5 text-center font-mono text-xs font-semibold text-muted-foreground">
+                          {item.cantidadEsperada}
+                        </td>
 
-                  {/* Controles de Cantidad y Conformidad Responsivos */}
-                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between md:justify-end gap-2 sm:gap-3 shrink-0 pt-1.5 md:pt-0 border-t md:border-t-0 w-full md:w-auto">
-                    {/* Cantidades agrupadas en mobile */}
-                    <div className="flex items-center gap-2">
-                      {/* Cantidad Esperada (Solo Lectura) */}
-                      <div className="flex items-center md:flex-col gap-1">
-                        <span className="text-[10.5px] font-semibold text-muted-foreground">
-                          Esp:
-                        </span>
-                        <Input
-                          type="number"
-                          disabled
-                          value={item.cantidadEsperada}
-                          className="h-7.5 w-12 sm:w-14 text-center text-xs font-bold bg-muted/60 text-muted-foreground border-border/60 cursor-not-allowed select-none px-1"
-                          title="Cantidad esperada pre-asignada al activo (Solo lectura)"
-                        />
-                      </div>
+                        {/* Cantidad Encontrada Stepper */}
+                        <td className="px-2 py-1.5 text-center">
+                          <div className="inline-flex items-center border rounded-md bg-background h-6.5">
+                            <button
+                              type="button"
+                              className="size-5 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+                              onClick={() =>
+                                handleUpdateItem(idx, {
+                                  cantidadEncontrada: Math.max(0, item.cantidadEncontrada - 1),
+                                })
+                              }
+                            >
+                              <Minus className="size-2.5" />
+                            </button>
+                            <span
+                              className={cn(
+                                "w-6 text-center text-xs font-mono font-bold",
+                                hasMismatch ? "text-amber-600 dark:text-amber-400" : "text-foreground",
+                              )}
+                            >
+                              {item.cantidadEncontrada}
+                            </span>
+                            <button
+                              type="button"
+                              className="size-5 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+                              onClick={() =>
+                                handleUpdateItem(idx, {
+                                  cantidadEncontrada: item.cantidadEncontrada + 1,
+                                })
+                              }
+                            >
+                              <Plus className="size-2.5" />
+                            </button>
+                          </div>
+                        </td>
 
-                      {/* Cantidad Encontrada con Stepper */}
-                      <div className="flex items-center md:flex-col gap-1">
-                        <span className="text-[10.5px] font-semibold text-muted-foreground">
-                          Enc:
-                        </span>
-                        <div className="flex items-center border rounded-lg bg-background h-7.5">
+                        {/* Toggle Conforme */}
+                        <td className="px-2 py-1.5 text-center">
                           <button
                             type="button"
-                            className="size-6 sm:size-7 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
                             onClick={() =>
-                              handleUpdateItem(idx, {
-                                cantidadEncontrada: Math.max(
-                                  0,
-                                  item.cantidadEncontrada - 1,
-                                ),
-                              })
+                              handleUpdateItem(idx, { conforme: !item.conforme })
                             }
+                            className={cn(
+                              "inline-flex items-center gap-1 h-6.5 px-2 rounded-md font-bold text-[10.5px] border transition-all cursor-pointer",
+                              item.conforme
+                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25 hover:bg-emerald-500/20"
+                                : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25 hover:bg-amber-500/20",
+                            )}
                           >
-                            <Minus className="size-3" />
+                            {item.conforme ? (
+                              <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+                            ) : (
+                              <AlertTriangle className="size-3 text-amber-600 dark:text-amber-400" />
+                            )}
+                            <span>{item.conforme ? "Conforme" : "Observado"}</span>
                           </button>
-                          <span className="w-6 sm:w-7 text-center text-xs font-bold">
-                            {item.cantidadEncontrada}
-                          </span>
+                        </td>
+
+                        {/* Input Observación */}
+                        <td className="px-2.5 py-1.5">
+                          <Input
+                            placeholder="Nota opcional..."
+                            value={item.observacion}
+                            onChange={(e) =>
+                              handleUpdateItem(idx, { observacion: e.target.value })
+                            }
+                            className="h-6.5 text-xs px-2 bg-background/80"
+                          />
+                        </td>
+
+                        {/* Eliminar */}
+                        <td className="px-1.5 py-1.5 text-center">
                           <button
                             type="button"
-                            className="size-6 sm:size-7 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
-                            onClick={() =>
-                              handleUpdateItem(idx, {
-                                cantidadEncontrada: item.cantidadEncontrada + 1,
-                              })
-                            }
+                            onClick={() => handleRemoveItem(idx)}
+                            className="size-6 inline-flex items-center justify-center rounded text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                            title="Eliminar accesorio"
                           >
-                            <Plus className="size-3" />
+                            <Trash2 className="size-3" />
                           </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Toggle Conforme */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleUpdateItem(idx, { conforme: !item.conforme })
-                      }
-                      className={cn(
-                        "flex items-center justify-center gap-1.5 h-7.5 sm:h-8 px-2.5 sm:px-3 rounded-lg font-bold text-xs border transition-all cursor-pointer shrink-0 ml-auto md:ml-0",
-                        item.conforme
-                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
-                          : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/25",
-                      )}
-                    >
-                      {item.conforme ? (
-                        <CheckCircle2 className="size-3.5" />
-                      ) : (
-                        <AlertTriangle className="size-3.5" />
-                      )}
-                      <span>{item.conforme ? "Conforme" : "Observado"}</span>
-                    </button>
-
-                    {/* Botón Eliminar Accesorio */}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveItem(idx)}
-                      className="size-7.5 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer shrink-0"
-                      title="Eliminar accesorio de la lista"
-                    >
-                      <Minus className="size-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </Card>
 
         {/* Dictamen y Observaciones Generales */}
-        <Card className="p-3.5 shadow-2xs space-y-3">
-          <div className="flex items-center gap-2 border-b pb-2">
-            <FileCheck2 className="size-4 text-primary" />
-            <h2 className="font-heading text-xs sm:text-sm font-bold text-foreground">
+        <Card className="p-3 shadow-2xs space-y-2">
+          <div className="flex items-center gap-1.5 border-b pb-1.5">
+            <FileCheck2 className="size-3.5 text-primary" />
+            <h2 className="font-heading text-xs sm:text-[13px] font-bold text-foreground">
               Dictamen Final y Observaciones Generales
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
             {/* Dictamen (1 Columna) */}
-            <div className="space-y-1.5 md:col-span-1">
-              <Label className="text-xs font-semibold text-foreground">
+            <div className="space-y-1 md:col-span-1">
+              <Label className="text-[11px] font-semibold text-foreground">
                 Resultado Dictamen <span className="text-destructive">*</span>
               </Label>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div
                   onClick={() => setConformeGeneral(true)}
                   className={cn(
-                    "flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-bold",
+                    "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all text-xs font-bold",
                     conformeGeneral
-                      ? "bg-emerald-500/15 border-emerald-500 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500/30 shadow-xs"
+                      ? "bg-emerald-500/15 border-emerald-500 text-emerald-800 dark:text-emerald-200 ring-1 ring-emerald-500/30 shadow-2xs"
                       : "bg-card hover:bg-muted/40 border-border/80 text-muted-foreground",
                   )}
                 >
-                  <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Conforme (Aceptado)</span>
                 </div>
 
                 <div
                   onClick={() => setConformeGeneral(false)}
                   className={cn(
-                    "flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-bold",
+                    "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all text-xs font-bold",
                     !conformeGeneral
-                      ? "bg-amber-500/15 border-amber-500 text-amber-800 dark:text-amber-200 ring-2 ring-amber-500/30 shadow-xs"
+                      ? "bg-amber-500/15 border-amber-500 text-amber-800 dark:text-amber-200 ring-1 ring-amber-500/30 shadow-2xs"
                       : "bg-card hover:bg-muted/40 border-border/80 text-muted-foreground",
                   )}
                 >
-                  <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                   <span>Con Observaciones / Faltantes</span>
                 </div>
               </div>
             </div>
 
             {/* Observaciones (2 Columnas) */}
-            <div className="space-y-1.5 md:col-span-2">
-              <Label htmlFor="obsGeneral" className="text-xs font-semibold text-foreground">
-                Observaciones Generales del Acta
-              </Label>
+            <div className="space-y-1 md:col-span-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="obsGeneral" className="text-[11px] font-semibold text-foreground">
+                  Observaciones Generales del Acta
+                </Label>
+                <span className="text-[10px] text-muted-foreground">
+                  {observacionGeneral.length}/500
+                </span>
+              </div>
               <Textarea
                 id="obsGeneral"
-                rows={3}
+                rows={2}
                 maxLength={500}
-                placeholder="Detalle cualquier condición especial, rayones o compromisos de entrega acordados..."
+                placeholder="Detalle cualquier condición especial, rayones o compromisos acordados..."
                 value={observacionGeneral}
                 onChange={(e) => setObservacionGeneral(e.target.value)}
-                className="text-xs resize-none"
+                className="text-xs resize-none min-h-[56px] py-1.5 px-2.5"
               />
-              <div className="flex justify-end text-[10px] text-muted-foreground">
-                {observacionGeneral.length}/500 caracteres
-              </div>
             </div>
           </div>
         </Card>
@@ -1030,12 +1098,12 @@ export function ControlActivoFormPage({
               {createMutation.isPending || updateMutation.isPending ? (
                 <>
                   <Loader2 className="size-3.5 animate-spin" />
-                  <span>Guardando...</span>
+                  <span>{isEditing ? "Actualizando..." : "Guardando..."}</span>
                 </>
               ) : (
                 <>
                   <Save className="size-3.5" />
-                  <span>{isEditing ? "Guardar Cambios" : "Guardar Acta"}</span>
+                  <span>{isEditing ? "Actualizar Acta" : "Guardar Acta"}</span>
                 </>
               )}
             </Button>

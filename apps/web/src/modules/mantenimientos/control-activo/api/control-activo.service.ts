@@ -27,30 +27,23 @@ export type ControlActivo = AuditableEntity & {
   id: string
   solicitudMantenimientoId: string
   ordenTrabajoId?: string | null
+  activoId?: string | null
   activo?: ActivoInfo | null
   tipo: TipoControlActivo
+  entregadoPorId?: string | null
   entregadoPor?: UserInfo | null
+  recibidoPorId?: string | null
   recibidoPor?: UserInfo | null
   fecha: string
   conforme: boolean
   observacion?: string | null
-}
-
-export type ControlActivoPayload = {
-  solicitudMantenimientoId: string
-  ordenTrabajoId?: string | null
-  activoId: string
-  tipo: TipoControlActivo
-  entregadoPorId?: string | null
-  recibidoPorId?: string | null
-  fecha: string
-  conforme: boolean
-  observacion?: string | null
+  detalles?: ControlActivoDetalle[]
 }
 
 export type ControlActivoDetalle = AuditableEntity & {
   id: string
   controlActivoId: string
+  accesorioId: string
   accesorio?: AccesorioInfo | null
   cantidadEsperada: number
   cantidadEncontrada: number

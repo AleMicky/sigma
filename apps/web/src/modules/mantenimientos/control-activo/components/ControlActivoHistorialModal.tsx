@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ClipboardList,
   Edit2,
+  FileText,
   Loader2,
   Package,
   Plus,
@@ -18,6 +19,8 @@ import {
 } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
+import { accesorioQueries } from "@/modules/activos/accesorio/api/accesorio.queries"
+import type { Accesorio } from "@/modules/activos/accesorio/api/accesorio.service"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -49,12 +52,14 @@ function ControlItemCard({
   onDelete,
   readOnly = false,
   defaultExpanded = false,
+  accesorioMap,
 }: {
   control: ControlActivo
   onCloseModal?: () => void
   onDelete?: (control: ControlActivo) => void
   readOnly?: boolean
   defaultExpanded?: boolean
+  accesorioMap?: Map<string, Accesorio>
 }) {
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState(defaultExpanded)
@@ -77,14 +82,14 @@ function ControlItemCard({
   )
 
   return (
-    <div className="rounded-lg border bg-card shadow-2xs overflow-hidden transition-all">
+    <div className="rounded-xl border bg-card shadow-2xs overflow-hidden transition-all">
       {/* Fila Principal Compacta */}
       <div className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           {/* Badge Tipo Compacto */}
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-bold shrink-0 border",
+              "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold shrink-0 border",
               isEntrega
                 ? "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/25"
                 : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
@@ -101,7 +106,7 @@ function ControlItemCard({
           {/* Badge Conformidad */}
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold border shrink-0",
+              "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold border shrink-0",
               control.conforme
                 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
                 : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
@@ -112,7 +117,7 @@ function ControlItemCard({
             ) : (
               <AlertTriangle className="size-3 text-amber-600 dark:text-amber-400" />
             )}
-            <span>{control.conforme ? "Conforme" : "Con Obs."}</span>
+            <span>{control.conforme ? "Conforme" : "Con Observaciones"}</span>
           </span>
 
           {/* Fecha y Personas */}
@@ -155,7 +160,7 @@ function ControlItemCard({
                     },
                   })
                 }}
-                className="h-7 text-xs gap-1 px-2 font-medium cursor-pointer"
+                className="h-7 text-xs gap-1 px-2.5 font-medium cursor-pointer"
               >
                 <Edit2 className="size-3 text-muted-foreground" />
                 <span>Editar</span>
@@ -179,7 +184,7 @@ function ControlItemCard({
             size="xs"
             variant="ghost"
             onClick={() => setExpanded((prev) => !prev)}
-            className="h-7 text-xs gap-1 px-2 font-medium cursor-pointer hover:bg-muted"
+            className="h-7 text-xs gap-1 px-2.5 font-semibold cursor-pointer hover:bg-muted"
           >
             <Package className="size-3 text-primary" />
             <span>{expanded ? "Ocultar" : "Accesorios"}</span>
@@ -192,29 +197,32 @@ function ControlItemCard({
         </div>
       </div>
 
-      {/* Observación si existe */}
+      {/* Observación General si existe */}
       {control.observacion && (
-        <div className="px-3 py-1.5 text-xs bg-amber-500/5 text-amber-900 dark:text-amber-200 border-t border-amber-500/15">
-          <strong className="font-semibold">Obs: </strong>
-          <span>{control.observacion}</span>
+        <div className="px-3.5 py-2 text-xs bg-amber-500/[0.04] dark:bg-amber-950/15 border-t border-amber-500/15 flex items-start gap-2">
+          <FileText className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <span className="font-bold text-foreground mr-1.5">Observación general:</span>
+            <span className="text-foreground/90 whitespace-pre-wrap">{control.observacion}</span>
+          </div>
         </div>
       )}
 
       {/* Tabla compacta de accesorios */}
       {expanded && (
-        <div className="border-t bg-muted/20 p-2.5 space-y-2">
+        <div className="border-t bg-muted/20 p-3 space-y-2.5">
           <div className="flex items-center justify-between text-xs px-1">
             <span className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider">
-              Accesorios Verificados
+              Accesorios Verificados en el Acta
             </span>
             {!detallesQuery.isLoading && detalles.length > 0 && (
-              <div className="flex items-center gap-2 text-[10px] font-semibold">
+              <div className="flex items-center gap-2 text-[11px] font-semibold">
                 <span className="text-emerald-600 dark:text-emerald-400">
-                  {countOk} OK
+                  {countOk} Conformes
                 </span>
                 {countInconforme > 0 && (
                   <span className="text-rose-600 dark:text-rose-400">
-                    {countInconforme} No OK
+                    {countInconforme} Con Observaciones
                   </span>
                 )}
               </div>
@@ -222,70 +230,94 @@ function ControlItemCard({
           </div>
 
           {detallesQuery.isLoading ? (
-            <div className="flex items-center justify-center py-3 text-xs text-muted-foreground gap-1.5">
+            <div className="flex items-center justify-center py-4 text-xs text-muted-foreground gap-1.5">
               <Loader2 className="size-3.5 animate-spin text-primary" />
-              <span>Cargando...</span>
+              <span>Cargando accesorios...</span>
             </div>
           ) : detalles.length === 0 ? (
-            <div className="text-center py-2 text-xs text-muted-foreground italic">
-              Sin accesorios especificados.
+            <div className="text-center py-3 text-xs text-muted-foreground italic">
+              Sin accesorios especificados en esta acta.
             </div>
           ) : (
-            <div className="rounded-md border bg-card overflow-hidden">
+            <div className="rounded-lg border bg-card overflow-hidden">
               <table className="w-full text-xs text-left">
-                <thead className="bg-muted/50 text-[10px] uppercase font-bold text-muted-foreground border-b">
+                <thead className="bg-muted/50 text-[10px] uppercase font-bold text-muted-foreground border-b select-none">
                   <tr>
-                    <th className="px-2.5 py-1.5">Código / Nombre</th>
-                    <th className="px-2 py-1.5 text-center">Esperado</th>
-                    <th className="px-2 py-1.5 text-center">Encontrado</th>
-                    <th className="px-2 py-1.5 text-center">Estado</th>
-                    <th className="px-2.5 py-1.5">Nota</th>
+                    <th className="px-3 py-1.5 min-w-[180px]">Accesorio</th>
+                    <th className="px-2 py-1.5 text-center w-20">Esperado</th>
+                    <th className="px-2 py-1.5 text-center w-24">Encontrado</th>
+                    <th className="px-2 py-1.5 text-center w-28">Estado</th>
+                    <th className="px-3 py-1.5">Nota / Observación</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {detalles.map((det) => {
                     const hasMismatch = det.cantidadEsperada !== det.cantidadEncontrada
                     const isOk = det.conforme && !hasMismatch
+                    const accInfo = accesorioMap?.get(det.accesorioId || det.accesorio?.id || "")
+                    const codigo = det.accesorio?.codigo || accInfo?.codigo || "ACC"
+                    const nombre = det.accesorio?.nombre || accInfo?.nombre || "Accesorio"
 
                     return (
                       <tr
                         key={det.id}
                         className={cn(
                           "transition-colors",
-                          !isOk && "bg-rose-500/5 dark:bg-rose-950/10",
+                          !isOk && "bg-amber-500/[0.04] dark:bg-amber-950/10",
                         )}
                       >
-                        <td className="px-2.5 py-1.5 font-medium">
-                          <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 px-1 py-0.5 rounded mr-1.5">
-                            {det.accesorio?.codigo ?? "ACC"}
-                          </span>
-                          <span>{det.accesorio?.nombre ?? "Accesorio"}</span>
+                        {/* Código y Nombre */}
+                        <td className="px-3 py-2 font-medium">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                              {codigo}
+                            </span>
+                            <span
+                              className="font-semibold text-foreground text-xs truncate max-w-[260px] sm:max-w-[340px]"
+                              title={nombre}
+                            >
+                              {nombre}
+                            </span>
+                          </div>
                         </td>
-                        <td className="px-2 py-1.5 text-center text-muted-foreground font-mono">
+
+                        {/* Cantidad Esperada */}
+                        <td className="px-2 py-2 text-center text-muted-foreground font-mono font-semibold">
                           {det.cantidadEsperada}
                         </td>
+
+                        {/* Cantidad Encontrada */}
                         <td
                           className={cn(
-                            "px-2 py-1.5 text-center font-mono font-bold",
-                            hasMismatch ? "text-rose-600 dark:text-rose-400" : "text-foreground",
+                            "px-2 py-2 text-center font-mono font-bold",
+                            hasMismatch ? "text-amber-600 dark:text-amber-400" : "text-foreground",
                           )}
                         >
                           {det.cantidadEncontrada}
                         </td>
-                        <td className="px-2 py-1.5 text-center">
+
+                        {/* Estado Conformidad */}
+                        <td className="px-2 py-2 text-center">
                           <span
                             className={cn(
-                              "inline-flex px-1.5 py-0.2 rounded text-[10px] font-bold",
+                              "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold border",
                               det.conforme
-                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                                : "bg-rose-500/10 text-rose-700 dark:text-rose-300",
+                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25"
+                                : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25",
                             )}
                           >
-                            {det.conforme ? "OK" : "NO OK"}
+                            {det.conforme ? (
+                              <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+                            ) : (
+                              <AlertTriangle className="size-3 text-amber-600 dark:text-amber-400" />
+                            )}
+                            <span>{det.conforme ? "Conforme" : "Observado"}</span>
                           </span>
                         </td>
-                        <td className="px-2.5 py-1.5 text-muted-foreground text-[11px] truncate max-w-[150px]">
-                          {det.observacion || "-"}
+
+                        {/* Observación / Nota */}
+                        <td className="px-3 py-2 text-muted-foreground text-xs">
+                          {det.observacion || <span className="text-muted-foreground/40 italic">-</span>}
                         </td>
                       </tr>
                     )
@@ -311,6 +343,19 @@ export function ControlActivoHistorialModal({
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("ALL")
   const [controlToDelete, setControlToDelete] = useState<ControlActivo | null>(null)
   const deleteMutation = useDeleteControlActivo()
+
+  const allAccesoriosQuery = useQuery({
+    ...accesorioQueries.list({ size: 1000 }),
+    enabled: open,
+  })
+
+  const accesorioMap = useMemo(() => {
+    const map = new Map<string, Accesorio>()
+    for (const acc of allAccesoriosQuery.data?.content ?? []) {
+      map.set(acc.id, acc)
+    }
+    return map
+  }, [allAccesoriosQuery.data])
 
   const controlesQuery = useQuery({
     ...controlActivoQueries.list({
@@ -341,7 +386,7 @@ export function ControlActivoHistorialModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border shadow-lg">
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border shadow-lg">
           {/* Cabecera Compacta */}
           <DialogHeader className="p-3.5 sm:p-4 border-b bg-muted/20">
             <div className="flex items-center justify-between gap-3">
@@ -485,6 +530,7 @@ export function ControlActivoHistorialModal({
                   control={control}
                   readOnly={readOnly}
                   defaultExpanded={idx === 0}
+                  accesorioMap={accesorioMap}
                   onCloseModal={() => onOpenChange(false)}
                   onDelete={(c) => setControlToDelete(c)}
                 />

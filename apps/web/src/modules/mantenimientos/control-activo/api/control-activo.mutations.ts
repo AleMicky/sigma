@@ -45,27 +45,16 @@ export function useCreateControlActivoWithDetalles() {
       control,
       detalles,
     }: CreateControlActivoWithDetallesPayload): Promise<ControlActivo> => {
-      // 1. Crear cabecera de ControlActivo
-      const nuevoControl = await createControlActivo(control)
-
-      // 2. Si hay detalles/accesorios, crearlos en paralelo asociados al nuevo control
-      if (detalles && detalles.length > 0) {
-        await Promise.all(
-          detalles.map((det) =>
-            createControlActivoDetalle({
-              ...det,
-              controlActivoId: nuevoControl.id,
-            }),
-          ),
-        )
-      }
-
-      return nuevoControl
+      // Enviar cabecera y detalles en una sola petición atómica al backend
+      return createControlActivo({
+        ...control,
+        detalles,
+      })
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: controlActivoKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: controlActivoKeys.all })
       queryClient.invalidateQueries({
-        queryKey: controlActivoKeys.detalles.lists(),
+        queryKey: controlActivoKeys.detalles.all,
       })
       toast.success(
         `Acta de ${data.tipo === "ENTREGA" ? "Entrega" : "Devolución"} guardada exitosamente`,
@@ -114,44 +103,17 @@ export function useUpdateControlActivoWithDetalles() {
       control,
       detalles,
     }: UpdateControlActivoWithDetallesPayload): Promise<ControlActivo> => {
-      // 1. Actualizar cabecera de ControlActivo
-      const updatedControl = await updateControlActivo(id, control)
-
-      // 2. Obtener detalles existentes y reemplazarlos con los nuevos
-      try {
-        const existingResponse = await listControlActivoDetalles({
-          controlActivoId: id,
-          size: 100,
-        })
-        const existingList = existingResponse.content ?? []
-        if (existingList.length > 0) {
-          await Promise.all(
-            existingList.map((d) => deleteControlActivoDetalle(d.id)),
-          )
-        }
-      } catch {
-        // En caso de error al listar anteriores, continuar con la creación
-      }
-
-      // 3. Crear los nuevos detalles asociados
-      if (detalles && detalles.length > 0) {
-        await Promise.all(
-          detalles.map((det) =>
-            createControlActivoDetalle({
-              ...det,
-              controlActivoId: id,
-            }),
-          ),
-        )
-      }
-
-      return updatedControl
+      // Enviar cabecera y detalles actualizados en una sola petición atómica
+      return updateControlActivo(id, {
+        ...control,
+        detalles,
+      })
     },
     onSuccess: (data, { id }) => {
-      queryClient.invalidateQueries({ queryKey: controlActivoKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: controlActivoKeys.all })
       queryClient.invalidateQueries({ queryKey: controlActivoKeys.detail(id) })
       queryClient.invalidateQueries({
-        queryKey: controlActivoKeys.detalles.lists(),
+        queryKey: controlActivoKeys.detalles.all,
       })
       toast.success(
         `Acta de ${data.tipo === "ENTREGA" ? "Entrega" : "Devolución"} actualizada exitosamente`,
