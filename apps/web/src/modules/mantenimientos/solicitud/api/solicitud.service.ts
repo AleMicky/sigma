@@ -56,6 +56,61 @@ export async function getSolicitudTrazabilidad(
   )
 }
 
+export type SolicitudMantenimientoPayload = {
+  activoId: string
+  tipoMantenimientoId: string
+  tipoFallas?: string | null
+  prioridadId: string
+  solicitanteId: string
+  titulo: string
+  descripcion: string
+  fechaSolicitud?: string | null
+}
+
+export type SolicitudPayload = SolicitudMantenimientoPayload
+
+/**
+ * Registra una nueva solicitud de mantenimiento (soporta archivos adjuntos en multipart).
+ * Endpoint: POST /api/v1/solicitudes-mantenimiento
+ */
+export async function createSolicitud(
+  payload: SolicitudMantenimientoPayload,
+  files?: File[],
+): Promise<SolicitudMantenimiento> {
+  if (files && files.length > 0) {
+    const formData = new FormData()
+    const jsonBlob = new Blob([JSON.stringify(payload)], {
+      type: "application/json",
+    })
+    formData.append("data", jsonBlob)
+    for (const file of files) {
+      formData.append("files", file)
+    }
+    return http.post<SolicitudMantenimiento>(SOLICITUD_ENDPOINTS.root, formData)
+  }
+
+  return http.post<SolicitudMantenimiento>(SOLICITUD_ENDPOINTS.root, payload)
+}
+
+/**
+ * Actualiza una solicitud de mantenimiento existente.
+ * Endpoint: PUT /api/v1/solicitudes-mantenimiento/{id}
+ */
+export async function updateSolicitud(
+  id: string,
+  payload: SolicitudMantenimientoPayload,
+): Promise<SolicitudMantenimiento> {
+  return http.put<SolicitudMantenimiento>(SOLICITUD_ENDPOINTS.detail(id), payload)
+}
+
+/**
+ * Elimina una solicitud de mantenimiento por su ID.
+ * Endpoint: DELETE /api/v1/solicitudes-mantenimiento/{id}
+ */
+export async function deleteSolicitud(id: string): Promise<void> {
+  return http.delete<void>(SOLICITUD_ENDPOINTS.detail(id))
+}
+
 // Aliases para conveniencia y compatibilidad
 export const listSolicitudes = getSolicitudesMantenimiento
 export const getSolicitudes = getSolicitudesMantenimiento

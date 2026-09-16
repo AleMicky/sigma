@@ -12,17 +12,22 @@ import {
 } from "lucide-react"
 
 import { PageShell } from "@/shared/components/page-shell"
+import { SearchField } from "@/shared/components/search-field"
 import { Badge } from "@/shared/components/ui/badge"
+import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { cn } from "@/shared/lib/utils"
 import { SolicitudHeader } from "../components/SolicitudHeader"
 import { useSolicitudes, useSolicitudResumen } from "../hooks/use-solicitudes"
 
 export function SolicitudesPage() {
   const [selectedEstado, setSelectedEstado] = useState<string>("")
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const debouncedSearch = useDebouncedValue(searchQuery, 300)
 
   const query = useSolicitudes({
     interfaz: "SolicitudesPage",
     ...(selectedEstado ? { estado: selectedEstado } : {}),
+    ...(debouncedSearch.trim() ? { q: debouncedSearch.trim() } : {}),
   })
   const resumenQuery = useSolicitudResumen()
 
@@ -204,6 +209,33 @@ export function SolicitudesPage() {
           </button>
         </div>
 
+        {/* Barra de Búsqueda y Filtros */}
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <SearchField
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Buscar por número o título…"
+            className="w-full max-w-sm sm:max-w-md"
+          />
+
+          {selectedEstado && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Filtrado por:</span>
+              <Badge variant="secondary" className="gap-1 text-xs capitalize">
+                {selectedEstado.replace("_", " ")}
+                <button
+                  type="button"
+                  onClick={() => setSelectedEstado("")}
+                  className="ml-0.5 rounded hover:bg-muted-foreground/20 px-1 py-0.2 cursor-pointer font-bold leading-none"
+                  title="Quitar filtro de estado"
+                >
+                  ×
+                </button>
+              </Badge>
+            </div>
+          )}
+        </div>
+
         {/* Listado */}
         {query.isLoading && (
           <div className="flex h-64 items-center justify-center gap-2 text-muted-foreground">
@@ -230,10 +262,24 @@ export function SolicitudesPage() {
           <div className="flex h-64 flex-col items-center justify-center gap-2 text-muted-foreground">
             <FileText className="size-8 opacity-40" />
             <p className="text-sm">
-              {selectedEstado
-                ? `No se encontraron solicitudes con estado "${selectedEstado}".`
-                : "No se encontraron solicitudes de mantenimiento."}
+              {debouncedSearch.trim()
+                ? `No se encontraron solicitudes que coincidan con "${debouncedSearch.trim()}".`
+                : selectedEstado
+                  ? `No se encontraron solicitudes con estado "${selectedEstado}".`
+                  : "No se encontraron solicitudes de mantenimiento."}
             </p>
+            {(searchQuery || selectedEstado) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("")
+                  setSelectedEstado("")
+                }}
+                className="text-xs font-medium text-primary hover:underline cursor-pointer"
+              >
+                Limpiar filtros
+              </button>
+            )}
           </div>
         )}
 
