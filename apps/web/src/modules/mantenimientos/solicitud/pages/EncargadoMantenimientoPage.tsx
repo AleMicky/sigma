@@ -54,7 +54,7 @@ export function EncargadoMantenimientoPage() {
     return {
       porIniciar: resumenQuery.data?.porIniciar ?? 0,
       enEjecucion: resumenQuery.data?.enEjecucion ?? 0,
-      enRevision: resumenQuery.data?.enRevision ?? 0,
+      enRevision: resumenQuery.data?.porRevisar ?? resumenQuery.data?.enRevision ?? 0,
       finalizadas: resumenQuery.data?.finalizadas ?? 0,
     }
   }, [resumenQuery.data])

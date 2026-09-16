@@ -84,6 +84,7 @@ export type SolicitudMantenimientoResumen = {
   enEjecucion?: number
   // SupervisorMantenimientoPage
   porRevisar?: number
+  observadasMantenimiento?: number
   validadas?: number
   trabajoConcluido?: number
 }

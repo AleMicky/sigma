@@ -123,8 +123,9 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
                 coalesce(sum(case when upper(s.estado) = 'ASIGNADO' then 1 else 0 end), 0) as asignadas,
                 coalesce(sum(case when upper(s.estado) in ('EN_MANTENIMIENTO', 'EN_REVISION', 'OBSERVADO_MANTENIMIENTO', 'VALIDADO', 'TRABAJO_REALIZADO', 'FINALIZADO', 'CERRADO') then 1 else 0 end), 0) as enProcesoAprobacion,
                 coalesce(sum(case when upper(s.estado) = 'ASIGNADO' then 1 else 0 end), 0) as porIniciar,
-                coalesce(sum(case when upper(s.estado) = 'EN_MANTENIMIENTO' then 1 else 0 end), 0) as enEjecucion,
+                coalesce(sum(case when upper(s.estado) in ('EN_MANTENIMIENTO', 'OBSERVADO_MANTENIMIENTO', 'VALIDADO') then 1 else 0 end), 0) as enEjecucion,
                 coalesce(sum(case when upper(s.estado) = 'EN_REVISION' then 1 else 0 end), 0) as porRevisar,
+                coalesce(sum(case when upper(s.estado) = 'OBSERVADO_MANTENIMIENTO' then 1 else 0 end), 0) as observadasMantenimiento,
                 coalesce(sum(case when upper(s.estado) = 'VALIDADO' then 1 else 0 end), 0) as validadas,
                 coalesce(sum(case when upper(s.estado) in ('TRABAJO_REALIZADO', 'FINALIZADO', 'CERRADO') then 1 else 0 end), 0) as trabajoConcluido
             from SolicitudMantenimientoEntity s

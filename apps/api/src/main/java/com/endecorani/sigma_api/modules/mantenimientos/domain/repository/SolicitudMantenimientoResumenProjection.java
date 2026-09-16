@@ -22,6 +22,8 @@ public interface SolicitudMantenimientoResumenProjection {
 
     // SupervisorMantenimientoPage
     Long getPorRevisar();
+    Long getObservadasMantenimiento();
     Long getValidadas();
     Long getTrabajoConcluido();
 }
+

@@ -175,10 +175,14 @@ public class SolicitudMantenimientoService {
         }
         String normalized = estado.trim().toUpperCase().replace("-", "_");
 
-        // Para la bandeja de ejecución del técnico/encargado, EN_MANTENIMIENTO corresponde estrictamente a en ejecución
+        // Para la bandeja de ejecución del técnico/encargado, EN_MANTENIMIENTO incluye estados activos de ejecución técnica
         if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz != null ? interfaz.trim() : "")) {
             if ("EN_MANTENIMIENTO".equals(normalized)) {
-                return List.of(ESTADO_BPMN_EN_MANTENIMIENTO);
+                return List.of(
+                        ESTADO_BPMN_EN_MANTENIMIENTO,
+                        ESTADO_BPMN_OBSERVADO_MANTENIMIENTO,
+                        ESTADO_BPMN_VALIDADO
+                );
             }
         }
 

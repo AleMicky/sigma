@@ -44,6 +44,26 @@ public record SolicitudMantenimientoResumenResponse(
         Long asignadas = projection.getAsignadas() != null ? projection.getAsignadas() : 0L;
 
         boolean esAprobaciones = "AprobacionesPage".equalsIgnoreCase(interfaz != null ? interfaz.trim() : "");
+        boolean esEncargado = "EncargadoMantenimientoPage".equalsIgnoreCase(interfaz != null ? interfaz.trim() : "");
+        boolean esSupervisor = "SupervisorMantenimientoPage".equalsIgnoreCase(interfaz != null ? interfaz.trim() : "");
+
+        Long porRevisar = projection.getPorRevisar() != null ? projection.getPorRevisar() : 0L;
+        Long enRevision;
+        if (esEncargado) {
+            enRevision = porRevisar;
+        } else {
+            enRevision = projection.getEnRevision() != null ? projection.getEnRevision() : 0L;
+        }
+
+        Long observadas;
+        if (esSupervisor) {
+            observadas = projection.getObservadasMantenimiento() != null
+                    ? projection.getObservadasMantenimiento()
+                    : (projection.getObservadas() != null ? projection.getObservadas() : 0L);
+        } else {
+            observadas = projection.getObservadas() != null ? projection.getObservadas() : 0L;
+        }
+
         Long enProceso;
         if (esAprobaciones) {
             enProceso = projection.getEnProcesoAprobacion() != null
@@ -55,7 +75,6 @@ public record SolicitudMantenimientoResumenResponse(
 
         Long porIniciar = projection.getPorIniciar() != null ? projection.getPorIniciar() : 0L;
         Long enEjecucion = projection.getEnEjecucion() != null ? projection.getEnEjecucion() : 0L;
-        Long porRevisar = projection.getPorRevisar() != null ? projection.getPorRevisar() : 0L;
         Long validadas = projection.getValidadas() != null ? projection.getValidadas() : 0L;
         Long trabajoConcluido = projection.getTrabajoConcluido() != null ? projection.getTrabajoConcluido() : 0L;
 
