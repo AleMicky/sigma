@@ -48,12 +48,14 @@ public class OrdenTrabajoService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<OrdenTrabajoResponse> listar(String search, PageRequestDto pageRequest) {
+    public PageResponse<OrdenTrabajoResponse> listar(UUID solicitudMantenimientoId, String search, PageRequestDto pageRequest) {
         String normalized = StringUtils.normalize(search);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Page<OrdenTrabajo> resultado;
 
-        if (normalized == null || normalized.isBlank()) {
+        if (solicitudMantenimientoId != null) {
+            resultado = repository.findBySolicitudMantenimientoId(solicitudMantenimientoId, pageable);
+        } else if (normalized == null || normalized.isBlank()) {
             resultado = repository.findAll(pageable);
         } else {
             resultado = repository.search(normalized, pageable);

@@ -14,6 +14,7 @@ import { Button } from "@/shared/components/ui/button"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 
 import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
+import { OrdenTrabajoDetailModal } from "../../orden-trabajo/components/OrdenTrabajoDetailModal"
 import { useCompletarWorkflowSolicitud } from "../api/solicitud.mutations"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
@@ -37,6 +38,7 @@ export function SupervisorMantenimientoPage() {
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
+  const [ordenTrabajoItem, setOrdenTrabajoItem] = useState<SolicitudMantenimiento | null>(null)
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
 
   const { target, isOpen, openAction, closeAction } =
@@ -175,6 +177,9 @@ export function SupervisorMantenimientoPage() {
                 onRegistrarControlActivo={(sol) => {
                   setControlActivoItem(sol)
                 }}
+                onGestionarOrdenTrabajo={(sol) => {
+                  setOrdenTrabajoItem(sol)
+                }}
                 onActionSelect={(sol, action, taskName, fields) => {
                   openAction(sol, action, taskName, fields)
                 }}
@@ -232,6 +237,16 @@ export function SupervisorMantenimientoPage() {
         solicitudNumero={controlActivoItem?.numero}
         readOnly={true}
         allowedTipo="ALL"
+      />
+
+      {/* Diálogo para visualizar el detalle completo de la orden de trabajo, checklist y evidencias */}
+      <OrdenTrabajoDetailModal
+        open={Boolean(ordenTrabajoItem)}
+        onOpenChange={(open) => {
+          if (!open) setOrdenTrabajoItem(null)
+        }}
+        solicitudId={ordenTrabajoItem?.id}
+        solicitudNumero={ordenTrabajoItem?.numero}
       />
     </PageShell>
   )

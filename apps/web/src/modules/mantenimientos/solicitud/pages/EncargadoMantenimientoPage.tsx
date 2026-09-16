@@ -14,7 +14,7 @@ import { Button } from "@/shared/components/ui/button"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 
 import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
-import { OrdenTrabajoHistorialModal } from "../../orden-trabajo/components/OrdenTrabajoHistorialModal"
+import { OrdenTrabajoDetailModal } from "../../orden-trabajo/components/OrdenTrabajoDetailModal"
 import { useCompletarWorkflowSolicitud } from "../api/solicitud.mutations"
 import {
   EncargadoResumenCards,
@@ -234,15 +234,14 @@ export function EncargadoMantenimientoPage() {
         allowedTipo="ENTREGA"
       />
 
-      {/* Diálogo para visualizar listado, creación, edición y eliminación de órdenes de trabajo */}
-      <OrdenTrabajoHistorialModal
+      {/* Diálogo para visualizar el detalle completo de la orden de trabajo, checklist y evidencias */}
+      <OrdenTrabajoDetailModal
         open={Boolean(ordenTrabajoItem)}
         onOpenChange={(open) => {
           if (!open) setOrdenTrabajoItem(null)
         }}
         solicitudId={ordenTrabajoItem?.id}
         solicitudNumero={ordenTrabajoItem?.numero}
-        solicitudActivoId={ordenTrabajoItem?.activo?.id}
       />
     </PageShell>
   )

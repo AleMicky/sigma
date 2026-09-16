@@ -35,11 +35,12 @@ public class OrdenTrabajoController {
     @GetMapping
     @Operation(summary = "Listar órdenes de trabajo con paginación y búsqueda opcional")
     public ResponseEntity<ApiResponse<PageResponse<OrdenTrabajoResponse>>> listar(
+            @RequestParam(required = false) UUID solicitudMantenimientoId,
             @RequestParam(required = false) String search,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(search, pageRequest))
+                ApiResponse.success(service.listar(solicitudMantenimientoId, search, pageRequest))
         );
     }
 
