@@ -35,12 +35,10 @@ public record SolicitudMantenimientoResumenResponse(
 
         Long total = projection.getTotal() != null ? projection.getTotal() : 0L;
         Long borradores = projection.getBorradores() != null ? projection.getBorradores() : 0L;
-        Long enRevision = projection.getEnRevision() != null ? projection.getEnRevision() : 0L;
         Long finalizadas = projection.getFinalizadas() != null ? projection.getFinalizadas() : 0L;
 
         Long porAprobar = projection.getPorAprobar() != null ? projection.getPorAprobar() : 0L;
-        Long observadas = projection.getObservadas() != null ? projection.getObservadas() : 0L;
-        Long enObservadas = projection.getEnObservadas() != null ? projection.getEnObservadas() : observadas;
+        Long enObservadas = projection.getEnObservadas() != null ? projection.getEnObservadas() : 0L;
         Long asignadas = projection.getAsignadas() != null ? projection.getAsignadas() : 0L;
 
         boolean esAprobaciones = "AprobacionesPage".equalsIgnoreCase(interfaz != null ? interfaz.trim() : "");

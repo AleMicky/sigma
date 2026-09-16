@@ -196,6 +196,8 @@ public class SolicitudMantenimientoService {
                     ESTADO_BPMN_OBSERVADO
             );
             case "EN_PROCESO", "ENPROCESO", "PROCESO" -> List.of(
+                    ESTADO_BPMN_SOLICITADO,
+                    ESTADO_BPMN_OBSERVADO,
                     ESTADO_BPMN_ASIGNADO,
                     ESTADO_BPMN_EN_MANTENIMIENTO,
                     ESTADO_BPMN_EN_REVISION,
@@ -225,7 +227,11 @@ public class SolicitudMantenimientoService {
             case "EN_REVISION" -> List.of(ESTADO_BPMN_EN_REVISION);
             case "OBSERVADO_MANTENIMIENTO" -> List.of(ESTADO_BPMN_OBSERVADO_MANTENIMIENTO);
             case "VALIDADO" -> List.of(ESTADO_BPMN_VALIDADO);
-            case "TRABAJO_REALIZADO" -> List.of(ESTADO_BPMN_TRABAJO_REALIZADO);
+            case "TRABAJO_REALIZADO", "TRABAJO_CONCLUIDO" -> List.of(
+                    ESTADO_BPMN_TRABAJO_REALIZADO,
+                    ESTADO_BPMN_FINALIZADO,
+                    "CERRADO"
+            );
 
             default -> List.of(normalized);
         };

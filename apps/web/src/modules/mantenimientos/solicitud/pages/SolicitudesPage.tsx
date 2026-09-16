@@ -53,7 +53,7 @@ export function SolicitudesPage() {
     ...(selectedEstado ? { estado: selectedEstado } : {}),
     ...(debouncedSearch.trim() ? { q: debouncedSearch.trim() } : {}),
   })
-  const resumenQuery = useSolicitudResumen()
+  const resumenQuery = useSolicitudResumen("SolicitudesPage")
 
   const solicitudes = query.data?.content ?? []
   const resumen = resumenQuery.data
