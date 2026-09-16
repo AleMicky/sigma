@@ -6,6 +6,7 @@ export interface SolicitudFilterToolbarProps {
   searchQuery: string
   onSearchChange: (value: string) => void
   selectedEstado?: string
+  selectedEstadoLabel?: string
   onClearEstado?: () => void
   placeholder?: string
   className?: string
@@ -15,6 +16,7 @@ export function SolicitudFilterToolbar({
   searchQuery,
   onSearchChange,
   selectedEstado,
+  selectedEstadoLabel,
   onClearEstado,
   placeholder = "Buscar por número o título…",
   className,
@@ -37,7 +39,7 @@ export function SolicitudFilterToolbar({
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span>Filtrado por:</span>
           <Badge variant="secondary" className="gap-1 text-xs capitalize">
-            {selectedEstado.replace("_", " ")}
+            {selectedEstadoLabel ?? selectedEstado.replace(/_/g, " ")}
             {onClearEstado && (
               <button
                 type="button"

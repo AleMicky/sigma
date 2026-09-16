@@ -95,6 +95,7 @@ export function AprobacionesPage() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           selectedEstado={selectedEstado}
+          selectedEstadoLabel={selectedEstado === "EN_MANTENIMIENTO" ? "En Proceso" : undefined}
           placeholder="Buscar por folio, título, activo o solicitante..."
         />
 
@@ -141,7 +142,9 @@ export function AprobacionesPage() {
             <p className="text-xs text-muted-foreground max-w-sm">
               {debouncedSearch.trim()
                 ? `No se encontraron resultados para "${debouncedSearch.trim()}".`
-                : `No tienes solicitudes de aprobación en estado "${selectedEstado.replace(/_/g, " ")}".`}
+                : selectedEstado === "EN_MANTENIMIENTO"
+                  ? "No tienes solicitudes de aprobación en proceso de mantenimiento."
+                  : `No tienes solicitudes de aprobación en estado "${selectedEstado.replace(/_/g, " ")}".`}
             </p>
             {searchQuery && (
               <button

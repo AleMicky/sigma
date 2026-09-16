@@ -140,7 +140,7 @@ public class SolicitudMantenimientoService {
             }
         }
 
-        List<String> estados = resolverEstados(estado);
+        List<String> estados = resolverEstados(estado, interfaz);
 
         SolicitudMantenimientoSearchCriteria criteria = new SolicitudMantenimientoSearchCriteria(
                 q,
@@ -166,10 +166,22 @@ public class SolicitudMantenimientoService {
     public static final String ESTADO_BPMN_FINALIZADO = "FINALIZADO";
 
     public static List<String> resolverEstados(String estado) {
+        return resolverEstados(estado, null);
+    }
+
+    public static List<String> resolverEstados(String estado, String interfaz) {
         if (estado == null || estado.isBlank()) {
             return Collections.emptyList();
         }
         String normalized = estado.trim().toUpperCase().replace("-", "_");
+
+        // Para la bandeja de ejecución del técnico/encargado, EN_MANTENIMIENTO corresponde estrictamente a en ejecución
+        if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz != null ? interfaz.trim() : "")) {
+            if ("EN_MANTENIMIENTO".equals(normalized)) {
+                return List.of(ESTADO_BPMN_EN_MANTENIMIENTO);
+            }
+        }
+
         return switch (normalized) {
             // Grupos de estados para las tarjetas de resumen y filtros
             case "BORRADOR", "BORRADORES" -> List.of(
@@ -196,7 +208,16 @@ public class SolicitudMantenimientoService {
             case "SOLICITADO" -> List.of(ESTADO_BPMN_SOLICITADO);
             case "OBSERVADO" -> List.of(ESTADO_BPMN_OBSERVADO);
             case "ASIGNADO" -> List.of(ESTADO_BPMN_ASIGNADO);
-            case "EN_MANTENIMIENTO" -> List.of(ESTADO_BPMN_EN_MANTENIMIENTO);
+            // EN_MANTENIMIENTO filtra todos los estados posteriores a ASIGNADO
+            case "EN_MANTENIMIENTO" -> List.of(
+                    ESTADO_BPMN_EN_MANTENIMIENTO,
+                    ESTADO_BPMN_EN_REVISION,
+                    ESTADO_BPMN_OBSERVADO_MANTENIMIENTO,
+                    ESTADO_BPMN_VALIDADO,
+                    ESTADO_BPMN_TRABAJO_REALIZADO,
+                    ESTADO_BPMN_FINALIZADO,
+                    "CERRADO"
+            );
             case "EN_REVISION" -> List.of(ESTADO_BPMN_EN_REVISION);
             case "OBSERVADO_MANTENIMIENTO" -> List.of(ESTADO_BPMN_OBSERVADO_MANTENIMIENTO);
             case "VALIDADO" -> List.of(ESTADO_BPMN_VALIDADO);
