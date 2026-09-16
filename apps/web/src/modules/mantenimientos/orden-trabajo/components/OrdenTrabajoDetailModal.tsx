@@ -58,6 +58,7 @@ type OrdenTrabajoDetailModalProps = {
   solicitudId?: string | null
   solicitudNumero?: string | null
   readOnly?: boolean
+  canManageTasks?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onUpdated?: () => void
@@ -68,6 +69,7 @@ export function OrdenTrabajoDetailModal({
   solicitudId,
   solicitudNumero,
   readOnly = false,
+  canManageTasks = true,
   open,
   onOpenChange,
   onUpdated,
@@ -141,6 +143,8 @@ export function OrdenTrabajoDetailModal({
     estadoSolicitudNorm === "FINALIZADO" ||
     estadoSolicitudNorm === "CANCELADO" ||
     estadoSolicitudNorm === "RECHAZADO"
+
+  const allowTaskManagement = !isReadOnly && canManageTasks
 
   // Se eliminó el modo planificación para que en estado ASIGNADO se pueda marcar tareas y subir adjuntos
   const isEnPlanificacion = false
@@ -268,7 +272,7 @@ export function OrdenTrabajoDetailModal({
                     </div>
                   </div>
 
-                  {!isReadOnly && (
+                  {allowTaskManagement && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -350,7 +354,7 @@ export function OrdenTrabajoDetailModal({
                     <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                       Tareas de la Orden ({completadasCount}/{totalActividades})
                     </h4>
-                    {!isReadOnly && (
+                    {allowTaskManagement && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -376,7 +380,7 @@ export function OrdenTrabajoDetailModal({
                           ? "Esta orden de trabajo no contiene actividades registradas."
                           : "Agrega las tareas técnicas que deben ejecutarse en esta orden de trabajo."}
                       </p>
-                      {!isReadOnly && (
+                      {allowTaskManagement && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -397,6 +401,7 @@ export function OrdenTrabajoDetailModal({
                           key={act.id}
                           actividad={act}
                           isReadOnly={isReadOnly}
+                          canManageTasks={allowTaskManagement}
                           isEnPlanificacion={isEnPlanificacion}
                           onToggleRealizado={() => handleToggleRealizado(act)}
                           onEdit={() =>
@@ -711,6 +716,7 @@ export function OrdenTrabajoDetailModal({
 function ActividadItemCard({
   actividad,
   isReadOnly = false,
+  canManageTasks = true,
   isEnPlanificacion,
   onToggleRealizado,
   onEdit,
@@ -721,6 +727,7 @@ function ActividadItemCard({
 }: {
   actividad: OrdenTrabajoActividad
   isReadOnly?: boolean
+  canManageTasks?: boolean
   isEnPlanificacion?: boolean
   onToggleRealizado: () => void
   onEdit: () => void
@@ -812,26 +819,30 @@ function ActividadItemCard({
             >
               <Camera className="size-3" />
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={onEdit}
-              className="size-5.5 text-muted-foreground hover:text-foreground rounded-md cursor-pointer"
-              title="Editar tarea"
-            >
-              <Edit2 className="size-2.5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={onDelete}
-              className="size-5.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-md cursor-pointer"
-              title="Eliminar tarea"
-            >
-              <Trash2 className="size-2.5" />
-            </Button>
+            {canManageTasks && (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={onEdit}
+                  className="size-5.5 text-muted-foreground hover:text-foreground rounded-md cursor-pointer"
+                  title="Editar tarea"
+                >
+                  <Edit2 className="size-2.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={onDelete}
+                  className="size-5.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-md cursor-pointer"
+                  title="Eliminar tarea"
+                >
+                  <Trash2 className="size-2.5" />
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>

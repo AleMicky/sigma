@@ -169,11 +169,6 @@ export function SupervisorMantenimientoPage() {
               <SolicitudListItem
                 key={solicitud.id}
                 solicitud={solicitud}
-                onSelect={(sol) => {
-                  navigate({
-                    to: routes.mantenimientos.editarSolicitud(sol.id),
-                  })
-                }}
                 onRegistrarControlActivo={(sol) => {
                   setControlActivoItem(sol)
                 }}
@@ -239,7 +234,7 @@ export function SupervisorMantenimientoPage() {
         allowedTipo="ALL"
       />
 
-      {/* Diálogo para visualizar el detalle completo de la orden de trabajo, checklist y evidencias */}
+      {/* Diálogo para visualizar y operar la orden de trabajo (Checklist y Evidencias activas, gestión estructural deshabilitada) */}
       <OrdenTrabajoDetailModal
         open={Boolean(ordenTrabajoItem)}
         onOpenChange={(open) => {
@@ -247,6 +242,7 @@ export function SupervisorMantenimientoPage() {
         }}
         solicitudId={ordenTrabajoItem?.id}
         solicitudNumero={ordenTrabajoItem?.numero}
+        canManageTasks={false}
       />
     </PageShell>
   )
