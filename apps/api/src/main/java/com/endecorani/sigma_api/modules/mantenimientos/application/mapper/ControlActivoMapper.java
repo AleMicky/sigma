@@ -40,5 +40,6 @@ public interface ControlActivoMapper {
     @Mapping(target = "controlActivoId", ignore = true)
     void updateDetalleFromRequest(ControlActivoDetalleRequest dto, @MappingTarget ControlActivoDetalle domain);
 
+    @Mapping(target = "accesorio", ignore = true)
     ControlActivoDetalleResponse toDetalleResponse(ControlActivoDetalle domain);
 }
