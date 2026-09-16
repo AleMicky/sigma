@@ -57,10 +57,10 @@ export function SolicitudListItem({
       priority={
         solicitud.prioridad
           ? {
-              level: prioridadNivel,
-              label: solicitud.prioridad.nombre,
-              isCritical,
-            }
+            level: prioridadNivel,
+            label: solicitud.prioridad.nombre,
+            isCritical,
+          }
           : undefined
       }
       actions={actions}
