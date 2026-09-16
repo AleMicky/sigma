@@ -14,6 +14,7 @@ import { Button } from "@/shared/components/ui/button"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 
 import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
+import { OrdenTrabajoHistorialModal } from "../../orden-trabajo/components/OrdenTrabajoHistorialModal"
 import { useCompletarWorkflowSolicitud } from "../api/solicitud.mutations"
 import {
   EncargadoResumenCards,
@@ -33,6 +34,7 @@ export function EncargadoMantenimientoPage() {
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
+  const [ordenTrabajoItem, setOrdenTrabajoItem] = useState<SolicitudMantenimiento | null>(null)
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
 
   const { target, isOpen, openAction, closeAction } =
@@ -171,6 +173,9 @@ export function EncargadoMantenimientoPage() {
                 onRegistrarControlActivo={(sol) => {
                   setControlActivoItem(sol)
                 }}
+                onGestionarOrdenTrabajo={(sol) => {
+                  setOrdenTrabajoItem(sol)
+                }}
                 onActionSelect={(sol, action, taskName, fields) => {
                   openAction(sol, action, taskName, fields)
                 }}
@@ -227,6 +232,17 @@ export function EncargadoMantenimientoPage() {
         solicitudId={controlActivoItem?.id}
         solicitudNumero={controlActivoItem?.numero}
         allowedTipo="ENTREGA"
+      />
+
+      {/* Diálogo para visualizar listado, creación, edición y eliminación de órdenes de trabajo */}
+      <OrdenTrabajoHistorialModal
+        open={Boolean(ordenTrabajoItem)}
+        onOpenChange={(open) => {
+          if (!open) setOrdenTrabajoItem(null)
+        }}
+        solicitudId={ordenTrabajoItem?.id}
+        solicitudNumero={ordenTrabajoItem?.numero}
+        solicitudActivoId={ordenTrabajoItem?.activo?.id}
       />
     </PageShell>
   )

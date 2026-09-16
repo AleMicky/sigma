@@ -16,6 +16,7 @@ export type SolicitudListItemProps = {
   onDelete?: (solicitud: SolicitudMantenimiento) => void
   onTraceability?: (solicitud: SolicitudMantenimiento) => void
   onRegistrarControlActivo?: (solicitud: SolicitudMantenimiento) => void
+  onGestionarOrdenTrabajo?: (solicitud: SolicitudMantenimiento) => void
   onActionSelect?: (
     solicitud: SolicitudMantenimiento,
     action: WorkflowAction,
@@ -34,6 +35,7 @@ export function SolicitudListItem({
   onDelete,
   onTraceability,
   onRegistrarControlActivo,
+  onGestionarOrdenTrabajo,
   onActionSelect,
   onlyWorkflowActionsOnBorrador = false,
   showWorkflowActions,
@@ -141,6 +143,23 @@ export function SolicitudListItem({
             >
               <ClipboardCheck className="size-3 text-sky-600 dark:text-sky-400" />
               <span>Control Activo</span>
+            </Button>
+          )}
+
+          {onGestionarOrdenTrabajo && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onGestionarOrdenTrabajo(solicitud)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/80 hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-400 text-foreground border-border/80 shadow-2xs cursor-pointer"
+              title="Gestionar Órdenes de Trabajo"
+            >
+              <Wrench className="size-3 text-sky-600 dark:text-sky-400" />
+              <span>Orden Trabajo</span>
             </Button>
           )}
 

@@ -222,7 +222,7 @@ export function SupervisorMantenimientoPage() {
         title="Trazabilidad de Solicitud de Mantenimiento"
       />
 
-      {/* Diálogo para visualizar listado e historial de actas de control de activo */}
+      {/* Diálogo para visualizar listado e historial de actas de control de activo (Solo Consulta) */}
       <ControlActivoHistorialModal
         open={Boolean(controlActivoItem)}
         onOpenChange={(open) => {
@@ -230,6 +230,8 @@ export function SupervisorMantenimientoPage() {
         }}
         solicitudId={controlActivoItem?.id}
         solicitudNumero={controlActivoItem?.numero}
+        readOnly={true}
+        allowedTipo="ALL"
       />
     </PageShell>
   )
