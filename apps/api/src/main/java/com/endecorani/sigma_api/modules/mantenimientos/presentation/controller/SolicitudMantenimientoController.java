@@ -7,7 +7,6 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResumenResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoTrazabilidadResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.SolicitudMantenimientoService;
-import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -110,28 +109,13 @@ public class SolicitudMantenimientoController {
         }
 
         @GetMapping
-        @Operation(summary = "Listar solicitudes con filtros combinados (estado, solicitante, responsable, supervisor, activo, prioridad, búsqueda)")
+        @Operation(summary = "Listar solicitudes con filtros combinados (búsqueda, estado)")
         public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findAll(
                         @RequestParam(required = false) String q,
                         @RequestParam(required = false) String estado,
-                        @RequestParam(required = false) UUID solicitanteId,
-                        @RequestParam(required = false) UUID responsableId,
-                        @RequestParam(required = false) UUID supervisorId,
-                        @RequestParam(required = false) UUID activoId,
-                        @RequestParam(required = false) UUID prioridadId,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
                 return ResponseEntity.ok(
-                                ApiResponse.success(
-                                                service.findAll(
-                                                                new SolicitudMantenimientoSearchCriteria(
-                                                                                q,
-                                                                                estado,
-                                                                                solicitanteId,
-                                                                                responsableId,
-                                                                                supervisorId,
-                                                                                activoId,
-                                                                                prioridadId),
-                                                                pageRequest)));
+                                ApiResponse.success(service.findAll(q, estado, pageRequest)));
         }
 
         @DeleteMapping("/{id}")

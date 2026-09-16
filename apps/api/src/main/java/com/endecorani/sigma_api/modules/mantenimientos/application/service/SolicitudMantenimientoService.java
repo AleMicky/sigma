@@ -81,7 +81,26 @@ public class SolicitudMantenimientoService {
 
     @Transactional(readOnly = true)
     public SolicitudMantenimientoResumenResponse obtenerResumen(UUID solicitanteId) {
-        return SolicitudMantenimientoResumenResponse.from(repository.obtenerResumen(solicitanteId));
+        UUID resolvedSolicitanteId = solicitanteId;
+        if (resolvedSolicitanteId == null && !securityUtils.isAdmin()) {
+            resolvedSolicitanteId = obtenerEmpleadoIdActual();
+        }
+        return SolicitudMantenimientoResumenResponse.from(repository.obtenerResumen(resolvedSolicitanteId));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SolicitudMantenimientoResponse> findAll(String q, String estado,
+            PageRequestDto pageRequest) {
+        UUID solicitanteId = securityUtils.isAdmin() ? null : obtenerEmpleadoIdActual();
+        SolicitudMantenimientoSearchCriteria criteria = new SolicitudMantenimientoSearchCriteria(
+                q,
+                estado,
+                solicitanteId,
+                null,
+                null,
+                null,
+                null);
+        return findAll(criteria, pageRequest);
     }
 
     @Transactional(readOnly = true)

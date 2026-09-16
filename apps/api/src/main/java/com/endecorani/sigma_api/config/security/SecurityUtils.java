@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,23 @@ public class SecurityUtils {
     private final JdbcClient jdbcClient;
     private final Map<String, UUID> keycloakUserCache = new ConcurrentHashMap<>();
     private final Map<String, UUID> usernameUserCache = new ConcurrentHashMap<>();
+
+    /**
+     * Verifica si el usuario autenticado tiene rol de administrador.
+     */
+    public boolean isAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(String::toUpperCase)
+                .anyMatch(a -> a.equals("ROLE_ADMIN")
+                        || a.equals("ADMIN")
+                        || a.equals("ROLE_ADMINISTRADOR")
+                        || a.equals("ADMINISTRADOR"));
+    }
 
     /**
      * Retorna el UUID de UsuarioEntity correspondiente al usuario autenticado actual.
