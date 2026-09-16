@@ -42,6 +42,7 @@ export type ControlActivoHistorialModalProps = {
   solicitudId?: string | null
   solicitudNumero?: string | null
   readOnly?: boolean
+  allowedTipo?: "ENTREGA" | "DEVOLUCION" | "ALL"
 }
 
 type TipoFilter = "ALL" | "ENTREGA" | "DEVOLUCION"
@@ -83,10 +84,10 @@ function ControlItemCard({
 
   return (
     <div className="rounded-xl border bg-card shadow-2xs overflow-hidden transition-all">
-      {/* Fila Principal Compacta */}
-      <div className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {/* Badge Tipo Compacto */}
+      {/* Fila Principal de la Tarjeta */}
+      <div className="p-3 sm:p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 bg-card">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+          {/* Badge Tipo */}
           <span
             className={cn(
               "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold shrink-0 border",
@@ -100,7 +101,7 @@ function ControlItemCard({
             ) : (
               <ArrowDownLeft className="size-3.5 text-emerald-600 dark:text-emerald-400" />
             )}
-            <span>{isEntrega ? "Entrega" : "Devolución"}</span>
+            <span>{isEntrega ? "Acta Entrega" : "Acta Devolución"}</span>
           </span>
 
           {/* Badge Conformidad */}
@@ -121,28 +122,34 @@ function ControlItemCard({
           </span>
 
           {/* Fecha y Personas */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1 font-medium shrink-0">
               <Calendar className="size-3 text-muted-foreground" />
               {formatDate(control.fecha)}
             </span>
 
             {control.entregadoPor && (
-              <span className="truncate">
-                Entrega: <strong className="text-foreground">{control.entregadoPor.nombre}</strong>
-              </span>
+              <>
+                <span className="text-muted-foreground/40 font-bold">•</span>
+                <span className="truncate">
+                  Entrega: <strong className="text-foreground font-medium">{control.entregadoPor.nombre}</strong>
+                </span>
+              </>
             )}
 
             {control.recibidoPor && (
-              <span className="truncate">
-                Recibe: <strong className="text-foreground">{control.recibidoPor.nombre}</strong>
-              </span>
+              <>
+                <span className="text-muted-foreground/40 font-bold">•</span>
+                <span className="truncate">
+                  Recibe: <strong className="text-foreground font-medium">{control.recibidoPor.nombre}</strong>
+                </span>
+              </>
             )}
           </div>
         </div>
 
         {/* Acciones */}
-        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+        <div className="flex items-center gap-1.5 shrink-0 self-start md:self-center pt-1 md:pt-0 border-t md:border-t-0 border-border/40 w-full md:w-auto justify-end">
           {!readOnly && (
             <>
               <Button
@@ -171,7 +178,7 @@ function ControlItemCard({
                 size="xs"
                 variant="ghost"
                 onClick={() => onDelete?.(control)}
-                className="h-7 text-xs px-1.5 font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                className="h-7 text-xs px-2 font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                 title="Eliminar acta"
               >
                 <Trash2 className="size-3.5" />
@@ -338,6 +345,7 @@ export function ControlActivoHistorialModal({
   solicitudId,
   solicitudNumero,
   readOnly = false,
+  allowedTipo = "ALL",
 }: ControlActivoHistorialModalProps) {
   const navigate = useNavigate()
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("ALL")
@@ -386,7 +394,7 @@ export function ControlActivoHistorialModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border shadow-lg">
+        <DialogContent className="sm:max-w-3xl md:max-w-4xl lg:max-w-5xl w-full max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden border shadow-xl">
           {/* Cabecera Compacta */}
           <DialogHeader className="p-3.5 sm:p-4 border-b bg-muted/20">
             <div className="flex items-center justify-between gap-3">
@@ -408,38 +416,42 @@ export function ControlActivoHistorialModal({
 
               {solicitudId && !readOnly && (
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="outline"
-                    onClick={() => {
-                      onOpenChange(false)
-                      navigate({
-                        to: routes.mantenimientos.controlesActivos.nuevo,
-                        search: { solicitudId, tipo: "DEVOLUCION" },
-                      })
-                    }}
-                    className="h-7 text-xs gap-1 px-2 font-medium border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer"
-                  >
-                    <ArrowDownLeft className="size-3" />
-                    <span>Devolución</span>
-                  </Button>
+                  {(allowedTipo === "ALL" || allowedTipo === "DEVOLUCION") && (
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      onClick={() => {
+                        onOpenChange(false)
+                        navigate({
+                          to: routes.mantenimientos.controlesActivos.nuevo,
+                          search: { solicitudId, tipo: "DEVOLUCION" },
+                        })
+                      }}
+                      className="h-7 text-xs gap-1 px-2 font-medium border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer"
+                    >
+                      <ArrowDownLeft className="size-3" />
+                      <span>Acta Devolución</span>
+                    </Button>
+                  )}
 
-                  <Button
-                    type="button"
-                    size="xs"
-                    onClick={() => {
-                      onOpenChange(false)
-                      navigate({
-                        to: routes.mantenimientos.controlesActivos.nuevo,
-                        search: { solicitudId, tipo: "ENTREGA" },
-                      })
-                    }}
-                    className="h-7 text-xs gap-1 px-2 font-medium cursor-pointer shadow-2xs"
-                  >
-                    <Plus className="size-3" />
-                    <span>Entrega</span>
-                  </Button>
+                  {(allowedTipo === "ALL" || allowedTipo === "ENTREGA") && (
+                    <Button
+                      type="button"
+                      size="xs"
+                      onClick={() => {
+                        onOpenChange(false)
+                        navigate({
+                          to: routes.mantenimientos.controlesActivos.nuevo,
+                          search: { solicitudId, tipo: "ENTREGA" },
+                        })
+                      }}
+                      className="h-7 text-xs gap-1 px-2 font-medium cursor-pointer shadow-2xs"
+                    >
+                      <Plus className="size-3" />
+                      <span>Acta Entrega</span>
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -503,7 +515,9 @@ export function ControlActivoHistorialModal({
                 <p className="text-[11px] max-w-xs mx-auto">
                   {readOnly
                     ? "Esta solicitud no tiene actas registradas."
-                    : "Genera la primera acta de entrega para controlar el activo y sus accesorios."}
+                    : allowedTipo === "DEVOLUCION"
+                      ? "Genera el acta de devolución para verificar el retorno del activo y sus accesorios."
+                      : "Genera el acta de entrega para controlar el activo y sus accesorios al iniciar el mantenimiento."}
                 </p>
                 {solicitudId && !readOnly && (
                   <Button
@@ -511,15 +525,21 @@ export function ControlActivoHistorialModal({
                     size="xs"
                     onClick={() => {
                       onOpenChange(false)
+                      const targetTipo =
+                        allowedTipo === "DEVOLUCION" ? "DEVOLUCION" : "ENTREGA"
                       navigate({
                         to: routes.mantenimientos.controlesActivos.nuevo,
-                        search: { solicitudId, tipo: "ENTREGA" },
+                        search: { solicitudId, tipo: targetTipo },
                       })
                     }}
                     className="h-7 text-xs mt-1"
                   >
                     <Plus className="size-3" />
-                    <span>Registrar Acta de Entrega</span>
+                    <span>
+                      {allowedTipo === "DEVOLUCION"
+                        ? "Registrar Acta de Devolución"
+                        : "Registrar Acta de Entrega"}
+                    </span>
                   </Button>
                 )}
               </div>

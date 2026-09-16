@@ -12,10 +12,8 @@ import {
 } from "@/modules/workflow"
 import { PageShell } from "@/shared/components/page-shell"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
-import {
-  useCompletarWorkflowSolicitud,
-  useDeleteSolicitud,
-} from "../api/solicitud.mutations"
+import { useCompletarWorkflowSolicitud, useDeleteSolicitud } from "../api/solicitud.mutations"
+import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
 import { SolicitudListItem } from "../components/SolicitudListItem"
@@ -28,6 +26,7 @@ export function SolicitudesPage() {
   const [selectedEstado, setSelectedEstado] = useState<string>("")
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
+  const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
   const [deletingItem, setDeletingItem] = useState<SolicitudMantenimiento | null>(null)
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
 
@@ -169,6 +168,9 @@ export function SolicitudesPage() {
                 onTraceability={(sol) => {
                   setTraceabilityItem(sol)
                 }}
+                onRegistrarControlActivo={(sol) => {
+                  setControlActivoItem(sol)
+                }}
               />
             ))}
           </WorkflowListView>
@@ -208,6 +210,17 @@ export function SolicitudesPage() {
         processInstanceId={traceabilityItem?.processInstanceId}
         entityCode={traceabilityItem?.numero}
         title="Trazabilidad de Solicitud de Mantenimiento"
+      />
+
+      {/* Diálogo para visualizar listado e historial de actas de control de activo (solo Devolución para Solicitudes) */}
+      <ControlActivoHistorialModal
+        open={Boolean(controlActivoItem)}
+        onOpenChange={(open) => {
+          if (!open) setControlActivoItem(null)
+        }}
+        solicitudId={controlActivoItem?.id}
+        solicitudNumero={controlActivoItem?.numero}
+        allowedTipo="DEVOLUCION"
       />
 
       {/* Diálogo de confirmación para eliminar solicitud en borrador */}

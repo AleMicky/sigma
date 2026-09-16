@@ -218,7 +218,7 @@ export function EncargadoMantenimientoPage() {
         title="Trazabilidad de Solicitud de Mantenimiento"
       />
 
-      {/* Diálogo para visualizar listado e historial de actas de control de activo */}
+      {/* Diálogo para visualizar listado e historial de actas de control de activo (solo Entrega para Encargado) */}
       <ControlActivoHistorialModal
         open={Boolean(controlActivoItem)}
         onOpenChange={(open) => {
@@ -226,6 +226,7 @@ export function EncargadoMantenimientoPage() {
         }}
         solicitudId={controlActivoItem?.id}
         solicitudNumero={controlActivoItem?.numero}
+        allowedTipo="ENTREGA"
       />
     </PageShell>
   )
