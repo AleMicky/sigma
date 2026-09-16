@@ -198,7 +198,7 @@ export function EncargadoMantenimientoPage() {
         onSuccess={() => {
           closeAction()
           query.refetch()
-          baseQuery.refetch()
+          resumenQuery.refetch()
         }}
       />
 

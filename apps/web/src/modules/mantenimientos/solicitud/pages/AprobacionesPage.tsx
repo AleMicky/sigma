@@ -198,7 +198,7 @@ export function AprobacionesPage() {
         onSuccess={() => {
           closeAction()
           query.refetch()
-          baseQuery.refetch()
+          resumenQuery.refetch()
         }}
       />
 

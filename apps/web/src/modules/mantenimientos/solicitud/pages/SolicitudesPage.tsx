@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router"
 import { AlertCircle, FileText, Loader2 } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
+import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import {
   WorkflowActionDialog,
   WorkflowHistoryDialog,
@@ -11,7 +12,10 @@ import {
 } from "@/modules/workflow"
 import { PageShell } from "@/shared/components/page-shell"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
-import { useCompletarWorkflowSolicitud } from "../api/solicitud.mutations"
+import {
+  useCompletarWorkflowSolicitud,
+  useDeleteSolicitud,
+} from "../api/solicitud.mutations"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
 import { SolicitudListItem } from "../components/SolicitudListItem"
@@ -24,11 +28,25 @@ export function SolicitudesPage() {
   const [selectedEstado, setSelectedEstado] = useState<string>("")
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
+  const [deletingItem, setDeletingItem] = useState<SolicitudMantenimiento | null>(null)
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
 
   const { target, isOpen, openAction, closeAction } =
     useWorkflowActionTarget<SolicitudMantenimiento>()
   const completarWorkflowMutation = useCompletarWorkflowSolicitud()
+  const deleteMutation = useDeleteSolicitud()
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingItem) return
+    try {
+      await deleteMutation.mutateAsync(deletingItem.id)
+      setDeletingItem(null)
+      query.refetch()
+      resumenQuery.refetch()
+    } catch {
+      // Error handled in useDeleteSolicitud
+    }
+  }
 
   const query = useSolicitudes({
     interfaz: "SolicitudesPage",
@@ -131,10 +149,19 @@ export function SolicitudesPage() {
               <SolicitudListItem
                 key={solicitud.id}
                 solicitud={solicitud}
+                onlyWorkflowActionsOnBorrador
                 onSelect={(sol) => {
                   navigate({
                     to: routes.mantenimientos.editarSolicitud(sol.id),
                   })
+                }}
+                onEdit={(sol) => {
+                  navigate({
+                    to: routes.mantenimientos.editarSolicitud(sol.id),
+                  })
+                }}
+                onDelete={(sol) => {
+                  setDeletingItem(sol)
                 }}
                 onActionSelect={(sol, action, taskName, fields) => {
                   openAction(sol, action, taskName, fields)
@@ -181,6 +208,19 @@ export function SolicitudesPage() {
         processInstanceId={traceabilityItem?.processInstanceId}
         entityCode={traceabilityItem?.numero}
         title="Trazabilidad de Solicitud de Mantenimiento"
+      />
+
+      {/* Diálogo de confirmación para eliminar solicitud en borrador */}
+      <ConfirmDeleteDialog
+        open={Boolean(deletingItem)}
+        onOpenChange={(open) => {
+          if (!open) setDeletingItem(null)
+        }}
+        title="Eliminar Solicitud de Mantenimiento"
+        description={`¿Estás seguro de que deseas eliminar la solicitud ${deletingItem?.numero || ""}? Esta acción es permanente y no se puede deshacer.`}
+        confirmLabel="Eliminar Solicitud"
+        isPending={deleteMutation.isPending}
+        onConfirm={handleDeleteConfirm}
       />
     </PageShell>
   )

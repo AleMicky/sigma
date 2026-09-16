@@ -1,7 +1,6 @@
 import type * as React from "react"
 import {
   CheckCircle2,
-  Clock,
   FileEdit,
   FileText,
   Wrench,
@@ -57,19 +56,6 @@ const RESUMEN_CARDS: ResumenCardConfig[] = [
     iconInactiveClass: "bg-muted text-muted-foreground",
   },
   {
-    estado: "en_revision",
-    label: "En Revisión",
-    icon: Clock,
-    getValue: (resumen) => resumen?.enRevision ?? 0,
-    activeClass: "border-amber-500/60 bg-amber-500/15 ring-1 ring-amber-500/40",
-    hoverBorderClass: "hover:border-amber-500/40",
-    hoverBgClass: "hover:bg-amber-500/5",
-    iconActiveClass: "bg-amber-600 text-white shadow-2xs",
-    iconInactiveClass: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-    labelClass: "text-amber-700 dark:text-amber-400",
-    numberClass: "text-amber-600 dark:text-amber-400",
-  },
-  {
     estado: "en_proceso",
     label: "En Proceso",
     icon: Wrench,
@@ -92,7 +78,6 @@ const RESUMEN_CARDS: ResumenCardConfig[] = [
     iconActiveClass: "bg-emerald-600 text-white shadow-2xs",
     iconInactiveClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     numberClass: "text-emerald-600 dark:text-emerald-400",
-    extraCardClass: "col-span-2 sm:col-span-1",
   },
 ]
 
@@ -104,7 +89,7 @@ export function SolicitudResumenCards({
   className,
 }: SolicitudResumenCardsProps) {
   return (
-    <div className={cn("grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5", className)}>
+    <div className={cn("grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-4", className)}>
       {RESUMEN_CARDS.map((card) => {
         const isSelected = card.estado ? selectedEstado === card.estado : !selectedEstado
         const Icon = card.icon

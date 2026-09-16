@@ -1,4 +1,4 @@
-import { Calendar, User, Wrench } from "lucide-react"
+import { Calendar, Pencil, Trash2, User, Wrench } from "lucide-react"
 
 import {
   WorkflowListItem,
@@ -6,11 +6,14 @@ import {
   type WorkflowAction,
   type WorkflowField,
 } from "@/modules/workflow"
+import { Button } from "@/shared/components/ui/button"
 import type { SolicitudMantenimiento } from "../types/solicitud.type"
 
 export type SolicitudListItemProps = {
   solicitud: SolicitudMantenimiento
   onSelect?: (solicitud: SolicitudMantenimiento) => void
+  onEdit?: (solicitud: SolicitudMantenimiento) => void
+  onDelete?: (solicitud: SolicitudMantenimiento) => void
   onTraceability?: (solicitud: SolicitudMantenimiento) => void
   onActionSelect?: (
     solicitud: SolicitudMantenimiento,
@@ -18,18 +21,26 @@ export type SolicitudListItemProps = {
     taskName?: string,
     fields?: WorkflowField[],
   ) => void
+  onlyWorkflowActionsOnBorrador?: boolean
   className?: string
 }
 
 export function SolicitudListItem({
   solicitud,
   onSelect,
+  onEdit,
+  onDelete,
   onTraceability,
   onActionSelect,
+  onlyWorkflowActionsOnBorrador = false,
   className,
 }: SolicitudListItemProps) {
   const prioridadNivel = solicitud.prioridad?.nivel ?? 1
   const isCritical = prioridadNivel >= 4
+
+  const estadoNorm = (solicitud.estado ?? "").trim().toLowerCase()
+  const isBorrador = estadoNorm === "borrador"
+  const shouldShowWorkflowActions = onlyWorkflowActionsOnBorrador ? isBorrador : true
 
   const { actions, taskName, fields, isLoading: isWorkflowLoading } = useWorkflowActions(
     solicitud.processInstanceId,
@@ -63,10 +74,10 @@ export function SolicitudListItem({
           }
           : undefined
       }
-      actions={actions}
+      actions={shouldShowWorkflowActions ? actions : []}
       taskName={taskName}
       fields={fields}
-      isWorkflowLoading={isWorkflowLoading}
+      isWorkflowLoading={shouldShowWorkflowActions ? isWorkflowLoading : false}
       onActionSelect={
         onActionSelect
           ? (action, tName, flds) => onActionSelect(solicitud, action, tName, flds)
@@ -100,15 +111,51 @@ export function SolicitudListItem({
         </>
       }
       extraActions={
-        solicitud.tipoMantenimiento?.nombre ? (
-          <span className="inline-flex items-center rounded-md bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground font-medium border border-border/60">
-            {solicitud.tipoMantenimiento.nombre}
-          </span>
-        ) : null
+        <>
+          {solicitud.tipoMantenimiento?.nombre && (
+            <span className="inline-flex items-center rounded-md bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground font-medium border border-border/60">
+              {solicitud.tipoMantenimiento.nombre}
+            </span>
+          )}
+
+          {isBorrador && onEdit && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit(solicitud)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/80 hover:bg-muted/80 text-foreground border-border/80 shadow-2xs cursor-pointer"
+              title="Editar solicitud"
+            >
+              <Pencil className="size-3 text-muted-foreground" />
+              <span>Editar</span>
+            </Button>
+          )}
+
+          {isBorrador && onDelete && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(solicitud)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30 shadow-2xs cursor-pointer"
+              title="Eliminar solicitud"
+            >
+              <Trash2 className="size-3 text-destructive" />
+              <span>Eliminar</span>
+            </Button>
+          )}
+        </>
       }
       onQuickView={onSelect ? () => onSelect(solicitud) : undefined}
       onTraceability={onTraceability ? () => onTraceability(solicitud) : undefined}
-      showWorkflowTrigger={Boolean(solicitud.processInstanceId)}
+      showWorkflowTrigger={shouldShowWorkflowActions && Boolean(solicitud.processInstanceId)}
       className={className}
     />
   )
