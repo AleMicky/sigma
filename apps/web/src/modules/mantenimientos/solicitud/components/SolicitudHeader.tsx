@@ -1,49 +1,66 @@
-import type { ReactNode } from "react"
+import type * as React from "react"
 import { Link } from "@tanstack/react-router"
-import { Plus, Shield, User } from "lucide-react"
+import { ClipboardList, Plus } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
 import { RefreshButton, type QueryLike } from "@/shared/components/refresh-button"
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 
-import type { RoleScope } from "../hooks/use-solicitud-role-scope"
-
 export interface SolicitudHeaderProps {
-  title?: ReactNode
-  description?: ReactNode
-  isAdmin?: boolean
-  scope?: RoleScope
-  onScopeChange?: (scope: RoleScope) => void
-  queries?: QueryLike | QueryLike[]
-  onRefresh?: () => void
-  isRefreshing?: boolean
-  onCreate?: () => void
+  title?: string
+  description?: string | null
+  icon?: React.ReactNode
+  totalCount?: number
+  countLabel?: string
   createHref?: string
+  onCreate?: () => void
   createLabel?: string
-  children?: ReactNode
+  showCreate?: boolean
+  queries?: QueryLike | QueryLike[]
+  onRefresh?: () => void | Promise<unknown>
+  isRefreshing?: boolean
+  showRefresh?: boolean
+  extraActions?: React.ReactNode
   className?: string
+  children?: React.ReactNode
 }
 
 export function SolicitudHeader({
   title = "Solicitudes de Mantenimiento",
   description = "Gestiona las solicitudes de mantenimiento correctivo y preventivo de activos.",
-  isAdmin = false,
-  scope = "MINE",
-  onScopeChange,
+  icon,
+  totalCount,
+  countLabel = "solicitudes",
+  createHref = routes.mantenimientos.nuevaSolicitud,
+  onCreate,
+  createLabel = "Nueva Solicitud",
+  showCreate = true,
   queries,
   onRefresh,
   isRefreshing,
-  onCreate,
-  createHref = routes.mantenimientos.nuevaSolicitud,
-  createLabel = "Crear Solicitud",
-  children,
+  showRefresh = true,
+  extraActions,
   className,
+  children,
 }: SolicitudHeaderProps) {
-  const renderCreateButton = (isMobile: boolean) => {
-    const commonClasses = isMobile
-      ? "h-7 px-2 text-xs"
-      : "h-8 gap-1.5 px-3 text-xs font-semibold shadow-xs"
+  const defaultIcon = (
+    <div className="flex size-8.5 sm:size-9.5 md:size-10 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs">
+      <ClipboardList className="size-4 sm:size-4.5 md:size-5" />
+    </div>
+  )
+
+  const renderCreateButton = (isMobile = false) => {
+    if (!showCreate) return null
+
+    const buttonContent = (
+      <>
+        <Plus className={cn(isMobile ? "size-3.5" : "size-4")} />
+        <span className={cn(isMobile ? "hidden xs:inline-block sm:inline-block" : "inline-block")}>
+          {createLabel}
+        </span>
+      </>
+    )
 
     if (onCreate) {
       return (
@@ -51,117 +68,104 @@ export function SolicitudHeader({
           size="sm"
           type="button"
           onClick={onCreate}
-          className={commonClasses}
-        >
-          <Plus className="size-3.5" />
-          {isMobile ? (
-            <span className="sr-only sm:not-sr-only">Crear</span>
-          ) : (
-            <span>{createLabel}</span>
+          className={cn(
+            "shrink-0 font-semibold cursor-pointer shadow-xs transition-all active:scale-[0.98]",
+            isMobile ? "h-7.5 px-2 xs:px-2.5 sm:px-3 text-xs gap-1.5" : "h-8.5 gap-2 px-3.5 text-xs",
           )}
+        >
+          {buttonContent}
         </Button>
       )
     }
 
     return (
-      <Button
+      <Link to={createHref}>
+        <Button
+          size="sm"
+          type="button"
+          className={cn(
+            "shrink-0 font-semibold cursor-pointer shadow-xs transition-all active:scale-[0.98]",
+            isMobile ? "h-7.5 px-2 xs:px-2.5 sm:px-3 text-xs gap-1.5" : "h-8.5 gap-2 px-3.5 text-xs",
+          )}
+        >
+          {buttonContent}
+        </Button>
+      </Link>
+    )
+  }
+
+  const renderRefreshButton = (isMobile = false) => {
+    if (!showRefresh) return null
+
+    return (
+      <RefreshButton
         size="sm"
-        type="button"
-        render={<Link to={createHref} />}
-        className={commonClasses}
-      >
-        <Plus className="size-3.5" />
-        {isMobile ? (
-          <span className="sr-only sm:not-sr-only">Crear</span>
-        ) : (
-          <span>{createLabel}</span>
+        queries={queries}
+        onRefresh={onRefresh}
+        isRefreshing={isRefreshing}
+        className={cn(
+          "cursor-pointer shadow-2xs transition-all",
+          isMobile ? "h-7.5 px-2 text-xs" : "h-8.5 gap-1.5 px-2.5 text-xs font-medium",
         )}
-      </Button>
+      />
     )
   }
 
   return (
     <header
       className={cn(
-        "flex shrink-0 flex-col gap-2 border-b py-2.5 sm:gap-3 sm:py-3.5 md:flex-row md:items-center md:justify-between",
+        "flex shrink-0 flex-col gap-2.5 border-b border-border/70 py-2.5 sm:gap-3 sm:py-3.5 md:flex-row md:items-center md:justify-between transition-colors",
         className,
       )}
     >
-      <div className="min-w-0 flex flex-1 flex-col gap-0.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <h1 className="font-heading text-lg font-semibold tracking-tight sm:text-xl md:text-2xl">
-              {title}
-            </h1>
+      <div className="flex min-w-0 flex-1 items-start sm:items-center justify-between gap-2.5 sm:gap-3">
+        {/* Lado izquierdo: Ícono + Título + Descripción + Badge */}
+        <div className="flex min-w-0 flex-1 items-start gap-2.5 sm:gap-3">
+          {icon !== undefined ? icon : defaultIcon}
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="font-heading text-base sm:text-lg md:text-2xl font-bold tracking-tight text-foreground truncate">
+                {title}
+              </h1>
+              {totalCount !== undefined && totalCount >= 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[11px] sm:text-xs font-semibold text-primary shrink-0 transition-all">
+                  <span className="size-1.5 rounded-full bg-primary" />
+                  <span>
+                    {totalCount} {totalCount === 1 ? countLabel.replace(/es$/, "").replace(/s$/, "") : countLabel}
+                  </span>
+                </span>
+              )}
+            </div>
 
-            {isAdmin ? (
-              <div className="inline-flex rounded-lg bg-muted p-0.5 border text-xs">
-                <button
-                  type="button"
-                  onClick={() => onScopeChange?.("ALL")}
-                  className={cn(
-                    "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
-                    scope === "ALL"
-                      ? "bg-amber-500 text-white shadow-xs"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <Shield className="size-3" />
-                  <span>Todas (Admin)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onScopeChange?.("MINE")}
-                  className={cn(
-                    "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
-                    scope === "MINE"
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <User className="size-3" />
-                  <span>Solo Mías</span>
-                </button>
-              </div>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                <User className="size-3" />
-                <span>Mis Solicitudes</span>
-              </span>
+            {description && (
+              <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-2">
+                {description}
+              </p>
             )}
-          </div>
-
-          <div className="flex items-center gap-1 shrink-0 md:hidden">
-            <RefreshButton
-              queries={queries}
-              onRefresh={onRefresh}
-              isRefreshing={isRefreshing}
-              size="sm"
-              className="h-7 px-2"
-            />
-            {renderCreateButton(true)}
-            {children}
           </div>
         </div>
 
-        {description && (
-          <p className="text-xs text-muted-foreground line-clamp-1">
-            {description}
-          </p>
-        )}
+        {/* Acciones en pantallas móviles (< md) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 md:hidden self-center sm:self-auto">
+          {extraActions}
+          {renderRefreshButton(true)}
+          {renderCreateButton(true)}
+        </div>
       </div>
 
-      <div className="hidden shrink-0 md:flex md:items-center md:gap-1.5">
-        <RefreshButton
-          queries={queries}
-          onRefresh={onRefresh}
-          isRefreshing={isRefreshing}
-          size="sm"
-          className="h-8 gap-1.5 px-2.5 text-xs"
-        />
+      {/* Acciones en pantallas medianas y grandes (>= md) */}
+      <div className="hidden shrink-0 md:flex md:items-center md:gap-2">
+        {extraActions}
+        {renderRefreshButton(false)}
         {renderCreateButton(false)}
-        {children}
       </div>
+
+      {/* Contenido adicional / sub-toolbar si se proporciona */}
+      {children && (
+        <div className="w-full shrink-0 pt-1">
+          {children}
+        </div>
+      )}
     </header>
   )
 }
