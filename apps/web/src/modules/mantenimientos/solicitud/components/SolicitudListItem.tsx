@@ -22,6 +22,7 @@ export type SolicitudListItemProps = {
     fields?: WorkflowField[],
   ) => void
   onlyWorkflowActionsOnBorrador?: boolean
+  showWorkflowActions?: boolean
   className?: string
 }
 
@@ -33,6 +34,7 @@ export function SolicitudListItem({
   onTraceability,
   onActionSelect,
   onlyWorkflowActionsOnBorrador = false,
+  showWorkflowActions,
   className,
 }: SolicitudListItemProps) {
   const prioridadNivel = solicitud.prioridad?.nivel ?? 1
@@ -40,11 +42,16 @@ export function SolicitudListItem({
 
   const estadoNorm = (solicitud.estado ?? "").trim().toLowerCase()
   const isBorrador = estadoNorm === "borrador"
-  const shouldShowWorkflowActions = onlyWorkflowActionsOnBorrador ? isBorrador : true
+  const shouldShowWorkflowActions =
+    showWorkflowActions !== undefined
+      ? showWorkflowActions
+      : onlyWorkflowActionsOnBorrador
+        ? isBorrador
+        : true
 
   const { actions, taskName, fields, isLoading: isWorkflowLoading } = useWorkflowActions(
     solicitud.processInstanceId,
-    { enabled: Boolean(solicitud.processInstanceId) },
+    { enabled: Boolean(solicitud.processInstanceId && shouldShowWorkflowActions) },
   )
 
   const solicitanteNombre =
@@ -75,11 +82,11 @@ export function SolicitudListItem({
           : undefined
       }
       actions={shouldShowWorkflowActions ? actions : []}
-      taskName={taskName}
-      fields={fields}
+      taskName={shouldShowWorkflowActions ? taskName : null}
+      fields={shouldShowWorkflowActions ? fields : []}
       isWorkflowLoading={shouldShowWorkflowActions ? isWorkflowLoading : false}
       onActionSelect={
-        onActionSelect
+        onActionSelect && shouldShowWorkflowActions
           ? (action, tName, flds) => onActionSelect(solicitud, action, tName, flds)
           : undefined
       }

@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
 import { AlertCircle, Inbox, Loader2, ShieldCheck } from "lucide-react"
 
-import { routes } from "@/app/config/routes"
 import {
   WorkflowActionDialog,
   WorkflowHistoryDialog,
@@ -27,7 +25,6 @@ import type { SolicitudMantenimiento } from "../types/solicitud.type"
 type EstadoFiltro = "SOLICITADO" | "OBSERVADO" | "ASIGNADO" | "EN_MANTENIMIENTO"
 
 export function AprobacionesPage() {
-  const navigate = useNavigate()
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("SOLICITADO")
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
@@ -160,23 +157,31 @@ export function AprobacionesPage() {
 
         {!query.isLoading && !query.isError && solicitudes.length > 0 && (
           <WorkflowListView>
-            {solicitudes.map((solicitud) => (
-              <SolicitudListItem
-                key={solicitud.id}
-                solicitud={solicitud}
-                onSelect={(sol) => {
-                  navigate({
-                    to: routes.mantenimientos.editarSolicitud(sol.id),
-                  })
-                }}
-                onActionSelect={(sol, action, taskName, fields) => {
-                  openAction(sol, action, taskName, fields)
-                }}
-                onTraceability={(sol) => {
-                  setTraceabilityItem(sol)
-                }}
-              />
-            ))}
+            {solicitudes.map((solicitud) => {
+              const isSolicitado =
+                (solicitud.estado ?? "").trim().toUpperCase() === "SOLICITADO"
+
+              return (
+                <SolicitudListItem
+                  key={solicitud.id}
+                  solicitud={solicitud}
+                  showWorkflowActions={isSolicitado}
+                  onSelect={(sol) => {
+                    setTraceabilityItem(sol)
+                  }}
+                  onActionSelect={
+                    isSolicitado
+                      ? (sol, action, taskName, fields) => {
+                          openAction(sol, action, taskName, fields)
+                        }
+                      : undefined
+                  }
+                  onTraceability={(sol) => {
+                    setTraceabilityItem(sol)
+                  }}
+                />
+              )
+            })}
           </WorkflowListView>
         )}
       </div>
