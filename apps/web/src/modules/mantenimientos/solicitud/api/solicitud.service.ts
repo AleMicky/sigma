@@ -42,8 +42,12 @@ export async function getSolicitudMantenimiento(
  * Obtiene el resumen/conteo de solicitudes agrupadas por estado.
  * Endpoint: GET /api/v1/solicitudes-mantenimiento/resumen
  */
-export async function getSolicitudResumen(): Promise<SolicitudMantenimientoResumen> {
-  return http.get<SolicitudMantenimientoResumen>(SOLICITUD_ENDPOINTS.resumen)
+export async function getSolicitudResumen(
+  interfaz?: string,
+): Promise<SolicitudMantenimientoResumen> {
+  return http.get<SolicitudMantenimientoResumen>(SOLICITUD_ENDPOINTS.resumen, {
+    params: interfaz ? { interfaz } : undefined,
+  })
 }
 
 /**

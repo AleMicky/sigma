@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository;
 
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.SolicitudMantenimientoEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -112,54 +113,35 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
     @Query("""
             select
                 count(s) as total,
-
-                coalesce(sum(
-                    case
-                        when upper(s.estado) = 'BORRADOR'
-                        then 1
-                        else 0
-                    end
-                ), 0) as borradores,
-
-                coalesce(sum(
-                    case
-                        when upper(s.estado) in (
-                            'SOLICITADO',
-                            'OBSERVADO'
-                        )
-                        then 1
-                        else 0
-                    end
-                ), 0) as enRevision,
-
-                coalesce(sum(
-                    case
-                        when upper(s.estado) in (
-                            'ASIGNADO',
-                            'EN_MANTENIMIENTO',
-                            'EN_REVISION',
-                            'OBSERVADO_MANTENIMIENTO',
-                            'VALIDADO'
-                        )
-                        then 1
-                        else 0
-                    end
-                ), 0) as enProceso,
-
-                coalesce(sum(
-                    case
-                        when upper(s.estado) in (
-                            'TRABAJO_REALIZADO',
-                            'FINALIZADO',
-                            'CERRADO'
-                        )
-                        then 1
-                        else 0
-                    end
-                ), 0) as finalizadas
-
+                coalesce(sum(case when upper(s.estado) = 'BORRADOR' then 1 else 0 end), 0) as borradores,
+                coalesce(sum(case when upper(s.estado) in ('SOLICITADO', 'OBSERVADO') then 1 else 0 end), 0) as enRevision,
+                coalesce(sum(case when upper(s.estado) in ('ASIGNADO', 'EN_MANTENIMIENTO', 'EN_REVISION', 'OBSERVADO_MANTENIMIENTO', 'VALIDADO') then 1 else 0 end), 0) as enProceso,
+                coalesce(sum(case when upper(s.estado) in ('TRABAJO_REALIZADO', 'FINALIZADO', 'CERRADO') then 1 else 0 end), 0) as finalizadas,
+                coalesce(sum(case when upper(s.estado) = 'SOLICITADO' then 1 else 0 end), 0) as porAprobar,
+                coalesce(sum(case when upper(s.estado) = 'OBSERVADO' then 1 else 0 end), 0) as observadas,
+                coalesce(sum(case when upper(s.estado) = 'OBSERVADO' then 1 else 0 end), 0) as enObservadas,
+                coalesce(sum(case when upper(s.estado) in ('ASIGNADO', 'EN_MANTENIMIENTO') then 1 else 0 end), 0) as asignadas,
+                coalesce(sum(case when upper(s.estado) in ('EN_REVISION', 'OBSERVADO_MANTENIMIENTO', 'VALIDADO', 'TRABAJO_REALIZADO', 'FINALIZADO', 'CERRADO') then 1 else 0 end), 0) as enProcesoAprobacion,
+                coalesce(sum(case when upper(s.estado) = 'ASIGNADO' then 1 else 0 end), 0) as porIniciar,
+                coalesce(sum(case when upper(s.estado) = 'EN_MANTENIMIENTO' then 1 else 0 end), 0) as enEjecucion,
+                coalesce(sum(case when upper(s.estado) = 'EN_REVISION' then 1 else 0 end), 0) as porRevisar,
+                coalesce(sum(case when upper(s.estado) = 'VALIDADO' then 1 else 0 end), 0) as validadas,
+                coalesce(sum(case when upper(s.estado) in ('TRABAJO_REALIZADO', 'FINALIZADO', 'CERRADO') then 1 else 0 end), 0) as trabajoConcluido
             from SolicitudMantenimientoEntity s
             where (:hasSolicitante = false or s.solicitante.id = :solicitanteId)
+              and (:hasAprobador = false or s.aprobador.id = :aprobadorId)
+              and (:hasSupervisor = false or s.supervisor.id = :supervisorId)
+              and (:hasResponsable = false or s.responsable.id = :responsableId)
             """)
-    com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection obtenerResumen(@Param("hasSolicitante") boolean hasSolicitante, @Param("solicitanteId") UUID solicitanteId);
+    SolicitudMantenimientoResumenProjection obtenerResumen(
+            @Param("hasSolicitante") boolean hasSolicitante, @Param("solicitanteId") UUID solicitanteId,
+            @Param("hasAprobador") boolean hasAprobador, @Param("aprobadorId") UUID aprobadorId,
+            @Param("hasSupervisor") boolean hasSupervisor, @Param("supervisorId") UUID supervisorId,
+            @Param("hasResponsable") boolean hasResponsable, @Param("responsableId") UUID responsableId
+    );
+
+
+
+    
+
 }

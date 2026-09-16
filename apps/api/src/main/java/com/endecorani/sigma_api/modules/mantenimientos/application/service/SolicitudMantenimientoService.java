@@ -12,6 +12,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMan
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoAdjunto;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoTrazabilidad;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoTrazabilidadRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
@@ -81,8 +82,36 @@ public class SolicitudMantenimientoService {
 
     @Transactional(readOnly = true)
     public SolicitudMantenimientoResumenResponse obtenerResumen() {
-        UUID solicitanteId = securityUtils.isAdmin() ? null : obtenerEmpleadoIdActual();
-        return SolicitudMantenimientoResumenResponse.from(repository.obtenerResumen(solicitanteId));
+        return obtenerResumen(null);
+    }
+
+    @Transactional(readOnly = true)
+    public SolicitudMantenimientoResumenResponse obtenerResumen(String interfaz) {
+        UUID solicitanteId = null;
+        UUID responsableId = null;
+        UUID supervisorId = null;
+        UUID aprobadorId = null;
+
+        if (!securityUtils.isAdmin()) {
+            UUID empleadoActual = obtenerEmpleadoIdActual();
+            if (interfaz == null || interfaz.isBlank() || "SolicitudesPage".equalsIgnoreCase(interfaz.trim())) {
+                solicitanteId = empleadoActual;
+            } else if ("AprobacionesPage".equalsIgnoreCase(interfaz.trim())) {
+                aprobadorId = empleadoActual;
+            } else if ("SupervisorMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+                supervisorId = empleadoActual;
+            } else if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+                responsableId = empleadoActual;
+            }
+        }
+
+        SolicitudMantenimientoResumenProjection projection = repository.obtenerResumen(
+                solicitanteId,
+                aprobadorId,
+                supervisorId,
+                responsableId
+        );
+        return SolicitudMantenimientoResumenResponse.from(projection, interfaz);
     }
 
     @Transactional(readOnly = true)
@@ -146,7 +175,7 @@ public class SolicitudMantenimientoService {
             case "BORRADOR", "BORRADORES" -> List.of(
                     ESTADO_BPMN_BORRADOR
             );
-            case "EN_REVISION", "ENREVISION", "REVISION", "REVISIONES" -> List.of(
+            case "ENREVISION", "REVISION", "REVISIONES" -> List.of(
                     ESTADO_BPMN_SOLICITADO,
                     ESTADO_BPMN_OBSERVADO
             );
@@ -168,6 +197,7 @@ public class SolicitudMantenimientoService {
             case "OBSERVADO" -> List.of(ESTADO_BPMN_OBSERVADO);
             case "ASIGNADO" -> List.of(ESTADO_BPMN_ASIGNADO);
             case "EN_MANTENIMIENTO" -> List.of(ESTADO_BPMN_EN_MANTENIMIENTO);
+            case "EN_REVISION" -> List.of(ESTADO_BPMN_EN_REVISION);
             case "OBSERVADO_MANTENIMIENTO" -> List.of(ESTADO_BPMN_OBSERVADO_MANTENIMIENTO);
             case "VALIDADO" -> List.of(ESTADO_BPMN_VALIDADO);
             case "TRABAJO_REALIZADO" -> List.of(ESTADO_BPMN_TRABAJO_REALIZADO);

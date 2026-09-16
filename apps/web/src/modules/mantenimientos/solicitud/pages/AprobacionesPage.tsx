@@ -21,7 +21,7 @@ import {
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
 import { SolicitudListItem } from "../components/SolicitudListItem"
-import { useSolicitudes } from "../hooks/use-solicitudes"
+import { useSolicitudes, useSolicitudResumen } from "../hooks/use-solicitudes"
 import type { SolicitudMantenimiento } from "../types/solicitud.type"
 
 type EstadoFiltro = "SOLICITADO" | "OBSERVADO" | "ASIGNADO" | "EN_MANTENIMIENTO"
@@ -37,11 +37,8 @@ export function AprobacionesPage() {
     useWorkflowActionTarget<SolicitudMantenimiento>()
   const completarWorkflowMutation = useCompletarWorkflowSolicitud()
 
-  // Consulta base para calcular los conteos de las etapas de aprobación
-  const baseQuery = useSolicitudes({
-    interfaz: "AprobacionesPage",
-    size: 200,
-  })
+  // Consulta de resumen y conteos específicos para AprobacionesPage desde el backend
+  const resumenQuery = useSolicitudResumen("AprobacionesPage")
 
   // Consulta filtrada según el estado operativo seleccionado
   const query = useSolicitudes({
@@ -54,17 +51,13 @@ export function AprobacionesPage() {
   const totalElements = query.data?.totalElements ?? 0
 
   const resumen: AprobacionResumen = useMemo(() => {
-    const items = baseQuery.data?.content ?? []
     return {
-      porAprobar: items.filter((s) => (s.estado || "").toUpperCase() === "SOLICITADO").length,
-      observadas: items.filter((s) => (s.estado || "").toUpperCase() === "OBSERVADO").length,
-      asignadas: items.filter((s) => (s.estado || "").toUpperCase() === "ASIGNADO").length,
-      enProceso: items.filter((s) => {
-        const e = (s.estado || "").toUpperCase()
-        return e === "EN_MANTENIMIENTO" || e === "EN_REVISION"
-      }).length,
+      porAprobar: resumenQuery.data?.porAprobar ?? 0,
+      observadas: resumenQuery.data?.observadas ?? resumenQuery.data?.enObservadas ?? 0,
+      asignadas: resumenQuery.data?.asignadas ?? 0,
+      enProceso: resumenQuery.data?.enProceso ?? 0,
     }
-  }, [baseQuery.data])
+  }, [resumenQuery.data])
 
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
@@ -80,19 +73,19 @@ export function AprobacionesPage() {
         totalCount={totalElements}
         countLabel="solicitudes en este estado"
         showCreate={false}
-        queries={[query, baseQuery]}
+        queries={[query, resumenQuery]}
         onRefresh={() => {
           query.refetch()
-          baseQuery.refetch()
+          resumenQuery.refetch()
         }}
-        isRefreshing={query.isRefetching || baseQuery.isRefetching}
+        isRefreshing={query.isRefetching || resumenQuery.isRefetching}
       />
 
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
         {/* Tarjetas de Resumen de Aprobación (4 etapas operativas, sin 'Todas') */}
         <AprobacionResumenCards
           resumen={resumen}
-          isLoading={baseQuery.isLoading}
+          isLoading={resumenQuery.isLoading}
           selectedEstado={selectedEstado}
           onSelectEstado={(estado) => setSelectedEstado(estado as EstadoFiltro)}
         />
@@ -130,7 +123,7 @@ export function AprobacionesPage() {
               size="sm"
               onClick={() => {
                 query.refetch()
-                baseQuery.refetch()
+                resumenQuery.refetch()
               }}
               className="text-xs mt-2 cursor-pointer"
             >

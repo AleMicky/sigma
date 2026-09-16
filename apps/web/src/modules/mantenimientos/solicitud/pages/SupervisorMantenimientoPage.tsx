@@ -21,7 +21,7 @@ import {
   SupervisorResumenCards,
   type SupervisorResumen,
 } from "../components/SupervisorResumenCards"
-import { useSolicitudes } from "../hooks/use-solicitudes"
+import { useSolicitudes, useSolicitudResumen } from "../hooks/use-solicitudes"
 import type { SolicitudMantenimiento } from "../types/solicitud.type"
 
 type EstadoFiltro =
@@ -41,11 +41,8 @@ export function SupervisorMantenimientoPage() {
     useWorkflowActionTarget<SolicitudMantenimiento>()
   const completarWorkflowMutation = useCompletarWorkflowSolicitud()
 
-  // Consulta base para calcular los conteos de las etapas de supervisión
-  const baseQuery = useSolicitudes({
-    interfaz: "SupervisorMantenimientoPage",
-    size: 200,
-  })
+  // Consulta de resumen y conteos para supervisión de mantenimiento
+  const resumenQuery = useSolicitudResumen("SupervisorMantenimientoPage")
 
   // Consulta filtrada según el estado seleccionado
   const query = useSolicitudes({
@@ -58,17 +55,13 @@ export function SupervisorMantenimientoPage() {
   const totalElements = query.data?.totalElements ?? 0
 
   const resumen: SupervisorResumen = useMemo(() => {
-    const items = baseQuery.data?.content ?? []
     return {
-      porRevisar: items.filter((s) => (s.estado || "").toUpperCase() === "EN_REVISION").length,
-      observadas: items.filter((s) => (s.estado || "").toUpperCase() === "OBSERVADO_MANTENIMIENTO").length,
-      validadas: items.filter((s) => (s.estado || "").toUpperCase() === "VALIDADO").length,
-      trabajoConcluido: items.filter((s) => {
-        const e = (s.estado || "").toUpperCase()
-        return e === "TRABAJO_REALIZADO" || e === "FINALIZADO" || e === "CERRADO"
-      }).length,
+      porRevisar: resumenQuery.data?.porRevisar ?? 0,
+      observadas: resumenQuery.data?.observadas ?? 0,
+      validadas: resumenQuery.data?.validadas ?? 0,
+      trabajoConcluido: resumenQuery.data?.trabajoConcluido ?? 0,
     }
-  }, [baseQuery.data])
+  }, [resumenQuery.data])
 
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
@@ -84,19 +77,19 @@ export function SupervisorMantenimientoPage() {
         totalCount={totalElements}
         countLabel="solicitudes en este estado"
         showCreate={false}
-        queries={[query, baseQuery]}
+        queries={[query, resumenQuery]}
         onRefresh={() => {
           query.refetch()
-          baseQuery.refetch()
+          resumenQuery.refetch()
         }}
-        isRefreshing={query.isRefetching || baseQuery.isRefetching}
+        isRefreshing={query.isRefetching || resumenQuery.isRefetching}
       />
 
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
         {/* Tarjetas de Resumen por Estado de Supervisión (4 etapas, sin 'Todas') */}
         <SupervisorResumenCards
           resumen={resumen}
-          isLoading={baseQuery.isLoading}
+          isLoading={resumenQuery.isLoading}
           selectedEstado={selectedEstado}
           onSelectEstado={(estado) => setSelectedEstado(estado as EstadoFiltro)}
         />
@@ -106,14 +99,14 @@ export function SupervisorMantenimientoPage() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           selectedEstado={selectedEstado}
-          placeholder="Buscar por código, título, activo o solicitante..."
+          placeholder="Buscar por folio, título, activo o solicitante..."
         />
 
         {/* Listado de Solicitudes */}
         {query.isLoading && (
           <div className="flex h-64 items-center justify-center gap-2 text-muted-foreground">
             <Loader2 className="size-5 animate-spin text-primary" />
-            <span className="text-sm">Cargando solicitudes a supervisar...</span>
+            <span className="text-sm">Cargando solicitudes para supervisión...</span>
           </div>
         )}
 
@@ -121,7 +114,7 @@ export function SupervisorMantenimientoPage() {
           <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
             <AlertCircle className="size-8 text-destructive" />
             <p className="text-sm font-medium text-destructive">
-              Error al consultar las solicitudes de supervisión
+              Error al consultar las solicitudes para supervisión
             </p>
             <p className="text-xs text-muted-foreground">
               {query.error instanceof Error
@@ -134,7 +127,7 @@ export function SupervisorMantenimientoPage() {
               size="sm"
               onClick={() => {
                 query.refetch()
-                baseQuery.refetch()
+                resumenQuery.refetch()
               }}
               className="text-xs mt-2 cursor-pointer"
             >
@@ -209,7 +202,7 @@ export function SupervisorMantenimientoPage() {
         onSuccess={() => {
           closeAction()
           query.refetch()
-          baseQuery.refetch()
+          resumenQuery.refetch()
         }}
       />
 

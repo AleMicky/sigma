@@ -61,10 +61,16 @@ public class SolicitudMantenimientoRepositoryAdapter implements SolicitudManteni
     }
 
     @Override
-    public SolicitudMantenimientoResumenProjection obtenerResumen(UUID solicitanteId) {
+    public SolicitudMantenimientoResumenProjection obtenerResumen(UUID solicitanteId, UUID aprobadorId, UUID supervisorId, UUID responsableId) {
         return springRepository.obtenerResumen(
             solicitanteId != null, 
-            solicitanteId != null ? solicitanteId : NULL_UUID
+            solicitanteId != null ? solicitanteId : NULL_UUID,
+            aprobadorId != null,
+            aprobadorId != null ? aprobadorId : NULL_UUID,
+            supervisorId != null,
+            supervisorId != null ? supervisorId : NULL_UUID,
+            responsableId != null,
+            responsableId != null ? responsableId : NULL_UUID
         );
     }
 

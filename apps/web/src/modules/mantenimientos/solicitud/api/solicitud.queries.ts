@@ -27,10 +27,10 @@ export const solicitudQueries = {
       enabled: Boolean(id),
     }),
 
-  resumen: () =>
+  resumen: (interfaz?: string) =>
     queryOptions({
-      queryKey: solicitudKeys.resumen(),
-      queryFn: () => getSolicitudResumen(),
+      queryKey: solicitudKeys.resumen(interfaz),
+      queryFn: () => getSolicitudResumen(interfaz),
     }),
 
   trazabilidad: (id: string) =>

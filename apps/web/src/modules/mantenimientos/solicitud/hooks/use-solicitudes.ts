@@ -23,8 +23,8 @@ export function useSolicitudes(filters?: SolicitudMantenimientoFilters) {
 }
 
 /**
- * Hook para consultar el resumen y conteo de solicitudes por estado.
+ * Hook para consultar el resumen y conteo de solicitudes por estado (opcionalmente por interfaz/rol).
  */
-export function useSolicitudResumen() {
-  return useQuery(solicitudQueries.resumen())
+export function useSolicitudResumen(interfaz?: string) {
+  return useQuery(solicitudQueries.resumen(interfaz))
 }

@@ -74,6 +74,18 @@ export type SolicitudMantenimientoResumen = {
   enRevision: number
   enProceso: number
   finalizadas: number
+  // AprobacionesPage
+  porAprobar?: number
+  observadas?: number
+  enObservadas?: number
+  asignadas?: number
+  // EncargadoMantenimientoPage
+  porIniciar?: number
+  enEjecucion?: number
+  // SupervisorMantenimientoPage
+  porRevisar?: number
+  validadas?: number
+  trabajoConcluido?: number
 }
 
 export type SolicitudMantenimientoTrazabilidad = {
