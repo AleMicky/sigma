@@ -152,7 +152,7 @@ export function SolicitudClasificacionSection() {
                 aria-invalid={isInvalid}
                 onlyMisEmpleados={true}
                 placeholder="Buscar solicitante por nombre, código o cargo..."
-                className="h-9.5 text-xs sm:text-sm"
+                className="w-full text-xs sm:text-sm"
               />
 
               {isInvalid && (
@@ -164,7 +164,7 @@ export function SolicitudClasificacionSection() {
       </form.Field>
 
       {/* Tipo de Falla y Nivel de Prioridad */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-0.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-0.5 items-start">
         <form.Field name="tipoFallas">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {(field: any) => {

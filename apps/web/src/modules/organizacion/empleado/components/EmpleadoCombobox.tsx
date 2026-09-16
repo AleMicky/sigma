@@ -125,9 +125,9 @@ export function EmpleadoCombobox({
     return (
       <div
         className={cn(
-          "flex items-center justify-between gap-2 rounded-xl border border-border/80 bg-background/95 px-2.5 py-1.5 min-h-8.5 shadow-2xs hover:border-primary/40 transition-all",
+          "flex items-center justify-between gap-2 rounded-xl border border-border/80 bg-background/95 px-2.5 py-1.5 min-h-9 shadow-2xs hover:border-primary/40 transition-all",
           ariaInvalid && "border-destructive ring-1 ring-destructive/20",
-          className,
+          className?.replace(/\bh-\S+/g, ""),
         )}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">

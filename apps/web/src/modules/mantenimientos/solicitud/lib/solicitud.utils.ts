@@ -1,4 +1,4 @@
-import type { Activo } from "@/modules/activos/activo/types/activo.types"
+import type { Activo } from "@/modules/activos/activo/api/activo.service"
 
 /**
  * Extrae la placa de circulación desde la descripción o texto de un activo.
@@ -112,6 +112,14 @@ export function getPrioridadColorConfig(nivel = 1): PrioridadColorConfig {
       }
   }
 }
+
+/**
+ * Retorna las clases de estilo del badge según el nivel de prioridad (1 a 5).
+ */
+export function getPrioridadBadgeStyles(nivel = 1): string {
+  return getPrioridadColorConfig(nivel).badgeClass
+}
+
 
 /**
  * Retorna las clases de estilo para las etiquetas interactivas de Tipo de Mantenimiento.

@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
+import { workflowKeys, type CompleteWorkflowTaskPayload } from "@/modules/workflow"
 import { getErrorMessage } from "@/shared/api"
 import { solicitudKeys } from "./solicitud.keys"
 import {
+  completarWorkflowSolicitud,
   createSolicitud,
   deleteSolicitud,
   updateSolicitud,
@@ -114,3 +116,35 @@ export function useDeleteSolicitud() {
     },
   })
 }
+
+export type CompletarWorkflowSolicitudVariables = {
+  id: string
+  payload: CompleteWorkflowTaskPayload
+}
+
+/**
+ * Mutation hook para completar una tarea de workflow sobre una solicitud de mantenimiento.
+ */
+export function useCompletarWorkflowSolicitud() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, payload }: CompletarWorkflowSolicitudVariables) =>
+      completarWorkflowSolicitud(id, payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
+      toast.success(
+        data.numero
+          ? `Acción completada para solicitud ${data.numero}`
+          : "Acción de workflow completada correctamente",
+      )
+    },
+    onError: (err) => {
+      toast.error(
+        getErrorMessage(err) || "Error al completar la acción de workflow de la solicitud",
+      )
+    },
+  })
+}
+

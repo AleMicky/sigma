@@ -1,3 +1,4 @@
+import type { CompleteWorkflowTaskPayload } from "@/modules/workflow"
 import { http } from "@/shared/api"
 import type { PageResponse } from "@/shared/types/api.types"
 
@@ -10,6 +11,7 @@ import type {
 } from "../types/solicitud.type"
 
 export * from "../types/solicitud.type"
+
 
 /**
  * Obtiene el listado paginado de solicitudes de mantenimiento con filtros opcionales.
@@ -111,7 +113,22 @@ export async function deleteSolicitud(id: string): Promise<void> {
   return http.delete<void>(SOLICITUD_ENDPOINTS.detail(id))
 }
 
+/**
+ * Completa la tarea actual de workflow para la solicitud de mantenimiento.
+ * Endpoint: POST /api/v1/solicitudes-mantenimiento/{id}/workflow/complete
+ */
+export async function completarWorkflowSolicitud(
+  id: string,
+  payload: CompleteWorkflowTaskPayload,
+): Promise<SolicitudMantenimiento> {
+  return http.post<SolicitudMantenimiento>(
+    SOLICITUD_ENDPOINTS.workflowComplete(id),
+    payload,
+  )
+}
+
 // Aliases para conveniencia y compatibilidad
 export const listSolicitudes = getSolicitudesMantenimiento
 export const getSolicitudes = getSolicitudesMantenimiento
 export const getSolicitud = getSolicitudMantenimiento
+

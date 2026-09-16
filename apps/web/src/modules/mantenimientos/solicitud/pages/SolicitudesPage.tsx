@@ -1,25 +1,34 @@
 import { useState } from "react"
-import {
-  AlertCircle,
-  Calendar,
-  FileText,
-  Loader2,
-  User,
-  Wrench,
-} from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
+import { AlertCircle, FileText, Loader2 } from "lucide-react"
 
+import { routes } from "@/app/config/routes"
+import {
+  WorkflowActionDialog,
+  WorkflowHistoryDialog,
+  WorkflowListView,
+  useWorkflowActionTarget,
+} from "@/modules/workflow"
 import { PageShell } from "@/shared/components/page-shell"
-import { Badge } from "@/shared/components/ui/badge"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
+import { useCompletarWorkflowSolicitud } from "../api/solicitud.mutations"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
+import { SolicitudListItem } from "../components/SolicitudListItem"
 import { SolicitudResumenCards } from "../components/SolicitudResumenCards"
 import { useSolicitudes, useSolicitudResumen } from "../hooks/use-solicitudes"
+import type { SolicitudMantenimiento } from "../types/solicitud.type"
 
 export function SolicitudesPage() {
+  const navigate = useNavigate()
   const [selectedEstado, setSelectedEstado] = useState<string>("")
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
+
+  const { target, isOpen, openAction, closeAction } =
+    useWorkflowActionTarget<SolicitudMantenimiento>()
+  const completarWorkflowMutation = useCompletarWorkflowSolicitud()
 
   const query = useSolicitudes({
     interfaz: "SolicitudesPage",
@@ -38,6 +47,7 @@ export function SolicitudesPage() {
     }
     setSelectedEstado((prev) => (prev === estado ? "" : estado))
   }
+
 
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
@@ -116,72 +126,62 @@ export function SolicitudesPage() {
         )}
 
         {!query.isLoading && !query.isError && solicitudes.length > 0 && (
-          <div className="divide-y divide-border/60 rounded-xl border border-border/80 bg-card shadow-2xs">
+          <WorkflowListView>
             {solicitudes.map((solicitud) => (
-              <div
+              <SolicitudListItem
                 key={solicitud.id}
-                className="flex flex-col gap-2 p-4 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="rounded bg-muted px-2 py-0.5 font-mono text-xs font-bold text-foreground">
-                      {solicitud.numero}
-                    </span>
-                    <h2 className="truncate text-sm font-semibold text-foreground">
-                      {solicitud.titulo}
-                    </h2>
-                    <Badge variant="outline" className="text-[11px] capitalize">
-                      {solicitud.estado}
-                    </Badge>
-                  </div>
-
-                  <p className="line-clamp-1 text-xs text-muted-foreground">
-                    {solicitud.descripcion}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-[11px] text-muted-foreground">
-                    {solicitud.activo && (
-                      <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
-                        <Wrench className="size-3 text-muted-foreground" />
-                        {solicitud.activo.codigo} - {solicitud.activo.nombre}
-                      </span>
-                    )}
-
-                    {solicitud.solicitante && (
-                      <span className="inline-flex items-center gap-1">
-                        <User className="size-3" />
-                        {solicitud.solicitante.nombreCompleto || solicitud.solicitante.nombre}
-                      </span>
-                    )}
-
-                    {solicitud.fechaSolicitud && (
-                      <span className="inline-flex items-center gap-1">
-                        <Calendar className="size-3" />
-                        {new Date(solicitud.fechaSolicitud).toLocaleDateString()}
-                      </span>
-                    )}
-
-                    {solicitud.prioridad && (
-                      <span>
-                        Prioridad:{" "}
-                        <strong className="font-semibold text-foreground">
-                          {solicitud.prioridad.nombre}
-                        </strong>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="shrink-0 text-right sm:self-center">
-                  <span className="text-xs text-muted-foreground">
-                    {solicitud.tipoMantenimiento?.nombre ?? "Mantenimiento"}
-                  </span>
-                </div>
-              </div>
+                solicitud={solicitud}
+                onSelect={(sol) => {
+                  navigate({
+                    to: routes.mantenimientos.editarSolicitud(sol.id),
+                  })
+                }}
+                onActionSelect={(sol, action, taskName, fields) => {
+                  openAction(sol, action, taskName, fields)
+                }}
+                onTraceability={(sol) => {
+                  setTraceabilityItem(sol)
+                }}
+              />
             ))}
-          </div>
+          </WorkflowListView>
         )}
       </div>
+
+      {/* Diálogo para completar acciones de workflow de forma interactiva */}
+      <WorkflowActionDialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) closeAction()
+        }}
+        action={target?.action ?? null}
+        taskName={target?.taskName}
+        fields={target?.fields}
+        entityId={target?.item.id}
+        onExecute={async ({ variables }) => {
+          if (!target) return
+          await completarWorkflowMutation.mutateAsync({
+            id: target.item.id,
+            payload: { variables },
+          })
+        }}
+        onSuccess={() => {
+          closeAction()
+          query.refetch()
+          resumenQuery.refetch()
+        }}
+      />
+
+      {/* Diálogo para consultar trazabilidad e historial de tareas */}
+      <WorkflowHistoryDialog
+        open={Boolean(traceabilityItem)}
+        onOpenChange={(open) => {
+          if (!open) setTraceabilityItem(null)
+        }}
+        processInstanceId={traceabilityItem?.processInstanceId}
+        entityCode={traceabilityItem?.numero}
+        title="Trazabilidad de Solicitud de Mantenimiento"
+      />
     </PageShell>
   )
 }

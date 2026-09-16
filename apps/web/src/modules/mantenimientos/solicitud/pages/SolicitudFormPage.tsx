@@ -51,8 +51,8 @@ function SolicitudFormContent() {
   }
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none overflow-y-auto px-4 py-4 sm:px-6 md:px-8">
-      <div className="w-full space-y-6 pb-12">
+    <PageShell className="h-full min-h-0 w-full overflow-y-auto px-3 py-3 sm:px-6 sm:py-5 md:px-8">
+      <div className="w-full max-w-5xl mx-auto space-y-6 pb-12">
         {/* Encabezado */}
         <SolicitudFormHeader />
 

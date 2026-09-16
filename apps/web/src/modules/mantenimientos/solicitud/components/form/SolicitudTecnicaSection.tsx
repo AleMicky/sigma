@@ -37,7 +37,7 @@ export function SolicitudTecnicaSection() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-start">
         {/* Activo / Ubicación */}
         <form.Field name="activoId">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -62,7 +62,7 @@ export function SolicitudTecnicaSection() {
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
                   placeholder="Buscar activo por código, nombre, ubicación o placa..."
-                  className="h-9.5 text-xs sm:text-sm"
+                  className="w-full text-xs sm:text-sm"
                 />
 
                 {isInvalid && (

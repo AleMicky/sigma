@@ -128,7 +128,7 @@ export function SolicitudResumenCard() {
                   <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
                     Solicitante:
                   </span>
-                  <span className="font-medium text-foreground">
+                  <span className="font-medium text-foreground truncate">
                     {selectedEmpleado
                       ? getEmpleadoNombre(selectedEmpleado)
                       : "—"}

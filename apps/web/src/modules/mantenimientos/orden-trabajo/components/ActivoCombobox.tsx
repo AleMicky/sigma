@@ -104,29 +104,29 @@ export function ActivoCombobox({
     return (
       <div
         className={cn(
-          "flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/20 p-2.5 shadow-2xs hover:border-primary/40 hover:bg-muted/30 transition-all",
+          "flex items-center justify-between gap-2.5 sm:gap-3 rounded-xl border border-border/80 bg-muted/20 p-2 sm:p-2.5 shadow-2xs hover:border-primary/40 hover:bg-muted/30 transition-all min-h-12",
           ariaInvalid && "border-destructive ring-1 ring-destructive/20",
-          className,
+          className?.replace(/\bh-\S+/g, ""),
         )}
       >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
           {/* Foto / Miniatura */}
-          <div className="relative size-11 shrink-0 overflow-hidden rounded-lg border border-border bg-background flex items-center justify-center shadow-xs">
+          <div className="relative size-9 sm:size-10 shrink-0 overflow-hidden rounded-lg border border-border bg-background flex items-center justify-center shadow-xs">
             {selectedActivo.urlImagen ? (
               <AuthenticatedImage
                 src={selectedActivo.urlImagen}
                 alt={selectedActivo.nombre}
                 className="size-full object-cover"
-                fallback={<Box className="size-5 text-muted-foreground/60" />}
+                fallback={<Box className="size-4.5 text-muted-foreground/60" />}
               />
             ) : (
-              <Box className="size-5 text-muted-foreground/60" />
+              <Box className="size-4.5 text-muted-foreground/60" />
             )}
           </div>
 
           {/* Datos del Activo */}
           <div className="min-w-0 flex-1 space-y-0.5">
-            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
               <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
                 {selectedActivo.codigo}
               </code>
@@ -163,12 +163,12 @@ export function ActivoCombobox({
           <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
+            size="icon-xs"
             onClick={() => onValueChange?.("", null)}
-            className="size-8 text-muted-foreground hover:text-destructive shrink-0 cursor-pointer"
+            className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg shrink-0 cursor-pointer transition-colors"
             title="Cambiar activo seleccionado"
           >
-            <X className="size-4" />
+            <X className="size-3.5" />
             <span className="sr-only">Remover</span>
           </Button>
         )}
