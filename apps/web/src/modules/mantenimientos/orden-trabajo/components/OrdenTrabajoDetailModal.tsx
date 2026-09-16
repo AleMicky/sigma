@@ -185,7 +185,7 @@ export function OrdenTrabajoDetailModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl">
+        <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl">
           {isInitialLoading ? (
             <div className="flex flex-col items-center justify-center p-12 gap-2.5 text-muted-foreground">
               <Loader2 className="size-6 animate-spin text-sky-600" />
@@ -224,8 +224,8 @@ export function OrdenTrabajoDetailModal({
           ) : (
             <>
               {/* Header */}
-              <DialogHeader className="px-4 py-2.5 sm:px-4.5 sm:py-2.5 border-b shrink-0 bg-muted/20">
-                <div className="flex items-start justify-between gap-2.5">
+              <DialogHeader className="px-5 py-3 border-b shrink-0 bg-muted/20">
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5 min-w-0">
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
                       <Wrench className="size-4" />
@@ -313,7 +313,7 @@ export function OrdenTrabajoDetailModal({
                 onValueChange={setActiveTab}
                 className="flex-1 min-h-0 flex flex-col overflow-hidden"
               >
-                <div className="px-4 pt-1.5 border-b shrink-0 bg-background">
+                <div className="px-5 pt-1.5 border-b shrink-0 bg-background">
                   <TabsList className="h-7 bg-muted/60 p-0.5 rounded-lg">
                     <TabsTrigger
                       value="actividades"
@@ -348,7 +348,7 @@ export function OrdenTrabajoDetailModal({
                 {/* TAB 1: ACTIVIDADES & TAREAS */}
                 <TabsContent
                   value="actividades"
-                  className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 m-0"
+                  className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2.5 m-0"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -439,21 +439,21 @@ export function OrdenTrabajoDetailModal({
                 {/* TAB 2: INFORMACIÓN GENERAL & DIAGNÓSTICO */}
                 <TabsContent
                   value="general"
-                  className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 m-0"
+                  className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 m-0"
                 >
                   {/* Fechas & Activo */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div className="rounded-lg border p-2 bg-card/60 space-y-0.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="rounded-lg border p-2.5 bg-card/60 space-y-0.5">
                       <p className="text-[9.5px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                         <Box className="size-2.5 text-sky-500" />
                         <span>Activo</span>
                       </p>
                       <p className="text-xs font-semibold text-foreground truncate" title={`${currentOT.activo?.codigo} - ${currentOT.activo?.nombre}`}>
-                        {currentOT.activo?.codigo}
+                        {currentOT.activo?.codigo} - {currentOT.activo?.nombre}
                       </p>
                     </div>
 
-                    <div className="rounded-lg border p-2 bg-card/60 space-y-0.5">
+                    <div className="rounded-lg border p-2.5 bg-card/60 space-y-0.5">
                       <p className="text-[9.5px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                         <User className="size-2.5 text-emerald-500" />
                         <span>Responsable</span>
@@ -463,33 +463,33 @@ export function OrdenTrabajoDetailModal({
                       </p>
                     </div>
 
-                    <div className="rounded-lg border p-2 bg-card/60 space-y-0.5">
+                    <div className="rounded-lg border p-2.5 bg-card/60 space-y-0.5">
                       <p className="text-[9.5px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                         <Calendar className="size-2.5 text-amber-500" />
                         <span>Inicio</span>
                       </p>
                       <p className="text-xs font-medium text-foreground truncate">
                         {currentOT.fechaInicio
-                          ? new Date(currentOT.fechaInicio).toLocaleDateString()
+                          ? new Date(currentOT.fechaInicio).toLocaleString()
                           : "Pendiente"}
                       </p>
                     </div>
 
-                    <div className="rounded-lg border p-2 bg-card/60 space-y-0.5">
+                    <div className="rounded-lg border p-2.5 bg-card/60 space-y-0.5">
                       <p className="text-[9.5px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                         <Calendar className="size-2.5 text-blue-500" />
                         <span>Fin</span>
                       </p>
                       <p className="text-xs font-medium text-foreground truncate">
                         {currentOT.fechaFin
-                          ? new Date(currentOT.fechaFin).toLocaleDateString()
+                          ? new Date(currentOT.fechaFin).toLocaleString()
                           : "En curso"}
                       </p>
                     </div>
                   </div>
 
                   {/* Diagnóstico */}
-                  <div className="rounded-lg border p-2.5 bg-card/60 space-y-0.5">
+                  <div className="rounded-lg border p-3 bg-card/60 space-y-1">
                     <p className="text-[10.5px] font-bold text-foreground flex items-center gap-1">
                       <AlertCircle className="size-3 text-amber-500" />
                       <span>Diagnóstico Técnico</span>
@@ -500,7 +500,7 @@ export function OrdenTrabajoDetailModal({
                   </div>
 
                   {/* Trabajo Realizado */}
-                  <div className="rounded-lg border p-2.5 bg-card/60 space-y-0.5">
+                  <div className="rounded-lg border p-3 bg-card/60 space-y-1">
                     <p className="text-[10.5px] font-bold text-foreground flex items-center gap-1">
                       <FileCheck2 className="size-3 text-emerald-500" />
                       <span>Trabajo Realizado / Procedimiento</span>
@@ -511,7 +511,7 @@ export function OrdenTrabajoDetailModal({
                   </div>
 
                   {/* Observaciones */}
-                  <div className="rounded-lg border p-2.5 bg-card/60 space-y-0.5">
+                  <div className="rounded-lg border p-3 bg-card/60 space-y-1">
                     <p className="text-[10.5px] font-bold text-foreground flex items-center gap-1">
                       <FileText className="size-3 text-sky-500" />
                       <span>Observaciones y Recomendaciones</span>
@@ -525,7 +525,7 @@ export function OrdenTrabajoDetailModal({
                 {/* TAB 3: ADJUNTOS GENERALES */}
                 <TabsContent
                   value="adjuntos"
-                  className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 m-0"
+                  className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2.5 m-0"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -577,7 +577,7 @@ export function OrdenTrabajoDetailModal({
                       )}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                       {adjuntos.map((adj) => (
                         <div
                           key={adj.id}

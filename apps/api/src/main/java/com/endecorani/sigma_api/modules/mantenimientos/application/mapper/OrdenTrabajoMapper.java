@@ -38,6 +38,7 @@ public interface OrdenTrabajoMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ordenTrabajoId", ignore = true)
+    @Mapping(target = "evidencias", ignore = true)
     void updateActividadFromRequest(OrdenTrabajoActividadRequest dto, @MappingTarget OrdenTrabajoActividad domain);
 
     OrdenTrabajoActividadResponse toActividadResponse(OrdenTrabajoActividad domain);
