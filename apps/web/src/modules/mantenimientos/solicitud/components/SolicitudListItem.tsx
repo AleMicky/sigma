@@ -1,5 +1,6 @@
 import { useMemo } from "react"
 import {
+  AlertTriangle,
   Calendar,
   ClipboardCheck,
   Eye,
@@ -130,6 +131,16 @@ export function SolicitudListItem({
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-1.5 py-0.5 text-[10.5px] font-medium text-foreground/80 border border-border/70 shrink-0 shadow-2xs">
               <Tag className="size-2.5 opacity-60 shrink-0" />
               <span>{solicitud.tipoMantenimiento.nombre}</span>
+            </span>
+          )}
+
+          {estadoNorm === "asignado" && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10.5px] font-semibold text-amber-700 dark:text-amber-300 border border-amber-500/20 shrink-0 shadow-2xs"
+              title="Requiere registrar Acta de Entrega y Orden de Trabajo para iniciar"
+            >
+              <AlertTriangle className="size-2.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>Requiere Entrega y OT</span>
             </span>
           )}
 

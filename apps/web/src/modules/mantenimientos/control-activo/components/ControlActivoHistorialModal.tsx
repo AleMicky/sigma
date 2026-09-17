@@ -37,6 +37,7 @@ import {
 import { cn } from "@/shared/lib/utils"
 import { formatDate } from "@/shared/utils/date.utils"
 
+import { solicitudQueries } from "@/modules/mantenimientos/solicitud/api/solicitud.queries"
 import { useDeleteControlActivo } from "../api/control-activo.mutations"
 import { controlActivoQueries } from "../api/control-activo.queries"
 import {
@@ -404,6 +405,21 @@ export function ControlActivoHistorialModal({
   const [controlToDelete, setControlToDelete] = useState<ControlActivo | null>(null)
   const deleteMutation = useDeleteControlActivo()
 
+  const solicitudQuery = useQuery({
+    ...solicitudQueries.detail(solicitudId ?? ""),
+    enabled: Boolean(solicitudId && open),
+  })
+  const estadoSolicitudNorm = (solicitudQuery.data?.estado ?? "").toUpperCase().trim()
+
+  const isEffectiveReadOnly =
+    readOnly ||
+    estadoSolicitudNorm === "EN_REVISION" ||
+    estadoSolicitudNorm === "VALIDADO" ||
+    estadoSolicitudNorm === "TRABAJO_REALIZADO" ||
+    estadoSolicitudNorm === "FINALIZADO" ||
+    estadoSolicitudNorm === "CANCELADO" ||
+    estadoSolicitudNorm === "RECHAZADO"
+
   const allAccesoriosQuery = useQuery({
     ...accesorioQueries.list({ size: 1000 }),
     enabled: open,
@@ -418,16 +434,11 @@ export function ControlActivoHistorialModal({
   }, [allAccesoriosQuery.data])
 
   const controlesQuery = useQuery({
-    ...controlActivoQueries.list({
-      solicitudMantenimientoId: solicitudId ?? undefined,
-      size: 50,
-      sortBy: "fecha",
-      direction: "DESC",
-    }),
+    ...controlActivoQueries.bySolicitud(solicitudId),
     enabled: open && Boolean(solicitudId),
   })
 
-  const allControles = (controlesQuery.data?.content ?? []) as ControlActivo[]
+  const allControles = (controlesQuery.data ?? []) as ControlActivo[]
 
   const entregasCount = useMemo(
     () => allControles.filter((c) => c.tipo === "ENTREGA").length,
@@ -472,7 +483,7 @@ export function ControlActivoHistorialModal({
                   Esta solicitud no tiene un control de activo asociado aún.
                 </p>
               </div>
-              {solicitudId && !readOnly && (
+              {solicitudId && !isEffectiveReadOnly && (
                 <Button
                   type="button"
                   size="sm"
@@ -521,7 +532,7 @@ export function ControlActivoHistorialModal({
                     </div>
                   </div>
 
-                  {solicitudId && !readOnly && (
+                  {solicitudId && !isEffectiveReadOnly && (
                     <div className="flex items-center gap-1.5 shrink-0">
                       {/* Solo mostrar botón de Devolución si aún no se ha creado una Devolución */}
                       {(allowedTipo === "ALL" || allowedTipo === "DEVOLUCION") && devolucionesCount === 0 && (
@@ -617,7 +628,7 @@ export function ControlActivoHistorialModal({
                     key={control.id}
                     control={control}
                     readOnly={
-                      readOnly || (allowedTipo !== "ALL" && control.tipo !== allowedTipo)
+                      isEffectiveReadOnly || (allowedTipo !== "ALL" && control.tipo !== allowedTipo)
                     }
                     defaultExpanded={idx === 0}
                     accesorioMap={accesorioMap}

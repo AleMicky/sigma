@@ -1,8 +1,10 @@
 import { useCallback, useMemo, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { AlertCircle, Inbox, RefreshCw, Wrench } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
+import { toast } from "sonner"
 import { EmptyState } from "@/shared/components/empty-state"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
@@ -12,17 +14,22 @@ import {
   WorkflowHistoryDialog,
   WorkflowListView,
   useWorkflowActionTarget,
+  type WorkflowAction,
+  type WorkflowField,
 } from "@/modules/workflow"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
+import { controlActivoQueries } from "../../control-activo/api/control-activo.queries"
 import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
+import { ordenTrabajoQueries } from "../../orden-trabajo/api/orden-trabajo.queries"
 import { OrdenTrabajoDetailModal } from "../../orden-trabajo/components/OrdenTrabajoDetailModal"
 import { useCompletarWorkflowSolicitud } from "../api/solicitud.mutations"
 import {
   EncargadoResumenCards,
   type EncargadoResumen,
 } from "../components/EncargadoResumenCards"
+import { RequisitosInicioMantenimientoDialog } from "../components/RequisitosInicioMantenimientoDialog"
 import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
@@ -34,11 +41,18 @@ type EstadoFiltro = "ASIGNADO" | "EN_MANTENIMIENTO" | "EN_REVISION" | "FINALIZAD
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function EncargadoMantenimientoPage() {
+  const queryClient = useQueryClient()
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("ASIGNADO")
   const [detailItem, setDetailItem] = useState<SolicitudMantenimiento | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
   const [ordenTrabajoItem, setOrdenTrabajoItem] = useState<SolicitudMantenimiento | null>(null)
+  const [requisitosItem, setRequisitosItem] = useState<{
+    solicitud: SolicitudMantenimiento
+    action: WorkflowAction
+    taskName?: string
+    fields?: WorkflowField[]
+  } | null>(null)
 
   const search = usePaginatedSearch({
     debounceMs: 300,
@@ -83,6 +97,68 @@ export function EncargadoMantenimientoPage() {
   const handleSelectEstado = useCallback((estado: string) => {
     setSelectedEstado(estado as EstadoFiltro)
   }, [])
+
+  const handleActionSelect = useCallback(
+    async (
+      solicitud: SolicitudMantenimiento,
+      action: WorkflowAction,
+      taskName?: string,
+      fields?: WorkflowField[],
+    ) => {
+      const estadoNorm = (solicitud.estado ?? "").trim().toUpperCase()
+
+      // Si la solicitud está en revisión o finalizada, el encargado solo puede consultar
+      if (
+        estadoNorm === "EN_REVISION" ||
+        estadoNorm === "VALIDADO" ||
+        estadoNorm === "FINALIZADO" ||
+        estadoNorm === "CANCELADO" ||
+        estadoNorm === "RECHAZADO"
+      ) {
+        toast.info(
+          "Esta solicitud se encuentra en revisión. No es posible cambiar de estado en esta fase.",
+        )
+        return
+      }
+
+      // En estado ASIGNADO (o iniciando intervención técnica), validar requisitos obligatorios
+      if (estadoNorm === "ASIGNADO") {
+        try {
+          const controles = await queryClient.fetchQuery(
+            controlActivoQueries.bySolicitud(solicitud.id),
+          )
+          const ot = await queryClient.fetchQuery(
+            ordenTrabajoQueries.bySolicitud(solicitud.id),
+          )
+
+          const hasEntrega = (controles ?? []).some((c) => c.tipo === "ENTREGA")
+          const hasOT = Boolean(ot?.id)
+
+          if (!hasEntrega || !hasOT) {
+            setRequisitosItem({
+              solicitud,
+              action,
+              taskName,
+              fields,
+            })
+            return
+          }
+        } catch {
+          // Si ocurre algún fallo al consultar, abrir el modal de requisitos para inspección
+          setRequisitosItem({
+            solicitud,
+            action,
+            taskName,
+            fields,
+          })
+          return
+        }
+      }
+
+      openAction(solicitud, action, taskName, fields)
+    },
+    [openAction, queryClient],
+  )
 
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-2.5 py-0 sm:px-4 md:px-5 lg:px-6 md:py-0">
@@ -188,18 +264,31 @@ export function EncargadoMantenimientoPage() {
                 )}
               >
                 <WorkflowListView>
-                  {solicitudes.map((solicitud) => (
-                    <SolicitudListItem
-                      key={solicitud.id}
-                      solicitud={solicitud}
-                      onViewDetail={setDetailItem}
-                      onSelect={setDetailItem}
-                      onRegistrarControlActivo={setControlActivoItem}
-                      onGestionarOrdenTrabajo={setOrdenTrabajoItem}
-                      onActionSelect={openAction}
-                      onTraceability={setTraceabilityItem}
-                    />
-                  ))}
+                  {solicitudes.map((solicitud) => {
+                    const estadoNorm = (solicitud.estado ?? "").trim().toUpperCase()
+                    const isReadOnlyFlow =
+                      selectedEstado === "EN_REVISION" ||
+                      selectedEstado === "FINALIZADO" ||
+                      estadoNorm === "EN_REVISION" ||
+                      estadoNorm === "VALIDADO" ||
+                      estadoNorm === "FINALIZADO" ||
+                      estadoNorm === "CANCELADO" ||
+                      estadoNorm === "RECHAZADO"
+
+                    return (
+                      <SolicitudListItem
+                        key={solicitud.id}
+                        solicitud={solicitud}
+                        showWorkflowActions={!isReadOnlyFlow}
+                        onViewDetail={setDetailItem}
+                        onSelect={setDetailItem}
+                        onRegistrarControlActivo={setControlActivoItem}
+                        onGestionarOrdenTrabajo={setOrdenTrabajoItem}
+                        onActionSelect={handleActionSelect}
+                        onTraceability={setTraceabilityItem}
+                      />
+                    )
+                  })}
                 </WorkflowListView>
               </div>
 
@@ -226,6 +315,25 @@ export function EncargadoMantenimientoPage() {
         onTraceability={setTraceabilityItem}
         onControlActivo={setControlActivoItem}
         onGestionarOrdenTrabajo={setOrdenTrabajoItem}
+      />
+
+      {/* Modal de Requisitos Obligatorios Previos para Iniciar Mantenimiento */}
+      <RequisitosInicioMantenimientoDialog
+        open={Boolean(requisitosItem)}
+        onOpenChange={(open) => {
+          if (!open) setRequisitosItem(null)
+        }}
+        solicitud={requisitosItem?.solicitud ?? null}
+        actionName={requisitosItem?.action.name ?? "Iniciar Mantenimiento"}
+        onRegistrarEntrega={(sol) => setControlActivoItem(sol)}
+        onGestionarOT={(sol) => setOrdenTrabajoItem(sol)}
+        onProceedWithAction={() => {
+          if (requisitosItem) {
+            const { action, solicitud, taskName, fields } = requisitosItem
+            setRequisitosItem(null)
+            openAction(solicitud, action, taskName, fields)
+          }
+        }}
       />
 
       {/* Diálogo interactivo para completar tareas de workflow (Iniciar Mantenimiento, etc.) */}
@@ -268,6 +376,14 @@ export function EncargadoMantenimientoPage() {
         solicitudId={controlActivoItem?.id}
         solicitudNumero={controlActivoItem?.numero}
         allowedTipo="ENTREGA"
+        readOnly={
+          selectedEstado === "EN_REVISION" ||
+          selectedEstado === "FINALIZADO" ||
+          controlActivoItem?.estado === "EN_REVISION" ||
+          controlActivoItem?.estado === "VALIDADO" ||
+          controlActivoItem?.estado === "TRABAJO_REALIZADO" ||
+          controlActivoItem?.estado === "FINALIZADO"
+        }
       />
 
       {/* Diálogo para visualizar el detalle completo de la orden de trabajo, checklist y evidencias */}
@@ -278,6 +394,22 @@ export function EncargadoMantenimientoPage() {
         }}
         solicitudId={ordenTrabajoItem?.id}
         solicitudNumero={ordenTrabajoItem?.numero}
+        readOnly={
+          selectedEstado === "EN_REVISION" ||
+          selectedEstado === "FINALIZADO" ||
+          ordenTrabajoItem?.estado === "EN_REVISION" ||
+          ordenTrabajoItem?.estado === "VALIDADO" ||
+          ordenTrabajoItem?.estado === "TRABAJO_REALIZADO" ||
+          ordenTrabajoItem?.estado === "FINALIZADO"
+        }
+        canManageTasks={
+          selectedEstado !== "EN_REVISION" &&
+          selectedEstado !== "FINALIZADO" &&
+          ordenTrabajoItem?.estado !== "EN_REVISION" &&
+          ordenTrabajoItem?.estado !== "VALIDADO" &&
+          ordenTrabajoItem?.estado !== "TRABAJO_REALIZADO" &&
+          ordenTrabajoItem?.estado !== "FINALIZADO"
+        }
       />
     </PageShell>
   )

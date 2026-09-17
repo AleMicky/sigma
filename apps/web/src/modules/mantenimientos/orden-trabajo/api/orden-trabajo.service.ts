@@ -118,6 +118,21 @@ export async function getOrdenTrabajo(id: string): Promise<OrdenTrabajo> {
   return http.get<OrdenTrabajo>(ORDEN_TRABAJO_ENDPOINTS.detail(id))
 }
 
+export async function getOrdenTrabajoBySolicitud(
+  solicitudId: string,
+): Promise<OrdenTrabajo | null> {
+  try {
+    return await http.get<OrdenTrabajo>(
+      ORDEN_TRABAJO_ENDPOINTS.bySolicitud(solicitudId),
+    )
+  } catch (err: any) {
+    if (err?.status === 404 || err?.response?.status === 404) {
+      return null
+    }
+    throw err
+  }
+}
+
 export async function createOrdenTrabajo(
   payload: OrdenTrabajoPayload,
 ): Promise<OrdenTrabajo> {

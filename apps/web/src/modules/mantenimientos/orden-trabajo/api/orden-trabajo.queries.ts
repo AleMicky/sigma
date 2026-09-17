@@ -8,6 +8,7 @@ import {
   getOrdenTrabajoActividad,
   getOrdenTrabajoActividadEvidencia,
   getOrdenTrabajoAdjunto,
+  getOrdenTrabajoBySolicitud,
   listOrdenesTrabajo,
   listOrdenTrabajoActividades,
   listOrdenTrabajoActividadesByOrdenTrabajoId,
@@ -22,6 +23,17 @@ export const ordenTrabajoQueries = {
     queryOptions({
       queryKey: ordenTrabajoKeys.list(filters),
       queryFn: () => listOrdenesTrabajo(filters),
+    }),
+
+  bySolicitud: (solicitudId?: string | null) =>
+    queryOptions({
+      queryKey: ordenTrabajoKeys.bySolicitud(solicitudId),
+      queryFn: () =>
+        solicitudId
+          ? getOrdenTrabajoBySolicitud(solicitudId)
+          : Promise.resolve(null),
+      enabled: Boolean(solicitudId),
+      retry: false,
     }),
 
   detail: (id: string) =>

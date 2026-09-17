@@ -142,6 +142,9 @@ export function OrdenTrabajoDetailModal({
   const estadoSolicitudNorm = (solicitud?.estado ?? "").toUpperCase().trim()
   const isReadOnly =
     readOnly ||
+    estadoSolicitudNorm === "EN_REVISION" ||
+    estadoSolicitudNorm === "VALIDADO" ||
+    estadoSolicitudNorm === "TRABAJO_REALIZADO" ||
     estadoSolicitudNorm === "FINALIZADO" ||
     estadoSolicitudNorm === "CANCELADO" ||
     estadoSolicitudNorm === "RECHAZADO"

@@ -7,6 +7,8 @@ export const ordenTrabajoKeys = {
   lists: () => [...ordenTrabajoKeys.all, "list"] as const,
   list: (filters?: OrdenTrabajoFilters) =>
     [...ordenTrabajoKeys.lists(), filters ?? {}] as const,
+  bySolicitud: (solicitudId?: string | null) =>
+    [...ordenTrabajoKeys.all, "by-solicitud", solicitudId] as const,
   details: () => [...ordenTrabajoKeys.all, "detail"] as const,
   detail: (id: string) => [...ordenTrabajoKeys.details(), id] as const,
   // Adjuntos

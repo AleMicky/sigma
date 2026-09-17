@@ -8,6 +8,12 @@ export const controlActivoKeys = {
   lists: () => [...controlActivoKeys.all, "list"] as const,
   list: (filters?: ControlActivoFilters) =>
     [...controlActivoKeys.lists(), filters] as const,
+  bySolicitud: (solicitudId?: string | null) =>
+    [...controlActivoKeys.all, "by-solicitud", solicitudId] as const,
+  byOrdenTrabajo: (ordenTrabajoId?: string | null) =>
+    [...controlActivoKeys.all, "by-orden-trabajo", ordenTrabajoId] as const,
+  byActivo: (activoId?: string | null) =>
+    [...controlActivoKeys.all, "by-activo", activoId] as const,
   details: () => [...controlActivoKeys.all, "detail"] as const,
   detail: (id: string) => [...controlActivoKeys.details(), id] as const,
 

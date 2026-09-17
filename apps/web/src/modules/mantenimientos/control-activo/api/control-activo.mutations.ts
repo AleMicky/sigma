@@ -27,7 +27,7 @@ export function useCreateControlActivo() {
   return useMutation({
     mutationFn: createControlActivo,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: controlActivoKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: controlActivoKeys.all })
       toast.success("Control de activo registrado correctamente")
     },
     onError: (error) => {
@@ -83,7 +83,7 @@ export function useUpdateControlActivo() {
       payload: ControlActivoPayload
     }) => updateControlActivo(id, payload),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: controlActivoKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: controlActivoKeys.all })
       queryClient.invalidateQueries({ queryKey: controlActivoKeys.detail(id) })
       toast.success("Control de activo actualizado correctamente")
     },
@@ -130,7 +130,7 @@ export function useDeleteControlActivo() {
   return useMutation({
     mutationFn: deleteControlActivo,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: controlActivoKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: controlActivoKeys.all })
       toast.success("Control de activo eliminado correctamente")
     },
     onError: (error) => {

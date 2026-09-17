@@ -92,6 +92,30 @@ export async function listControlesActivos(
   })
 }
 
+export async function listControlesActivosBySolicitud(
+  solicitudId: string,
+): Promise<ControlActivo[]> {
+  return http.get<ControlActivo[]>(
+    CONTROL_ACTIVO_ENDPOINTS.bySolicitud(solicitudId),
+  )
+}
+
+export async function listControlesActivosByOrdenTrabajo(
+  ordenTrabajoId: string,
+): Promise<ControlActivo[]> {
+  return http.get<ControlActivo[]>(
+    CONTROL_ACTIVO_ENDPOINTS.byOrdenTrabajo(ordenTrabajoId),
+  )
+}
+
+export async function listControlesActivosByActivo(
+  activoId: string,
+): Promise<ControlActivo[]> {
+  return http.get<ControlActivo[]>(
+    CONTROL_ACTIVO_ENDPOINTS.byActivo(activoId),
+  )
+}
+
 export async function getControlActivo(id: string): Promise<ControlActivo> {
   return http.get<ControlActivo>(CONTROL_ACTIVO_ENDPOINTS.detail(id))
 }

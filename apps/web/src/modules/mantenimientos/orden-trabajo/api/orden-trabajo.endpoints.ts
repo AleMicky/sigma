@@ -1,6 +1,7 @@
 export const ORDEN_TRABAJO_ENDPOINTS = {
   root: "/ordenes-trabajo",
   detail: (id: string) => `/ordenes-trabajo/${id}`,
+  bySolicitud: (solicitudId: string) => `/ordenes-trabajo/solicitud/${solicitudId}`,
   reportePdf: (id: string) => `/ordenes-trabajo/${id}/reporte-pdf`,
   adjuntos: {
     root: (ordenTrabajoId: string) => `/ordenes-trabajo/${ordenTrabajoId}/adjuntos`,

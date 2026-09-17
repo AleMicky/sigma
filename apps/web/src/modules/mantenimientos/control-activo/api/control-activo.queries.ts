@@ -8,6 +8,9 @@ import {
   getControlActivoDetalle,
   listControlActivoDetalles,
   listControlesActivos,
+  listControlesActivosByActivo,
+  listControlesActivosByOrdenTrabajo,
+  listControlesActivosBySolicitud,
 } from "./control-activo.service"
 
 export const controlActivoQueries = {
@@ -15,6 +18,34 @@ export const controlActivoQueries = {
     queryOptions({
       queryKey: controlActivoKeys.list(filters),
       queryFn: () => listControlesActivos(filters),
+    }),
+
+  bySolicitud: (solicitudId?: string | null) =>
+    queryOptions({
+      queryKey: controlActivoKeys.bySolicitud(solicitudId),
+      queryFn: () =>
+        solicitudId
+          ? listControlesActivosBySolicitud(solicitudId)
+          : Promise.resolve([]),
+      enabled: Boolean(solicitudId),
+    }),
+
+  byOrdenTrabajo: (ordenTrabajoId?: string | null) =>
+    queryOptions({
+      queryKey: controlActivoKeys.byOrdenTrabajo(ordenTrabajoId),
+      queryFn: () =>
+        ordenTrabajoId
+          ? listControlesActivosByOrdenTrabajo(ordenTrabajoId)
+          : Promise.resolve([]),
+      enabled: Boolean(ordenTrabajoId),
+    }),
+
+  byActivo: (activoId?: string | null) =>
+    queryOptions({
+      queryKey: controlActivoKeys.byActivo(activoId),
+      queryFn: () =>
+        activoId ? listControlesActivosByActivo(activoId) : Promise.resolve([]),
+      enabled: Boolean(activoId),
     }),
 
   detail: (id: string) =>
