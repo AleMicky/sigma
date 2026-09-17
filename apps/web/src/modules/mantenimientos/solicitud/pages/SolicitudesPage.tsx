@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { AlertCircle, FileText, Plus, RefreshCw } from "lucide-react"
 
@@ -52,15 +52,22 @@ export function SolicitudesPage() {
   const completarWorkflowMutation = useCompletarWorkflowSolicitud()
   const deleteMutation = useDeleteSolicitud()
 
+  const handleEdit = useCallback(
+    (sol: SolicitudMantenimiento) => {
+      navigate({
+        to: routes.mantenimientos.editarSolicitud(sol.id),
+      })
+    },
+    [navigate],
+  )
+
   const handleDeleteConfirm = async () => {
     if (!deletingItem) return
     try {
       await deleteMutation.mutateAsync(deletingItem.id)
       setDeletingItem(null)
-      query.refetch()
-      resumenQuery.refetch()
     } catch {
-      // Error handled in useDeleteSolicitud
+      // Error manejado con toast en useDeleteSolicitud
     }
   }
 
@@ -79,13 +86,14 @@ export function SolicitudesPage() {
 
   useClampPage(search.page, search.setPage, query.data?.totalPages)
 
-  const handleSelectEstado = (estado: string) => {
-    if (!estado) {
-      setSelectedEstado("")
-      return
-    }
-    setSelectedEstado((prev) => (prev === estado ? "" : estado))
-  }
+  const handleSelectEstado = useCallback((estado: string) => {
+    setSelectedEstado((prev) => (!estado || prev === estado ? "" : estado))
+  }, [])
+
+  const handleRefresh = useCallback(() => {
+    query.refetch()
+    resumenQuery.refetch()
+  }, [query, resumenQuery])
 
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
@@ -93,10 +101,7 @@ export function SolicitudesPage() {
       <SolicitudHeader
         queries={[query, resumenQuery]}
         totalCount={totalCount}
-        onRefresh={() => {
-          query.refetch()
-          resumenQuery.refetch()
-        }}
+        onRefresh={handleRefresh}
         isRefreshing={query.isRefetching || resumenQuery.isRefetching}
       />
 
@@ -136,10 +141,7 @@ export function SolicitudesPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      query.refetch()
-                      resumenQuery.refetch()
-                    }}
+                    onClick={handleRefresh}
                     className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
                   >
                     <RefreshCw className="size-3.5" />
@@ -208,29 +210,13 @@ export function SolicitudesPage() {
                       key={solicitud.id}
                       solicitud={solicitud}
                       onlyWorkflowActionsOnBorrador
-                      onViewDetail={(sol) => {
-                        setDetailItem(sol)
-                      }}
-                      onEdit={(sol) => {
-                        navigate({
-                          to: routes.mantenimientos.editarSolicitud(sol.id),
-                        })
-                      }}
-                      onDelete={(sol) => {
-                        setDeletingItem(sol)
-                      }}
-                      onActionSelect={(sol, action, taskName, fields) => {
-                        openAction(sol, action, taskName, fields)
-                      }}
-                      onTraceability={(sol) => {
-                        setTraceabilityItem(sol)
-                      }}
-                      onRegistrarControlActivo={(sol) => {
-                        setControlActivoItem(sol)
-                      }}
-                      onGestionarOrdenTrabajo={(sol) => {
-                        setOrdenTrabajoItem(sol)
-                      }}
+                      onViewDetail={setDetailItem}
+                      onEdit={handleEdit}
+                      onDelete={setDeletingItem}
+                      onActionSelect={openAction}
+                      onTraceability={setTraceabilityItem}
+                      onRegistrarControlActivo={setControlActivoItem}
+                      onGestionarOrdenTrabajo={setOrdenTrabajoItem}
                     />
                   ))}
                 </WorkflowListView>
@@ -256,20 +242,10 @@ export function SolicitudesPage() {
           if (!open) setDetailItem(null)
         }}
         solicitud={detailItem}
-        onEdit={(sol) => {
-          navigate({
-            to: routes.mantenimientos.editarSolicitud(sol.id),
-          })
-        }}
-        onTraceability={(sol) => {
-          setTraceabilityItem(sol)
-        }}
-        onControlActivo={(sol) => {
-          setControlActivoItem(sol)
-        }}
-        onGestionarOrdenTrabajo={(sol) => {
-          setOrdenTrabajoItem(sol)
-        }}
+        onEdit={handleEdit}
+        onTraceability={setTraceabilityItem}
+        onControlActivo={setControlActivoItem}
+        onGestionarOrdenTrabajo={setOrdenTrabajoItem}
       />
 
       {/* Diálogo para completar acciones de workflow de forma interactiva */}
@@ -289,11 +265,7 @@ export function SolicitudesPage() {
             payload: { variables },
           })
         }}
-        onSuccess={() => {
-          closeAction()
-          query.refetch()
-          resumenQuery.refetch()
-        }}
+        onSuccess={closeAction}
       />
 
       {/* Diálogo para consultar trazabilidad e historial de tareas */}
