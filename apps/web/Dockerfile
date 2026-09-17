@@ -9,7 +9,8 @@ WORKDIR /build
 # Copy dependency files first (cache layer)
 COPY package.json pnpm-lock.yaml ./
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # Copy source files
 COPY . .

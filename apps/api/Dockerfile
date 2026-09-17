@@ -6,11 +6,13 @@ WORKDIR /build
 # Copy Maven wrapper and POM first (cache dependencies)
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+RUN --mount=type=cache,target=/root/.m2 \
+    chmod +x mvnw && ./mvnw dependency:go-offline -B
 
 # Copy source and build
 COPY src/ src/
-RUN ./mvnw package -DskipTests -B && \
+RUN --mount=type=cache,target=/root/.m2 \
+    ./mvnw package -DskipTests -B && \
     mv target/*.jar target/app.jar
 
 # ── Stage 2: Runtime ─────────────────────────────────────────
