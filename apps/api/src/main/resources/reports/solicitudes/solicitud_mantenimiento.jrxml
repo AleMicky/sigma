@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport name="solicitud_mantenimiento" language="java" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30" uuid="c2a41d99-8260-4966-9b51-0a374dc7b871">
+	<parameter name="NUMERO_SOLICITUD" class="java.lang.String"/>
+	<parameter name="FECHA_SOLICITUD" class="java.lang.String"/>
+	<parameter name="ESTADO" class="java.lang.String"/>
+	<parameter name="PRIORIDAD" class="java.lang.String"/>
+	<parameter name="TIPO_MANTENIMIENTO" class="java.lang.String"/>
+	<parameter name="TIPO_FALLAS" class="java.lang.String"/>
+	<parameter name="SOLICITANTE_NOMBRE" class="java.lang.String"/>
+	<parameter name="SOLICITANTE_CARGO" class="java.lang.String"/>
+	<parameter name="ACTIVO_CODIGO" class="java.lang.String"/>
+	<parameter name="ACTIVO_NOMBRE" class="java.lang.String"/>
+	<parameter name="ACTIVO_CATEGORIA" class="java.lang.String"/>
+	<parameter name="ACTIVO_UBICACION" class="java.lang.String"/>
+	<parameter name="TITULO" class="java.lang.String"/>
+	<parameter name="DESCRIPCION" class="java.lang.String"/>
+	<parameter name="APROBADOR_NOMBRE" class="java.lang.String"/>
+	<parameter name="RESPONSABLE_NOMBRE" class="java.lang.String"/>
+	<parameter name="SUPERVISOR_NOMBRE" class="java.lang.String"/>
+	<parameter name="FECHA_INICIO" class="java.lang.String"/>
+	<parameter name="FECHA_FIN" class="java.lang.String"/>
+	<parameter name="FECHA_CIERRE" class="java.lang.String"/>
+	<parameter name="FECHA_EMISION" class="java.lang.String"/>
+	<title height="740">
+		<!-- Encabezado Principal -->
+		<element kind="rectangle" x="0" y="0" width="535" height="60" backcolor="#1E293B" mode="Opaque" uuid="a1b2c3d4-e5f6-7890-1234-56789abcdef0">
+			<property name="net.sf.jasperreports.customizer.class" value=""/>
+		</element>
+		<element kind="staticText" x="15" y="10" width="320" height="24" forecolor="#FFFFFF" fontName="SansSerif" fontSize="16" bold="true" vTextAlign="Middle" uuid="b2c3d4e5-f6a7-8901-2345-6789abcdef01">
+			<text><![CDATA[SOLICITUD DE MANTENIMIENTO]]></text>
+		</element>
+		<element kind="staticText" x="15" y="34" width="320" height="16" forecolor="#94A3B8" fontName="SansSerif" fontSize="10" vTextAlign="Middle" uuid="c3d4e5f6-a7b8-9012-3456-789abcdef012">
+			<text><![CDATA[Sistema Integrado de Gestión de Mantenimiento - SIGMA]]></text>
+		</element>
+		<element kind="staticText" x="350" y="10" width="170" height="14" forecolor="#94A3B8" fontName="SansSerif" fontSize="9" hTextAlign="Right" vTextAlign="Middle" uuid="d4e5f6a7-b8c9-0123-4567-89abcdef0123">
+			<text><![CDATA[N° DE SOLICITUD]]></text>
+		</element>
+		<element kind="textField" x="350" y="24" width="170" height="22" forecolor="#38BDF8" fontName="SansSerif" fontSize="14" bold="true" hTextAlign="Right" vTextAlign="Middle" uuid="e5f6a7b8-c9d0-1234-5678-9abcdef01234">
+			<expression><![CDATA[$P{NUMERO_SOLICITUD} != null ? $P{NUMERO_SOLICITUD} : "N/A"]]></expression>
+		</element>
+
+		<!-- Subcabecera: Estado y Fecha de Emisión -->
+		<element kind="rectangle" x="0" y="65" width="535" height="28" backcolor="#F1F5F9" mode="Opaque" uuid="f6a7b8c9-d0e1-2345-6789-abcdef012345">
+			<pen lineWidth="0.5" lineColor="#CBD5E1"/>
+		</element>
+		<element kind="staticText" x="10" y="70" width="55" height="18" forecolor="#475569" fontName="SansSerif" fontSize="9" bold="true" vTextAlign="Middle" uuid="a7b8c9d0-e1f2-3456-789a-bcdef0123456">
+			<text><![CDATA[Estado:]]></text>
+		</element>
+		<element kind="textField" x="65" y="70" width="160" height="18" forecolor="#0F172A" fontName="SansSerif" fontSize="9" bold="true" vTextAlign="Middle" uuid="b8c9d0e1-f2a3-4567-89ab-cdef01234567">
+			<expression><![CDATA[$P{ESTADO} != null ? $P{ESTADO} : "REGISTRADO"]]></expression>
+		</element>
+		<element kind="staticText" x="300" y="70" width="95" height="18" forecolor="#475569" fontName="SansSerif" fontSize="9" bold="true" hTextAlign="Right" vTextAlign="Middle" uuid="c9d0e1f2-a3b4-5678-9abc-def012345678">
+			<text><![CDATA[Fecha de Emisión:]]></text>
+		</element>
+		<element kind="textField" x="400" y="70" width="125" height="18" forecolor="#0F172A" fontName="SansSerif" fontSize="9" hTextAlign="Right" vTextAlign="Middle" uuid="d0e1f2a3-b4c5-6789-abcd-ef0123456789">
+			<expression><![CDATA[$P{FECHA_EMISION} != null ? $P{FECHA_EMISION} : "-"]]></expression>
+		</element>
+
+		<!-- SECCIÓN 1: DATOS DE LA SOLICITUD -->
+		<element kind="rectangle" x="0" y="100" width="535" height="20" backcolor="#E2E8F0" mode="Opaque" uuid="e1f2a3b4-c5d6-789a-bcde-f0123456789a">
+			<pen lineWidth="0.0"/>
+		</element>
+		<element kind="staticText" x="8" y="100" width="519" height="20" forecolor="#1E293B" fontName="SansSerif" fontSize="10" bold="true" vTextAlign="Middle" uuid="f2a3b4c5-d6e7-89ab-cdef-0123456789ab">
+			<text><![CDATA[1. INFORMACIÓN GENERAL]]></text>
+		</element>
+
+		<element kind="rectangle" x="0" y="120" width="535" height="65" mode="Transparent" uuid="a3b4c5d6-e7f8-9abc-def0-123456789abc">
+			<pen lineWidth="0.5" lineColor="#CBD5E1"/>
+		</element>
+		<element kind="staticText" x="10" y="125" width="90" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="b4c5d6e7-f8a9-bcde-f012-3456789abcde">
+			<text><![CDATA[SOLICITANTE:]]></text>
+		</element>
+		<element kind="textField" x="100" y="125" width="200" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="c5d6e7f8-a9b0-cdef-0123-456789abcdef">
+			<expression><![CDATA[$P{SOLICITANTE_NOMBRE} != null ? $P{SOLICITANTE_NOMBRE} : "-"]]></expression>
+		</element>
+		<element kind="staticText" x="310" y="125" width="95" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="d6e7f8a9-b0c1-def0-1234-56789abcdef0">
+			<text><![CDATA[FECHA SOLICITUD:]]></text>
+		</element>
+		<element kind="textField" x="405" y="125" width="120" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="e7f8a9b0-c1d2-ef01-2345-6789abcdef01">
+			<expression><![CDATA[$P{FECHA_SOLICITUD} != null ? $P{FECHA_SOLICITUD} : "-"]]></expression>
+		</element>
+
+		<element kind="staticText" x="10" y="143" width="90" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="f8a9b0c1-d2e3-f012-3456-789abcdef012">
+			<text><![CDATA[CARGO / PUESTO:]]></text>
+		</element>
+		<element kind="textField" x="100" y="143" width="200" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="a9b0c1d2-e3f4-0123-4567-89abcdef0123">
+			<expression><![CDATA[$P{SOLICITANTE_CARGO} != null ? $P{SOLICITANTE_CARGO} : "-"]]></expression>
+		</element>
+		<element kind="staticText" x="310" y="143" width="95" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="b0c1d2e3-f4a5-1234-5678-9abcdef01234">
+			<text><![CDATA[PRIORIDAD:]]></text>
+		</element>
+		<element kind="textField" x="405" y="143" width="120" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" bold="true" uuid="c1d2e3f4-a5b6-2345-6789-abcdef012345">
+			<expression><![CDATA[$P{PRIORIDAD} != null ? $P{PRIORIDAD} : "-"]]></expression>
+		</element>
+
+		<element kind="staticText" x="10" y="161" width="90" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="d2e3f4a5-b6c7-3456-789a-bcdef0123456">
+			<text><![CDATA[TIPO MTTO:]]></text>
+		</element>
+		<element kind="textField" x="100" y="161" width="200" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="e3f4a5b6-c7d8-4567-89ab-cdef01234567">
+			<expression><![CDATA[$P{TIPO_MANTENIMIENTO} != null ? $P{TIPO_MANTENIMIENTO} : "-"]]></expression>
+		</element>
+		<element kind="staticText" x="310" y="161" width="95" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="f4a5b6c7-d8e9-5678-9abc-def012345678">
+			<text><![CDATA[TIPO DE FALLA:]]></text>
+		</element>
+		<element kind="textField" x="405" y="161" width="120" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="a5b6c7d8-e9f0-6789-abcd-ef0123456789">
+			<expression><![CDATA[$P{TIPO_FALLAS} != null ? $P{TIPO_FALLAS} : "-"]]></expression>
+		</element>
+
+		<!-- SECCIÓN 2: DATOS DEL ACTIVO -->
+		<element kind="rectangle" x="0" y="195" width="535" height="20" backcolor="#E2E8F0" mode="Opaque" uuid="b6c7d8e9-f0a1-789a-bcde-f0123456789a">
+			<pen lineWidth="0.0"/>
+		</element>
+		<element kind="staticText" x="8" y="195" width="519" height="20" forecolor="#1E293B" fontName="SansSerif" fontSize="10" bold="true" vTextAlign="Middle" uuid="c7d8e9f0-a1b2-89ab-cdef-0123456789ab">
+			<text><![CDATA[2. DATOS DEL ACTIVO AFECTADO]]></text>
+		</element>
+
+		<element kind="rectangle" x="0" y="215" width="535" height="50" mode="Transparent" uuid="d8e9f0a1-b2c3-9abc-def0-123456789abc">
+			<pen lineWidth="0.5" lineColor="#CBD5E1"/>
+		</element>
+		<element kind="staticText" x="10" y="222" width="90" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="e9f0a1b2-c3d4-bcde-f012-3456789abcde">
+			<text><![CDATA[CÓDIGO ACTIVO:]]></text>
+		</element>
+		<element kind="textField" x="100" y="222" width="150" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" bold="true" uuid="f0a1b2c3-d4e5-cdef-0123-456789abcdef">
+			<expression><![CDATA[$P{ACTIVO_CODIGO} != null ? $P{ACTIVO_CODIGO} : "-"]]></expression>
+		</element>
+		<element kind="staticText" x="260" y="222" width="70" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="a1b2c3d4-e5f6-def0-1234-56789abcdef0">
+			<text><![CDATA[NOMBRE:]]></text>
+		</element>
+		<element kind="textField" x="330" y="222" width="195" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="b2c3d4e5-f6a7-ef01-2345-6789abcdef01">
+			<expression><![CDATA[$P{ACTIVO_NOMBRE} != null ? $P{ACTIVO_NOMBRE} : "-"]]></expression>
+		</element>
+
+		<element kind="staticText" x="10" y="242" width="90" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="c3d4e5f6-a7b8-f012-3456-789abcdef012">
+			<text><![CDATA[CATEGORÍA:]]></text>
+		</element>
+		<element kind="textField" x="100" y="242" width="150" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="d4e5f6a7-b8c9-0123-4567-89abcdef0123">
+			<expression><![CDATA[$P{ACTIVO_CATEGORIA} != null ? $P{ACTIVO_CATEGORIA} : "-"]]></expression>
+		</element>
+		<element kind="staticText" x="260" y="242" width="70" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="e5f6a7b8-c9d0-1234-5678-9abcdef01234">
+			<text><![CDATA[UBICACIÓN:]]></text>
+		</element>
+		<element kind="textField" x="330" y="242" width="195" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="f6a7b8c9-d0e1-2345-6789-abcdef012345">
+			<expression><![CDATA[$P{ACTIVO_UBICACION} != null ? $P{ACTIVO_UBICACION} : "-"]]></expression>
+		</element>
+
+		<!-- SECCIÓN 3: DESCRIPCIÓN DEL REQUERIMIENTO -->
+		<element kind="rectangle" x="0" y="275" width="535" height="20" backcolor="#E2E8F0" mode="Opaque" uuid="a7b8c9d0-e1f2-3456-789a-bcdef0123456">
+			<pen lineWidth="0.0"/>
+		</element>
+		<element kind="staticText" x="8" y="275" width="519" height="20" forecolor="#1E293B" fontName="SansSerif" fontSize="10" bold="true" vTextAlign="Middle" uuid="b8c9d0e1-f2a3-4567-89ab-cdef01234567">
+			<text><![CDATA[3. DESCRIPCIÓN DEL REQUERIMIENTO O PROBLEMA]]></text>
+		</element>
+
+		<element kind="rectangle" x="0" y="295" width="535" height="110" mode="Transparent" uuid="c9d0e1f2-a3b4-5678-9abc-def012345678">
+			<pen lineWidth="0.5" lineColor="#CBD5E1"/>
+		</element>
+		<element kind="staticText" x="10" y="302" width="90" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="d0e1f2a3-b4c5-6789-abcd-ef0123456789">
+			<text><![CDATA[TÍTULO:]]></text>
+		</element>
+		<element kind="textField" x="100" y="302" width="425" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" bold="true" uuid="e1f2a3b4-c5d6-789a-bcde-f0123456789a">
+			<expression><![CDATA[$P{TITULO} != null ? $P{TITULO} : "-"]]></expression>
+		</element>
+
+		<element kind="staticText" x="10" y="325" width="90" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="f2a3b4c5-d6e7-89ab-cdef-0123456789ab">
+			<text><![CDATA[DETALLE:]]></text>
+		</element>
+		<element kind="textField" x="100" y="325" width="425" height="70" forecolor="#334155" fontName="SansSerif" fontSize="9" uuid="a3b4c5d6-e7f8-9abc-def0-123456789abc">
+			<expression><![CDATA[$P{DESCRIPCION} != null ? $P{DESCRIPCION} : "Sin descripción detallada."]]></expression>
+		</element>
+
+		<!-- SECCIÓN 4: ASIGNACIÓN Y SEGUIMIENTO -->
+		<element kind="rectangle" x="0" y="415" width="535" height="20" backcolor="#E2E8F0" mode="Opaque" uuid="b4c5d6e7-f8a9-bcde-f012-3456789abcde">
+			<pen lineWidth="0.0"/>
+		</element>
+		<element kind="staticText" x="8" y="415" width="519" height="20" forecolor="#1E293B" fontName="SansSerif" fontSize="10" bold="true" vTextAlign="Middle" uuid="c5d6e7f8-a9b0-cdef-0123-456789abcdef">
+			<text><![CDATA[4. ASIGNACIÓN DE RESPONSABLES Y TIEMPOS]]></text>
+		</element>
+
+		<element kind="rectangle" x="0" y="435" width="535" height="75" mode="Transparent" uuid="d6e7f8a9-b0c1-def0-1234-56789abcdef0">
+			<pen lineWidth="0.5" lineColor="#CBD5E1"/>
+		</element>
+		<element kind="staticText" x="10" y="442" width="100" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="e7f8a9b0-c1d2-ef01-2345-6789abcdef01">
+			<text><![CDATA[APROBADOR:]]></text>
+		</element>
+		<element kind="textField" x="115" y="442" width="160" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="f8a9b0c1-d2e3-f012-3456-789abcdef012">
+			<expression><![CDATA[$P{APROBADOR_NOMBRE} != null ? $P{APROBADOR_NOMBRE} : "Pendiente de aprobación"]]></expression>
+		</element>
+		<element kind="staticText" x="285" y="442" width="90" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="a9b0c1d2-e3f4-0123-4567-89abcdef0123">
+			<text><![CDATA[INICIO PLANIFICADO:]]></text>
+		</element>
+		<element kind="textField" x="380" y="442" width="145" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="b0c1d2e3-f4a5-1234-5678-9abcdef01234">
+			<expression><![CDATA[$P{FECHA_INICIO} != null ? $P{FECHA_INICIO} : "-"]]></expression>
+		</element>
+
+		<element kind="staticText" x="10" y="462" width="100" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="c1d2e3f4-a5b6-2345-6789-abcdef012345">
+			<text><![CDATA[RESPONSABLE MTTO:]]></text>
+		</element>
+		<element kind="textField" x="115" y="462" width="160" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="d2e3f4a5-b6c7-3456-789a-bcdef0123456">
+			<expression><![CDATA[$P{RESPONSABLE_NOMBRE} != null ? $P{RESPONSABLE_NOMBRE} : "No asignado"]]></expression>
+		</element>
+		<element kind="staticText" x="285" y="462" width="90" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="e3f4a5b6-c7d8-4567-89ab-cdef01234567">
+			<text><![CDATA[FIN PLANIFICADO:]]></text>
+		</element>
+		<element kind="textField" x="380" y="462" width="145" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="f4a5b6c7-d8e9-5678-9abc-def012345678">
+			<expression><![CDATA[$P{FECHA_FIN} != null ? $P{FECHA_FIN} : "-"]]></expression>
+		</element>
+
+		<element kind="staticText" x="10" y="482" width="100" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="a5b6c7d8-e9f0-6789-abcd-ef0123456789">
+			<text><![CDATA[SUPERVISOR:]]></text>
+		</element>
+		<element kind="textField" x="115" y="482" width="160" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="b6c7d8e9-f0a1-789a-bcde-f0123456789a">
+			<expression><![CDATA[$P{SUPERVISOR_NOMBRE} != null ? $P{SUPERVISOR_NOMBRE} : "No asignado"]]></expression>
+		</element>
+		<element kind="staticText" x="285" y="482" width="90" height="15" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" uuid="c7d8e9f0-a1b2-89ab-cdef-0123456789ab">
+			<text><![CDATA[FECHA DE CIERRE:]]></text>
+		</element>
+		<element kind="textField" x="380" y="482" width="145" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="9" uuid="d8e9f0a1-b2c3-9abc-def0-123456789abc">
+			<expression><![CDATA[$P{FECHA_CIERRE} != null ? $P{FECHA_CIERRE} : "-"]]></expression>
+		</element>
+
+		<!-- SECCIÓN 5: FIRMAS DE CONFORMIDAD -->
+		<element kind="rectangle" x="0" y="530" width="535" height="20" backcolor="#E2E8F0" mode="Opaque" uuid="e9f0a1b2-c3d4-bcde-f012-3456789abcde">
+			<pen lineWidth="0.0"/>
+		</element>
+		<element kind="staticText" x="8" y="530" width="519" height="20" forecolor="#1E293B" fontName="SansSerif" fontSize="10" bold="true" vTextAlign="Middle" uuid="f0a1b2c3-d4e5-cdef-0123-456789abcdef">
+			<text><![CDATA[5. FIRMAS Y CONFORMIDAD]]></text>
+		</element>
+
+		<!-- Cuadro Firmas -->
+		<element kind="rectangle" x="0" y="550" width="535" height="110" mode="Transparent" uuid="a1b2c3d4-e5f6-def0-1234-56789abcdef0">
+			<pen lineWidth="0.5" lineColor="#CBD5E1"/>
+		</element>
+
+		<!-- Firma Solicitante -->
+		<element kind="line" x="25" y="625" width="135" height="1" forecolor="#64748B" uuid="b2c3d4e5-f6a7-ef01-2345-6789abcdef01"/>
+		<element kind="staticText" x="25" y="628" width="135" height="12" forecolor="#475569" fontName="SansSerif" fontSize="8" bold="true" hTextAlign="Center" uuid="c3d4e5f6-a7b8-f012-3456-789abcdef012">
+			<text><![CDATA[SOLICITANTE]]></text>
+		</element>
+		<element kind="textField" x="15" y="640" width="155" height="14" forecolor="#64748B" fontName="SansSerif" fontSize="7" hTextAlign="Center" uuid="d4e5f6a7-b8c9-0123-4567-89abcdef0123">
+			<expression><![CDATA[$P{SOLICITANTE_NOMBRE} != null ? $P{SOLICITANTE_NOMBRE} : "Firma"]]></expression>
+		</element>
+
+		<!-- Firma Responsable -->
+		<element kind="line" x="200" y="625" width="135" height="1" forecolor="#64748B" uuid="e5f6a7b8-c9d0-1234-5678-9abcdef01234"/>
+		<element kind="staticText" x="200" y="628" width="135" height="12" forecolor="#475569" fontName="SansSerif" fontSize="8" bold="true" hTextAlign="Center" uuid="f6a7b8c9-d0e1-2345-6789-abcdef012345">
+			<text><![CDATA[RESPONSABLE MTTO.]]></text>
+		</element>
+		<element kind="textField" x="190" y="640" width="155" height="14" forecolor="#64748B" fontName="SansSerif" fontSize="7" hTextAlign="Center" uuid="a7b8c9d0-e1f2-3456-789a-bcdef0123456">
+			<expression><![CDATA[$P{RESPONSABLE_NOMBRE} != null ? $P{RESPONSABLE_NOMBRE} : "Firma"]]></expression>
+		</element>
+
+		<!-- Firma Supervisor / Aprobador -->
+		<element kind="line" x="375" y="625" width="135" height="1" forecolor="#64748B" uuid="b8c9d0e1-f2a3-4567-89ab-cdef01234567"/>
+		<element kind="staticText" x="375" y="628" width="135" height="12" forecolor="#475569" fontName="SansSerif" fontSize="8" bold="true" hTextAlign="Center" uuid="c9d0e1f2-a3b4-5678-9abc-def012345678">
+			<text><![CDATA[SUPERVISOR / APROBADOR]]></text>
+		</element>
+		<element kind="textField" x="365" y="640" width="155" height="14" forecolor="#64748B" fontName="SansSerif" fontSize="7" hTextAlign="Center" uuid="d0e1f2a3-b4c5-6789-abcd-ef0123456789">
+			<expression><![CDATA[$P{APROBADOR_NOMBRE} != null ? $P{APROBADOR_NOMBRE} : ($P{SUPERVISOR_NOMBRE} != null ? $P{SUPERVISOR_NOMBRE} : "Firma")]]></expression>
+		</element>
+
+		<!-- Pie de Página / Nota -->
+		<element kind="staticText" x="0" y="680" width="535" height="20" forecolor="#94A3B8" fontName="SansSerif" fontSize="8" hTextAlign="Center" vTextAlign="Middle" uuid="e1f2a3b4-c5d6-789a-bcde-f0123456789a">
+			<text><![CDATA[Documento emitido electrónicamente por el Sistema SIGMA. Válido sin tachaduras ni enmiendas.]]></text>
+		</element>
+	</title>
+</jasperReport>

@@ -108,6 +108,19 @@ public class SolicitudMantenimientoController {
                 return ResponseEntity.ok(ApiResponse.success(service.obtenerTrazabilidad(id)));
         }
 
+        @GetMapping(value = "/{id}/reporte-pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+        @Operation(summary = "Generar reporte PDF de una solicitud de mantenimiento")
+        public ResponseEntity<byte[]> generarReportePdf(@PathVariable UUID id) {
+                byte[] pdfBytes = service.generarReportePdf(id);
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_PDF);
+                headers.setContentDisposition(org.springframework.http.ContentDisposition.inline()
+                                .filename("solicitud-mantenimiento-" + id + ".pdf")
+                                .build());
+                headers.setContentLength(pdfBytes.length);
+                return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        }
+
         @GetMapping
         @Operation(summary = "Listar solicitudes con filtros combinados (búsqueda, estado, interfaz)")
         public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findAll(

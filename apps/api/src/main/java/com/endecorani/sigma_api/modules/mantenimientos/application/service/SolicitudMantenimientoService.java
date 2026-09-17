@@ -59,6 +59,8 @@ public class SolicitudMantenimientoService {
     private static final String ESTADO_SOLICITADO = "solicitado";
     private static final String WORKFLOW_CODIGO = "SOLICITUD_MANTENIMIENTO";
     private static final String ADJUNTO_FOLDER = "solicitud_mantenimiento_adjuntos";
+    private static final String REPORTE_SOLICITUD_PATH = "reports/solicitudes/solicitud_mantenimiento.jrxml";
+    private static final java.time.format.DateTimeFormatter FORMATTER_FECHA_HORA = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -79,6 +81,7 @@ public class SolicitudMantenimientoService {
     private final CorrelativoService correlativoService;
     private final WorkflowApplicationService workflowApplicationService;
     private final DocumentStorageService documentStorageService;
+    private final com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService jasperReportService;
 
     @Transactional(readOnly = true)
     public SolicitudMantenimientoResumenResponse obtenerResumen() {
@@ -264,6 +267,41 @@ public class SolicitudMantenimientoService {
     public SolicitudMantenimientoResponse findById(UUID id) {
         SolicitudMantenimiento solicitud = obtenerPorId(id);
         return mapper.toResponse(solicitud);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] generarReportePdf(UUID id) {
+        SolicitudMantenimientoResponse response = findById(id);
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("NUMERO_SOLICITUD", response.numero() != null ? response.numero() : "S/N");
+        parameters.put("FECHA_SOLICITUD", response.fechaSolicitud() != null ? response.fechaSolicitud().format(FORMATTER_FECHA_HORA) : "-");
+        parameters.put("ESTADO", response.estado() != null ? response.estado().toUpperCase() : "BORRADOR");
+        parameters.put("PRIORIDAD", response.prioridad() != null ? response.prioridad().nombre() : "-");
+        parameters.put("TIPO_MANTENIMIENTO", response.tipoMantenimiento() != null ? response.tipoMantenimiento().nombre() : "-");
+        parameters.put("TIPO_FALLAS", response.tipoFallas() != null ? response.tipoFallas() : "-");
+
+        parameters.put("SOLICITANTE_NOMBRE", response.solicitante() != null ? response.solicitante().nombreCompleto() : "-");
+        parameters.put("SOLICITANTE_CARGO", response.solicitante() != null && response.solicitante().cargo() != null ? response.solicitante().cargo() : "-");
+
+        parameters.put("ACTIVO_CODIGO", response.activo() != null ? response.activo().codigo() : "-");
+        parameters.put("ACTIVO_NOMBRE", response.activo() != null ? response.activo().nombre() : "-");
+        parameters.put("ACTIVO_CATEGORIA", "-");
+        parameters.put("ACTIVO_UBICACION", "-");
+
+        parameters.put("TITULO", response.titulo() != null ? response.titulo() : "-");
+        parameters.put("DESCRIPCION", response.descripcion() != null ? response.descripcion() : "-");
+
+        parameters.put("APROBADOR_NOMBRE", response.aprobador() != null ? response.aprobador().nombreCompleto() : "Pendiente de aprobación");
+        parameters.put("RESPONSABLE_NOMBRE", response.responsable() != null ? response.responsable().nombreCompleto() : "No asignado");
+        parameters.put("SUPERVISOR_NOMBRE", response.supervisor() != null ? response.supervisor().nombreCompleto() : "No asignado");
+
+        parameters.put("FECHA_INICIO", response.fechaInicioMantenimiento() != null ? response.fechaInicioMantenimiento().format(FORMATTER_FECHA_HORA) : "-");
+        parameters.put("FECHA_FIN", response.fechaFinMantenimiento() != null ? response.fechaFinMantenimiento().format(FORMATTER_FECHA_HORA) : "-");
+        parameters.put("FECHA_CIERRE", response.fechaCierre() != null ? response.fechaCierre().format(FORMATTER_FECHA_HORA) : "-");
+        parameters.put("FECHA_EMISION", LocalDateTime.now().format(FORMATTER_FECHA_HORA));
+
+        return jasperReportService.generatePdfReport(REPORTE_SOLICITUD_PATH, parameters);
     }
 
     @Transactional

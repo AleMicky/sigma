@@ -264,7 +264,8 @@ export function ControlActivoListItem({
                     </p>
                   )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

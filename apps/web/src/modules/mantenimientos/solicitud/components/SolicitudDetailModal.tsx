@@ -37,6 +37,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { cn } from "@/shared/lib/utils"
 import { WorkflowStatusBadge } from "@/modules/workflow/components/WorkflowStatusBadge"
 import { solicitudQueries } from "../api/solicitud.queries"
+import { downloadSolicitudReportePdf } from "../api/solicitud.service"
 import type { SolicitudAdjunto, SolicitudMantenimiento } from "../types/solicitud.type"
 
 export type SolicitudDetailModalProps = {
@@ -69,6 +70,7 @@ export function SolicitudDetailModal({
 }: SolicitudDetailModalProps) {
   const [activeTab, setActiveTab] = useState<string>("general")
   const [copied, setCopied] = useState(false)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
   const targetId = solicitud?.id || solicitudId || ""
 
@@ -131,6 +133,21 @@ export function SolicitudDetailModal({
     setCopied(true)
     toast.success("Folio copiado", { duration: 1200 })
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleDownloadPdf = async (e?: MouseEvent) => {
+    e?.stopPropagation()
+    if (!currentSolicitud?.id) return
+    try {
+      setIsGeneratingPdf(true)
+      await downloadSolicitudReportePdf(currentSolicitud.id, currentSolicitud.numero)
+      toast.success("Reporte generado correctamente")
+    } catch (error) {
+      console.error("Error al generar reporte PDF:", error)
+      toast.error("Error al generar el reporte PDF")
+    } finally {
+      setIsGeneratingPdf(false)
+    }
   }
 
   return (
@@ -202,20 +219,39 @@ export function SolicitudDetailModal({
                   )}
                 </div>
 
-                {isBorrador && onEdit && (
+                <div className="flex items-center gap-1.5 shrink-0">
                   <Button
+                    type="button"
                     variant="outline"
                     size="xs"
-                    onClick={() => {
-                      onOpenChange(false)
-                      onEdit(currentSolicitud)
-                    }}
-                    className="h-7 text-xs gap-1.5 px-3 font-semibold cursor-pointer shadow-2xs shrink-0"
+                    disabled={isGeneratingPdf}
+                    onClick={handleDownloadPdf}
+                    className="h-7 text-xs gap-1.5 px-2.5 font-medium cursor-pointer shadow-2xs hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-500/30"
+                    title="Descargar Reporte PDF"
                   >
-                    <Pencil className="size-3" />
-                    <span>Editar</span>
+                    {isGeneratingPdf ? (
+                      <Loader2 className="size-3 animate-spin text-rose-500" />
+                    ) : (
+                      <FileText className="size-3 text-rose-500" />
+                    )}
+                    <span>PDF</span>
                   </Button>
-                )}
+
+                  {isBorrador && onEdit && (
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => {
+                        onOpenChange(false)
+                        onEdit(currentSolicitud)
+                      }}
+                      className="h-7 text-xs gap-1.5 px-3 font-semibold cursor-pointer shadow-2xs"
+                    >
+                      <Pencil className="size-3" />
+                      <span>Editar</span>
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* Título de la Solicitud */}
@@ -551,6 +587,22 @@ export function SolicitudDetailModal({
                     <span>Orden de Trabajo</span>
                   </Button>
                 )}
+
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  disabled={isGeneratingPdf}
+                  onClick={handleDownloadPdf}
+                  className="h-7.5 gap-1.5 px-3 text-xs font-medium hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-500/30 cursor-pointer shadow-2xs"
+                >
+                  {isGeneratingPdf ? (
+                    <Loader2 className="size-3.5 animate-spin text-rose-600 dark:text-rose-400" />
+                  ) : (
+                    <FileText className="size-3.5 text-rose-600 dark:text-rose-400" />
+                  )}
+                  <span>Reporte PDF</span>
+                </Button>
               </div>
 
               <Button

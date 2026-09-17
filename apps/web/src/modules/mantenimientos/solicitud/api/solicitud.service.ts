@@ -131,6 +131,47 @@ export async function completarWorkflowSolicitud(
   )
 }
 
+/**
+ * Descarga o genera el reporte PDF de una solicitud de mantenimiento.
+ * Endpoint: GET /api/v1/solicitudes-mantenimiento/{id}/reporte-pdf
+ */
+export async function downloadSolicitudReportePdf(
+  id: string,
+  numero?: string,
+): Promise<void> {
+  const blob = await http.get<Blob>(SOLICITUD_ENDPOINTS.reportePdf(id), {
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `solicitud-${numero || id}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+
+/**
+ * Abre el reporte PDF de una solicitud de mantenimiento en una pestaña nueva.
+ * Endpoint: GET /api/v1/solicitudes-mantenimiento/{id}/reporte-pdf
+ */
+export async function openSolicitudReportePdf(id: string): Promise<void> {
+  const blob = await http.get<Blob>(SOLICITUD_ENDPOINTS.reportePdf(id), {
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  window.open(url, "_blank")
+}
+
 // Aliases para conveniencia y compatibilidad
 export const listSolicitudes = getSolicitudesMantenimiento
 export const getSolicitudes = getSolicitudesMantenimiento
