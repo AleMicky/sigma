@@ -8,6 +8,8 @@ import { TooltipProvider } from "@/shared/components/ui/tooltip"
 
 import { AppHeader } from "./AppHeader"
 import { AppSidebar } from "./AppSidebar"
+import { NavigationTabs } from "./NavigationTabs"
+import { PageTransition } from "./PageTransition"
 
 export function DashboardLayout({ children }: PropsWithChildren) {
   return (
@@ -17,8 +19,9 @@ export function DashboardLayout({ children }: PropsWithChildren) {
           <AppSidebar variant="inset" />
           <SidebarInset className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background md:my-1.5 md:rounded-l-2xl md:border-l md:border-t md:border-b md:border-border/50 md:shadow-sm">
             <AppHeader />
+            <NavigationTabs />
             <main className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden p-2.5 sm:p-3 md:p-4">
-              {children}
+              <PageTransition>{children}</PageTransition>
             </main>
           </SidebarInset>
         </div>

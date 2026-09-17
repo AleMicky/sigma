@@ -10,12 +10,67 @@ import { resolveLucideIcon } from "@/modules/seguridad/menu/components/DynamicLu
 import type { NavNode, NavSection } from "@/shared/types/nav.types"
 
 /**
+ * Helper to infer a contextual Lucide icon based on route path, title, or code
+ */
+function inferFallbackIcon(route?: string | null, title?: string, code?: string) {
+  const target = `${route ?? ""} ${title ?? ""} ${code ?? ""}`.toLowerCase()
+
+  if (target.includes("dashboard") || target.includes("inicio") || target.includes("home")) {
+    return resolveLucideIcon("LayoutDashboard") || LayoutDashboard
+  }
+  if (target.includes("activo") || target.includes("equipo") || target.includes("bienes")) {
+    return resolveLucideIcon("Boxes") || Folder
+  }
+  if (target.includes("solicitud") || target.includes("solicitudes")) {
+    return resolveLucideIcon("FileText") || FileText
+  }
+  if (target.includes("orden") || target.includes("ots") || target.includes("trabajo")) {
+    return resolveLucideIcon("CheckSquare") || FileText
+  }
+  if (target.includes("mantenimiento") || target.includes("preventivo") || target.includes("correctivo")) {
+    return resolveLucideIcon("Wrench") || Folder
+  }
+  if (target.includes("plan") || target.includes("programa") || target.includes("actividad")) {
+    return resolveLucideIcon("ListTodo") || Folder
+  }
+  if (target.includes("usuario") || target.includes("persona") || target.includes("empleado")) {
+    return resolveLucideIcon("Users") || FileText
+  }
+  if (target.includes("rol") || target.includes("perfil")) {
+    return resolveLucideIcon("ShieldCheck") || FileText
+  }
+  if (target.includes("permiso") || target.includes("acceso")) {
+    return resolveLucideIcon("Key") || FileText
+  }
+  if (target.includes("seguridad") || target.includes("auditoria") || target.includes("auth")) {
+    return resolveLucideIcon("Shield") || Folder
+  }
+  if (target.includes("catalogo") || target.includes("categoria") || target.includes("tipo")) {
+    return resolveLucideIcon("LayoutGrid") || Folder
+  }
+  if (target.includes("ubicacion") || target.includes("planta") || target.includes("area")) {
+    return resolveLucideIcon("MapPin") || FileText
+  }
+  if (target.includes("reporte") || target.includes("informe") || target.includes("estadistica") || target.includes("jasper")) {
+    return resolveLucideIcon("FileSpreadsheet") || FileText
+  }
+  if (target.includes("config") || target.includes("parametro") || target.includes("ajuste") || target.includes("sistema")) {
+    return resolveLucideIcon("Settings2") || Folder
+  }
+
+  return null
+}
+
+/**
  * Convierte un nodo de árbol de menú de forma recursiva a NavNode
  */
 function mapTreeNodeToNavNode(node: MenuTreeNode): NavNode {
   const isLeaf = !node.hijos || node.hijos.length === 0
   const defaultIcon = isLeaf ? FileText : Folder
-  const Icon = resolveLucideIcon(node.icono) || defaultIcon
+  const Icon =
+    resolveLucideIcon(node.icono) ||
+    inferFallbackIcon(node.ruta, node.nombre, node.codigo) ||
+    defaultIcon
 
   const activeChildren = (node.hijos || [])
     .filter((child) => child && child.activo !== false)
@@ -52,7 +107,6 @@ function convertTreeToNavSections(nodes: MenuTreeNode[] | unknown): NavSection[]
       ? ((nodes as { data: MenuTreeNode[] }).data)
       : []
 
-
   if (!rawList || rawList.length === 0) return []
 
   const activeRoots = rawList
@@ -65,8 +119,11 @@ function convertTreeToNavSections(nodes: MenuTreeNode[] | unknown): NavSection[]
       root.codigo === "MOD_INICIO" ||
       (!root.hijos?.length && (root.ruta === "/" || !root.ruta))
 
-    const defaultIcon = isHome ? LayoutDashboard : LayoutDashboard
-    const Icon = resolveLucideIcon(root.icono) || defaultIcon
+    const defaultIcon = isHome ? LayoutDashboard : Folder
+    const Icon =
+      resolveLucideIcon(root.icono) ||
+      inferFallbackIcon(root.ruta, root.nombre, root.codigo) ||
+      defaultIcon
 
     const activeChildren = (root.hijos || [])
       .filter((child) => child && child.activo !== false)
