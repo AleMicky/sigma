@@ -54,6 +54,57 @@ const STORAGE_KEY = "sigma_recent_nav_tabs"
 const MAX_TABS = 10
 
 /**
+ * Detecta si una ruta corresponde a un formulario, edición, creación o vista transitoria.
+ * Al salir de estas vistas, la pestaña se retira del historial para evitar confusiones.
+ */
+function isFormOrTransientPath(pathname: string): boolean {
+  if (!pathname || pathname === "/") return false
+
+  const cleanPath = pathname.toLowerCase().trim()
+  const segments = cleanPath.split("/").filter(Boolean)
+
+  const formKeywords = [
+    "nuevo",
+    "nueva",
+    "new",
+    "crear",
+    "create",
+    "editar",
+    "edit",
+    "modificar",
+    "form",
+    "formulario",
+    "registro",
+    "wizard",
+    "asistente",
+  ]
+
+  // Verifica si algún segmento coincide con una palabra clave de formulario
+  const hasFormKeyword = segments.some((segment) =>
+    formKeywords.some(
+      (keyword) =>
+        segment === keyword ||
+        segment.startsWith(`${keyword}-`) ||
+        segment.endsWith(`-${keyword}`),
+    ),
+  )
+
+  if (hasFormKeyword) return true
+
+  // Si termina en un identificador numérico o UUID en subrutas de acción
+  const lastSegment = segments[segments.length - 1]
+  const isIdSegment =
+    /^[0-9]+$/.test(lastSegment) ||
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lastSegment)
+
+  if (isIdSegment && segments.length > 2) {
+    return true
+  }
+
+  return false
+}
+
+/**
  * Infiere un icono exacto representativo según el segmento de ruta o título
  */
 function resolveTabIcon(pathname: string) {
@@ -102,7 +153,13 @@ export function NavigationTabs() {
       const stored = sessionStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored) as NavTabItem[]
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Filtrar cualquier ruta de formulario previa guardada
+          const filtered = parsed.filter(
+            (t) => t.pathname === "/" || !isFormOrTransientPath(t.pathname),
+          )
+          if (filtered.length > 0) return filtered
+        }
       }
     } catch {
       // Ignorar errores de parsing
@@ -116,7 +173,12 @@ export function NavigationTabs() {
   if (prevPathname !== pathname) {
     setPrevPathname(pathname)
     if (pathname && pathname !== "/login" && pathname !== "/auth/callback") {
-      const exists = tabs.some((tab) => tab.pathname === pathname)
+      // 1. Limpiar pestañas de formularios que ya no están activas
+      const baseCleanTabs = tabs.filter(
+        (tab) => tab.pathname === pathname || !isFormOrTransientPath(tab.pathname),
+      )
+
+      const exists = baseCleanTabs.some((tab) => tab.pathname === pathname)
       if (!exists) {
         const segments = pathname.split("/").filter(Boolean)
         const lastSegment = segments[segments.length - 1] || "Inicio"
@@ -128,7 +190,7 @@ export function NavigationTabs() {
           title,
         }
 
-        const updated = [...tabs, newTab]
+        const updated = [...baseCleanTabs, newTab]
         if (updated.length > MAX_TABS) {
           const first = updated.find((t) => t.pathname === "/")
           const rest = updated.filter((t) => t.pathname !== "/").slice(-MAX_TABS + 1)
@@ -136,6 +198,8 @@ export function NavigationTabs() {
         } else {
           setTabs(updated)
         }
+      } else {
+        setTabs(baseCleanTabs)
       }
     }
   }
