@@ -84,6 +84,10 @@ export function SolicitudDetailModal({
 
   const estadoNorm = (currentSolicitud?.estado ?? "").trim().toLowerCase()
   const isBorrador = estadoNorm === "borrador"
+  const isTrabajoRealizado =
+    estadoNorm === "trabajo_realizado" ||
+    estadoNorm === "trabajo realizado" ||
+    estadoNorm === "trabajo-realizado"
   const prioridadNivel = currentSolicitud?.prioridad?.nivel ?? 1
   const isCritical = prioridadNivel >= 4
 
@@ -293,6 +297,37 @@ export function SolicitudDetailModal({
                 value="general"
                 className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4 m-0 text-xs"
               >
+                {/* Banner de Aviso: Acta de Devolución Requerida */}
+                {isTrabajoRealizado && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200">
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                      <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <p className="font-semibold text-xs text-amber-800 dark:text-amber-300">
+                          Trabajo Realizado - Registro de Devolución Requerido
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          El mantenimiento técnico ha concluido. Registra el <strong>Acta de Devolución de Activo</strong> para proceder con el cambio de estado y cierre de la solicitud.
+                        </p>
+                      </div>
+                    </div>
+                    {onControlActivo && (
+                      <Button
+                        type="button"
+                        size="xs"
+                        onClick={() => {
+                          onOpenChange(false)
+                          onControlActivo(currentSolicitud)
+                        }}
+                        className="h-7 text-xs font-semibold gap-1.5 shrink-0 bg-amber-600 hover:bg-amber-700 text-white shadow-2xs cursor-pointer"
+                      >
+                        <ClipboardCheck className="size-3" />
+                        <span>Registrar Devolución</span>
+                      </Button>
+                    )}
+                  </div>
+                )}
+
                 {/* 1. SECCIÓN PRINCIPAL: SOLICITANTE, TÉCNICO Y ACTIVO */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                   {/* Solicitante */}

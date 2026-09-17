@@ -414,8 +414,6 @@ export function ControlActivoHistorialModal({
   const isEffectiveReadOnly =
     readOnly ||
     estadoSolicitudNorm === "EN_REVISION" ||
-    estadoSolicitudNorm === "VALIDADO" ||
-    estadoSolicitudNorm === "TRABAJO_REALIZADO" ||
     estadoSolicitudNorm === "FINALIZADO" ||
     estadoSolicitudNorm === "CANCELADO" ||
     estadoSolicitudNorm === "RECHAZADO"

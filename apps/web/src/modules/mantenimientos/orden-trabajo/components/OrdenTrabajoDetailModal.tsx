@@ -140,16 +140,22 @@ export function OrdenTrabajoDetailModal({
   })
   const solicitud = solicitudQuery.data
   const estadoSolicitudNorm = (solicitud?.estado ?? "").toUpperCase().trim()
-  const isReadOnly =
-    readOnly ||
-    estadoSolicitudNorm === "EN_REVISION" ||
-    estadoSolicitudNorm === "VALIDADO" ||
-    estadoSolicitudNorm === "TRABAJO_REALIZADO" ||
+
+  const isFinalized =
     estadoSolicitudNorm === "FINALIZADO" ||
     estadoSolicitudNorm === "CANCELADO" ||
     estadoSolicitudNorm === "RECHAZADO"
 
-  const allowTaskManagement = !isReadOnly && canManageTasks
+  // Modo solo lectura estricto (por prop readOnly o si la solicitud está finalizada/cancelada)
+  const isReadOnly = readOnly || isFinalized
+
+  // Gestión estructural de definición de tareas (Crear, Editar, Eliminar actividades)
+  const allowTaskManagement =
+    !isReadOnly &&
+    canManageTasks &&
+    estadoSolicitudNorm !== "EN_REVISION" &&
+    estadoSolicitudNorm !== "VALIDADO" &&
+    estadoSolicitudNorm !== "TRABAJO_REALIZADO"
 
   // Se eliminó el modo planificación para que en estado ASIGNADO se pueda marcar tareas y subir adjuntos
   const isEnPlanificacion = false

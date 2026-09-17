@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import { AlertCircle, FileText, Plus, RefreshCw } from "lucide-react"
 
 import { appConfig } from "@/app/config"
@@ -15,13 +16,17 @@ import {
   WorkflowHistoryDialog,
   WorkflowListView,
   useWorkflowActionTarget,
+  type WorkflowAction,
+  type WorkflowField,
 } from "@/modules/workflow"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
-import { useCompletarWorkflowSolicitud, useDeleteSolicitud } from "../api/solicitud.mutations"
+import { controlActivoQueries } from "../../control-activo/api/control-activo.queries"
 import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
 import { OrdenTrabajoDetailModal } from "../../orden-trabajo/components/OrdenTrabajoDetailModal"
+import { useCompletarWorkflowSolicitud, useDeleteSolicitud } from "../api/solicitud.mutations"
+import { RequisitosDevolucionDialog } from "../components/RequisitosDevolucionDialog"
 import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
@@ -34,12 +39,19 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function SolicitudesPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [selectedEstado, setSelectedEstado] = useState<string>("")
   const [detailItem, setDetailItem] = useState<SolicitudMantenimiento | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
   const [ordenTrabajoItem, setOrdenTrabajoItem] = useState<SolicitudMantenimiento | null>(null)
   const [deletingItem, setDeletingItem] = useState<SolicitudMantenimiento | null>(null)
+  const [requisitosItem, setRequisitosItem] = useState<{
+    solicitud: SolicitudMantenimiento
+    action: WorkflowAction
+    taskName?: string
+    fields?: WorkflowField[]
+  } | null>(null)
 
   const search = usePaginatedSearch({
     debounceMs: 300,
@@ -93,6 +105,52 @@ export function SolicitudesPage() {
     query.refetch()
     resumenQuery.refetch()
   }, [query, resumenQuery])
+
+  const handleActionSelect = useCallback(
+    async (
+      solicitud: SolicitudMantenimiento,
+      action: WorkflowAction,
+      taskName?: string,
+      fields?: WorkflowField[],
+    ) => {
+      const estadoNorm = (solicitud.estado ?? "").trim().toUpperCase()
+
+      // Si la solicitud está en estado TRABAJO_REALIZADO, validar requisito obligatorio de Acta de Devolución
+      if (
+        estadoNorm === "TRABAJO_REALIZADO" ||
+        estadoNorm === "TRABAJO REALIZADO" ||
+        estadoNorm === "TRABAJO-REALIZADO"
+      ) {
+        try {
+          const controles = await queryClient.fetchQuery(
+            controlActivoQueries.bySolicitud(solicitud.id),
+          )
+          const hasDevolucion = (controles ?? []).some((c) => c.tipo === "DEVOLUCION")
+
+          if (!hasDevolucion) {
+            setRequisitosItem({
+              solicitud,
+              action,
+              taskName,
+              fields,
+            })
+            return
+          }
+        } catch {
+          setRequisitosItem({
+            solicitud,
+            action,
+            taskName,
+            fields,
+          })
+          return
+        }
+      }
+
+      openAction(solicitud, action, taskName, fields)
+    },
+    [openAction, queryClient],
+  )
 
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-2.5 py-0 sm:px-4 md:px-5 lg:px-6 md:py-0">
@@ -219,7 +277,7 @@ export function SolicitudesPage() {
                       onViewDetail={setDetailItem}
                       onEdit={handleEdit}
                       onDelete={setDeletingItem}
-                      onActionSelect={openAction}
+                      onActionSelect={handleActionSelect}
                       onTraceability={setTraceabilityItem}
                       onRegistrarControlActivo={setControlActivoItem}
                       onGestionarOrdenTrabajo={setOrdenTrabajoItem}
@@ -252,6 +310,24 @@ export function SolicitudesPage() {
         onTraceability={setTraceabilityItem}
         onControlActivo={setControlActivoItem}
         onGestionarOrdenTrabajo={setOrdenTrabajoItem}
+      />
+
+      {/* Modal de Requisitos de Devolución Obligatoria */}
+      <RequisitosDevolucionDialog
+        open={Boolean(requisitosItem)}
+        onOpenChange={(open) => {
+          if (!open) setRequisitosItem(null)
+        }}
+        solicitud={requisitosItem?.solicitud ?? null}
+        actionName={requisitosItem?.action.name ?? "Completar Solicitud"}
+        onRegistrarDevolucion={(sol) => setControlActivoItem(sol)}
+        onProceedWithAction={() => {
+          if (requisitosItem) {
+            const { action, solicitud, taskName, fields } = requisitosItem
+            setRequisitosItem(null)
+            openAction(solicitud, action, taskName, fields)
+          }
+        }}
       />
 
       {/* Diálogo para completar acciones de workflow de forma interactiva */}

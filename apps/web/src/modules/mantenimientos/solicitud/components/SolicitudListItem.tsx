@@ -144,6 +144,16 @@ export function SolicitudListItem({
             </span>
           )}
 
+          {isTrabajoRealizado && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10.5px] font-semibold text-amber-700 dark:text-amber-300 border border-amber-500/20 shrink-0 shadow-2xs"
+              title="Requiere registrar Acta de Devolución para completar o cerrar"
+            >
+              <AlertTriangle className="size-2.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>Requiere Devolución</span>
+            </span>
+          )}
+
           {adjuntosCount > 0 && (
             <span
               className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10.5px] font-medium text-muted-foreground border border-border/60 shrink-0"

@@ -110,7 +110,6 @@ export function EncargadoMantenimientoPage() {
       // Si la solicitud está en revisión o finalizada, el encargado solo puede consultar
       if (
         estadoNorm === "EN_REVISION" ||
-        estadoNorm === "VALIDADO" ||
         estadoNorm === "FINALIZADO" ||
         estadoNorm === "CANCELADO" ||
         estadoNorm === "RECHAZADO"
@@ -270,7 +269,6 @@ export function EncargadoMantenimientoPage() {
                       selectedEstado === "EN_REVISION" ||
                       selectedEstado === "FINALIZADO" ||
                       estadoNorm === "EN_REVISION" ||
-                      estadoNorm === "VALIDADO" ||
                       estadoNorm === "FINALIZADO" ||
                       estadoNorm === "CANCELADO" ||
                       estadoNorm === "RECHAZADO"
@@ -367,7 +365,7 @@ export function EncargadoMantenimientoPage() {
         title="Trazabilidad de Solicitud de Mantenimiento"
       />
 
-      {/* Diálogo para visualizar listado e historial de actas de control de activo (solo Entrega para Encargado) */}
+      {/* Diálogo para visualizar listado e historial de actas de control de activo */}
       <ControlActivoHistorialModal
         open={Boolean(controlActivoItem)}
         onOpenChange={(open) => {
@@ -375,14 +373,19 @@ export function EncargadoMantenimientoPage() {
         }}
         solicitudId={controlActivoItem?.id}
         solicitudNumero={controlActivoItem?.numero}
-        allowedTipo="ENTREGA"
+        allowedTipo={
+          controlActivoItem?.estado === "VALIDADO" ||
+          controlActivoItem?.estado === "TRABAJO_REALIZADO"
+            ? "ALL"
+            : "ENTREGA"
+        }
         readOnly={
           selectedEstado === "EN_REVISION" ||
           selectedEstado === "FINALIZADO" ||
           controlActivoItem?.estado === "EN_REVISION" ||
-          controlActivoItem?.estado === "VALIDADO" ||
-          controlActivoItem?.estado === "TRABAJO_REALIZADO" ||
-          controlActivoItem?.estado === "FINALIZADO"
+          controlActivoItem?.estado === "FINALIZADO" ||
+          controlActivoItem?.estado === "CANCELADO" ||
+          controlActivoItem?.estado === "RECHAZADO"
         }
       />
 
@@ -398,17 +401,17 @@ export function EncargadoMantenimientoPage() {
           selectedEstado === "EN_REVISION" ||
           selectedEstado === "FINALIZADO" ||
           ordenTrabajoItem?.estado === "EN_REVISION" ||
-          ordenTrabajoItem?.estado === "VALIDADO" ||
-          ordenTrabajoItem?.estado === "TRABAJO_REALIZADO" ||
-          ordenTrabajoItem?.estado === "FINALIZADO"
+          ordenTrabajoItem?.estado === "FINALIZADO" ||
+          ordenTrabajoItem?.estado === "CANCELADO" ||
+          ordenTrabajoItem?.estado === "RECHAZADO"
         }
         canManageTasks={
           selectedEstado !== "EN_REVISION" &&
           selectedEstado !== "FINALIZADO" &&
           ordenTrabajoItem?.estado !== "EN_REVISION" &&
-          ordenTrabajoItem?.estado !== "VALIDADO" &&
-          ordenTrabajoItem?.estado !== "TRABAJO_REALIZADO" &&
-          ordenTrabajoItem?.estado !== "FINALIZADO"
+          ordenTrabajoItem?.estado !== "FINALIZADO" &&
+          ordenTrabajoItem?.estado !== "CANCELADO" &&
+          ordenTrabajoItem?.estado !== "RECHAZADO"
         }
       />
     </PageShell>
