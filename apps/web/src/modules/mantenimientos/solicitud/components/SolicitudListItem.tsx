@@ -214,7 +214,7 @@ export function SolicitudListItem({
             </Button>
           )}
 
-          {onRegistrarControlActivo && (
+          {!isBorrador && onRegistrarControlActivo && (
             <Button
               type="button"
               size="xs"
@@ -231,7 +231,7 @@ export function SolicitudListItem({
             </Button>
           )}
 
-          {onGestionarOrdenTrabajo && (
+          {!isBorrador && onGestionarOrdenTrabajo && (
             <Button
               type="button"
               size="xs"

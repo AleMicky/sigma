@@ -22,6 +22,7 @@ import { cn } from "@/shared/lib/utils"
 
 import { useCompletarWorkflowSolicitud, useDeleteSolicitud } from "../api/solicitud.mutations"
 import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
+import { OrdenTrabajoDetailModal } from "../../orden-trabajo/components/OrdenTrabajoDetailModal"
 import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
@@ -38,6 +39,7 @@ export function SolicitudesPage() {
   const [detailItem, setDetailItem] = useState<SolicitudMantenimiento | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
+  const [ordenTrabajoItem, setOrdenTrabajoItem] = useState<SolicitudMantenimiento | null>(null)
   const [deletingItem, setDeletingItem] = useState<SolicitudMantenimiento | null>(null)
 
   const search = usePaginatedSearch({
@@ -226,6 +228,9 @@ export function SolicitudesPage() {
                       onRegistrarControlActivo={(sol) => {
                         setControlActivoItem(sol)
                       }}
+                      onGestionarOrdenTrabajo={(sol) => {
+                        setOrdenTrabajoItem(sol)
+                      }}
                     />
                   ))}
                 </WorkflowListView>
@@ -261,6 +266,9 @@ export function SolicitudesPage() {
         }}
         onControlActivo={(sol) => {
           setControlActivoItem(sol)
+        }}
+        onGestionarOrdenTrabajo={(sol) => {
+          setOrdenTrabajoItem(sol)
         }}
       />
 
@@ -308,6 +316,17 @@ export function SolicitudesPage() {
         solicitudId={controlActivoItem?.id}
         solicitudNumero={controlActivoItem?.numero}
         allowedTipo="DEVOLUCION"
+      />
+
+      {/* Diálogo para visualizar la orden de trabajo (solo consulta) */}
+      <OrdenTrabajoDetailModal
+        open={Boolean(ordenTrabajoItem)}
+        onOpenChange={(open) => {
+          if (!open) setOrdenTrabajoItem(null)
+        }}
+        solicitudId={ordenTrabajoItem?.id}
+        solicitudNumero={ordenTrabajoItem?.numero}
+        readOnly={true}
       />
 
       {/* Diálogo de confirmación para eliminar solicitud en borrador */}

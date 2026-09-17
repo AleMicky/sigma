@@ -616,7 +616,9 @@ export function ControlActivoHistorialModal({
                   <ControlItemCard
                     key={control.id}
                     control={control}
-                    readOnly={readOnly}
+                    readOnly={
+                      readOnly || (allowedTipo !== "ALL" && control.tipo !== allowedTipo)
+                    }
                     defaultExpanded={idx === 0}
                     accesorioMap={accesorioMap}
                     onCloseModal={() => onOpenChange(false)}

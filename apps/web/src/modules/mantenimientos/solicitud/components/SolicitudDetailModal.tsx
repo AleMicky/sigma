@@ -556,7 +556,7 @@ export function SolicitudDetailModal({
                   </Button>
                 )}
 
-                {onControlActivo && (
+                {!isBorrador && onControlActivo && (
                   <Button
                     type="button"
                     size="xs"
@@ -572,7 +572,7 @@ export function SolicitudDetailModal({
                   </Button>
                 )}
 
-                {onGestionarOrdenTrabajo && (
+                {!isBorrador && onGestionarOrdenTrabajo && (
                   <Button
                     type="button"
                     size="xs"
