@@ -35,6 +35,12 @@ class JasperReportServiceTest {
         parameters.put("FECHA_FIN", "18/09/2026 16:00");
         parameters.put("FECHA_CIERRE", "19/09/2026 12:00");
         parameters.put("FECHA_EMISION", "17/09/2026 15:45");
+        parameters.put("GENERADO_POR", "Ing. Juan Pérez - Jefe de Mantenimiento");
+
+        java.awt.image.BufferedImage barcode = BarcodeUtil.generateBarcode128("SM-2026-0001", 320, 60);
+        if (barcode != null) {
+            parameters.put("BARCODE_IMAGEN", barcode);
+        }
 
         try {
             org.springframework.core.io.ClassPathResource logoResource = new org.springframework.core.io.ClassPathResource("reports/images/logo-ende-corani.png");

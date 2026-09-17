@@ -106,5 +106,26 @@ public class SecurityUtils {
 
         return Optional.empty();
     }
+
+    /**
+     * Retorna el nombre de usuario o nombre completo del usuario autenticado actual.
+     */
+    public String getCurrentUsername() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            return "Sistema";
+        }
+        if (auth.getPrincipal() instanceof Jwt jwt) {
+            String name = jwt.getClaimAsString("name");
+            if (name != null && !name.isBlank()) {
+                return name;
+            }
+            String preferredUsername = jwt.getClaimAsString("preferred_username");
+            if (preferredUsername != null && !preferredUsername.isBlank()) {
+                return preferredUsername;
+            }
+        }
+        return auth.getName() != null ? auth.getName() : "Sistema";
+    }
 }
 

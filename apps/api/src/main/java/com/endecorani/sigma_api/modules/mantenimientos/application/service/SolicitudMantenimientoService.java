@@ -301,6 +301,24 @@ public class SolicitudMantenimientoService {
         parameters.put("FECHA_CIERRE", response.fechaCierre() != null ? response.fechaCierre().format(FORMATTER_FECHA_HORA) : "-");
         parameters.put("FECHA_EMISION", LocalDateTime.now().format(FORMATTER_FECHA_HORA));
 
+        // Usuario generador del reporte
+        String usuarioGenerador = securityUtils.getCurrentUsername();
+        UUID currentEmpId = obtenerEmpleadoIdActual();
+        if (currentEmpId != null) {
+            Empleado emp = empleadoRepository.findById(currentEmpId).orElse(null);
+            if (emp != null && emp.getNombreCompleto() != null && !emp.getNombreCompleto().isBlank()) {
+                usuarioGenerador = emp.getNombreCompleto() + (emp.getCargo() != null && !emp.getCargo().isBlank() ? " - " + emp.getCargo() : "");
+            }
+        }
+        parameters.put("GENERADO_POR", usuarioGenerador);
+
+        // Código de barras
+        String codigoBarras = response.numero() != null && !response.numero().isBlank() ? response.numero() : id.toString();
+        java.awt.image.BufferedImage barcodeImage = com.endecorani.sigma_api.shared.infrastructure.report.BarcodeUtil.generateBarcode128(codigoBarras, 320, 60);
+        if (barcodeImage != null) {
+            parameters.put("BARCODE_IMAGEN", barcodeImage);
+        }
+
         try {
             org.springframework.core.io.ClassPathResource logoResource = new org.springframework.core.io.ClassPathResource("reports/images/logo-ende-corani.png");
             if (logoResource.exists()) {
