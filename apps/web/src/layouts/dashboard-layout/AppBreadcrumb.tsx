@@ -37,7 +37,7 @@ export function AppBreadcrumb() {
                   </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink
-                    render={<Link to={item.href as any} />}
+                    render={<Link to={item.href} />}
                     className="flex items-center gap-1 transition-colors hover:text-foreground shrink-0"
                   >
                     {isFirst && <Home className="size-3.5" />}

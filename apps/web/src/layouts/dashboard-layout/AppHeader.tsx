@@ -9,6 +9,7 @@ import {
   WifiOff,
 } from "lucide-react"
 
+import { appConfig } from "@/app/config"
 import { RefreshButton } from "@/shared/components/refresh-button"
 import { ThemeToggle } from "@/shared/components/theme-toggle"
 import { Button } from "@/shared/components/ui/button"
@@ -140,7 +141,7 @@ export function AppHeader() {
 
           <div className="hidden lg:inline-flex items-center gap-1.5 text-xs font-semibold text-foreground/90 px-2 py-1 rounded-lg bg-muted/50 border border-border/40">
             <Building2 className="size-3.5 text-amber-500" />
-            <span className="font-heading">ENDE Corani S.A.</span>
+            <span className="font-heading">{appConfig.shortName}</span>
           </div>
 
           {isOnline && (

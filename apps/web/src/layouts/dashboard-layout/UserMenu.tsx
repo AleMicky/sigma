@@ -42,15 +42,15 @@ export function UserMenu() {
   const user = useAuthStore((state) => state.user)
   const logoutMutation = useLogout()
 
-  const displayName = user?.name ?? "Usuario"
-  const subtitle = user?.roles?.[0] ?? "Operador"
+  const displayName = user?.name || user?.username || "Usuario"
+  const subtitle = user?.roles?.[0] ?? ""
   const initials = getInitials(displayName)
 
   async function handleLogout() {
     try {
       await logoutMutation.mutateAsync()
     } catch {
-      // La sesión local se limpia igual si Keycloak ya invalidó el token.
+      // La sesión local se limpia igual si el proveedor de auth ya invalidó el token.
     } finally {
       await navigate({ to: "/login" })
     }
@@ -81,12 +81,14 @@ export function UserMenu() {
               <span className="truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
                 {displayName}
               </span>
-              <div className="flex items-center gap-1">
-                <span className="inline-block size-1 rounded-full bg-emerald-500" />
-                <span className="truncate text-[10.5px] font-medium text-muted-foreground">
-                  {subtitle}
-                </span>
-              </div>
+              {subtitle && (
+                <div className="flex items-center gap-1">
+                  <span className="inline-block size-1 rounded-full bg-emerald-500" />
+                  <span className="truncate text-[10.5px] font-medium text-muted-foreground">
+                    {subtitle}
+                  </span>
+                </div>
+              )}
             </div>
             <ChevronsUpDown className="ml-auto size-3.5 text-muted-foreground/70 transition-transform group-hover:text-foreground group-data-[collapsible=icon]:hidden" />
           </DropdownMenuTrigger>
@@ -109,12 +111,14 @@ export function UserMenu() {
                     <span className="truncate text-sm font-semibold text-foreground">
                       {displayName}
                     </span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {user?.email ?? "usuario@endecorani.bo"}
-                    </span>
+                    {user?.email && (
+                      <span className="truncate text-xs text-muted-foreground">
+                        {user.email}
+                      </span>
+                    )}
                     <div className="mt-1 flex items-center gap-1.5 text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400">
                       <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>Conectado con Keycloak</span>
+                      <span>{user?.roles?.length ? user.roles.join(", ") : "Sesión activa"}</span>
                     </div>
                   </div>
                 </div>

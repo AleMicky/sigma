@@ -35,50 +35,12 @@ export interface SystemNotification {
   to?: string
 }
 
-const INITIAL_NOTIFICATIONS: SystemNotification[] = [
-  {
-    id: "notif-1",
-    title: "Solicitud de Mantenimiento por Aprobar",
-    description: "SOL-2024-008: Inspección preventiva en Turbina Hidráulica 1.",
-    timeAgo: "Hace 15 min",
-    type: "approval",
-    priority: "warning",
-    read: false,
-    to: "/mantenimientos/solicitudes",
-  },
-  {
-    id: "notif-2",
-    title: "Alerta de Mantenimiento Preventivo",
-    description: "La Orden OT-2024-042 del Transformador T-02 vence en 48 horas.",
-    timeAgo: "Hace 1 hora",
-    type: "maintenance",
-    priority: "critical",
-    read: false,
-    to: "/mantenimientos/ordenes-trabajo",
-  },
-  {
-    id: "notif-3",
-    title: "Aprobación de Solicitud Exitosa",
-    description: "La solicitud SOL-2024-005 ha sido aprobada por Supervisor de Planta.",
-    timeAgo: "Hace 3 horas",
-    type: "system",
-    priority: "info",
-    read: true,
-    to: "/mantenimientos/solicitudes",
-  },
-  {
-    id: "notif-4",
-    title: "Sincronización de Base de Datos OK",
-    description: "Catálogos y activos migrados correctamente al nodo central.",
-    timeAgo: "Hace 1 día",
-    type: "system",
-    priority: "info",
-    read: true,
-  },
-]
-
-export function NotificationCenter() {
-  const [notifications, setNotifications] = useState<SystemNotification[]>(INITIAL_NOTIFICATIONS)
+export function NotificationCenter({
+  initialNotifications = [],
+}: {
+  initialNotifications?: SystemNotification[]
+} = {}) {
+  const [notifications, setNotifications] = useState<SystemNotification[]>(initialNotifications)
   const [filter, setFilter] = useState<"all" | "unread" | "maintenance">("all")
 
   const unreadCount = notifications.filter((n) => !n.read).length

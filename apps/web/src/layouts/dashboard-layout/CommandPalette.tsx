@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useTheme } from "next-themes"
 import {
@@ -101,9 +101,17 @@ export function CommandPalette({
   const [search, setSearch] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [prevSearch, setPrevSearch] = useState(search)
+  const [prevOpen, setPrevOpen] = useState(open)
+
+  if (prevSearch !== search || prevOpen !== open) {
+    setPrevSearch(search)
+    setPrevOpen(open)
+    setSelectedIndex(0)
+  }
 
   // Toggle fullscreen
-  function toggleFullscreen() {
+  const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       void document.documentElement.requestFullscreen()
       setIsFullscreen(true)
@@ -112,7 +120,7 @@ export function CommandPalette({
       setIsFullscreen(false)
     }
     onOpenChange(false)
-  }
+  }, [onOpenChange])
 
   // Colección de todos los comandos
   const allItems = useMemo<CommandItem[]>(() => {
@@ -165,7 +173,7 @@ export function CommandPalette({
       {
         id: "sys-logout",
         title: "Cerrar Sesión",
-        subtitle: "Salir de la cuenta Keycloak",
+        subtitle: "Finalizar sesión en el sistema",
         icon: LogOut,
         category: "Sistema",
         onSelect: async () => {
@@ -182,7 +190,7 @@ export function CommandPalette({
     ]
 
     return [...navItems, ...systemItems]
-  }, [sections, navigate, onOpenChange, theme, setTheme, isFullscreen, logoutMutation])
+  }, [sections, navigate, onOpenChange, theme, setTheme, isFullscreen, toggleFullscreen, logoutMutation])
 
   // Filtrado de comandos por búsqueda
   const filteredItems = useMemo(() => {
@@ -196,11 +204,6 @@ export function CommandPalette({
         item.category.toLowerCase().includes(query),
     )
   }, [allItems, search])
-
-  // Reset del index seleccionado al cambiar búsqueda o abrir
-  useEffect(() => {
-    setSelectedIndex(0)
-  }, [search, open])
 
   // Manejo de teclado
   function handleKeyDown(e: React.KeyboardEvent) {

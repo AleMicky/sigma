@@ -77,7 +77,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-border/80 transition-all duration-200 group-hover:scale-105 group-hover:shadow-md dark:bg-white/95 dark:ring-white/20">
             <img
               src={logoEndeCorani}
-              alt="ENDE Corani"
+              alt={appConfig.shortName}
               className="size-full object-contain"
             />
           </div>
@@ -93,7 +93,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
             <div className="flex items-center gap-1 mt-0.5">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="truncate text-[11px] font-medium text-muted-foreground">
-                ENDE Corani S.A.
+                {appConfig.description}
               </span>
             </div>
           </div>
