@@ -35,13 +35,27 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
         }),
 
-      clearSession: () =>
+      clearSession: () => {
+        try {
+          if (typeof sessionStorage !== "undefined") {
+            Object.keys(sessionStorage).forEach((key) => {
+              if (key.startsWith("sigma_recent_nav_tabs")) {
+                sessionStorage.removeItem(key)
+              }
+            })
+            sessionStorage.removeItem("sigma_recent_nav_tabs")
+          }
+        } catch {
+          // Ignorar errores de acceso al storage
+        }
+
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
-        }),
+        })
+      },
     }),
     {
       name: appConfig.storageKeys.user,

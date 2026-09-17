@@ -34,6 +34,7 @@ import {
 } from "lucide-react"
 
 import { formatSegment } from "./breadcrumb.utils"
+import { useAuthStore } from "@/app/store/auth.store"
 import { Button } from "@/shared/components/ui/button"
 import {
   DropdownMenu,
@@ -52,6 +53,10 @@ export interface NavTabItem {
 
 const STORAGE_KEY = "sigma_recent_nav_tabs"
 const MAX_TABS = 10
+
+function getStorageKey(userId?: string | null): string {
+  return userId ? `${STORAGE_KEY}_${userId}` : STORAGE_KEY
+}
 
 /**
  * Detecta si una ruta corresponde a un formulario, edición, creación o vista transitoria.
@@ -104,6 +109,28 @@ function isFormOrTransientPath(pathname: string): boolean {
   return false
 }
 
+function loadInitialTabs(userId?: string | null): NavTabItem[] {
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      const storageKey = getStorageKey(userId)
+      const stored = sessionStorage.getItem(storageKey)
+      if (stored) {
+        const parsed = JSON.parse(stored) as NavTabItem[]
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Filtrar cualquier ruta de formulario previa guardada
+          const filtered = parsed.filter(
+            (t) => t.pathname === "/" || !isFormOrTransientPath(t.pathname),
+          )
+          if (filtered.length > 0) return filtered
+        }
+      }
+    }
+  } catch {
+    // Ignorar errores de parsing
+  }
+  return [{ id: "/", pathname: "/", title: "Inicio" }]
+}
+
 /**
  * Infiere un icono exacto representativo según el segmento de ruta o título
  */
@@ -147,27 +174,18 @@ export function NavigationTabs() {
   })
   const navigate = useNavigate()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const user = useAuthStore((state) => state.user)
+  const userId = user?.id
 
-  const [tabs, setTabs] = useState<NavTabItem[]>(() => {
-    try {
-      const stored = sessionStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored) as NavTabItem[]
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Filtrar cualquier ruta de formulario previa guardada
-          const filtered = parsed.filter(
-            (t) => t.pathname === "/" || !isFormOrTransientPath(t.pathname),
-          )
-          if (filtered.length > 0) return filtered
-        }
-      }
-    } catch {
-      // Ignorar errores de parsing
-    }
-    return [{ id: "/", pathname: "/", title: "Inicio" }]
-  })
-
+  const [tabs, setTabs] = useState<NavTabItem[]>(() => loadInitialTabs(userId))
   const [prevPathname, setPrevPathname] = useState(pathname)
+  const [prevUserId, setPrevUserId] = useState(userId)
+
+  // Resetear o sincronizar pestañas si cambia el usuario autenticado (cierre o cambio de sesión)
+  if (prevUserId !== userId) {
+    setPrevUserId(userId)
+    setTabs(loadInitialTabs(userId))
+  }
 
   // Sincronizar nueva pestaña al cambiar de ruta
   if (prevPathname !== pathname) {
@@ -204,14 +222,17 @@ export function NavigationTabs() {
     }
   }
 
-  // Guardar en sessionStorage
+  // Guardar en sessionStorage para el usuario actual
   useEffect(() => {
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(tabs))
+      if (typeof sessionStorage !== "undefined") {
+        const storageKey = getStorageKey(userId)
+        sessionStorage.setItem(storageKey, JSON.stringify(tabs))
+      }
     } catch {
       // Ignorar
     }
-  }, [tabs])
+  }, [tabs, userId])
 
   // Auto-scroll a la pestaña activa
   useEffect(() => {

@@ -143,9 +143,16 @@ public class WorkflowApplicationService {
             return;
         }
 
+        boolean esObservacionORechazo = esAccionObservacionORechazo(variables, tarea);
+
         for (WorkflowFieldResponse field : tarea.fields()) {
 
             if (!field.required()) {
+                continue;
+            }
+
+            // En acciones de observación o rechazo, los campos de asignación no aplican
+            if (esObservacionORechazo && esCampoDeAsignacion(field.id())) {
                 continue;
             }
 
@@ -161,6 +168,37 @@ public class WorkflowApplicationService {
                 );
             }
         }
+    }
+
+    private boolean esAccionObservacionORechazo(
+            Map<String, Object> variables,
+            WorkflowTaskActionsResponse tarea
+    ) {
+        if (tarea.actions() == null || tarea.actions().isEmpty()) {
+            return false;
+        }
+
+        return tarea.actions().stream().anyMatch(action -> {
+            Object val = variables.get(action.variable());
+            if (val == null) {
+                return false;
+            }
+            String actionVal = val.toString().toUpperCase();
+            String actionName = action.name() != null ? action.name().toUpperCase() : "";
+            return actionVal.contains("OBSERV") || actionVal.contains("RECHAZ") || actionVal.contains("CANCEL")
+                    || actionName.contains("OBSERV") || actionName.contains("RECHAZ") || actionName.contains("CANCEL");
+        });
+    }
+
+    private boolean esCampoDeAsignacion(String fieldId) {
+        if (fieldId == null) {
+            return false;
+        }
+        String lower = fieldId.toLowerCase();
+        return lower.contains("responsable")
+                || lower.contains("supervisor")
+                || lower.contains("tecnico")
+                || lower.contains("encargado");
     }
 
     private void validarVariablesPermitidas(

@@ -61,11 +61,13 @@ export function SolicitudListItem({
 
   const estadoNorm = (solicitud.estado ?? "").trim().toLowerCase()
   const isBorrador = estadoNorm === "borrador"
+  const isSolicitado = estadoNorm === "solicitado"
+  const isObservado = estadoNorm === "observado"
+  const isPreAsignacion = isBorrador || isSolicitado || isObservado
   const isTrabajoRealizado =
     estadoNorm === "trabajo_realizado" ||
     estadoNorm === "trabajo realizado" ||
     estadoNorm === "trabajo-realizado"
-  const isObservado = estadoNorm === "observado"
 
   const shouldShowWorkflowActions =
     showWorkflowActions !== undefined
@@ -235,7 +237,7 @@ export function SolicitudListItem({
             </Button>
           )}
 
-          {!isBorrador && onRegistrarControlActivo && (
+          {!isPreAsignacion && onRegistrarControlActivo && (
             <Button
               type="button"
               size="xs"
@@ -252,7 +254,7 @@ export function SolicitudListItem({
             </Button>
           )}
 
-          {!isBorrador && onGestionarOrdenTrabajo && (
+          {!isPreAsignacion && onGestionarOrdenTrabajo && (
             <Button
               type="button"
               size="xs"
@@ -269,7 +271,7 @@ export function SolicitudListItem({
             </Button>
           )}
 
-          {isBorrador && onEdit && (
+          {(isBorrador || isObservado) && onEdit && (
             <Button
               type="button"
               size="xs"
@@ -279,7 +281,7 @@ export function SolicitudListItem({
                 onEdit(solicitud)
               }}
               className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/90 hover:bg-muted text-foreground border-border/80 shadow-2xs cursor-pointer transition-all"
-              title="Editar borrador de solicitud"
+              title={isObservado ? "Editar solicitud observada" : "Editar borrador de solicitud"}
             >
               <Pencil className="size-3 text-muted-foreground shrink-0" />
               <span>Editar</span>

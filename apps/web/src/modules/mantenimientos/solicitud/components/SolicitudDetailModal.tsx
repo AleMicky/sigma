@@ -84,6 +84,10 @@ export function SolicitudDetailModal({
 
   const estadoNorm = (currentSolicitud?.estado ?? "").trim().toLowerCase()
   const isBorrador = estadoNorm === "borrador"
+  const isSolicitado = estadoNorm === "solicitado"
+  const isObservado = estadoNorm === "observado"
+  const isPreAsignacion = isBorrador || isSolicitado || isObservado
+  const canEdit = isBorrador || isObservado
   const isTrabajoRealizado =
     estadoNorm === "trabajo_realizado" ||
     estadoNorm === "trabajo realizado" ||
@@ -241,7 +245,7 @@ export function SolicitudDetailModal({
                     <span>PDF</span>
                   </Button>
 
-                  {isBorrador && onEdit && (
+                  {canEdit && onEdit && (
                     <Button
                       variant="outline"
                       size="xs"
@@ -250,6 +254,7 @@ export function SolicitudDetailModal({
                         onEdit(currentSolicitud)
                       }}
                       className="h-7 text-xs gap-1.5 px-3 font-semibold cursor-pointer shadow-2xs"
+                      title={isObservado ? "Editar solicitud observada" : "Editar borrador de solicitud"}
                     >
                       <Pencil className="size-3" />
                       <span>Editar</span>
@@ -591,7 +596,7 @@ export function SolicitudDetailModal({
                   </Button>
                 )}
 
-                {!isBorrador && onControlActivo && (
+                {!isPreAsignacion && onControlActivo && (
                   <Button
                     type="button"
                     size="xs"
@@ -607,7 +612,7 @@ export function SolicitudDetailModal({
                   </Button>
                 )}
 
-                {!isBorrador && onGestionarOrdenTrabajo && (
+                {!isPreAsignacion && onGestionarOrdenTrabajo && (
                   <Button
                     type="button"
                     size="xs"
