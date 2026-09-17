@@ -1,4 +1,23 @@
-import { CheckCircle2, Clock, History, Loader2, User } from "lucide-react"
+import { useState, type MouseEvent } from "react"
+import {
+  Check,
+  CheckCircle2,
+  Clock,
+  Copy,
+  FileCheck2,
+  FileEdit,
+  History,
+  Hourglass,
+  Loader2,
+  PackageCheck,
+  RefreshCw,
+  Share2,
+  ShieldCheck,
+  User,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react"
+import { toast } from "sonner"
 
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -20,6 +39,15 @@ export type WorkflowHistoryDialogProps = {
   processInstanceId?: string | null
   entityCode?: string | null
   title?: string
+}
+
+function getInitials(name?: string | null): string {
+  if (!name) return "?"
+  const clean = name.replace(/\[.*?\]/g, "").trim()
+  const parts = clean.split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 function formatWorkflowDate(dateString?: string | null): string {
@@ -59,162 +87,363 @@ function formatDuration(startTime?: string | null, endTime?: string | null): str
   }
 }
 
+function getStageVisuals(
+  taskName?: string | null,
+  taskKey?: string | null,
+): { icon: LucideIcon; accentColor: string; bgBadge: string } {
+  const norm = ((taskName ?? "") + " " + (taskKey ?? "")).toUpperCase()
+
+  if (norm.includes("BORRADOR") || norm.includes("SOLICITANTE") || norm.includes("CREAR")) {
+    return {
+      icon: FileEdit,
+      accentColor: "text-sky-600 dark:text-sky-400",
+      bgBadge: "bg-sky-500/10 border-sky-500/30 text-sky-700 dark:text-sky-300",
+    }
+  }
+  if (norm.includes("REVISAR") || norm.includes("APROBAD") || norm.includes("SOLICITADO")) {
+    return {
+      icon: ShieldCheck,
+      accentColor: "text-indigo-600 dark:text-indigo-400",
+      bgBadge: "bg-indigo-500/10 border-indigo-500/30 text-indigo-700 dark:text-indigo-300",
+    }
+  }
+  if (norm.includes("ASIGNAD") || norm.includes("INICIAR") || norm.includes("EJECUTAR") || norm.includes("MANTENIMIENTO")) {
+    return {
+      icon: Wrench,
+      accentColor: "text-amber-600 dark:text-amber-400",
+      bgBadge: "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300",
+    }
+  }
+  if (norm.includes("REVISION") || norm.includes("SUPERVIS")) {
+    return {
+      icon: FileCheck2,
+      accentColor: "text-purple-600 dark:text-purple-400",
+      bgBadge: "bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300",
+    }
+  }
+  if (norm.includes("VALIDADO") || norm.includes("TRABAJO") || norm.includes("RECIB") || norm.includes("CERR")) {
+    return {
+      icon: PackageCheck,
+      accentColor: "text-emerald-600 dark:text-emerald-400",
+      bgBadge: "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300",
+    }
+  }
+
+  return {
+    icon: Clock,
+    accentColor: "text-primary",
+    bgBadge: "bg-primary/10 border-primary/30 text-primary",
+  }
+}
+
 export function WorkflowHistoryDialog({
   open,
   onOpenChange,
   processInstanceId,
   entityCode,
-  title = "Trazabilidad de Workflow",
+  title = "Trazabilidad de Solicitud",
 }: WorkflowHistoryDialogProps) {
-  const { items, isLoading, isError, refetch } = useWorkflowHistory(
+  const [copiedFolio, setCopiedFolio] = useState(false)
+  const [copiedSummary, setCopiedSummary] = useState(false)
+
+  const { items, isLoading, isFetching, isError, refetch } = useWorkflowHistory(
     processInstanceId,
     { enabled: open && Boolean(processInstanceId) },
   )
 
+  const completedCount = items.filter((i) => Boolean(i.endTime)).length
+  const totalCount = items.length
+  const percentCompleted = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+
+  // Cálculo de tiempo acumulado global
+  const firstStartTime = items.length > 0 ? items[0].startTime : null
+  const lastCompletedEndTime =
+    completedCount === totalCount && totalCount > 0
+      ? items[items.length - 1].endTime
+      : new Date().toISOString()
+  const totalCumulativeDuration = formatDuration(firstStartTime, lastCompletedEndTime)
+
+  const handleCopyFolio = (e: MouseEvent) => {
+    e.stopPropagation()
+    if (!entityCode) return
+    navigator.clipboard.writeText(entityCode)
+    setCopiedFolio(true)
+    toast.success("Folio copiado al portapapeles", { duration: 1500 })
+    setTimeout(() => setCopiedFolio(false), 2000)
+  }
+
+  const handleCopySummary = () => {
+    if (items.length === 0) return
+
+    const header = `📋 TRAZABILIDAD DE WORKFLOW\nFolio: ${entityCode || "N/A"}\nInstancia: ${processInstanceId || "N/A"}\nAvance: ${completedCount}/${totalCount} pasos (${percentCompleted}%)\n${totalCumulativeDuration ? `Tiempo Total: ${totalCumulativeDuration}\n` : ""}----------------------------------------\n`
+
+    const stepsText = items
+      .map((item, idx) => {
+        const isDone = Boolean(item.endTime)
+        const name = fixWorkflowEncoding(item.taskName || item.taskDefinitionKey || "Tarea")
+        const dur = formatDuration(item.startTime, item.endTime)
+        const lines = [
+          `[Paso ${idx + 1}] ${name} (${isDone ? "COMPLETADA" : "EN PROGRESO"})`,
+          `  Responsable: ${item.assigneeName || item.assignee || "Sin asignar"}`,
+          `  Inicio: ${formatWorkflowDate(item.startTime)}`,
+          isDone ? `  Fin: ${formatWorkflowDate(item.endTime)}` : null,
+          dur ? `  Duración: ${dur}` : null,
+        ].filter(Boolean)
+        return lines.join("\n")
+      })
+      .join("\n\n")
+
+    navigator.clipboard.writeText(header + stepsText)
+    setCopiedSummary(true)
+    toast.success("Resumen de trazabilidad copiado", { duration: 2000 })
+    setTimeout(() => setCopiedSummary(false), 2500)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 gap-0 border-border/80 shadow-2xl rounded-2xl overflow-hidden">
-        {/* Header */}
-        <DialogHeader className="px-6 py-4 border-b border-border/60 bg-muted/20">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
-                <History className="size-4" />
+      <DialogContent className="max-w-xl p-0 gap-0 border-border/80 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Header Estructurado */}
+        <DialogHeader className="px-5 sm:px-6 pt-4 pb-3.5 border-b border-border/60 bg-muted/20 shrink-0 space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0 border border-primary/20">
+                <History className="size-4.5" />
               </div>
               <div className="min-w-0">
-                <DialogTitle className="text-base font-semibold leading-tight truncate">
+                <DialogTitle className="text-base font-bold text-foreground leading-snug truncate">
                   {title}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground truncate">
-                  {entityCode ? `Folio / Código: ${entityCode}` : "Historial cronológico de tareas"}
+                  Historial cronológico y trazabilidad de ejecución
                 </DialogDescription>
               </div>
             </div>
-            {processInstanceId && (
-              <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground shrink-0">
-                {processInstanceId.substring(0, 8)}...
-              </Badge>
-            )}
+
+            {/* Acciones de Cabecera (Refrescar & ID de Proceso) */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-xs"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                title="Actualizar trazabilidad"
+                className="size-7 rounded-lg border-border/70 hover:bg-muted cursor-pointer"
+              >
+                <RefreshCw className={cn("size-3.5 text-muted-foreground", isFetching && "animate-spin text-primary")} />
+              </Button>
+
+              {processInstanceId && (
+                <Badge
+                  variant="outline"
+                  className="font-mono text-[10px] text-muted-foreground bg-background px-2 py-0.5"
+                  title={`ID de Instancia Flowable: ${processInstanceId}`}
+                >
+                  {processInstanceId.substring(0, 8)}...
+                </Badge>
+              )}
+            </div>
           </div>
+
+          {/* Badges y Barra de Progreso */}
+          <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              {entityCode && (
+                <button
+                  type="button"
+                  onClick={handleCopyFolio}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-background px-2 py-0.5 font-mono text-xs font-bold text-foreground border border-border shadow-2xs hover:border-primary/50 hover:bg-muted/40 cursor-pointer active:scale-95 transition-all"
+                  title="Haga clic para copiar folio"
+                >
+                  <span>{entityCode}</span>
+                  {copiedFolio ? (
+                    <Check className="size-3 text-emerald-500 shrink-0" />
+                  ) : (
+                    <Copy className="size-3 opacity-40 hover:opacity-100 shrink-0" />
+                  )}
+                </button>
+              )}
+
+              {totalCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md border border-border/50">
+                  <CheckCircle2 className="size-3 text-emerald-500" />
+                  <span>
+                    {completedCount} de {totalCount} pasos ({percentCompleted}%)
+                  </span>
+                </span>
+              )}
+
+              {totalCumulativeDuration && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md border border-border/50">
+                  <Hourglass className="size-3 text-amber-500" />
+                  <span>{totalCumulativeDuration}</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Micro Progress Line */}
+          {totalCount > 0 && (
+            <div className="w-full bg-border/60 h-1 rounded-full overflow-hidden mt-1">
+              <div
+                className="bg-emerald-500 h-full transition-all duration-500 rounded-full"
+                style={{ width: `${percentCompleted}%` }}
+              />
+            </div>
+          )}
         </DialogHeader>
 
         {/* Body / Timeline */}
-        <div className="max-h-[60vh] overflow-y-auto p-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 bg-background">
           {isLoading && (
-            <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
-              <Loader2 className="size-6 animate-spin text-primary" />
-              <span className="text-xs">Cargando trazabilidad del proceso...</span>
+            <div className="flex flex-col items-center justify-center py-14 gap-2.5 text-muted-foreground">
+              <Loader2 className="size-7 animate-spin text-primary" />
+              <p className="text-xs font-medium">Cargando trazabilidad del proceso...</p>
             </div>
           )}
 
           {isError && (
-            <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
               <p className="text-xs text-destructive font-medium">
-                No se pudo cargar la trazabilidad del proceso
+                No se pudo cargar la trazabilidad del proceso.
               </p>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => refetch()}
-                className="text-xs cursor-pointer"
+                className="text-xs cursor-pointer gap-1.5"
               >
-                Reintentar
+                <RefreshCw className="size-3.5" />
+                <span>Reintentar</span>
               </Button>
             </div>
           )}
 
           {!isLoading && !isError && items.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground gap-2">
-              <Clock className="size-8 opacity-40" />
-              <p className="text-sm font-medium">Sin historial registrado</p>
-              <p className="text-xs">
-                Aún no se han completado tareas previas en este flujo de trabajo.
+            <div className="flex flex-col items-center justify-center py-14 text-center text-muted-foreground gap-2">
+              <Clock className="size-9 opacity-35 text-muted-foreground" />
+              <p className="text-sm font-semibold text-foreground">Sin historial registrado</p>
+              <p className="text-xs max-w-xs">
+                Aún no se han completado transiciones previas en el flujo de trabajo de esta solicitud.
               </p>
             </div>
           )}
 
           {!isLoading && !isError && items.length > 0 && (
-            <div className="relative pl-6 space-y-5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-border/70">
+            <div className="relative pl-7 space-y-4 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-border/80">
               {items.map((item, index) => {
                 const isCompleted = Boolean(item.endTime)
                 const cleanName = fixWorkflowEncoding(item.taskName || item.taskDefinitionKey || "Tarea")
                 const duration = formatDuration(item.startTime, item.endTime)
+                const visuals = getStageVisuals(item.taskName, item.taskDefinitionKey)
+                const StageIcon = visuals.icon
 
                 return (
                   <div key={item.taskId || index} className="relative group">
-                    {/* Timeline bullet indicator */}
+                    {/* Bullet Indicator en la Línea de Tiempo */}
                     <div
                       className={cn(
-                        "absolute -left-6 top-1 size-4.5 rounded-full border-2 bg-background flex items-center justify-center transition-all shadow-2xs",
+                        "absolute -left-7 top-1 size-6 rounded-full border-2 bg-background flex items-center justify-center transition-all shadow-xs z-10",
                         isCompleted
-                          ? "border-emerald-500 text-emerald-500"
-                          : "border-primary text-primary animate-pulse",
+                          ? "border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                          : "border-primary text-primary animate-pulse bg-primary/5",
                       )}
                     >
                       {isCompleted ? (
-                        <CheckCircle2 className="size-3 text-emerald-500 shrink-0" />
+                        <Check className="size-3.5 stroke-[2.5]" />
                       ) : (
-                        <div className="size-1.5 rounded-full bg-primary" />
+                        <div className="size-2 rounded-full bg-primary" />
                       )}
                     </div>
 
-                    {/* Step Card */}
-                    <div className="rounded-xl border border-border/70 bg-card p-3.5 shadow-2xs hover:border-border transition-colors space-y-2">
+                    {/* Tarjeta de Etapa */}
+                    <div
+                      className={cn(
+                        "rounded-xl border p-3.5 shadow-2xs transition-all space-y-2.5",
+                        isCompleted
+                          ? "border-border/70 bg-card hover:border-border hover:shadow-xs"
+                          : "border-primary/40 bg-primary/5 shadow-xs",
+                      )}
+                    >
+                      {/* Cabecera del Paso */}
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded border border-border/50">
                             Paso {index + 1}
                           </span>
-                          <span className="text-xs font-semibold text-foreground truncate">
-                            {cleanName}
-                          </span>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <StageIcon className={cn("size-3.5 shrink-0", visuals.accentColor)} />
+                            <span className="text-xs font-bold text-foreground break-words leading-tight">
+                              {cleanName}
+                            </span>
+                          </div>
                         </div>
 
                         <Badge
                           variant={isCompleted ? "secondary" : "default"}
                           className={cn(
-                            "text-[10px] px-2 py-0.5 font-medium shrink-0",
+                            "text-[10px] px-2 py-0.5 font-semibold shrink-0 gap-1",
                             isCompleted
-                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                              : "bg-primary/10 text-primary border-primary/20",
+                              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                              : "bg-primary/10 text-primary border-primary/30 animate-pulse",
                           )}
                         >
-                          {isCompleted ? "Completada" : "En Progreso"}
+                          {isCompleted ? (
+                            <>
+                              <CheckCircle2 className="size-2.5" />
+                              <span>Completada</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="size-2.5" />
+                              <span>En Progreso</span>
+                            </>
+                          )}
                         </Badge>
                       </div>
 
-                      {/* Asignado / Responsable */}
+                      {/* Asignado / Responsable con Avatar */}
                       {(item.assigneeName || item.assignee) && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <User className="size-3 text-muted-foreground/70 shrink-0" />
-                          <span className="truncate">
-                            <strong className="font-normal text-foreground/80">Responsable:</strong>{" "}
-                            {item.assigneeName || item.assignee}
-                          </span>
+                        <div className="flex items-center gap-2 text-xs pt-0.5">
+                          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[10px] border border-primary/20">
+                            {getInitials(item.assigneeName || item.assignee)}
+                          </div>
+                          <div className="min-w-0 flex-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <span className="font-semibold text-foreground truncate">
+                              {item.assigneeName || item.assignee}
+                            </span>
+                          </div>
                         </div>
                       )}
 
-                      {/* Fechas y Duración */}
-                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 pt-1.5 text-[10.5px] text-muted-foreground/80 border-t border-border/40">
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                      {/* Fechas e Indicador de Duración */}
+                      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 pt-2 text-[11px] text-muted-foreground border-t border-border/40">
+                        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-0.5">
                           {item.startTime && (
-                            <span>
-                              <strong className="text-foreground/70 font-normal">Inicio:</strong>{" "}
-                              {formatWorkflowDate(item.startTime)}
+                            <span className="flex items-center gap-1">
+                              <span className="text-foreground/70 font-medium">Inicio:</span>
+                              <span className="text-foreground/90 font-mono text-[10.5px]">
+                                {formatWorkflowDate(item.startTime)}
+                              </span>
                             </span>
                           )}
                           {item.endTime && (
-                            <span>
-                              <strong className="text-foreground/70 font-normal">Fin:</strong>{" "}
-                              {formatWorkflowDate(item.endTime)}
+                            <span className="flex items-center gap-1">
+                              <span className="text-foreground/70 font-medium">Fin:</span>
+                              <span className="text-foreground/90 font-mono text-[10.5px]">
+                                {formatWorkflowDate(item.endTime)}
+                              </span>
                             </span>
                           )}
                         </div>
 
                         {duration && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">
-                            <Clock className="size-2.5" />
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full border border-border/50"
+                            title="Tiempo transcurrido en esta tarea"
+                          >
+                            <Clock className="size-2.5 text-primary" />
                             <span>{duration}</span>
                           </span>
                         )}
@@ -227,14 +456,31 @@ export function WorkflowHistoryDialog({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-border/60 bg-muted/10 flex justify-end">
+        {/* Footer con Acciones */}
+        <div className="p-3 border-t border-border/60 bg-muted/10 flex items-center justify-between gap-2 shrink-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            disabled={items.length === 0}
+            onClick={handleCopySummary}
+            className="text-xs text-muted-foreground hover:text-foreground gap-1.5 cursor-pointer"
+            title="Copiar el resumen completo de la trazabilidad"
+          >
+            {copiedSummary ? (
+              <Check className="size-3.5 text-emerald-500" />
+            ) : (
+              <Share2 className="size-3.5" />
+            )}
+            <span>{copiedSummary ? "Copiado" : "Copiar Historial"}</span>
+          </Button>
+
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="text-xs cursor-pointer"
+            className="text-xs px-4 cursor-pointer font-medium"
           >
             Cerrar
           </Button>
