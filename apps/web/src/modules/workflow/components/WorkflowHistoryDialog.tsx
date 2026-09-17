@@ -13,7 +13,6 @@ import {
   RefreshCw,
   Share2,
   ShieldCheck,
-  User,
   Wrench,
   type LucideIcon,
 } from "lucide-react"
