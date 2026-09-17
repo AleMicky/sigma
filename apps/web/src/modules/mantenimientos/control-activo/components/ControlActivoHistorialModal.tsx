@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState, type MouseEvent } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import {
@@ -7,10 +7,12 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Calendar,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
+  Copy,
   Edit2,
   FileText,
   Hash,
@@ -18,10 +20,10 @@ import {
   Loader2,
   Package,
   Plus,
+  RefreshCw,
   Trash2,
-  User,
-  UserCheck,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import { routes } from "@/app/config/routes"
 import { accesorioQueries } from "@/modules/activos/accesorio/api/accesorio.queries"
@@ -31,6 +33,7 @@ import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog"
@@ -45,7 +48,6 @@ import {
   type ControlActivo,
   type ControlActivoDetalle,
 } from "../api/control-activo.service"
-import { toast } from "sonner"
 
 export type ControlActivoHistorialModalProps = {
   open: boolean
@@ -57,6 +59,15 @@ export type ControlActivoHistorialModalProps = {
 }
 
 type TipoFilter = "ALL" | "ENTREGA" | "DEVOLUCION"
+
+function getInitials(name?: string | null): string {
+  if (!name) return "?"
+  const clean = name.replace(/\[.*?\]/g, "").trim()
+  const parts = clean.split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
 function ControlItemCard({
   control,
@@ -82,7 +93,7 @@ function ControlItemCard({
       setIsExportingPdf(true)
       await downloadControlActivoReportePdf(control.id, control.tipo)
       toast.success("Reporte PDF generado exitosamente")
-    } catch (error) {
+    } catch {
       toast.error("Error al generar el reporte PDF del control de activo")
     } finally {
       setIsExportingPdf(false)
@@ -94,7 +105,10 @@ function ControlItemCard({
     enabled: expanded,
   })
 
-  const detalles = (detallesQuery.data?.content ?? []) as ControlActivoDetalle[]
+  const detalles = useMemo(
+    () => (detallesQuery.data?.content ?? []) as ControlActivoDetalle[],
+    [detallesQuery.data?.content],
+  )
   const isEntrega = control.tipo === "ENTREGA"
 
   const countOk = useMemo(
@@ -105,38 +119,53 @@ function ControlItemCard({
     () => detalles.filter((d) => !d.conforme).length,
     [detalles],
   )
+  const totalAccesorios = detalles.length
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card shadow-2xs overflow-hidden transition-all">
+    <div
+      className={cn(
+        "rounded-2xl border bg-card shadow-2xs overflow-hidden transition-all",
+        isEntrega
+          ? "border-sky-500/20 dark:border-sky-500/30"
+          : "border-emerald-500/20 dark:border-emerald-500/30",
+      )}
+    >
       {/* Cabecera de la Tarjeta del Acta */}
-      <div className="p-3.5 sm:p-4 bg-muted/20 border-b border-border/40">
+      <div
+        className={cn(
+          "p-3.5 sm:p-4 border-b transition-colors",
+          isEntrega
+            ? "bg-sky-500/[0.03] border-sky-500/10"
+            : "bg-emerald-500/[0.03] border-emerald-500/10",
+        )}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Badges y Metadatos Principales */}
           <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
             {/* Tipo de Acta */}
             <span
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold shrink-0",
+                "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold shrink-0 border shadow-2xs",
                 isEntrega
-                  ? "bg-sky-500/10 text-sky-700 dark:text-sky-300"
-                  : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                  ? "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30"
+                  : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
               )}
             >
               {isEntrega ? (
-                <ArrowUpRight className="size-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+                <ArrowUpRight className="size-3.5 text-sky-600 dark:text-sky-400 shrink-0 stroke-[2.5]" />
               ) : (
-                <ArrowDownLeft className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <ArrowDownLeft className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 stroke-[2.5]" />
               )}
-              <span>{isEntrega ? "Acta Entrega" : "Acta Devolución"}</span>
+              <span>{isEntrega ? "Acta de Entrega" : "Acta de Devolución"}</span>
             </span>
 
             {/* Conformidad */}
             <span
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold shrink-0",
+                "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold shrink-0 border shadow-2xs",
                 control.conforme
-                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                  : "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                  : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30",
               )}
             >
               {control.conforme ? (
@@ -148,7 +177,7 @@ function ControlItemCard({
             </span>
 
             {/* Fecha */}
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground bg-background/80 px-2.5 py-1 rounded-lg border border-border/60 shrink-0">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground bg-background px-2.5 py-1 rounded-lg border border-border/70 shrink-0 shadow-2xs">
               <Calendar className="size-3.5 text-muted-foreground shrink-0" />
               <span>{formatDate(control.fecha)}</span>
             </span>
@@ -163,11 +192,11 @@ function ControlItemCard({
               variant="outline"
               onClick={handleExportPdf}
               disabled={isExportingPdf}
-              className="h-7 text-xs gap-1.5 px-2.5 font-medium bg-background hover:bg-muted cursor-pointer shadow-2xs text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+              className="h-7 text-xs gap-1.5 px-2.5 font-medium bg-background hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer shadow-2xs text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/50 hover:border-rose-300"
               title="Descargar Acta en PDF"
             >
               {isExportingPdf ? (
-                <Loader2 className="size-3 animate-spin" />
+                <Loader2 className="size-3 animate-spin text-rose-600" />
               ) : (
                 <FileText className="size-3 text-rose-600 dark:text-rose-400" />
               )}
@@ -229,30 +258,47 @@ function ControlItemCard({
           </div>
         </div>
 
-        {/* Participantes (Entrega / Recepción) */}
+        {/* Participantes (Entrega / Recepción) con Avatares */}
         {(control.entregadoPor || control.recibidoPor) && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5 pt-2 border-t border-border/40 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-border/40 text-xs">
             {control.entregadoPor && (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <User className="size-3.5 text-muted-foreground shrink-0" />
-                <span>Entregado por:</span>
-                <span className="font-semibold text-foreground">{control.entregadoPor.nombre}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground font-bold text-[10px] border border-border">
+                  {getInitials(control.entregadoPor.nombre)}
+                </div>
+                <div className="min-w-0 flex-1 truncate">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground block leading-none mb-0.5">
+                    Entregado por:
+                  </span>
+                  <span className="font-semibold text-foreground text-xs truncate block" title={control.entregadoPor.nombre}>
+                    {control.entregadoPor.nombre}
+                  </span>
+                </div>
               </div>
             )}
+
             {control.recibidoPor && (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <UserCheck className="size-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-                <span>Recibido por:</span>
-                <span className="font-semibold text-foreground">{control.recibidoPor.nombre}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold text-[10px] border border-sky-500/20">
+                  {getInitials(control.recibidoPor.nombre)}
+                </div>
+                <div className="min-w-0 flex-1 truncate">
+                  <span className="text-[10px] uppercase font-bold text-sky-600 dark:text-sky-400 block leading-none mb-0.5">
+                    Recibido por:
+                  </span>
+                  <span className="font-semibold text-foreground text-xs truncate block" title={control.recibidoPor.nombre}>
+                    {control.recibidoPor.nombre}
+                  </span>
+                </div>
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Observación General limpia sin bordes pesados */}
+      {/* Observación General destacada */}
       {control.observacion && (
-        <div className="p-3 sm:px-4 sm:py-2.5 bg-amber-500/[0.04] dark:bg-amber-950/15 border-b border-amber-500/10 flex items-start gap-2.5 text-xs">
+        <div className="p-3 sm:px-4 sm:py-2.5 bg-amber-500/[0.04] dark:bg-amber-950/15 border-b border-amber-500/15 flex items-start gap-2.5 text-xs">
           <FileText className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1">
             <span className="font-semibold text-amber-800 dark:text-amber-300 mr-1.5">
@@ -265,7 +311,7 @@ function ControlItemCard({
         </div>
       )}
 
-      {/* Tabla limpia de accesorios sin bordes internos pesados */}
+      {/* Tabla de accesorios y checklist */}
       {expanded && (
         <div className="p-3.5 sm:p-4 space-y-2.5">
           <div className="flex items-center justify-between text-xs px-0.5 flex-wrap gap-2">
@@ -273,14 +319,14 @@ function ControlItemCard({
               <ListChecks className="size-3.5 text-primary" />
               <span>Accesorios verificados en el acta</span>
             </div>
-            {!detallesQuery.isLoading && detalles.length > 0 && (
-              <div className="flex items-center gap-1.5 text-xs font-semibold">
-                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-[11px]">
+            {!detallesQuery.isLoading && totalAccesorios > 0 && (
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-[11px] bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                   <CheckCircle2 className="size-3" />
                   <span>{countOk} Conformes</span>
                 </span>
                 {countInconforme > 0 && (
-                  <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 text-[11px] ml-1.5">
+                  <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 text-[11px] bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
                     <AlertCircle className="size-3" />
                     <span>{countInconforme} Con Observaciones</span>
                   </span>
@@ -299,21 +345,22 @@ function ControlItemCard({
               Sin accesorios especificados en esta acta.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-border/50 bg-background/50">
               <table className="w-full text-xs text-left">
                 <thead>
-                  <tr className="border-b border-border/40 text-[10.5px] uppercase font-semibold text-muted-foreground select-none">
-                    <th className="py-2 pr-3 min-w-[180px]">Accesorio</th>
-                    <th className="py-2 px-2 text-center w-20">Esperado</th>
-                    <th className="py-2 px-2 text-center w-20">Encontrado</th>
-                    <th className="py-2 px-2 text-center w-28">Estado</th>
-                    <th className="py-2 pl-3 min-w-[180px]">Nota / Observación</th>
+                  <tr className="border-b border-border/40 text-[10.5px] uppercase font-semibold text-muted-foreground select-none bg-muted/30">
+                    <th className="py-2.5 px-3 min-w-[180px]">Accesorio</th>
+                    <th className="py-2.5 px-2 text-center w-20">Esperado</th>
+                    <th className="py-2.5 px-2 text-center w-24">Encontrado</th>
+                    <th className="py-2.5 px-2 text-center w-28">Estado</th>
+                    <th className="py-2.5 px-3 min-w-[180px]">Nota / Observación</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
                   {detalles.map((det) => {
                     const hasMismatch = det.cantidadEsperada !== det.cantidadEncontrada
                     const isOk = det.conforme && !hasMismatch
+                    const diff = det.cantidadEncontrada - det.cantidadEsperada
                     const accInfo = accesorioMap?.get(det.accesorioId || det.accesorio?.id || "")
                     const codigo = det.accesorio?.codigo || accInfo?.codigo || "ACC"
                     const nombre = det.accesorio?.nombre || accInfo?.nombre || "Accesorio"
@@ -327,7 +374,7 @@ function ControlItemCard({
                         )}
                       >
                         {/* Código y Nombre */}
-                        <td className="py-2.5 pr-3 font-medium">
+                        <td className="py-2.5 px-3 font-medium">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="font-mono text-[10.5px] font-medium text-sky-600 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded shrink-0">
                               {codigo}
@@ -346,21 +393,38 @@ function ControlItemCard({
                           {det.cantidadEsperada}
                         </td>
 
-                        {/* Cantidad Encontrada */}
-                        <td
-                          className={cn(
-                            "py-2.5 px-2 text-center font-mono font-bold",
-                            hasMismatch ? "text-amber-600 dark:text-amber-400" : "text-foreground",
-                          )}
-                        >
-                          {det.cantidadEncontrada}
+                        {/* Cantidad Encontrada + Badge Discrepancia */}
+                        <td className="py-2.5 px-2 text-center font-mono">
+                          <div className="flex items-center justify-center gap-1">
+                            <span
+                              className={cn(
+                                "font-bold",
+                                hasMismatch ? "text-amber-600 dark:text-amber-400" : "text-foreground",
+                              )}
+                            >
+                              {det.cantidadEncontrada}
+                            </span>
+                            {hasMismatch && (
+                              <span
+                                className={cn(
+                                  "text-[9px] font-bold px-1 rounded",
+                                  diff > 0
+                                    ? "bg-sky-500/10 text-sky-600"
+                                    : "bg-rose-500/10 text-rose-600",
+                                )}
+                                title={diff > 0 ? `Excedente de +${diff}` : `Faltante de ${diff}`}
+                              >
+                                {diff > 0 ? `+${diff}` : diff}
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Estado Conformidad */}
                         <td className="py-2.5 px-2 text-center">
                           <span
                             className={cn(
-                              "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium",
+                              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold",
                               det.conforme
                                 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                                 : "bg-amber-500/10 text-amber-700 dark:text-amber-300",
@@ -376,7 +440,7 @@ function ControlItemCard({
                         </td>
 
                         {/* Observación / Nota */}
-                        <td className="py-2.5 pl-3 text-muted-foreground text-xs leading-relaxed">
+                        <td className="py-2.5 px-3 text-muted-foreground text-xs leading-relaxed">
                           {det.observacion || <span className="text-muted-foreground/30 italic font-mono">-</span>}
                         </td>
                       </tr>
@@ -403,6 +467,7 @@ export function ControlActivoHistorialModal({
   const navigate = useNavigate()
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("ALL")
   const [controlToDelete, setControlToDelete] = useState<ControlActivo | null>(null)
+  const [copiedFolio, setCopiedFolio] = useState(false)
   const deleteMutation = useDeleteControlActivo()
 
   const solicitudQuery = useQuery({
@@ -410,6 +475,11 @@ export function ControlActivoHistorialModal({
     enabled: Boolean(solicitudId && open),
   })
   const estadoSolicitudNorm = (solicitudQuery.data?.estado ?? "").toUpperCase().trim()
+
+  const isTrabajoRealizado =
+    estadoSolicitudNorm === "TRABAJO_REALIZADO" ||
+    estadoSolicitudNorm === "TRABAJO REALIZADO" ||
+    estadoSolicitudNorm === "TRABAJO-REALIZADO"
 
   const isEffectiveReadOnly =
     readOnly ||
@@ -447,10 +517,21 @@ export function ControlActivoHistorialModal({
     [allControles],
   )
 
+  const hasDevolucion = devolucionesCount > 0
+
   const filteredControles = useMemo(() => {
     if (tipoFilter === "ALL") return allControles
     return allControles.filter((c) => c.tipo === tipoFilter)
   }, [allControles, tipoFilter])
+
+  const handleCopyFolio = (e: MouseEvent) => {
+    e.stopPropagation()
+    if (!solicitudNumero) return
+    navigator.clipboard.writeText(solicitudNumero)
+    setCopiedFolio(true)
+    toast.success("Folio copiado al portapapeles", { duration: 1500 })
+    setTimeout(() => setCopiedFolio(false), 2000)
+  }
 
   return (
     <>
@@ -464,21 +545,23 @@ export function ControlActivoHistorialModal({
           )}
         >
           {controlesQuery.isLoading ? (
-            <div className="flex flex-col items-center justify-center p-12 gap-2.5 text-muted-foreground">
-              <Loader2 className="size-6 animate-spin text-sky-600" />
-              <p className="text-xs font-semibold">Cargando controles de activo...</p>
+            <div className="flex flex-col items-center justify-center p-14 gap-2.5 text-muted-foreground">
+              <Loader2 className="size-7 animate-spin text-sky-600" />
+              <p className="text-xs font-semibold">Cargando actas de control de activo...</p>
             </div>
           ) : allControles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center gap-2.5">
-              <div className="size-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
-                <ClipboardCheck className="size-5" />
+            <div className="flex flex-col items-center justify-center p-8 text-center gap-3">
+              <div className="size-12 rounded-2xl bg-sky-500/10 text-sky-600 flex items-center justify-center border border-sky-500/20">
+                <ClipboardCheck className="size-6" />
               </div>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <p className="text-sm font-bold text-foreground">
-                  Sin Control de Activo
+                  Sin Control de Activo Registrado
                 </p>
-                <p className="text-[11px] text-muted-foreground max-w-sm">
-                  Esta solicitud no tiene un control de activo asociado aún.
+                <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
+                  {allowedTipo === "DEVOLUCION"
+                    ? "Esta solicitud requiere registrar el Acta de Devolución para verificar el estado de los accesorios al finalizar el trabajo."
+                    : "No hay actas de Entrega ni Devolución asociadas a esta solicitud de mantenimiento."}
                 </p>
               </div>
               {solicitudId && !isEffectiveReadOnly && (
@@ -491,12 +574,15 @@ export function ControlActivoHistorialModal({
                       allowedTipo === "DEVOLUCION" ? "DEVOLUCION" : "ENTREGA"
                     navigate({
                       to: routes.mantenimientos.controlesActivos.nuevo,
-                      search: { solicitudId, tipo: targetTipo },
+                      search: {
+                        solicitudId: solicitudId ?? undefined,
+                        tipo: targetTipo,
+                      },
                     })
                   }}
-                  className="h-7.5 gap-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer mt-1 shadow-xs"
+                  className="h-8 gap-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer mt-1 shadow-xs"
                 >
-                  <Plus className="size-3" />
+                  <Plus className="size-3.5" />
                   <span>
                     {allowedTipo === "DEVOLUCION"
                       ? "Crear Acta de Devolución"
@@ -508,7 +594,7 @@ export function ControlActivoHistorialModal({
           ) : (
             <>
               {/* Cabecera Principal Pulida */}
-              <DialogHeader className="px-5 py-3.5 border-b bg-muted/20 shrink-0 space-y-2.5">
+              <DialogHeader className="px-5 sm:px-6 pt-4 pb-3.5 border-b bg-muted/20 shrink-0 space-y-2.5">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shadow-2xs">
@@ -518,65 +604,133 @@ export function ControlActivoHistorialModal({
                       <DialogTitle className="text-base font-bold truncate">
                         Controles de Activo
                       </DialogTitle>
+
                       {solicitudNumero && (
-                        <div className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-0.5 font-mono text-xs font-bold text-foreground border border-border shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={handleCopyFolio}
+                          className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-0.5 font-mono text-xs font-bold text-foreground border border-border shadow-2xs hover:border-primary/50 hover:bg-muted/40 cursor-pointer active:scale-95 transition-all"
+                          title="Haga clic para copiar folio"
+                        >
                           <Hash className="size-3 text-muted-foreground" />
                           <span>{solicitudNumero}</span>
-                        </div>
+                          {copiedFolio ? (
+                            <Check className="size-3 text-emerald-500" />
+                          ) : (
+                            <Copy className="size-3 opacity-40 hover:opacity-100" />
+                          )}
+                        </button>
                       )}
+
                       <span className="text-xs text-muted-foreground font-semibold">
                         ({allControles.length})
                       </span>
                     </div>
                   </div>
 
-                  {solicitudId && !isEffectiveReadOnly && (
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Solo mostrar botón de Devolución si aún no se ha creado una Devolución */}
-                      {(allowedTipo === "ALL" || allowedTipo === "DEVOLUCION") && devolucionesCount === 0 && (
-                        <Button
-                          type="button"
-                          size="xs"
-                          variant="outline"
-                          onClick={() => {
-                            onOpenChange(false)
-                            navigate({
-                              to: routes.mantenimientos.controlesActivos.nuevo,
-                              search: { solicitudId, tipo: "DEVOLUCION" },
-                            })
-                          }}
-                          className="h-7.5 text-xs gap-1.5 px-3 font-semibold border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer shadow-2xs"
-                        >
-                          <ArrowDownLeft className="size-3" />
-                          <span>Acta Devolución</span>
-                        </Button>
-                      )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      onClick={() => controlesQuery.refetch()}
+                      disabled={controlesQuery.isFetching}
+                      title="Actualizar listado de actas"
+                      className="size-7 rounded-lg border-border/70 hover:bg-muted cursor-pointer"
+                    >
+                      <RefreshCw
+                        className={cn(
+                          "size-3.5 text-muted-foreground",
+                          controlesQuery.isFetching && "animate-spin text-primary",
+                        )}
+                      />
+                    </Button>
 
-                      {/* Solo mostrar botón de Entrega si aún no se ha creado una Entrega */}
-                      {(allowedTipo === "ALL" || allowedTipo === "ENTREGA") && entregasCount === 0 && (
-                        <Button
-                          type="button"
-                          size="xs"
-                          onClick={() => {
-                            onOpenChange(false)
-                            navigate({
-                              to: routes.mantenimientos.controlesActivos.nuevo,
-                              search: { solicitudId, tipo: "ENTREGA" },
-                            })
-                          }}
-                          className="h-7.5 text-xs gap-1.5 px-3 font-semibold bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer shadow-2xs"
-                        >
-                          <Plus className="size-3" />
-                          <span>Acta Entrega</span>
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                    {solicitudId && !isEffectiveReadOnly && (
+                      <>
+                        {/* Solo mostrar botón de Devolución si aún no se ha creado una Devolución */}
+                        {(allowedTipo === "ALL" || allowedTipo === "DEVOLUCION") && devolucionesCount === 0 && (
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="outline"
+                            onClick={() => {
+                              onOpenChange(false)
+                              navigate({
+                                to: routes.mantenimientos.controlesActivos.nuevo,
+                                search: {
+                                  solicitudId: solicitudId ?? undefined,
+                                  tipo: "DEVOLUCION",
+                                },
+                              })
+                            }}
+                            className="h-7.5 text-xs gap-1.5 px-3 font-semibold border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer shadow-2xs"
+                          >
+                            <ArrowDownLeft className="size-3 stroke-[2.5]" />
+                            <span>Acta Devolución</span>
+                          </Button>
+                        )}
+
+                        {/* Solo mostrar botón de Entrega si aún no se ha creado una Entrega */}
+                        {(allowedTipo === "ALL" || allowedTipo === "ENTREGA") && entregasCount === 0 && (
+                          <Button
+                            type="button"
+                            size="xs"
+                            onClick={() => {
+                              onOpenChange(false)
+                              navigate({
+                                to: routes.mantenimientos.controlesActivos.nuevo,
+                                search: {
+                                  solicitudId: solicitudId ?? undefined,
+                                  tipo: "ENTREGA",
+                                },
+                              })
+                            }}
+                            className="h-7.5 text-xs gap-1.5 px-3 font-semibold bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer shadow-2xs"
+                          >
+                            <Plus className="size-3" />
+                            <span>Acta Entrega</span>
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
+
+                {/* Banner Contextual: Requisito de Devolución para Solicitudes en Trabajo Realizado */}
+                {isTrabajoRealizado && !hasDevolucion && (
+                  <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <span className="font-medium truncate">
+                        <strong>Requisito Obligatorio:</strong> Registra el Acta de Devolución para cerrar la solicitud.
+                      </span>
+                    </div>
+                    {!isEffectiveReadOnly && (
+                      <Button
+                        type="button"
+                        size="xs"
+                        onClick={() => {
+                          onOpenChange(false)
+                          navigate({
+                            to: routes.mantenimientos.controlesActivos.nuevo,
+                            search: {
+                              solicitudId: solicitudId ?? undefined,
+                              tipo: "DEVOLUCION",
+                            },
+                          })
+                        }}
+                        className="h-6.5 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white shrink-0 cursor-pointer px-2.5 rounded-md"
+                      >
+                        Crear Devolución
+                      </Button>
+                    )}
+                  </div>
+                )}
 
                 {/* Filtros en Pills Compactos */}
                 {allControles.length > 1 && (
-                  <div className="flex items-center gap-1 pt-1.5 border-t border-border/40">
+                  <div className="flex items-center gap-1 pt-1 border-t border-border/40">
                     <button
                       type="button"
                       onClick={() => setTipoFilter("ALL")}
@@ -635,6 +789,23 @@ export function ControlActivoHistorialModal({
                   />
                 ))}
               </div>
+
+              {/* Footer Estructurado */}
+              <DialogFooter className="p-3 border-t border-border/60 bg-muted/10 flex sm:flex-row items-center justify-between gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground">
+                  {filteredControles.length} {filteredControles.length === 1 ? "acta registrada" : "actas registradas"}
+                </span>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="text-xs px-4 cursor-pointer font-medium"
+                >
+                  Cerrar
+                </Button>
+              </DialogFooter>
             </>
           )}
         </DialogContent>
@@ -656,4 +827,3 @@ export function ControlActivoHistorialModal({
     </>
   )
 }
-
