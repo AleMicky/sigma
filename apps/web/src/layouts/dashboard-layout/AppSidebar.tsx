@@ -272,11 +272,10 @@ function NavigationMenu({ searchQuery }: { searchQuery: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {filteredSections.map((section, sectionIndex) => (
+      {filteredSections.map((section) => (
         <NavSectionGroup
           key={section.id || section.title}
           section={section}
-          sectionIndex={sectionIndex}
           pathname={pathname}
         />
       ))}
@@ -288,11 +287,9 @@ function NavigationMenu({ searchQuery }: { searchQuery: string }) {
 
 function NavSectionGroup({
   section,
-  sectionIndex: _sectionIndex,
   pathname,
 }: {
   section: NavSection
-  sectionIndex: number
   pathname: string
 }) {
   const { state } = useSidebar()
@@ -314,7 +311,7 @@ function NavSectionGroup({
               <SidebarMenuButton
                 isActive={isSelfActive}
                 tooltip={section.title}
-                render={<Link to={section.to as any} />}
+                render={<Link to={section.to} />}
                 title={section.title}
                 className={cn(
                   "group h-8 rounded-lg px-2.5 text-[13px] font-medium transition-colors",
@@ -441,10 +438,14 @@ function NavNodeItem({
   const isActive = isSelfActive || isChildActive
 
   const [isOpen, setIsOpen] = useState(isActive)
+  const [prevIsActive, setPrevIsActive] = useState(isActive)
 
-  useEffect(() => {
-    if (isActive) setIsOpen(true)
-  }, [isActive])
+  if (prevIsActive !== isActive) {
+    setPrevIsActive(isActive)
+    if (isActive) {
+      setIsOpen(true)
+    }
+  }
 
   const NodeIcon = node.icon || (hasChildren ? Folder : FileText)
 
@@ -504,7 +505,7 @@ function NavNodeItem({
         <SidebarMenuButton
           isActive={isSelfActive}
           tooltip={node.title}
-          render={node.to ? <Link to={node.to as any} /> : undefined}
+          render={node.to ? <Link to={node.to} /> : undefined}
           title={node.title}
           className={cn(
             "group h-8 rounded-lg px-2.5 text-[13px] font-medium transition-colors",
@@ -530,7 +531,7 @@ function NavNodeItem({
     <SidebarMenuSubItem>
       <SidebarMenuSubButton
         isActive={isSelfActive}
-        render={node.to ? <Link to={node.to as any} /> : undefined}
+        render={node.to ? <Link to={node.to} /> : undefined}
         title={node.title}
         className={cn(
           "h-7 rounded-md px-2 text-xs font-medium transition-colors",
@@ -600,7 +601,7 @@ function DropdownRecursiveNode({
   return (
     <DropdownMenuItem
       key={node.id || node.to || node.title}
-      render={node.to ? <Link to={node.to as any} /> : undefined}
+      render={node.to ? <Link to={node.to} /> : undefined}
       className={cn(
         "flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium cursor-pointer transition-colors",
         isSelfActive

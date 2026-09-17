@@ -2,7 +2,7 @@ import { useEffect } from "react"
 import { Outlet, createRootRouteWithContext, useRouterState } from "@tanstack/react-router"
 
 import type { RouterContext } from "@/app/router/router.context"
-import { generateBreadcrumbs } from "@/layouts/dashboard-layout/AppBreadcrumb"
+import { generateBreadcrumbs } from "@/layouts/dashboard-layout/breadcrumb.utils"
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootComponent,
