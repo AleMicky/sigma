@@ -157,9 +157,10 @@ export function WorkflowListItem({
 
   return (
     <li
-      onClick={() => onQuickView?.()}
+      onClick={onQuickView ? () => onQuickView() : undefined}
       className={cn(
-        "group relative flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-3 p-3 sm:py-3.5 sm:px-4 transition-all duration-200 cursor-pointer border-l-[3.5px] select-none",
+        "group relative flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-3 p-3 sm:py-3.5 sm:px-4 transition-all duration-200 border-l-[3.5px]",
+        onQuickView ? "cursor-pointer select-none" : "cursor-default",
         "hover:bg-muted/30 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring",
         isCrit
           ? "border-l-rose-500 bg-rose-500/[0.02] hover:bg-rose-500/[0.05]"

@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persisten
 
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ControlActivo;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ControlActivoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.ControlActivoDetalleEntity;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.ControlActivoEntity;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.mapper.ControlActivoPersistenceMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository.SpringControlActivoRepository;
@@ -55,6 +56,35 @@ public class ControlActivoRepositoryAdapter implements ControlActivoRepository {
 
     @Override
     public ControlActivo save(ControlActivo controlActivo) {
+        if (controlActivo.getId() != null) {
+            Optional<ControlActivoEntity> existingOpt = springRepository.findById(controlActivo.getId());
+            if (existingOpt.isPresent()) {
+                ControlActivoEntity existing = existingOpt.get();
+                existing.setSolicitudMantenimientoId(controlActivo.getSolicitudMantenimientoId());
+                existing.setOrdenTrabajoId(controlActivo.getOrdenTrabajoId());
+                existing.setActivoId(controlActivo.getActivoId());
+                existing.setTipo(controlActivo.getTipo());
+                existing.setEntregadoPorId(controlActivo.getEntregadoPorId());
+                existing.setRecibidoPorId(controlActivo.getRecibidoPorId());
+                existing.setFecha(controlActivo.getFecha());
+                existing.setConforme(controlActivo.isConforme());
+                existing.setObservacion(controlActivo.getObservacion());
+
+                if (controlActivo.getDetalles() != null) {
+                    existing.getDetalles().clear();
+                    springRepository.saveAndFlush(existing);
+
+                    List<ControlActivoDetalleEntity> newDetalles = controlActivo.getDetalles().stream()
+                            .map(mapper::toDetalleEntity)
+                            .collect(Collectors.toList());
+                    existing.getDetalles().addAll(newDetalles);
+                }
+
+                ControlActivoEntity saved = springRepository.save(existing);
+                return mapper.toDomain(saved);
+            }
+        }
+
         ControlActivoEntity entity = mapper.toEntity(controlActivo);
         ControlActivoEntity saved = springRepository.save(entity);
         return mapper.toDomain(saved);

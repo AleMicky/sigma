@@ -1,63 +1,42 @@
 import { queryOptions } from "@tanstack/react-query"
 
-import type { PageParams } from "@/shared/types/api.types"
-
 import { solicitudKeys } from "./solicitud.keys"
 import {
-  getSolicitud,
+  getSolicitudesMantenimiento,
+  getSolicitudMantenimiento,
   getSolicitudResumen,
-  getWorkflowActions,
-  getWorkflowHistory,
-  listAdjuntos,
-  listSolicitudes,
-  type SolicitudListParams,
+  getSolicitudTrazabilidad,
 } from "./solicitud.service"
+import type { SolicitudMantenimientoFilters } from "../types/solicitud.type"
 
 export const solicitudQueries = {
-  resumen: () =>
-    queryOptions({
-      queryKey: solicitudKeys.resumen(),
-      queryFn: () => getSolicitudResumen(),
-    }),
-
-  list: (filters?: SolicitudListParams) =>
+  list: (filters?: SolicitudMantenimientoFilters) =>
     queryOptions({
       queryKey: solicitudKeys.list(filters),
       queryFn: () => {
         const { q, ...rest } = filters ?? {}
         const trimmed = q?.trim()
-        return listSolicitudes(trimmed ? { ...rest, q: trimmed } : rest)
+        return getSolicitudesMantenimiento(trimmed ? { ...rest, q: trimmed } : rest)
       },
     }),
 
   detail: (id: string) =>
     queryOptions({
       queryKey: solicitudKeys.detail(id),
-      queryFn: () => getSolicitud(id),
+      queryFn: () => getSolicitudMantenimiento(id),
       enabled: Boolean(id),
     }),
 
-  adjuntos: (solicitudId: string, params?: PageParams) =>
+  resumen: (interfaz?: string) =>
     queryOptions({
-      queryKey: solicitudKeys.adjuntosList(solicitudId, params ?? {}),
-      queryFn: () => listAdjuntos(solicitudId, params),
-      enabled: Boolean(solicitudId),
+      queryKey: solicitudKeys.resumen(interfaz),
+      queryFn: () => getSolicitudResumen(interfaz),
     }),
 
-  workflowActions: (processInstanceId?: string | null) =>
+  trazabilidad: (id: string) =>
     queryOptions({
-      queryKey: solicitudKeys.workflowActions(processInstanceId ?? ""),
-      queryFn: () => getWorkflowActions(processInstanceId!),
-      enabled: Boolean(processInstanceId),
-      staleTime: 0,
-    }),
-
-  workflowHistory: (processInstanceId?: string | null) =>
-    queryOptions({
-      queryKey: solicitudKeys.workflowHistory(processInstanceId ?? ""),
-      queryFn: () => getWorkflowHistory(processInstanceId!),
-      enabled: Boolean(processInstanceId),
-      staleTime: 0,
+      queryKey: solicitudKeys.trazabilidad(id),
+      queryFn: () => getSolicitudTrazabilidad(id),
+      enabled: Boolean(id),
     }),
 }
-

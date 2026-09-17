@@ -46,6 +46,11 @@ public class OrdenTrabajoRepositoryAdapter implements OrdenTrabajoRepository {
     }
 
     @Override
+    public Page<OrdenTrabajo> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId, Pageable pageable) {
+        return springRepository.findBySolicitudMantenimientoId(solicitudMantenimientoId, pageable).map(mapper::toDomain);
+    }
+
+    @Override
     public OrdenTrabajo save(OrdenTrabajo ordenTrabajo) {
         OrdenTrabajoEntity entity = mapper.toEntity(ordenTrabajo);
         OrdenTrabajoEntity saved = springRepository.save(entity);

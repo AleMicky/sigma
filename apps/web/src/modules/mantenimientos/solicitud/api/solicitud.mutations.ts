@@ -1,46 +1,51 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-import { createCrudMutations, getErrorMessage } from "@/shared/api"
-
+import { workflowKeys, type CompleteWorkflowTaskPayload } from "@/modules/workflow"
+import { getErrorMessage } from "@/shared/api"
 import { solicitudKeys } from "./solicitud.keys"
 import {
-  completeWorkflowTask,
-  createAdjunto,
+  completarWorkflowSolicitud,
   createSolicitud,
-  createSolicitudWithFiles,
-  deleteAdjunto,
   deleteSolicitud,
-  enviarSolicitud,
   updateSolicitud,
-  type CompleteWorkflowTaskPayload,
-  type EnviarSolicitudPayload,
-  type SolicitudMantenimiento,
-  type SolicitudPayload,
+  type SolicitudMantenimientoPayload,
 } from "./solicitud.service"
 
+/**
+ * Mutation hook para crear una nueva solicitud de mantenimiento sin archivos o con payload directo.
+ */
+export function useCreateSolicitud() {
+  const queryClient = useQueryClient()
 
-const solicitudCrudMutations = createCrudMutations<
-  SolicitudMantenimiento,
-  SolicitudPayload
->({
-  keys: solicitudKeys,
-  service: {
-    create: createSolicitud,
-    update: updateSolicitud,
-    remove: deleteSolicitud,
-  },
-  messages: {
-    created: "Solicitud creada correctamente",
-    updated: "Solicitud actualizada correctamente",
-    deleted: "Solicitud eliminada correctamente",
-  },
-})
+  return useMutation({
+    mutationFn: (
+      args:
+        | SolicitudMantenimientoPayload
+        | { payload: SolicitudMantenimientoPayload; files?: File[] },
+    ) => {
+      if ("payload" in args) {
+        return createSolicitud(args.payload, args.files)
+      }
+      return createSolicitud(args)
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      toast.success(
+        data.numero
+          ? `Solicitud ${data.numero} registrada correctamente`
+          : "Solicitud registrada correctamente",
+      )
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err) || "Error al registrar la solicitud de mantenimiento")
+    },
+  })
+}
 
-export const useCreateSolicitud = solicitudCrudMutations.useCreate
-export const useUpdateSolicitud = solicitudCrudMutations.useUpdate
-export const useDeleteSolicitud = solicitudCrudMutations.useDelete
-
+/**
+ * Mutation hook para crear una nueva solicitud de mantenimiento con archivos adjuntos.
+ */
 export function useCreateSolicitudWithFiles() {
   const queryClient = useQueryClient()
 
@@ -49,70 +54,27 @@ export function useCreateSolicitudWithFiles() {
       payload,
       files,
     }: {
-      payload: SolicitudPayload
-      files?: File[] | null
-    }) => createSolicitudWithFiles(payload, files),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
-      toast.success("Solicitud creada correctamente")
+      payload: SolicitudMantenimientoPayload
+      files?: File[]
+    }) => createSolicitud(payload, files),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      toast.success(
+        data.numero
+          ? `Solicitud ${data.numero} registrada correctamente`
+          : "Solicitud registrada correctamente",
+      )
     },
-    onError: (error) => {
-      toast.error(getErrorMessage(error))
-    },
-  })
-}
-
-export function useCreateAdjunto() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({
-      solicitudId,
-      file,
-      descripcion,
-    }: {
-      solicitudId: string
-      file: File
-      descripcion?: string
-    }) => createAdjunto(solicitudId, file, descripcion),
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
-      void queryClient.invalidateQueries({
-        queryKey: solicitudKeys.adjuntos(variables.solicitudId),
-      })
-      toast.success("Archivo adjuntado correctamente")
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error))
+    onError: (err) => {
+      toast.error(getErrorMessage(err) || "Error al registrar la solicitud de mantenimiento")
     },
   })
 }
 
-export function useDeleteAdjunto() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({
-      solicitudId,
-      adjuntoId,
-    }: {
-      solicitudId: string
-      adjuntoId: string
-    }) => deleteAdjunto(solicitudId, adjuntoId),
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
-      void queryClient.invalidateQueries({
-        queryKey: solicitudKeys.adjuntos(variables.solicitudId),
-      })
-      toast.success("Adjunto eliminado correctamente")
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error))
-    },
-  })
-}
-
-export function useEnviarSolicitud() {
+/**
+ * Mutation hook para actualizar una solicitud de mantenimiento existente.
+ */
+export function useUpdateSolicitud() {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -121,39 +83,67 @@ export function useEnviarSolicitud() {
       payload,
     }: {
       id: string
-      payload: EnviarSolicitudPayload
-    }) => enviarSolicitud(id, payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
-      toast.success("Solicitud enviada correctamente e iniciado el flujo de trabajo")
+      payload: SolicitudMantenimientoPayload
+    }) => updateSolicitud(id, payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      toast.success(
+        data.numero
+          ? `Solicitud ${data.numero} actualizada correctamente`
+          : "Solicitud actualizada correctamente",
+      )
     },
-    onError: (error) => {
-      toast.error(getErrorMessage(error))
+    onError: (err) => {
+      toast.error(getErrorMessage(err) || "Error al actualizar la solicitud de mantenimiento")
     },
   })
 }
 
-
-export function useCompleteWorkflowTask() {
+/**
+ * Mutation hook para eliminar una solicitud de mantenimiento.
+ */
+export function useDeleteSolicitud() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      solicitudId,
-      payload,
-    }: {
-      solicitudId: string
-      payload: CompleteWorkflowTaskPayload
-    }) => completeWorkflowTask(solicitudId, payload),
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
-      void queryClient.invalidateQueries({
-        queryKey: solicitudKeys.detail(variables.solicitudId),
-      })
-      toast.success("Acción de flujo de trabajo completada con éxito")
+    mutationFn: (id: string) => deleteSolicitud(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      toast.success("Solicitud eliminada correctamente")
     },
-    onError: (error) => {
-      toast.error(getErrorMessage(error))
+    onError: (err) => {
+      toast.error(getErrorMessage(err) || "Error al eliminar la solicitud")
+    },
+  })
+}
+
+export type CompletarWorkflowSolicitudVariables = {
+  id: string
+  payload: CompleteWorkflowTaskPayload
+}
+
+/**
+ * Mutation hook para completar una tarea de workflow sobre una solicitud de mantenimiento.
+ */
+export function useCompletarWorkflowSolicitud() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, payload }: CompletarWorkflowSolicitudVariables) =>
+      completarWorkflowSolicitud(id, payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
+      toast.success(
+        data.numero
+          ? `Acción completada para solicitud ${data.numero}`
+          : "Acción de workflow completada correctamente",
+      )
+    },
+    onError: (err) => {
+      toast.error(
+        getErrorMessage(err) || "Error al completar la acción de workflow de la solicitud",
+      )
     },
   })
 }

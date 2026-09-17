@@ -43,7 +43,9 @@ public class ControlActivoDetalleEntity extends BaseEntity {
 
     @Column(
             name = "control_activo_id",
-            nullable = false
+            nullable = false,
+            insertable = false,
+            updatable = false
     )
     private UUID controlActivoId;
 

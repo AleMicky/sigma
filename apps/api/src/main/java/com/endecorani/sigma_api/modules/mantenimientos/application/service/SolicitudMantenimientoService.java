@@ -12,6 +12,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMan
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoAdjunto;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoTrazabilidad;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoTrazabilidadRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
@@ -58,6 +59,8 @@ public class SolicitudMantenimientoService {
     private static final String ESTADO_SOLICITADO = "solicitado";
     private static final String WORKFLOW_CODIGO = "SOLICITUD_MANTENIMIENTO";
     private static final String ADJUNTO_FOLDER = "solicitud_mantenimiento_adjuntos";
+    private static final String REPORTE_SOLICITUD_PATH = "reports/solicitudes/solicitud_mantenimiento.jrxml";
+    private static final java.time.format.DateTimeFormatter FORMATTER_FECHA_HORA = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -78,10 +81,163 @@ public class SolicitudMantenimientoService {
     private final CorrelativoService correlativoService;
     private final WorkflowApplicationService workflowApplicationService;
     private final DocumentStorageService documentStorageService;
+    private final com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService jasperReportService;
 
     @Transactional(readOnly = true)
-    public SolicitudMantenimientoResumenResponse obtenerResumen(UUID solicitanteId) {
-        return SolicitudMantenimientoResumenResponse.from(repository.obtenerResumen(solicitanteId));
+    public SolicitudMantenimientoResumenResponse obtenerResumen() {
+        return obtenerResumen(null);
+    }
+
+    @Transactional(readOnly = true)
+    public SolicitudMantenimientoResumenResponse obtenerResumen(String interfaz) {
+        UUID solicitanteId = null;
+        UUID responsableId = null;
+        UUID supervisorId = null;
+        UUID aprobadorId = null;
+
+        if (!securityUtils.isAdmin()) {
+            UUID empleadoActual = obtenerEmpleadoIdActual();
+            if (interfaz == null || interfaz.isBlank() || "SolicitudesPage".equalsIgnoreCase(interfaz.trim())) {
+                solicitanteId = empleadoActual;
+            } else if ("AprobacionesPage".equalsIgnoreCase(interfaz.trim())) {
+                aprobadorId = empleadoActual;
+            } else if ("SupervisorMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+                supervisorId = empleadoActual;
+            } else if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+                responsableId = empleadoActual;
+            }
+        }
+
+        SolicitudMantenimientoResumenProjection projection = repository.obtenerResumen(
+                solicitanteId,
+                aprobadorId,
+                supervisorId,
+                responsableId
+        );
+        return SolicitudMantenimientoResumenResponse.from(projection, interfaz);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SolicitudMantenimientoResponse> findAll(String q, String estado, PageRequestDto pageRequest) {
+        return findAll(q, estado, null, pageRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SolicitudMantenimientoResponse> findAll(String q, String estado, String interfaz,
+            PageRequestDto pageRequest) {
+        UUID solicitanteId = null;
+        UUID responsableId = null;
+        UUID supervisorId = null;
+        UUID aprobadorId = null;
+
+        if (!securityUtils.isAdmin()) {
+            UUID empleadoActual = obtenerEmpleadoIdActual();
+            if (interfaz == null || interfaz.isBlank() || "SolicitudesPage".equalsIgnoreCase(interfaz.trim())) {
+                solicitanteId = empleadoActual;
+            } else if ("AprobacionesPage".equalsIgnoreCase(interfaz.trim())) {
+                aprobadorId = empleadoActual;
+            } else if ("SupervisorMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+                supervisorId = empleadoActual;
+            } else if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+                responsableId = empleadoActual;
+            }
+        }
+
+        List<String> estados = resolverEstados(estado, interfaz);
+
+        SolicitudMantenimientoSearchCriteria criteria = new SolicitudMantenimientoSearchCriteria(
+                q,
+                estados,
+                solicitanteId,
+                responsableId,
+                supervisorId,
+                null,
+                aprobadorId);
+        return findAll(criteria, pageRequest);
+    }
+
+    // Estados del BPMN (solicitudMantenimientoProcess.bpmn20.xml)
+    public static final String ESTADO_BPMN_BORRADOR = "BORRADOR";
+    public static final String ESTADO_BPMN_SOLICITADO = "SOLICITADO";
+    public static final String ESTADO_BPMN_OBSERVADO = "OBSERVADO";
+    public static final String ESTADO_BPMN_ASIGNADO = "ASIGNADO";
+    public static final String ESTADO_BPMN_EN_MANTENIMIENTO = "EN_MANTENIMIENTO";
+    public static final String ESTADO_BPMN_EN_REVISION = "EN_REVISION";
+    public static final String ESTADO_BPMN_OBSERVADO_MANTENIMIENTO = "OBSERVADO_MANTENIMIENTO";
+    public static final String ESTADO_BPMN_VALIDADO = "VALIDADO";
+    public static final String ESTADO_BPMN_TRABAJO_REALIZADO = "TRABAJO_REALIZADO";
+    public static final String ESTADO_BPMN_FINALIZADO = "FINALIZADO";
+
+    public static List<String> resolverEstados(String estado) {
+        return resolverEstados(estado, null);
+    }
+
+    public static List<String> resolverEstados(String estado, String interfaz) {
+        if (estado == null || estado.isBlank()) {
+            return Collections.emptyList();
+        }
+        String normalized = estado.trim().toUpperCase().replace("-", "_");
+
+        // Para la bandeja de ejecución del técnico/encargado, EN_MANTENIMIENTO incluye estados activos de ejecución técnica
+        if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz != null ? interfaz.trim() : "")) {
+            if ("EN_MANTENIMIENTO".equals(normalized)) {
+                return List.of(
+                        ESTADO_BPMN_EN_MANTENIMIENTO,
+                        ESTADO_BPMN_OBSERVADO_MANTENIMIENTO,
+                        ESTADO_BPMN_VALIDADO
+                );
+            }
+        }
+
+        return switch (normalized) {
+            // Grupos de estados para las tarjetas de resumen y filtros
+            case "BORRADOR", "BORRADORES" -> List.of(
+                    ESTADO_BPMN_BORRADOR
+            );
+            case "ENREVISION", "REVISION", "REVISIONES" -> List.of(
+                    ESTADO_BPMN_SOLICITADO,
+                    ESTADO_BPMN_OBSERVADO
+            );
+            case "EN_PROCESO", "ENPROCESO", "PROCESO" -> List.of(
+                    ESTADO_BPMN_SOLICITADO,
+                    ESTADO_BPMN_OBSERVADO,
+                    ESTADO_BPMN_ASIGNADO,
+                    ESTADO_BPMN_EN_MANTENIMIENTO,
+                    ESTADO_BPMN_EN_REVISION,
+                    ESTADO_BPMN_OBSERVADO_MANTENIMIENTO,
+                    ESTADO_BPMN_VALIDADO
+            );
+            case "FINALIZADA", "FINALIZADO", "FINALIZADAS", "FINALIZADOS" -> List.of(
+                    ESTADO_BPMN_TRABAJO_REALIZADO,
+                    ESTADO_BPMN_FINALIZADO,
+                    "CERRADO"
+            );
+
+            // Estados directos individuales del BPMN
+            case "SOLICITADO" -> List.of(ESTADO_BPMN_SOLICITADO);
+            case "OBSERVADO" -> List.of(ESTADO_BPMN_OBSERVADO);
+            case "ASIGNADO" -> List.of(ESTADO_BPMN_ASIGNADO);
+            // EN_MANTENIMIENTO filtra todos los estados posteriores a ASIGNADO
+            case "EN_MANTENIMIENTO" -> List.of(
+                    ESTADO_BPMN_EN_MANTENIMIENTO,
+                    ESTADO_BPMN_EN_REVISION,
+                    ESTADO_BPMN_OBSERVADO_MANTENIMIENTO,
+                    ESTADO_BPMN_VALIDADO,
+                    ESTADO_BPMN_TRABAJO_REALIZADO,
+                    ESTADO_BPMN_FINALIZADO,
+                    "CERRADO"
+            );
+            case "EN_REVISION" -> List.of(ESTADO_BPMN_EN_REVISION);
+            case "OBSERVADO_MANTENIMIENTO" -> List.of(ESTADO_BPMN_OBSERVADO_MANTENIMIENTO);
+            case "VALIDADO" -> List.of(ESTADO_BPMN_VALIDADO);
+            case "TRABAJO_REALIZADO", "TRABAJO_CONCLUIDO" -> List.of(
+                    ESTADO_BPMN_TRABAJO_REALIZADO,
+                    ESTADO_BPMN_FINALIZADO,
+                    "CERRADO"
+            );
+
+            default -> List.of(normalized);
+        };
     }
 
     @Transactional(readOnly = true)
@@ -111,6 +267,68 @@ public class SolicitudMantenimientoService {
     public SolicitudMantenimientoResponse findById(UUID id) {
         SolicitudMantenimiento solicitud = obtenerPorId(id);
         return mapper.toResponse(solicitud);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] generarReportePdf(UUID id) {
+        SolicitudMantenimientoResponse response = findById(id);
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("NUMERO_SOLICITUD", response.numero() != null ? response.numero() : "S/N");
+        parameters.put("FECHA_SOLICITUD", response.fechaSolicitud() != null ? response.fechaSolicitud().format(FORMATTER_FECHA_HORA) : "-");
+        parameters.put("ESTADO", response.estado() != null ? response.estado().toUpperCase() : "BORRADOR");
+        parameters.put("PRIORIDAD", response.prioridad() != null ? response.prioridad().nombre() : "-");
+        parameters.put("TIPO_MANTENIMIENTO", response.tipoMantenimiento() != null ? response.tipoMantenimiento().nombre() : "-");
+        parameters.put("TIPO_FALLAS", response.tipoFallas() != null ? response.tipoFallas() : "-");
+
+        parameters.put("SOLICITANTE_NOMBRE", response.solicitante() != null ? response.solicitante().nombreCompleto() : "-");
+        parameters.put("SOLICITANTE_CARGO", response.solicitante() != null && response.solicitante().cargo() != null ? response.solicitante().cargo() : "-");
+
+        parameters.put("ACTIVO_CODIGO", response.activo() != null ? response.activo().codigo() : "-");
+        parameters.put("ACTIVO_NOMBRE", response.activo() != null ? response.activo().nombre() : "-");
+        parameters.put("ACTIVO_CATEGORIA", "-");
+        parameters.put("ACTIVO_UBICACION", "-");
+
+        parameters.put("TITULO", response.titulo() != null ? response.titulo() : "-");
+        parameters.put("DESCRIPCION", response.descripcion() != null ? response.descripcion() : "-");
+
+        parameters.put("APROBADOR_NOMBRE", response.aprobador() != null ? response.aprobador().nombreCompleto() : "Pendiente de aprobación");
+        parameters.put("RESPONSABLE_NOMBRE", response.responsable() != null ? response.responsable().nombreCompleto() : "No asignado");
+        parameters.put("SUPERVISOR_NOMBRE", response.supervisor() != null ? response.supervisor().nombreCompleto() : "No asignado");
+
+        parameters.put("FECHA_INICIO", response.fechaInicioMantenimiento() != null ? response.fechaInicioMantenimiento().format(FORMATTER_FECHA_HORA) : "-");
+        parameters.put("FECHA_FIN", response.fechaFinMantenimiento() != null ? response.fechaFinMantenimiento().format(FORMATTER_FECHA_HORA) : "-");
+        parameters.put("FECHA_CIERRE", response.fechaCierre() != null ? response.fechaCierre().format(FORMATTER_FECHA_HORA) : "-");
+        parameters.put("FECHA_EMISION", LocalDateTime.now().format(FORMATTER_FECHA_HORA));
+
+        // Usuario generador del reporte
+        String usuarioGenerador = securityUtils.getCurrentUsername();
+        UUID currentEmpId = obtenerEmpleadoIdActual();
+        if (currentEmpId != null) {
+            Empleado emp = empleadoRepository.findById(currentEmpId).orElse(null);
+            if (emp != null && emp.getNombreCompleto() != null && !emp.getNombreCompleto().isBlank()) {
+                usuarioGenerador = emp.getNombreCompleto() + (emp.getCargo() != null && !emp.getCargo().isBlank() ? " - " + emp.getCargo() : "");
+            }
+        }
+        parameters.put("GENERADO_POR", usuarioGenerador);
+
+        // Código de barras
+        String codigoBarras = response.numero() != null && !response.numero().isBlank() ? response.numero() : id.toString();
+        java.awt.image.BufferedImage barcodeImage = com.endecorani.sigma_api.shared.infrastructure.report.BarcodeUtil.generateBarcode128(codigoBarras, 320, 60);
+        if (barcodeImage != null) {
+            parameters.put("BARCODE_IMAGEN", barcodeImage);
+        }
+
+        try {
+            org.springframework.core.io.ClassPathResource logoResource = new org.springframework.core.io.ClassPathResource("reports/images/logo-ende-corani.png");
+            if (logoResource.exists()) {
+                parameters.put("LOGO_EMPRESA", logoResource.getInputStream());
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo cargar el logo para el reporte: {}", e.getMessage());
+        }
+
+        return jasperReportService.generatePdfReport(REPORTE_SOLICITUD_PATH, parameters);
     }
 
     @Transactional

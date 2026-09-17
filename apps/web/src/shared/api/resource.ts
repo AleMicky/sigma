@@ -41,13 +41,10 @@ export function createCrudService<
   TListParams = PageParams,
 >(endpoints: ResourceEndpoints): CrudService<TEntity, TPayload, TListParams> {
   return {
-    list: (params) =>
-      http.get<PageResponse<TEntity>>(endpoints.root, { params }),
+    list: (params) => http.get<PageResponse<TEntity>>(endpoints.root, { params }),
     get: (id) => http.get<TEntity>(endpoints.byId(id)),
-    create: (payload) =>
-      http.post<TEntity, TPayload>(endpoints.root, payload),
-    update: (id, payload) =>
-      http.put<TEntity, TPayload>(endpoints.byId(id), payload),
+    create: (payload) => http.post<TEntity, TPayload>(endpoints.root, payload),
+    update: (id, payload) => http.put<TEntity, TPayload>(endpoints.byId(id), payload),
     remove: async (id) => {
       await http.delete<void>(endpoints.byId(id))
     },

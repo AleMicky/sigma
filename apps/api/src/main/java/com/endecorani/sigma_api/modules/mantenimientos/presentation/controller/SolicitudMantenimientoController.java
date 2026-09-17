@@ -7,7 +7,6 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResumenResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoTrazabilidadResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.SolicitudMantenimientoService;
-import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -39,8 +38,8 @@ public class SolicitudMantenimientoController {
         @GetMapping("/resumen")
         @Operation(summary = "Obtener resumen y conteo de solicitudes por estado")
         public ResponseEntity<ApiResponse<SolicitudMantenimientoResumenResponse>> obtenerResumen(
-                        @RequestParam(required = false) UUID solicitanteId) {
-                return ResponseEntity.ok(ApiResponse.success(service.obtenerResumen(solicitanteId)));
+                        @RequestParam(value = "interfaz", required = false) String interfaz) {
+                return ResponseEntity.ok(ApiResponse.success(service.obtenerResumen(interfaz)));
         }
 
         @PostMapping
@@ -109,29 +108,28 @@ public class SolicitudMantenimientoController {
                 return ResponseEntity.ok(ApiResponse.success(service.obtenerTrazabilidad(id)));
         }
 
+        @GetMapping(value = "/{id}/reporte-pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+        @Operation(summary = "Generar reporte PDF de una solicitud de mantenimiento")
+        public ResponseEntity<byte[]> generarReportePdf(@PathVariable UUID id) {
+                byte[] pdfBytes = service.generarReportePdf(id);
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_PDF);
+                headers.setContentDisposition(org.springframework.http.ContentDisposition.inline()
+                                .filename("solicitud-mantenimiento-" + id + ".pdf")
+                                .build());
+                headers.setContentLength(pdfBytes.length);
+                return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        }
+
         @GetMapping
-        @Operation(summary = "Listar solicitudes con filtros combinados (estado, solicitante, responsable, supervisor, activo, prioridad, búsqueda)")
+        @Operation(summary = "Listar solicitudes con filtros combinados (búsqueda, estado, interfaz)")
         public ResponseEntity<ApiResponse<PageResponse<SolicitudMantenimientoResponse>>> findAll(
                         @RequestParam(required = false) String q,
                         @RequestParam(required = false) String estado,
-                        @RequestParam(required = false) UUID solicitanteId,
-                        @RequestParam(required = false) UUID responsableId,
-                        @RequestParam(required = false) UUID supervisorId,
-                        @RequestParam(required = false) UUID activoId,
-                        @RequestParam(required = false) UUID prioridadId,
+                        @RequestParam(required = false) String interfaz,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
                 return ResponseEntity.ok(
-                                ApiResponse.success(
-                                                service.findAll(
-                                                                new SolicitudMantenimientoSearchCriteria(
-                                                                                q,
-                                                                                estado,
-                                                                                solicitanteId,
-                                                                                responsableId,
-                                                                                supervisorId,
-                                                                                activoId,
-                                                                                prioridadId),
-                                                                pageRequest)));
+                                ApiResponse.success(service.findAll(q, estado, interfaz, pageRequest)));
         }
 
         @DeleteMapping("/{id}")

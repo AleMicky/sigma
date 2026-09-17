@@ -31,10 +31,8 @@ public record OrdenTrabajoRequest(
         @Size(max = 2000, message = "La observación no puede superar los 2000 caracteres")
         String observacion,
 
-        @Valid
-        List<OrdenTrabajoActividadRequest> actividades,
+        List<@Valid OrdenTrabajoActividadRequest> actividades,
 
-        @Valid
-        List<OrdenTrabajoAdjuntoRequest> adjuntos
+        List<@Valid OrdenTrabajoAdjuntoRequest> adjuntos
 ) {
 }

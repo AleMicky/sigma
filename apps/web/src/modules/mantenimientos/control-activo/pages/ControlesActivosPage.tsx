@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select"
+import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
@@ -43,6 +44,7 @@ export function ControlesActivosPage() {
   const [tipoFilter, setTipoFilter] = useState<string>("ALL")
   const [conformidadFilter, setConformidadFilter] = useState<string>("ALL")
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [controlIdToDelete, setControlIdToDelete] = useState<string | null>(null)
 
   const queryFilters = useMemo(() => {
     return {
@@ -100,9 +102,7 @@ export function ControlesActivosPage() {
   )
 
   function handleDelete(id: string) {
-    if (confirm("¿Estás seguro de que deseas eliminar este control de activo?")) {
-      deleteMutation.mutate(id)
-    }
+    setControlIdToDelete(id)
   }
 
   return (
@@ -375,6 +375,20 @@ export function ControlesActivosPage() {
           </>
         )}
       </div>
+
+      <ConfirmDeleteDialog
+        open={Boolean(controlIdToDelete)}
+        onOpenChange={(isOpen) => !isOpen && setControlIdToDelete(null)}
+        title="¿Eliminar acta de control?"
+        description="¿Estás seguro de que deseas eliminar este control de activo? Se eliminarán también todos los accesorios registrados en el acta."
+        isPending={deleteMutation.isPending}
+        onConfirm={async () => {
+          if (controlIdToDelete) {
+            await deleteMutation.mutateAsync(controlIdToDelete)
+            setControlIdToDelete(null)
+          }
+        }}
+      />
     </PageShell>
   )
 }

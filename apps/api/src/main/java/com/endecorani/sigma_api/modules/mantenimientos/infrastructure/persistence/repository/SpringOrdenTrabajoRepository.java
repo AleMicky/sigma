@@ -24,6 +24,8 @@ public interface SpringOrdenTrabajoRepository extends JpaRepository<OrdenTrabajo
 
     Optional<OrdenTrabajoEntity> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
 
+    Page<OrdenTrabajoEntity> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId, Pageable pageable);
+
     @Query("""
         SELECT ot
         FROM OrdenTrabajoEntity ot

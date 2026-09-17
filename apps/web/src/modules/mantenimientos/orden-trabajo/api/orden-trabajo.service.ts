@@ -314,3 +314,44 @@ export async function deleteOrdenTrabajoActividadEvidencia(
     ORDEN_TRABAJO_ENDPOINTS.actividades.evidencias.detail(actividadId, id),
   )
 }
+
+/**
+ * Descarga el reporte PDF de una orden de trabajo.
+ * Endpoint: GET /api/v1/ordenes-trabajo/{id}/reporte-pdf
+ */
+export async function downloadOrdenTrabajoReportePdf(
+  id: string,
+  numero?: string,
+): Promise<void> {
+  const blob = await http.get<Blob>(ORDEN_TRABAJO_ENDPOINTS.reportePdf(id), {
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `orden-trabajo-${numero || id}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+
+/**
+ * Abre el reporte PDF de una orden de trabajo en una pestaña nueva.
+ * Endpoint: GET /api/v1/ordenes-trabajo/{id}/reporte-pdf
+ */
+export async function openOrdenTrabajoReportePdf(id: string): Promise<void> {
+  const blob = await http.get<Blob>(ORDEN_TRABAJO_ENDPOINTS.reportePdf(id), {
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  window.open(url, "_blank")
+}

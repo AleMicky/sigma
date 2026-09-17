@@ -27,11 +27,26 @@ export type ControlActivo = AuditableEntity & {
   id: string
   solicitudMantenimientoId: string
   ordenTrabajoId?: string | null
+  activoId?: string | null
   activo?: ActivoInfo | null
   tipo: TipoControlActivo
+  entregadoPorId?: string | null
   entregadoPor?: UserInfo | null
+  recibidoPorId?: string | null
   recibidoPor?: UserInfo | null
   fecha: string
+  conforme: boolean
+  observacion?: string | null
+  detalles?: ControlActivoDetalle[]
+}
+
+export type ControlActivoDetalle = AuditableEntity & {
+  id: string
+  controlActivoId: string
+  accesorioId: string
+  accesorio?: AccesorioInfo | null
+  cantidadEsperada: number
+  cantidadEncontrada: number
   conforme: boolean
   observacion?: string | null
 }
@@ -39,23 +54,14 @@ export type ControlActivo = AuditableEntity & {
 export type ControlActivoPayload = {
   solicitudMantenimientoId: string
   ordenTrabajoId?: string | null
-  activoId: string
+  activoId?: string | null
   tipo: TipoControlActivo
   entregadoPorId?: string | null
   recibidoPorId?: string | null
   fecha: string
   conforme: boolean
   observacion?: string | null
-}
-
-export type ControlActivoDetalle = AuditableEntity & {
-  id: string
-  controlActivoId: string
-  accesorio?: AccesorioInfo | null
-  cantidadEsperada: number
-  cantidadEncontrada: number
-  conforme: boolean
-  observacion?: string | null
+  detalles?: (Omit<ControlActivoDetallePayload, "controlActivoId"> & { controlActivoId?: string })[]
 }
 
 export type ControlActivoDetallePayload = {
@@ -148,4 +154,46 @@ export async function updateControlActivoDetalle(
 
 export async function deleteControlActivoDetalle(id: string): Promise<void> {
   return http.delete<void>(CONTROL_ACTIVO_ENDPOINTS.detalles.detail(id))
+}
+
+/**
+ * Descarga el reporte PDF de un control de activo (Acta de Entrega o Devolución).
+ * Endpoint: GET /api/v1/controles-activos/{id}/reporte-pdf
+ */
+export async function downloadControlActivoReportePdf(
+  id: string,
+  tipo?: string,
+): Promise<void> {
+  const blob = await http.get<Blob>(CONTROL_ACTIVO_ENDPOINTS.reportePdf(id), {
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const tipoPrefix = tipo ? `acta-${tipo.toLowerCase()}` : "acta-control-activo"
+  a.download = `${tipoPrefix}-${id}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+
+/**
+ * Abre el reporte PDF de un control de activo en una pestaña nueva.
+ * Endpoint: GET /api/v1/controles-activos/{id}/reporte-pdf
+ */
+export async function openControlActivoReportePdf(id: string): Promise<void> {
+  const blob = await http.get<Blob>(CONTROL_ACTIVO_ENDPOINTS.reportePdf(id), {
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  window.open(url, "_blank")
 }

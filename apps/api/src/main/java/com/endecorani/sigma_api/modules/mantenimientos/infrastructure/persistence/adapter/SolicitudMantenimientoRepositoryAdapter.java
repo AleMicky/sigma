@@ -61,18 +61,29 @@ public class SolicitudMantenimientoRepositoryAdapter implements SolicitudManteni
     }
 
     @Override
-    public SolicitudMantenimientoResumenProjection obtenerResumen(UUID solicitanteId) {
+    public SolicitudMantenimientoResumenProjection obtenerResumen(UUID solicitanteId, UUID aprobadorId, UUID supervisorId, UUID responsableId) {
         return springRepository.obtenerResumen(
             solicitanteId != null, 
-            solicitanteId != null ? solicitanteId : NULL_UUID
+            solicitanteId != null ? solicitanteId : NULL_UUID,
+            aprobadorId != null,
+            aprobadorId != null ? aprobadorId : NULL_UUID,
+            supervisorId != null,
+            supervisorId != null ? supervisorId : NULL_UUID,
+            responsableId != null,
+            responsableId != null ? responsableId : NULL_UUID
         );
     }
 
+    private static final java.util.List<String> DUMMY_ESTADOS = java.util.List.of("__NONE__");
+
     @Override
     public Page<SolicitudMantenimiento> findAll(SolicitudMantenimientoSearchCriteria criteria, Pageable pageable) {
+        boolean hasEstados = criteria.estados() != null && !criteria.estados().isEmpty();
+        java.util.Collection<String> estados = hasEstados ? criteria.estados() : DUMMY_ESTADOS;
+
         return springRepository.searchWithCriteria(
                 hasText(criteria.q()), textOrEmpty(criteria.q()),
-                hasText(criteria.estado()), textOrEmpty(criteria.estado()),
+                hasEstados, estados,
                 hasId(criteria.solicitanteId()), idOrDefault(criteria.solicitanteId()),
                 hasId(criteria.responsableId()), idOrDefault(criteria.responsableId()),
                 hasId(criteria.supervisorId()), idOrDefault(criteria.supervisorId()),

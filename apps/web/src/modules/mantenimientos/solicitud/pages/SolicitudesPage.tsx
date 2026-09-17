@@ -1,21 +1,6 @@
-import { useMemo, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
-import {
-  AlertCircle,
-  AlertTriangle,
-  Box,
-  CheckCircle2,
-  ClipboardCheck,
-  Eye,
-  FileCheck2,
-  Pencil,
-  Plus,
-  Shield,
-  Trash2,
-  User,
-  Wrench,
-} from "lucide-react"
+import { AlertCircle, FileText, Plus, RefreshCw } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { routes } from "@/app/config/routes"
@@ -25,623 +10,339 @@ import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
-import { RefreshButton } from "@/shared/components/refresh-button"
 import { Button } from "@/shared/components/ui/button"
 import {
-  useClampPage,
-  usePaginatedSearch,
-} from "@/shared/hooks/use-paginated-search"
+  WorkflowActionDialog,
+  WorkflowHistoryDialog,
+  WorkflowListView,
+  useWorkflowActionTarget,
+} from "@/modules/workflow"
+import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
-import { toast } from "sonner"
-
-import { ControlActivoHistorialModal } from "@/modules/mantenimientos/control-activo/components/ControlActivoHistorialModal"
-import { controlActivoQueries } from "@/modules/mantenimientos/control-activo/api/control-activo.queries"
-import {
-  useWorkflowActionTarget,
-  WorkflowActionDialog,
-  WorkflowListView,
-} from "@/modules/workflow"
-import {
-  useCompleteWorkflowTask,
-  useDeleteSolicitud,
-} from "../api/solicitud.mutations"
-import { solicitudQueries } from "../api/solicitud.queries"
-import type { SolicitudMantenimiento } from "../api/solicitud.service"
-import {
-  SolicitudFilterToolbar,
-  SolicitudQuickViewSheet,
-  SolicitudStats,
-  SolicitudTrazabilidadModal,
-  SolicitudWorkflowListItem,
-} from "../components"
-import {
-  extractPlaca,
-  getTipoMantenimientoBadgeClass,
-} from "../lib/solicitud.utils"
-import { useSolicitudRoleScope } from "../hooks/use-solicitud-role-scope"
+import { useCompletarWorkflowSolicitud, useDeleteSolicitud } from "../api/solicitud.mutations"
+import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
+import { OrdenTrabajoDetailModal } from "../../orden-trabajo/components/OrdenTrabajoDetailModal"
+import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
+import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
+import { SolicitudHeader } from "../components/SolicitudHeader"
+import { SolicitudListItem } from "../components/SolicitudListItem"
+import { SolicitudResumenCards } from "../components/SolicitudResumenCards"
+import { useSolicitudes, useSolicitudResumen } from "../hooks/use-solicitudes"
+import type { SolicitudMantenimiento } from "../types/solicitud.type"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
-function SolicitudSolicitanteListItem({
-  solicitud,
-  onOpenEdit,
-  onDeleting,
-  onQuickView,
-  onControlActivo,
-  onTraceability,
-  onActionSelect,
-}: {
-  solicitud: SolicitudMantenimiento
-  onOpenEdit: (s: SolicitudMantenimiento) => void
-  onDeleting: (s: SolicitudMantenimiento) => void
-  onQuickView: (s: SolicitudMantenimiento) => void
-  onControlActivo: (s: SolicitudMantenimiento) => void
-  onTraceability?: () => void
-  onActionSelect?: (
-    action: any,
-    taskName?: string,
-    fields?: any[],
-  ) => void
-}) {
-  const navigate = useNavigate()
-  const estadoNorm = (solicitud.estado ?? "").toLowerCase().trim()
-  const isBorrador = estadoNorm === "borrador"
-  const isObservado = estadoNorm === "observado"
-  const isValidado = estadoNorm === "validado"
-  const isEditable = isBorrador || isObservado
-  const isTrabajoRealizado = estadoNorm === "trabajo_realizado"
-  const placa = extractPlaca(solicitud.activo)
-  const adjuntosCount = solicitud.adjuntos?.length ?? 0
-
-  // Consultar actas existentes de esta solicitud
-  const controlesQuery = useQuery({
-    ...controlActivoQueries.list({
-      solicitudMantenimientoId: solicitud.id,
-      size: 50,
-    }),
-  })
-  const controles = controlesQuery.data?.content ?? []
-  const hasEntrega = controles.some((c) => c.tipo === "ENTREGA")
-  const hasDevolucion = controles.some((c) => c.tipo === "DEVOLUCION")
-  const totalActas = controles.length
-
-  return (
-    <SolicitudWorkflowListItem
-      key={solicitud.id}
-      solicitud={solicitud}
-      showWorkflowTrigger={isBorrador || isValidado || isTrabajoRealizado}
-      badges={
-        <>
-          {solicitud.tipoMantenimiento && (
-            <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10.5px] font-semibold border shrink-0 ${getTipoMantenimientoBadgeClass(
-                solicitud.tipoMantenimiento.nombre,
-                false,
-              )}`}
-            >
-              <Wrench className="size-2.5 shrink-0" />
-              <span>{solicitud.tipoMantenimiento.nombre}</span>
-            </span>
-          )}
-          {solicitud.tipoFallas && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10.5px] font-medium bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 truncate max-w-55 shrink-0">
-              <AlertTriangle className="size-2.5 shrink-0" />
-              <span className="truncate">{solicitud.tipoFallas}</span>
-            </span>
-          )}
-          {hasEntrega && hasDevolucion && (
-            <span
-              onClick={(e) => {
-                e.stopPropagation()
-                onControlActivo(solicitud)
-              }}
-              className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10.5px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 shrink-0 cursor-pointer hover:bg-emerald-500/20"
-              title="Actas de entrega y devolución completadas"
-            >
-              <CheckCircle2 className="size-2.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Actas completadas</span>
-            </span>
-          )}
-        </>
-      }
-      extraContent={
-        <>
-          {solicitud.activo && (
-            <div className="inline-flex items-center gap-1.5 truncate max-w-sm">
-              <Box className="size-3 shrink-0 text-primary opacity-90" />
-              <span className="font-mono font-bold text-primary text-[11px]">
-                {solicitud.activo.codigo}
-              </span>
-              <span className="truncate text-foreground/90 font-medium">
-                {solicitud.activo.nombre}
-              </span>
-              {placa ? (
-                <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded shrink-0">
-                  {placa}
-                </span>
-              ) : null}
-            </div>
-          )}
-          {solicitud.solicitante && (
-            <div className="flex items-center gap-1 truncate max-w-50">
-              <User className="size-3 text-muted-foreground/70 shrink-0" />
-              <span className="text-muted-foreground/80">Solicita:</span>
-              <strong className="truncate font-semibold text-foreground/90">
-                {solicitud.solicitante.nombre}
-              </strong>
-            </div>
-          )}
-          {adjuntosCount > 0 && (
-            <div className="inline-flex items-center gap-1 font-semibold text-primary bg-primary/10 px-1.5 py-0.2 rounded-md border border-primary/20 text-[10px] shrink-0">
-              <span>
-                {adjuntosCount} {adjuntosCount === 1 ? "adjunto" : "adjuntos"}
-              </span>
-            </div>
-          )}
-        </>
-      }
-      extraActions={
-        <div className="flex items-center gap-1">
-          {/* Botón Inteligente de Actas: Si ya tiene ambas actas (o solo consulta) muestra "Ver Actas", si está en TRABAJO_REALIZADO y falta devolución muestra "Devolución" */}
-          {hasEntrega && hasDevolucion ? (
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation()
-                onControlActivo(solicitud)
-              }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/30 rounded-md shadow-2xs cursor-pointer"
-              title="Ver actas de entrega y devolución registradas"
-            >
-              <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
-              <span>Ver Actas</span>
-            </Button>
-          ) : isTrabajoRealizado && !hasDevolucion ? (
-            <Button
-              type="button"
-              size="xs"
-              onClick={(e) => {
-                e.stopPropagation()
-                navigate({
-                  to: routes.mantenimientos.controlesActivos.nuevo,
-                  search: {
-                    solicitudId: solicitud.id,
-                    tipo: "DEVOLUCION",
-                  },
-                })
-              }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-md shadow-2xs cursor-pointer"
-              title="Registrar Devolución de Activo"
-            >
-              <ClipboardCheck className="size-3" />
-              <span>Devolución</span>
-            </Button>
-          ) : totalActas > 0 ? (
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation()
-                onControlActivo(solicitud)
-              }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/30 rounded-md shadow-2xs cursor-pointer"
-              title="Ver historial de actas registradas"
-            >
-              <FileCheck2 className="size-3 text-amber-600 dark:text-amber-400" />
-              <span>Ver Actas ({totalActas})</span>
-            </Button>
-          ) : null}
-
-          {/* Botón Ver Detalles */}
-          <Button
-            type="button"
-            size="xs"
-            variant="ghost"
-            onClick={() => onQuickView(solicitud)}
-            className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
-            title="Ver detalles completos"
-          >
-            <Eye className="size-3 text-primary" />
-            <span>Detalles</span>
-          </Button>
-
-          {/* Botón Editar (En Borrador u Observado) */}
-          {isEditable && (
-            <Button
-              type="button"
-              size="xs"
-              variant="ghost"
-              onClick={() => onOpenEdit(solicitud)}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium hover:bg-muted cursor-pointer"
-              title="Editar solicitud"
-            >
-              <Pencil className="size-3 text-muted-foreground" />
-              <span>Editar</span>
-            </Button>
-          )}
-
-          {/* Botón Eliminar (Solo en Borrador) */}
-          {isBorrador && (
-            <Button
-              type="button"
-              size="icon-xs"
-              variant="ghost"
-              onClick={() => onDeleting(solicitud)}
-              className="size-6.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-              title="Eliminar solicitud"
-            >
-              <Trash2 className="size-3 text-destructive/80" />
-            </Button>
-          )}
-        </div>
-      }
-      onTraceability={onTraceability}
-      onQuickView={() => onQuickView(solicitud)}
-      onActionSelect={onActionSelect}
-    />
-  )
-}
-
 export function SolicitudesPage() {
   const navigate = useNavigate()
-  const [statusFilter, setStatusFilter] = useState<string>("")
-  const [quickView, setQuickView] = useState<SolicitudMantenimiento | null>(null)
-  const [deleting, setDeleting] = useState<SolicitudMantenimiento | null>(null)
+  const [selectedEstado, setSelectedEstado] = useState<string>("")
+  const [detailItem, setDetailItem] = useState<SolicitudMantenimiento | null>(null)
+  const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
+  const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
+  const [ordenTrabajoItem, setOrdenTrabajoItem] = useState<SolicitudMantenimiento | null>(null)
+  const [deletingItem, setDeletingItem] = useState<SolicitudMantenimiento | null>(null)
 
-  const {
-    isAdmin,
-    scope,
-    setScope,
-    isMineOnly,
-    currentEmpleado,
-    isSolicitantePropio,
-  } = useSolicitudRoleScope()
+  const search = usePaginatedSearch({
+    debounceMs: 300,
+    resetKey: selectedEstado,
+  })
 
-  const search = usePaginatedSearch()
+  const { target, isOpen, openAction, closeAction } =
+    useWorkflowActionTarget<SolicitudMantenimiento>()
+  const completarWorkflowMutation = useCompletarWorkflowSolicitud()
   const deleteMutation = useDeleteSolicitud()
-  const completeWorkflowMutation = useCompleteWorkflowTask()
-  const workflowAction = useWorkflowActionTarget<SolicitudMantenimiento>()
-  const [trazabilidadSolicitud, setTrazabilidadSolicitud] =
-    useState<SolicitudMantenimiento | null>(null)
-  const [controlActivoTarget, setControlActivoTarget] =
-    useState<SolicitudMantenimiento | null>(null)
 
-  const handleStatusSelect = (status: string) => {
-    setStatusFilter(status)
-    search.setPage(0)
-  }
-
-  const resumenQuery = useQuery(solicitudQueries.resumen())
-  const resumen = resumenQuery.data
-
-  const solicitudesQuery = useQuery(
-    solicitudQueries.list({
-      page: search.page,
-      size: PAGE_SIZE,
-      sortBy: "createdAt",
-      direction: "DESC",
-      ...(search.query ? { q: search.query } : {}),
-      ...(statusFilter ? { estado: statusFilter } : {}),
-      ...(isMineOnly && currentEmpleado?.id
-        ? { solicitanteId: currentEmpleado.id }
-        : {}),
-    }),
-  )
-
-  const rawSolicitudes = useMemo(
-    () => solicitudesQuery.data?.content ?? [],
-    [solicitudesQuery.data?.content],
-  )
-
-  // In-memory fallback if backend solicitanteId wasn't applied or for multi-employee user
-  const solicitudes = useMemo(() => {
-    if (!isMineOnly) return rawSolicitudes
-    if (currentEmpleado?.id) return rawSolicitudes
-    return rawSolicitudes.filter(isSolicitantePropio)
-  }, [rawSolicitudes, isMineOnly, currentEmpleado?.id, isSolicitantePropio])
-
-  useClampPage(
-    search.page,
-    search.setPage,
-    solicitudesQuery.data?.totalPages,
-  )
-
-  function openCreate() {
-    navigate({ to: routes.mantenimientos.nuevaSolicitud })
-  }
-
-  function openEdit(solicitud: SolicitudMantenimiento) {
-    const estado = (solicitud.estado ?? "").toLowerCase()
-    if (estado !== "borrador" && estado !== "observado") {
-      toast.error("Solo se pueden editar solicitudes en estado Borrador u Observado")
-      return
-    }
-    navigate({
-      to: routes.mantenimientos.editarSolicitud(solicitud.id),
-    })
-  }
-
-  const hasActiveFilters = Boolean(search.search.trim() || statusFilter)
-
-  function resetFilters() {
-    search.setSearch("")
-    setStatusFilter("")
-  }
-
-  async function handleDelete() {
-    if (!deleting) return
-    if ((deleting.estado ?? "").toLowerCase() !== "borrador") {
-      toast.error("Solo se pueden eliminar solicitudes en estado Borrador")
-      setDeleting(null)
-      return
-    }
+  const handleDeleteConfirm = async () => {
+    if (!deletingItem) return
     try {
-      await deleteMutation.mutateAsync(deleting.id)
-      setDeleting(null)
+      await deleteMutation.mutateAsync(deletingItem.id)
+      setDeletingItem(null)
+      query.refetch()
+      resumenQuery.refetch()
     } catch {
-      // Handled by mutation toast
+      // Error handled in useDeleteSolicitud
     }
+  }
+
+  const query = useSolicitudes({
+    interfaz: "SolicitudesPage",
+    page: search.page,
+    size: PAGE_SIZE,
+    ...(selectedEstado ? { estado: selectedEstado } : {}),
+    ...(search.query ? { q: search.query } : {}),
+  })
+  const resumenQuery = useSolicitudResumen("SolicitudesPage")
+
+  const solicitudes = query.data?.content ?? []
+  const resumen = resumenQuery.data
+  const totalCount = resumen?.total ?? query.data?.totalElements ?? 0
+
+  useClampPage(search.page, search.setPage, query.data?.totalPages)
+
+  const handleSelectEstado = (estado: string) => {
+    if (!estado) {
+      setSelectedEstado("")
+      return
+    }
+    setSelectedEstado((prev) => (prev === estado ? "" : estado))
   }
 
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
-      {/* Header */}
-      <header className="flex shrink-0 flex-col gap-2 border-b py-2.5 sm:gap-3 sm:py-3.5 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0 flex flex-1 flex-col gap-0.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <h1 className="font-heading text-lg font-semibold tracking-tight sm:text-xl md:text-2xl">
-                Solicitudes de Mantenimiento
-              </h1>
-              {isAdmin ? (
-                <div className="inline-flex rounded-lg bg-muted p-0.5 border text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setScope("ALL")}
-                    className={cn(
-                      "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
-                      scope === "ALL"
-                        ? "bg-amber-500 text-white shadow-xs"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <Shield className="size-3" />
-                    <span>Todas (Admin)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setScope("MINE")}
-                    className={cn(
-                      "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
-                      scope === "MINE"
-                        ? "bg-primary text-primary-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <User className="size-3" />
-                    <span>Solo Mías</span>
-                  </button>
-                </div>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                  <User className="size-3" />
-                  <span>Mis Solicitudes</span>
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0 md:hidden">
-              <RefreshButton
-                queries={[solicitudesQuery, resumenQuery]}
-                size="sm"
-                className="h-7 px-2"
-              />
-              <Button
-                size="sm"
-                type="button"
-                render={<Link to={routes.mantenimientos.nuevaSolicitud} />}
-                className="h-7 px-2 text-xs"
-              >
-                <Plus className="size-3.5" />
-                <span className="sr-only sm:not-sr-only">Crear</span>
-              </Button>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground line-clamp-1">
-            Gestiona las solicitudes de mantenimiento correctivo y preventivo de activos.
-          </p>
-        </div>
+      {/* Encabezado principal */}
+      <SolicitudHeader
+        queries={[query, resumenQuery]}
+        totalCount={totalCount}
+        onRefresh={() => {
+          query.refetch()
+          resumenQuery.refetch()
+        }}
+        isRefreshing={query.isRefetching || resumenQuery.isRefetching}
+      />
 
-        <div className="hidden shrink-0 md:flex md:items-center md:gap-1.5">
-          <RefreshButton
-            queries={[solicitudesQuery, resumenQuery]}
-            size="sm"
-            className="h-8 gap-1.5 px-2.5 text-xs"
-          />
-
-          <Button
-            size="sm"
-            type="button"
-            render={<Link to={routes.mantenimientos.nuevaSolicitud} />}
-            className="h-8 gap-1.5 px-3 text-xs font-semibold shadow-xs"
-          >
-            <Plus className="size-3.5" />
-            <span>Crear Solicitud</span>
-          </Button>
-        </div>
-      </header>
-
-      {/* Stats Section */}
-      <div className="shrink-0 pt-2.5 pb-1">
-        <SolicitudStats
-          totalCount={resumen?.total ?? 0}
-          borradorCount={resumen?.borradores ?? 0}
-          enviadasCount={resumen?.enRevision ?? 0}
-          enProcesoCount={resumen?.enProceso ?? 0}
-          finalizadoCount={resumen?.finalizadas ?? 0}
+      {/* Contenedor de contenido estructurado */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-3 sm:py-4 gap-3 sm:gap-4">
+        {/* Tarjetas KPI de Resumen */}
+        <SolicitudResumenCards
+          resumen={resumen}
           isLoading={resumenQuery.isLoading}
-          activeStatus={statusFilter}
-          onSelectStatus={handleStatusSelect}
+          selectedEstado={selectedEstado}
+          onSelectEstado={handleSelectEstado}
         />
-      </div>
 
-      {/* Filter Toolbar */}
-      <SolicitudFilterToolbar
-        searchValue={search.search}
-        onSearchChange={search.setSearch}
-        hasActiveFilters={hasActiveFilters}
-        onResetFilters={resetFilters}
-      />
+        {/* Barra de Búsqueda y Filtro activo */}
+        <SolicitudFilterToolbar
+          searchQuery={search.search}
+          onSearchChange={search.setSearch}
+          selectedEstado={selectedEstado}
+          onClearEstado={() => setSelectedEstado("")}
+        />
 
-      {/* Content Section */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2">
-        {solicitudesQuery.isLoading ? (
-          <ListSkeleton
-            rows={6}
-            rowClassName="h-20 rounded-xl"
-            className="space-y-2"
-          />
-        ) : solicitudesQuery.isError ? (
-          <EmptyState
-            title={getErrorMessage(solicitudesQuery.error)}
-            className="text-destructive"
-          />
-        ) : solicitudes.length === 0 ? (
-          <EmptyState
-            icon={<AlertCircle className="size-4 text-muted-foreground" />}
-            title={
-              hasActiveFilters
-                ? "Sin resultados"
-                : "No hay solicitudes registradas"
-            }
-            description={
-              hasActiveFilters
-                ? "Prueba con otra búsqueda o limpia los filtros activos."
-                : "Crea la primera solicitud de mantenimiento para comenzar."
-            }
-            action={
-              hasActiveFilters ? (
-                <Button
-                  size="sm"
-                  type="button"
-                  onClick={resetFilters}
-                  className="h-8 text-xs"
-                >
-                  Limpiar filtros
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  type="button"
-                  onClick={openCreate}
-                  className="h-8 text-xs"
-                >
-                  <Plus className="size-3.5" />
-                  Crear Solicitud
-                </Button>
-              )
-            }
-          />
-        ) : (
-          <>
-            <div
-              className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2",
-                solicitudesQuery.isFetching && "opacity-70",
-              )}
-            >
-              <WorkflowListView>
-                {solicitudes.map((solicitud) => (
-                  <SolicitudSolicitanteListItem
-                    key={solicitud.id}
-                    solicitud={solicitud}
-                    onOpenEdit={openEdit}
-                    onDeleting={setDeleting}
-                    onQuickView={setQuickView}
-                    onControlActivo={setControlActivoTarget}
-                    onTraceability={
-                      solicitud.processInstanceId
-                        ? () => setTrazabilidadSolicitud(solicitud)
-                        : undefined
-                    }
-                    onActionSelect={(action, taskName, fields) => {
-                      workflowAction.openAction(solicitud, action, taskName, fields)
+        {/* Listado y Estados UX */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {query.isLoading ? (
+            <ListSkeleton
+              rows={5}
+              rowClassName="h-24 rounded-xl"
+              className="space-y-2.5"
+            />
+          ) : query.isError ? (
+            <div className="flex flex-1 items-center justify-center p-6">
+              <EmptyState
+                icon={<AlertCircle className="size-8 text-destructive" />}
+                title="Error al cargar las solicitudes"
+                description={getErrorMessage(query.error)}
+                action={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      query.refetch()
+                      resumenQuery.refetch()
                     }}
-                  />
-                ))}
-              </WorkflowListView>
-            </div>
-
-            {solicitudesQuery.data ? (
-              <Pagination
-                page={solicitudesQuery.data}
-                onPageChange={search.setPage}
-                className="-mx-3 border-x-0 px-3 sm:-mx-5 sm:px-5 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 shrink-0"
+                    className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+                  >
+                    <RefreshCw className="size-3.5" />
+                    <span>Reintentar</span>
+                  </Button>
+                }
               />
-            ) : null}
-          </>
-        )}
+            </div>
+          ) : solicitudes.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-6">
+              <EmptyState
+                icon={<FileText className="size-8 text-muted-foreground/60" />}
+                title={
+                  search.debouncedSearch
+                    ? "No se encontraron solicitudes coincidentes"
+                    : selectedEstado
+                      ? `No hay solicitudes con estado "${selectedEstado.replace(/_/g, " ")}"`
+                      : "No hay solicitudes de mantenimiento registradas"
+                }
+                description={
+                  search.debouncedSearch
+                    ? `No se hallaron resultados para "${search.debouncedSearch}". Prueba con otro término o limpia la búsqueda.`
+                    : selectedEstado
+                      ? "Puedes seleccionar otro estado en las tarjetas superiores o limpiar el filtro actual."
+                      : "Crea una nueva solicitud para reportar averías o mantenimientos requeridos en tus activos."
+                }
+                action={
+                  search.debouncedSearch || selectedEstado ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        search.setSearch("")
+                        setSelectedEstado("")
+                      }}
+                      className="mt-2 text-xs font-medium cursor-pointer"
+                    >
+                      Limpiar filtros
+                    </Button>
+                  ) : (
+                    <Link to={routes.mantenimientos.nuevaSolicitud}>
+                      <Button
+                        size="sm"
+                        className="mt-2 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
+                      >
+                        <Plus className="size-3.5" />
+                        <span>Crear Primera Solicitud</span>
+                      </Button>
+                    </Link>
+                  )
+                }
+              />
+            </div>
+          ) : (
+            <>
+              {/* Contenedor scrolleable de items */}
+              <div
+                className={cn(
+                  "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 pr-0.5",
+                  query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200",
+                )}
+              >
+                <WorkflowListView>
+                  {solicitudes.map((solicitud) => (
+                    <SolicitudListItem
+                      key={solicitud.id}
+                      solicitud={solicitud}
+                      onlyWorkflowActionsOnBorrador
+                      onViewDetail={(sol) => {
+                        setDetailItem(sol)
+                      }}
+                      onEdit={(sol) => {
+                        navigate({
+                          to: routes.mantenimientos.editarSolicitud(sol.id),
+                        })
+                      }}
+                      onDelete={(sol) => {
+                        setDeletingItem(sol)
+                      }}
+                      onActionSelect={(sol, action, taskName, fields) => {
+                        openAction(sol, action, taskName, fields)
+                      }}
+                      onTraceability={(sol) => {
+                        setTraceabilityItem(sol)
+                      }}
+                      onRegistrarControlActivo={(sol) => {
+                        setControlActivoItem(sol)
+                      }}
+                      onGestionarOrdenTrabajo={(sol) => {
+                        setOrdenTrabajoItem(sol)
+                      }}
+                    />
+                  ))}
+                </WorkflowListView>
+              </div>
+
+              {/* Paginación */}
+              {query.data && (
+                <Pagination
+                  page={query.data}
+                  onPageChange={search.setPage}
+                  className="border-t pt-2 shrink-0 text-xs"
+                />
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Quick View Sheet */}
-      <SolicitudQuickViewSheet
-        solicitud={quickView}
-        open={Boolean(quickView)}
-        onOpenChange={(open) => !open && setQuickView(null)}
+      {/* Modal de Detalle Completo de Solicitud */}
+      <SolicitudDetailModal
+        open={Boolean(detailItem)}
+        onOpenChange={(open) => {
+          if (!open) setDetailItem(null)
+        }}
+        solicitud={detailItem}
+        onEdit={(sol) => {
+          navigate({
+            to: routes.mantenimientos.editarSolicitud(sol.id),
+          })
+        }}
+        onTraceability={(sol) => {
+          setTraceabilityItem(sol)
+        }}
+        onControlActivo={(sol) => {
+          setControlActivoItem(sol)
+        }}
+        onGestionarOrdenTrabajo={(sol) => {
+          setOrdenTrabajoItem(sol)
+        }}
       />
 
-      {/* Modal Historial / Consulta de Actas */}
-      <ControlActivoHistorialModal
-        key={`actas-${controlActivoTarget?.id}`}
-        solicitudId={controlActivoTarget?.id ?? null}
-        solicitudNumero={controlActivoTarget?.numero ?? null}
-        readOnly={true}
-        open={Boolean(controlActivoTarget)}
-        onOpenChange={(open) => !open && setControlActivoTarget(null)}
-      />
-
-      {/* Modal de Trazabilidad e Historial de Workflow */}
-      <SolicitudTrazabilidadModal
-        solicitud={trazabilidadSolicitud}
-        open={Boolean(trazabilidadSolicitud)}
-        onOpenChange={(open) => !open && setTrazabilidadSolicitud(null)}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDeleteDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        title={`¿Eliminar solicitud "${deleting?.titulo}"?`}
-        description="Esta acción no se puede deshacer. Se eliminará la solicitud y sus adjuntos del sistema."
-        isPending={deleteMutation.isPending}
-        onConfirm={handleDelete}
-      />
-
-      {/* Dynamic Workflow Action Dialog (e.g. Reenviar/Corregir en Observado) */}
+      {/* Diálogo para completar acciones de workflow de forma interactiva */}
       <WorkflowActionDialog
-        open={workflowAction.isOpen}
-        onOpenChange={(open) => !open && workflowAction.closeAction()}
-        action={workflowAction.target?.action ?? null}
-        taskName={workflowAction.target?.taskName}
-        fields={workflowAction.target?.fields}
-        entityId={workflowAction.target?.item?.id}
-        onExecute={({ variables }) => {
-          const item = workflowAction.target?.item
-          if (!item) return Promise.resolve()
-          return completeWorkflowMutation.mutateAsync({
-            solicitudId: item.id,
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) closeAction()
+        }}
+        action={target?.action ?? null}
+        taskName={target?.taskName}
+        fields={target?.fields}
+        entityId={target?.item.id}
+        onExecute={async ({ variables }) => {
+          if (!target) return
+          await completarWorkflowMutation.mutateAsync({
+            id: target.item.id,
             payload: { variables },
           })
         }}
         onSuccess={() => {
-          solicitudesQuery.refetch()
+          closeAction()
+          query.refetch()
           resumenQuery.refetch()
-          setQuickView(null)
         }}
+      />
+
+      {/* Diálogo para consultar trazabilidad e historial de tareas */}
+      <WorkflowHistoryDialog
+        open={Boolean(traceabilityItem)}
+        onOpenChange={(open) => {
+          if (!open) setTraceabilityItem(null)
+        }}
+        processInstanceId={traceabilityItem?.processInstanceId}
+        entityCode={traceabilityItem?.numero}
+        title="Trazabilidad de Solicitud de Mantenimiento"
+      />
+
+      {/* Diálogo para visualizar listado e historial de actas de control de activo (solo Devolución para Solicitudes) */}
+      <ControlActivoHistorialModal
+        open={Boolean(controlActivoItem)}
+        onOpenChange={(open) => {
+          if (!open) setControlActivoItem(null)
+        }}
+        solicitudId={controlActivoItem?.id}
+        solicitudNumero={controlActivoItem?.numero}
+        allowedTipo="DEVOLUCION"
+      />
+
+      {/* Diálogo para visualizar la orden de trabajo (solo consulta) */}
+      <OrdenTrabajoDetailModal
+        open={Boolean(ordenTrabajoItem)}
+        onOpenChange={(open) => {
+          if (!open) setOrdenTrabajoItem(null)
+        }}
+        solicitudId={ordenTrabajoItem?.id}
+        solicitudNumero={ordenTrabajoItem?.numero}
+        readOnly={true}
+      />
+
+      {/* Diálogo de confirmación para eliminar solicitud en borrador */}
+      <ConfirmDeleteDialog
+        open={Boolean(deletingItem)}
+        onOpenChange={(open) => {
+          if (!open) setDeletingItem(null)
+        }}
+        title="Eliminar Solicitud de Mantenimiento"
+        description={`¿Estás seguro de que deseas eliminar la solicitud ${deletingItem?.numero || ""}? Esta acción es permanente y no se puede deshacer.`}
+        confirmLabel="Eliminar Solicitud"
+        isPending={deleteMutation.isPending}
+        onConfirm={handleDeleteConfirm}
       />
     </PageShell>
   )
 }
+
+

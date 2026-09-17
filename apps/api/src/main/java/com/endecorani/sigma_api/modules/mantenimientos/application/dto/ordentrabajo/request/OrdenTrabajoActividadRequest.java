@@ -23,9 +23,7 @@ public record OrdenTrabajoActividadRequest(
         String observacion,
 
         LocalDateTime fechaRealizacion,
-
-        @Valid
-        List<OrdenTrabajoActividadEvidenciaRequest> evidencias
+        List<@Valid OrdenTrabajoActividadEvidenciaRequest> evidencias
 ) {
 }
 

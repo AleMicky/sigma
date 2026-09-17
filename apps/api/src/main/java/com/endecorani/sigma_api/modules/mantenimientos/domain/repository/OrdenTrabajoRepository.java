@@ -19,6 +19,8 @@ public interface OrdenTrabajoRepository {
 
     Optional<OrdenTrabajo> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
 
+    Page<OrdenTrabajo> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId, Pageable pageable);
+
     OrdenTrabajo save(OrdenTrabajo ordenTrabajo);
 
     void deleteById(UUID id);

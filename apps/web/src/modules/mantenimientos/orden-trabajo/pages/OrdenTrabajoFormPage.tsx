@@ -9,6 +9,7 @@ import {
   Clock,
   FileText,
   Info,
+  ListChecks,
   Loader2,
   MapPin,
   Plus,
@@ -36,6 +37,10 @@ import { useCreateOrdenTrabajoWithActividades } from "../api/orden-trabajo.mutat
 import type { OrdenTrabajoPayload } from "../api/orden-trabajo.service"
 import { ActividadMantenimientoCombobox } from "../components/ActividadMantenimientoCombobox"
 import { ActivoCombobox } from "../components/ActivoCombobox"
+import {
+  ChecklistTemplateSelectDialog,
+  type ImportedChecklistItem,
+} from "../components/ChecklistTemplateSelectDialog"
 import { SolicitudAsignadaCombobox } from "../components/SolicitudAsignadaCombobox"
 
 export type ActividadFormItem = {
@@ -94,6 +99,9 @@ export function OrdenTrabajoFormPage({
 
   // Form State - Detalle (Actividades)
   const [actividades, setActividades] = useState<ActividadFormItem[]>([])
+
+  // Modal State - Cargar desde Checklist / Plantilla
+  const [isChecklistDialogOpen, setIsChecklistDialogOpen] = useState(false)
 
   // Set default initial date
   useEffect(() => {
@@ -156,7 +164,7 @@ export function OrdenTrabajoFormPage({
 
   const createMutation = useCreateOrdenTrabajoWithActividades()
 
-  // Handler for adding an activity row
+  // Handler for adding an activity row manually
   function handleAddActividad() {
     const newItem: ActividadFormItem = {
       id: generateId(),
@@ -166,6 +174,21 @@ export function OrdenTrabajoFormPage({
       observacion: "",
     }
     setActividades((prev) => [...prev, newItem])
+  }
+
+  // Handler for importing tasks from checklist template
+  function handleImportChecklist(importedItems: ImportedChecklistItem[]) {
+    const newItems: ActividadFormItem[] = importedItems.map((item) => ({
+      id: generateId(),
+      actividadMantenimientoId: item.actividadMantenimientoId,
+      descripcion: item.descripcion,
+      realizado: false,
+      observacion: item.observacion || "",
+    }))
+    setActividades((prev) => [...prev, ...newItems])
+    toast.success(
+      `${newItems.length} ${newItems.length === 1 ? "tarea importada" : "tareas importadas"} desde el checklist`,
+    )
   }
 
   function handleUpdateActividad(
@@ -229,7 +252,7 @@ export function OrdenTrabajoFormPage({
   }
 
   return (
-    <PageShell size="full" padding="none" layout="auto" className="w-full max-w-5xl mx-auto space-y-3 pb-10">
+    <PageShell size="full" padding="none" layout="auto" className="w-full max-w-5xl mx-auto space-y-2.5 pb-6">
       {/* Top Header Compacto */}
       <header className="flex shrink-0 items-center justify-between gap-2 border-b pb-2 pt-0.5">
         <div className="flex items-center gap-2 min-w-0">
@@ -244,7 +267,7 @@ export function OrdenTrabajoFormPage({
           </Button>
 
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
               <Wrench className="size-3.5" />
             </div>
             <h1 className="font-heading text-sm sm:text-base font-bold tracking-tight truncate">
@@ -272,29 +295,29 @@ export function OrdenTrabajoFormPage({
       </header>
 
       {/* Main Form Body */}
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-2.5">
         {/* Banner Superior: Activo & Solicitud Resumen */}
-        <Card className="p-3 border bg-card shadow-2xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <Card className="p-2.5 sm:px-3 sm:py-2.5 border bg-card shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             {/* Activo & Solicitud Resumen */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                <Box className="size-4.5" />
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                <Box className="size-4" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {(solicitud?.activo?.codigo || activo?.codigo) && (
-                    <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                    <span className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0.2 rounded border border-sky-500/20">
                       {solicitud?.activo?.codigo || activo?.codigo}
                     </span>
                   )}
-                  <span className="font-heading text-sm font-bold text-foreground truncate">
+                  <span className="font-heading text-xs sm:text-sm font-bold text-foreground truncate">
                     {solicitud?.activo?.nombre || activo?.nombre || "Activo no especificado"}
                   </span>
                   {solicitud?.prioridad && (
                     <span
                       className={cn(
-                        "px-2 py-0.5 text-xs font-semibold rounded border",
+                        "px-1.5 py-0.2 text-[11px] font-semibold rounded border",
                         getPrioridadBadgeStyles(solicitud.prioridad.nivel ?? 1),
                       )}
                     >
@@ -303,10 +326,10 @@ export function OrdenTrabajoFormPage({
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-muted-foreground mt-0.5">
                   {activo?.ubicacion && (
                     <span className="flex items-center gap-1">
-                      <MapPin className="size-3 opacity-70" />
+                      <MapPin className="size-2.5 opacity-70" />
                       {activo.ubicacion.nombre}
                     </span>
                   )}
@@ -325,15 +348,15 @@ export function OrdenTrabajoFormPage({
             </div>
 
             {/* Badge Indicador de Orden de Trabajo */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 font-bold text-xs shadow-2xs shrink-0 self-start sm:self-center">
-              <Wrench className="size-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-              <span>Orden de Trabajo Técnica</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 font-bold text-xs shadow-2xs shrink-0 self-start sm:self-center">
+              <Wrench className="size-3 text-sky-600 dark:text-sky-400 shrink-0" />
+              <span>Orden de Trabajo</span>
             </div>
           </div>
 
           {/* Selectores en caso de que no venga una solicitud asignada */}
           {!initialSolicitudId && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 mt-3 border-t border-border/60">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2.5 mt-2 border-t border-border/60">
               <div className="space-y-1">
                 <Label className="text-[11px] font-semibold text-foreground flex items-center gap-1">
                   Solicitud Asignada <span className="text-destructive">*</span>
@@ -352,7 +375,7 @@ export function OrdenTrabajoFormPage({
                       setDiagnostico(sol.descripcion)
                     }
                   }}
-                  className="h-8.5 text-xs"
+                  className="h-8 text-xs"
                 />
               </div>
 
@@ -364,22 +387,23 @@ export function OrdenTrabajoFormPage({
                   value={activoId || solicitud?.activo?.id || ""}
                   onValueChange={(val) => setActivoId(val)}
                   disabled={Boolean(solicitud?.activo?.id)}
-                  className="h-8.5 text-xs"
+                  className="h-8 text-xs"
                 />
               </div>
             </div>
           )}
         </Card>
 
-        {/* Responsable y Fechas de Planificación (3 Columnas Compactas) */}
-        <Card className="p-3 shadow-2xs space-y-2.5">
+        {/* Datos Principales y Planificación Temporal (Card Única Compacta) */}
+        <Card className="p-2.5 sm:p-3 shadow-2xs space-y-2.5">
           <div className="flex items-center gap-1.5 border-b pb-1.5">
             <UserCheck className="size-3.5 text-primary" />
             <h2 className="font-heading text-xs sm:text-[13px] font-bold text-foreground">
-              Responsable y Planificación Temporal
+              Responsable, Planificación y Descripción
             </h2>
           </div>
 
+          {/* Fila 1: Responsable y Fechas */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-start">
             {/* Responsable Técnico */}
             <div className="space-y-1">
@@ -392,7 +416,7 @@ export function OrdenTrabajoFormPage({
                 value={responsableId}
                 onValueChange={(val) => setResponsableId(val)}
                 placeholder="Seleccionar técnico..."
-                className="h-8.5 text-xs"
+                className="h-8 text-xs"
               />
             </div>
 
@@ -407,7 +431,7 @@ export function OrdenTrabajoFormPage({
                 type="datetime-local"
                 value={fechaInicio}
                 onChange={(e) => setFechaInicio(e.target.value)}
-                className="h-8.5 text-xs font-medium bg-background"
+                className="h-8 text-xs font-medium bg-background"
               />
             </div>
 
@@ -422,34 +446,26 @@ export function OrdenTrabajoFormPage({
                 type="datetime-local"
                 value={fechaFin}
                 onChange={(e) => setFechaFin(e.target.value)}
-                className="h-8.5 text-xs font-medium bg-background"
+                className="h-8 text-xs font-medium bg-background"
               />
             </div>
           </div>
-        </Card>
 
-        {/* Diagnóstico y Observaciones (2 Columnas Limpias) */}
-        <Card className="p-3 shadow-2xs space-y-2.5">
-          <div className="flex items-center gap-1.5 border-b pb-1.5">
-            <FileText className="size-3.5 text-primary" />
-            <h2 className="font-heading text-xs sm:text-[13px] font-bold text-foreground">
-              Descripcion y Observaciones
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Diagnóstico */}
+          {/* Fila 2: Descripción y Observaciones */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            {/* Diagnóstico / Descripción */}
             <div className="space-y-1">
-              <Label htmlFor="diagnostico" className="text-[11px] font-semibold text-foreground">
-                Descripcion
+              <Label htmlFor="diagnostico" className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+                <FileText className="size-3 text-muted-foreground" />
+                <span>Descripción / Diagnóstico</span>
               </Label>
               <Textarea
                 id="diagnostico"
                 value={diagnostico}
                 onChange={(e) => setDiagnostico(e.target.value)}
-                placeholder="Describe la evaluación preliminar del problema o falla..."
+                placeholder="Describe la evaluación preliminar o alcance del trabajo..."
                 rows={2}
-                className="text-xs resize-none bg-background"
+                className="text-xs resize-none bg-background min-h-[52px]"
               />
             </div>
 
@@ -462,20 +478,20 @@ export function OrdenTrabajoFormPage({
                 id="observacion"
                 value={observacion}
                 onChange={(e) => setObservacion(e.target.value)}
-                placeholder="Notas adicionales, herramientas especiales o precauciones..."
+                placeholder="Notas adicionales, herramientas o precauciones..."
                 rows={2}
-                className="text-xs resize-none bg-background"
+                className="text-xs resize-none bg-background min-h-[52px]"
               />
             </div>
           </div>
         </Card>
 
-        {/* Tareas / Actividades a Realizar (Estructura tipo Checklist / Accesorios) */}
-        <Card className="p-3.5 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between gap-2 border-b pb-2">
-            <div className="flex items-center gap-2">
-              <CheckSquare className="size-4 text-primary" />
-              <h2 className="font-heading text-xs sm:text-sm font-bold text-foreground">
+        {/* Tareas / Actividades a Realizar */}
+        <Card className="p-2.5 sm:p-3 shadow-2xs space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-1.5">
+            <div className="flex items-center gap-1.5">
+              <CheckSquare className="size-3.5 text-primary" />
+              <h2 className="font-heading text-xs sm:text-[13px] font-bold text-foreground">
                 Planificación de Actividades / Tareas
               </h2>
               <span className="text-xs text-muted-foreground font-medium">
@@ -483,58 +499,86 @@ export function OrdenTrabajoFormPage({
               </span>
             </div>
 
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={handleAddActividad}
-              className="h-7 gap-1 px-2.5 text-xs font-semibold rounded-lg"
-            >
-              <Plus className="size-3.5" />
-              <span>Agregar Tarea</span>
-            </Button>
-          </div>
-
-          {/* Lista de Actividades como Lista Contigua / Tabla */}
-          {actividades.length === 0 ? (
-            <div className="py-8 text-center text-xs text-muted-foreground border border-dashed rounded-xl bg-muted/10 p-4">
-              <p className="font-semibold text-foreground">No hay actividades planificadas</p>
-              <p className="text-muted-foreground mt-0.5">
-                {isCorrectivo
-                  ? "Escriba las tareas técnicas específicas que el técnico debe cumplir con el botón '+ Agregar Tarea'."
-                  : "Puede añadir actividades desde el catálogo o escribir tareas personalizadas con el botón '+ Agregar Tarea'."}
-              </p>
+            {/* Acciones de carga: Checklist y Manual */}
+            <div className="flex items-center gap-1.5 self-end sm:self-center">
               <Button
                 type="button"
-                variant="outline"
                 size="sm"
+                variant="outline"
+                onClick={() => setIsChecklistDialogOpen(true)}
+                className="h-7 gap-1 px-2.5 text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-500/10 border-sky-500/30 hover:bg-sky-500/20 rounded-lg cursor-pointer"
+                title="Cargar tareas desde una plantilla / checklist de actividad"
+              >
+                <ListChecks className="size-3.5 text-sky-600 dark:text-sky-400" />
+                <span>Cargar desde Checklist</span>
+              </Button>
+
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
                 onClick={handleAddActividad}
-                className="h-7 text-xs font-semibold gap-1 rounded-lg mt-2 cursor-pointer"
+                className="h-7 gap-1 px-2.5 text-xs font-semibold rounded-lg cursor-pointer"
               >
                 <Plus className="size-3.5" />
-                <span>Agregar primera tarea</span>
+                <span>Agregar Manual</span>
               </Button>
+            </div>
+          </div>
+
+          {/* Lista de Actividades como Lista Contigua / Tabla Compacta */}
+          {actividades.length === 0 ? (
+            <div className="py-6 text-center text-xs text-muted-foreground border border-dashed rounded-xl bg-muted/10 p-3 space-y-2">
+              <div>
+                <p className="font-semibold text-foreground text-xs">No hay actividades planificadas</p>
+                <p className="text-muted-foreground text-[11px] mt-0.5 max-w-md mx-auto">
+                  Puedes importar tareas automáticamente desde el checklist de una actividad del catálogo o agregarlas de forma manual.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setIsChecklistDialogOpen(true)}
+                  className="h-7.5 text-xs font-bold gap-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer shadow-xs"
+                >
+                  <ListChecks className="size-3.5" />
+                  <span>Cargar desde Checklist / Plantilla</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddActividad}
+                  className="h-7.5 text-xs font-semibold gap-1 rounded-lg cursor-pointer"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Agregar Manualmente</span>
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="rounded-xl border border-border/80 overflow-hidden divide-y divide-border/60 bg-background shadow-2xs">
               {/* Encabezado de la tabla */}
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
-                <div className="w-8 text-center shrink-0">#</div>
-                {!isCorrectivo && <div className="w-56 shrink-0">Catálogo</div>}
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                <div className="w-7 text-center shrink-0">#</div>
+                {!isCorrectivo && <div className="w-52 shrink-0">Catálogo</div>}
                 <div className="flex-1 min-w-0">Descripción de la Tarea <span className="text-destructive">*</span></div>
-                <div className="w-48 sm:w-56 shrink-0">Nota / Instrucción</div>
-                <div className="w-7 shrink-0"></div>
+                <div className="w-44 sm:w-52 shrink-0">Nota / Instrucción</div>
+                <div className="w-6 shrink-0"></div>
               </div>
 
-              {/* Filas en formato lista contigua */}
+              {/* Filas en formato lista contigua compacta */}
               {actividades.map((act, index) => (
                 <div
                   key={act.id}
-                  className="p-1.5 sm:px-3 text-xs flex flex-col md:flex-row md:items-center gap-2 hover:bg-muted/15 transition-colors"
+                  className="p-1.5 sm:px-2.5 text-xs flex flex-col md:flex-row md:items-center gap-1.5 sm:gap-2 hover:bg-muted/15 transition-colors"
                 >
                   {/* Número de tarea */}
-                  <div className="flex items-center justify-between md:justify-center md:w-8 shrink-0">
-                    <span className="flex size-5 items-center justify-center rounded bg-muted font-mono font-bold text-[11px] text-foreground">
+                  <div className="flex items-center justify-between md:justify-center md:w-7 shrink-0">
+                    <span className="flex size-5 items-center justify-center rounded bg-muted font-mono font-bold text-[10px] text-foreground">
                       {index + 1}
                     </span>
                     <span className="font-bold text-foreground text-xs md:hidden">
@@ -548,13 +592,13 @@ export function OrdenTrabajoFormPage({
                       onClick={() => handleRemoveActividad(act.id)}
                       title="Eliminar tarea"
                     >
-                      <Trash2 className="size-3.5" />
+                      <Trash2 className="size-3" />
                     </Button>
                   </div>
 
-                  {/* Catálogo Opcional (solo si no es mantenimiento correctivo) */}
+                  {/* Catálogo Opcional */}
                   {!isCorrectivo && (
-                    <div className="w-full md:w-56 shrink-0 space-y-0.5 md:space-y-0">
+                    <div className="w-full md:w-52 shrink-0 space-y-0.5 md:space-y-0">
                       <span className="md:hidden text-[10.5px] font-semibold text-muted-foreground">
                         Catálogo de Actividad:
                       </span>
@@ -569,7 +613,7 @@ export function OrdenTrabajoFormPage({
                           })
                         }}
                         placeholder="Catálogo (opcional)..."
-                        className="h-8 text-xs"
+                        className="h-7.5 text-xs"
                       />
                     </div>
                   )}
@@ -588,13 +632,13 @@ export function OrdenTrabajoFormPage({
                         })
                       }
                       placeholder="Descripción de la tarea técnica (obligatorio)..."
-                      className="h-8 text-xs bg-background"
+                      className="h-7.5 text-xs bg-background"
                       required
                     />
                   </div>
 
                   {/* Observación de la tarea */}
-                  <div className="w-full md:w-48 sm:w-56 shrink-0 space-y-0.5 md:space-y-0">
+                  <div className="w-full md:w-44 sm:w-52 shrink-0 space-y-0.5 md:space-y-0">
                     <span className="md:hidden text-[10.5px] font-semibold text-muted-foreground">
                       Nota / Instrucción (Opcional):
                     </span>
@@ -606,7 +650,7 @@ export function OrdenTrabajoFormPage({
                         })
                       }
                       placeholder="Nota / Instrucción (opc)..."
-                      className="h-8 text-xs bg-background text-muted-foreground"
+                      className="h-7.5 text-xs bg-background text-muted-foreground"
                     />
                   </div>
 
@@ -615,11 +659,11 @@ export function OrdenTrabajoFormPage({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-7 text-muted-foreground hover:text-destructive shrink-0 hidden md:flex cursor-pointer"
+                    className="size-6.5 text-muted-foreground hover:text-destructive shrink-0 hidden md:flex cursor-pointer rounded"
                     onClick={() => handleRemoveActividad(act.id)}
                     title="Eliminar tarea"
                   >
-                    <Trash2 className="size-3.5" />
+                    <Trash2 className="size-3 text-muted-foreground hover:text-destructive" />
                   </Button>
                 </div>
               ))}
@@ -627,10 +671,10 @@ export function OrdenTrabajoFormPage({
           )}
         </Card>
 
-        {/* Bottom Action Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border bg-card shadow-2xs">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Info className="size-4 text-primary shrink-0" />
+        {/* Bottom Action Bar Compacto */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 sm:px-3 sm:py-2 rounded-xl border bg-card shadow-2xs">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Info className="size-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
             <span>
               Orden de Trabajo • <strong>{actividades.length}</strong> {actividades.length === 1 ? "tarea planificada" : "tareas planificadas"}
             </span>
@@ -643,7 +687,7 @@ export function OrdenTrabajoFormPage({
               size="sm"
               onClick={() => window.history.back()}
               disabled={createMutation.isPending}
-              className="h-8 px-4 text-xs font-semibold"
+              className="h-7.5 px-3 text-xs font-semibold"
             >
               Cancelar
             </Button>
@@ -652,16 +696,16 @@ export function OrdenTrabajoFormPage({
               type="submit"
               size="sm"
               disabled={!isValid || createMutation.isPending}
-              className="h-8 gap-2 px-5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs cursor-pointer"
+              className="h-7.5 gap-1.5 px-4 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-xs cursor-pointer"
             >
               {createMutation.isPending ? (
                 <>
-                  <Loader2 className="size-3.5 animate-spin" />
+                  <Loader2 className="size-3 animate-spin" />
                   <span>Guardando OT...</span>
                 </>
               ) : (
                 <>
-                  <Save className="size-3.5" />
+                  <Save className="size-3" />
                   <span>Guardar Orden de Trabajo</span>
                 </>
               )}
@@ -669,7 +713,15 @@ export function OrdenTrabajoFormPage({
           </div>
         </div>
       </form>
+
+      {/* Diálogo para Cargar Actividades desde Plantilla / Checklist */}
+      <ChecklistTemplateSelectDialog
+        open={isChecklistDialogOpen}
+        onOpenChange={setIsChecklistDialogOpen}
+        tipoActivoId={activo?.tipoActivo?.id}
+        tipoActivoNombre={activo?.tipoActivo?.nombre}
+        onImport={handleImportChecklist}
+      />
     </PageShell>
   )
 }
-

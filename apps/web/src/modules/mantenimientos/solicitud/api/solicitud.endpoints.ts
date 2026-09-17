@@ -1,23 +1,10 @@
-import { createResourceEndpoints } from "@/shared/api"
-
-export const solicitudEndpoints = {
-  ...createResourceEndpoints("/solicitudes-mantenimiento"),
+export const SOLICITUD_ENDPOINTS = {
+  root: "/solicitudes-mantenimiento",
+  detail: (id: string) => `/solicitudes-mantenimiento/${id}`,
   resumen: "/solicitudes-mantenimiento/resumen",
-  enviar: (id: string) => `/solicitudes-mantenimiento/${id}/enviar`,
-  workflow: {
-    actions: (processInstanceId: string) =>
-      `/workflow/instances/${processInstanceId}/actions`,
-    history: (processInstanceId: string) =>
-      `/workflow/instances/${processInstanceId}/history`,
-    complete: (solicitudId: string) =>
-      `/solicitudes-mantenimiento/${solicitudId}/workflow/complete`,
-  },
-  adjuntos: {
-    list: (solicitudId: string) =>
-      `/solicitudes-mantenimiento/${solicitudId}/adjuntos`,
-    create: (solicitudId: string) =>
-      `/solicitudes-mantenimiento/${solicitudId}/adjuntos`,
-    byId: (solicitudId: string, adjuntoId: string) =>
-      `/solicitudes-mantenimiento/${solicitudId}/adjuntos/${adjuntoId}`,
-  },
-}
+  trazabilidad: (id: string) => `/solicitudes-mantenimiento/${id}/trazabilidad`,
+  reportePdf: (id: string) => `/solicitudes-mantenimiento/${id}/reporte-pdf`,
+  workflowComplete: (id: string) => `/solicitudes-mantenimiento/${id}/workflow/complete`,
+} as const
+
+export const solicitudEndpoints = SOLICITUD_ENDPOINTS

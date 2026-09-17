@@ -1,75 +1,68 @@
-import { createCrudService, http } from "@/shared/api"
-import type { PageParams, PageResponse } from "@/shared/types/api.types"
-import type { AuditableEntity } from "@/shared/types/audit.types"
+import type { CompleteWorkflowTaskPayload } from "@/modules/workflow"
+import { http } from "@/shared/api"
+import type { PageResponse } from "@/shared/types/api.types"
 
-import { solicitudEndpoints } from "./solicitud.endpoints"
+import { SOLICITUD_ENDPOINTS } from "./solicitud.endpoints"
+import type {
+  SolicitudMantenimiento,
+  SolicitudMantenimientoFilters,
+  SolicitudMantenimientoResumen,
+  SolicitudMantenimientoTrazabilidad,
+} from "../types/solicitud.type"
 
-export type ActivoInfo = {
-  id: string
-  codigo: string
-  nombre: string
-  descripcion?: string | null
+export * from "../types/solicitud.type"
+
+
+/**
+ * Obtiene el listado paginado de solicitudes de mantenimiento con filtros opcionales.
+ * Endpoint: GET /api/v1/solicitudes-mantenimiento?page=0&size=1&sortBy=id&direction=ASC
+ */
+export async function getSolicitudesMantenimiento(
+  filters?: SolicitudMantenimientoFilters,
+): Promise<PageResponse<SolicitudMantenimiento>> {
+  return http.get<PageResponse<SolicitudMantenimiento>>(
+    SOLICITUD_ENDPOINTS.root,
+    {
+      params: filters,
+    },
+  )
 }
 
-export type TipoMantenimientoInfo = {
-  id: string
-  codigo: string
-  nombre: string
+/**
+ * Obtiene el detalle de una solicitud de mantenimiento por su ID.
+ * Endpoint: GET /api/v1/solicitudes-mantenimiento/{id}
+ */
+export async function getSolicitudMantenimiento(
+  id: string,
+): Promise<SolicitudMantenimiento> {
+  return http.get<SolicitudMantenimiento>(SOLICITUD_ENDPOINTS.detail(id))
 }
 
-export type PrioridadInfo = {
-  id: string
-  codigo: string
-  nombre: string
-  nivel: number
+/**
+ * Obtiene el resumen/conteo de solicitudes agrupadas por estado.
+ * Endpoint: GET /api/v1/solicitudes-mantenimiento/resumen
+ */
+export async function getSolicitudResumen(
+  interfaz?: string,
+): Promise<SolicitudMantenimientoResumen> {
+  return http.get<SolicitudMantenimientoResumen>(SOLICITUD_ENDPOINTS.resumen, {
+    params: interfaz ? { interfaz } : undefined,
+  })
 }
 
-export type UserInfo = {
-  id: string
-  nombre: string
+/**
+ * Obtiene el historial de trazabilidad de una solicitud de mantenimiento.
+ * Endpoint: GET /api/v1/solicitudes-mantenimiento/{id}/trazabilidad
+ */
+export async function getSolicitudTrazabilidad(
+  id: string,
+): Promise<SolicitudMantenimientoTrazabilidad[]> {
+  return http.get<SolicitudMantenimientoTrazabilidad[]>(
+    SOLICITUD_ENDPOINTS.trazabilidad(id),
+  )
 }
 
-export type SolicitudMantenimientoAdjunto = {
-  id: string
-  solicitudMantenimientoId: string
-  nombreArchivo: string
-  tipoContenido: string
-  size: number
-  url: string
-  descripcion?: string | null
-  auditoria?: AuditableEntity
-}
-
-export type SolicitudMantenimiento = AuditableEntity & {
-  numero: string
-  activo: ActivoInfo | null
-  tipoMantenimiento: TipoMantenimientoInfo | null
-  tipoFallas?: string | null
-  prioridad: PrioridadInfo | null
-  solicitante?: UserInfo | null
-  titulo: string
-  descripcion: string
-  fechaSolicitud?: string | null
-  aprobadoPor?: UserInfo | null
-  fechaAprobacion?: string | null
-  fechaEstimadaOt?: string | null
-  observacionAprobacion?: string | null
-  responsable?: UserInfo | null
-  fechaAsignacion?: string | null
-  fechaInicioMantenimiento?: string | null
-  fechaFinMantenimiento?: string | null
-  supervisor?: UserInfo | null
-  fechaValidacion?: string | null
-  observacionValidacion?: string | null
-  fechaFinalizacion?: string | null
-  recibidoPor?: UserInfo | null
-  observacionCierre?: string | null
-  estado: string
-  processInstanceId?: string | null
-  adjuntos?: SolicitudMantenimientoAdjunto[]
-}
-
-export type SolicitudPayload = {
+export type SolicitudMantenimientoPayload = {
   activoId: string
   tipoMantenimientoId: string
   tipoFallas?: string | null
@@ -78,167 +71,109 @@ export type SolicitudPayload = {
   titulo: string
   descripcion: string
   fechaSolicitud?: string | null
-  fechaEstimadaOt?: string | null
 }
 
-export type SolicitudListParams = PageParams & {
-  activoId?: string
-  estado?: string
-  solicitanteId?: string
-  responsableId?: string
-  supervisorId?: string
-  prioridadId?: string
-}
+export type SolicitudPayload = SolicitudMantenimientoPayload
 
-const crud = createCrudService<SolicitudMantenimiento, SolicitudPayload, SolicitudListParams>(solicitudEndpoints)
-
-export const listSolicitudes = crud.list
-export const getSolicitud = crud.get
-export const createSolicitud = crud.create
-export const updateSolicitud = crud.update
-export const deleteSolicitud = crud.remove
-
-export async function createSolicitudWithFiles(
-  payload: SolicitudPayload,
-  files?: File[] | null,
+/**
+ * Registra una nueva solicitud de mantenimiento (soporta archivos adjuntos en multipart).
+ * Endpoint: POST /api/v1/solicitudes-mantenimiento
+ */
+export async function createSolicitud(
+  payload: SolicitudMantenimientoPayload,
+  files?: File[],
 ): Promise<SolicitudMantenimiento> {
-  if (!files || files.length === 0) {
-    return createSolicitud(payload)
-  }
-
-  const formData = new FormData()
-  const jsonBlob = new Blob([JSON.stringify(payload)], {
-    type: "application/json",
-  })
-  formData.append("data", jsonBlob)
-
-  for (const file of files) {
-    formData.append("files", file)
-  }
-
-  return http.post<SolicitudMantenimiento, FormData>(solicitudEndpoints.root, formData)
-}
-
-export async function listAdjuntos(
-  solicitudId: string,
-  params?: PageParams,
-): Promise<PageResponse<SolicitudMantenimientoAdjunto>> {
-  return http.get<PageResponse<SolicitudMantenimientoAdjunto>>(
-    solicitudEndpoints.adjuntos.list(solicitudId),
-    { params },
-  )
-}
-
-export async function createAdjunto(
-  solicitudId: string,
-  file: File,
-  descripcion?: string,
-): Promise<SolicitudMantenimientoAdjunto> {
-  const formData = new FormData()
-  formData.append("file", file)
-  if (descripcion) {
-    const jsonBlob = new Blob([JSON.stringify({ descripcion })], {
+  if (files && files.length > 0) {
+    const formData = new FormData()
+    const jsonBlob = new Blob([JSON.stringify(payload)], {
       type: "application/json",
     })
     formData.append("data", jsonBlob)
+    for (const file of files) {
+      formData.append("files", file)
+    }
+    return http.post<SolicitudMantenimiento>(SOLICITUD_ENDPOINTS.root, formData)
   }
 
-  return http.post<SolicitudMantenimientoAdjunto, FormData>(
-    solicitudEndpoints.adjuntos.create(solicitudId),
-    formData,
-  )
+  return http.post<SolicitudMantenimiento>(SOLICITUD_ENDPOINTS.root, payload)
 }
 
-export async function deleteAdjunto(
-  solicitudId: string,
-  adjuntoId: string,
-): Promise<void> {
-  await http.delete<void>(solicitudEndpoints.adjuntos.byId(solicitudId, adjuntoId))
-}
-
-export type EnviarSolicitudPayload = {
-  aprobadoPorId: string
-  supervisorId?: string | null
-}
-
-export async function enviarSolicitud(
+/**
+ * Actualiza una solicitud de mantenimiento existente.
+ * Endpoint: PUT /api/v1/solicitudes-mantenimiento/{id}
+ */
+export async function updateSolicitud(
   id: string,
-  payload: EnviarSolicitudPayload,
+  payload: SolicitudMantenimientoPayload,
 ): Promise<SolicitudMantenimiento> {
-  return http.post<SolicitudMantenimiento, EnviarSolicitudPayload>(
-    solicitudEndpoints.enviar(id),
-    payload,
-  )
+  return http.put<SolicitudMantenimiento>(SOLICITUD_ENDPOINTS.detail(id), payload)
 }
 
-
-import type {
-  CompleteWorkflowTaskPayload,
-  WorkflowAction,
-  WorkflowField,
-  WorkflowFieldOption,
-  WorkflowTaskActionsResponse,
-} from "@/modules/workflow"
-
-export type {
-  CompleteWorkflowTaskPayload,
-  WorkflowAction,
-  WorkflowField,
-  WorkflowFieldOption,
-  WorkflowTaskActionsResponse,
+/**
+ * Elimina una solicitud de mantenimiento por su ID.
+ * Endpoint: DELETE /api/v1/solicitudes-mantenimiento/{id}
+ */
+export async function deleteSolicitud(id: string): Promise<void> {
+  return http.delete<void>(SOLICITUD_ENDPOINTS.detail(id))
 }
 
-export async function getWorkflowActions(
-  processInstanceId: string,
-): Promise<WorkflowTaskActionsResponse> {
-  return http.get<WorkflowTaskActionsResponse>(
-    solicitudEndpoints.workflow.actions(processInstanceId),
-  )
-}
-
-export async function completeWorkflowTask(
-  solicitudId: string,
+/**
+ * Completa la tarea actual de workflow para la solicitud de mantenimiento.
+ * Endpoint: POST /api/v1/solicitudes-mantenimiento/{id}/workflow/complete
+ */
+export async function completarWorkflowSolicitud(
+  id: string,
   payload: CompleteWorkflowTaskPayload,
 ): Promise<SolicitudMantenimiento> {
-  return http.post<SolicitudMantenimiento, CompleteWorkflowTaskPayload>(
-    solicitudEndpoints.workflow.complete(solicitudId),
+  return http.post<SolicitudMantenimiento>(
+    SOLICITUD_ENDPOINTS.workflowComplete(id),
     payload,
   )
 }
 
-export type WorkflowHistoryItem = {
-  taskId: string
-  taskDefinitionKey: string
-  taskName: string
-  assignee?: string | null
-  assigneeName?: string | null
-  startTime?: string | null
-  endTime?: string | null
-  status: "COMPLETADA" | "ACTIVA" | string
+/**
+ * Descarga o genera el reporte PDF de una solicitud de mantenimiento.
+ * Endpoint: GET /api/v1/solicitudes-mantenimiento/{id}/reporte-pdf
+ */
+export async function downloadSolicitudReportePdf(
+  id: string,
+  numero?: string,
+): Promise<void> {
+  const blob = await http.get<Blob>(SOLICITUD_ENDPOINTS.reportePdf(id), {
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `solicitud-${numero || id}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
 }
 
-export type WorkflowHistoryResponse = {
-  processInstanceId: string
-  items: WorkflowHistoryItem[]
+/**
+ * Abre el reporte PDF de una solicitud de mantenimiento en una pestaña nueva.
+ * Endpoint: GET /api/v1/solicitudes-mantenimiento/{id}/reporte-pdf
+ */
+export async function openSolicitudReportePdf(id: string): Promise<void> {
+  const blob = await http.get<Blob>(SOLICITUD_ENDPOINTS.reportePdf(id), {
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  window.open(url, "_blank")
 }
 
-export async function getWorkflowHistory(
-  processInstanceId: string,
-): Promise<WorkflowHistoryResponse> {
-  return http.get<WorkflowHistoryResponse>(
-    solicitudEndpoints.workflow.history(processInstanceId),
-  )
-}
-
-export type SolicitudMantenimientoResumen = {
-  total: number
-  borradores: number
-  enRevision: number
-  enProceso: number
-  finalizadas: number
-}
-
-export async function getSolicitudResumen(): Promise<SolicitudMantenimientoResumen> {
-  return http.get<SolicitudMantenimientoResumen>(solicitudEndpoints.resumen)
-}
+// Aliases para conveniencia y compatibilidad
+export const listSolicitudes = getSolicitudesMantenimiento
+export const getSolicitudes = getSolicitudesMantenimiento
+export const getSolicitud = getSolicitudMantenimiento
 

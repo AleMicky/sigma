@@ -10,13 +10,16 @@ import {
   Clock,
   Edit2,
   ExternalLink,
+  Eye,
   FileText,
   Loader2,
   Plus,
+  Trash2,
   User,
   Wrench,
 } from "lucide-react"
 
+import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -29,7 +32,11 @@ import {
 import { cn } from "@/shared/lib/utils"
 import { formatDate } from "@/shared/utils/date.utils"
 
-import { useToggleOrdenTrabajoActividadRealizado } from "../api/orden-trabajo.mutations"
+import {
+  useDeleteOrdenTrabajo,
+  useDeleteOrdenTrabajoActividad,
+  useToggleOrdenTrabajoActividadRealizado,
+} from "../api/orden-trabajo.mutations"
 import { ordenTrabajoKeys } from "../api/orden-trabajo.keys"
 import { ordenTrabajoQueries } from "../api/orden-trabajo.queries"
 import type {
@@ -37,14 +44,16 @@ import type {
   OrdenTrabajoActividad,
 } from "../api/orden-trabajo.service"
 import { OrdenTrabajoActividadDialog } from "./OrdenTrabajoActividadDialog"
+import { OrdenTrabajoDetailModal } from "./OrdenTrabajoDetailModal"
 import { OrdenTrabajoEvidenciaDialog } from "./OrdenTrabajoEvidenciaDialog"
 import { OrdenTrabajoFormDialog } from "./OrdenTrabajoFormDialog"
 
-type OrdenTrabajoHistorialModalProps = {
+export type OrdenTrabajoHistorialModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   solicitudId?: string | null
   solicitudNumero?: string | null
+  solicitudActivoId?: string | null
   onSelectOT?: (ot: OrdenTrabajo) => void
 }
 
@@ -52,7 +61,9 @@ function OTItemCard({
   ot,
   onSelectOT,
   onEditOT,
+  onDeleteOT,
   onEditActividad,
+  onDeleteActividad,
   onAddActividad,
   onToggleRealizado,
   onOpenEvidencia,
@@ -60,7 +71,9 @@ function OTItemCard({
   ot: OrdenTrabajo
   onSelectOT?: (ot: OrdenTrabajo) => void
   onEditOT: (ot: OrdenTrabajo) => void
+  onDeleteOT: (ot: OrdenTrabajo) => void
   onEditActividad: (ordenTrabajoId: string, actividad: OrdenTrabajoActividad) => void
+  onDeleteActividad: (ordenTrabajoId: string, actividad: OrdenTrabajoActividad) => void
   onAddActividad: (ordenTrabajoId: string) => void
   onToggleRealizado: (ordenTrabajoId: string, act: OrdenTrabajoActividad) => void
   onOpenEvidencia: (act: OrdenTrabajoActividad) => void
@@ -98,7 +111,7 @@ function OTItemCard({
               </span>
               {ot.activo && (
                 <Badge variant="outline" className="text-[11px] font-medium text-muted-foreground">
-                  {ot.activo.nombre}
+                  {ot.activo.codigo ? `${ot.activo.codigo} - ` : ""}{ot.activo.nombre}
                 </Badge>
               )}
             </div>
@@ -107,7 +120,7 @@ function OTItemCard({
               {ot.responsable && (
                 <span className="flex items-center gap-1">
                   <User className="size-3 text-muted-foreground" />
-                  Técnico: <strong className="text-foreground">{ot.responsable.nombre}</strong>
+                  Técnico: <strong className="text-foreground font-medium">{ot.responsable.nombre}</strong>
                 </span>
               )}
               {ot.fechaInicio && (
@@ -127,6 +140,20 @@ function OTItemCard({
         </div>
 
         <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0 flex-wrap justify-end">
+          {/* Botón Ver Detalle */}
+          {onSelectOT && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onSelectOT(ot)}
+              className="h-7 text-xs font-semibold gap-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20 cursor-pointer"
+            >
+              <Eye className="size-3.5" />
+              <span>Ver Detalle</span>
+            </Button>
+          )}
+
           {/* Botón Editar OT */}
           <Button
             type="button"
@@ -140,18 +167,18 @@ function OTItemCard({
             <span>Editar OT</span>
           </Button>
 
-          {onSelectOT && (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => onSelectOT(ot)}
-              className="h-7 text-xs font-semibold gap-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20 cursor-pointer"
-            >
-              <ExternalLink className="size-3.5" />
-              <span>Ver Detalle</span>
-            </Button>
-          )}
+          {/* Botón Eliminar OT */}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => onDeleteOT(ot)}
+            className="h-7 text-xs font-semibold gap-1 text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+            title="Eliminar Orden de Trabajo"
+          >
+            <Trash2 className="size-3 text-destructive" />
+            <span>Eliminar</span>
+          </Button>
 
           <Button
             type="button"
@@ -282,6 +309,18 @@ function OTItemCard({
                     >
                       <Edit2 className="size-3" />
                     </Button>
+
+                    {/* Botón Eliminar Actividad */}
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onDeleteActividad(ot.id, act)}
+                      className="size-6 text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer rounded"
+                      title="Eliminar actividad"
+                    >
+                      <Trash2 className="size-3" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -298,14 +337,25 @@ export function OrdenTrabajoHistorialModal({
   onOpenChange,
   solicitudId,
   solicitudNumero,
+  solicitudActivoId,
   onSelectOT,
 }: OrdenTrabajoHistorialModalProps) {
   const queryClient = useQueryClient()
   const toggleActividadMutation = useToggleOrdenTrabajoActividadRealizado()
+  const deleteOTMutation = useDeleteOrdenTrabajo()
+  const deleteActividadMutation = useDeleteOrdenTrabajoActividad()
 
-  // Estado para edición de Orden de Trabajo
-  const [editOT, setEditOT] = useState<OrdenTrabajo | null>(null)
-  const [isEditOTOpen, setIsEditOTOpen] = useState(false)
+  // Estado para creación y edición de Orden de Trabajo
+  const [formOTDialog, setFormOTDialog] = useState<{
+    open: boolean
+    ordenTrabajo: OrdenTrabajo | null
+  }>({ open: false, ordenTrabajo: null })
+
+  // Estado para visualización de detalle de Orden de Trabajo
+  const [detailOT, setDetailOT] = useState<OrdenTrabajo | null>(null)
+
+  // Estado para eliminación de OT
+  const [otToDelete, setOtToDelete] = useState<OrdenTrabajo | null>(null)
 
   // Estado para agregar / editar Actividad
   const [actividadDialog, setActividadDialog] = useState<{
@@ -313,6 +363,12 @@ export function OrdenTrabajoHistorialModal({
     ordenTrabajoId: string
     actividad?: OrdenTrabajoActividad | null
   }>({ open: false, ordenTrabajoId: "" })
+
+  // Estado para eliminación de Actividad
+  const [actividadToDelete, setActividadToDelete] = useState<{
+    ordenTrabajoId: string
+    actividad: OrdenTrabajoActividad
+  } | null>(null)
 
   // Estado para Evidencias
   const [evidenciaDialog, setEvidenciaDialog] = useState<{
@@ -341,9 +397,30 @@ export function OrdenTrabajoHistorialModal({
     )
   }, [rawOrdenes, solicitudId])
 
+  function handleOpenCreateOT() {
+    setFormOTDialog({
+      open: true,
+      ordenTrabajo: null,
+    })
+  }
+
   function handleOpenEditOT(ot: OrdenTrabajo) {
-    setEditOT(ot)
-    setIsEditOTOpen(true)
+    setFormOTDialog({
+      open: true,
+      ordenTrabajo: ot,
+    })
+  }
+
+  function handleOpenDeleteOT(ot: OrdenTrabajo) {
+    setOtToDelete(ot)
+  }
+
+  async function handleConfirmDeleteOT() {
+    if (!otToDelete) return
+    await deleteOTMutation.mutateAsync(otToDelete.id)
+    setOtToDelete(null)
+    otsQuery.refetch()
+    queryClient.invalidateQueries({ queryKey: ordenTrabajoKeys.all })
   }
 
   function handleOpenEditActividad(
@@ -354,6 +431,27 @@ export function OrdenTrabajoHistorialModal({
       open: true,
       ordenTrabajoId,
       actividad,
+    })
+  }
+
+  function handleOpenDeleteActividad(
+    ordenTrabajoId: string,
+    actividad: OrdenTrabajoActividad,
+  ) {
+    setActividadToDelete({
+      ordenTrabajoId,
+      actividad,
+    })
+  }
+
+  async function handleConfirmDeleteActividad() {
+    if (!actividadToDelete) return
+    await deleteActividadMutation.mutateAsync(actividadToDelete.actividad.id)
+    const otId = actividadToDelete.ordenTrabajoId
+    setActividadToDelete(null)
+    otsQuery.refetch()
+    queryClient.invalidateQueries({
+      queryKey: ordenTrabajoKeys.actividadesByOT(otId),
     })
   }
 
@@ -402,7 +500,7 @@ export function OrdenTrabajoHistorialModal({
     )
   }
 
-  function handleOTUpdated() {
+  function handleOTSaved() {
     otsQuery.refetch()
     queryClient.invalidateQueries({ queryKey: ordenTrabajoKeys.all })
   }
@@ -424,7 +522,7 @@ export function OrdenTrabajoHistorialModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        <DialogContent className="max-w-4xl sm:max-w-4xl md:max-w-5xl lg:max-w-5xl max-h-[88vh] flex flex-col p-0 overflow-hidden">
           <DialogHeader className="p-4 sm:p-5 border-b bg-muted/20 shrink-0">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-2.5">
@@ -436,7 +534,7 @@ export function OrdenTrabajoHistorialModal({
                     Órdenes de Trabajo Registradas
                   </DialogTitle>
                   <DialogDescription className="text-xs">
-                    Órdenes técnicas asociadas al folio{" "}
+                    Órdenes técnicas vinculadas a la solicitud de mantenimiento{" "}
                     <strong className="text-foreground font-mono">
                       {solicitudNumero || "N/A"}
                     </strong>
@@ -445,21 +543,35 @@ export function OrdenTrabajoHistorialModal({
               </div>
 
               {solicitudId && (
-                <Link
-                  to="/mantenimientos/ordenes-trabajo/nuevo"
-                  search={{ solicitudId }}
-                  onClick={() => onOpenChange(false)}
-                  className="shrink-0"
-                >
+                <div className="flex items-center gap-2">
                   <Button
                     type="button"
                     size="sm"
+                    onClick={handleOpenCreateOT}
                     className="h-8 gap-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg shadow-xs cursor-pointer"
                   >
                     <Plus className="size-3.5" />
-                    <span>Nueva OT</span>
+                    <span>Registrar OT</span>
                   </Button>
-                </Link>
+
+                  <Link
+                    to="/mantenimientos/ordenes-trabajo/nuevo"
+                    search={{ solicitudId }}
+                    onClick={() => onOpenChange(false)}
+                    className="shrink-0"
+                  >
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1 text-xs font-semibold rounded-lg shadow-2xs cursor-pointer"
+                      title="Abrir formulario completo en página dedicada"
+                    >
+                      <ExternalLink className="size-3.5" />
+                      <span>Formulario Completo</span>
+                    </Button>
+                  </Link>
+                </div>
               )}
             </div>
           </DialogHeader>
@@ -484,20 +596,15 @@ export function OrdenTrabajoHistorialModal({
                   </p>
                 </div>
                 {solicitudId && (
-                  <Link
-                    to="/mantenimientos/ordenes-trabajo/nuevo"
-                    search={{ solicitudId }}
-                    onClick={() => onOpenChange(false)}
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleOpenCreateOT}
+                    className="h-8 text-xs font-bold gap-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg mt-2 cursor-pointer shadow-xs"
                   >
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="h-8 text-xs font-bold gap-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg mt-2 cursor-pointer shadow-xs"
-                    >
-                      <Plus className="size-3.5" />
-                      <span>Crear Orden de Trabajo Ahora</span>
-                    </Button>
-                  </Link>
+                    <Plus className="size-3.5" />
+                    <span>Crear Orden de Trabajo Ahora</span>
+                  </Button>
                 )}
               </div>
             ) : (
@@ -507,11 +614,17 @@ export function OrdenTrabajoHistorialModal({
                     key={ot.id}
                     ot={ot}
                     onSelectOT={(selected) => {
-                      onOpenChange(false)
-                      onSelectOT?.(selected)
+                      if (onSelectOT) {
+                        onOpenChange(false)
+                        onSelectOT(selected)
+                      } else {
+                        setDetailOT(selected)
+                      }
                     }}
                     onEditOT={handleOpenEditOT}
+                    onDeleteOT={handleOpenDeleteOT}
                     onEditActividad={handleOpenEditActividad}
+                    onDeleteActividad={handleOpenDeleteActividad}
                     onAddActividad={handleOpenAddActividad}
                     onToggleRealizado={handleToggleRealizado}
                     onOpenEvidencia={handleOpenEvidencia}
@@ -523,16 +636,33 @@ export function OrdenTrabajoHistorialModal({
         </DialogContent>
       </Dialog>
 
-      {/* Modal Edición de Orden de Trabajo */}
+      {/* Modal Creación / Edición de Orden de Trabajo */}
       <OrdenTrabajoFormDialog
-        open={isEditOTOpen}
-        onOpenChange={setIsEditOTOpen}
-        ordenTrabajo={editOT}
+        open={formOTDialog.open}
+        onOpenChange={(isOpen) =>
+          setFormOTDialog((prev) => ({ ...prev, open: isOpen }))
+        }
+        ordenTrabajo={formOTDialog.ordenTrabajo}
+        initialSolicitudId={solicitudId ?? undefined}
+        initialActivoId={solicitudActivoId ?? undefined}
         onSuccess={() => {
-          handleOTUpdated()
-          setIsEditOTOpen(false)
+          handleOTSaved()
+          setFormOTDialog({ open: false, ordenTrabajo: null })
         }}
       />
+
+      {/* Modal Detalle Completo de Orden de Trabajo */}
+      {detailOT && (
+        <OrdenTrabajoDetailModal
+          open={Boolean(detailOT)}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) setDetailOT(null)
+          }}
+          ordenTrabajo={detailOT}
+          solicitudId={solicitudId}
+          solicitudNumero={solicitudNumero}
+        />
+      )}
 
       {/* Modal Creación / Edición de Actividad */}
       <OrdenTrabajoActividadDialog
@@ -561,6 +691,30 @@ export function OrdenTrabajoHistorialModal({
             queryKey: ordenTrabajoKeys.evidenciasAll(),
           })
         }}
+      />
+
+      {/* Confirmación de Eliminación de OT */}
+      <ConfirmDeleteDialog
+        open={Boolean(otToDelete)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setOtToDelete(null)
+        }}
+        title="Eliminar Orden de Trabajo"
+        description={`¿Estás seguro de que deseas eliminar la Orden de Trabajo "${otToDelete?.numero || ""}"? Esta acción eliminará permanentemente sus actividades y adjuntos asociados.`}
+        isPending={deleteOTMutation.isPending}
+        onConfirm={handleConfirmDeleteOT}
+      />
+
+      {/* Confirmación de Eliminación de Actividad */}
+      <ConfirmDeleteDialog
+        open={Boolean(actividadToDelete)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setActividadToDelete(null)
+        }}
+        title="Eliminar Actividad"
+        description={`¿Estás seguro de que deseas eliminar la actividad "${actividadToDelete?.actividad.descripcion || ""}"?`}
+        isPending={deleteActividadMutation.isPending}
+        onConfirm={handleConfirmDeleteActividad}
       />
     </>
   )

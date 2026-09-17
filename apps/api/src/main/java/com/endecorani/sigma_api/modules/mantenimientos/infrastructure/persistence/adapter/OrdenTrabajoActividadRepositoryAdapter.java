@@ -46,6 +46,20 @@ public class OrdenTrabajoActividadRepositoryAdapter implements OrdenTrabajoActiv
 
     @Override
     public OrdenTrabajoActividad save(OrdenTrabajoActividad actividad) {
+        if (actividad.getId() != null) {
+            Optional<OrdenTrabajoActividadEntity> existingOpt = springRepository.findById(actividad.getId());
+            if (existingOpt.isPresent()) {
+                OrdenTrabajoActividadEntity entity = existingOpt.get();
+                entity.setOrdenTrabajoId(actividad.getOrdenTrabajoId());
+                entity.setActividadMantenimientoId(actividad.getActividadMantenimientoId());
+                entity.setDescripcion(actividad.getDescripcion());
+                entity.setRealizado(actividad.isRealizado());
+                entity.setObservacion(actividad.getObservacion());
+                entity.setFechaRealizacion(actividad.getFechaRealizacion());
+                OrdenTrabajoActividadEntity saved = springRepository.save(entity);
+                return mapper.toActividadDomain(saved);
+            }
+        }
         OrdenTrabajoActividadEntity entity = mapper.toActividadEntity(actividad);
         OrdenTrabajoActividadEntity saved = springRepository.save(entity);
         return mapper.toActividadDomain(saved);

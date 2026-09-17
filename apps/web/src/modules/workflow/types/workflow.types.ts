@@ -44,9 +44,35 @@ export type CompleteWorkflowTaskPayload = {
   variables: Record<string, unknown>
 }
 
+export type WorkflowTaskResponse = {
+  id: string
+  name: string
+  taskDefinitionKey?: string
+  assignee?: string | null
+  processInstanceId: string
+  processDefinitionId?: string
+}
+
+export type WorkflowHistoryItem = {
+  taskId: string
+  taskDefinitionKey?: string
+  taskName: string
+  assignee?: string | null
+  assigneeName?: string | null
+  startTime?: string | null
+  endTime?: string | null
+  status?: string | null
+}
+
+export type WorkflowHistoryResponse = {
+  processInstanceId: string
+  items: WorkflowHistoryItem[]
+}
+
 export type WorkflowActionTarget<T = unknown> = {
   item: T
   action: WorkflowAction
   taskName?: string
   fields?: WorkflowField[]
 }
+
