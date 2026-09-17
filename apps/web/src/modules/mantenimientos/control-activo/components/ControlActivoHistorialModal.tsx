@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  ClipboardList,
+  ClipboardCheck,
   Edit2,
   FileText,
   Loader2,
@@ -394,169 +394,178 @@ export function ControlActivoHistorialModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-3xl md:max-w-4xl lg:max-w-5xl w-full max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden border shadow-xl">
-          {/* Cabecera Compacta */}
-          <DialogHeader className="p-3.5 sm:p-4 border-b bg-muted/20">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <DialogTitle className="text-sm sm:text-base font-bold truncate font-heading">
-                  Controles de Activo
-                </DialogTitle>
-                {solicitudNumero && (
-                  <span className="font-mono text-xs font-bold text-foreground bg-muted px-1.5 py-0.5 rounded border">
-                    {solicitudNumero}
-                  </span>
-                )}
-                {!controlesQuery.isLoading && (
-                  <span className="text-xs text-muted-foreground font-semibold">
-                    ({allControles.length})
-                  </span>
-                )}
+        <DialogContent
+          className={cn(
+            "flex flex-col p-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl",
+            allControles.length === 0
+              ? "max-w-md max-h-[88vh]"
+              : "sm:max-w-3xl md:max-w-4xl lg:max-w-5xl w-full max-h-[90vh]",
+          )}
+        >
+          {controlesQuery.isLoading ? (
+            <div className="flex flex-col items-center justify-center p-12 gap-2.5 text-muted-foreground">
+              <Loader2 className="size-6 animate-spin text-sky-600" />
+              <p className="text-xs font-semibold">Cargando controles de activo...</p>
+            </div>
+          ) : allControles.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center gap-2.5">
+              <div className="size-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
+                <ClipboardCheck className="size-5" />
               </div>
-
+              <div className="space-y-0.5">
+                <p className="text-sm font-bold text-foreground">
+                  Sin Control de Activo
+                </p>
+                <p className="text-[11px] text-muted-foreground max-w-sm">
+                  Esta solicitud no tiene un control de activo asociado aún.
+                </p>
+              </div>
               {solicitudId && !readOnly && (
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {(allowedTipo === "ALL" || allowedTipo === "DEVOLUCION") && (
-                    <Button
-                      type="button"
-                      size="xs"
-                      variant="outline"
-                      onClick={() => {
-                        onOpenChange(false)
-                        navigate({
-                          to: routes.mantenimientos.controlesActivos.nuevo,
-                          search: { solicitudId, tipo: "DEVOLUCION" },
-                        })
-                      }}
-                      className="h-7 text-xs gap-1 px-2 font-medium border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer"
-                    >
-                      <ArrowDownLeft className="size-3" />
-                      <span>Acta Devolución</span>
-                    </Button>
-                  )}
-
-                  {(allowedTipo === "ALL" || allowedTipo === "ENTREGA") && (
-                    <Button
-                      type="button"
-                      size="xs"
-                      onClick={() => {
-                        onOpenChange(false)
-                        navigate({
-                          to: routes.mantenimientos.controlesActivos.nuevo,
-                          search: { solicitudId, tipo: "ENTREGA" },
-                        })
-                      }}
-                      className="h-7 text-xs gap-1 px-2 font-medium cursor-pointer shadow-2xs"
-                    >
-                      <Plus className="size-3" />
-                      <span>Acta Entrega</span>
-                    </Button>
-                  )}
-                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    onOpenChange(false)
+                    const targetTipo =
+                      allowedTipo === "DEVOLUCION" ? "DEVOLUCION" : "ENTREGA"
+                    navigate({
+                      to: routes.mantenimientos.controlesActivos.nuevo,
+                      search: { solicitudId, tipo: targetTipo },
+                    })
+                  }}
+                  className="h-7.5 gap-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer mt-1 shadow-xs"
+                >
+                  <Plus className="size-3" />
+                  <span>
+                    {allowedTipo === "DEVOLUCION"
+                      ? "Crear Acta de Devolución"
+                      : "Crear Control de Activo"}
+                  </span>
+                </Button>
               )}
             </div>
-
-            {/* Filtros en Pills Compactos */}
-            {!controlesQuery.isLoading && allControles.length > 1 && (
-              <div className="flex items-center gap-1 pt-2 mt-1 border-t border-border/40">
-                <button
-                  type="button"
-                  onClick={() => setTipoFilter("ALL")}
-                  className={cn(
-                    "px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors cursor-pointer",
-                    tipoFilter === "ALL"
-                      ? "bg-primary text-primary-foreground font-semibold"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  Todas ({allControles.length})
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setTipoFilter("ENTREGA")}
-                  className={cn(
-                    "px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors cursor-pointer",
-                    tipoFilter === "ENTREGA"
-                      ? "bg-sky-600 text-white font-semibold"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  Entregas ({entregasCount})
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setTipoFilter("DEVOLUCION")}
-                  className={cn(
-                    "px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors cursor-pointer",
-                    tipoFilter === "DEVOLUCION"
-                      ? "bg-emerald-600 text-white font-semibold"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  Devoluciones ({devolucionesCount})
-                </button>
-              </div>
-            )}
-          </DialogHeader>
-
-          {/* Listado Compacto */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2">
-            {controlesQuery.isLoading ? (
-              <div className="flex items-center justify-center py-10 text-xs text-muted-foreground gap-2">
-                <Loader2 className="size-4 animate-spin text-primary" />
-                <span>Cargando actas...</span>
-              </div>
-            ) : allControles.length === 0 ? (
-              <div className="py-8 text-center text-xs text-muted-foreground space-y-2">
-                <ClipboardList className="size-8 text-muted-foreground/40 mx-auto" />
-                <p className="font-semibold text-foreground">No hay actas registradas</p>
-                <p className="text-[11px] max-w-xs mx-auto">
-                  {readOnly
-                    ? "Esta solicitud no tiene actas registradas."
-                    : allowedTipo === "DEVOLUCION"
-                      ? "Genera el acta de devolución para verificar el retorno del activo y sus accesorios."
-                      : "Genera el acta de entrega para controlar el activo y sus accesorios al iniciar el mantenimiento."}
-                </p>
-                {solicitudId && !readOnly && (
-                  <Button
-                    type="button"
-                    size="xs"
-                    onClick={() => {
-                      onOpenChange(false)
-                      const targetTipo =
-                        allowedTipo === "DEVOLUCION" ? "DEVOLUCION" : "ENTREGA"
-                      navigate({
-                        to: routes.mantenimientos.controlesActivos.nuevo,
-                        search: { solicitudId, tipo: targetTipo },
-                      })
-                    }}
-                    className="h-7 text-xs mt-1"
-                  >
-                    <Plus className="size-3" />
-                    <span>
-                      {allowedTipo === "DEVOLUCION"
-                        ? "Registrar Acta de Devolución"
-                        : "Registrar Acta de Entrega"}
+          ) : (
+            <>
+              {/* Cabecera Compacta */}
+              <DialogHeader className="p-3.5 sm:p-4 border-b bg-muted/20">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <DialogTitle className="text-sm sm:text-base font-bold truncate font-heading">
+                      Controles de Activo
+                    </DialogTitle>
+                    {solicitudNumero && (
+                      <span className="font-mono text-xs font-bold text-foreground bg-muted px-1.5 py-0.5 rounded border">
+                        {solicitudNumero}
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground font-semibold">
+                      ({allControles.length})
                     </span>
-                  </Button>
+                  </div>
+
+                  {solicitudId && !readOnly && (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {(allowedTipo === "ALL" || allowedTipo === "DEVOLUCION") && (
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant="outline"
+                          onClick={() => {
+                            onOpenChange(false)
+                            navigate({
+                              to: routes.mantenimientos.controlesActivos.nuevo,
+                              search: { solicitudId, tipo: "DEVOLUCION" },
+                            })
+                          }}
+                          className="h-7 text-xs gap-1 px-2 font-medium border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer"
+                        >
+                          <ArrowDownLeft className="size-3" />
+                          <span>Acta Devolución</span>
+                        </Button>
+                      )}
+
+                      {(allowedTipo === "ALL" || allowedTipo === "ENTREGA") && (
+                        <Button
+                          type="button"
+                          size="xs"
+                          onClick={() => {
+                            onOpenChange(false)
+                            navigate({
+                              to: routes.mantenimientos.controlesActivos.nuevo,
+                              search: { solicitudId, tipo: "ENTREGA" },
+                            })
+                          }}
+                          className="h-7 text-xs gap-1 px-2 font-medium cursor-pointer shadow-2xs"
+                        >
+                          <Plus className="size-3" />
+                          <span>Acta Entrega</span>
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Filtros en Pills Compactos */}
+                {allControles.length > 1 && (
+                  <div className="flex items-center gap-1 pt-2 mt-1 border-t border-border/40">
+                    <button
+                      type="button"
+                      onClick={() => setTipoFilter("ALL")}
+                      className={cn(
+                        "px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors cursor-pointer",
+                        tipoFilter === "ALL"
+                          ? "bg-primary text-primary-foreground font-semibold"
+                          : "text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      Todas ({allControles.length})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setTipoFilter("ENTREGA")}
+                      className={cn(
+                        "px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors cursor-pointer",
+                        tipoFilter === "ENTREGA"
+                          ? "bg-sky-600 text-white font-semibold"
+                          : "text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      Entregas ({entregasCount})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setTipoFilter("DEVOLUCION")}
+                      className={cn(
+                        "px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors cursor-pointer",
+                        tipoFilter === "DEVOLUCION"
+                          ? "bg-emerald-600 text-white font-semibold"
+                          : "text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      Devoluciones ({devolucionesCount})
+                    </button>
+                  </div>
                 )}
+              </DialogHeader>
+
+              {/* Listado Compacto */}
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2">
+                {filteredControles.map((control, idx) => (
+                  <ControlItemCard
+                    key={control.id}
+                    control={control}
+                    readOnly={readOnly}
+                    defaultExpanded={idx === 0}
+                    accesorioMap={accesorioMap}
+                    onCloseModal={() => onOpenChange(false)}
+                    onDelete={(c) => setControlToDelete(c)}
+                  />
+                ))}
               </div>
-            ) : (
-              filteredControles.map((control, idx) => (
-                <ControlItemCard
-                  key={control.id}
-                  control={control}
-                  readOnly={readOnly}
-                  defaultExpanded={idx === 0}
-                  accesorioMap={accesorioMap}
-                  onCloseModal={() => onOpenChange(false)}
-                  onDelete={(c) => setControlToDelete(c)}
-                />
-              ))
-            )}
-          </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
