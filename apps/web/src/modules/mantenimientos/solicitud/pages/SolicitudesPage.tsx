@@ -7,7 +7,6 @@ import { routes } from "@/app/config/routes"
 import { getErrorMessage } from "@/shared/api"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { EmptyState } from "@/shared/components/empty-state"
-import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
 import { Button } from "@/shared/components/ui/button"
@@ -26,7 +25,7 @@ import { OrdenTrabajoDetailModal } from "../../orden-trabajo/components/OrdenTra
 import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
-import { SolicitudListItem } from "../components/SolicitudListItem"
+import { SolicitudListItem, SolicitudListItemSkeleton } from "../components/SolicitudListItem"
 import { SolicitudResumenCards } from "../components/SolicitudResumenCards"
 import { useSolicitudes, useSolicitudResumen } from "../hooks/use-solicitudes"
 import type { SolicitudMantenimiento } from "../types/solicitud.type"
@@ -96,7 +95,7 @@ export function SolicitudesPage() {
   }, [query, resumenQuery])
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
+    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-2.5 py-0 sm:px-4 md:px-5 lg:px-6 md:py-0">
       {/* Encabezado principal */}
       <SolicitudHeader
         queries={[query, resumenQuery]}
@@ -106,7 +105,7 @@ export function SolicitudesPage() {
       />
 
       {/* Contenedor de contenido estructurado */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-3 sm:py-4 gap-3 sm:gap-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2 sm:py-2.5 gap-2 sm:gap-2.5">
         {/* Tarjetas KPI de Resumen */}
         <SolicitudResumenCards
           resumen={resumen}
@@ -124,13 +123,20 @@ export function SolicitudesPage() {
         />
 
         {/* Listado y Estados UX */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* Barra indicadora de actualización en segundo plano */}
+          {query.isFetching && !query.isLoading && (
+            <div className="absolute top-0 left-0 right-0 z-10 h-0.5 overflow-hidden bg-primary/10">
+              <div className="h-full w-1/3 animate-[shimmer_1.5s_infinite] bg-primary rounded-full" />
+            </div>
+          )}
+
           {query.isLoading ? (
-            <ListSkeleton
-              rows={5}
-              rowClassName="h-24 rounded-xl"
-              className="space-y-2.5"
-            />
+            <div className="space-y-2 overflow-y-auto pr-0.5">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <SolicitudListItemSkeleton key={index} />
+              ))}
+            </div>
           ) : query.isError ? (
             <div className="flex flex-1 items-center justify-center p-6">
               <EmptyState

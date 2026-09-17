@@ -290,3 +290,31 @@ export function SolicitudListItem({
   )
 }
 
+export function SolicitudListItemSkeleton() {
+  return (
+    <div className="flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card/70 p-3 sm:p-4 shadow-2xs animate-pulse">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="h-5 w-24 rounded-md bg-muted" />
+          <div className="h-5 w-20 rounded-full bg-muted/80" />
+          <div className="h-5 w-16 rounded-md bg-muted/60 hidden sm:inline-block" />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-6.5 w-20 rounded-md bg-muted/70" />
+          <div className="h-6.5 w-16 rounded-md bg-muted/50 hidden xs:inline-block" />
+        </div>
+      </div>
+      <div className="space-y-1.5 my-0.5">
+        <div className="h-5 w-3/5 max-w-sm rounded-md bg-muted/90" />
+        <div className="h-3.5 w-4/5 max-w-lg rounded-md bg-muted/60" />
+      </div>
+      <div className="flex flex-wrap items-center gap-3 pt-1.5 border-t border-border/40">
+        <div className="h-4 w-36 rounded-md bg-muted/50" />
+        <div className="h-4 w-28 rounded-md bg-muted/50" />
+        <div className="h-4 w-20 rounded-md bg-muted/40 ml-auto" />
+      </div>
+    </div>
+  )
+}
+
+
