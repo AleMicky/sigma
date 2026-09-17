@@ -60,11 +60,17 @@ export function SolicitudListItem({
 
   const estadoNorm = (solicitud.estado ?? "").trim().toLowerCase()
   const isBorrador = estadoNorm === "borrador"
+  const isTrabajoRealizado =
+    estadoNorm === "trabajo_realizado" ||
+    estadoNorm === "trabajo realizado" ||
+    estadoNorm === "trabajo-realizado"
+  const isObservado = estadoNorm === "observado"
+
   const shouldShowWorkflowActions =
     showWorkflowActions !== undefined
       ? showWorkflowActions
       : onlyWorkflowActionsOnBorrador
-        ? isBorrador
+        ? isBorrador || isTrabajoRealizado || isObservado
         : true
 
   const { actions, taskName, fields, isLoading: isWorkflowLoading } = useWorkflowActions(
