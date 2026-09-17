@@ -28,19 +28,19 @@ export function AppBreadcrumb() {
           return (
             <Fragment key={`${item.title}-${index}`}>
               {index > 0 && (
-                <BreadcrumbSeparator className="size-3.5 shrink-0 opacity-60" />
+                <BreadcrumbSeparator className="size-3.5 shrink-0 opacity-40 text-muted-foreground" />
               )}
               <BreadcrumbItem className="inline-flex items-center min-w-0">
                 {item.isCurrent ? (
-                  <BreadcrumbPage className="font-medium text-foreground truncate max-w-40 sm:max-w-60 md:max-w-none">
+                  <BreadcrumbPage className="font-heading font-semibold text-foreground tracking-tight truncate max-w-40 sm:max-w-60 md:max-w-none">
                     {item.title}
                   </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink
                     render={<Link to={item.href} />}
-                    className="flex items-center gap-1 transition-colors hover:text-foreground shrink-0"
+                    className="flex items-center gap-1 font-medium transition-all hover:text-primary shrink-0 hover:scale-[1.02]"
                   >
-                    {isFirst && <Home className="size-3.5" />}
+                    {isFirst && <Home className="size-3.5 text-muted-foreground/80 group-hover:text-primary" />}
                     <span>{item.title}</span>
                   </BreadcrumbLink>
                 )}

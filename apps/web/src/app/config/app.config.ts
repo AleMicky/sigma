@@ -3,8 +3,8 @@ import { env } from "./env";
 export const appConfig = {
     name: env.appName,
     shortName: "SIGMA",
-    description:
-        "Sistema Integrado de Gestión de Mantenimiento, Vehículos y Activos",
+    companyName: "ENDE CORANI S.A.",
+    description: "ENDE CORANI S.A.",
 
     version: "1.0.0",
 

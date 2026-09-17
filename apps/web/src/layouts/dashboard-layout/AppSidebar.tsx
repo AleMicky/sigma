@@ -93,7 +93,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
             <div className="flex items-center gap-1 mt-0.5">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="truncate text-[11px] font-medium text-muted-foreground">
-                {appConfig.description}
+                {appConfig.companyName}
               </span>
             </div>
           </div>

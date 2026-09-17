@@ -210,12 +210,12 @@ export function NavigationTabs() {
   }
 
   return (
-    <div className="flex h-9 shrink-0 items-center justify-between border-b border-border/60 bg-muted/20 px-2 select-none">
+    <div className="flex h-9 shrink-0 items-center justify-between border-b border-border/60 bg-muted/20 px-2 select-none backdrop-blur-xs">
       {/* Botón scroll izquierdo */}
       <button
         type="button"
         onClick={() => scroll("left")}
-        className="hidden sm:flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/80 hover:bg-muted hover:text-foreground transition-colors mr-1"
+        className="hidden sm:flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-muted/80 hover:text-foreground hover:scale-105 active:scale-95 transition-all mr-1"
         title="Desplazar a la izquierda"
       >
         <ChevronLeft className="size-3.5" />
@@ -239,25 +239,27 @@ export function NavigationTabs() {
               className={cn(
                 "group relative flex h-7 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-150 border",
                 isActive
-                  ? "bg-background text-primary border-border/80 shadow-2xs font-semibold ring-1 ring-primary/20"
-                  : "bg-background/40 text-muted-foreground border-transparent hover:bg-background/80 hover:text-foreground hover:border-border/40",
+                  ? "bg-background text-primary border-primary/30 shadow-xs font-semibold ring-1 ring-primary/25"
+                  : "bg-background/40 text-muted-foreground border-transparent hover:bg-background/80 hover:text-foreground hover:border-border/60 hover:shadow-2xs",
               )}
             >
               <Icon
                 className={cn(
                   "size-3.5 shrink-0 transition-colors",
-                  isActive ? "text-primary" : "text-muted-foreground/80 group-hover:text-foreground",
+                  isActive
+                    ? "text-primary"
+                    : "text-muted-foreground/70 group-hover:text-primary transition-colors",
                 )}
               />
 
-              <span className="truncate max-w-36">{tab.title}</span>
+              <span className="truncate max-w-36 font-sans tracking-tight">{tab.title}</span>
 
               {/* Botón cerrar pestaña individual */}
               {!isHome && tabs.length > 1 && (
                 <button
                   type="button"
                   onClick={(e) => closeTab(e, tab)}
-                  className="size-4 shrink-0 rounded-md flex items-center justify-center text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-destructive transition-all ml-0.5"
+                  className="size-4 shrink-0 rounded-md flex items-center justify-center text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:bg-destructive/15 hover:text-destructive hover:scale-110 active:scale-95 transition-all ml-0.5"
                   title="Cerrar pestaña"
                 >
                   <X className="size-2.5" />
@@ -273,7 +275,7 @@ export function NavigationTabs() {
         <button
           type="button"
           onClick={() => scroll("right")}
-          className="hidden sm:flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/80 hover:bg-muted hover:text-foreground transition-colors"
+          className="hidden sm:flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-muted/80 hover:text-foreground hover:scale-105 active:scale-95 transition-all"
           title="Desplazar a la derecha"
         >
           <ChevronRight className="size-3.5" />
@@ -285,7 +287,7 @@ export function NavigationTabs() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                className="size-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 hover:scale-105 active:scale-95 transition-all"
                 title="Opciones de pestañas"
               />
             }
