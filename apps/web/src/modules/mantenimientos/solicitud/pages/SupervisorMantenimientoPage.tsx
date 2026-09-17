@@ -90,7 +90,10 @@ export function SupervisorMantenimientoPage() {
   }, [])
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-2.5 py-0 sm:px-4 md:px-5 lg:px-6 md:py-0">
+    <PageShell
+      layout="scroll"
+      className="w-full max-w-none px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 lg:px-6 space-y-2.5"
+    >
       {/* Encabezado Principal */}
       <SolicitudHeader
         title="Supervisión de Mantenimiento"
@@ -108,117 +111,114 @@ export function SupervisorMantenimientoPage() {
         isRefreshing={query.isRefetching || resumenQuery.isRefetching}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2 sm:py-2.5 gap-2 sm:gap-2.5">
-        {/* Tarjetas de Resumen por Estado de Supervisión */}
-        <SupervisorResumenCards
-          resumen={resumen}
-          isLoading={resumenQuery.isLoading}
-          selectedEstado={selectedEstado}
-          onSelectEstado={handleSelectEstado}
-        />
+      {/* Tarjetas de Resumen por Estado de Supervisión */}
+      <SupervisorResumenCards
+        resumen={resumen}
+        isLoading={resumenQuery.isLoading}
+        selectedEstado={selectedEstado}
+        onSelectEstado={handleSelectEstado}
+      />
 
-        {/* Barra de Búsqueda y Filtros */}
-        <SolicitudFilterToolbar
-          searchQuery={search.search}
-          onSearchChange={search.setSearch}
-          selectedEstado={selectedEstado}
-          placeholder="Buscar por folio, título, activo o solicitante..."
-        />
+      {/* Barra de Búsqueda y Filtros */}
+      <SolicitudFilterToolbar
+        searchQuery={search.search}
+        onSearchChange={search.setSearch}
+        selectedEstado={selectedEstado}
+        placeholder="Buscar por folio, título, activo o solicitante..."
+      />
 
-        {/* Listado y Estados UX */}
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-          {/* Barra indicadora de actualización en segundo plano */}
-          {query.isFetching && !query.isLoading && (
-            <div className="absolute top-0 left-0 right-0 z-10 h-0.5 overflow-hidden bg-primary/10">
-              <div className="h-full w-1/3 animate-[shimmer_1.5s_infinite] bg-primary rounded-full" />
-            </div>
-          )}
+      {/* Listado y Estados UX */}
+      <div className="relative flex flex-col space-y-2.5">
+        {/* Barra indicadora de actualización en segundo plano */}
+        {query.isFetching && !query.isLoading && (
+          <div className="absolute -top-1 left-0 right-0 z-10 h-0.5 overflow-hidden bg-primary/10 rounded-full">
+            <div className="h-full w-1/3 animate-[shimmer_1.5s_infinite] bg-primary rounded-full" />
+          </div>
+        )}
 
-          {query.isLoading ? (
-            <div className="space-y-2 overflow-y-auto pr-0.5">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <SolicitudListItemSkeleton key={index} />
-              ))}
-            </div>
-          ) : query.isError ? (
-            <div className="flex flex-1 items-center justify-center p-6">
-              <EmptyState
-                icon={<AlertCircle className="size-8 text-destructive" />}
-                title="Error al consultar las solicitudes para supervisión"
-                description={getErrorMessage(query.error)}
-                action={
+        {query.isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <SolicitudListItemSkeleton key={index} />
+            ))}
+          </div>
+        ) : query.isError ? (
+          <div className="flex flex-1 items-center justify-center p-6">
+            <EmptyState
+              icon={<AlertCircle className="size-8 text-destructive" />}
+              title="Error al consultar las solicitudes para supervisión"
+              description={getErrorMessage(query.error)}
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+                >
+                  <RefreshCw className="size-3.5" />
+                  <span>Reintentar</span>
+                </Button>
+              }
+            />
+          </div>
+        ) : solicitudes.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center p-6">
+            <EmptyState
+              icon={<Inbox className="size-8 text-muted-foreground/60" />}
+              title="No hay solicitudes en este estado"
+              description={
+                search.debouncedSearch
+                  ? `No se encontraron resultados para "${search.debouncedSearch}". Prueba con otro término de búsqueda.`
+                  : `No tienes solicitudes de supervisión en estado "${selectedEstado.replace(/_/g, " ")}".`
+              }
+              action={
+                search.debouncedSearch ? (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleRefresh}
-                    className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+                    onClick={() => search.setSearch("")}
+                    className="mt-2 text-xs font-medium cursor-pointer"
                   >
-                    <RefreshCw className="size-3.5" />
-                    <span>Reintentar</span>
+                    Limpiar búsqueda
                   </Button>
-                }
-              />
-            </div>
-          ) : solicitudes.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center p-6">
-              <EmptyState
-                icon={<Inbox className="size-8 text-muted-foreground/60" />}
-                title="No hay solicitudes en este estado"
-                description={
-                  search.debouncedSearch
-                    ? `No se encontraron resultados para "${search.debouncedSearch}". Prueba con otro término de búsqueda.`
-                    : `No tienes solicitudes de supervisión en estado "${selectedEstado.replace(/_/g, " ")}".`
-                }
-                action={
-                  search.debouncedSearch ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => search.setSearch("")}
-                      className="mt-2 text-xs font-medium cursor-pointer"
-                    >
-                      Limpiar búsqueda
-                    </Button>
-                  ) : undefined
-                }
-              />
-            </div>
-          ) : (
-            <>
-              {/* Contenedor scrolleable de items */}
-              <div
-                className={cn(
-                  "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 pr-0.5",
-                  query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200",
-                )}
-              >
-                <WorkflowListView>
-                  {solicitudes.map((solicitud) => (
-                    <SolicitudListItem
-                      key={solicitud.id}
-                      solicitud={solicitud}
-                      onViewDetail={setDetailItem}
-                      onSelect={setDetailItem}
-                      onRegistrarControlActivo={setControlActivoItem}
-                      onGestionarOrdenTrabajo={setOrdenTrabajoItem}
-                      onActionSelect={openAction}
-                      onTraceability={setTraceabilityItem}
-                    />
-                  ))}
-                </WorkflowListView>
-              </div>
-
-              {/* Paginación */}
-              {query.data && (
-                <Pagination
-                  page={query.data}
-                  onPageChange={search.setPage}
-                  className="border-t pt-1.5 shrink-0 text-xs"
-                />
+                ) : undefined
+              }
+            />
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {/* Contenedor de items */}
+            <div
+              className={cn(
+                query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200",
               )}
-            </>
-          )}
-        </div>
+            >
+              <WorkflowListView>
+                {solicitudes.map((solicitud) => (
+                  <SolicitudListItem
+                    key={solicitud.id}
+                    solicitud={solicitud}
+                    onViewDetail={setDetailItem}
+                    onSelect={setDetailItem}
+                    onRegistrarControlActivo={setControlActivoItem}
+                    onGestionarOrdenTrabajo={setOrdenTrabajoItem}
+                    onActionSelect={openAction}
+                    onTraceability={setTraceabilityItem}
+                  />
+                ))}
+              </WorkflowListView>
+            </div>
+
+            {/* Paginación: solo cuando hay más de 10 registros o más de 1 página */}
+            {query.data && (query.data.totalElements > 10 || query.data.totalPages > 1) && (
+              <Pagination
+                page={query.data}
+                onPageChange={search.setPage}
+                className="border-t pt-1.5 shrink-0 text-xs"
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Modal de Detalle Completo de Solicitud */}

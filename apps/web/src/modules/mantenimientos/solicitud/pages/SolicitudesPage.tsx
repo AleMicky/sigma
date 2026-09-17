@@ -153,7 +153,10 @@ export function SolicitudesPage() {
   )
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-2.5 py-0 sm:px-4 md:px-5 lg:px-6 md:py-0">
+    <PageShell
+      layout="scroll"
+      className="w-full max-w-none px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 lg:px-6 space-y-2.5"
+    >
       {/* Encabezado principal */}
       <SolicitudHeader
         queries={[query, resumenQuery]}
@@ -162,141 +165,137 @@ export function SolicitudesPage() {
         isRefreshing={query.isRefetching || resumenQuery.isRefetching}
       />
 
-      {/* Contenedor de contenido estructurado */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2 sm:py-2.5 gap-2 sm:gap-2.5">
-        {/* Tarjetas KPI de Resumen */}
-        <SolicitudResumenCards
-          resumen={resumen}
-          isLoading={resumenQuery.isLoading}
-          selectedEstado={selectedEstado}
-          onSelectEstado={handleSelectEstado}
-        />
+      {/* Tarjetas KPI de Resumen */}
+      <SolicitudResumenCards
+        resumen={resumen}
+        isLoading={resumenQuery.isLoading}
+        selectedEstado={selectedEstado}
+        onSelectEstado={handleSelectEstado}
+      />
 
-        {/* Barra de Búsqueda y Filtro activo */}
-        <SolicitudFilterToolbar
-          searchQuery={search.search}
-          onSearchChange={search.setSearch}
-          selectedEstado={selectedEstado}
-          onClearEstado={() => setSelectedEstado("")}
-        />
+      {/* Barra de Búsqueda y Filtro activo */}
+      <SolicitudFilterToolbar
+        searchQuery={search.search}
+        onSearchChange={search.setSearch}
+        selectedEstado={selectedEstado}
+        onClearEstado={() => setSelectedEstado("")}
+      />
 
-        {/* Listado y Estados UX */}
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-          {/* Barra indicadora de actualización en segundo plano */}
-          {query.isFetching && !query.isLoading && (
-            <div className="absolute top-0 left-0 right-0 z-10 h-0.5 overflow-hidden bg-primary/10">
-              <div className="h-full w-1/3 animate-[shimmer_1.5s_infinite] bg-primary rounded-full" />
-            </div>
-          )}
+      {/* Listado y Estados UX */}
+      <div className="relative flex flex-col space-y-2.5">
+        {/* Barra indicadora de actualización en segundo plano */}
+        {query.isFetching && !query.isLoading && (
+          <div className="absolute -top-1 left-0 right-0 z-10 h-0.5 overflow-hidden bg-primary/10 rounded-full">
+            <div className="h-full w-1/3 animate-[shimmer_1.5s_infinite] bg-primary rounded-full" />
+          </div>
+        )}
 
-          {query.isLoading ? (
-            <div className="space-y-2 overflow-y-auto pr-0.5">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <SolicitudListItemSkeleton key={index} />
-              ))}
-            </div>
-          ) : query.isError ? (
-            <div className="flex flex-1 items-center justify-center p-6">
-              <EmptyState
-                icon={<AlertCircle className="size-8 text-destructive" />}
-                title="Error al cargar las solicitudes"
-                description={getErrorMessage(query.error)}
-                action={
+        {query.isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <SolicitudListItemSkeleton key={index} />
+            ))}
+          </div>
+        ) : query.isError ? (
+          <div className="flex flex-1 items-center justify-center p-6">
+            <EmptyState
+              icon={<AlertCircle className="size-8 text-destructive" />}
+              title="Error al cargar las solicitudes"
+              description={getErrorMessage(query.error)}
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+                >
+                  <RefreshCw className="size-3.5" />
+                  <span>Reintentar</span>
+                </Button>
+              }
+            />
+          </div>
+        ) : solicitudes.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center p-6">
+            <EmptyState
+              icon={<FileText className="size-8 text-muted-foreground/60" />}
+              title={
+                search.debouncedSearch
+                  ? "No se encontraron solicitudes coincidentes"
+                  : selectedEstado
+                    ? `No hay solicitudes con estado "${selectedEstado.replace(/_/g, " ")}"`
+                    : "No hay solicitudes de mantenimiento registradas"
+              }
+              description={
+                search.debouncedSearch
+                  ? `No se hallaron resultados para "${search.debouncedSearch}". Prueba con otro término o limpia la búsqueda.`
+                  : selectedEstado
+                    ? "Puedes seleccionar otro estado en las tarjetas superiores o limpiar el filtro actual."
+                    : "Crea una nueva solicitud para reportar averías o mantenimientos requeridos en tus activos."
+              }
+              action={
+                search.debouncedSearch || selectedEstado ? (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleRefresh}
-                    className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+                    onClick={() => {
+                      search.setSearch("")
+                      setSelectedEstado("")
+                    }}
+                    className="mt-2 text-xs font-medium cursor-pointer"
                   >
-                    <RefreshCw className="size-3.5" />
-                    <span>Reintentar</span>
+                    Limpiar filtros
                   </Button>
-                }
-              />
-            </div>
-          ) : solicitudes.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center p-6">
-              <EmptyState
-                icon={<FileText className="size-8 text-muted-foreground/60" />}
-                title={
-                  search.debouncedSearch
-                    ? "No se encontraron solicitudes coincidentes"
-                    : selectedEstado
-                      ? `No hay solicitudes con estado "${selectedEstado.replace(/_/g, " ")}"`
-                      : "No hay solicitudes de mantenimiento registradas"
-                }
-                description={
-                  search.debouncedSearch
-                    ? `No se hallaron resultados para "${search.debouncedSearch}". Prueba con otro término o limpia la búsqueda.`
-                    : selectedEstado
-                      ? "Puedes seleccionar otro estado en las tarjetas superiores o limpiar el filtro actual."
-                      : "Crea una nueva solicitud para reportar averías o mantenimientos requeridos en tus activos."
-                }
-                action={
-                  search.debouncedSearch || selectedEstado ? (
+                ) : (
+                  <Link to={routes.mantenimientos.nuevaSolicitud}>
                     <Button
-                      variant="outline"
                       size="sm"
-                      onClick={() => {
-                        search.setSearch("")
-                        setSelectedEstado("")
-                      }}
-                      className="mt-2 text-xs font-medium cursor-pointer"
+                      className="mt-2 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
                     >
-                      Limpiar filtros
+                      <Plus className="size-3.5" />
+                      <span>Crear Primera Solicitud</span>
                     </Button>
-                  ) : (
-                    <Link to={routes.mantenimientos.nuevaSolicitud}>
-                      <Button
-                        size="sm"
-                        className="mt-2 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
-                      >
-                        <Plus className="size-3.5" />
-                        <span>Crear Primera Solicitud</span>
-                      </Button>
-                    </Link>
-                  )
-                }
-              />
-            </div>
-          ) : (
-            <>
-              {/* Contenedor scrolleable de items */}
-              <div
-                className={cn(
-                  "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 pr-0.5",
-                  query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200",
-                )}
-              >
-                <WorkflowListView>
-                  {solicitudes.map((solicitud) => (
-                    <SolicitudListItem
-                      key={solicitud.id}
-                      solicitud={solicitud}
-                      onlyWorkflowActionsOnBorrador
-                      onViewDetail={setDetailItem}
-                      onEdit={handleEdit}
-                      onDelete={setDeletingItem}
-                      onActionSelect={handleActionSelect}
-                      onTraceability={setTraceabilityItem}
-                      onRegistrarControlActivo={setControlActivoItem}
-                      onGestionarOrdenTrabajo={setOrdenTrabajoItem}
-                    />
-                  ))}
-                </WorkflowListView>
-              </div>
-
-              {/* Paginación */}
-              {query.data && (
-                <Pagination
-                  page={query.data}
-                  onPageChange={search.setPage}
-                  className="border-t pt-2 shrink-0 text-xs"
-                />
+                  </Link>
+                )
+              }
+            />
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {/* Contenedor de items */}
+            <div
+              className={cn(
+                query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200",
               )}
-            </>
-          )}
-        </div>
+            >
+              <WorkflowListView>
+                {solicitudes.map((solicitud) => (
+                  <SolicitudListItem
+                    key={solicitud.id}
+                    solicitud={solicitud}
+                    onlyWorkflowActionsOnBorrador
+                    onViewDetail={setDetailItem}
+                    onEdit={handleEdit}
+                    onDelete={setDeletingItem}
+                    onActionSelect={handleActionSelect}
+                    onTraceability={setTraceabilityItem}
+                    onRegistrarControlActivo={setControlActivoItem}
+                    onGestionarOrdenTrabajo={setOrdenTrabajoItem}
+                  />
+                ))}
+              </WorkflowListView>
+            </div>
+
+            {/* Paginación: solo cuando hay más de 10 registros o más de 1 página */}
+            {query.data && (query.data.totalElements > 10 || query.data.totalPages > 1) && (
+              <Pagination
+                page={query.data}
+                onPageChange={search.setPage}
+                className="border-t pt-2 shrink-0 text-xs"
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Modal de Detalle Completo de Solicitud */}
