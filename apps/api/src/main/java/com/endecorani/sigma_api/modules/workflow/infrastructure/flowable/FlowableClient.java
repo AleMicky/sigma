@@ -90,6 +90,10 @@ public class FlowableClient {
                                         processInstanceId
                                 )
                                 .queryParam(
+                                        "sort",
+                                        "startTime"
+                                )
+                                .queryParam(
                                         "order",
                                         "asc"
                                 )

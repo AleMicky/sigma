@@ -202,6 +202,7 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
         List<WorkflowHistoryItemResponse> items =
                 response.data()
                         .stream()
+                        .sorted(HISTORIC_TASK_COMPARATOR)
                         .map(task -> {
                             String assigneeName = resolverNombreAsignado(task.assignee());
                             return new WorkflowHistoryItemResponse(
@@ -223,6 +224,56 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                 processInstanceId,
                 items
         );
+    }
+
+    private static final java.util.Comparator<HistoricTaskResponse> HISTORIC_TASK_COMPARATOR = (t1, t2) -> {
+        if (t1 == t2) return 0;
+        if (t1 == null) return 1;
+        if (t2 == null) return -1;
+
+        java.time.Instant s1 = parseInstant(t1.startTime());
+        java.time.Instant s2 = parseInstant(t2.startTime());
+
+        if (s1 != null && s2 != null) {
+            int cmp = s1.compareTo(s2);
+            if (cmp != 0) return cmp;
+        } else if (s1 != null) {
+            return -1;
+        } else if (s2 != null) {
+            return 1;
+        }
+
+        java.time.Instant e1 = parseInstant(t1.endTime());
+        java.time.Instant e2 = parseInstant(t2.endTime());
+
+        if (e1 != null && e2 != null) {
+            int cmp = e1.compareTo(e2);
+            if (cmp != 0) return cmp;
+        } else if (e1 != null) {
+            return -1;
+        } else if (e2 != null) {
+            return 1;
+        }
+
+        if (t1.id() != null && t2.id() != null) {
+            return t1.id().compareTo(t2.id());
+        }
+        return 0;
+    };
+
+    private static java.time.Instant parseInstant(String str) {
+        if (str == null || str.isBlank()) {
+            return null;
+        }
+        try {
+            return java.time.OffsetDateTime.parse(str).toInstant();
+        } catch (Exception e1) {
+            try {
+                return java.time.Instant.parse(str);
+            } catch (Exception e2) {
+                return null;
+            }
+        }
     }
 
     private String resolverNombreAsignado(String assignee) {

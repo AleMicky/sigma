@@ -16,6 +16,21 @@ export function useWorkflowHistory(
   const query = useQuery({
     ...workflowQueries.history(processInstanceId),
     enabled: Boolean(processInstanceId) && (options?.enabled ?? true),
+    select: (data) => {
+      if (!data?.items) return data
+      const sortedItems = [...data.items].sort((a, b) => {
+        const timeA = a.startTime ? new Date(a.startTime).getTime() : 0
+        const timeB = b.startTime ? new Date(b.startTime).getTime() : 0
+        if (timeA !== timeB) return timeA - timeB
+        const endA = a.endTime ? new Date(a.endTime).getTime() : Number.MAX_SAFE_INTEGER
+        const endB = b.endTime ? new Date(b.endTime).getTime() : Number.MAX_SAFE_INTEGER
+        return endA - endB
+      })
+      return {
+        ...data,
+        items: sortedItems,
+      }
+    },
   })
 
   return {
