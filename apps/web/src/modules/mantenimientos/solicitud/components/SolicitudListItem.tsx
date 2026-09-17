@@ -1,4 +1,15 @@
-import { Calendar, ClipboardCheck, Pencil, Trash2, User, Wrench } from "lucide-react"
+import { useMemo } from "react"
+import {
+  Calendar,
+  ClipboardCheck,
+  HardHat,
+  Paperclip,
+  Pencil,
+  Tag,
+  Trash2,
+  User,
+  Wrench,
+} from "lucide-react"
 
 import {
   WorkflowListItem,
@@ -63,9 +74,27 @@ export function SolicitudListItem({
     solicitud.solicitante?.nombre ||
     ""
 
-  const formattedDate = solicitud.fechaSolicitud
-    ? new Date(solicitud.fechaSolicitud).toLocaleDateString()
-    : null
+  const responsableNombre =
+    solicitud.responsable?.nombreCompleto ||
+    solicitud.responsable?.nombre ||
+    ""
+
+  const formattedDate = useMemo(() => {
+    if (!solicitud.fechaSolicitud) return null
+    try {
+      const d = new Date(solicitud.fechaSolicitud)
+      if (isNaN(d.getTime())) return null
+      return new Intl.DateTimeFormat("es-ES", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(d)
+    } catch {
+      return null
+    }
+  }, [solicitud.fechaSolicitud])
+
+  const adjuntosCount = solicitud.adjuntos?.length ?? 0
 
   return (
     <WorkflowListItem
@@ -79,11 +108,31 @@ export function SolicitudListItem({
       priority={
         solicitud.prioridad
           ? {
-            level: prioridadNivel,
-            label: solicitud.prioridad.nombre,
-            isCritical,
-          }
+              level: prioridadNivel,
+              label: solicitud.prioridad.nombre,
+              isCritical,
+            }
           : undefined
+      }
+      badges={
+        <>
+          {solicitud.tipoMantenimiento?.nombre && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-1.5 py-0.5 text-[10.5px] font-medium text-foreground/80 border border-border/70 shrink-0 shadow-2xs">
+              <Tag className="size-2.5 opacity-60 shrink-0" />
+              <span>{solicitud.tipoMantenimiento.nombre}</span>
+            </span>
+          )}
+
+          {adjuntosCount > 0 && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10.5px] font-medium text-muted-foreground border border-border/60 shrink-0"
+              title={`${adjuntosCount} archivo(s) adjunto(s)`}
+            >
+              <Paperclip className="size-2.5 opacity-70 shrink-0" />
+              <span>{adjuntosCount}</span>
+            </span>
+          )}
+        </>
       }
       actions={shouldShowWorkflowActions ? actions : []}
       taskName={shouldShowWorkflowActions ? taskName : null}
@@ -94,27 +143,42 @@ export function SolicitudListItem({
           ? (action, tName, flds) => onActionSelect(solicitud, action, tName, flds)
           : undefined
       }
-
       extraContent={
         <>
           {solicitud.activo && (
-            <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
+            <span
+              className="inline-flex items-center gap-1.5 font-medium text-foreground/90 max-w-xs truncate"
+              title={`Activo: ${solicitud.activo.codigo} - ${solicitud.activo.nombre}`}
+            >
               <Wrench className="size-3 text-muted-foreground shrink-0" />
-              <span>
-                {solicitud.activo.codigo} - {solicitud.activo.nombre}
-              </span>
+              <span className="font-semibold text-foreground/95">{solicitud.activo.codigo}</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="truncate">{solicitud.activo.nombre}</span>
             </span>
           )}
 
           {solicitanteNombre && (
-            <span className="inline-flex items-center gap-1">
+            <span
+              className="inline-flex items-center gap-1 text-muted-foreground"
+              title={`Solicitado por: ${solicitanteNombre}${solicitud.solicitante?.cargo ? ` (${solicitud.solicitante.cargo})` : ""}`}
+            >
               <User className="size-3 text-muted-foreground shrink-0" />
-              <span>{solicitanteNombre}</span>
+              <span className="truncate">{solicitanteNombre}</span>
+            </span>
+          )}
+
+          {responsableNombre && (
+            <span
+              className="inline-flex items-center gap-1 text-sky-700 dark:text-sky-300 font-medium"
+              title={`Responsable técnico: ${responsableNombre}`}
+            >
+              <HardHat className="size-3 text-sky-500 shrink-0" />
+              <span className="truncate">{responsableNombre}</span>
             </span>
           )}
 
           {formattedDate && (
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
               <Calendar className="size-3 text-muted-foreground shrink-0" />
               <span>{formattedDate}</span>
             </span>
@@ -123,12 +187,6 @@ export function SolicitudListItem({
       }
       extraActions={
         <>
-          {solicitud.tipoMantenimiento?.nombre && (
-            <span className="inline-flex items-center rounded-md bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground font-medium border border-border/60">
-              {solicitud.tipoMantenimiento.nombre}
-            </span>
-          )}
-
           {onRegistrarControlActivo && (
             <Button
               type="button"
@@ -138,10 +196,10 @@ export function SolicitudListItem({
                 e.stopPropagation()
                 onRegistrarControlActivo(solicitud)
               }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/80 hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-400 text-foreground border-border/80 shadow-2xs cursor-pointer"
-              title="Registrar Control de Activo"
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/90 hover:bg-sky-500/10 hover:text-sky-600 hover:border-sky-500/30 dark:hover:text-sky-400 text-foreground border-border/80 shadow-2xs cursor-pointer transition-all"
+              title="Registrar o consultar acta de control de activo"
             >
-              <ClipboardCheck className="size-3 text-sky-600 dark:text-sky-400" />
+              <ClipboardCheck className="size-3 text-sky-600 dark:text-sky-400 shrink-0" />
               <span>Control Activo</span>
             </Button>
           )}
@@ -155,10 +213,10 @@ export function SolicitudListItem({
                 e.stopPropagation()
                 onGestionarOrdenTrabajo(solicitud)
               }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/80 hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-400 text-foreground border-border/80 shadow-2xs cursor-pointer"
-              title="Gestionar Órdenes de Trabajo"
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/90 hover:bg-amber-500/10 hover:text-amber-600 hover:border-amber-500/30 dark:hover:text-amber-400 text-foreground border-border/80 shadow-2xs cursor-pointer transition-all"
+              title="Gestionar o consultar órdenes de trabajo vinculadas"
             >
-              <Wrench className="size-3 text-sky-600 dark:text-sky-400" />
+              <Wrench className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
               <span>Orden Trabajo</span>
             </Button>
           )}
@@ -172,10 +230,10 @@ export function SolicitudListItem({
                 e.stopPropagation()
                 onEdit(solicitud)
               }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/80 hover:bg-muted/80 text-foreground border-border/80 shadow-2xs cursor-pointer"
-              title="Editar solicitud"
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/90 hover:bg-muted text-foreground border-border/80 shadow-2xs cursor-pointer transition-all"
+              title="Editar borrador de solicitud"
             >
-              <Pencil className="size-3 text-muted-foreground" />
+              <Pencil className="size-3 text-muted-foreground shrink-0" />
               <span>Editar</span>
             </Button>
           )}
@@ -189,10 +247,10 @@ export function SolicitudListItem({
                 e.stopPropagation()
                 onDelete(solicitud)
               }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30 shadow-2xs cursor-pointer"
-              title="Eliminar solicitud"
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 border-destructive/30 shadow-2xs cursor-pointer transition-all"
+              title="Eliminar borrador de solicitud"
             >
-              <Trash2 className="size-3 text-destructive" />
+              <Trash2 className="size-3 text-destructive shrink-0" />
               <span>Eliminar</span>
             </Button>
           )}
@@ -205,3 +263,4 @@ export function SolicitudListItem({
     />
   )
 }
+
