@@ -12,7 +12,6 @@ import {
   createControlActivoDetalle,
   deleteControlActivo,
   deleteControlActivoDetalle,
-  listControlActivoDetalles,
   updateControlActivo,
   updateControlActivoDetalle,
 } from "./control-activo.service"

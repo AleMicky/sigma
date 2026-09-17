@@ -16,6 +16,7 @@ import {
   AprobacionResumenCards,
   type AprobacionResumen,
 } from "../components/AprobacionResumenCards"
+import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
 import { SolicitudListItem } from "../components/SolicitudListItem"
@@ -27,6 +28,7 @@ type EstadoFiltro = "SOLICITADO" | "OBSERVADO" | "ASIGNADO" | "EN_MANTENIMIENTO"
 export function AprobacionesPage() {
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("SOLICITADO")
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [detailItem, setDetailItem] = useState<SolicitudMantenimiento | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
 
@@ -166,8 +168,11 @@ export function AprobacionesPage() {
                   key={solicitud.id}
                   solicitud={solicitud}
                   showWorkflowActions={isSolicitado}
+                  onViewDetail={(sol) => {
+                    setDetailItem(sol)
+                  }}
                   onSelect={(sol) => {
-                    setTraceabilityItem(sol)
+                    setDetailItem(sol)
                   }}
                   onActionSelect={
                     isSolicitado
@@ -185,6 +190,18 @@ export function AprobacionesPage() {
           </WorkflowListView>
         )}
       </div>
+
+      {/* Modal de Detalle Completo de Solicitud */}
+      <SolicitudDetailModal
+        open={Boolean(detailItem)}
+        onOpenChange={(open) => {
+          if (!open) setDetailItem(null)
+        }}
+        solicitud={detailItem}
+        onTraceability={(sol) => {
+          setTraceabilityItem(sol)
+        }}
+      />
 
       {/* Diálogo interactivo para completar tareas de workflow (Aprobar / Observar / Rechazar) */}
       <WorkflowActionDialog

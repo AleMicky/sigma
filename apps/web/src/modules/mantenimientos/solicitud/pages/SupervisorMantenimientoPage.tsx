@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
 import { AlertCircle, ClipboardCheck, Inbox, Loader2 } from "lucide-react"
 
-import { routes } from "@/app/config/routes"
 import {
   WorkflowActionDialog,
   WorkflowHistoryDialog,
@@ -16,6 +14,7 @@ import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
 import { OrdenTrabajoDetailModal } from "../../orden-trabajo/components/OrdenTrabajoDetailModal"
 import { useCompletarWorkflowSolicitud } from "../api/solicitud.mutations"
+import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
 import { SolicitudListItem } from "../components/SolicitudListItem"
@@ -33,9 +32,9 @@ type EstadoFiltro =
   | "TRABAJO_REALIZADO"
 
 export function SupervisorMantenimientoPage() {
-  const navigate = useNavigate()
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("EN_REVISION")
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [detailItem, setDetailItem] = useState<SolicitudMantenimiento | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
   const [ordenTrabajoItem, setOrdenTrabajoItem] = useState<SolicitudMantenimiento | null>(null)
@@ -169,6 +168,12 @@ export function SupervisorMantenimientoPage() {
               <SolicitudListItem
                 key={solicitud.id}
                 solicitud={solicitud}
+                onViewDetail={(sol) => {
+                  setDetailItem(sol)
+                }}
+                onSelect={(sol) => {
+                  setDetailItem(sol)
+                }}
                 onRegistrarControlActivo={(sol) => {
                   setControlActivoItem(sol)
                 }}
@@ -186,6 +191,24 @@ export function SupervisorMantenimientoPage() {
           </WorkflowListView>
         )}
       </div>
+
+      {/* Modal de Detalle Completo de Solicitud */}
+      <SolicitudDetailModal
+        open={Boolean(detailItem)}
+        onOpenChange={(open) => {
+          if (!open) setDetailItem(null)
+        }}
+        solicitud={detailItem}
+        onTraceability={(sol) => {
+          setTraceabilityItem(sol)
+        }}
+        onControlActivo={(sol) => {
+          setControlActivoItem(sol)
+        }}
+        onGestionarOrdenTrabajo={(sol) => {
+          setOrdenTrabajoItem(sol)
+        }}
+      />
 
       {/* Diálogo interactivo para completar tareas de supervisión (Validar, Observar) */}
       <WorkflowActionDialog

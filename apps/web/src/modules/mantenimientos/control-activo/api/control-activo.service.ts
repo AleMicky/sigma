@@ -51,6 +51,19 @@ export type ControlActivoDetalle = AuditableEntity & {
   observacion?: string | null
 }
 
+export type ControlActivoPayload = {
+  solicitudMantenimientoId: string
+  ordenTrabajoId?: string | null
+  activoId?: string | null
+  tipo: TipoControlActivo
+  entregadoPorId?: string | null
+  recibidoPorId?: string | null
+  fecha: string
+  conforme: boolean
+  observacion?: string | null
+  detalles?: (Omit<ControlActivoDetallePayload, "controlActivoId"> & { controlActivoId?: string })[]
+}
+
 export type ControlActivoDetallePayload = {
   controlActivoId: string
   accesorioId: string

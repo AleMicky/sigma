@@ -446,10 +446,7 @@ export function OrdenTrabajoHistorialModal({
 
   async function handleConfirmDeleteActividad() {
     if (!actividadToDelete) return
-    await deleteActividadMutation.mutateAsync({
-      ordenTrabajoId: actividadToDelete.ordenTrabajoId,
-      actividadId: actividadToDelete.actividad.id,
-    })
+    await deleteActividadMutation.mutateAsync(actividadToDelete.actividad.id)
     const otId = actividadToDelete.ordenTrabajoId
     setActividadToDelete(null)
     otsQuery.refetch()

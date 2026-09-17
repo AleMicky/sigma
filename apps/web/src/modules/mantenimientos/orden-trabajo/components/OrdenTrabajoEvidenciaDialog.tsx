@@ -53,7 +53,6 @@ export function OrdenTrabajoEvidenciaDialog({
   const deleteMutation = useDeleteOrdenTrabajoActividadEvidencia()
 
   const [file, setFile] = useState<File | null>(null)
-  const [showUploadForm, setShowUploadForm] = useState(true)
 
   // Query existing evidences for this activity
   const evidenciasQuery = useQuery({

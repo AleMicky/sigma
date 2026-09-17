@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
 import { AlertCircle, Inbox, Loader2, Wrench } from "lucide-react"
 
-import { routes } from "@/app/config/routes"
 import {
   WorkflowActionDialog,
   WorkflowHistoryDialog,
@@ -20,6 +18,7 @@ import {
   EncargadoResumenCards,
   type EncargadoResumen,
 } from "../components/EncargadoResumenCards"
+import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
 import { SolicitudListItem } from "../components/SolicitudListItem"
@@ -29,9 +28,9 @@ import type { SolicitudMantenimiento } from "../types/solicitud.type"
 type EstadoFiltro = "ASIGNADO" | "EN_MANTENIMIENTO" | "EN_REVISION" | "FINALIZADO"
 
 export function EncargadoMantenimientoPage() {
-  const navigate = useNavigate()
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("ASIGNADO")
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [detailItem, setDetailItem] = useState<SolicitudMantenimiento | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
   const [ordenTrabajoItem, setOrdenTrabajoItem] = useState<SolicitudMantenimiento | null>(null)
@@ -165,10 +164,11 @@ export function EncargadoMantenimientoPage() {
               <SolicitudListItem
                 key={solicitud.id}
                 solicitud={solicitud}
+                onViewDetail={(sol) => {
+                  setDetailItem(sol)
+                }}
                 onSelect={(sol) => {
-                  navigate({
-                    to: routes.mantenimientos.editarSolicitud(sol.id),
-                  })
+                  setDetailItem(sol)
                 }}
                 onRegistrarControlActivo={(sol) => {
                   setControlActivoItem(sol)
@@ -187,6 +187,24 @@ export function EncargadoMantenimientoPage() {
           </WorkflowListView>
         )}
       </div>
+
+      {/* Modal de Detalle Completo de Solicitud */}
+      <SolicitudDetailModal
+        open={Boolean(detailItem)}
+        onOpenChange={(open) => {
+          if (!open) setDetailItem(null)
+        }}
+        solicitud={detailItem}
+        onTraceability={(sol) => {
+          setTraceabilityItem(sol)
+        }}
+        onControlActivo={(sol) => {
+          setControlActivoItem(sol)
+        }}
+        onGestionarOrdenTrabajo={(sol) => {
+          setOrdenTrabajoItem(sol)
+        }}
+      />
 
       {/* Diálogo interactivo para completar tareas de workflow (Iniciar Mantenimiento, etc.) */}
       <WorkflowActionDialog

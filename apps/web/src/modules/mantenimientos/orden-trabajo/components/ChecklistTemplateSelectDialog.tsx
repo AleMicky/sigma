@@ -10,7 +10,6 @@ import {
   Wrench,
 } from "lucide-react"
 
-import { actividadQueries } from "@/modules/mantenimientos/actividad/api/actividad.queries"
 import { actividadAplicacionQueries } from "@/modules/mantenimientos/actividad/api/actividad-aplicacion.queries"
 import { checklistItemQueries } from "@/modules/mantenimientos/actividad/api/checklist-item.queries"
 import { Button } from "@/shared/components/ui/button"
