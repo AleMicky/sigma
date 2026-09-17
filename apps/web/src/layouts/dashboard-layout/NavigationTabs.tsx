@@ -110,34 +110,35 @@ export function NavigationTabs() {
     return [{ id: "/", pathname: "/", title: "Inicio" }]
   })
 
+  const [prevPathname, setPrevPathname] = useState(pathname)
+
   // Sincronizar nueva pestaña al cambiar de ruta
-  useEffect(() => {
-    if (!pathname || pathname === "/login" || pathname === "/auth/callback") return
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname)
+    if (pathname && pathname !== "/login" && pathname !== "/auth/callback") {
+      const exists = tabs.some((tab) => tab.pathname === pathname)
+      if (!exists) {
+        const segments = pathname.split("/").filter(Boolean)
+        const lastSegment = segments[segments.length - 1] || "Inicio"
+        const title = pathname === "/" ? "Inicio" : formatSegment(lastSegment)
 
-    setTabs((prev) => {
-      const exists = prev.some((tab) => tab.pathname === pathname)
-      if (exists) return prev
+        const newTab: NavTabItem = {
+          id: pathname,
+          pathname,
+          title,
+        }
 
-      const segments = pathname.split("/").filter(Boolean)
-      const lastSegment = segments[segments.length - 1] || "Inicio"
-      const title = pathname === "/" ? "Inicio" : formatSegment(lastSegment)
-
-      const newTab: NavTabItem = {
-        id: pathname,
-        pathname,
-        title,
+        const updated = [...tabs, newTab]
+        if (updated.length > MAX_TABS) {
+          const first = updated.find((t) => t.pathname === "/")
+          const rest = updated.filter((t) => t.pathname !== "/").slice(-MAX_TABS + 1)
+          setTabs(first ? [first, ...rest] : rest)
+        } else {
+          setTabs(updated)
+        }
       }
-
-      const updated = [...prev, newTab]
-      if (updated.length > MAX_TABS) {
-        const first = updated.find((t) => t.pathname === "/")
-        const rest = updated.filter((t) => t.pathname !== "/").slice(-MAX_TABS + 1)
-        return first ? [first, ...rest] : rest
-      }
-
-      return updated
-    })
-  }, [pathname])
+    }
+  }
 
   // Guardar en sessionStorage
   useEffect(() => {
@@ -176,7 +177,7 @@ export function NavigationTabs() {
       const closingIndex = tabs.findIndex((t) => t.id === tabToClose.id)
       const nextTab = newTabs[Math.max(0, closingIndex - 1)] || newTabs[0]
       if (nextTab) {
-        void navigate({ to: nextTab.pathname as any })
+        void navigate({ to: nextTab.pathname })
       }
     }
   }
@@ -233,7 +234,7 @@ export function NavigationTabs() {
           return (
             <Link
               key={tab.id}
-              to={tab.pathname as any}
+              to={tab.pathname}
               data-tab-active={isActive}
               className={cn(
                 "group relative flex h-7 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-150 border",

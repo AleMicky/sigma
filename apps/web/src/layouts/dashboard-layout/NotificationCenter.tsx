@@ -272,7 +272,7 @@ export function NotificationCenter() {
                       <div className="flex items-center gap-2">
                         {item.to && (
                           <Link
-                            to={item.to as any}
+                            to={item.to}
                             onClick={() => markAsRead(item.id)}
                             className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
                           >
