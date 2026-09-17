@@ -4,6 +4,7 @@
 
 SHELL := /bin/bash
 COMPOSE_PROD := docker compose -f compose.prod.yml
+COMPOSE_TEST := docker compose --env-file .env.test -f compose.test.yml
 COMPOSE_DEV  := docker compose -f compose.yml
 NETWORK_NAME := infraestructura-network
 
@@ -101,6 +102,36 @@ logs-web: ## Muestra los logs en tiempo real de la app Web en producción
 .PHONY: ps
 ps: ## Muestra el estado de los contenedores en producción
 	$(COMPOSE_PROD) ps
+
+# ------------------------------------------------------------------------------
+# Entorno de Test / Staging (compose.test.yml + .env.test)
+# ------------------------------------------------------------------------------
+
+.PHONY: deploy-test
+deploy-test: ## Despliega el stack de test usando compose.test.yml y .env.test
+	@printf "$(YELLOW)Desplegando stack de test SIGMA...$(RESET)\n"
+	$(COMPOSE_TEST) up -d --build
+	@printf "$(GREEN)Despliegue de test completado exitosamente.$(RESET)\n"
+
+.PHONY: pull-deploy-test
+pull-deploy-test: ## Actualiza desde la rama 'test' de Git (git pull) y despliega test
+	@printf "$(YELLOW)Actualizando repositorio desde la rama test...$(RESET)\n"
+	git checkout test 2>/dev/null || git checkout -b test origin/test || true
+	git pull origin test
+	@$(MAKE) deploy-test
+
+.PHONY: down-test
+down-test: ## Detiene y elimina los contenedores del entorno de test
+	@printf "$(YELLOW)Deteniendo stack de test...$(RESET)\n"
+	$(COMPOSE_TEST) down
+
+.PHONY: logs-test
+logs-test: ## Muestra los logs en tiempo real de todos los servicios de test
+	$(COMPOSE_TEST) logs -f
+
+.PHONY: ps-test
+ps-test: ## Muestra el estado de los contenedores de test
+	$(COMPOSE_TEST) ps
 
 # ------------------------------------------------------------------------------
 # Entorno de Desarrollo (compose.yml)

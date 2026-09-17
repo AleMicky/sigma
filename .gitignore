@@ -1,6 +1,7 @@
 # Variables de entorno (mantener *.example)
 .env
 .env.*
+.env.test
 !.env.example
 !**/.env.example
 
