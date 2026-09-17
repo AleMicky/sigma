@@ -78,6 +78,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   componentes: "Componentes",
   historial: "Historial",
   perfil: "Mi Perfil",
+  login: "Iniciar Sesión",
 }
 
 function formatSegment(segment: string): string {
