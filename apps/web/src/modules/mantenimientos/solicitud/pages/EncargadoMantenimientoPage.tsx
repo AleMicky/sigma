@@ -1,15 +1,20 @@
-import { useMemo, useState } from "react"
-import { AlertCircle, Inbox, Loader2, Wrench } from "lucide-react"
+import { useCallback, useMemo, useState } from "react"
+import { AlertCircle, Inbox, RefreshCw, Wrench } from "lucide-react"
 
+import { appConfig } from "@/app/config"
+import { getErrorMessage } from "@/shared/api"
+import { EmptyState } from "@/shared/components/empty-state"
+import { PageShell } from "@/shared/components/page-shell"
+import { Pagination } from "@/shared/components/pagination"
+import { Button } from "@/shared/components/ui/button"
 import {
   WorkflowActionDialog,
   WorkflowHistoryDialog,
   WorkflowListView,
   useWorkflowActionTarget,
 } from "@/modules/workflow"
-import { PageShell } from "@/shared/components/page-shell"
-import { Button } from "@/shared/components/ui/button"
-import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
+import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
+import { cn } from "@/shared/lib/utils"
 
 import { ControlActivoHistorialModal } from "../../control-activo/components/ControlActivoHistorialModal"
 import { OrdenTrabajoDetailModal } from "../../orden-trabajo/components/OrdenTrabajoDetailModal"
@@ -21,20 +26,24 @@ import {
 import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
-import { SolicitudListItem } from "../components/SolicitudListItem"
+import { SolicitudListItem, SolicitudListItemSkeleton } from "../components/SolicitudListItem"
 import { useSolicitudes, useSolicitudResumen } from "../hooks/use-solicitudes"
 import type { SolicitudMantenimiento } from "../types/solicitud.type"
 
 type EstadoFiltro = "ASIGNADO" | "EN_MANTENIMIENTO" | "EN_REVISION" | "FINALIZADO"
+const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function EncargadoMantenimientoPage() {
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("ASIGNADO")
-  const [searchQuery, setSearchQuery] = useState<string>("")
   const [detailItem, setDetailItem] = useState<SolicitudMantenimiento | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
   const [ordenTrabajoItem, setOrdenTrabajoItem] = useState<SolicitudMantenimiento | null>(null)
-  const debouncedSearch = useDebouncedValue(searchQuery, 300)
+
+  const search = usePaginatedSearch({
+    debounceMs: 300,
+    resetKey: selectedEstado,
+  })
 
   const { target, isOpen, openAction, closeAction } =
     useWorkflowActionTarget<SolicitudMantenimiento>()
@@ -43,15 +52,19 @@ export function EncargadoMantenimientoPage() {
   // Consulta de resumen y conteos para el encargado de mantenimiento
   const resumenQuery = useSolicitudResumen("EncargadoMantenimientoPage")
 
-  // Consulta filtrada según el estado operativo seleccionado
+  // Consulta filtrada según el estado operativo seleccionado y paginación
   const query = useSolicitudes({
     interfaz: "EncargadoMantenimientoPage",
     estado: selectedEstado,
-    ...(debouncedSearch.trim() ? { q: debouncedSearch.trim() } : {}),
+    page: search.page,
+    size: PAGE_SIZE,
+    ...(search.query ? { q: search.query } : {}),
   })
 
   const solicitudes = query.data?.content ?? []
   const totalElements = query.data?.totalElements ?? 0
+
+  useClampPage(search.page, search.setPage, query.data?.totalPages)
 
   const resumen: EncargadoResumen = useMemo(() => {
     return {
@@ -62,130 +75,145 @@ export function EncargadoMantenimientoPage() {
     }
   }, [resumenQuery.data])
 
+  const handleRefresh = useCallback(() => {
+    query.refetch()
+    resumenQuery.refetch()
+  }, [query, resumenQuery])
+
+  const handleSelectEstado = useCallback((estado: string) => {
+    setSelectedEstado(estado as EstadoFiltro)
+  }, [])
+
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-3 py-0 sm:px-5 md:px-6 lg:px-8 md:py-0">
+    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-2.5 py-0 sm:px-4 md:px-5 lg:px-6 md:py-0">
       {/* Encabezado Principal */}
       <SolicitudHeader
         title="Bandeja de Ejecución de Mantenimiento"
         description="Gestiona las solicitudes de mantenimiento asignadas a tu cargo, inicia intervenciones técnicas y envíalas a revisión."
         icon={
-          <div className="flex size-8.5 sm:size-9.5 md:size-10 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-2xs">
-            <Wrench className="size-4 sm:size-4.5 md:size-5" />
+          <div className="flex size-7.5 sm:size-8.5 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/20 via-blue-500/10 to-blue-500/5 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-2xs">
+            <Wrench className="size-3.5 sm:size-4" />
           </div>
         }
         totalCount={totalElements}
         countLabel="solicitudes en este estado"
         showCreate={false}
         queries={[query, resumenQuery]}
-        onRefresh={() => {
-          query.refetch()
-          resumenQuery.refetch()
-        }}
+        onRefresh={handleRefresh}
         isRefreshing={query.isRefetching || resumenQuery.isRefetching}
       />
 
-      <div className="flex-1 overflow-y-auto py-4 space-y-4">
-        {/* Tarjetas de Resumen por Estado de Ejecución (sin opción 'Todas') */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2 sm:py-2.5 gap-2 sm:gap-2.5">
+        {/* Tarjetas de Resumen por Estado de Ejecución */}
         <EncargadoResumenCards
           resumen={resumen}
           isLoading={resumenQuery.isLoading}
           selectedEstado={selectedEstado}
-          onSelectEstado={(estado) => setSelectedEstado(estado as EstadoFiltro)}
+          onSelectEstado={handleSelectEstado}
         />
 
         {/* Barra de Búsqueda y Filtros */}
         <SolicitudFilterToolbar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          searchQuery={search.search}
+          onSearchChange={search.setSearch}
           selectedEstado={selectedEstado}
           placeholder="Buscar por folio, título, activo o solicitante..."
         />
 
-        {/* Listado de Solicitudes */}
-        {query.isLoading && (
-          <div className="flex h-64 items-center justify-center gap-2 text-muted-foreground">
-            <Loader2 className="size-5 animate-spin text-primary" />
-            <span className="text-sm">Cargando intervenciones técnicas asignadas...</span>
-          </div>
-        )}
+        {/* Listado y Estados UX */}
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* Barra indicadora de actualización en segundo plano */}
+          {query.isFetching && !query.isLoading && (
+            <div className="absolute top-0 left-0 right-0 z-10 h-0.5 overflow-hidden bg-primary/10">
+              <div className="h-full w-1/3 animate-[shimmer_1.5s_infinite] bg-primary rounded-full" />
+            </div>
+          )}
 
-        {query.isError && (
-          <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
-            <AlertCircle className="size-8 text-destructive" />
-            <p className="text-sm font-medium text-destructive">
-              Error al consultar las solicitudes asignadas
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {query.error instanceof Error
-                ? query.error.message
-                : "Ocurrió un error inesperado al consultar la API"}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                query.refetch()
-                resumenQuery.refetch()
-              }}
-              className="text-xs mt-2 cursor-pointer"
-            >
-              Reintentar
-            </Button>
-          </div>
-        )}
-
-        {!query.isLoading && !query.isError && solicitudes.length === 0 && (
-          <div className="flex h-64 flex-col items-center justify-center gap-2.5 text-center text-muted-foreground">
-            <Inbox className="size-10 opacity-35" />
-            <p className="text-sm font-medium text-foreground">
-              No hay solicitudes en este estado
-            </p>
-            <p className="text-xs text-muted-foreground max-w-sm">
-              {debouncedSearch.trim()
-                ? `No se encontraron resultados para "${debouncedSearch.trim()}".`
-                : `No tienes solicitudes de mantenimiento con estado "${selectedEstado.replace(/_/g, " ")}".`}
-            </p>
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="text-xs font-semibold text-primary hover:underline cursor-pointer pt-1"
-              >
-                Limpiar búsqueda
-              </button>
-            )}
-          </div>
-        )}
-
-        {!query.isLoading && !query.isError && solicitudes.length > 0 && (
-          <WorkflowListView>
-            {solicitudes.map((solicitud) => (
-              <SolicitudListItem
-                key={solicitud.id}
-                solicitud={solicitud}
-                onViewDetail={(sol) => {
-                  setDetailItem(sol)
-                }}
-                onSelect={(sol) => {
-                  setDetailItem(sol)
-                }}
-                onRegistrarControlActivo={(sol) => {
-                  setControlActivoItem(sol)
-                }}
-                onGestionarOrdenTrabajo={(sol) => {
-                  setOrdenTrabajoItem(sol)
-                }}
-                onActionSelect={(sol, action, taskName, fields) => {
-                  openAction(sol, action, taskName, fields)
-                }}
-                onTraceability={(sol) => {
-                  setTraceabilityItem(sol)
-                }}
+          {query.isLoading ? (
+            <div className="space-y-2 overflow-y-auto pr-0.5">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <SolicitudListItemSkeleton key={index} />
+              ))}
+            </div>
+          ) : query.isError ? (
+            <div className="flex flex-1 items-center justify-center p-6">
+              <EmptyState
+                icon={<AlertCircle className="size-8 text-destructive" />}
+                title="Error al consultar las solicitudes asignadas"
+                description={getErrorMessage(query.error)}
+                action={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefresh}
+                    className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+                  >
+                    <RefreshCw className="size-3.5" />
+                    <span>Reintentar</span>
+                  </Button>
+                }
               />
-            ))}
-          </WorkflowListView>
-        )}
+            </div>
+          ) : solicitudes.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-6">
+              <EmptyState
+                icon={<Inbox className="size-8 text-muted-foreground/60" />}
+                title="No hay solicitudes en este estado"
+                description={
+                  search.debouncedSearch
+                    ? `No se encontraron resultados para "${search.debouncedSearch}". Prueba con otro término de búsqueda.`
+                    : `No tienes solicitudes de mantenimiento con estado "${selectedEstado.replace(/_/g, " ")}".`
+                }
+                action={
+                  search.debouncedSearch ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => search.setSearch("")}
+                      className="mt-2 text-xs font-medium cursor-pointer"
+                    >
+                      Limpiar búsqueda
+                    </Button>
+                  ) : undefined
+                }
+              />
+            </div>
+          ) : (
+            <>
+              {/* Contenedor scrolleable de items */}
+              <div
+                className={cn(
+                  "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 pr-0.5",
+                  query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200",
+                )}
+              >
+                <WorkflowListView>
+                  {solicitudes.map((solicitud) => (
+                    <SolicitudListItem
+                      key={solicitud.id}
+                      solicitud={solicitud}
+                      onViewDetail={setDetailItem}
+                      onSelect={setDetailItem}
+                      onRegistrarControlActivo={setControlActivoItem}
+                      onGestionarOrdenTrabajo={setOrdenTrabajoItem}
+                      onActionSelect={openAction}
+                      onTraceability={setTraceabilityItem}
+                    />
+                  ))}
+                </WorkflowListView>
+              </div>
+
+              {/* Paginación */}
+              {query.data && (
+                <Pagination
+                  page={query.data}
+                  onPageChange={search.setPage}
+                  className="border-t pt-1.5 shrink-0 text-xs"
+                />
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Modal de Detalle Completo de Solicitud */}
@@ -195,15 +223,9 @@ export function EncargadoMantenimientoPage() {
           if (!open) setDetailItem(null)
         }}
         solicitud={detailItem}
-        onTraceability={(sol) => {
-          setTraceabilityItem(sol)
-        }}
-        onControlActivo={(sol) => {
-          setControlActivoItem(sol)
-        }}
-        onGestionarOrdenTrabajo={(sol) => {
-          setOrdenTrabajoItem(sol)
-        }}
+        onTraceability={setTraceabilityItem}
+        onControlActivo={setControlActivoItem}
+        onGestionarOrdenTrabajo={setOrdenTrabajoItem}
       />
 
       {/* Diálogo interactivo para completar tareas de workflow (Iniciar Mantenimiento, etc.) */}
@@ -223,11 +245,7 @@ export function EncargadoMantenimientoPage() {
             payload: { variables },
           })
         }}
-        onSuccess={() => {
-          closeAction()
-          query.refetch()
-          resumenQuery.refetch()
-        }}
+        onSuccess={closeAction}
       />
 
       {/* Diálogo para visualizar trazabilidad e historial */}
@@ -264,3 +282,4 @@ export function EncargadoMantenimientoPage() {
     </PageShell>
   )
 }
+

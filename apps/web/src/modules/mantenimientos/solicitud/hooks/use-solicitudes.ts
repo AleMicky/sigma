@@ -7,7 +7,7 @@ const DEFAULT_FILTERS: SolicitudMantenimientoFilters = {
   page: 0,
   size: 20,
   sortBy: "id",
-  direction: "ASC",
+  direction: "DESC",
 }
 
 /**
