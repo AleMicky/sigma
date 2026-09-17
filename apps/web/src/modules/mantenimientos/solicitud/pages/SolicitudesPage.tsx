@@ -206,7 +206,7 @@ export function SolicitudesPage() {
                       key={solicitud.id}
                       solicitud={solicitud}
                       onlyWorkflowActionsOnBorrador
-                      onSelect={(sol) => {
+                      onViewDetail={(sol) => {
                         setDetailItem(sol)
                       }}
                       onEdit={(sol) => {

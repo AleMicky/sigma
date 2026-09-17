@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import {
   Calendar,
   ClipboardCheck,
+  Eye,
   HardHat,
   Paperclip,
   Pencil,
@@ -22,6 +23,7 @@ import type { SolicitudMantenimiento } from "../types/solicitud.type"
 
 export type SolicitudListItemProps = {
   solicitud: SolicitudMantenimiento
+  onViewDetail?: (solicitud: SolicitudMantenimiento) => void
   onSelect?: (solicitud: SolicitudMantenimiento) => void
   onEdit?: (solicitud: SolicitudMantenimiento) => void
   onDelete?: (solicitud: SolicitudMantenimiento) => void
@@ -41,6 +43,7 @@ export type SolicitudListItemProps = {
 
 export function SolicitudListItem({
   solicitud,
+  onViewDetail,
   onSelect,
   onEdit,
   onDelete,
@@ -95,6 +98,7 @@ export function SolicitudListItem({
   }, [solicitud.fechaSolicitud])
 
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
+  const handleViewDetail = onViewDetail || onSelect
 
   return (
     <WorkflowListItem
@@ -187,6 +191,23 @@ export function SolicitudListItem({
       }
       extraActions={
         <>
+          {handleViewDetail && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleViewDetail(solicitud)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/90 hover:bg-muted text-foreground border-border/80 shadow-2xs cursor-pointer transition-all"
+              title="Ver detalles completos de la solicitud"
+            >
+              <Eye className="size-3 text-primary shrink-0" />
+              <span>Ver Detalle</span>
+            </Button>
+          )}
+
           {onRegistrarControlActivo && (
             <Button
               type="button"
@@ -256,7 +277,6 @@ export function SolicitudListItem({
           )}
         </>
       }
-      onQuickView={onSelect ? () => onSelect(solicitud) : undefined}
       onTraceability={onTraceability ? () => onTraceability(solicitud) : undefined}
       showWorkflowTrigger={shouldShowWorkflowActions && Boolean(solicitud.processInstanceId)}
       className={className}
