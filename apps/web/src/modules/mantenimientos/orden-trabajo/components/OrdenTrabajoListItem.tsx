@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   Box,
@@ -5,6 +6,8 @@ import {
   CheckSquare,
   Edit2,
   Eye,
+  FileText,
+  Loader2,
   Trash2,
   User,
   Wrench,
@@ -15,7 +18,11 @@ import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 
 import { ordenTrabajoQueries } from "../api/orden-trabajo.queries"
-import type { OrdenTrabajo } from "../api/orden-trabajo.service"
+import {
+  downloadOrdenTrabajoReportePdf,
+  type OrdenTrabajo,
+} from "../api/orden-trabajo.service"
+import { toast } from "sonner"
 
 type OrdenTrabajoListItemProps = {
   ordenTrabajo: OrdenTrabajo
@@ -39,6 +46,21 @@ export function OrdenTrabajoListItem({
   const completadas = actividades.filter((a) => a.realizado).length
   const progressPercent =
     totalAct > 0 ? Math.round((completadas / totalAct) * 100) : 0
+
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
+
+  const handleDownloadPdf = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      setIsDownloadingPdf(true)
+      await downloadOrdenTrabajoReportePdf(ordenTrabajo.id, ordenTrabajo.numero)
+      toast.success("Reporte PDF de Orden de Trabajo descargado exitosamente")
+    } catch (error) {
+      toast.error("Error al generar el reporte PDF de la orden de trabajo")
+    } finally {
+      setIsDownloadingPdf(false)
+    }
+  }
 
   return (
     <div
@@ -97,13 +119,10 @@ export function OrdenTrabajoListItem({
               )}
 
               {ordenTrabajo.responsable && (
-                <>
-                  <span className="text-muted-foreground/40 font-bold">•</span>
-                  <div className="flex items-center gap-1 min-w-0 truncate">
-                    <User className="size-3 text-emerald-500 shrink-0" />
-                    <span className="truncate">{ordenTrabajo.responsable.nombre}</span>
-                  </div>
-                </>
+                <div className="flex items-center gap-1 min-w-0 truncate">
+                  <User className="size-3 text-muted-foreground shrink-0" />
+                  <span className="truncate">{ordenTrabajo.responsable.nombre}</span>
+                </div>
               )}
             </div>
 
@@ -134,6 +153,22 @@ export function OrdenTrabajoListItem({
             className="flex items-center gap-1 shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="h-7 px-2 text-xs font-semibold gap-1 text-rose-700 dark:text-rose-400 bg-rose-500/10 border-rose-500/30 hover:bg-rose-500/20 cursor-pointer"
+              title="Descargar OT en PDF"
+            >
+              {isDownloadingPdf ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <FileText className="size-3 text-rose-600 dark:text-rose-400" />
+              )}
+              <span>PDF</span>
+            </Button>
             <Button
               type="button"
               variant="outline"

@@ -14,7 +14,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +34,19 @@ import java.util.UUID;
 public class OrdenTrabajoController {
 
     private final OrdenTrabajoService service;
+
+    @GetMapping(value = "/{id}/reporte-pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Generar reporte PDF de una orden de trabajo")
+    public ResponseEntity<byte[]> generarReportePdf(@PathVariable UUID id) {
+        byte[] pdfBytes = service.generarReportePdf(id);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.inline()
+                .filename("orden-trabajo-" + id + ".pdf")
+                .build());
+        headers.setContentLength(pdfBytes.length);
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+    }
 
     @GetMapping
     @Operation(summary = "Listar órdenes de trabajo con paginación y búsqueda opcional")

@@ -35,19 +35,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { cn } from "@/shared/lib/utils"
 
 import { solicitudQueries } from "@/modules/mantenimientos/solicitud/api/solicitud.queries"
-import {
-  useDeleteOrdenTrabajoActividad,
+import { useDeleteOrdenTrabajoActividad,
   useDeleteOrdenTrabajoActividadEvidencia,
   useDeleteOrdenTrabajoAdjunto,
   useToggleOrdenTrabajoActividadRealizado,
 } from "../api/orden-trabajo.mutations"
 import { ordenTrabajoQueries } from "../api/orden-trabajo.queries"
-import type {
-  OrdenTrabajo,
-  OrdenTrabajoActividad,
-  OrdenTrabajoActividadEvidencia,
-  OrdenTrabajoAdjunto,
+import {
+  downloadOrdenTrabajoReportePdf,
+  type OrdenTrabajo,
+  type OrdenTrabajoActividad,
+  type OrdenTrabajoActividadEvidencia,
+  type OrdenTrabajoAdjunto,
 } from "../api/orden-trabajo.service"
+import { toast } from "sonner"
 import { OrdenTrabajoActividadDialog } from "./OrdenTrabajoActividadDialog"
 import { OrdenTrabajoAdjuntoDialog } from "./OrdenTrabajoAdjuntoDialog"
 import { OrdenTrabajoEvidenciaDialog } from "./OrdenTrabajoEvidenciaDialog"
@@ -76,6 +77,7 @@ export function OrdenTrabajoDetailModal({
 }: OrdenTrabajoDetailModalProps) {
   const [activeTab, setActiveTab] = useState<string>("actividades")
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false)
 
   // Sub-dialogs state
   const [actividadModal, setActividadModal] = useState<{
@@ -182,6 +184,19 @@ export function OrdenTrabajoDetailModal({
     })
   }
 
+  const handleDownloadPdf = async () => {
+    if (!currentOT?.id) return
+    try {
+      setIsGeneratingPdf(true)
+      await downloadOrdenTrabajoReportePdf(currentOT.id, currentOT.numero)
+      toast.success("Reporte PDF de Orden de Trabajo descargado exitosamente")
+    } catch (error) {
+      toast.error("Error al generar el reporte PDF de la orden de trabajo")
+    } finally {
+      setIsGeneratingPdf(false)
+    }
+  }
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -272,17 +287,35 @@ export function OrdenTrabajoDetailModal({
                     </div>
                   </div>
 
-                  {allowTaskManagement && (
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setIsEditDialogOpen(true)}
-                      className="h-6.5 text-[11px] gap-1 px-2 shrink-0 font-semibold cursor-pointer"
+                      onClick={handleDownloadPdf}
+                      disabled={isGeneratingPdf}
+                      className="h-6.5 text-[11px] gap-1 px-2 font-semibold cursor-pointer text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                      title="Descargar Orden de Trabajo en PDF"
                     >
-                      <Edit2 className="size-2.5" />
-                      <span>Editar</span>
+                      {isGeneratingPdf ? (
+                        <Loader2 className="size-2.5 animate-spin" />
+                      ) : (
+                        <FileText className="size-2.5 text-rose-600 dark:text-rose-400" />
+                      )}
+                      <span>PDF</span>
                     </Button>
-                  )}
+
+                    {allowTaskManagement && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditDialogOpen(true)}
+                        className="h-6.5 text-[11px] gap-1 px-2 font-semibold cursor-pointer"
+                      >
+                        <Edit2 className="size-2.5" />
+                        <span>Editar</span>
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Progress bar */}
