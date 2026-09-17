@@ -301,6 +301,15 @@ public class SolicitudMantenimientoService {
         parameters.put("FECHA_CIERRE", response.fechaCierre() != null ? response.fechaCierre().format(FORMATTER_FECHA_HORA) : "-");
         parameters.put("FECHA_EMISION", LocalDateTime.now().format(FORMATTER_FECHA_HORA));
 
+        try {
+            org.springframework.core.io.ClassPathResource logoResource = new org.springframework.core.io.ClassPathResource("reports/images/logo-ende-corani.png");
+            if (logoResource.exists()) {
+                parameters.put("LOGO_EMPRESA", logoResource.getInputStream());
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo cargar el logo para el reporte: {}", e.getMessage());
+        }
+
         return jasperReportService.generatePdfReport(REPORTE_SOLICITUD_PATH, parameters);
     }
 

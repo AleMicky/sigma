@@ -36,6 +36,13 @@ class JasperReportServiceTest {
         parameters.put("FECHA_CIERRE", "19/09/2026 12:00");
         parameters.put("FECHA_EMISION", "17/09/2026 15:45");
 
+        try {
+            org.springframework.core.io.ClassPathResource logoResource = new org.springframework.core.io.ClassPathResource("reports/images/logo-ende-corani.png");
+            if (logoResource.exists()) {
+                parameters.put("LOGO_EMPRESA", logoResource.getInputStream());
+            }
+        } catch (Exception ignored) {}
+
         byte[] pdfBytes = service.generatePdfReport("reports/solicitudes/solicitud_mantenimiento.jrxml", parameters);
 
         assertNotNull(pdfBytes, "El PDF no debe ser nulo");

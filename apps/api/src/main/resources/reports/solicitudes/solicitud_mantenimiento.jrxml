@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport name="solicitud_mantenimiento" language="java" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30" uuid="c2a41d99-8260-4966-9b51-0a374dc7b871">
+	<parameter name="LOGO_EMPRESA" class="java.lang.Object"/>
 	<parameter name="NUMERO_SOLICITUD" class="java.lang.String"/>
 	<parameter name="FECHA_SOLICITUD" class="java.lang.String"/>
 	<parameter name="ESTADO" class="java.lang.String"/>
@@ -23,24 +24,39 @@
 	<parameter name="FECHA_EMISION" class="java.lang.String"/>
 	<title height="740">
 		<!-- Encabezado Principal -->
-		<element kind="rectangle" x="0" y="0" width="535" height="60" backcolor="#1E293B" mode="Opaque" uuid="a1b2c3d4-e5f6-7890-1234-56789abcdef0">
-			<property name="net.sf.jasperreports.customizer.class" value=""/>
+		<element kind="rectangle" x="0" y="0" width="535" height="58" backcolor="#FFFFFF" mode="Opaque" uuid="a1b2c3d4-e5f6-7890-1234-56789abcdef0">
+			<pen lineWidth="0.5" lineColor="#CBD5E1"/>
 		</element>
-		<element kind="staticText" x="15" y="10" width="320" height="24" forecolor="#FFFFFF" fontName="SansSerif" fontSize="16" bold="true" vTextAlign="Middle" uuid="b2c3d4e5-f6a7-8901-2345-6789abcdef01">
+		
+		<!-- Logo Empresa -->
+		<element kind="image" x="8" y="6" width="125" height="46" scaleImage="RetainShape" hImageAlign="Left" vImageAlign="Middle" uuid="a0b1c2d3-e4f5-6789-0123-456789abcdef">
+			<expression><![CDATA[$P{LOGO_EMPRESA}]]></expression>
+		</element>
+
+		<!-- Título Central -->
+		<element kind="staticText" x="140" y="8" width="235" height="20" forecolor="#0F172A" fontName="SansSerif" fontSize="13" bold="true" vTextAlign="Middle" uuid="b2c3d4e5-f6a7-8901-2345-6789abcdef01">
 			<text><![CDATA[SOLICITUD DE MANTENIMIENTO]]></text>
 		</element>
-		<element kind="staticText" x="15" y="34" width="320" height="16" forecolor="#94A3B8" fontName="SansSerif" fontSize="10" vTextAlign="Middle" uuid="c3d4e5f6-a7b8-9012-3456-789abcdef012">
-			<text><![CDATA[Sistema Integrado de Gestión de Mantenimiento - SIGMA]]></text>
+		<element kind="staticText" x="140" y="28" width="235" height="12" forecolor="#0284C7" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="c3d4e5f6-a7b8-9012-3456-789abcdef012">
+			<text><![CDATA[ENDE CORANI S.A.]]></text>
 		</element>
-		<element kind="staticText" x="350" y="10" width="170" height="14" forecolor="#94A3B8" fontName="SansSerif" fontSize="9" hTextAlign="Right" vTextAlign="Middle" uuid="d4e5f6a7-b8c9-0123-4567-89abcdef0123">
+		<element kind="staticText" x="140" y="40" width="235" height="12" forecolor="#64748B" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="c3d4e5f6-a7b8-9012-3456-789abcdef013">
+			<text><![CDATA[Sistema Integrado de Gestión - SIGMA]]></text>
+		</element>
+
+		<!-- Caja Número Solicitud -->
+		<element kind="rectangle" x="385" y="6" width="142" height="46" backcolor="#F8FAFC" mode="Opaque" uuid="d4e5f6a7-b8c9-0123-4567-89abcdef0122">
+			<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+		</element>
+		<element kind="staticText" x="385" y="10" width="142" height="12" forecolor="#64748B" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d4e5f6a7-b8c9-0123-4567-89abcdef0123">
 			<text><![CDATA[N° DE SOLICITUD]]></text>
 		</element>
-		<element kind="textField" x="350" y="24" width="170" height="22" forecolor="#38BDF8" fontName="SansSerif" fontSize="14" bold="true" hTextAlign="Right" vTextAlign="Middle" uuid="e5f6a7b8-c9d0-1234-5678-9abcdef01234">
+		<element kind="textField" x="385" y="22" width="142" height="24" forecolor="#0284C7" fontName="SansSerif" fontSize="13" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="e5f6a7b8-c9d0-1234-5678-9abcdef01234">
 			<expression><![CDATA[$P{NUMERO_SOLICITUD} != null ? $P{NUMERO_SOLICITUD} : "N/A"]]></expression>
 		</element>
 
 		<!-- Subcabecera: Estado y Fecha de Emisión -->
-		<element kind="rectangle" x="0" y="65" width="535" height="28" backcolor="#F1F5F9" mode="Opaque" uuid="f6a7b8c9-d0e1-2345-6789-abcdef012345">
+		<element kind="rectangle" x="0" y="65" width="535" height="26" backcolor="#F1F5F9" mode="Opaque" uuid="f6a7b8c9-d0e1-2345-6789-abcdef012345">
 			<pen lineWidth="0.5" lineColor="#CBD5E1"/>
 		</element>
 		<element kind="staticText" x="10" y="70" width="55" height="18" forecolor="#475569" fontName="SansSerif" fontSize="9" bold="true" vTextAlign="Middle" uuid="a7b8c9d0-e1f2-3456-789a-bcdef0123456">
