@@ -29,11 +29,11 @@ services:
 
       JAVA_OPTS: "-Xms256m -Xmx512m"
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/v3/api-docs || exit 1" ]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/v3/api-docs > /dev/null || exit 1" ]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      timeout: 20s
+      retries: 5
+      start_period: 120s
     volumes:
       - sigma_uploads:/app/uploads
     networks:
