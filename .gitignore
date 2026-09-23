@@ -14,11 +14,24 @@
 hs_err_pid*
 replay_pid*
 
-# React / Node / Vite
+# React / Node / Vite / Expo
 **/node_modules/
 **/dist/
 **/dist-ssr/
 **/.vite/
+**/.expo/
+**/web-build/
+**/expo-env.d.ts
+**/.metro-health-check*
+**/.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+**/ios/
+**/android/
 *.local
 *.tsbuildinfo
 coverage/
