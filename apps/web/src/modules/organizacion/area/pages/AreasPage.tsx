@@ -1,29 +1,23 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Building, HelpCircle, Plus } from "lucide-react"
+import { Building, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
-import { getErrorMessage } from "@/shared/api"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
-import { EmptyState } from "@/shared/components/empty-state"
-import { ListSkeleton } from "@/shared/components/list-skeleton"
-import { PageShell } from "@/shared/components/page-shell"
-import { Pagination } from "@/shared/components/pagination"
-import { RefreshButton } from "@/shared/components/refresh-button"
-import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
 import {
   useClampPage,
   usePaginatedSearch,
 } from "@/shared/hooks/use-paginated-search"
-import { cn } from "@/shared/lib/utils"
 
 import { useDeleteArea } from "../api/area.mutations"
 import { areaQueries } from "../api/area.queries"
 import type { Area } from "../api/area.service"
 import { AreaFormDialog } from "../components/AreaFormDialog"
 import { AreaHelpModal } from "../components/AreaHelpModal"
-import { AreaListItem } from "../components/AreaListItem"
+import { AreasFilters } from "../components/AreasFilters"
+import { AreasHeader } from "../components/AreasHeader"
+import { AreaTableView } from "../components/AreaTableView"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
@@ -40,8 +34,8 @@ export function AreasPage() {
     areaQueries.list({
       page: search.page,
       size: PAGE_SIZE,
-      sortBy: "nombre",
-      direction: "ASC",
+      sortBy: "createdAt",
+      direction: "DESC",
       ...(search.query ? { q: search.query } : {}),
     }),
   )
@@ -74,179 +68,86 @@ export function AreasPage() {
     }
   }
 
+  const hasActiveFilters = Boolean(search.search.trim())
+
+  function resetFilters() {
+    search.setSearch("")
+  }
+
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
-      {/* Header */}
-      <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:gap-4 sm:py-6 md:flex-row md:items-start md:justify-between md:py-8">
-        <div className="min-w-0 flex flex-1 flex-col gap-1">
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-              Áreas
-            </h1>
-            <div className="flex items-center gap-1.5 shrink-0 md:hidden">
-              <RefreshButton
-                size="sm"
-                onRefresh={() => areasQuery.refetch()}
-                isRefreshing={areasQuery.isFetching}
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                type="button"
-                onClick={() => setHelpModalOpen(true)}
-              >
-                <HelpCircle className="size-4 text-primary" />
-                <span className="sr-only sm:not-sr-only">Guía</span>
-              </Button>
-              <Button
-                size="sm"
-                type="button"
-                onClick={openCreate}
-                className="shrink-0"
-              >
-                <Plus className="size-4" />
-                <span className="sr-only sm:not-sr-only">Crear</span>
-              </Button>
+    <div className="flex w-full flex-col gap-6 px-2 pt-2 pb-6">
+      <AreasHeader
+        isRefreshing={areasQuery.isFetching}
+        onRefresh={() => areasQuery.refetch()}
+        onOpenHelp={() => setHelpModalOpen(true)}
+        onOpenCreate={openCreate}
+      />
+
+      <AreasFilters
+        search={search.search}
+        setSearch={search.setSearch}
+        hasActiveFilters={hasActiveFilters}
+        resetFilters={resetFilters}
+      />
+
+      {/* TABLE SECTION */}
+      <div className="flex-1 w-full mt-1">
+        <AreaTableView
+          areas={areas}
+          isLoading={areasQuery.isFetching}
+          page={areasQuery.data}
+          onPageChange={search.setPage}
+          onEdit={openEdit}
+          onDelete={setDeleting}
+          emptyTitle={
+            hasActiveFilters
+              ? "No se encontraron áreas"
+              : "No hay áreas registradas"
+          }
+          emptyDescription={
+            hasActiveFilters
+              ? "No hay resultados para la búsqueda realizada."
+              : "Agrega áreas para definir la estructura organizacional."
+          }
+          emptyIcon={
+            <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary/60 shadow-inner">
+              <Building className="size-8" />
             </div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Administra las áreas y divisiones de la estructura organizacional.
-          </p>
-        </div>
-
-        <div className="hidden shrink-0 self-start md:flex md:items-center md:gap-2">
-          <RefreshButton
-            size="sm"
-            onRefresh={() => areasQuery.refetch()}
-            isRefreshing={areasQuery.isFetching}
-          />
-
-          <Button
-            size="sm"
-            variant="outline"
-            type="button"
-            onClick={() => setHelpModalOpen(true)}
-            className="gap-1.5 border-border/80 hover:bg-muted"
-          >
-            <HelpCircle className="size-4 text-primary" />
-            <span>Guía de Áreas</span>
-          </Button>
-
-          <Button
-            size="sm"
-            type="button"
-            onClick={openCreate}
-            className="gap-1.5"
-          >
-            <Plus className="size-4" />
-            <span>Crear Área</span>
-          </Button>
-        </div>
-      </header>
-
-      {/* Buscador de ancho completo */}
-      <div className="flex shrink-0 py-3">
-        <SearchField
-          value={search.search}
-          onChange={search.setSearch}
-          placeholder="Buscar por código o nombre…"
-          aria-label="Buscar áreas"
-          className="w-full min-w-0"
+          }
+          emptyAction={
+            !hasActiveFilters && (
+              <Button onClick={openCreate} className="mt-4 gap-2">
+                <Plus className="size-4" />
+                Agregar Área
+              </Button>
+            )
+          }
         />
       </div>
 
-      {/* Content Section - Compact List */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {areasQuery.isLoading ? (
-          <ListSkeleton
-            rows={8}
-            rowClassName="h-12 rounded-lg"
-            className="flex flex-col gap-2"
-          />
-        ) : areasQuery.isError ? (
-          <EmptyState
-            title={getErrorMessage(areasQuery.error)}
-            className="text-destructive"
-          />
-        ) : areas.length === 0 ? (
-          <EmptyState
-            icon={<Building className="size-4 text-muted-foreground" />}
-            title={
-              search.search.trim() ? "Sin resultados" : "No hay áreas registradas"
-            }
-            description={
-              search.search.trim()
-                ? "Prueba con otro código o nombre."
-                : "Crea la primera área para definir la estructura de la organización."
-            }
-            action={
-              search.search.trim() ? undefined : (
-                <Button size="sm" type="button" onClick={openCreate}>
-                  <Plus />
-                  Crear Área
-                </Button>
-              )
-            }
-          />
-        ) : (
-          <>
-            <div
-              className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3",
-                areasQuery.isFetching && "opacity-70",
-              )}
-            >
-              <ul className="divide-y divide-border/60 rounded-xl border border-border/80 bg-card overflow-hidden shadow-2xs">
-                {areas.map((area) => (
-                  <AreaListItem
-                    key={area.id}
-                    area={area}
-                    onEdit={openEdit}
-                    onDelete={(a) => setDeleting(a)}
-                  />
-                ))}
-              </ul>
-            </div>
+      {/* MODALS */}
+      {dialogOpen && (
+        <AreaFormDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          area={editing}
+        />
+      )}
 
-            {areasQuery.data ? (
-              <Pagination
-                page={areasQuery.data}
-                onPageChange={search.setPage}
-                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 shrink-0"
-              />
-            ) : null}
-          </>
-        )}
-      </div>
+      {deleting && (
+        <ConfirmDeleteDialog
+          open={true}
+          onOpenChange={(isOpen) => !isOpen && setDeleting(null)}
+          title="Eliminar área"
+          description={`¿Estás seguro de que deseas eliminar el área "${deleting.nombre}"?`}
+          onConfirm={handleDelete}
+          isPending={deleteMutation.isPending}
+        />
+      )}
 
-      {/* Form Dialog Modal */}
-      <AreaFormDialog
-        key={editing?.id ?? "new-area"}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        area={editing}
-        onSuccess={() => {
-          if (!editing) {
-            search.setPage(0)
-          }
-        }}
-      />
-
-      {/* Help Guide Modal */}
-      <AreaHelpModal
-        open={helpModalOpen}
-        onOpenChange={setHelpModalOpen}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDeleteDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        title={`¿Eliminar área "${deleting?.nombre}"?`}
-        description="Esta acción no se puede deshacer. Se eliminará la definición de esta área de la organización."
-        isPending={deleteMutation.isPending}
-        onConfirm={handleDelete}
-      />
-    </PageShell>
+      {helpModalOpen && (
+        <AreaHelpModal open={helpModalOpen} onOpenChange={setHelpModalOpen} />
+      )}
+    </div>
   )
 }
