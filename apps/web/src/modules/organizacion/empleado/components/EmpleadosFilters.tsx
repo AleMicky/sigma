@@ -30,7 +30,7 @@ export function EmpleadosFilters({
   const selectedArea = areas.find((a) => a.id === selectedAreaId)
 
   return (
-    <div className="flex flex-col gap-3 p-4 rounded-2xl border border-border/40 bg-background/40 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/5">
+    <div className="flex flex-col gap-3 w-full mb-1">
       <div className="flex flex-col sm:flex-row gap-3 w-full">
         <div className="w-full sm:flex-1 relative">
           <SearchField
@@ -41,7 +41,7 @@ export function EmpleadosFilters({
           />
         </div>
 
-        <div className="relative w-full sm:flex-1">
+        <div className="relative w-full sm:w-64 shrink-0">
           <Building className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/70 pointer-events-none" />
           <select
             className="flex h-11 w-full appearance-none rounded-xl border border-input/60 bg-background/50 px-3 py-2 text-sm shadow-xs ring-offset-background transition-all hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 pl-9 cursor-pointer"
@@ -68,7 +68,7 @@ export function EmpleadosFilters({
       </div>
 
       {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-2 pt-2 mt-1 border-t border-border/30">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mr-1 uppercase tracking-wider">
             <FilterX className="size-3.5" />
             Filtros:
