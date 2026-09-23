@@ -29,43 +29,44 @@ export function Pagination({
   return (
     <div
       className={cn(
-        "flex shrink-0 flex-wrap items-center justify-between gap-2 border-t bg-background px-2 py-2 sm:gap-3 sm:px-3",
+        "flex shrink-0 items-center justify-between gap-3 border-t border-border/60 bg-muted/15 px-4 py-2.5",
         className,
       )}
     >
-      <p className="min-w-0 text-[11px] text-muted-foreground sm:text-xs">
-        <span className="sm:hidden">
-          {currentDisplay}/{Math.max(page.totalPages, 1)} · {page.totalElements}
-        </span>
-        <span className="hidden sm:inline">
-          {from}–{to} de {page.totalElements}
-        </span>
+      <p className="min-w-0 text-xs text-muted-foreground">
+        Mostrando <span className="font-medium text-foreground">{from}–{to}</span> de{" "}
+        <span className="font-medium text-foreground">{page.totalElements}</span> registros
       </p>
 
-      <div className="flex items-center gap-1">
-        <Button
-          type="button"
-          variant="default"
-          size="icon-sm"
-          aria-label="Página anterior"
-          disabled={page.first}
-          onClick={() => onPageChange(page.page - 1)}
-        >
-          <ChevronLeft />
-        </Button>
-        <span className="hidden min-w-16 px-1 text-center text-xs text-muted-foreground sm:inline">
-          {currentDisplay} / {Math.max(page.totalPages, 1)}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">
+          Página <span className="font-medium text-foreground">{currentDisplay}</span> de{" "}
+          <span className="font-medium text-foreground">{Math.max(page.totalPages, 1)}</span>
         </span>
-        <Button
-          type="button"
-          variant="default"
-          size="icon-sm"
-          aria-label="Página siguiente"
-          disabled={page.last}
-          onClick={() => onPageChange(page.page + 1)}
-        >
-          <ChevronRight />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-xs"
+            aria-label="Página anterior"
+            disabled={page.first}
+            onClick={() => onPageChange(page.page - 1)}
+            className="size-7 cursor-pointer"
+          >
+            <ChevronLeft className="size-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-xs"
+            aria-label="Página siguiente"
+            disabled={page.last}
+            onClick={() => onPageChange(page.page + 1)}
+            className="size-7 cursor-pointer"
+          >
+            <ChevronRight className="size-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   )
