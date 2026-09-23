@@ -8,6 +8,7 @@ pipeline {
 
     environment {
         COMPOSE_FILE = 'compose.prod.yml'
+        ENV_FILE = '/opt/infraestructura/sigma/.env'
         PROJECT_NAME = 'sigma-prod'
     }
 
@@ -23,7 +24,9 @@ pipeline {
             steps {
                 sh '''
                     echo "Validando configuración Docker Compose..."
+
                     docker compose \
+                        --env-file ${ENV_FILE} \
                         -p ${PROJECT_NAME} \
                         -f ${COMPOSE_FILE} \
                         config --quiet
@@ -37,6 +40,7 @@ pipeline {
                     echo "Construyendo SIGMA..."
 
                     docker compose \
+                        --env-file ${ENV_FILE} \
                         -p ${PROJECT_NAME} \
                         -f ${COMPOSE_FILE} \
                         build
@@ -50,6 +54,7 @@ pipeline {
                     echo "Desplegando SIGMA..."
 
                     docker compose \
+                        --env-file ${ENV_FILE} \
                         -p ${PROJECT_NAME} \
                         -f ${COMPOSE_FILE} \
                         up -d --remove-orphans
@@ -64,6 +69,7 @@ pipeline {
                     sleep 15
 
                     docker compose \
+                        --env-file ${ENV_FILE} \
                         -p ${PROJECT_NAME} \
                         -f ${COMPOSE_FILE} \
                         ps
