@@ -40,20 +40,23 @@ export function EmpleadosHeader({
           size="sm"
           onClick={onOpenHelp}
           title="Ayuda"
-          className="h-9 rounded-full px-4 hover:bg-muted/80 transition-colors"
+          className="h-9 flex items-center gap-1.5 rounded-full px-4 hover:bg-muted/80 transition-colors"
         >
-          <HelpCircle className="size-4 sm:mr-1.5" />
+          <HelpCircle className="size-4" />
           <span className="hidden sm:inline">Ayuda</span>
         </Button>
-        <div className="h-9">
-          <RefreshButton isRefreshing={isRefreshing} onRefresh={onRefresh} />
-        </div>
+        <RefreshButton
+          isRefreshing={isRefreshing}
+          onRefresh={onRefresh}
+          className="h-9 w-9 rounded-full px-0"
+          iconClassName="size-4"
+        />
         <Button
           size="sm"
           onClick={onOpenCreate}
-          className="h-9 rounded-full px-4 shadow-sm hover:shadow-md transition-all active:scale-95 bg-primary/90 hover:bg-primary"
+          className="h-9 flex items-center gap-1.5 rounded-full px-4 shadow-sm hover:shadow-md transition-all active:scale-95 bg-primary/90 hover:bg-primary"
         >
-          <Plus className="size-4 sm:mr-1.5" />
+          <Plus className="size-4" />
           <span className="hidden sm:inline">Nuevo Empleado</span>
         </Button>
       </div>
