@@ -34,39 +34,109 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                sh '''
-                    echo "Construyendo SIGMA..."
+        // ─────────────────────────────────────────────
+        // API
+        // ─────────────────────────────────────────────
 
+        stage('Build API') {
+            when {
+                anyOf {
+                    changeset "apps/api/**"
+                    changeset "compose.prod.yml"
+                }
+            }
+
+            steps {
+                echo 'Cambios detectados en API. Construyendo...'
+
+                sh '''
                     docker compose \
                         --env-file ${ENV_FILE} \
                         -p ${PROJECT_NAME} \
                         -f ${COMPOSE_FILE} \
-                        build
+                        build api
                 '''
             }
         }
 
-        stage('Deploy') {
-            steps {
-                sh '''
-                    echo "Desplegando SIGMA..."
+        stage('Deploy API') {
+            when {
+                anyOf {
+                    changeset "apps/api/**"
+                    changeset "compose.prod.yml"
+                }
+            }
 
+            steps {
+                echo 'Desplegando API...'
+
+                sh '''
                     docker compose \
                         --env-file ${ENV_FILE} \
                         -p ${PROJECT_NAME} \
                         -f ${COMPOSE_FILE} \
-                        up -d --remove-orphans
+                        up -d --no-deps api
                 '''
             }
         }
+
+        // ─────────────────────────────────────────────
+        // WEB
+        // ─────────────────────────────────────────────
+
+        stage('Build Web') {
+            when {
+                anyOf {
+                    changeset "apps/web/**"
+                    changeset "compose.prod.yml"
+                }
+            }
+
+            steps {
+                echo 'Cambios detectados en Web. Construyendo...'
+
+                sh '''
+                    docker compose \
+                        --env-file ${ENV_FILE} \
+                        -p ${PROJECT_NAME} \
+                        -f ${COMPOSE_FILE} \
+                        build web
+                '''
+            }
+        }
+
+        stage('Deploy Web') {
+            when {
+                anyOf {
+                    changeset "apps/web/**"
+                    changeset "compose.prod.yml"
+                }
+            }
+
+            steps {
+                echo 'Desplegando Web...'
+
+                sh '''
+                    docker compose \
+                        --env-file ${ENV_FILE} \
+                        -p ${PROJECT_NAME} \
+                        -f ${COMPOSE_FILE} \
+                        up -d --no-deps web
+                '''
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        // VERIFY
+        // ─────────────────────────────────────────────
 
         stage('Verify') {
             steps {
                 sh '''
                     echo "Esperando servicios..."
                     sleep 15
+
+                    echo "Estado de SIGMA:"
 
                     docker compose \
                         --env-file ${ENV_FILE} \
@@ -79,6 +149,7 @@ pipeline {
     }
 
     post {
+
         success {
             echo 'SIGMA desplegado correctamente.'
         }
@@ -89,6 +160,7 @@ pipeline {
 
         always {
             sh '''
+                echo "Limpiando imágenes Docker no utilizadas..."
                 docker image prune -f || true
             '''
         }
