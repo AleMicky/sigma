@@ -14,9 +14,9 @@ const pageShellVariants = cva("mx-auto w-full flex flex-col transition-all", {
     },
     padding: {
       none: "p-0",
-      compact: "px-4 py-2.5 sm:px-6 sm:py-3 md:px-8",
-      default: "px-4 py-4 sm:px-6 sm:py-6 md:px-8",
-      relaxed: "px-6 py-6 md:px-10 md:py-8",
+      compact: "px-2 py-2 sm:px-4 sm:py-3 md:px-4",
+      default: "px-4 py-4 sm:px-6 sm:py-6 md:px-6",
+      relaxed: "px-6 py-6 md:px-8 md:py-8",
     },
     layout: {
       fill: "h-full min-h-0 flex-1 overflow-hidden",
