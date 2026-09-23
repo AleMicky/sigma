@@ -2,6 +2,14 @@ import { Building, FilterX, X } from "lucide-react"
 
 import { SearchField } from "@/shared/components/search-field"
 import { Badge } from "@/shared/components/ui/badge"
+import { Button } from "@/shared/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
 
 type AreaResumen = {
   id: string
@@ -30,40 +38,49 @@ export function EmpleadosFilters({
   const selectedArea = areas.find((a) => a.id === selectedAreaId)
 
   return (
-    <div className="flex flex-col gap-3 w-full mb-1">
-      <div className="flex flex-col sm:flex-row gap-3 w-full">
+    <div className="flex flex-col gap-3 w-full mb-3">
+      <div className="flex flex-col sm:flex-row gap-2 w-full">
         <div className="w-full sm:flex-1 relative">
           <SearchField
             placeholder="Buscar por nombre o documento..."
             value={search}
             onChange={setSearch}
-            inputClassName="h-11 rounded-xl border-input/60 bg-background/50 shadow-xs focus-visible:ring-2 focus-visible:ring-ring/30 transition-all hover:bg-background"
+            inputClassName="bg-background shadow-sm h-10"
           />
         </div>
 
         <div className="relative w-full sm:w-64 shrink-0">
-          <Building className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/70 pointer-events-none" />
-          <select
-            className="flex h-11 w-full appearance-none rounded-xl border border-input/60 bg-background/50 px-3 py-2 text-sm shadow-xs ring-offset-background transition-all hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 pl-9 cursor-pointer"
-            value={selectedAreaId}
-            onChange={(e) => setSelectedAreaId(e.target.value)}
+          <Select
+            value={selectedAreaId || "all"}
+            onValueChange={(val) => setSelectedAreaId(!val || val === "all" ? "" : val)}
           >
-            <option value="">Todas las áreas</option>
-            {areas.map((area) => (
-              <option key={area.id} value={area.id}>
-                {area.nombre}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full bg-background shadow-sm h-10 pl-9 relative">
+              <Building className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/70 pointer-events-none" />
+              <SelectValue placeholder="Todas las áreas">
+                {selectedAreaId && selectedAreaId !== "all" && selectedArea 
+                  ? selectedArea.nombre 
+                  : "Todas las áreas"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" label="Todas las áreas">Todas las áreas</SelectItem>
+              {areas.map((area) => (
+                <SelectItem key={area.id} value={area.id} label={area.nombre}>
+                  {area.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {hasActiveFilters && (
-          <button
+          <Button
+            variant="ghost"
             onClick={resetFilters}
-            className="text-xs text-muted-foreground ml-auto sm:ml-2 h-11 px-3 hover:text-foreground transition-colors shrink-0"
+            className="text-xs h-10 px-3 ml-auto sm:ml-0 text-muted-foreground hover:text-foreground shrink-0"
           >
             Limpiar filtros
-          </button>
+          </Button>
         )}
       </div>
 
