@@ -48,7 +48,6 @@ export function EmpleadosPage() {
   )
 
   const empleados = empleadosQuery.data?.content ?? []
-  const totalElements = empleadosQuery.data?.totalElements ?? 0
 
   useClampPage(
     search.page,
@@ -110,14 +109,7 @@ export function EmpleadosPage() {
         <EmpleadoTableView
           empleados={empleados}
           isLoading={empleadosQuery.isFetching}
-          page={{
-            page: search.page,
-            size: PAGE_SIZE,
-            totalElements,
-            totalPages: empleadosQuery.data?.totalPages || 0,
-            first: search.page === 1,
-            last: search.page === (empleadosQuery.data?.totalPages || 1)
-          }}
+          page={empleadosQuery.data}
           onPageChange={search.setPage}
           onEdit={openEdit}
           onDelete={setDeleting}
