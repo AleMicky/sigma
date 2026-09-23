@@ -14,11 +14,19 @@ pipeline {
 
     stages {
 
+        // ─────────────────────────────────────────────
+        // CHECKOUT
+        // ─────────────────────────────────────────────
+
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
+
+        // ─────────────────────────────────────────────
+        // VALIDATE
+        // ─────────────────────────────────────────────
 
         stage('Validate') {
             steps {
@@ -127,16 +135,69 @@ pipeline {
         }
 
         // ─────────────────────────────────────────────
-        // VERIFY
+        // VERIFY API
         // ─────────────────────────────────────────────
 
-        stage('Verify') {
+        stage('Verify API') {
+            when {
+                anyOf {
+                    changeset "apps/api/**"
+                    changeset "compose.prod.yml"
+                }
+            }
+
             steps {
                 sh '''
-                    echo "Esperando servicios..."
+                    echo "Esperando API..."
                     sleep 15
 
-                    echo "Estado de SIGMA:"
+                    echo "Estado de sigma-api:"
+
+                    docker compose \
+                        --env-file ${ENV_FILE} \
+                        -p ${PROJECT_NAME} \
+                        -f ${COMPOSE_FILE} \
+                        ps api
+                '''
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        // VERIFY WEB
+        // ─────────────────────────────────────────────
+
+        stage('Verify Web') {
+            when {
+                anyOf {
+                    changeset "apps/web/**"
+                    changeset "compose.prod.yml"
+                }
+            }
+
+            steps {
+                sh '''
+                    echo "Esperando Web..."
+                    sleep 5
+
+                    echo "Estado de sigma-web:"
+
+                    docker compose \
+                        --env-file ${ENV_FILE} \
+                        -p ${PROJECT_NAME} \
+                        -f ${COMPOSE_FILE} \
+                        ps web
+                '''
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        // STATUS
+        // ─────────────────────────────────────────────
+
+        stage('Status') {
+            steps {
+                sh '''
+                    echo "Estado actual de SIGMA:"
 
                     docker compose \
                         --env-file ${ENV_FILE} \
@@ -151,11 +212,11 @@ pipeline {
     post {
 
         success {
-            echo 'SIGMA desplegado correctamente.'
+            echo 'Pipeline de SIGMA finalizado correctamente.'
         }
 
         failure {
-            echo 'Falló el despliegue de SIGMA.'
+            echo 'Falló el pipeline de SIGMA.'
         }
 
         always {
