@@ -65,6 +65,7 @@ export type DataTableProps<TData, TValue> = {
   // Styling
   className?: string
   containerClassName?: string
+  density?: "compact" | "normal"
 }
 
 export function DataTable<TData, TValue>({
@@ -90,6 +91,7 @@ export function DataTable<TData, TValue>({
   toolbar,
   className,
   containerClassName,
+  density = "normal",
 }: DataTableProps<TData, TValue>) {
   "use no memo"
 
@@ -155,7 +157,11 @@ export function DataTable<TData, TValue>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
+                    <TableHead 
+                      key={header.id} 
+                      colSpan={header.colSpan}
+                      className={cn(density === "compact" && "h-8 px-3 text-[11px]")}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -185,7 +191,10 @@ export function DataTable<TData, TValue>({
                   )}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell 
+                      key={cell.id}
+                      className={cn(density === "compact" && "py-1.5 px-3")}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

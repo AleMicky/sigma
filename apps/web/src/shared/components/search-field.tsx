@@ -9,6 +9,7 @@ type SearchFieldProps = {
   onChange: (value: string) => void
   placeholder?: string
   className?: string
+  inputClassName?: string
   "aria-label"?: string
 }
 
@@ -17,18 +18,19 @@ export function SearchField({
   onChange,
   placeholder = "Buscar…",
   className,
+  inputClassName,
   "aria-label": ariaLabel = "Buscar",
 }: SearchFieldProps) {
   return (
     <div className={cn("relative", className)}>
-      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={ariaLabel}
-        className="h-8 pr-8 pl-8"
+        className={cn("h-10 pr-9 pl-9", inputClassName)}
       />
       {value ? (
         <Button

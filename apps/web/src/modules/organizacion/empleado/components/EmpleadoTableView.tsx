@@ -4,8 +4,6 @@ import {
   Briefcase,
   Building,
   Calendar,
-  CheckCircle2,
-  Clock,
   Pencil,
   Trash2,
 } from "lucide-react"
@@ -82,12 +80,12 @@ export function EmpleadoTableView({
           const initials = getInitials(nombrePersona)
 
           return (
-            <div className="flex items-center gap-3 min-w-[200px]">
-              <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-medium text-xs text-primary ring-1 ring-primary/20">
+            <div className="flex items-center gap-3.5 min-w-[220px]">
+              <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/40 font-bold text-sm text-primary-foreground shadow-sm ring-2 ring-background">
                 <span>{initials}</span>
                 <span
                   className={cn(
-                    "absolute -bottom-0.5 -right-0.5 size-2 rounded-full ring-2 ring-card",
+                    "absolute bottom-0 right-0 size-3 rounded-full border-2 border-background shadow-sm",
                     isExpired ? "bg-amber-500" : "bg-emerald-500"
                   )}
                   title={isExpired ? "Periodo finalizado" : "Activo / Vigente"}
@@ -98,7 +96,7 @@ export function EmpleadoTableView({
                 <button
                   type="button"
                   onClick={() => onEdit(emp)}
-                  className="truncate text-left text-sm font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
+                  className="truncate text-left text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
                 >
                   {nombrePersona}
                 </button>
@@ -166,13 +164,13 @@ export function EmpleadoTableView({
               <div className="flex items-center gap-1.5">
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium ring-1 ring-inset",
+                    "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider",
                     isExpired
-                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-amber-500/20"
-                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20"
+                      ? "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
+                      : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
                   )}
                 >
-                  {isExpired ? <Clock className="size-3" /> : <CheckCircle2 className="size-3" />}
+                  <span className={cn("size-1.5 rounded-full", isExpired ? "bg-amber-500" : "bg-emerald-500 animate-pulse")} />
                   <span>{isExpired ? "Finalizado" : "Vigente"}</span>
                 </span>
               </div>
@@ -257,6 +255,7 @@ export function EmpleadoTableView({
       emptyIcon={emptyIcon}
       emptyAction={emptyAction}
       showViewOptions
+      density="compact"
     />
   )
 }
