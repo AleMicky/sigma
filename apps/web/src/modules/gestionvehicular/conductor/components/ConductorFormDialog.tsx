@@ -66,6 +66,7 @@ export function ConductorFormDialog({
       try {
         if (isEditing && conductor) {
           const payload = {
+            empleadoId: conductor.empleadoId || value.empleadoId,
             numeroLicencia: value.numeroLicencia.trim().toUpperCase(),
             categoriaLicencia: value.categoriaLicencia.trim().toUpperCase(),
             fechaVencimiento: value.fechaVencimiento,

@@ -3,6 +3,7 @@ import type { PageParams } from "@/shared/types/api.types"
 
 export type ConductorListFilters = PageParams & {
   search?: string
+  categoria?: string
   empleadoId?: string
   activo?: boolean
 }

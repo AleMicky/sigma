@@ -31,6 +31,11 @@ public class ConductorRepositoryAdapter implements ConductorRepository {
     }
 
     @Override
+    public Page<Conductor> searchWithFilters(String search, String categoria, Boolean activo, Pageable pageable) {
+        return springRepository.searchWithFilters(search, categoria, activo, pageable).map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<Conductor> findById(UUID id) {
         return springRepository.findById(id).map(mapper::toDomain);
     }

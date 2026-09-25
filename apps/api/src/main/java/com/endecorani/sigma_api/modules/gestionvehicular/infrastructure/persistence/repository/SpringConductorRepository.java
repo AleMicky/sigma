@@ -22,6 +22,20 @@ public interface SpringConductorRepository extends JpaRepository<ConductorEntity
     @Query("""
         SELECT c
         FROM ConductorEntity c
+        WHERE (:search IS NULL OR LOWER(c.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(c.categoriaLicencia) LIKE LOWER(CONCAT('%', :search, '%')))
+          AND (:categoria IS NULL OR c.categoriaLicencia = :categoria)
+          AND (:activo IS NULL OR c.activo = :activo)
+    """)
+    Page<ConductorEntity> searchWithFilters(
+            @Param("search") String search,
+            @Param("categoria") String categoria,
+            @Param("activo") Boolean activo,
+            Pageable pageable
+    );
+
+    @Query("""
+        SELECT c
+        FROM ConductorEntity c
         WHERE LOWER(c.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(c.categoriaLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
     """)

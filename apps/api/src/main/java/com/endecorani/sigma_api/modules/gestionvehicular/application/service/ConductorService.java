@@ -56,14 +56,22 @@ public class ConductorService {
 
     @Transactional(readOnly = true)
     public PageResponse<ConductorResponse> listar(String search, PageRequestDto pageRequest) {
-        String normalized = StringUtils.normalize(search);
+        return listar(search, null, null, pageRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ConductorResponse> listar(String search, String categoria, Boolean activo, PageRequestDto pageRequest) {
+        String normalizedSearch = StringUtils.normalize(search);
+        String normalizedCategoria = StringUtils.normalize(categoria);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Page<Conductor> resultado;
 
-        if (normalized == null || normalized.isBlank()) {
+        if ((normalizedSearch == null || normalizedSearch.isBlank()) &&
+            (normalizedCategoria == null || normalizedCategoria.isBlank()) &&
+            activo == null) {
             resultado = repository.findAll(pageable);
         } else {
-            resultado = repository.search(normalized, pageable);
+            resultado = repository.searchWithFilters(normalizedSearch, normalizedCategoria, activo, pageable);
         }
 
         return toPageResponse(resultado);

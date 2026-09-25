@@ -36,10 +36,12 @@ public class ConductorController {
     @Operation(summary = "Listar conductores con paginación y búsqueda opcional")
     public ResponseEntity<ApiResponse<PageResponse<ConductorResponse>>> listar(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String categoria,
+            @RequestParam(required = false) Boolean activo,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(search, pageRequest))
+                ApiResponse.success(service.listar(search, categoria, activo, pageRequest))
         );
     }
 

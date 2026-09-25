@@ -32,6 +32,7 @@ export type ConductorPayload = {
 }
 
 export type ConductorUpdatePayload = {
+  empleadoId: string
   numeroLicencia: string
   categoriaLicencia: string
   fechaVencimiento: string

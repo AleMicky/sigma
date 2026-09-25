@@ -13,6 +13,8 @@ public interface ConductorRepository {
 
     Page<Conductor> search(String search, Pageable pageable);
 
+    Page<Conductor> searchWithFilters(String search, String categoria, Boolean activo, Pageable pageable);
+
     Optional<Conductor> findById(UUID id);
 
     Conductor save(Conductor conductor);

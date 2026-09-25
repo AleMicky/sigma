@@ -27,7 +27,9 @@ export function ConductoresPage() {
   const [selectedCategoria, setSelectedCategoria] = useState<string>("")
   const [selectedEstado, setSelectedEstado] = useState<string>("")
 
-  const search = usePaginatedSearch()
+  const search = usePaginatedSearch({
+    resetKey: `${selectedCategoria}-${selectedEstado}`,
+  })
   const deleteMutation = useDeleteConductor()
 
   const queryParams = {
@@ -36,6 +38,7 @@ export function ConductoresPage() {
     sortBy: "createdAt",
     direction: "DESC" as const,
     ...(search.query ? { search: search.query } : {}),
+    ...(selectedCategoria ? { categoria: selectedCategoria } : {}),
     ...(selectedEstado === "ACTIVO"
       ? { activo: true }
       : selectedEstado === "INACTIVO"
@@ -45,14 +48,7 @@ export function ConductoresPage() {
 
   const conductoresQuery = useQuery(conductorQueries.list(queryParams))
 
-  let conductores = conductoresQuery.data?.content ?? []
-
-  // Client-side filter for categoria if specified
-  if (selectedCategoria) {
-    conductores = conductores.filter(
-      (c) => c.categoriaLicencia === selectedCategoria
-    )
-  }
+  const conductores = conductoresQuery.data?.content ?? []
 
   useClampPage(
     search.page,

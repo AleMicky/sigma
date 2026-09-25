@@ -21,18 +21,19 @@ export function AuthenticatedImage({
   const [objectUrl, setObjectUrl] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
 
+  const [prevSrc, setPrevSrc] = useState(src)
+
+  if (prevSrc !== src) {
+    setPrevSrc(src)
+    setObjectUrl(null)
+    setFailed(false)
+  }
+
   useEffect(() => {
-    if (!src) {
-      setObjectUrl(null)
-      setFailed(false)
-      return
-    }
+    if (!src) return
 
     let cancelled = false
     let createdUrl: string | null = null
-
-    setFailed(false)
-    setObjectUrl(null)
 
     void fetchAuthenticatedBlob(src)
       .then((blob) => {
