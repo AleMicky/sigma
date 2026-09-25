@@ -9,6 +9,8 @@ import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.Conductor;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ConductorRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -25,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,6 +46,7 @@ public class ConductorService {
 
     private final ConductorRepository repository;
     private final EmpleadoRepository empleadoRepository;
+    private final SpringVEmpleadoRepository springVEmpleadoRepository;
     private final ConductorMapper mapper;
 
     @Transactional(readOnly = true)
@@ -161,30 +163,63 @@ public class ConductorService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<UUID, Empleado> empleadoMap = empleadoIds.isEmpty()
+        Map<UUID, ConductorEmpleadoInfo> empleadoMap = empleadoIds.isEmpty()
                 ? Map.of()
-                : empleadoRepository.findAllById(empleadoIds).stream()
-                .collect(Collectors.toMap(Empleado::getId, Function.identity(), (a, b) -> a));
+                : springVEmpleadoRepository.findAllById(empleadoIds).stream()
+                .collect(Collectors.toMap(
+                        VEmpleadoEntity::getEmpleadoId,
+                        ve -> new ConductorEmpleadoInfo(
+                                ve.getEmpleadoId(),
+                                ve.getCodigo(),
+                                ve.getNombreCompleto(),
+                                ve.getCargo(),
+                                ve.getArea()
+                        ),
+                        (a, b) -> a
+                ));
 
         List<ConductorResponse> responses = content.stream()
-                .map(domain -> toResponse(domain, empleadoMap.get(domain.getEmpleadoId())))
+                .map(domain -> mapper.toResponse(domain, empleadoMap.get(domain.getEmpleadoId())))
                 .toList();
 
         return PageResponse.of(responses, page);
     }
 
     private ConductorResponse toResponse(Conductor conductor) {
-        Empleado empleado = conductor.getEmpleadoId() != null
-                ? empleadoRepository.findById(conductor.getEmpleadoId()).orElse(null)
+        ConductorEmpleadoInfo empleadoInfo = conductor.getEmpleadoId() != null
+                ? obtenerEmpleadoInfo(conductor.getEmpleadoId())
                 : null;
-        return toResponse(conductor, empleado);
+        return mapper.toResponse(conductor, empleadoInfo);
     }
 
     private ConductorResponse toResponse(Conductor conductor, Empleado empleado) {
-        ConductorEmpleadoInfo empleadoInfo = empleado != null
-                ? mapper.toEmpleadoInfo(empleado)
-                : null;
+        ConductorEmpleadoInfo empleadoInfo = conductor.getEmpleadoId() != null
+                ? obtenerEmpleadoInfo(conductor.getEmpleadoId())
+                : (empleado != null ? mapper.toEmpleadoInfo(empleado) : null);
         return mapper.toResponse(conductor, empleadoInfo);
+    }
+
+    private ConductorEmpleadoInfo obtenerEmpleadoInfo(UUID empleadoId) {
+        if (empleadoId == null) {
+            return null;
+        }
+        return springVEmpleadoRepository.findById(empleadoId)
+                .map(ve -> new ConductorEmpleadoInfo(
+                        ve.getEmpleadoId(),
+                        ve.getCodigo(),
+                        ve.getNombreCompleto(),
+                        ve.getCargo(),
+                        ve.getArea()
+                ))
+                .orElseGet(() -> empleadoRepository.findById(empleadoId)
+                        .map(emp -> new ConductorEmpleadoInfo(
+                                emp.getId(),
+                                emp.getCodigo(),
+                                emp.getNombreCompleto(),
+                                emp.getCargo(),
+                                emp.getArea()
+                        ))
+                        .orElse(null));
     }
 
     private Empleado obtenerEmpleado(UUID empleadoId) {

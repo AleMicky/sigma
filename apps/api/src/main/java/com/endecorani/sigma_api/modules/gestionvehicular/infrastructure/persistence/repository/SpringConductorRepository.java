@@ -22,7 +22,12 @@ public interface SpringConductorRepository extends JpaRepository<ConductorEntity
     @Query("""
         SELECT c
         FROM ConductorEntity c
-        WHERE (:search IS NULL OR LOWER(c.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(c.categoriaLicencia) LIKE LOWER(CONCAT('%', :search, '%')))
+        LEFT JOIN com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity ve ON c.empleadoId = ve.empleadoId
+        WHERE (:search IS NULL 
+            OR LOWER(c.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%')) 
+            OR LOWER(c.categoriaLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(ve.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:categoria IS NULL OR c.categoriaLicencia = :categoria)
           AND (:activo IS NULL OR c.activo = :activo)
     """)
@@ -36,8 +41,11 @@ public interface SpringConductorRepository extends JpaRepository<ConductorEntity
     @Query("""
         SELECT c
         FROM ConductorEntity c
+        LEFT JOIN com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity ve ON c.empleadoId = ve.empleadoId
         WHERE LOWER(c.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(c.categoriaLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(ve.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%'))
     """)
     Page<ConductorEntity> search(@Param("search") String search, Pageable pageable);
 }
