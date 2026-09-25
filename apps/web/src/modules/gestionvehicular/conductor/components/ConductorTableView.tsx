@@ -249,7 +249,10 @@ export function ConductorTableView({
         cell: ({ row }) => {
           const c = row.original
           return (
-            <div className="flex items-center justify-end gap-1">
+            <div
+              className="flex items-center justify-end gap-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Button
                 variant="ghost"
                 size="icon-xs"
@@ -280,14 +283,14 @@ export function ConductorTableView({
     <DataTable
       columns={columns}
       data={conductores}
-      page={page}
-      onPageChange={onPageChange}
+      onRowClick={onEdit}
       isLoading={isLoading}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}
       emptyIcon={emptyIcon}
       emptyAction={emptyAction}
       density="compact"
+      stickyHeader
       containerClassName="gap-0"
       className="border-0 rounded-none shadow-none"
     />

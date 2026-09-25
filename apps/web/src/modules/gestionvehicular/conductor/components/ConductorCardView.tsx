@@ -12,7 +12,6 @@ import {
 } from "lucide-react"
 
 import { EmptyState } from "@/shared/components/empty-state"
-import { Pagination } from "@/shared/components/pagination"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
@@ -121,7 +120,7 @@ export function ConductorCardView({
   hoy.setHours(0, 0, 0, 0)
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-1 flex-col justify-between">
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
         {conductores.map((conductor) => {
           const nombre = conductor.empleado?.nombreCompleto || "Empleado sin asignar"
@@ -310,13 +309,6 @@ export function ConductorCardView({
           )
         })}
       </div>
-
-      {/* Pagination */}
-      {page && onPageChange && page.totalElements > 0 && (
-        <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-2xs">
-          <Pagination page={page} onPageChange={onPageChange} />
-        </div>
-      )}
     </div>
   )
 }

@@ -66,6 +66,8 @@ export type DataTableProps<TData, TValue> = {
   className?: string
   containerClassName?: string
   density?: "compact" | "normal"
+  stickyHeader?: boolean
+  striped?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -92,6 +94,8 @@ export function DataTable<TData, TValue>({
   className,
   containerClassName,
   density = "normal",
+  stickyHeader = false,
+  striped = false,
 }: DataTableProps<TData, TValue>) {
   "use no memo"
 
@@ -152,7 +156,7 @@ export function DataTable<TData, TValue>({
         )}
       >
         <Table>
-          <TableHeader>
+          <TableHeader className={cn(stickyHeader && "sticky top-0 z-10 bg-card/95 backdrop-blur-xs shadow-2xs")}>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -186,8 +190,16 @@ export function DataTable<TData, TValue>({
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
                   onClick={() => onRowClick?.(row.original)}
+                  onKeyDown={(e) => {
+                    if (onRowClick && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault()
+                      onRowClick(row.original)
+                    }
+                  }}
+                  tabIndex={onRowClick ? 0 : undefined}
                   className={cn(
-                    onRowClick && "cursor-pointer hover:bg-muted/60"
+                    onRowClick && "cursor-pointer hover:bg-primary/[0.04] focus-visible:bg-primary/[0.06] focus-visible:outline-hidden",
+                    striped && "odd:bg-muted/15"
                   )}
                 >
                   {row.getVisibleCells().map((cell) => (

@@ -4,6 +4,7 @@ import { Car, Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
+import { Pagination } from "@/shared/components/pagination"
 import { Button } from "@/shared/components/ui/button"
 import {
   useClampPage,
@@ -153,7 +154,7 @@ export function ConductoresPage() {
       />
 
       {/* UNIFIED CONTAINER */}
-      <div className="flex-1 w-full overflow-hidden rounded-xl border border-border/70 bg-card/75 shadow-2xs">
+      <div className="flex-1 w-full overflow-hidden rounded-xl border border-border/70 bg-card/75 shadow-2xs flex flex-col">
         <ConductoresFilters
           search={search.search}
           setSearch={search.setSearch}
@@ -167,12 +168,22 @@ export function ConductoresPage() {
           onViewModeChange={setViewMode}
         />
 
-        {viewMode === "grid" ? (
-          <div className="p-3">
-            <ConductorCardView {...viewProps} />
-          </div>
-        ) : (
-          <ConductorTableView {...viewProps} />
+        <div className="flex-1 min-h-0">
+          {viewMode === "grid" ? (
+            <div className="p-3">
+              <ConductorCardView {...viewProps} />
+            </div>
+          ) : (
+            <ConductorTableView {...viewProps} />
+          )}
+        </div>
+
+        {/* PAGINACIÓN UNIFICADA AL FINAL */}
+        {conductoresQuery.data && conductores.length > 0 && (
+          <Pagination
+            page={conductoresQuery.data}
+            onPageChange={search.setPage}
+          />
         )}
       </div>
 
