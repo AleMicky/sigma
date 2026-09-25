@@ -1,7 +1,5 @@
 package com.endecorani.sigma_api.config.security;
 
-
-
 import org.jspecify.annotations.NonNull;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -11,22 +9,22 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
-// Spring Security no convierte automáticamente ese campo en authorities, así que crearemos un convertidor.
 @Component
 public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
     private static final String REALM_ACCESS = "realm_access";
+    private static final String RESOURCE_ACCESS = "resource_access";
     private static final String ROLES = "roles";
     private static final String ROLE_PREFIX = "ROLE_";
 
     @Override
     public AbstractAuthenticationToken convert(@NonNull Jwt jwt) {
-        Collection<GrantedAuthority> authorities = extractRealmRoles(jwt);
+        Collection<GrantedAuthority> authorities = extractRoles(jwt);
         String principalName = resolvePrincipalName(jwt);
 
         return new JwtAuthenticationToken(
@@ -36,29 +34,34 @@ public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, Abstra
         );
     }
 
-    private Collection<GrantedAuthority> extractRealmRoles(Jwt jwt) {
+    private Collection<GrantedAuthority> extractRoles(Jwt jwt) {
+        Set<GrantedAuthority> authorities = new HashSet<>();
 
+        // 1. Roles de Realm (realm_access.roles)
         Map<String, Object> realmAccess = jwt.getClaimAsMap(REALM_ACCESS);
-
-        if (realmAccess == null) {
-            return List.of();
-        }
-
-        Object rolesClaim = realmAccess.get(ROLES);
-
-        if (!(rolesClaim instanceof Collection<?> roles)) {
-            return List.of();
-        }
-
-        List<GrantedAuthority> authorities = new ArrayList<>();
-
-        for (Object role : roles) {
-            if (role instanceof String roleName && !roleName.isBlank()) {
-                authorities.add(
-                        new SimpleGrantedAuthority(ROLE_PREFIX + roleName)
-                );
+        if (realmAccess != null && realmAccess.get(ROLES) instanceof Collection<?> realmRoles) {
+            for (Object role : realmRoles) {
+                if (role instanceof String roleName && !roleName.isBlank()) {
+                    authorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + roleName));
+                }
             }
         }
+
+        // 2. Roles de Clientes (resource_access.<client>.roles)
+        Map<String, Object> resourceAccess = jwt.getClaimAsMap(RESOURCE_ACCESS);
+        if (resourceAccess != null) {
+            for (Map.Entry<String, Object> entry : resourceAccess.entrySet()) {
+                if (entry.getValue() instanceof Map<?, ?> clientData
+                        && clientData.get(ROLES) instanceof Collection<?> clientRoles) {
+                    for (Object role : clientRoles) {
+                        if (role instanceof String roleName && !roleName.isBlank()) {
+                            authorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + roleName));
+                        }
+                    }
+                }
+            }
+        }
+
         return authorities;
     }
 
@@ -70,5 +73,4 @@ public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, Abstra
         }
         return jwt.getSubject();
     }
-
 }

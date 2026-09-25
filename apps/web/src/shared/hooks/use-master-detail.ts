@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { useIsMobile } from "@/shared/hooks/use-mobile"
 
@@ -11,26 +11,24 @@ export function useMasterDetail<T extends Identifiable>(items: T[]) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
 
-  useEffect(() => {
-    if (items.length === 0) {
-      setSelectedId(null)
-      setMobileShowDetail(false)
-      return
-    }
+  const [prevIsMobile, setPrevIsMobile] = useState(isMobile)
 
-    if (!selectedId || !items.some((item) => item.id === selectedId)) {
-      setSelectedId(items[0]?.id ?? null)
-    }
-  }, [items, selectedId])
-
-  useEffect(() => {
+  if (prevIsMobile !== isMobile) {
+    setPrevIsMobile(isMobile)
     if (!isMobile) {
       setMobileShowDetail(false)
     }
-  }, [isMobile])
+  }
+
+  const effectiveSelectedId =
+    items.length === 0
+      ? null
+      : selectedId && items.some((item) => item.id === selectedId)
+      ? selectedId
+      : (items[0]?.id ?? null)
 
   const selected =
-    items.find((item) => item.id === selectedId) ?? null
+    items.find((item) => item.id === effectiveSelectedId) ?? null
 
   const showMaster = !isMobile || !mobileShowDetail
   const showDetail = !isMobile || mobileShowDetail

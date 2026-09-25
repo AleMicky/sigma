@@ -65,16 +65,16 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r border-sidebar-border/60 bg-sidebar/95 backdrop-blur-md select-none transition-all duration-300"
+      className="border-r border-sidebar-border bg-sidebar select-none transition-all duration-200"
       {...props}
     >
       {/* ── Header: Logo + Búsqueda ── */}
-      <SidebarHeader className="gap-3 px-3 pt-3.5 pb-2.5 border-b border-sidebar-border/40">
+      <SidebarHeader className="gap-2.5 px-3 pt-3 pb-2 border-b border-sidebar-border/60">
         <Link
           to="/"
-          className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1.5 transition-all duration-200 hover:bg-sidebar-accent/80 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1"
+          className="group flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 transition-colors hover:bg-sidebar-accent group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0.5"
         >
-          <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-border/80 transition-all duration-200 group-hover:scale-105 group-hover:shadow-md dark:bg-white/95 dark:ring-white/20">
+          <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-white p-1 shadow-2xs ring-1 ring-border/80 transition-all group-hover:scale-105 dark:bg-white/95">
             <img
               src={logoEndeCorani}
               alt={appConfig.shortName}
@@ -83,16 +83,16 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           </div>
           <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold tracking-tight text-foreground font-heading">
+              <span className="text-xs font-bold tracking-tight text-foreground font-heading">
                 {appConfig.shortName}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary ring-1 ring-primary/20">
+              <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-1 py-0.2 text-[9px] font-semibold text-primary">
                 v{appConfig.version}
               </span>
             </div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="truncate text-[11px] font-medium text-muted-foreground">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span className="truncate text-[10.5px] font-medium text-muted-foreground">
                 {appConfig.companyName}
               </span>
             </div>
@@ -103,7 +103,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       {/* ── Contenido: Navegación ── */}
-      <SidebarContent className="px-2.5 py-2 overflow-x-hidden scrollbar-thin">
+      <SidebarContent className="px-2 py-2 overflow-x-hidden scrollbar-thin">
         <NavigationMenu
           searchQuery={searchQuery}
           onClearSearch={() => setSearchQuery("")}
@@ -111,7 +111,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       {/* ── Footer: Usuario ── */}
-      <SidebarFooter className="p-2 border-t border-sidebar-border/60 bg-sidebar/50 backdrop-blur-xs">
+      <SidebarFooter className="p-1.5 border-t border-sidebar-border/60 bg-sidebar">
         <UserMenu />
       </SidebarFooter>
 
@@ -395,15 +395,15 @@ function NavSectionGroup({
                 render={<Link to={section.to} />}
                 title={section.title}
                 className={cn(
-                  "group relative h-9 rounded-xl px-2.5 text-[13px] font-medium transition-all duration-150",
+                  "group relative h-8 rounded-md px-2 text-[12.5px] font-medium transition-colors",
                   isSelfActive
-                    ? "bg-primary text-primary-foreground font-semibold shadow-xs shadow-primary/20 hover:bg-primary/95"
-                    : "text-foreground/80 hover:bg-sidebar-accent/80 hover:text-foreground",
+                    ? "bg-primary text-primary-foreground font-semibold shadow-2xs hover:bg-primary/95"
+                    : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
                 <SectionIcon
                   className={cn(
-                    "size-4 shrink-0 transition-transform duration-150 group-hover:scale-105",
+                    "size-4 shrink-0 transition-colors",
                     isSelfActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground",
                   )}
                 />
@@ -432,17 +432,17 @@ function NavSectionGroup({
                       isActive={isSectionActive}
                       tooltip={section.title}
                       className={cn(
-                        "group relative h-9 rounded-xl transition-all duration-150",
+                        "group relative h-8 rounded-md transition-colors",
                         isSectionActive
-                          ? "bg-primary text-primary-foreground font-semibold shadow-xs shadow-primary/20"
-                          : "text-foreground/80 hover:bg-sidebar-accent/80 hover:text-foreground",
+                          ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                          : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                       )}
                     />
                   }
                 >
                   <SectionIcon
                     className={cn(
-                      "size-4 shrink-0 transition-transform duration-150 group-hover:scale-105",
+                      "size-4 shrink-0 transition-colors",
                       isSectionActive ? "text-primary-foreground" : "text-muted-foreground",
                     )}
                   />
@@ -452,14 +452,14 @@ function NavSectionGroup({
                 <DropdownMenuContent
                   side="right"
                   align="start"
-                  sideOffset={10}
-                  className="min-w-56 rounded-2xl p-2 shadow-2xl border-border/60 bg-popover/95 backdrop-blur-md animate-in fade-in-0 zoom-in-95"
+                  sideOffset={8}
+                  className="min-w-52 rounded-xl p-1.5 shadow-lg border-border/60 bg-popover/98 text-xs"
                 >
-                  <DropdownMenuLabel className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-bold text-foreground font-heading">
-                    <SectionIcon className="size-4 text-primary shrink-0" />
+                  <DropdownMenuLabel className="flex items-center gap-2 px-2 py-1 text-xs font-bold text-foreground font-heading">
+                    <SectionIcon className="size-3.5 text-primary shrink-0" />
                     <span className="truncate">{section.title}</span>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="my-1.5" />
+                  <DropdownMenuSeparator className="my-1" />
                   <div className="flex flex-col gap-0.5">
                     {section.children?.map((child) => (
                       <DropdownRecursiveNode
@@ -481,13 +481,13 @@ function NavSectionGroup({
   // Vista expandida → Encabezado de sección + Menús hijos
   return (
     <SidebarGroup className="p-0">
-      <SidebarGroupLabel className="flex h-5.5 items-center gap-1.5 px-2.5 mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 group-data-[collapsible=icon]:hidden select-none">
+      <SidebarGroupLabel className="flex h-5 items-center gap-1.5 px-2 mb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 group-data-[collapsible=icon]:hidden select-none">
         <span className="size-1 rounded-full bg-primary/40" />
         <span className="truncate">{section.title}</span>
       </SidebarGroupLabel>
 
       <SidebarGroupContent>
-        <SidebarMenu className="gap-1">
+        <SidebarMenu className="gap-0.5">
           {section.children?.map((child) => (
             <NavNodeItem
               key={child.id || child.title}
@@ -553,32 +553,32 @@ function NavNodeItem({
           onClick={() => setIsOpen(!isOpen)}
           title={node.title}
           className={cn(
-            "group relative flex items-center justify-between rounded-xl px-2.5 font-medium transition-all duration-150",
-            depth === 0 ? "h-9 text-[13px]" : "h-8 text-[12.5px]",
+            "group relative flex items-center justify-between rounded-md px-2 font-medium transition-colors",
+            depth === 0 ? "h-8 text-[12.5px]" : "h-7.5 text-[12px]",
             isActive && !isOpen
-              ? "bg-primary/10 text-primary font-semibold border-l-2 border-primary"
-              : "text-foreground/80 hover:bg-sidebar-accent/70 hover:text-foreground",
+              ? "bg-primary/10 text-primary font-semibold"
+              : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
           )}
         >
-          <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex min-w-0 items-center gap-2">
             <NodeIcon
               className={cn(
-                "shrink-0 transition-transform duration-150 group-hover:scale-105",
-                depth === 0 ? "size-4" : "size-3.5",
+                "shrink-0 transition-colors",
+                depth === 0 ? "size-3.5" : "size-3",
                 isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
               )}
             />
             <span className="truncate">{node.title}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 ml-1">
+          <div className="flex items-center gap-1 shrink-0 ml-1">
             {/* Indicador sutil de que contiene ruta activa si está cerrado */}
             {isChildActive && !isOpen && (
-              <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="size-1 rounded-full bg-primary" />
             )}
             <ChevronRight
               className={cn(
-                "size-3.5 text-muted-foreground/60 transition-transform duration-200 shrink-0 group-hover:text-foreground",
+                "size-3 text-muted-foreground/60 transition-transform duration-150 shrink-0 group-hover:text-foreground",
                 isOpen && "rotate-90 text-foreground",
               )}
             />
@@ -586,7 +586,7 @@ function NavNodeItem({
         </SidebarMenuButton>
 
         {isOpen && node.children && (
-          <SidebarMenuSub className="relative ml-3.5 border-l border-sidebar-border/60 pl-2.5 mt-0.5 gap-0.5 transition-all">
+          <SidebarMenuSub className="relative ml-3 border-l border-sidebar-border/60 pl-2 mt-0.5 gap-0.5 transition-all">
             {node.children.map((child) => (
               <NavNodeItem
                 key={child.id || child.title}
@@ -612,15 +612,15 @@ function NavNodeItem({
           render={node.to ? <Link to={node.to} /> : undefined}
           title={node.title}
           className={cn(
-            "group relative h-9 rounded-xl px-2.5 text-[13px] font-medium transition-all duration-150",
+            "group relative h-8 rounded-md px-2 text-[12.5px] font-medium transition-colors",
             isSelfActive
-              ? "bg-primary text-primary-foreground font-semibold shadow-xs shadow-primary/25 hover:bg-primary/95"
-              : "text-foreground/80 hover:bg-sidebar-accent/80 hover:text-foreground",
+              ? "bg-primary text-primary-foreground font-semibold shadow-2xs hover:bg-primary/95"
+              : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
           )}
         >
           <NodeIcon
             className={cn(
-              "size-4 shrink-0 transition-transform duration-150 group-hover:scale-105",
+              "size-3.5 shrink-0 transition-colors",
               isSelfActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground",
             )}
           />
@@ -638,15 +638,15 @@ function NavNodeItem({
         render={node.to ? <Link to={node.to} /> : undefined}
         title={node.title}
         className={cn(
-          "group relative h-7.5 rounded-lg px-2 text-[12px] font-medium transition-all duration-150",
+          "group relative h-7 rounded-md px-2 text-[11.5px] font-medium transition-colors",
           isSelfActive
-            ? "bg-primary/12 text-primary font-semibold dark:bg-primary/18 shadow-2xs"
-            : "text-muted-foreground/90 hover:bg-sidebar-accent/70 hover:text-foreground",
+            ? "bg-primary/10 text-primary font-semibold"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
         )}
       >
         <NodeIcon
           className={cn(
-            "size-3.5 shrink-0 transition-transform duration-150 group-hover:scale-105",
+            "size-3 shrink-0 transition-colors",
             isSelfActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-foreground",
           )}
         />

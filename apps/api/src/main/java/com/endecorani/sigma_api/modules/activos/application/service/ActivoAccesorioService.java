@@ -16,12 +16,18 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -98,16 +104,12 @@ public class ActivoAccesorioService {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
         if (normalized == null) {
-            return PageResponse.from(
-                    activoAccesorioRepository.findAll(pageable),
-                    this::toResponse
-            );
+            Page<ActivoAccesorio> page = activoAccesorioRepository.findAll(pageable);
+            return toPageResponse(page);
         }
 
-        return PageResponse.from(
-                activoAccesorioRepository.search(normalized, pageable),
-                this::toResponse
-        );
+        Page<ActivoAccesorio> page = activoAccesorioRepository.search(normalized, pageable);
+        return toPageResponse(page);
     }
 
     @Transactional(readOnly = true)
@@ -122,23 +124,19 @@ public class ActivoAccesorioService {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
         if (normalized == null) {
-            return PageResponse.from(
-                    activoAccesorioRepository.findByActivoId(
-                            activoId,
-                            pageable
-                    ),
-                    this::toResponse
+            Page<ActivoAccesorio> page = activoAccesorioRepository.findByActivoId(
+                    activoId,
+                    pageable
             );
+            return toPageResponse(page);
         }
 
-        return PageResponse.from(
-                activoAccesorioRepository.searchByActivoId(
-                        activoId,
-                        normalized,
-                        pageable
-                ),
-                this::toResponse
+        Page<ActivoAccesorio> page = activoAccesorioRepository.searchByActivoId(
+                activoId,
+                normalized,
+                pageable
         );
+        return toPageResponse(page);
     }
 
     @Transactional(readOnly = true)
@@ -149,14 +147,11 @@ public class ActivoAccesorioService {
         requireAccesorioExists(accesorioId);
 
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
-
-        return PageResponse.from(
-                activoAccesorioRepository.findByAccesorioId(
-                        accesorioId,
-                        pageable
-                ),
-                this::toResponse
+        Page<ActivoAccesorio> page = activoAccesorioRepository.findByAccesorioId(
+                accesorioId,
+                pageable
         );
+        return toPageResponse(page);
     }
 
     @Transactional
@@ -217,9 +212,53 @@ public class ActivoAccesorioService {
         }
     }
 
+    private PageResponse<ActivoAccesorioResponse> toPageResponse(Page<ActivoAccesorio> page) {
+        if (page.isEmpty()) {
+            return PageResponse.of(List.of(), page);
+        }
+
+        Set<UUID> activoIds = page.getContent().stream()
+                .map(ActivoAccesorio::getActivoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<UUID> accesorioIds = page.getContent().stream()
+                .map(ActivoAccesorio::getAccesorioId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, Activo> activoMap = activoIds.isEmpty() ? Map.of() :
+                activoRepository.findAllById(activoIds).stream()
+                        .collect(Collectors.toMap(Activo::getId, Function.identity(), (a, b) -> a));
+
+        Map<UUID, Accesorio> accesorioMap = accesorioIds.isEmpty() ? Map.of() :
+                accesorioRepository.findAllById(accesorioIds).stream()
+                        .collect(Collectors.toMap(Accesorio::getId, Function.identity(), (a, b) -> a));
+
+        List<ActivoAccesorioResponse> content = page.getContent().stream()
+                .map(aa -> toResponse(
+                        aa,
+                        aa.getActivoId() != null ? activoMap.get(aa.getActivoId()) : null,
+                        aa.getAccesorioId() != null ? accesorioMap.get(aa.getAccesorioId()) : null
+                ))
+                .toList();
+
+        return PageResponse.of(content, page);
+    }
+
     private ActivoAccesorioResponse toResponse(ActivoAccesorio domain) {
+        return toResponse(domain, null, null);
+    }
+
+    private ActivoAccesorioResponse toResponse(ActivoAccesorio domain, Activo activo, Accesorio accesorio) {
         ActivoAccesorioResponse.ActivoInfo activoInfo = null;
-        if (domain.getActivoId() != null) {
+        if (activo != null) {
+            activoInfo = new ActivoAccesorioResponse.ActivoInfo(
+                    activo.getId(),
+                    activo.getCodigo(),
+                    activo.getNombre()
+            );
+        } else if (domain.getActivoId() != null) {
             activoInfo = activoRepository.findById(domain.getActivoId())
                     .map(a -> new ActivoAccesorioResponse.ActivoInfo(
                             a.getId(),
@@ -230,7 +269,13 @@ public class ActivoAccesorioService {
         }
 
         ActivoAccesorioResponse.AccesorioInfo accesorioInfo = null;
-        if (domain.getAccesorioId() != null) {
+        if (accesorio != null) {
+            accesorioInfo = new ActivoAccesorioResponse.AccesorioInfo(
+                    accesorio.getId(),
+                    accesorio.getCodigo(),
+                    accesorio.getNombre()
+            );
+        } else if (domain.getAccesorioId() != null) {
             accesorioInfo = accesorioRepository.findById(domain.getAccesorioId())
                     .map(ac -> new ActivoAccesorioResponse.AccesorioInfo(
                             ac.getId(),

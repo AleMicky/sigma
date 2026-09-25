@@ -54,6 +54,9 @@ function inferFallbackIcon(route?: string | null, title?: string, code?: string)
   if (target.includes("reporte") || target.includes("informe") || target.includes("estadistica") || target.includes("jasper")) {
     return resolveLucideIcon("FileSpreadsheet") || FileText
   }
+  if (target.includes("vehicul") || target.includes("conductor") || target.includes("flota") || target.includes("chofer") || target.includes("auto")) {
+    return resolveLucideIcon("Car") || Folder
+  }
   if (target.includes("config") || target.includes("parametro") || target.includes("ajuste") || target.includes("sistema")) {
     return resolveLucideIcon("Settings2") || Folder
   }

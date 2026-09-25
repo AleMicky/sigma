@@ -71,13 +71,10 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="relative flex h-13 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background/80 px-4 backdrop-blur-xl transition-all sticky top-0 z-10 shadow-xs">
-        {/* Línea superior con degradado sutil de acento */}
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-linear-to-r from-transparent via-primary/35 to-transparent pointer-events-none" />
-
-        <div className="flex items-center gap-2.5 min-w-0 overflow-hidden">
-          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground hover:bg-accent/80 rounded-lg transition-all shrink-0 hover:scale-105 active:scale-95" />
-          <div className="h-4 w-px bg-border/60 shrink-0" />
+      <header className="relative flex h-11 sm:h-12 shrink-0 items-center justify-between gap-2.5 border-b border-border/60 bg-background/95 px-3 sm:px-4 backdrop-blur-md sticky top-0 z-10">
+        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+          <SidebarTrigger className="-ml-1 size-7.5 text-muted-foreground hover:text-foreground hover:bg-accent/80 rounded-md transition-colors shrink-0" />
+          <div className="h-3.5 w-px bg-border/60 shrink-0" />
           <AppBreadcrumb />
         </div>
 
@@ -87,19 +84,19 @@ export function AppHeader() {
             variant="outline"
             size="sm"
             onClick={() => setCommandOpen(true)}
-            className="group hidden sm:inline-flex h-8 items-center gap-2 rounded-lg border-border/60 bg-muted/30 px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/70 hover:border-primary/40 hover:text-foreground hover:shadow-2xs transition-all"
+            className="group hidden sm:inline-flex h-7.5 items-center gap-2 rounded-md border-border/60 bg-muted/30 px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:border-border hover:text-foreground transition-colors shadow-none"
             title="Abrir paleta de comandos (⌘K)"
           >
-            <Search className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-            <span className="hidden md:inline font-sans">Comandos…</span>
-            <kbd className="pointer-events-none rounded border border-border/70 bg-background/80 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground shadow-2xs group-hover:border-primary/30">
+            <Search className="size-3 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <span className="hidden md:inline">Buscar o comandos…</span>
+            <kbd className="pointer-events-none rounded border border-border/70 bg-background/80 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
               ⌘K
             </kbd>
           </Button>
 
           {/* Syncing indicator */}
           {isFetching && (
-            <div className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-primary/25 shadow-2xs animate-in fade-in-0 duration-200">
+            <div className="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-primary/20">
               <Loader2 className="size-3 animate-spin text-primary" />
               <span>Sincronizando…</span>
             </div>
@@ -107,7 +104,7 @@ export function AppHeader() {
 
           {/* Offline warning indicator */}
           {!isOnline && (
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-2.5 py-0.5 text-[11px] font-semibold text-destructive shadow-2xs animate-pulse">
+            <div className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
               <WifiOff className="size-3" />
               <span>Sin conexión</span>
             </div>
@@ -116,10 +113,10 @@ export function AppHeader() {
           <RefreshButton
             variant="ghost"
             size="sm"
-            tooltip="Sincronizar datos del sistema"
+            tooltip="Sincronizar datos"
             isRefreshing={isFetching}
             onRefresh={() => queryClient.invalidateQueries()}
-            className="size-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent/80 rounded-lg transition-all hover:scale-105 active:scale-95"
+            className="size-7.5 p-0 text-muted-foreground hover:text-foreground hover:bg-accent/80 rounded-md transition-colors"
           />
 
           <NotificationCenter />
@@ -128,28 +125,28 @@ export function AppHeader() {
             variant="ghost"
             size="icon"
             onClick={toggleFullscreen}
-            className="hidden sm:inline-flex size-8 text-muted-foreground hover:text-foreground hover:bg-accent/80 rounded-lg transition-all hover:scale-105 active:scale-95"
+            className="hidden sm:inline-flex size-7.5 text-muted-foreground hover:text-foreground hover:bg-accent/80 rounded-md transition-colors"
             title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
           >
             {isFullscreen ? (
-              <Minimize2 className="size-4" />
+              <Minimize2 className="size-3.5" />
             ) : (
-              <Maximize2 className="size-4" />
+              <Maximize2 className="size-3.5" />
             )}
           </Button>
 
           <ThemeToggle />
 
-          <div className="h-4 w-px bg-border/60 shrink-0 mx-0.5 hidden sm:block" />
+          <div className="h-3.5 w-px bg-border/60 shrink-0 mx-0.5 hidden sm:block" />
 
-          <div className="hidden lg:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-linear-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/25 text-amber-900 dark:text-amber-300 shadow-2xs">
-            <Building2 className="size-3.5 text-amber-500 shrink-0" />
-            <span className="font-heading tracking-wide">{appConfig.companyName}</span>
+          <div className="hidden xl:inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md border border-border/60 bg-muted/20 text-muted-foreground">
+            <Building2 className="size-3.5 text-primary shrink-0" />
+            <span className="tracking-tight text-foreground">{appConfig.companyName}</span>
           </div>
 
           {isOnline && (
-            <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shadow-2xs">
-              <span className="size-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse" />
+            <div className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
               <span>Operativo</span>
             </div>
           )}

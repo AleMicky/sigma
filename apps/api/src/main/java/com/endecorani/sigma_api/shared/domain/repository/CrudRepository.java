@@ -12,6 +12,8 @@ public interface CrudRepository<T, ID> {
 
     Optional<T> findById(ID id);
 
+    List<T> findAllById(Iterable<ID> ids);
+
     List<T> findAll();
 
     Page<T> findAll(Pageable pageable);

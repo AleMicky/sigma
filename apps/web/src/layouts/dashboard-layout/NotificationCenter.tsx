@@ -76,12 +76,12 @@ export function NotificationCenter({
           <Button
             variant="ghost"
             size="icon"
-            className="relative size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="relative size-7.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-colors"
             aria-label="Abrir centro de notificaciones"
           />
         }
       >
-        <Bell className="size-4" />
+        <Bell className="size-3.5" />
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 flex size-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
@@ -93,7 +93,7 @@ export function NotificationCenter({
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-80 sm:w-96 rounded-2xl p-0 shadow-2xl border-border/60 bg-popover/95 backdrop-blur-md overflow-hidden animate-in fade-in-0 zoom-in-95"
+        className="w-80 sm:w-96 rounded-xl p-0 shadow-xl border-border/60 bg-popover/98 overflow-hidden animate-in fade-in-0 zoom-in-95"
       >
         {/* Cabecera del Centro de Notificaciones */}
         <div className="flex items-center justify-between border-b border-border/50 px-4 py-3 bg-muted/20">

@@ -4,6 +4,8 @@ import com.endecorani.sigma_api.modules.organizacion.application.dto.EmpleadoSea
 import com.endecorani.sigma_api.modules.organizacion.application.dto.request.EmpleadoRequest;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.EmpleadoResponse;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResumenResponse;
+import com.endecorani.sigma_api.modules.organizacion.domain.model.Area;
+import com.endecorani.sigma_api.modules.organizacion.domain.model.Cargo;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.AreaRepository;
@@ -28,9 +30,13 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -98,10 +104,8 @@ public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoRes
     @Override
     @Transactional(readOnly = true)
     public PageResponse<EmpleadoResponse> findAll(PageRequestDto pageRequest) {
-        return PageResponse.from(
-                empleadoRepository.findAll(pageRequest.toPageable(allowedSortFields())),
-                this::toResponse
-        );
+        Page<Empleado> page = empleadoRepository.findAll(pageRequest.toPageable(allowedSortFields()));
+        return toPageResponse(page);
     }
 
     @Transactional(readOnly = true)
@@ -112,18 +116,16 @@ public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoRes
             String query,
             PageRequestDto pageRequest
     ) {
-        return PageResponse.from(
-                empleadoRepository.findAll(
-                        new EmpleadoSearchCriteria(
-                                personaId,
-                                areaId,
-                                cargoId,
-                                StringUtils.normalize(query)
-                        ),
-                        pageRequest.toPageable(allowedSortFields())
+        Page<Empleado> page = empleadoRepository.findAll(
+                new EmpleadoSearchCriteria(
+                        personaId,
+                        areaId,
+                        cargoId,
+                        StringUtils.normalize(query)
                 ),
-                this::toResponse
+                pageRequest.toPageable(allowedSortFields())
         );
+        return toPageResponse(page);
     }
 
     @Transactional(readOnly = true)
@@ -142,21 +144,19 @@ public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoRes
         UUID personaId = personaIdDeSesion(authentication);
 
         if (personaId == null) {
-            return PageResponse.from(Page.<Empleado>empty(), this::toResponse);
+            return PageResponse.of(List.of(), Page.empty());
         }
 
-        return PageResponse.from(
-                empleadoRepository.findAll(
-                        new EmpleadoSearchCriteria(
-                                personaId,
-                                null,
-                                null,
-                                StringUtils.normalize(query)
-                        ),
-                        pageRequest.toPageable(allowedSortFields())
+        Page<Empleado> page = empleadoRepository.findAll(
+                new EmpleadoSearchCriteria(
+                        personaId,
+                        null,
+                        null,
+                        StringUtils.normalize(query)
                 ),
-                this::toResponse
+                pageRequest.toPageable(allowedSortFields())
         );
+        return toPageResponse(page);
     }
 
     private UUID personaIdDeSesion(Authentication authentication) {
@@ -221,12 +221,72 @@ public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoRes
         domain.setFechaFin(request.fechaFin());
     }
 
+    private PageResponse<EmpleadoResponse> toPageResponse(Page<Empleado> page) {
+        if (page.isEmpty()) {
+            return PageResponse.of(List.of(), page);
+        }
+
+        Set<UUID> personaIds = page.getContent().stream()
+                .map(Empleado::getPersonaId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<UUID> areaIds = page.getContent().stream()
+                .map(Empleado::getAreaId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<UUID> cargoIds = page.getContent().stream()
+                .map(Empleado::getCargoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, Persona> personaMap = personaIds.isEmpty() ? Map.of() :
+                personaRepository.findAllById(personaIds).stream()
+                        .collect(Collectors.toMap(Persona::getId, Function.identity(), (a, b) -> a));
+
+        Map<UUID, Area> areaMap = areaIds.isEmpty() ? Map.of() :
+                areaRepository.findAllById(areaIds).stream()
+                        .collect(Collectors.toMap(Area::getId, Function.identity(), (a, b) -> a));
+
+        Map<UUID, Cargo> cargoMap = cargoIds.isEmpty() ? Map.of() :
+                cargoRepository.findAllById(cargoIds).stream()
+                        .collect(Collectors.toMap(Cargo::getId, Function.identity(), (a, b) -> a));
+
+        List<EmpleadoResponse> content = page.getContent().stream()
+                .map(e -> toResponse(e, personaMap.get(e.getPersonaId()), areaMap.get(e.getAreaId()), cargoMap.get(e.getCargoId())))
+                .toList();
+
+        return PageResponse.of(content, page);
+    }
+
     private EmpleadoResponse toResponse(Empleado domain) {
+        return toResponse(domain, null, null, null);
+    }
+
+    private EmpleadoResponse toResponse(Empleado domain, Persona persona, Area area, Cargo cargo) {
+        PersonaResumenResponse personaInfo = persona != null
+                ? new PersonaResumenResponse(
+                        persona.getId(),
+                        buildNombreCompleto(persona),
+                        persona.getTipoDocumento(),
+                        persona.getNumeroDocumento()
+                )
+                : buildPersonaInfo(domain.getPersonaId());
+
+        CatalogoResumenResponse areaInfo = area != null
+                ? new CatalogoResumenResponse(area.getId(), area.getCodigo(), area.getNombre())
+                : buildAreaInfo(domain.getAreaId());
+
+        CatalogoResumenResponse cargoInfo = cargo != null
+                ? new CatalogoResumenResponse(cargo.getId(), cargo.getCodigo(), cargo.getNombre())
+                : buildCargoInfo(domain.getCargoId());
+
         return new EmpleadoResponse(
                 domain.getId(),
-                buildPersonaInfo(domain.getPersonaId()),
-                buildAreaInfo(domain.getAreaId()),
-                buildCargoInfo(domain.getCargoId()),
+                personaInfo,
+                areaInfo,
+                cargoInfo,
                 domain.getCodigo(),
                 domain.getFechaInicio(),
                 domain.getFechaFin(),

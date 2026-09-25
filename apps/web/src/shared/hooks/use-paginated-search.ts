@@ -14,15 +14,19 @@ export function usePaginatedSearch(options: UsePaginatedSearchOptions = {}) {
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebouncedValue(search, debounceMs)
 
-  useEffect(() => {
-    setPage(0)
-  }, [debouncedSearch])
+  const [prevDebouncedSearch, setPrevDebouncedSearch] = useState(debouncedSearch)
+  const [prevResetKey, setPrevResetKey] = useState(resetKey)
 
-  useEffect(() => {
-    if (resetKey === undefined) return
+  if (prevDebouncedSearch !== debouncedSearch) {
+    setPrevDebouncedSearch(debouncedSearch)
+    setPage(0)
+  }
+
+  if (resetKey !== undefined && prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey)
     setPage(0)
     setSearch("")
-  }, [resetKey])
+  }
 
   return {
     page,

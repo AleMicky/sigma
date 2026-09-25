@@ -31,14 +31,18 @@ public record PageRequestDto(
 ) {
 
     public PageRequestDto {
-        page = page == null ? 0 : page;
-        size = size == null ? ApiConstants.DEFAULT_PAGE_SIZE : size;
+        page = page == null || page < 0 ? 0 : page;
+        size = size == null || size <= 0 ? ApiConstants.DEFAULT_PAGE_SIZE : Math.min(size, ApiConstants.MAX_PAGE_SIZE);
         sortBy = sortBy == null || sortBy.isBlank()
                 ? ApiConstants.DEFAULT_SORT_FIELD
                 : sortBy;
         direction = direction == null
                 ? Sort.Direction.fromString(ApiConstants.DEFAULT_SORT_DIRECTION)
                 : direction;
+    }
+
+    public PageRequestDto() {
+        this(null, null, null, null);
     }
 
     public Pageable toPageable() {

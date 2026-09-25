@@ -13,12 +13,16 @@ import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,8 +47,8 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public PageResponse<UsuarioResponse> findAll(PageRequestDto pageRequest) {
-        var page = usuarioRepository.findAll(pageRequest.toPageable(SORT_FIELDS));
-        return PageResponse.from(page, this::toResponse);
+        Page<Usuario> page = usuarioRepository.findAll(pageRequest.toPageable(SORT_FIELDS));
+        return toPageResponse(page);
     }
 
     @Transactional(readOnly = true)
@@ -58,13 +62,11 @@ public class UsuarioService {
             return findAll(pageRequest);
         }
 
-        return PageResponse.from(
-                usuarioRepository.search(
-                        normalized,
-                        pageRequest.toPageable(SORT_FIELDS)
-                ),
-                this::toResponse
+        Page<Usuario> page = usuarioRepository.search(
+                normalized,
+                pageRequest.toPageable(SORT_FIELDS)
         );
+        return toPageResponse(page);
     }
 
     @Transactional(readOnly = true)
@@ -96,23 +98,73 @@ public class UsuarioService {
         return toResponse(usuarioGuardado);
     }
 
+    private PageResponse<UsuarioResponse> toPageResponse(Page<Usuario> page) {
+        if (page.isEmpty()) {
+            return PageResponse.of(List.of(), page);
+        }
+
+        Set<UUID> usuarioIds = page.getContent().stream()
+                .map(Usuario::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<UUID> personaIds = page.getContent().stream()
+                .map(Usuario::getPersonaId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, List<String>> rolesByUsuarioId = usuarioIds.isEmpty() ? Map.of() :
+                usuarioRolJpaRepository.findActiveRolesByUsuarioIdIn(usuarioIds).stream()
+                        .collect(Collectors.groupingBy(
+                                ur -> ur.getUsuario().getId(),
+                                Collectors.mapping(ur -> ur.getRol().getNombre(), Collectors.toList())
+                        ));
+
+        Map<UUID, Persona> personaMap = personaIds.isEmpty() ? Map.of() :
+                personaRepository.findAllById(personaIds).stream()
+                        .collect(Collectors.toMap(Persona::getId, Function.identity(), (a, b) -> a));
+
+        List<UsuarioResponse> content = page.getContent().stream()
+                .map(u -> toResponse(
+                        u,
+                        rolesByUsuarioId.getOrDefault(u.getId(), List.of()),
+                        u.getPersonaId() != null ? personaMap.get(u.getPersonaId()) : null
+                ))
+                .toList();
+
+        return PageResponse.of(content, page);
+    }
+
     private UsuarioResponse toResponse(Usuario usuario) {
-        List<String> roles = List.of();
-        if (usuario.getId() != null) {
+        return toResponse(usuario, null, null);
+    }
+
+    private UsuarioResponse toResponse(Usuario usuario, List<String> explicitRoles, Persona persona) {
+        List<String> roles = explicitRoles;
+        if (roles == null && usuario.getId() != null) {
             roles = usuarioRolJpaRepository.findActiveRolesByUsuarioId(usuario.getId())
                     .stream()
                     .map(ur -> ur.getRol().getNombre())
                     .toList();
+        } else if (roles == null) {
+            roles = List.of();
         }
 
         PersonaResumenResponse personaResumen = null;
-        if (usuario.getPersonaId() != null) {
+        if (persona != null) {
+            personaResumen = new PersonaResumenResponse(
+                    persona.getId(),
+                    buildNombreCompleto(persona),
+                    persona.getTipoDocumento(),
+                    persona.getNumeroDocumento()
+            );
+        } else if (usuario.getPersonaId() != null) {
             personaResumen = personaRepository.findById(usuario.getPersonaId())
-                    .map(persona -> new PersonaResumenResponse(
-                            persona.getId(),
-                            buildNombreCompleto(persona),
-                            persona.getTipoDocumento(),
-                            persona.getNumeroDocumento()
+                    .map(p -> new PersonaResumenResponse(
+                            p.getId(),
+                            buildNombreCompleto(p),
+                            p.getTipoDocumento(),
+                            p.getNumeroDocumento()
                     ))
                     .orElse(null);
         }

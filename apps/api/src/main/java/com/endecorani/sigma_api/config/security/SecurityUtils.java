@@ -20,9 +20,19 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class SecurityUtils {
 
+    private static final int MAX_CACHE_SIZE = 1000;
+
     private final JdbcClient jdbcClient;
     private final Map<String, UUID> keycloakUserCache = new ConcurrentHashMap<>();
     private final Map<String, UUID> usernameUserCache = new ConcurrentHashMap<>();
+
+    /**
+     * Limpia la caché en memoria de resolución de usuarios.
+     */
+    public void clearCache() {
+        keycloakUserCache.clear();
+        usernameUserCache.clear();
+    }
 
     /**
      * Verifica si el usuario autenticado tiene rol de administrador.
@@ -76,6 +86,9 @@ public class SecurityUtils {
                         .query(UUID.class)
                         .optional();
                 if (userId.isPresent()) {
+                    if (keycloakUserCache.size() >= MAX_CACHE_SIZE) {
+                        keycloakUserCache.clear();
+                    }
                     keycloakUserCache.put(keycloakUserId, userId.get());
                     return userId;
                 }
@@ -96,6 +109,9 @@ public class SecurityUtils {
                         .query(UUID.class)
                         .optional();
                 if (userId.isPresent()) {
+                    if (usernameUserCache.size() >= MAX_CACHE_SIZE) {
+                        usernameUserCache.clear();
+                    }
                     usernameUserCache.put(username.toLowerCase(), userId.get());
                     return userId;
                 }

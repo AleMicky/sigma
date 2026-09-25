@@ -65,39 +65,38 @@ export function UserMenu() {
               <SidebarMenuButton
                 size="default"
                 tooltip={displayName}
-                className="group h-9 rounded-lg px-2 data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground hover:bg-sidebar-accent/80 transition-all duration-150"
+                className="group h-8.5 rounded-md px-1.5 data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-colors"
               />
             }
           >
             <div className="relative shrink-0">
-              <Avatar className="size-7.5 rounded-lg border border-primary/20 shadow-2xs transition-transform duration-150 group-hover:scale-105">
-                <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-600 text-[11px] font-bold text-white shadow-inner">
+              <Avatar className="size-7 rounded-md border border-primary/20 shadow-2xs">
+                <AvatarFallback className="rounded-md bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-600 text-[10.5px] font-bold text-white">
                   {initials || "U"}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-emerald-500 ring-2 ring-sidebar animate-pulse" />
+              <span className="absolute -bottom-0.5 -right-0.5 size-1.5 rounded-full bg-emerald-500 ring-2 ring-sidebar" />
             </div>
             <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+              <span className="truncate text-xs font-semibold text-sidebar-foreground">
                 {displayName}
               </span>
               {subtitle && (
                 <div className="flex items-center gap-1">
                   <span className="inline-block size-1 rounded-full bg-emerald-500" />
-                  <span className="truncate text-[10.5px] font-medium text-muted-foreground">
+                  <span className="truncate text-[10px] font-medium text-muted-foreground">
                     {subtitle}
                   </span>
                 </div>
               )}
             </div>
-            <ChevronsUpDown className="ml-auto size-3.5 text-muted-foreground/70 transition-transform group-hover:text-foreground group-data-[collapsible=icon]:hidden" />
+            <ChevronsUpDown className="ml-auto size-3.5 text-muted-foreground transition-colors group-hover:text-foreground group-data-[collapsible=icon]:hidden" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-60 rounded-xl p-1.5 shadow-xl border-border/60 bg-popover/95 backdrop-blur-md"
-
+            className="min-w-56 rounded-xl p-1.5 shadow-lg border-border/60 bg-popover/98 text-xs"
             side={isMobile ? "bottom" : "right"}
             align="end"
-            sideOffset={10}
+            sideOffset={8}
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="font-normal p-2.5">
