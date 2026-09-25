@@ -213,22 +213,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             MethodArgumentTypeMismatchException.class,
             MissingServletRequestParameterException.class,
-            HttpMessageNotReadableException.class
+            HttpMessageNotReadableException.class,
+            IllegalArgumentException.class,
+            IllegalStateException.class
     })
     public ResponseEntity<ApiErrorResponse> handleBadRequest(
             Exception exception,
             HttpServletRequest request
-
     ) {
-
         return buildResponse(
                 HttpStatus.BAD_REQUEST,
                 "BAD_REQUEST",
                 resolveBadRequestMessage(exception),
                 request.getRequestURI()
-
         );
-
     }
 
     @ExceptionHandler(PropertyReferenceException.class)
@@ -330,6 +328,11 @@ public class GlobalExceptionHandler {
 
         if (exception instanceof HttpMessageNotReadableException) {
             return "El cuerpo de la solicitud tiene un formato inválido";
+        }
+
+        if ((exception instanceof IllegalArgumentException || exception instanceof IllegalStateException)
+                && exception.getMessage() != null && !exception.getMessage().isBlank()) {
+            return exception.getMessage();
         }
 
         return "La solicitud contiene datos inválidos";

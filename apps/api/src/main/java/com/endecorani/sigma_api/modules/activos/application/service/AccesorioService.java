@@ -13,12 +13,18 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -92,16 +98,12 @@ public class AccesorioService {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
         if (normalized == null) {
-            return PageResponse.from(
-                    accesorioRepository.findAll(pageable),
-                    this::toResponse
-            );
+            Page<Accesorio> page = accesorioRepository.findAll(pageable);
+            return toPageResponse(page);
         }
 
-        return PageResponse.from(
-                accesorioRepository.search(normalized, pageable),
-                this::toResponse
-        );
+        Page<Accesorio> page = accesorioRepository.search(normalized, pageable);
+        return toPageResponse(page);
     }
 
     @Transactional(readOnly = true)
@@ -116,23 +118,19 @@ public class AccesorioService {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
         if (normalized == null) {
-            return PageResponse.from(
-                    accesorioRepository.findByCategoriaId(
-                            categoriaId,
-                            pageable
-                    ),
-                    this::toResponse
+            Page<Accesorio> page = accesorioRepository.findByCategoriaId(
+                    categoriaId,
+                    pageable
             );
+            return toPageResponse(page);
         }
 
-        return PageResponse.from(
-                accesorioRepository.searchByCategoriaId(
-                        categoriaId,
-                        normalized,
-                        pageable
-                ),
-                this::toResponse
+        Page<Accesorio> page = accesorioRepository.searchByCategoriaId(
+                categoriaId,
+                normalized,
+                pageable
         );
+        return toPageResponse(page);
     }
 
     @Transactional
@@ -189,9 +187,43 @@ public class AccesorioService {
         }
     }
 
+    private PageResponse<AccesorioResponse> toPageResponse(Page<Accesorio> page) {
+        if (page.isEmpty()) {
+            return PageResponse.of(List.of(), page);
+        }
+
+        Set<UUID> categoriaIds = page.getContent().stream()
+                .map(Accesorio::getCategoriaId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, com.endecorani.sigma_api.modules.activos.domain.model.Categoria> categoriaMap = categoriaIds.isEmpty() ? Map.of() :
+                categoriaRepository.findAllById(categoriaIds).stream()
+                        .collect(Collectors.toMap(com.endecorani.sigma_api.modules.activos.domain.model.Categoria::getId, Function.identity(), (a, b) -> a));
+
+        List<AccesorioResponse> content = page.getContent().stream()
+                .map(a -> toResponse(a, a.getCategoriaId() != null ? categoriaMap.get(a.getCategoriaId()) : null))
+                .toList();
+
+        return PageResponse.of(content, page);
+    }
+
     private AccesorioResponse toResponse(Accesorio domain) {
+        return toResponse(domain, null);
+    }
+
+    private AccesorioResponse toResponse(
+            Accesorio domain,
+            com.endecorani.sigma_api.modules.activos.domain.model.Categoria categoria
+    ) {
         AccesorioResponse.CatalogoInfo catalogoInfo = null;
-        if (domain.getCategoriaId() != null) {
+        if (categoria != null) {
+            catalogoInfo = new AccesorioResponse.CatalogoInfo(
+                    categoria.getId(),
+                    categoria.getCodigo(),
+                    categoria.getNombre()
+            );
+        } else if (domain.getCategoriaId() != null) {
             catalogoInfo = categoriaRepository.findById(domain.getCategoriaId())
                     .map(cat -> new AccesorioResponse.CatalogoInfo(
                             cat.getId(),

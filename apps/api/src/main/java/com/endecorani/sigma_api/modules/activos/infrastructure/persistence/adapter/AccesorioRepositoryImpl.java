@@ -35,6 +35,15 @@ public class AccesorioRepositoryImpl implements AccesorioRepository {
     }
 
     @Override
+    public List<Accesorio> findAllById(Iterable<UUID> ids) {
+        return springRepository
+                .findAllById(ids)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<Accesorio> findAll() {
         return springRepository
                 .findAll()

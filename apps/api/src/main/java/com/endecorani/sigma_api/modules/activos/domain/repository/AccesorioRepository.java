@@ -14,6 +14,8 @@ public interface AccesorioRepository {
 
     Optional<Accesorio> findById(UUID id);
 
+    List<Accesorio> findAllById(Iterable<UUID> ids);
+
     List<Accesorio> findAll();
 
     Page<Accesorio> findAll(Pageable pageable);
