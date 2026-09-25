@@ -14,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class TipoSolicitudVehicular  extends AuditableModel {
+public class TipoSolicitudVehicular extends AuditableModel {
 
     private UUID id;
     private String codigo;
