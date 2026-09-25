@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.entity;
 
+import com.endecorani.sigma_api.modules.seguridad.domain.model.TipoMenu;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -14,7 +15,8 @@ import lombok.experimental.SuperBuilder;
         },
         indexes = {
                 @Index(name = "idx_menus_menu_padre_id", columnList = "menu_padre_id"),
-                @Index(name = "idx_menus_activo", columnList = "activo")
+                @Index(name = "idx_menus_activo", columnList = "activo"),
+                @Index(name = "idx_menus_tipo", columnList = "tipo")
         }
 )
 @Getter
@@ -36,11 +38,26 @@ public class MenuEntity extends BaseEntity {
     @Column(name = "nombre", nullable = false, length = 150)
     private String nombre;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(name = "tipo", length = 30, nullable = false)
+    private TipoMenu tipo = TipoMenu.ITEM;
+
     @Column(name = "icono", length = 100)
     private String icono;
 
     @Column(name = "ruta", length = 300)
     private String ruta;
+
+    @Column(name = "badge", length = 50)
+    private String badge;
+
+    @Column(name = "descripcion", length = 255)
+    private String descripcion;
+
+    @Builder.Default
+    @Column(name = "visible_en_menu", nullable = false)
+    private boolean visibleEnMenu = true;
 
     @Builder.Default
     @Column(name = "orden", nullable = false)

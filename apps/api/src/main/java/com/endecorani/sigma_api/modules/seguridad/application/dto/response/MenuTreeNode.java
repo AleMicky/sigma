@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.seguridad.application.dto.response;
 
+import com.endecorani.sigma_api.modules.seguridad.domain.model.TipoMenu;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -36,6 +37,12 @@ public record MenuTreeNode(
         String nombre,
 
         @Schema(
+                description = "Tipo de menú (MODULO, AGRUPADOR, ITEM)",
+                example = "ITEM"
+        )
+        TipoMenu tipo,
+
+        @Schema(
                 description = "Icono del menú",
                 example = "users"
         )
@@ -46,6 +53,24 @@ public record MenuTreeNode(
                 example = "/seguridad/usuarios"
         )
         String ruta,
+
+        @Schema(
+                description = "Badge o etiqueta visual",
+                example = "Nuevo"
+        )
+        String badge,
+
+        @Schema(
+                description = "Descripción corta del menú",
+                example = "Gestión de usuarios"
+        )
+        String descripcion,
+
+        @Schema(
+                description = "Indica si es visible en el menú lateral",
+                example = "true"
+        )
+        boolean visibleEnMenu,
 
         @Schema(
                 description = "Orden de presentación del menú",
@@ -65,3 +90,4 @@ public record MenuTreeNode(
         List<MenuTreeNode> hijos
 ) {
 }
+

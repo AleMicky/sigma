@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.seguridad.application.dto.request;
 
+import com.endecorani.sigma_api.modules.seguridad.domain.model.TipoMenu;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -41,7 +42,13 @@ public record MenuRequest(
         String nombre,
 
         @Schema(
-                description = "Icono del menú",
+                description = "Tipo de menú (MODULO, AGRUPADOR, ITEM)",
+                example = "ITEM"
+        )
+        TipoMenu tipo,
+
+        @Schema(
+                description = "Icono del menú (nombre de Lucide Icon)",
                 example = "users"
         )
         @Size(
@@ -59,6 +66,32 @@ public record MenuRequest(
                 message = "La ruta no puede superar los 300 caracteres"
         )
         String ruta,
+
+        @Schema(
+                description = "Badge o etiqueta visual (ej. 'Nuevo', 'Beta')",
+                example = "Nuevo"
+        )
+        @Size(
+                max = 50,
+                message = "El badge no puede superar los 50 caracteres"
+        )
+        String badge,
+
+        @Schema(
+                description = "Descripción corta o tooltip del menú",
+                example = "Gestión integral de usuarios del sistema"
+        )
+        @Size(
+                max = 255,
+                message = "La descripción no puede superar los 255 caracteres"
+        )
+        String descripcion,
+
+        @Schema(
+                description = "Indica si el menú se muestra en la barra lateral",
+                example = "true"
+        )
+        Boolean visibleEnMenu,
 
         @Schema(
                 description = "Identificador del menú padre (opcional para nodos raíz)",
@@ -87,3 +120,4 @@ public record MenuRequest(
         Boolean activo
 ) {
 }
+
