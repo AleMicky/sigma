@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -155,15 +156,19 @@ public class RolMenuService {
                 .collect(Collectors.toSet());
 
         List<Menu> allMenus = menuRepository.findAll();
-        Map<UUID, Menu> allMenusById = allMenus.stream()
-                .collect(Collectors.toMap(Menu::getId, m -> m));
+        Map<UUID, Menu> allMenusById = new HashMap<>();
+        for (Menu m : allMenus) {
+            if (m != null && m.getId() != null) {
+                allMenusById.put(m.getId(), m);
+            }
+        }
 
-        Set<Menu> assignedWithAncestors = new HashSet<>();
+        Set<UUID> assignedMenuIds = new HashSet<>();
         for (UUID menuId : menuIds) {
             Menu current = allMenusById.get(menuId);
             while (current != null) {
                 if (current.isActivo()) {
-                    assignedWithAncestors.add(current);
+                    assignedMenuIds.add(current.getId());
                 }
                 current = current.getMenuPadreId() != null
                         ? allMenusById.get(current.getMenuPadreId())
@@ -172,12 +177,19 @@ public class RolMenuService {
         }
 
         // Asegurar que el menú de Inicio esté siempre accesible si existe en el sistema
-        allMenus.stream()
-                .filter(m -> "MOD_INICIO".equalsIgnoreCase(m.getCodigo())
-                        || "MENU_INICIO".equalsIgnoreCase(m.getCodigo()))
-                .forEach(assignedWithAncestors::add);
+        for (Menu m : allMenus) {
+            if (m != null && m.getId() != null
+                    && ("MOD_INICIO".equalsIgnoreCase(m.getCodigo()) || "MENU_INICIO".equalsIgnoreCase(m.getCodigo()))) {
+                assignedMenuIds.add(m.getId());
+            }
+        }
 
-        return menuService.buildArbolFromMenus(new ArrayList<>(assignedWithAncestors));
+        List<Menu> distinctMenus = assignedMenuIds.stream()
+                .map(allMenusById::get)
+                .filter(Objects::nonNull)
+                .toList();
+
+        return menuService.buildArbolFromMenus(distinctMenus);
     }
 
     private void validarRolExiste(UUID rolId) {

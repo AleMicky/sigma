@@ -25,7 +25,7 @@ export function DataTableColumnHeader<TData, TValue>({
   hideSortMenu = false,
 }: DataTableColumnHeaderProps<TData, TValue>) {
   if (!column.getCanSort()) {
-    return <div className={cn("text-xs font-semibold uppercase tracking-wider text-muted-foreground", className)}>{title}</div>
+    return <div className={cn("text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80", className)}>{title}</div>
   }
 
   if (hideSortMenu) {
@@ -33,38 +33,38 @@ export function DataTableColumnHeader<TData, TValue>({
       <Button
         variant="ghost"
         size="xs"
-        className={cn("-ml-2 h-7 data-[state=open]:bg-accent font-semibold uppercase tracking-wider text-xs", className)}
+        className={cn("-ml-2 h-6.5 data-[state=open]:bg-accent font-bold uppercase tracking-wider text-[11px] text-muted-foreground hover:text-foreground", className)}
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         <span>{title}</span>
         {column.getIsSorted() === "desc" ? (
-          <ArrowDown className="ml-1 size-3.5 text-foreground" />
+          <ArrowDown className="ml-1 size-3 text-primary" />
         ) : column.getIsSorted() === "asc" ? (
-          <ArrowUp className="ml-1 size-3.5 text-foreground" />
+          <ArrowUp className="ml-1 size-3 text-primary" />
         ) : (
-          <ArrowUpDown className="ml-1 size-3.5 opacity-60" />
+          <ArrowUpDown className="ml-1 size-3 opacity-40" />
         )}
       </Button>
     )
   }
 
   return (
-    <div className={cn("flex items-center space-x-2", className)}>
+    <div className={cn("flex items-center space-x-1.5", className)}>
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
             <Button
               variant="ghost"
               size="xs"
-              className="-ml-2 h-7 data-[state=open]:bg-accent font-semibold uppercase tracking-wider text-xs"
+              className="-ml-2 h-6.5 data-[state=open]:bg-accent font-bold uppercase tracking-wider text-[11px] text-muted-foreground hover:text-foreground"
             >
               <span>{title}</span>
               {column.getIsSorted() === "desc" ? (
-                <ArrowDown className="ml-1 size-3.5 text-foreground" />
+                <ArrowDown className="ml-1 size-3 text-primary" />
               ) : column.getIsSorted() === "asc" ? (
-                <ArrowUp className="ml-1 size-3.5 text-foreground" />
+                <ArrowUp className="ml-1 size-3 text-primary" />
               ) : (
-                <ArrowUpDown className="ml-1 size-3.5 opacity-60" />
+                <ArrowUpDown className="ml-1 size-3 opacity-40" />
               )}
             </Button>
           }

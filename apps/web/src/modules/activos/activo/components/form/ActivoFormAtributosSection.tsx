@@ -4,6 +4,7 @@ import type { ActivoAtributo } from "@/modules/activos/activo-atributo/api/activ
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import type { TipoDato } from "@/modules/parametros/tipo-dato/api/tipo-dato.service"
 import { getErrorMessage } from "@/shared/api"
+import { FormSection } from "@/shared/components/form-section"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 
 import { ActivoAtributoValorFields } from "../ActivoAtributoValorFields"
@@ -34,21 +35,20 @@ export function ActivoFormAtributosSection({
   onChange,
 }: ActivoFormAtributosSectionProps) {
   return (
-    <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs space-y-4">
-      <div className="flex items-center justify-between pb-2 border-b">
-        <div className="flex items-center gap-2.5">
-          <Sliders className="size-4 text-primary" />
-          <h2 className="font-heading font-semibold text-base">
-            Atributos Dinámicos
-          </h2>
-        </div>
-        {selectedTipo ? (
-          <span className="text-xs text-muted-foreground">
+    <FormSection
+      step={3}
+      title="Especificaciones Técnicas Dinámicas"
+      description="Atributos técnicos parametrizados según la tipología del activo seleccionado."
+      icon={Sliders}
+      badge={
+        selectedTipo ? (
+          <span className="text-xs text-muted-foreground font-medium">
             {atributosVisibles.length} atributo(s)
           </span>
-        ) : null}
-      </div>
-
+        ) : null
+      }
+      columns={1}
+    >
       {!tipoActivoId ? (
         <div className="p-6 text-center rounded-xl border border-dashed border-border bg-muted/20">
           <Tags className="size-8 text-muted-foreground/50 mx-auto mb-2" />
@@ -56,8 +56,8 @@ export function ActivoFormAtributosSection({
             Selecciona un tipo de activo
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Los atributos personalizados se cargan según el tipo seleccionado
-            arriba.
+            Los atributos personalizados se cargarán automáticamente según el tipo
+            seleccionado en el Paso 1.
           </p>
         </div>
       ) : isLoading ? (
@@ -75,6 +75,6 @@ export function ActivoFormAtributosSection({
           onChange={onChange}
         />
       )}
-    </div>
+    </FormSection>
   )
 }

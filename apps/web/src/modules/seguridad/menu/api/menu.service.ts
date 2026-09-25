@@ -8,8 +8,12 @@ export type Menu = AuditableEntity & {
   menuPadreId: string | null
   codigo: string
   nombre: string
+  tipo?: "MODULO" | "AGRUPADOR" | "ITEM"
   icono: string | null
   ruta: string | null
+  badge?: string | null
+  descripcion?: string | null
+  visibleEnMenu?: boolean
   orden: number
   activo: boolean
 }
@@ -19,8 +23,12 @@ export type MenuTreeNode = {
   menuPadreId: string | null
   codigo: string
   nombre: string
+  tipo?: "MODULO" | "AGRUPADOR" | "ITEM"
   icono: string | null
   ruta: string | null
+  badge?: string | null
+  descripcion?: string | null
+  visibleEnMenu?: boolean
   orden: number
   activo: boolean
   hijos: MenuTreeNode[]

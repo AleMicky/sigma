@@ -352,7 +352,7 @@ function NavigationMenu({
 
       {filteredSections.map((section) => (
         <NavSectionGroup
-          key={section.id || section.title}
+          key={section.id ? `${section.id}-${section.title}` : (section.code || section.title)}
           section={section}
           pathname={pathname}
           isSearching={Boolean(normalizedQuery)}
@@ -442,10 +442,10 @@ function NavSectionGroup({
                 >
                   <SectionIcon
                     className={cn(
-                      "size-4 shrink-0 transition-colors",
-                      isSectionActive ? "text-primary-foreground" : "text-muted-foreground",
-                    )}
-                  />
+                    "size-4 shrink-0 transition-colors",
+                    isSectionActive ? "text-primary-foreground" : "text-muted-foreground",
+                  )}
+                />
                   <span className="truncate">{section.title}</span>
                 </DropdownMenuTrigger>
 
@@ -463,7 +463,7 @@ function NavSectionGroup({
                   <div className="flex flex-col gap-0.5">
                     {section.children?.map((child) => (
                       <DropdownRecursiveNode
-                        key={child.id || child.title}
+                        key={child.id ? `${child.id}-${child.to || child.title}` : (child.to || child.title)}
                         node={child}
                         pathname={pathname}
                       />
@@ -490,7 +490,7 @@ function NavSectionGroup({
         <SidebarMenu className="gap-0.5">
           {section.children?.map((child) => (
             <NavNodeItem
-              key={child.id || child.title}
+              key={child.id ? `${child.id}-${child.to || child.title}` : (child.to || child.title)}
               node={child}
               depth={0}
               pathname={pathname}
@@ -589,7 +589,7 @@ function NavNodeItem({
           <SidebarMenuSub className="relative ml-3 border-l border-sidebar-border/60 pl-2 mt-0.5 gap-0.5 transition-all">
             {node.children.map((child) => (
               <NavNodeItem
-                key={child.id || child.title}
+                key={child.id ? `${child.id}-${child.to || child.title}` : (child.to || child.title)}
                 node={child}
                 depth={depth + 1}
                 pathname={pathname}
@@ -614,17 +614,30 @@ function NavNodeItem({
           className={cn(
             "group relative h-8 rounded-md px-2 text-[12.5px] font-medium transition-colors",
             isSelfActive
-              ? "bg-primary text-primary-foreground font-semibold shadow-2xs hover:bg-primary/95"
+              ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.75 before:rounded-r before:bg-primary"
               : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
           )}
         >
           <NodeIcon
             className={cn(
               "size-3.5 shrink-0 transition-colors",
-              isSelfActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground",
+              isSelfActive ? "text-primary font-bold" : "text-muted-foreground group-hover:text-foreground",
             )}
           />
-          <span className="truncate">{node.title}</span>
+          <span className="truncate flex-1 text-left">{node.title}</span>
+
+          {node.badge && (
+            <span
+              className={cn(
+                "ml-auto shrink-0 px-1.5 py-0.2 text-[9.5px] font-bold uppercase tracking-tight rounded-md",
+                typeof node.badge === "number" || /^\d+$/.test(String(node.badge))
+                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 tabular-nums"
+                  : "bg-primary/10 text-primary border border-primary/20",
+              )}
+            >
+              {node.badge}
+            </span>
+          )}
         </SidebarMenuButton>
       </SidebarMenuItem>
     )
@@ -640,17 +653,30 @@ function NavNodeItem({
         className={cn(
           "group relative h-7 rounded-md px-2 text-[11.5px] font-medium transition-colors",
           isSelfActive
-            ? "bg-primary/10 text-primary font-semibold"
+            ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-0.75 before:rounded-r before:bg-primary"
             : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
         )}
       >
         <NodeIcon
           className={cn(
             "size-3 shrink-0 transition-colors",
-            isSelfActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-foreground",
+            isSelfActive ? "text-primary font-bold" : "text-muted-foreground/70 group-hover:text-foreground",
           )}
         />
-        <span className="truncate">{node.title}</span>
+        <span className="truncate flex-1 text-left">{node.title}</span>
+
+        {node.badge && (
+          <span
+            className={cn(
+              "ml-auto shrink-0 px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-tight rounded",
+              typeof node.badge === "number" || /^\d+$/.test(String(node.badge))
+                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 tabular-nums"
+                : "bg-primary/10 text-primary border border-primary/20",
+            )}
+          >
+            {node.badge}
+          </span>
+        )}
       </SidebarMenuSubButton>
     </SidebarMenuSubItem>
   )
@@ -672,7 +698,7 @@ function DropdownRecursiveNode({
 
   if (hasChildren && node.children) {
     return (
-      <DropdownMenuSub key={node.id || node.title}>
+      <DropdownMenuSub key={node.id ? `${node.id}-${node.title}` : node.title}>
         <DropdownMenuSubTrigger
           className={cn(
             "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium cursor-pointer transition-colors",
@@ -692,7 +718,7 @@ function DropdownRecursiveNode({
         <DropdownMenuSubContent className="min-w-44 rounded-2xl p-1.5 shadow-xl border-border/60 bg-popover/95 backdrop-blur-md">
           {node.children.map((child) => (
             <DropdownRecursiveNode
-              key={child.id || child.title}
+              key={child.id ? `${child.id}-${child.to || child.title}` : (child.to || child.title)}
               node={child}
               pathname={pathname}
             />
@@ -704,7 +730,7 @@ function DropdownRecursiveNode({
 
   return (
     <DropdownMenuItem
-      key={node.id || node.to || node.title}
+      key={node.id ? `${node.id}-${node.to || node.title}` : (node.to || node.title)}
       render={node.to ? <Link to={node.to} /> : undefined}
       className={cn(
         "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium cursor-pointer transition-colors",

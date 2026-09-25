@@ -118,6 +118,35 @@ function inferFallbackIcon(route?: string | null, title?: string, code?: string)
 /**
  * Convierte un nodo de árbol de menú a NavNode con iconos y resolución limpia.
  */
+/**
+ * Deduplica una lista de NavNode eliminando items con la misma ruta o mismo id
+ */
+function deduplicateNavNodes(nodes: NavNode[]): NavNode[] {
+  const seen = new Set<string>()
+  const result: NavNode[] = []
+
+  for (const node of nodes) {
+    const key = node.to
+      ? `to:${node.to}`
+      : node.id
+        ? `id:${node.id}`
+        : `title:${node.title.toLowerCase()}`
+
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    result.push({
+      ...node,
+      children: node.children ? deduplicateNavNodes(node.children) : undefined,
+    })
+  }
+
+  return result
+}
+
+/**
+ * Convierte un nodo de árbol de menú a NavNode con iconos y resolución limpia.
+ */
 function mapTreeNodeToNavNode(node: MenuTreeNode, currentDepth = 1): NavNode {
   const isLeaf = !node.hijos || node.hijos.length === 0
   const defaultIcon = isLeaf ? FileText : Folder
@@ -130,27 +159,40 @@ function mapTreeNodeToNavNode(node: MenuTreeNode, currentDepth = 1): NavNode {
     .filter((child) => child && child.activo !== false)
     .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
 
+  const mappedChildren =
+    rawActiveChildren.length > 0
+      ? rawActiveChildren.map((child) => mapTreeNodeToNavNode(child, currentDepth + 1))
+      : undefined
+
   return {
     id: node.id,
     title: node.nombre.trim(),
     to: node.ruta || undefined,
     icon: Icon,
+    badge: node.badge || undefined,
     order: node.orden,
-    children:
-      rawActiveChildren.length > 0
-        ? rawActiveChildren.map((child) => mapTreeNodeToNavNode(child, currentDepth + 1))
-        : undefined,
+    children: mappedChildren ? deduplicateNavNodes(mappedChildren) : undefined,
   }
 }
 
 /**
- * Aplana niveles redundantes de 1 solo hijo intermedio sin ruta.
- * Por ejemplo: Raíz "MÓDULO SEGURIDAD" -> Subcarpeta única "Seguridad" -> [Usuarios, Roles, Menús]
- * Se transforma en: Raíz "Seguridad" -> [Usuarios, Roles, Menús]
+ * Aplana niveles redundantes de 1 solo hijo intermedio sin ruta y deduplica.
  */
 function simplifyChildren(nodes: MenuTreeNode[]): NavNode[] {
-  const activeChildren = nodes
-    .filter((child) => child && child.activo !== false)
+  const uniqueMap = new Map<string, MenuTreeNode>()
+  for (const child of nodes) {
+    if (!child || child.activo === false) continue
+    const key = child.codigo
+      ? `code:${child.codigo}`
+      : child.id
+        ? `id:${child.id}`
+        : `name:${child.nombre}`
+    if (!uniqueMap.has(key)) {
+      uniqueMap.set(key, child)
+    }
+  }
+
+  const activeChildren = Array.from(uniqueMap.values())
     .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
 
   // Si tiene exactamente 1 hijo que es una carpeta agrupada (sin ruta propia) y tiene sus propios hijos,
@@ -165,12 +207,13 @@ function simplifyChildren(nodes: MenuTreeNode[]): NavNode[] {
     return simplifyChildren(activeChildren[0].hijos)
   }
 
-  return activeChildren.map((child) => mapTreeNodeToNavNode(child, 1))
+  const mapped = activeChildren.map((child) => mapTreeNodeToNavNode(child, 1))
+  return deduplicateNavNodes(mapped)
 }
 
 /**
  * Transforma el árbol de menús dinámico entregado por la API (GET /menus/mis-menus)
- * a secciones y nodos de navegación optimizados para el Sidebar empresarial.
+ * a secciones y nodos de navegación optimizados para el Sidebar empresarial sin duplicados.
  */
 function convertTreeToNavSections(nodes: MenuTreeNode[] | unknown): NavSection[] {
   const rawList: MenuTreeNode[] = Array.isArray(nodes)
@@ -184,23 +227,39 @@ function convertTreeToNavSections(nodes: MenuTreeNode[] | unknown): NavSection[]
 
   if (!rawList || rawList.length === 0) return []
 
-  const activeRoots = rawList
-    .filter((n) => n && n.activo !== false)
+  // Deduplicar nodos raíz por ID o código
+  const uniqueRootsMap = new Map<string, MenuTreeNode>()
+  for (const root of rawList) {
+    if (!root || root.activo === false) continue
+    const key = root.codigo
+      ? `code:${root.codigo}`
+      : root.id
+        ? `id:${root.id}`
+        : `name:${root.nombre}`
+    if (!uniqueRootsMap.has(key)) {
+      uniqueRootsMap.set(key, root)
+    }
+  }
+
+  const activeRoots = Array.from(uniqueRootsMap.values())
     .sort((a, b) => {
-      // Primero ordenamos por peso de prioridad lógica de negocio
       const priorityA = getModulePriority(a.codigo, a.nombre)
       const priorityB = getModulePriority(b.codigo, b.nombre)
       if (priorityA !== priorityB) return priorityA - priorityB
-
-      // Si tienen la misma prioridad, usamos el orden explícito de la API/BD
       return (a.orden ?? 0) - (b.orden ?? 0)
     })
 
-  return activeRoots.map((root): NavSection => {
+  const sections: NavSection[] = []
+  const seenTitles = new Set<string>()
+
+  for (const root of activeRoots) {
     const isHome =
       root.codigo === "MENU_INICIO" ||
       root.codigo === "MOD_INICIO" ||
       (!root.hijos?.length && (root.ruta === "/" || !root.ruta))
+
+    const title = isHome ? "Inicio" : cleanModuleTitle(root.nombre)
+    const titleKey = title.toLowerCase()
 
     const defaultIcon = isHome ? LayoutDashboard : Folder
     const Icon =
@@ -208,20 +267,38 @@ function convertTreeToNavSections(nodes: MenuTreeNode[] | unknown): NavSection[]
       inferFallbackIcon(root.ruta, root.nombre, root.codigo) ||
       defaultIcon
 
-    const simplifiedChildren = root.hijos && root.hijos.length > 0
+    const rawSimplified = root.hijos && root.hijos.length > 0
       ? simplifyChildren(root.hijos)
       : undefined
 
-    return {
+    const simplifiedChildren = rawSimplified ? deduplicateNavNodes(rawSimplified) : undefined
+
+    // Si ya existe una sección con el mismo título, unificar hijos sin duplicar
+    if (seenTitles.has(titleKey)) {
+      const existing = sections.find((s) => s.title.toLowerCase() === titleKey)
+      if (existing && simplifiedChildren && simplifiedChildren.length > 0) {
+        existing.children = deduplicateNavNodes([
+          ...(existing.children || []),
+          ...simplifiedChildren,
+        ])
+      }
+      continue
+    }
+
+    seenTitles.add(titleKey)
+
+    sections.push({
       id: root.id,
-      title: isHome ? "Inicio" : cleanModuleTitle(root.nombre),
+      title,
       code: root.codigo,
       to: isHome ? (root.ruta || routes.home) : root.ruta || undefined,
       icon: Icon,
       order: root.orden,
       children: simplifiedChildren && simplifiedChildren.length > 0 ? simplifiedChildren : undefined,
-    }
-  })
+    })
+  }
+
+  return sections
 }
 
 export function useAllowedNavItems() {
