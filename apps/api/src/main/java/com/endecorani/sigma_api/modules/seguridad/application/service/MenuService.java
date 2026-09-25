@@ -361,7 +361,13 @@ public class MenuService {
 
     private Map<UUID, List<Menu>> agruparPorPadre(List<Menu> menus) {
         Map<UUID, List<Menu>> porPadre = new HashMap<>();
+        Map<UUID, Menu> distinctMenus = new HashMap<>();
         for (Menu menu : menus) {
+            if (menu != null && menu.getId() != null) {
+                distinctMenus.putIfAbsent(menu.getId(), menu);
+            }
+        }
+        for (Menu menu : distinctMenus.values()) {
             UUID clave = menu.getMenuPadreId() != null
                     ? menu.getMenuPadreId()
                     : null;

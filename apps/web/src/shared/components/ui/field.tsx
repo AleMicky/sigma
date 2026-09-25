@@ -214,7 +214,7 @@ function FieldError({
     }
 
     return (
-      <ul className="ml-4 flex list-disc flex-col gap-1">
+      <ul className="ml-3.5 flex list-disc flex-col gap-0.5">
         {uniqueErrors.map((msg, index) => (
           <li key={index}>{msg}</li>
         ))}
@@ -230,10 +230,27 @@ function FieldError({
     <div
       role="alert"
       data-slot="field-error"
-      className={cn("text-sm font-normal text-destructive", className)}
+      className={cn(
+        "flex items-center gap-1.5 text-[11.5px] font-medium text-destructive animate-in fade-in-0 duration-150",
+        className,
+      )}
       {...props}
     >
-      {content}
+      <svg
+        className="size-3.5 shrink-0 text-destructive"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <span>{content}</span>
     </div>
   )
 }

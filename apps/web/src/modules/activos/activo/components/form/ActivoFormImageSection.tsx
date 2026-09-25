@@ -1,5 +1,6 @@
 import { Camera } from "lucide-react"
 
+import { FormSection } from "@/shared/components/form-section"
 import { ImageUploadField } from "@/shared/components/image-upload-field"
 
 type ActivoFormImageSectionProps = {
@@ -18,13 +19,13 @@ export function ActivoFormImageSection({
   onRemoveExistingChange,
 }: ActivoFormImageSectionProps) {
   return (
-    <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs space-y-4">
-      <div className="flex items-center gap-2.5 pb-2 border-b">
-        <Camera className="size-4 text-primary" />
-        <h2 className="font-heading font-semibold text-base">
-          Fotografía del Activo
-        </h2>
-      </div>
+    <FormSection
+      step={4}
+      title="Fotografía & Multimedia"
+      description="Evidencia visual y ficha fotográfica para reconocimiento en campo."
+      icon={Camera}
+      columns={1}
+    >
       <ImageUploadField
         currentUrl={currentUrl}
         file={pendingFile}
@@ -32,6 +33,6 @@ export function ActivoFormImageSection({
         removeExisting={removeExistingImage}
         onRemoveExistingChange={onRemoveExistingChange}
       />
-    </div>
+    </FormSection>
   )
 }

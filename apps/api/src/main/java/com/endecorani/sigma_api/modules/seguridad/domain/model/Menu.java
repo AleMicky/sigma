@@ -11,6 +11,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
+@EqualsAndHashCode(of = "id", callSuper = false)
 public class Menu extends AuditableModel {
     private UUID id;
     private UUID menuPadreId;
