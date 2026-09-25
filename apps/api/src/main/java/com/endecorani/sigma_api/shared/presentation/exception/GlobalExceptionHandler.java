@@ -83,29 +83,51 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(UnauthorizedException.class)
+    @ExceptionHandler({
+            UnauthorizedException.class,
+            org.springframework.security.core.AuthenticationException.class
+    })
     public ResponseEntity<ApiErrorResponse> handleUnauthorized(
-            UnauthorizedException exception,
+            Exception exception,
             HttpServletRequest request
     ) {
+        String code = (exception instanceof UnauthorizedException ue) ? ue.getCode() : "UNAUTHORIZED";
+        String message = (exception instanceof UnauthorizedException ue) ? ue.getMessage() : "No se encuentra autenticado o la sesión ha expirado";
         return buildResponse(
                 HttpStatus.UNAUTHORIZED,
-                exception.getCode(),
-                exception.getMessage(),
+                code,
+                message,
                 request.getRequestURI()
         );
     }
 
-    @ExceptionHandler(ForbiddenException.class)
+    @ExceptionHandler({
+            ForbiddenException.class,
+            org.springframework.security.access.AccessDeniedException.class
+    })
     public ResponseEntity<ApiErrorResponse> handleForbidden(
-            ForbiddenException exception,
+            Exception exception,
             HttpServletRequest request
-
     ) {
+        String code = (exception instanceof ForbiddenException fe) ? fe.getCode() : "FORBIDDEN";
+        String message = (exception instanceof ForbiddenException fe) ? fe.getMessage() : "No tiene permisos suficientes para acceder a este recurso";
         return buildResponse(
                 HttpStatus.FORBIDDEN,
-                exception.getCode(),
-                exception.getMessage(),
+                code,
+                message,
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodNotAllowed(
+            org.springframework.web.HttpRequestMethodNotSupportedException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.METHOD_NOT_ALLOWED,
+                "METHOD_NOT_ALLOWED",
+                "El método HTTP '%s' no está permitido para este endpoint".formatted(exception.getMethod()),
                 request.getRequestURI()
         );
     }

@@ -1,11 +1,12 @@
 package com.endecorani.sigma_api.modules.inventarios.application.service;
 
 import com.endecorani.sigma_api.modules.inventarios.application.dto.request.InsumoRequest;
-import com.endecorani.sigma_api.modules.inventarios.application.dto.response.CategoriaInsumoResponse;
 import com.endecorani.sigma_api.modules.inventarios.application.dto.response.InsumoResponse;
+import com.endecorani.sigma_api.modules.inventarios.domain.model.CategoriaInsumo;
 import com.endecorani.sigma_api.modules.inventarios.domain.model.Insumo;
 import com.endecorani.sigma_api.modules.inventarios.domain.repository.CategoriaInsumoRepository;
 import com.endecorani.sigma_api.modules.inventarios.domain.repository.InsumoRepository;
+import com.endecorani.sigma_api.modules.parametros.domain.model.UnidadMedida;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UnidadMedidaRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
@@ -15,11 +16,17 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,8 +48,8 @@ public class InsumoService {
 
     @Transactional(readOnly = true)
     public PageResponse<InsumoResponse> findAll(PageRequestDto pageRequest) {
-        var page = insumoRepository.findAll(pageRequest.toPageable(SORT_FIELDS));
-        return PageResponse.from(page, this::toResponse);
+        Page<Insumo> page = insumoRepository.findAll(pageRequest.toPageable(SORT_FIELDS));
+        return toPageResponse(page);
     }
 
     @Transactional(readOnly = true)
@@ -63,13 +70,11 @@ public class InsumoService {
             return findAll(pageRequest);
         }
 
-        return PageResponse.from(
-                insumoRepository.search(
-                        normalized,
-                        pageRequest.toPageable(SORT_FIELDS)
-                ),
-                this::toResponse
+        Page<Insumo> page = insumoRepository.search(
+                normalized,
+                pageRequest.toPageable(SORT_FIELDS)
         );
+        return toPageResponse(page);
     }
 
     @Transactional
@@ -123,28 +128,65 @@ public class InsumoService {
         insumoRepository.deleteById(id);
     }
 
-    private InsumoResponse toResponse(Insumo domain) {
-        InsumoResponse.BaseInfo categoriaInsumoInfo = null;
-        if (domain.getCategoriaInsumoId() != null) {
-            categoriaInsumoInfo = categoriaInsumoRepository.findById(domain.getCategoriaInsumoId())
-                    .map(c -> new InsumoResponse.BaseInfo(
-                            c.getId(),
-                            c.getCodigo(),
-                            c.getNombre()
-                    ))
-                    .orElse(null);
+    private PageResponse<InsumoResponse> toPageResponse(Page<Insumo> page) {
+        if (page.isEmpty()) {
+            return PageResponse.of(List.of(), page);
         }
 
-        InsumoResponse.BaseInfo unidadMedidaInfo = null;
-        if (domain.getUnidadMedidaId() != null) {
-            unidadMedidaInfo = unidadMedidaRepository.findById(domain.getUnidadMedidaId())
-                    .map(u -> new InsumoResponse.BaseInfo(
-                            u.getId(),
-                            u.getCodigo(),
-                            u.getNombre()
-                    ))
-                    .orElse(null);
-        }
+        List<Insumo> content = page.getContent();
+        Set<UUID> categoriaIds = content.stream()
+                .map(Insumo::getCategoriaInsumoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<UUID> unidadIds = content.stream()
+                .map(Insumo::getUnidadMedidaId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, CategoriaInsumo> categoriaMap = categoriaIds.isEmpty()
+                ? Map.of()
+                : categoriaInsumoRepository.findAllById(categoriaIds).stream()
+                .collect(Collectors.toMap(CategoriaInsumo::getId, Function.identity(), (a, b) -> a));
+
+        Map<UUID, UnidadMedida> unidadMap = unidadIds.isEmpty()
+                ? Map.of()
+                : unidadMedidaRepository.findAllById(unidadIds).stream()
+                .collect(Collectors.toMap(UnidadMedida::getId, Function.identity(), (a, b) -> a));
+
+        List<InsumoResponse> responses = content.stream()
+                .map(domain -> toResponse(domain, categoriaMap.get(domain.getCategoriaInsumoId()), unidadMap.get(domain.getUnidadMedidaId())))
+                .toList();
+
+        return PageResponse.of(responses, page);
+    }
+
+    private InsumoResponse toResponse(Insumo domain) {
+        CategoriaInsumo categoria = domain.getCategoriaInsumoId() != null
+                ? categoriaInsumoRepository.findById(domain.getCategoriaInsumoId()).orElse(null)
+                : null;
+        UnidadMedida unidad = domain.getUnidadMedidaId() != null
+                ? unidadMedidaRepository.findById(domain.getUnidadMedidaId()).orElse(null)
+                : null;
+        return toResponse(domain, categoria, unidad);
+    }
+
+    private InsumoResponse toResponse(Insumo domain, CategoriaInsumo categoria, UnidadMedida unidad) {
+        InsumoResponse.BaseInfo categoriaInsumoInfo = categoria != null
+                ? new InsumoResponse.BaseInfo(
+                categoria.getId(),
+                categoria.getCodigo(),
+                categoria.getNombre()
+        )
+                : null;
+
+        InsumoResponse.BaseInfo unidadMedidaInfo = unidad != null
+                ? new InsumoResponse.BaseInfo(
+                unidad.getId(),
+                unidad.getCodigo(),
+                unidad.getNombre()
+        )
+                : null;
 
         return new InsumoResponse(
                 domain.getId(),
