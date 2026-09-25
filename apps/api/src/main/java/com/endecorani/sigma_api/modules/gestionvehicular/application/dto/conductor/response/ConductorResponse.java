@@ -8,6 +8,7 @@ import java.util.UUID;
 public record ConductorResponse(
         UUID id,
         UUID empleadoId,
+        ConductorEmpleadoInfo empleado,
         String numeroLicencia,
         String categoriaLicencia,
         LocalDate fechaVencimiento,

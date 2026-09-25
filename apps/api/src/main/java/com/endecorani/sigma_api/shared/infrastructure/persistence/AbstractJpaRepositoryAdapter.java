@@ -34,6 +34,15 @@ public abstract class AbstractJpaRepositoryAdapter<
     }
 
     @Override
+    public List<DOMAIN> findAllById(Iterable<ID> ids) {
+        return jpaRepository()
+                .findAllById(ids)
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<DOMAIN> findAll() {
         return jpaRepository()
                 .findAll()

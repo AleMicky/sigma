@@ -5,6 +5,8 @@ import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoR
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
+import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
+import com.endecorani.sigma_api.modules.parametros.domain.model.Ubicacion;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
@@ -16,13 +18,19 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -107,17 +115,11 @@ public class ActivoService {
         String normalized = StringUtils.normalize(query);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
-        if (normalized == null) {
-            return PageResponse.from(
-                    activoRepository.findAll(pageable),
-                    this::toResponse
-            );
-        }
+        Page<Activo> page = (normalized == null)
+                ? activoRepository.findAll(pageable)
+                : activoRepository.search(normalized, pageable);
 
-        return PageResponse.from(
-                activoRepository.search(normalized, pageable),
-                this::toResponse
-        );
+        return toPageResponse(page);
     }
 
     @Transactional(readOnly = true)
@@ -131,21 +133,11 @@ public class ActivoService {
         String normalized = StringUtils.normalize(query);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
-        if (normalized == null) {
-            return PageResponse.from(
-                    activoRepository.findByTipoActivoId(tipoActivoId, pageable),
-                    this::toResponse
-            );
-        }
+        Page<Activo> page = (normalized == null)
+                ? activoRepository.findByTipoActivoId(tipoActivoId, pageable)
+                : activoRepository.searchByTipoActivoId(tipoActivoId, normalized, pageable);
 
-        return PageResponse.from(
-                activoRepository.searchByTipoActivoId(
-                        tipoActivoId,
-                        normalized,
-                        pageable
-                ),
-                this::toResponse
-        );
+        return toPageResponse(page);
     }
 
     @Transactional(readOnly = true)
@@ -153,20 +145,7 @@ public class ActivoService {
             String query,
             PageRequestDto pageRequest
     ) {
-        String normalized = StringUtils.normalize(query);
-        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
-
-        if (normalized == null) {
-            return PageResponse.from(
-                    activoRepository.findAll(pageable),
-                    this::toResponse
-            );
-        }
-
-        return PageResponse.from(
-                activoRepository.search(normalized, pageable),
-                this::toResponse
-        );
+        return findAll(query, pageRequest);
     }
 
     @Transactional
@@ -213,29 +192,66 @@ public class ActivoService {
                 );
     }
 
-    private ActivoResponse toResponse(Activo domain) {
-        ActivoResponse.TipoActivoInfo tipoActivoInfo = null;
-        if (domain.getTipoActivoId() != null) {
-            tipoActivoInfo = tipoActivoRepository.findById(domain.getTipoActivoId())
-                    .map(tipo -> new ActivoResponse.TipoActivoInfo(
-                            tipo.getId(),
-                            tipo.getCategoriaId(),
-                            tipo.getNombre(),
-                            tipo.getDescripcion()
-                    ))
-                    .orElse(null);
+    private PageResponse<ActivoResponse> toPageResponse(Page<Activo> page) {
+        if (page.isEmpty()) {
+            return PageResponse.of(List.of(), page);
         }
 
-        ActivoResponse.UbicacionInfo ubicacionInfo = null;
-        if (domain.getUbicacionId() != null) {
-            ubicacionInfo = ubicacionRepository.findById(domain.getUbicacionId())
-                    .map(ubicacion -> new ActivoResponse.UbicacionInfo(
-                            ubicacion.getId(),
-                            ubicacion.getCodigo(),
-                            ubicacion.getNombre()
-                    ))
-                    .orElse(null);
-        }
+        List<Activo> content = page.getContent();
+        Set<UUID> tipoIds = content.stream()
+                .map(Activo::getTipoActivoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<UUID> ubicacionIds = content.stream()
+                .map(Activo::getUbicacionId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, TipoActivo> tipoMap = tipoIds.isEmpty()
+                ? Map.of()
+                : tipoActivoRepository.findAllById(tipoIds).stream()
+                .collect(Collectors.toMap(TipoActivo::getId, Function.identity(), (a, b) -> a));
+
+        Map<UUID, Ubicacion> ubicacionMap = ubicacionIds.isEmpty()
+                ? Map.of()
+                : ubicacionRepository.findAllById(ubicacionIds).stream()
+                .collect(Collectors.toMap(Ubicacion::getId, Function.identity(), (a, b) -> a));
+
+        List<ActivoResponse> responses = content.stream()
+                .map(domain -> toResponse(domain, tipoMap.get(domain.getTipoActivoId()), ubicacionMap.get(domain.getUbicacionId())))
+                .toList();
+
+        return PageResponse.of(responses, page);
+    }
+
+    private ActivoResponse toResponse(Activo domain) {
+        TipoActivo tipoActivo = domain.getTipoActivoId() != null
+                ? tipoActivoRepository.findById(domain.getTipoActivoId()).orElse(null)
+                : null;
+        Ubicacion ubicacion = domain.getUbicacionId() != null
+                ? ubicacionRepository.findById(domain.getUbicacionId()).orElse(null)
+                : null;
+        return toResponse(domain, tipoActivo, ubicacion);
+    }
+
+    private ActivoResponse toResponse(Activo domain, TipoActivo tipoActivo, Ubicacion ubicacion) {
+        ActivoResponse.TipoActivoInfo tipoActivoInfo = tipoActivo != null
+                ? new ActivoResponse.TipoActivoInfo(
+                tipoActivo.getId(),
+                tipoActivo.getCategoriaId(),
+                tipoActivo.getNombre(),
+                tipoActivo.getDescripcion()
+        )
+                : null;
+
+        ActivoResponse.UbicacionInfo ubicacionInfo = ubicacion != null
+                ? new ActivoResponse.UbicacionInfo(
+                ubicacion.getId(),
+                ubicacion.getCodigo(),
+                ubicacion.getNombre()
+        )
+                : null;
 
         return new ActivoResponse(
                 domain.getId(),

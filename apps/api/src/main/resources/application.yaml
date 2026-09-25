@@ -54,8 +54,8 @@ app:
   keycloak:
     base-url: ${KEYCLOAK_BASE_URL:}
     realm: ${KEYCLOAK_REALM:}
-    token-url: ${KEYCLOAK_TOKEN_URL:http://157.173.99.216:8081/realms/sigma/protocol/openid-connect/token}
-    logout-url: ${KEYCLOAK_LOGOUT_URL:http://157.173.99.216:8081/realms/sigma/protocol/openid-connect/logout}
+    token-url: ${KEYCLOAK_TOKEN_URL:http://localhost:8081/realms/sigma/protocol/openid-connect/token}
+    logout-url: ${KEYCLOAK_LOGOUT_URL:http://localhost:8081/realms/sigma/protocol/openid-connect/logout}
     client-id: ${KEYCLOAK_CLIENT_ID:sigma-web}
     client-secret: ${KEYCLOAK_CLIENT_SECRET:}
     audience: ${KEYCLOAK_AUDIENCE:sigma-api}
@@ -84,6 +84,6 @@ app:
         - image/webp
         - image/gif
 flowable:
-  base-url: ${FLOWABLE_BASE_URL:http://157.173.99.216:8089/flowable-rest/service}
+  base-url: ${FLOWABLE_BASE_URL:http://localhost:8089/flowable-rest/service}
   username: ${FLOWABLE_USERNAME:admin}
   password: ${FLOWABLE_PASSWORD:admin}

@@ -41,6 +41,10 @@ public record PageRequestDto(
                 : direction;
     }
 
+    public PageRequestDto() {
+        this(null, null, null, null);
+    }
+
     public Pageable toPageable() {
         return toPageable(ApiConstants.BASE_SORT_FIELDS);
     }

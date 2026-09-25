@@ -14,6 +14,8 @@ public interface EmpleadoRepository {
 
     Optional<Empleado> findById(UUID id);
 
+    java.util.List<Empleado> findAllById(Iterable<UUID> ids);
+
     Page<Empleado> findAll(Pageable pageable);
 
     boolean existsById(UUID id);

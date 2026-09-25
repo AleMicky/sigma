@@ -37,6 +37,15 @@ public class EmpleadoRepositoryImpl implements EmpleadoRepository {
     }
 
     @Override
+    public java.util.List<Empleado> findAllById(Iterable<UUID> ids) {
+        return springRepository
+                .findAllById(ids)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public Page<Empleado> findAll(Pageable pageable) {
         return springRepository
                 .findAll(pageable)

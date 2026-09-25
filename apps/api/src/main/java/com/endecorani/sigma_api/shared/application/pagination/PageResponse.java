@@ -52,5 +52,21 @@ public record PageResponse<T>(
 
     }
 
+    public static <T, R> PageResponse<R> of(
+            List<R> content,
+            Page<T> pageData
+    ) {
+        return new PageResponse<>(
+                content,
+                pageData.getNumber(),
+                pageData.getSize(),
+                pageData.getTotalElements(),
+                pageData.getTotalPages(),
+                pageData.isFirst(),
+                pageData.isLast(),
+                pageData.isEmpty()
+        );
+    }
+
 
 }
