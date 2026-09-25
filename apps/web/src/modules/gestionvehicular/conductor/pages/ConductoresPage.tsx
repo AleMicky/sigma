@@ -27,8 +27,8 @@ export function ConductoresPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Conductor | null>(null)
   const [deleting, setDeleting] = useState<Conductor | null>(null)
-  const [selectedCategoria, setSelectedCategoria] = useState<string>("")
-  const [selectedEstado, setSelectedEstado] = useState<string>("")
+  const [selectedCategoria, setSelectedCategoria] = useState("")
+  const [selectedEstado, setSelectedEstado] = useState("")
 
   const search = usePaginatedSearch({
     resetKey: `${selectedCategoria}-${selectedEstado}`,
@@ -40,68 +40,52 @@ export function ConductoresPage() {
     size: PAGE_SIZE,
     sortBy: "createdAt",
     direction: "DESC" as const,
-    ...(search.query ? { search: search.query } : {}),
-    ...(selectedCategoria ? { categoria: selectedCategoria } : {}),
-    ...(selectedEstado === "ACTIVO"
-      ? { activo: true }
-      : selectedEstado === "INACTIVO"
-      ? { activo: false }
-      : {}),
+    ...(search.query && { search: search.query }),
+    ...(selectedCategoria && { categoria: selectedCategoria }),
+    ...(selectedEstado && { activo: selectedEstado === "ACTIVO" }),
   }
 
   const conductoresQuery = useQuery(conductorQueries.list(queryParams))
-  const conductores = conductoresQuery.data?.content ?? []
+  const allConductoresQuery = useQuery(conductorQueries.list({ size: 1000 }))
 
-  // Global query for KPIs calculation
-  const allConductoresQuery = useQuery(
-    conductorQueries.list({ size: 1000 })
-  )
+  const conductores = conductoresQuery.data?.content ?? []
 
   const kpiStats = useMemo(() => {
     const list = allConductoresQuery.data?.content ?? conductores
     const total = allConductoresQuery.data?.totalElements ?? list.length
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+
     let activos = 0
     let porVencer = 0
     let vencidas = 0
 
-    const hoy = new Date()
-    hoy.setHours(0, 0, 0, 0)
-
     for (const c of list) {
       if (c.activo) activos++
       if (c.fechaVencimiento) {
-        const vencimiento = new Date(c.fechaVencimiento)
         const diffDays = Math.ceil(
-          (vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)
+          (new Date(c.fechaVencimiento).getTime() - hoy.getTime()) / 86_400_000
         )
-        if (diffDays < 0) {
-          vencidas++
-        } else if (diffDays <= 30) {
-          porVencer++
-        }
+        if (diffDays < 0) vencidas++
+        else if (diffDays <= 30) porVencer++
       }
     }
-
     return { total, activos, porVencer, vencidas }
   }, [allConductoresQuery.data, conductores])
 
-  useClampPage(
-    search.page,
-    search.setPage,
-    conductoresQuery.data?.totalPages,
-  )
+  useClampPage(search.page, search.setPage, conductoresQuery.data?.totalPages)
 
-  function openCreate() {
+  const openCreate = () => {
     setEditing(null)
     setDialogOpen(true)
   }
 
-  function openEdit(conductor: Conductor) {
+  const openEdit = (conductor: Conductor) => {
     setEditing(conductor)
     setDialogOpen(true)
   }
 
-  async function handleDelete() {
+  const handleDelete = async () => {
     if (!deleting) return
     try {
       await deleteMutation.mutateAsync(deleting.id)
@@ -115,32 +99,40 @@ export function ConductoresPage() {
     search.search.trim() || selectedCategoria || selectedEstado
   )
 
-  function resetFilters() {
+  const resetFilters = () => {
     search.setSearch("")
     setSelectedCategoria("")
     setSelectedEstado("")
   }
 
-  const emptyTitle = hasActiveFilters
-    ? "No se encontraron conductores"
-    : "No hay conductores registrados"
-  const emptyDescription = hasActiveFilters
-    ? "No hay resultados que coincidan con los filtros seleccionados."
-    : "Registra conductores autorizados para gestionar la flota vehicular."
-  const emptyIcon = (
-    <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary/60 shadow-inner">
-      <Car className="size-8" />
-    </div>
-  )
-  const emptyAction = !hasActiveFilters && (
-    <Button onClick={openCreate} className="mt-4 gap-2">
-      <Plus className="size-4" />
-      Registrar Conductor
-    </Button>
-  )
+  const viewProps = {
+    conductores,
+    isLoading: conductoresQuery.isFetching,
+    page: conductoresQuery.data,
+    onPageChange: search.setPage,
+    onEdit: openEdit,
+    onDelete: setDeleting,
+    emptyTitle: hasActiveFilters
+      ? "No se encontraron conductores"
+      : "No hay conductores registrados",
+    emptyDescription: hasActiveFilters
+      ? "No hay resultados que coincidan con los filtros seleccionados."
+      : "Registra conductores autorizados para gestionar la flota vehicular.",
+    emptyIcon: (
+      <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary/70 shadow-2xs">
+        <Car className="size-6" />
+      </div>
+    ),
+    emptyAction: !hasActiveFilters && (
+      <Button onClick={openCreate} size="sm" className="mt-3 gap-1.5 rounded-lg text-xs font-semibold">
+        <Plus className="size-3.5" />
+        Registrar Conductor
+      </Button>
+    ),
+  }
 
   return (
-    <div className="flex w-full flex-col gap-4 px-2 pt-2 pb-6">
+    <div className="flex w-full flex-col gap-3 px-1 sm:px-2 pt-1 pb-4">
       {/* HEADER */}
       <ConductoresHeader
         isRefreshing={conductoresQuery.isFetching}
@@ -151,7 +143,7 @@ export function ConductoresPage() {
         onOpenCreate={openCreate}
       />
 
-      {/* KPI METRICS (INFORMATIVE COUNTERS) */}
+      {/* COMPACT KPI METRICS */}
       <ConductorKPIs
         totalCount={kpiStats.total}
         activosCount={kpiStats.activos}
@@ -161,8 +153,7 @@ export function ConductoresPage() {
       />
 
       {/* UNIFIED CONTAINER */}
-      <div className="flex-1 w-full overflow-hidden rounded-2xl border border-border/80 bg-card/75 shadow-xs">
-        {/* Integrated Toolbar */}
+      <div className="flex-1 w-full overflow-hidden rounded-xl border border-border/70 bg-card/75 shadow-2xs">
         <ConductoresFilters
           search={search.search}
           setSearch={search.setSearch}
@@ -176,35 +167,12 @@ export function ConductoresPage() {
           onViewModeChange={setViewMode}
         />
 
-        {/* Content Area */}
         {viewMode === "grid" ? (
-          <div className="p-4">
-            <ConductorCardView
-              conductores={conductores}
-              isLoading={conductoresQuery.isFetching}
-              page={conductoresQuery.data}
-              onPageChange={search.setPage}
-              onEdit={openEdit}
-              onDelete={setDeleting}
-              emptyTitle={emptyTitle}
-              emptyDescription={emptyDescription}
-              emptyIcon={emptyIcon}
-              emptyAction={emptyAction}
-            />
+          <div className="p-3">
+            <ConductorCardView {...viewProps} />
           </div>
         ) : (
-          <ConductorTableView
-            conductores={conductores}
-            isLoading={conductoresQuery.isFetching}
-            page={conductoresQuery.data}
-            onPageChange={search.setPage}
-            onEdit={openEdit}
-            onDelete={setDeleting}
-            emptyTitle={emptyTitle}
-            emptyDescription={emptyDescription}
-            emptyIcon={emptyIcon}
-            emptyAction={emptyAction}
-          />
+          <ConductorTableView {...viewProps} />
         )}
       </div>
 
@@ -230,3 +198,4 @@ export function ConductoresPage() {
     </div>
   )
 }
+

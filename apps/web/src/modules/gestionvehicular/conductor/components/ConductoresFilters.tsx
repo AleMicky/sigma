@@ -41,26 +41,26 @@ export function ConductoresFilters({
   return (
     <div className="flex flex-col bg-card/60 backdrop-blur-md">
       {/* Top Main Toolbar */}
-      <div className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between border-b border-border/60">
+      <div className="flex flex-col gap-2.5 p-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-border/60">
         {/* Left: Search & Dropdowns */}
-        <div className="flex flex-1 flex-wrap items-center gap-2.5">
+        <div className="flex flex-1 flex-wrap items-center gap-2">
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[220px] sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70" />
+          <div className="relative flex-1 min-w-[200px] sm:max-w-xs">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/70" />
             <Input
               placeholder="Buscar conductor, licencia o código…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-8 h-9 text-xs rounded-xl bg-background/70 border-border/60 focus-visible:ring-primary/25 placeholder:text-muted-foreground/60 shadow-2xs"
+              className="pl-8 pr-7 h-8 text-xs rounded-lg bg-background/70 border-border/60 focus-visible:ring-primary/25 placeholder:text-muted-foreground/60 shadow-2xs"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground p-0.5 cursor-pointer"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground p-0.5 cursor-pointer"
                 title="Limpiar búsqueda"
               >
-                <X className="size-3.5" />
+                <X className="size-3" />
               </button>
             )}
           </div>
@@ -70,7 +70,7 @@ export function ConductoresFilters({
             value={categoria || "ALL"}
             onValueChange={(val) => setCategoria(val === "ALL" || !val ? "" : val)}
           >
-            <SelectTrigger className="h-9 w-[150px] text-xs rounded-xl bg-background/70 border-border/60 shadow-2xs font-medium">
+            <SelectTrigger className="h-8 w-[140px] text-xs rounded-lg bg-background/70 border-border/60 shadow-2xs font-medium">
               <div className="flex items-center gap-1.5 truncate">
                 <span className="text-muted-foreground font-normal">Cat:</span>
                 <SelectValue placeholder="Todas" />
@@ -92,7 +92,7 @@ export function ConductoresFilters({
             value={estado || "ALL"}
             onValueChange={(val) => setEstado(val === "ALL" || !val ? "" : val)}
           >
-            <SelectTrigger className="h-9 w-[135px] text-xs rounded-xl bg-background/70 border-border/60 shadow-2xs font-medium">
+            <SelectTrigger className="h-8 w-[130px] text-xs rounded-lg bg-background/70 border-border/60 shadow-2xs font-medium">
               <div className="flex items-center gap-1.5 truncate">
                 <span className="text-muted-foreground font-normal">Estado:</span>
                 <SelectValue placeholder="Todos" />
@@ -107,13 +107,13 @@ export function ConductoresFilters({
         </div>
 
         {/* Right: View Switcher */}
-        <div className="flex items-center gap-1 self-end sm:self-auto rounded-xl border border-border/60 bg-muted/30 p-1 shadow-2xs">
+        <div className="flex items-center gap-1 self-end sm:self-auto rounded-lg border border-border/60 bg-muted/30 p-0.5 shadow-2xs">
           <Button
             size="sm"
             variant={viewMode === "table" ? "secondary" : "ghost"}
             type="button"
             onClick={() => onViewModeChange("table")}
-            className="h-7 px-3 text-xs gap-1.5 rounded-lg font-medium transition-all"
+            className="h-6.5 px-2.5 text-xs gap-1.5 rounded-md font-medium transition-all"
             title="Vista tabular compacta"
           >
             <List className="size-3.5" />
@@ -125,7 +125,7 @@ export function ConductoresFilters({
             variant={viewMode === "grid" ? "secondary" : "ghost"}
             type="button"
             onClick={() => onViewModeChange("grid")}
-            className="h-7 px-3 text-xs gap-1.5 rounded-lg font-medium transition-all"
+            className="h-6.5 px-2.5 text-xs gap-1.5 rounded-md font-medium transition-all"
             title="Vista en tarjetas"
           >
             <LayoutGrid className="size-3.5" />

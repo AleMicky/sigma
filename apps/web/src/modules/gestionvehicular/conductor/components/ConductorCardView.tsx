@@ -80,23 +80,23 @@ export function ConductorCardView({
 }: ConductorCardViewProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card
             key={i}
-            className="overflow-hidden border-border/60 bg-card/60 p-5 space-y-4 rounded-2xl"
+            className="overflow-hidden border-border/60 bg-card/60 p-3.5 space-y-3 rounded-xl shadow-2xs"
           >
-            <div className="flex items-center gap-3">
-              <Skeleton className="size-12 rounded-2xl" />
-              <div className="space-y-2 flex-1">
-                <Skeleton className="h-4.5 w-3/4 rounded-md" />
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="size-9 rounded-xl" />
+              <div className="space-y-1.5 flex-1">
+                <Skeleton className="h-4 w-3/4 rounded" />
                 <Skeleton className="h-3 w-1/2 rounded" />
               </div>
             </div>
-            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="h-14 w-full rounded-lg" />
             <div className="flex items-center justify-between pt-2 border-t border-border/40">
-              <Skeleton className="h-5 w-24 rounded-full" />
-              <Skeleton className="h-8 w-16 rounded-lg" />
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="h-6 w-14 rounded-md" />
             </div>
           </Card>
         ))}
@@ -106,7 +106,7 @@ export function ConductorCardView({
 
   if (conductores.length === 0) {
     return (
-      <div className="rounded-2xl border border-border/60 bg-card/40 p-12 text-center shadow-2xs">
+      <div className="rounded-xl border border-border/60 bg-card/40 p-8 text-center shadow-2xs">
         <EmptyState
           title={emptyTitle}
           description={emptyDescription}
@@ -117,12 +117,14 @@ export function ConductorCardView({
     )
   }
 
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
         {conductores.map((conductor) => {
-          const nombre =
-            conductor.empleado?.nombreCompleto || "Empleado sin asignar"
+          const nombre = conductor.empleado?.nombreCompleto || "Empleado sin asignar"
           const codigo = conductor.empleado?.codigo || "-"
           const cargo = conductor.empleado?.cargo || null
           const area = conductor.empleado?.area || null
@@ -134,11 +136,8 @@ export function ConductorCardView({
           let diasRestantes = 0
 
           if (dateStr) {
-            const vencimiento = new Date(dateStr)
-            const hoy = new Date()
-            hoy.setHours(0, 0, 0, 0)
             diasRestantes = Math.ceil(
-              (vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)
+              (new Date(dateStr).getTime() - hoy.getTime()) / 86_400_000
             )
             isExpired = diasRestantes < 0
             isExpiringSoon = diasRestantes >= 0 && diasRestantes <= 30
@@ -150,7 +149,7 @@ export function ConductorCardView({
             <Card
               key={conductor.id}
               className={cn(
-                "group relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-card/90 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+                "group relative flex flex-col justify-between overflow-hidden rounded-xl border bg-card/90 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm",
                 isExpired
                   ? "border-destructive/40 hover:border-destructive/70"
                   : isExpiringSoon
@@ -158,15 +157,15 @@ export function ConductorCardView({
                   : "border-border/70 hover:border-primary/50"
               )}
             >
-              <CardContent className="p-4.5 sm:p-5 flex flex-col gap-4 flex-1">
-                {/* Header: Avatar, Name, Category & Status Badges */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <div className="relative flex size-11 sm:size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/90 via-primary/70 to-primary/40 font-bold text-xs sm:text-sm text-primary-foreground shadow-sm ring-2 ring-background">
+              <CardContent className="p-3.5 flex flex-col gap-2.5 flex-1">
+                {/* Header: Avatar, Name, Category */}
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/90 via-primary/70 to-primary/40 font-bold text-xs text-primary-foreground shadow-2xs ring-2 ring-background">
                       <span>{initials}</span>
                       <span
                         className={cn(
-                          "absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-background shadow-xs",
+                          "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background shadow-2xs",
                           conductor.activo ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
                         )}
                         title={conductor.activo ? "Habilitado / Activo" : "Inactivo"}
@@ -177,17 +176,17 @@ export function ConductorCardView({
                       <button
                         type="button"
                         onClick={() => onEdit(conductor)}
-                        className="text-left text-sm font-bold text-foreground hover:text-primary transition-colors cursor-pointer leading-snug"
+                        className="text-left text-xs sm:text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate"
                         title={nombre}
                       >
                         {nombre}
                       </button>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1 flex-wrap">
-                        <span className="font-mono text-[10px] sm:text-[11px] font-semibold text-foreground/85 bg-muted/90 px-1.5 py-0.2 rounded-md border border-border/40">
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
+                        <span className="font-mono text-[10px] font-semibold text-foreground/85 bg-muted/90 px-1.5 py-0.2 rounded border border-border/40">
                           {codigo}
                         </span>
                         {cargo && (
-                          <span className="text-[11px] font-medium text-foreground/75" title={cargo}>
+                          <span className="truncate text-[10px] font-medium text-foreground/75" title={cargo}>
                             • {cargo}
                           </span>
                         )}
@@ -198,50 +197,50 @@ export function ConductorCardView({
                   {/* Category Pill */}
                   <span
                     className={cn(
-                      "inline-flex items-center justify-center rounded-xl font-bold text-xs px-2.5 py-1 border shadow-2xs shrink-0",
+                      "inline-flex items-center justify-center rounded-lg font-bold text-[10px] px-2 py-0.5 border shadow-2xs shrink-0",
                       categoryClasses
                     )}
-                    title={`Categoría de licencia: ${conductor.categoriaLicencia}`}
+                    title={`Categoría: ${conductor.categoriaLicencia}`}
                   >
                     Cat. {conductor.categoriaLicencia}
                   </span>
                 </div>
 
                 {/* Details Section */}
-                <div className="flex flex-col gap-2 pt-3 border-t border-border/50 text-xs">
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-border/50 text-xs">
                   {/* License Row */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground flex items-center gap-1.5">
-                      <IdCard className="size-3.5 text-muted-foreground/70" />
+                    <span className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
+                      <IdCard className="size-3 text-muted-foreground/70" />
                       Nº Licencia:
                     </span>
-                    <span className="font-mono text-xs font-bold text-foreground tracking-wide">
+                    <span className="font-mono text-xs font-semibold text-foreground tracking-wide">
                       {conductor.numeroLicencia}
                     </span>
                   </div>
 
                   {/* Expiration Row */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground flex items-center gap-1.5">
-                      <Calendar className="size-3.5 text-muted-foreground/70" />
+                    <span className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
+                      <Calendar className="size-3 text-muted-foreground/70" />
                       Vencimiento:
                     </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-medium text-foreground">
                         {dateStr ? formatDate(dateStr) : "Sin fecha"}
                       </span>
                       {isExpired ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
-                          <AlertTriangle className="size-3" />
+                        <span className="inline-flex items-center gap-1 rounded bg-destructive/10 px-1 py-0.2 text-[10px] font-semibold text-destructive">
+                          <AlertTriangle className="size-2.5" />
                           Vencida ({Math.abs(diasRestantes)}d)
                         </span>
                       ) : isExpiringSoon ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                          <Clock className="size-3" />
-                          Vence en {diasRestantes}d
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1 py-0.2 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                          <Clock className="size-2.5" />
+                          Vence ({diasRestantes}d)
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1 py-0.2 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                           Vigente
                         </span>
                       )}
@@ -251,11 +250,11 @@ export function ConductorCardView({
                   {/* Area Row */}
                   {area && (
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground flex items-center gap-1.5">
-                        <Building className="size-3.5 text-muted-foreground/70" />
+                      <span className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
+                        <Building className="size-3 text-muted-foreground/70" />
                         Área:
                       </span>
-                      <span className="font-medium text-foreground text-right" title={area}>
+                      <span className="text-[11px] font-medium text-foreground text-right truncate max-w-[150px]" title={area}>
                         {area}
                       </span>
                     </div>
@@ -263,22 +262,22 @@ export function ConductorCardView({
                 </div>
 
                 {/* Footer: State & Actions */}
-                <div className="flex items-center justify-between pt-3 mt-auto border-t border-border/50">
+                <div className="flex items-center justify-between pt-2 mt-auto border-t border-border/50">
                   <div>
                     {conductor.activo ? (
                       <Badge
                         variant="outline"
-                        className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium rounded-full px-2.5 py-0.5 shadow-2xs"
+                        className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium rounded-full px-2 py-0.2 shadow-2xs"
                       >
-                        <CheckCircle2 className="size-3.5" />
+                        <CheckCircle2 className="size-3" />
                         Habilitado
                       </Badge>
                     ) : (
                       <Badge
                         variant="outline"
-                        className="gap-1 border-zinc-500/30 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 text-xs font-medium rounded-full px-2.5 py-0.5 shadow-2xs"
+                        className="gap-1 border-zinc-500/30 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 text-[10px] font-medium rounded-full px-2 py-0.2 shadow-2xs"
                       >
-                        <XCircle className="size-3.5" />
+                        <XCircle className="size-3" />
                         Inactivo
                       </Badge>
                     )}
@@ -289,20 +288,20 @@ export function ConductorCardView({
                       variant="ghost"
                       size="sm"
                       onClick={() => onEdit(conductor)}
-                      className="h-8 gap-1.5 px-2.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                      className="h-7 gap-1 px-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                       title="Editar conductor"
                     >
-                      <Pencil className="size-3.5" />
+                      <Pencil className="size-3" />
                       <span>Editar</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon-xs"
                       onClick={() => onDelete(conductor)}
-                      className="size-8 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      className="size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                       title="Eliminar conductor"
                     >
-                      <Trash2 className="size-3.5" />
+                      <Trash2 className="size-3" />
                     </Button>
                   </div>
                 </div>
@@ -314,10 +313,11 @@ export function ConductorCardView({
 
       {/* Pagination */}
       {page && onPageChange && page.totalElements > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-2xs">
+        <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-2xs">
           <Pagination page={page} onPageChange={onPageChange} />
         </div>
       )}
     </div>
   )
 }
+
