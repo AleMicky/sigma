@@ -97,5 +97,10 @@ export const routes = {
     roles: "/seguridad/roles",
     menus: "/seguridad/menus",
   },
+
+  gestionVehicular: {
+    root: "/gestion-vehicular",
+    conductores: "/gestion-vehicular/conductores",
+  },
 } as const
 
