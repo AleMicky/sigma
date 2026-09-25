@@ -295,12 +295,12 @@ export function NavigationTabs() {
   }
 
   return (
-    <div className="flex h-9 shrink-0 items-center justify-between border-b border-border/60 bg-muted/20 px-2 select-none backdrop-blur-xs">
+    <div className="flex h-8.5 shrink-0 items-center justify-between border-b border-border/50 bg-muted/20 px-2 select-none">
       {/* Botón scroll izquierdo */}
       <button
         type="button"
         onClick={() => scroll("left")}
-        className="hidden sm:flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-muted/80 hover:text-foreground hover:scale-105 active:scale-95 transition-all mr-1"
+        className="hidden sm:flex size-5.5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors mr-1"
         title="Desplazar a la izquierda"
       >
         <ChevronLeft className="size-3.5" />
@@ -309,7 +309,7 @@ export function NavigationTabs() {
       {/* Lista de pestañas con scroll horizontal */}
       <div
         ref={scrollContainerRef}
-        className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto scrollbar-none py-1"
+        className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-none py-0.5"
       >
         {tabs.map((tab) => {
           const isActive = pathname === tab.pathname
@@ -322,29 +322,29 @@ export function NavigationTabs() {
               to={tab.pathname}
               data-tab-active={isActive}
               className={cn(
-                "group relative flex h-7 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-150 border",
+                "group relative flex h-6.5 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[11.5px] font-medium transition-colors border",
                 isActive
-                  ? "bg-background text-primary border-primary/30 shadow-xs font-semibold ring-1 ring-primary/25"
-                  : "bg-background/40 text-muted-foreground border-transparent hover:bg-background/80 hover:text-foreground hover:border-border/60 hover:shadow-2xs",
+                  ? "bg-background text-foreground border-border shadow-2xs font-semibold"
+                  : "bg-transparent text-muted-foreground border-transparent hover:bg-background/60 hover:text-foreground",
               )}
             >
               <Icon
                 className={cn(
-                  "size-3.5 shrink-0 transition-colors",
+                  "size-3 shrink-0 transition-colors",
                   isActive
                     ? "text-primary"
-                    : "text-muted-foreground/70 group-hover:text-primary transition-colors",
+                    : "text-muted-foreground/70 group-hover:text-foreground",
                 )}
               />
 
-              <span className="truncate max-w-36 font-sans tracking-tight">{tab.title}</span>
+              <span className="truncate max-w-36 tracking-tight">{tab.title}</span>
 
               {/* Botón cerrar pestaña individual */}
               {!isHome && tabs.length > 1 && (
                 <button
                   type="button"
                   onClick={(e) => closeTab(e, tab)}
-                  className="size-4 shrink-0 rounded-md flex items-center justify-center text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:bg-destructive/15 hover:text-destructive hover:scale-110 active:scale-95 transition-all ml-0.5"
+                  className="size-3.5 shrink-0 rounded flex items-center justify-center text-muted-foreground/60 opacity-0 group-hover:opacity-100 hover:bg-destructive/15 hover:text-destructive transition-all ml-0.5"
                   title="Cerrar pestaña"
                 >
                   <X className="size-2.5" />
@@ -356,11 +356,11 @@ export function NavigationTabs() {
       </div>
 
       {/* Botón scroll derecho y menú de acciones */}
-      <div className="flex items-center gap-1 ml-1.5 shrink-0">
+      <div className="flex items-center gap-0.5 ml-1 shrink-0">
         <button
           type="button"
           onClick={() => scroll("right")}
-          className="hidden sm:flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-muted/80 hover:text-foreground hover:scale-105 active:scale-95 transition-all"
+          className="hidden sm:flex size-5.5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
           title="Desplazar a la derecha"
         >
           <ChevronRight className="size-3.5" />
@@ -372,18 +372,18 @@ export function NavigationTabs() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 hover:scale-105 active:scale-95 transition-all"
+                className="size-5.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
                 title="Opciones de pestañas"
               />
             }
           >
             <MoreHorizontal className="size-3.5" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-40 rounded-xl p-1 shadow-lg text-xs">
+          <DropdownMenuContent align="end" className="min-w-36 rounded-lg p-1 shadow-md text-xs">
             <DropdownMenuItem
               onClick={closeOtherTabs}
               disabled={tabs.length <= 1}
-              className="rounded-lg cursor-pointer py-1.5"
+              className="rounded-md cursor-pointer py-1.5 text-xs"
             >
               <Layers className="size-3.5 mr-1.5 text-muted-foreground" />
               <span>Cerrar las demás</span>
@@ -392,7 +392,7 @@ export function NavigationTabs() {
             <DropdownMenuItem
               onClick={closeAllTabs}
               disabled={tabs.length <= 1 && pathname === "/"}
-              className="rounded-lg cursor-pointer py-1.5 text-destructive focus:text-destructive"
+              className="rounded-md cursor-pointer py-1.5 text-xs text-destructive focus:text-destructive"
             >
               <X className="size-3.5 mr-1.5" />
               <span>Cerrar todas</span>
