@@ -151,15 +151,13 @@ export function ConductoresPage() {
         onOpenCreate={openCreate}
       />
 
-      {/* KPI METRICS (INTERACTIVE) */}
+      {/* KPI METRICS (INFORMATIVE COUNTERS) */}
       <ConductorKPIs
         totalCount={kpiStats.total}
         activosCount={kpiStats.activos}
         porVencerCount={kpiStats.porVencer}
         vencidasCount={kpiStats.vencidas}
         isLoading={allConductoresQuery.isFetching && !allConductoresQuery.data}
-        selectedEstado={selectedEstado}
-        onSelectEstado={setSelectedEstado}
       />
 
       {/* UNIFIED CONTAINER */}
