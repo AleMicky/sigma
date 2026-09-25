@@ -18,7 +18,6 @@ import { Card, CardContent } from "@/shared/components/ui/card"
 import { Skeleton } from "@/shared/components/ui/skeleton"
 import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
-import type { PageResponse } from "@/shared/types/api.types"
 
 import type { Conductor } from "../api/conductor.service"
 
@@ -51,11 +50,6 @@ function getCategoryTheme(cat?: string | null) {
 
 type ConductorCardViewProps = {
   conductores: Conductor[]
-  page?: Pick<
-    PageResponse<unknown>,
-    "page" | "size" | "totalElements" | "totalPages" | "first" | "last"
-  >
-  onPageChange?: (page: number) => void
   onEdit: (conductor: Conductor) => void
   onDelete: (conductor: Conductor) => void
   isLoading?: boolean
@@ -67,8 +61,6 @@ type ConductorCardViewProps = {
 
 export function ConductorCardView({
   conductores,
-  page,
-  onPageChange,
   onEdit,
   onDelete,
   isLoading = false,

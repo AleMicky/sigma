@@ -109,8 +109,6 @@ export function ConductoresPage() {
   const viewProps = {
     conductores,
     isLoading: conductoresQuery.isFetching,
-    page: conductoresQuery.data,
-    onPageChange: search.setPage,
     onEdit: openEdit,
     onDelete: setDeleting,
     emptyTitle: hasActiveFilters

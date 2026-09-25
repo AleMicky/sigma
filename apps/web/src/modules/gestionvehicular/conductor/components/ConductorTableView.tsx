@@ -16,7 +16,6 @@ import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
-import type { PageResponse } from "@/shared/types/api.types"
 
 import type { Conductor } from "../api/conductor.service"
 
@@ -49,11 +48,6 @@ function getCategoryColor(cat?: string | null) {
 
 type ConductorTableViewProps = {
   conductores: Conductor[]
-  page?: Pick<
-    PageResponse<unknown>,
-    "page" | "size" | "totalElements" | "totalPages" | "first" | "last"
-  >
-  onPageChange?: (page: number) => void
   onEdit: (conductor: Conductor) => void
   onDelete: (conductor: Conductor) => void
   isLoading?: boolean
@@ -65,8 +59,6 @@ type ConductorTableViewProps = {
 
 export function ConductorTableView({
   conductores,
-  page,
-  onPageChange,
   onEdit,
   onDelete,
   isLoading = false,
@@ -79,8 +71,9 @@ export function ConductorTableView({
     () => [
       {
         id: "conductor",
+        accessorFn: (row) => row.empleado?.nombreCompleto || "",
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Conductor / Colaborador" />
+          <DataTableColumnHeader column={column} title="Conductor / Colaborador" hideSortMenu />
         ),
         cell: ({ row }) => {
           const c = row.original
@@ -91,12 +84,12 @@ export function ConductorTableView({
           const initials = getInitials(nombre)
 
           return (
-            <div className="flex items-center gap-3.5 py-0.5 min-w-0">
-              <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/80 via-primary/60 to-primary/30 font-bold text-xs text-primary-foreground shadow-xs ring-2 ring-background">
+            <div className="flex items-center gap-3 py-0.5 min-w-0">
+              <div className="relative flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/80 via-primary/60 to-primary/30 font-bold text-xs text-primary-foreground shadow-2xs ring-2 ring-background">
                 <span>{initials}</span>
                 <span
                   className={cn(
-                    "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background shadow-xs",
+                    "absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-background shadow-2xs",
                     c.activo ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
                   )}
                   title={c.activo ? "Habilitado / Activo" : "Inactivo"}
@@ -104,14 +97,12 @@ export function ConductorTableView({
               </div>
 
               <div className="flex min-w-0 flex-1 flex-col">
-                <button
-                  type="button"
-                  onClick={() => onEdit(c)}
-                  className="text-left text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
+                <span
+                  className="text-left text-xs sm:text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate"
                   title={nombre}
                 >
                   {nombre}
-                </button>
+                </span>
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
                   <span className="font-mono text-[10px] font-semibold text-foreground/85 bg-muted/80 px-1.5 py-0.2 rounded border border-border/40">
                     {codigo}
@@ -119,7 +110,7 @@ export function ConductorTableView({
                   {cargo && (
                     <>
                       <span className="opacity-40">•</span>
-                      <span className="font-medium text-foreground/75" title={cargo}>
+                      <span className="font-medium text-foreground/75 truncate max-w-[140px]" title={cargo}>
                         {cargo}
                       </span>
                     </>
@@ -127,7 +118,7 @@ export function ConductorTableView({
                   {area && (
                     <>
                       <span className="opacity-40 hidden sm:inline">•</span>
-                      <span className="text-muted-foreground/70 hidden sm:inline" title={area}>
+                      <span className="text-muted-foreground/70 hidden sm:inline truncate max-w-[140px]" title={area}>
                         {area}
                       </span>
                     </>
@@ -140,8 +131,9 @@ export function ConductorTableView({
       },
       {
         id: "licencia",
+        accessorFn: (row) => row.numeroLicencia,
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Licencia" />
+          <DataTableColumnHeader column={column} title="Licencia" hideSortMenu />
         ),
         cell: ({ row }) => {
           const c = row.original
@@ -151,7 +143,7 @@ export function ConductorTableView({
             <div className="flex items-center gap-2 whitespace-nowrap">
               <span
                 className={cn(
-                  "inline-flex size-6.5 items-center justify-center rounded-lg font-bold text-xs border shadow-2xs",
+                  "inline-flex size-6 items-center justify-center rounded-lg font-bold text-[10px] border shadow-2xs",
                   colorClasses
                 )}
                 title={`Categoría ${c.categoriaLicencia}`}
@@ -169,7 +161,7 @@ export function ConductorTableView({
       {
         accessorKey: "fechaVencimiento",
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Vencimiento" />
+          <DataTableColumnHeader column={column} title="Vencimiento" hideSortMenu />
         ),
         cell: ({ row }) => {
           const dateStr = row.original.fechaVencimiento
@@ -178,7 +170,7 @@ export function ConductorTableView({
           const vencimiento = new Date(dateStr)
           const hoy = new Date()
           hoy.setHours(0, 0, 0, 0)
-          const diasRestantes = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+          const diasRestantes = Math.ceil((vencimiento.getTime() - hoy.getTime()) / 86_400_000)
 
           const isExpired = diasRestantes < 0
           const isExpiringSoon = diasRestantes >= 0 && diasRestantes <= 30
@@ -192,12 +184,12 @@ export function ConductorTableView({
               {isExpired ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-destructive">
                   <AlertTriangle className="size-2.5 shrink-0" />
-                  Vencida hace {Math.abs(diasRestantes)}d
+                  Vencida ({Math.abs(diasRestantes)}d)
                 </span>
               ) : isExpiringSoon ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
                   <Clock className="size-2.5 shrink-0" />
-                  Vence en {diasRestantes}d
+                  Vence ({diasRestantes}d)
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600/90 dark:text-emerald-400/90">
@@ -212,7 +204,7 @@ export function ConductorTableView({
       {
         accessorKey: "activo",
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Estado" />
+          <DataTableColumnHeader column={column} title="Estado" hideSortMenu />
         ),
         cell: ({ row }) => {
           const activo = row.original.activo
@@ -221,7 +213,7 @@ export function ConductorTableView({
               {activo ? (
                 <Badge
                   variant="outline"
-                  className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium rounded-full px-2.5 py-0.5 shadow-2xs"
+                  className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium rounded-full px-2 py-0.2 shadow-2xs"
                 >
                   <CheckCircle2 className="size-3 shrink-0" />
                   Habilitado
@@ -229,7 +221,7 @@ export function ConductorTableView({
               ) : (
                 <Badge
                   variant="outline"
-                  className="gap-1 border-zinc-500/30 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 text-[11px] font-medium rounded-full px-2.5 py-0.5 shadow-2xs"
+                  className="gap-1 border-zinc-500/30 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 text-[10px] font-medium rounded-full px-2 py-0.2 shadow-2xs"
                 >
                   <XCircle className="size-3 shrink-0" />
                   Inactivo
@@ -241,6 +233,7 @@ export function ConductorTableView({
       },
       {
         id: "actions",
+        enableSorting: false,
         header: () => (
           <div className="text-right text-xs uppercase tracking-wider text-muted-foreground font-semibold">
             Acciones

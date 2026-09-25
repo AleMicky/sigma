@@ -64,34 +64,19 @@ export function ConductorFormDialog({
       setFormError(null)
 
       try {
-        if (isEditing && conductor) {
-          const payload = {
-            empleadoId: conductor.empleadoId || value.empleadoId,
-            numeroLicencia: value.numeroLicencia.trim().toUpperCase(),
-            categoriaLicencia: value.categoriaLicencia.trim().toUpperCase(),
-            fechaVencimiento: value.fechaVencimiento,
-            activo: value.activo,
-          }
-
-          const saved = await updateMutation.mutateAsync({
-            id: conductor.id,
-            payload,
-          })
-
-          onSuccess?.(saved)
-        } else {
-          const payload = {
-            empleadoId: value.empleadoId,
-            numeroLicencia: value.numeroLicencia.trim().toUpperCase(),
-            categoriaLicencia: value.categoriaLicencia.trim().toUpperCase(),
-            fechaVencimiento: value.fechaVencimiento,
-            activo: value.activo,
-          }
-
-          const saved = await createMutation.mutateAsync(payload)
-          onSuccess?.(saved)
+        const payload = {
+          empleadoId: isEditing && conductor ? conductor.empleadoId : value.empleadoId,
+          numeroLicencia: value.numeroLicencia.trim().toUpperCase(),
+          categoriaLicencia: value.categoriaLicencia.trim().toUpperCase(),
+          fechaVencimiento: value.fechaVencimiento,
+          activo: value.activo,
         }
 
+        const saved = isEditing && conductor
+          ? await updateMutation.mutateAsync({ id: conductor.id, payload })
+          : await createMutation.mutateAsync(payload)
+
+        onSuccess?.(saved)
         onOpenChange(false)
         form.reset()
       } catch (error) {
