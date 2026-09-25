@@ -55,6 +55,7 @@ import { Route as DashboardActivosActivoIdEditarRouteImport } from './../../rout
 import { Route as DashboardActivosCatalogoIndexRouteImport } from './../../routes/_dashboard/activos/catalogo/index'
 import { Route as DashboardActivosCatalogoActivoIdRouteImport } from './../../routes/_dashboard/activos/catalogo/$activoId'
 import { Route as DashboardGestionVehicularConductoresIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/conductores/index'
+import { Route as DashboardGestionVehicularTiposSolicitudIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/tipos-solicitud/index'
 import { Route as DashboardInventariosInsumoIdEditarRouteImport } from './../../routes/_dashboard/inventarios/$insumoId/editar'
 import { Route as DashboardInventariosCategoriasIndexRouteImport } from './../../routes/_dashboard/inventarios/categorias/index'
 import { Route as DashboardInventariosTiposInsumoIndexRouteImport } from './../../routes/_dashboard/inventarios/tipos-insumo/index'
@@ -354,6 +355,12 @@ const DashboardGestionVehicularConductoresIndexRoute =
     path: '/conductores/',
     getParentRoute: () => DashboardGestionVehicularRouteRoute,
   } as any)
+const DashboardGestionVehicularTiposSolicitudIndexRoute =
+  DashboardGestionVehicularTiposSolicitudIndexRouteImport.update({
+    id: '/tipos-solicitud/',
+    path: '/tipos-solicitud/',
+    getParentRoute: () => DashboardGestionVehicularRouteRoute,
+  } as any)
 const DashboardInventariosInsumoIdEditarRoute =
   DashboardInventariosInsumoIdEditarRouteImport.update({
     id: '/$insumoId/editar',
@@ -600,6 +607,7 @@ export interface FileRoutesByFullPath {
   '/activos/$activoId/': typeof DashboardActivosActivoIdIndexRoute
   '/activos/catalogo/': typeof DashboardActivosCatalogoIndexRoute
   '/gestion-vehicular/conductores/': typeof DashboardGestionVehicularConductoresIndexRoute
+  '/gestion-vehicular/tipos-solicitud/': typeof DashboardGestionVehicularTiposSolicitudIndexRoute
   '/inventarios/categorias/': typeof DashboardInventariosCategoriasIndexRoute
   '/inventarios/tipos-insumo/': typeof DashboardInventariosTiposInsumoIndexRoute
   '/mantenimientos/actividades/': typeof DashboardMantenimientosActividadesIndexRoute
@@ -661,6 +669,7 @@ export interface FileRoutesByTo {
   '/activos/$activoId': typeof DashboardActivosActivoIdIndexRoute
   '/activos/catalogo': typeof DashboardActivosCatalogoIndexRoute
   '/gestion-vehicular/conductores': typeof DashboardGestionVehicularConductoresIndexRoute
+  '/gestion-vehicular/tipos-solicitud': typeof DashboardGestionVehicularTiposSolicitudIndexRoute
   '/inventarios/categorias': typeof DashboardInventariosCategoriasIndexRoute
   '/inventarios/tipos-insumo': typeof DashboardInventariosTiposInsumoIndexRoute
   '/mantenimientos/actividades': typeof DashboardMantenimientosActividadesIndexRoute
@@ -742,6 +751,7 @@ export interface FileRoutesById {
   '/_dashboard/activos/$activoId/': typeof DashboardActivosActivoIdIndexRoute
   '/_dashboard/activos/catalogo/': typeof DashboardActivosCatalogoIndexRoute
   '/_dashboard/gestion-vehicular/conductores/': typeof DashboardGestionVehicularConductoresIndexRoute
+  '/_dashboard/gestion-vehicular/tipos-solicitud/': typeof DashboardGestionVehicularTiposSolicitudIndexRoute
   '/_dashboard/inventarios/categorias/': typeof DashboardInventariosCategoriasIndexRoute
   '/_dashboard/inventarios/tipos-insumo/': typeof DashboardInventariosTiposInsumoIndexRoute
   '/_dashboard/mantenimientos/actividades/': typeof DashboardMantenimientosActividadesIndexRoute
@@ -823,6 +833,7 @@ export interface FileRouteTypes {
     | '/activos/$activoId/'
     | '/activos/catalogo/'
     | '/gestion-vehicular/conductores/'
+    | '/gestion-vehicular/tipos-solicitud/'
     | '/inventarios/categorias/'
     | '/inventarios/tipos-insumo/'
     | '/mantenimientos/actividades/'
@@ -884,6 +895,7 @@ export interface FileRouteTypes {
     | '/activos/$activoId'
     | '/activos/catalogo'
     | '/gestion-vehicular/conductores'
+    | '/gestion-vehicular/tipos-solicitud'
     | '/inventarios/categorias'
     | '/inventarios/tipos-insumo'
     | '/mantenimientos/actividades'
@@ -964,6 +976,7 @@ export interface FileRouteTypes {
     | '/_dashboard/activos/$activoId/'
     | '/_dashboard/activos/catalogo/'
     | '/_dashboard/gestion-vehicular/conductores/'
+    | '/_dashboard/gestion-vehicular/tipos-solicitud/'
     | '/_dashboard/inventarios/categorias/'
     | '/_dashboard/inventarios/tipos-insumo/'
     | '/_dashboard/mantenimientos/actividades/'
@@ -1320,6 +1333,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardGestionVehicularConductoresIndexRouteImport
       parentRoute: typeof DashboardGestionVehicularRouteRoute
     }
+    '/_dashboard/gestion-vehicular/tipos-solicitud/': {
+      id: '/_dashboard/gestion-vehicular/tipos-solicitud/'
+      path: '/tipos-solicitud'
+      fullPath: '/gestion-vehicular/tipos-solicitud/'
+      preLoaderRoute: typeof DashboardGestionVehicularTiposSolicitudIndexRouteImport
+      parentRoute: typeof DashboardGestionVehicularRouteRoute
+    }
     '/_dashboard/inventarios/$insumoId/editar': {
       id: '/_dashboard/inventarios/$insumoId/editar'
       path: '/$insumoId/editar'
@@ -1604,6 +1624,7 @@ const DashboardCategoriasRouteRouteWithChildren =
 interface DashboardGestionVehicularRouteRouteChildren {
   DashboardGestionVehicularIndexRoute: typeof DashboardGestionVehicularIndexRoute
   DashboardGestionVehicularConductoresIndexRoute: typeof DashboardGestionVehicularConductoresIndexRoute
+  DashboardGestionVehicularTiposSolicitudIndexRoute: typeof DashboardGestionVehicularTiposSolicitudIndexRoute
 }
 
 const DashboardGestionVehicularRouteRouteChildren: DashboardGestionVehicularRouteRouteChildren =
@@ -1611,6 +1632,8 @@ const DashboardGestionVehicularRouteRouteChildren: DashboardGestionVehicularRout
     DashboardGestionVehicularIndexRoute: DashboardGestionVehicularIndexRoute,
     DashboardGestionVehicularConductoresIndexRoute:
       DashboardGestionVehicularConductoresIndexRoute,
+    DashboardGestionVehicularTiposSolicitudIndexRoute:
+      DashboardGestionVehicularTiposSolicitudIndexRoute,
   }
 
 const DashboardGestionVehicularRouteRouteWithChildren =

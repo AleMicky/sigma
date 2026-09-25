@@ -101,6 +101,7 @@ export const routes = {
   gestionVehicular: {
     root: "/gestion-vehicular",
     conductores: "/gestion-vehicular/conductores",
+    tiposSolicitud: "/gestion-vehicular/tipos-solicitud",
   },
 } as const
 

@@ -3,52 +3,36 @@ import { Filter, FilterX, LayoutGrid, List, Search, X } from "lucide-react"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 
 export type ViewMode = "grid" | "table"
 
-type ConductoresFiltersProps = {
+type TipoSolicitudFiltersProps = {
   search: string
   setSearch: (value: string) => void
-  categoria: string
-  setCategoria: (value: string) => void
-  estado: string
-  setEstado: (value: string) => void
   hasActiveFilters: boolean
   resetFilters: () => void
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
 }
 
-export function ConductoresFilters({
+export function TipoSolicitudFilters({
   search,
   setSearch,
-  categoria,
-  setCategoria,
-  estado,
-  setEstado,
   hasActiveFilters,
   resetFilters,
   viewMode,
   onViewModeChange,
-}: ConductoresFiltersProps) {
+}: TipoSolicitudFiltersProps) {
   return (
     <div className="flex flex-col bg-card/60 backdrop-blur-md">
       {/* Top Main Toolbar */}
       <div className="flex flex-col gap-2.5 p-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-border/60">
-        {/* Left: Search & Dropdowns */}
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          {/* Search Input */}
+        {/* Left: Search */}
+        <div className="flex flex-1 items-center gap-2">
           <div className="relative flex-1 min-w-[200px] sm:max-w-xs">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/70" />
             <Input
-              placeholder="Buscar conductor, licencia o código…"
+              placeholder="Buscar por código, nombre o descripción…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-8 pr-7 h-8 text-xs rounded-lg bg-background/70 border-border/60 focus-visible:ring-primary/25 placeholder:text-muted-foreground/60 shadow-2xs"
@@ -64,46 +48,6 @@ export function ConductoresFilters({
               </button>
             )}
           </div>
-
-          {/* Categoría Selector */}
-          <Select
-            value={categoria || "ALL"}
-            onValueChange={(val) => setCategoria(val === "ALL" || !val ? "" : val)}
-          >
-            <SelectTrigger className="h-8 w-[140px] text-xs rounded-lg bg-background/70 border-border/60 shadow-2xs font-medium">
-              <div className="flex items-center gap-1.5 truncate">
-                <span className="text-muted-foreground font-normal">Cat:</span>
-                <SelectValue placeholder="Todas" />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="rounded-xl text-xs">
-              <SelectItem value="ALL">Todas las categorías</SelectItem>
-              <SelectItem value="M">Categoría M (Motocicletas)</SelectItem>
-              <SelectItem value="P">Categoría P (Particular)</SelectItem>
-              <SelectItem value="A">Categoría A (Profesional)</SelectItem>
-              <SelectItem value="B">Categoría B (Carga/Pasajeros)</SelectItem>
-              <SelectItem value="C">Categoría C (Pesada/Articulados)</SelectItem>
-              <SelectItem value="T">Categoría T (Tractores/Maquinaria)</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Estado Selector */}
-          <Select
-            value={estado || "ALL"}
-            onValueChange={(val) => setEstado(val === "ALL" || !val ? "" : val)}
-          >
-            <SelectTrigger className="h-8 w-[130px] text-xs rounded-lg bg-background/70 border-border/60 shadow-2xs font-medium">
-              <div className="flex items-center gap-1.5 truncate">
-                <span className="text-muted-foreground font-normal">Estado:</span>
-                <SelectValue placeholder="Todos" />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="rounded-xl text-xs">
-              <SelectItem value="ALL">Todos los estados</SelectItem>
-              <SelectItem value="ACTIVO">Habilitados</SelectItem>
-              <SelectItem value="INACTIVO">Inactivos</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Right: View Switcher */}
@@ -151,38 +95,6 @@ export function ConductoresFilters({
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="hover:text-destructive cursor-pointer ml-0.5"
-              >
-                <X className="size-3" />
-              </button>
-            </Badge>
-          )}
-
-          {categoria && (
-            <Badge
-              variant="secondary"
-              className="h-6 gap-1 rounded-lg px-2 text-[11px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
-            >
-              <span>Categoría {categoria}</span>
-              <button
-                type="button"
-                onClick={() => setCategoria("")}
-                className="hover:text-destructive cursor-pointer ml-0.5"
-              >
-                <X className="size-3" />
-              </button>
-            </Badge>
-          )}
-
-          {estado && (
-            <Badge
-              variant="secondary"
-              className="h-6 gap-1 rounded-lg px-2 text-[11px] font-medium bg-background border border-border/60"
-            >
-              <span>Estado: {estado === "ACTIVO" ? "Habilitado" : "Inactivo"}</span>
-              <button
-                type="button"
-                onClick={() => setEstado("")}
                 className="hover:text-destructive cursor-pointer ml-0.5"
               >
                 <X className="size-3" />

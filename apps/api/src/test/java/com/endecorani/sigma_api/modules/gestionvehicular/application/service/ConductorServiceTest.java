@@ -43,6 +43,9 @@ class ConductorServiceTest {
     private EmpleadoRepository empleadoRepository;
 
     @Mock
+    private com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository springVEmpleadoRepository;
+
+    @Mock
     private ConductorMapper mapper;
 
     @InjectMocks
@@ -52,6 +55,7 @@ class ConductorServiceTest {
     private UUID empleadoId;
     private Conductor conductorDomain;
     private Empleado empleadoDomain;
+    private com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity vEmpleadoEntity;
     private ConductorResponse conductorResponse;
     private ConductorEmpleadoInfo empleadoInfo;
 
@@ -76,6 +80,13 @@ class ConductorServiceTest {
                 .cargo("Chofer")
                 .area("Transportes")
                 .build();
+
+        vEmpleadoEntity = new com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity();
+        vEmpleadoEntity.setEmpleadoId(empleadoId);
+        vEmpleadoEntity.setCodigo("EMP-001");
+        vEmpleadoEntity.setNombreCompleto("Juan Perez");
+        vEmpleadoEntity.setCargo("Chofer");
+        vEmpleadoEntity.setArea("Transportes");
 
         empleadoInfo = new ConductorEmpleadoInfo(
                 empleadoId,
@@ -102,9 +113,8 @@ class ConductorServiceTest {
     void debeListarConductoresConPaginacion() {
         PageRequestDto pageRequest = new PageRequestDto();
         when(repository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(conductorDomain)));
-        when(empleadoRepository.findAllById(any())).thenReturn(List.of(empleadoDomain));
-        when(mapper.toEmpleadoInfo(empleadoDomain)).thenReturn(empleadoInfo);
-        when(mapper.toResponse(eq(conductorDomain), eq(empleadoInfo))).thenReturn(conductorResponse);
+        when(springVEmpleadoRepository.findAllById(any())).thenReturn(List.of(vEmpleadoEntity));
+        when(mapper.toResponse(eq(conductorDomain), any(ConductorEmpleadoInfo.class))).thenReturn(conductorResponse);
 
         PageResponse<ConductorResponse> response = service.findAll(pageRequest);
 
@@ -118,9 +128,8 @@ class ConductorServiceTest {
     @DisplayName("Debe obtener un conductor por ID correctamente")
     void debeObtenerConductorPorId() {
         when(repository.findById(conductorId)).thenReturn(Optional.of(conductorDomain));
-        when(empleadoRepository.findById(empleadoId)).thenReturn(Optional.of(empleadoDomain));
-        when(mapper.toEmpleadoInfo(empleadoDomain)).thenReturn(empleadoInfo);
-        when(mapper.toResponse(conductorDomain, empleadoInfo)).thenReturn(conductorResponse);
+        when(springVEmpleadoRepository.findById(empleadoId)).thenReturn(Optional.of(vEmpleadoEntity));
+        when(mapper.toResponse(eq(conductorDomain), any(ConductorEmpleadoInfo.class))).thenReturn(conductorResponse);
 
         ConductorResponse result = service.findById(conductorId);
 
@@ -153,8 +162,8 @@ class ConductorServiceTest {
         when(repository.existsByNumeroLicenciaIgnoreCase("12345678-LP")).thenReturn(false);
         when(mapper.toDomain(request)).thenReturn(conductorDomain);
         when(repository.save(any(Conductor.class))).thenReturn(conductorDomain);
-        when(mapper.toEmpleadoInfo(empleadoDomain)).thenReturn(empleadoInfo);
-        when(mapper.toResponse(conductorDomain, empleadoInfo)).thenReturn(conductorResponse);
+        when(springVEmpleadoRepository.findById(empleadoId)).thenReturn(Optional.of(vEmpleadoEntity));
+        when(mapper.toResponse(eq(conductorDomain), any(ConductorEmpleadoInfo.class))).thenReturn(conductorResponse);
 
         ConductorResponse created = service.create(request);
 
