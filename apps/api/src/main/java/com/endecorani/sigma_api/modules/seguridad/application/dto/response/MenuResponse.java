@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.seguridad.application.dto.response;
 
+import com.endecorani.sigma_api.modules.seguridad.domain.model.TipoMenu;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -36,6 +37,12 @@ public record MenuResponse(
         String nombre,
 
         @Schema(
+                description = "Tipo de menú (MODULO, AGRUPADOR, ITEM)",
+                example = "ITEM"
+        )
+        TipoMenu tipo,
+
+        @Schema(
                 description = "Icono del menú",
                 example = "users"
         )
@@ -46,6 +53,24 @@ public record MenuResponse(
                 example = "/seguridad/usuarios"
         )
         String ruta,
+
+        @Schema(
+                description = "Badge o etiqueta visual",
+                example = "Nuevo"
+        )
+        String badge,
+
+        @Schema(
+                description = "Descripción corta del menú",
+                example = "Gestión de usuarios"
+        )
+        String descripcion,
+
+        @Schema(
+                description = "Indica si es visible en el menú lateral",
+                example = "true"
+        )
+        boolean visibleEnMenu,
 
         @Schema(
                 description = "Orden de presentación del menú",

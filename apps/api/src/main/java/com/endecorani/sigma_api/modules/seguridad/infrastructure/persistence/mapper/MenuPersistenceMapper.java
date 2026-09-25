@@ -16,8 +16,12 @@ public class MenuPersistenceMapper {
         entity.setId(menu.getId());
         entity.setCodigo(menu.getCodigo());
         entity.setNombre(menu.getNombre());
+        entity.setTipo(menu.getTipo() != null ? menu.getTipo() : com.endecorani.sigma_api.modules.seguridad.domain.model.TipoMenu.ITEM);
         entity.setIcono(menu.getIcono());
         entity.setRuta(menu.getRuta());
+        entity.setBadge(menu.getBadge());
+        entity.setDescripcion(menu.getDescripcion());
+        entity.setVisibleEnMenu(menu.isVisibleEnMenu());
         entity.setOrden(menu.getOrden());
         entity.setActivo(menu.isActivo());
 
@@ -45,8 +49,12 @@ public class MenuPersistenceMapper {
                 )
                 .codigo(entity.getCodigo())
                 .nombre(entity.getNombre())
+                .tipo(entity.getTipo())
                 .icono(entity.getIcono())
                 .ruta(entity.getRuta())
+                .badge(entity.getBadge())
+                .descripcion(entity.getDescripcion())
+                .visibleEnMenu(entity.isVisibleEnMenu())
                 .orden(entity.getOrden())
                 .activo(entity.isActivo())
                 .createdAt(entity.getCreatedAt())

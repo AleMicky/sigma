@@ -16,8 +16,12 @@ public class Menu extends AuditableModel {
     private UUID menuPadreId;
     private String codigo;
     private String nombre;
+    private TipoMenu tipo;
     private String icono;
     private String ruta;
+    private String badge;
+    private String descripcion;
+    private boolean visibleEnMenu;
     private Integer orden;
     private boolean activo;
 }

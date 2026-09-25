@@ -151,8 +151,12 @@ public class MenuService {
         return Menu.builder()
                 .codigo(codigo)
                 .nombre(requireNormalizedNombre(request.nombre()))
+                .tipo(request.tipo() != null ? request.tipo() : (request.ruta() != null && !request.ruta().isBlank() ? com.endecorani.sigma_api.modules.seguridad.domain.model.TipoMenu.ITEM : com.endecorani.sigma_api.modules.seguridad.domain.model.TipoMenu.AGRUPADOR))
                 .icono(normalizeIcono(request.icono()))
                 .ruta(normalizeRuta(request.ruta()))
+                .badge(StringUtils.normalize(request.badge()))
+                .descripcion(StringUtils.normalize(request.descripcion()))
+                .visibleEnMenu(request.visibleEnMenu() == null || request.visibleEnMenu())
                 .menuPadreId(request.menuPadreId())
                 .orden(orden)
                 .activo(request.activo() == null || request.activo())
@@ -185,8 +189,16 @@ public class MenuService {
         }
 
         domain.setNombre(requireNormalizedNombre(request.nombre()));
+        if (request.tipo() != null) {
+            domain.setTipo(request.tipo());
+        }
         domain.setIcono(normalizeIcono(request.icono()));
         domain.setRuta(normalizeRuta(request.ruta()));
+        domain.setBadge(StringUtils.normalize(request.badge()));
+        domain.setDescripcion(StringUtils.normalize(request.descripcion()));
+        if (request.visibleEnMenu() != null) {
+            domain.setVisibleEnMenu(request.visibleEnMenu());
+        }
         domain.setMenuPadreId(request.menuPadreId());
         domain.setOrden(normalizeOrden(request.orden()));
         domain.setActivo(request.activo() == null || request.activo());
@@ -198,8 +210,12 @@ public class MenuService {
                 menu.getMenuPadreId(),
                 menu.getCodigo(),
                 menu.getNombre(),
+                menu.getTipo(),
                 menu.getIcono(),
                 menu.getRuta(),
+                menu.getBadge(),
+                menu.getDescripcion(),
+                menu.isVisibleEnMenu(),
                 menu.getOrden(),
                 menu.isActivo(),
                 AuditoriaMapper.from(menu)
@@ -386,8 +402,12 @@ public class MenuService {
                 menu.getMenuPadreId(),
                 menu.getCodigo(),
                 menu.getNombre(),
+                menu.getTipo(),
                 menu.getIcono(),
                 menu.getRuta(),
+                menu.getBadge(),
+                menu.getDescripcion(),
+                menu.isVisibleEnMenu(),
                 menu.getOrden(),
                 menu.isActivo(),
                 hijos
