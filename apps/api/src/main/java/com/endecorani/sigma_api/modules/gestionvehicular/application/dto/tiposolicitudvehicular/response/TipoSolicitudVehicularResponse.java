@@ -9,6 +9,10 @@ public record TipoSolicitudVehicularResponse(
         String codigo,
         String nombre,
         String descripcion,
+        Integer diasAnticipacion,
+        Boolean requiereRespaldo,
+        Boolean requiereJustificacion,
         AuditoriaResponse auditoria
 ) {
 }
+

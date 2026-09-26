@@ -130,6 +130,34 @@ export function TipoSolicitudCardView({
                   </span>
                 )}
               </p>
+
+              {/* Requirement tags & anticipation */}
+              <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] font-medium px-1.5 py-0 bg-muted/70 text-foreground border-border/70"
+                >
+                  {tipo.diasAnticipacion === 0
+                    ? "Inmediato (0 d)"
+                    : `${tipo.diasAnticipacion} ${tipo.diasAnticipacion === 1 ? "día" : "días"} anticipación`}
+                </Badge>
+                {tipo.requiereRespaldo && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] font-medium px-1.5 py-0 bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                  >
+                    Respaldo
+                  </Badge>
+                )}
+                {tipo.requiereJustificacion && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] font-medium px-1.5 py-0 bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800"
+                  >
+                    Justificación
+                  </Badge>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between border-t border-border/50 pt-2.5 mt-2.5 text-[11px] text-muted-foreground">

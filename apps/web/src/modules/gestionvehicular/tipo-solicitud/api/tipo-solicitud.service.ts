@@ -10,18 +10,27 @@ export type TipoSolicitudVehicular = AuditableEntity & {
   codigo: string
   nombre: string
   descripcion?: string | null
+  diasAnticipacion: number
+  requiereRespaldo: boolean
+  requiereJustificacion: boolean
 }
 
 export type TipoSolicitudVehicularPayload = {
   codigo: string
   nombre: string
   descripcion?: string | null
+  diasAnticipacion: number
+  requiereRespaldo: boolean
+  requiereJustificacion: boolean
 }
 
 export type TipoSolicitudVehicularUpdatePayload = {
   codigo: string
   nombre: string
   descripcion?: string | null
+  diasAnticipacion: number
+  requiereRespaldo: boolean
+  requiereJustificacion: boolean
 }
 
 const crud = createCrudService<TipoSolicitudVehicular, TipoSolicitudVehicularPayload>(

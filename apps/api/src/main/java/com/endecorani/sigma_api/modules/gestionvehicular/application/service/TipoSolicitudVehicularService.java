@@ -29,6 +29,9 @@ public class TipoSolicitudVehicularService {
             "codigo",
             "nombre",
             "descripcion",
+            "diasAnticipacion",
+            "requiereRespaldo",
+            "requiereJustificacion",
             "createdAt",
             "updatedAt"
     );
@@ -66,6 +69,9 @@ public class TipoSolicitudVehicularService {
                 .codigo(codigo)
                 .nombre(StringUtils.normalize(dto.nombre()))
                 .descripcion(StringUtils.normalize(dto.descripcion()))
+                .diasAnticipacion(dto.diasAnticipacion())
+                .requiereRespaldo(dto.requiereRespaldo())
+                .requiereJustificacion(dto.requiereJustificacion())
                 .build();
 
         TipoSolicitudVehicular guardado = repository.save(tipo);
@@ -82,6 +88,9 @@ public class TipoSolicitudVehicularService {
         actual.setCodigo(codigo);
         actual.setNombre(StringUtils.normalize(dto.nombre()));
         actual.setDescripcion(StringUtils.normalize(dto.descripcion()));
+        actual.setDiasAnticipacion(dto.diasAnticipacion());
+        actual.setRequiereRespaldo(dto.requiereRespaldo());
+        actual.setRequiereJustificacion(dto.requiereJustificacion());
 
         TipoSolicitudVehicular actualizado = repository.save(actual);
         return mapper.toResponse(actualizado);
@@ -97,6 +106,9 @@ public class TipoSolicitudVehicularService {
         actual.setCodigo(codigo);
         actual.setNombre(StringUtils.normalize(dto.nombre()));
         actual.setDescripcion(StringUtils.normalize(dto.descripcion()));
+        actual.setDiasAnticipacion(dto.diasAnticipacion());
+        actual.setRequiereRespaldo(dto.requiereRespaldo());
+        actual.setRequiereJustificacion(dto.requiereJustificacion());
 
         TipoSolicitudVehicular actualizado = repository.save(actual);
         return mapper.toResponse(actualizado);
