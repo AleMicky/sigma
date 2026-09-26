@@ -273,25 +273,80 @@ public class BpmnDefinitionParser {
             String name = flow.getAttribute("name");
             String expression = obtenerConditionExpression(flow);
 
-            if (expression == null) {
+            if (expression == null || expression.isBlank()) {
+                // Flujo por defecto o sin condición explícita
+                if (name != null && !name.isBlank()) {
+                    actions.add(new WorkflowActionResponse(
+                            name,
+                            "action",
+                            name.trim().toUpperCase().replaceAll("[^A-Z0-9]+", "_")
+                    ));
+                }
                 continue;
             }
 
-            Matcher matcher = CONDITION_PATTERN.matcher(expression.trim());
-            if (!matcher.find()) {
-                continue;
+            WorkflowActionResponse action = parsearAccionDesdeCondicion(name, expression);
+            if (action != null) {
+                actions.add(action);
             }
-
-            String variable = matcher.group(1);
-            String value = matcher.group(2);
-            actions.add(new WorkflowActionResponse(
-                    name != null && !name.isBlank() ? name : value,
-                    variable,
-                    value
-            ));
         }
 
         return actions;
+    }
+
+    private WorkflowActionResponse parsearAccionDesdeCondicion(String name, String expression) {
+        if (expression == null || expression.isBlank()) {
+            return null;
+        }
+        String cleanExpr = expression.trim();
+
+        // 1. ${variable == 'VALUE'} o ${variable == "VALUE"}
+        Matcher m1 = CONDITION_PATTERN.matcher(cleanExpr);
+        if (m1.find()) {
+            String variable = m1.group(1);
+            String value = m1.group(2);
+            return new WorkflowActionResponse(
+                    name != null && !name.isBlank() ? name : value,
+                    variable,
+                    value
+            );
+        }
+
+        // 2. ${variable == true} o ${variable == false}
+        Matcher m2 = Pattern.compile("\\$\\{\\s*([a-zA-Z0-9_]+)\\s*==\\s*(true|false)\\s*}", Pattern.CASE_INSENSITIVE).matcher(cleanExpr);
+        if (m2.find()) {
+            String variable = m2.group(1);
+            String value = m2.group(2).toLowerCase();
+            return new WorkflowActionResponse(
+                    name != null && !name.isBlank() ? name : ("true".equals(value) ? "Aprobar" : "Rechazar"),
+                    variable,
+                    value
+            );
+        }
+
+        // 3. ${variable} (booleano directo)
+        Matcher m3 = Pattern.compile("\\$\\{\\s*([a-zA-Z0-9_]+)\\s*}").matcher(cleanExpr);
+        if (m3.find()) {
+            String variable = m3.group(1);
+            return new WorkflowActionResponse(
+                    name != null && !name.isBlank() ? name : variable,
+                    variable,
+                    "true"
+            );
+        }
+
+        // 4. ${!variable} (booleano negado)
+        Matcher m4 = Pattern.compile("\\$\\{\\s*!\\s*([a-zA-Z0-9_]+)\\s*}").matcher(cleanExpr);
+        if (m4.find()) {
+            String variable = m4.group(1);
+            return new WorkflowActionResponse(
+                    name != null && !name.isBlank() ? name : variable,
+                    variable,
+                    "false"
+            );
+        }
+
+        return null;
     }
 
     private List<WorkflowActionResponse> obtenerAccionesDirectas(
