@@ -57,6 +57,12 @@ export const SEGMENT_LABELS: Record<string, string> = {
   roles: "Roles",
   menus: "Menús",
 
+  // Gestión Vehicular
+  "gestion-vehicular": "Gestión Vehicular",
+  conductores: "Conductores",
+  "tipos-solicitud": "Tipos de Solicitud",
+  "solicitudes-vehiculares": "Solicitudes Vehiculares",
+
   // Acciones comunes
   nuevo: "Nuevo",
   nueva: "Nueva",

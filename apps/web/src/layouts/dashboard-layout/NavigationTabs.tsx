@@ -181,6 +181,8 @@ export function NavigationTabs() {
   const [prevPathname, setPrevPathname] = useState(pathname)
   const [prevUserId, setPrevUserId] = useState(userId)
 
+  const isFormPage = isFormOrTransientPath(pathname)
+
   // Resetear o sincronizar pestañas si cambia el usuario autenticado (cierre o cambio de sesión)
   if (prevUserId !== userId) {
     setPrevUserId(userId)
@@ -191,33 +193,42 @@ export function NavigationTabs() {
   if (prevPathname !== pathname) {
     setPrevPathname(pathname)
     if (pathname && pathname !== "/login" && pathname !== "/auth/callback") {
-      // 1. Limpiar pestañas de formularios que ya no están activas
+      // 1. Limpiar pestañas de formularios que hayan quedado guardadas
       const baseCleanTabs = tabs.filter(
-        (tab) => tab.pathname === pathname || !isFormOrTransientPath(tab.pathname),
+        (tab) => !isFormOrTransientPath(tab.pathname),
       )
 
-      const exists = baseCleanTabs.some((tab) => tab.pathname === pathname)
-      if (!exists) {
-        const segments = pathname.split("/").filter(Boolean)
-        const lastSegment = segments[segments.length - 1] || "Inicio"
-        const title = pathname === "/" ? "Inicio" : formatSegment(lastSegment)
+      if (!isFormPage) {
+        const exists = baseCleanTabs.some((tab) => tab.pathname === pathname)
+        if (!exists) {
+          const segments = pathname.split("/").filter(Boolean)
+          const lastSegment = segments[segments.length - 1] || "Inicio"
+          const title = pathname === "/" ? "Inicio" : formatSegment(lastSegment)
 
-        const newTab: NavTabItem = {
-          id: pathname,
-          pathname,
-          title,
-        }
+          const newTab: NavTabItem = {
+            id: pathname,
+            pathname,
+            title,
+          }
 
-        const updated = [...baseCleanTabs, newTab]
-        if (updated.length > MAX_TABS) {
-          const first = updated.find((t) => t.pathname === "/")
-          const rest = updated.filter((t) => t.pathname !== "/").slice(-MAX_TABS + 1)
-          setTabs(first ? [first, ...rest] : rest)
+          const updated = [...baseCleanTabs, newTab]
+          if (updated.length > MAX_TABS) {
+            const first = updated.find((t) => t.pathname === "/")
+            const rest = updated.filter((t) => t.pathname !== "/").slice(-MAX_TABS + 1)
+            setTabs(first ? [first, ...rest] : rest)
+          } else {
+            setTabs(updated)
+          }
         } else {
-          setTabs(updated)
+          setTabs(baseCleanTabs)
         }
       } else {
-        setTabs(baseCleanTabs)
+        // En página de formulario, conservamos las pestañas limpias sin agregar el formulario
+        setTabs(
+          baseCleanTabs.length > 0
+            ? baseCleanTabs
+            : [{ id: "/", pathname: "/", title: "Inicio" }],
+        )
       }
     }
   }
@@ -292,6 +303,10 @@ export function NavigationTabs() {
     if (!scrollContainerRef.current) return
     const offset = direction === "left" ? -150 : 150
     scrollContainerRef.current.scrollBy({ left: offset, behavior: "smooth" })
+  }
+
+  if (isFormPage) {
+    return null
   }
 
   return (

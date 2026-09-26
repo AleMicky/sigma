@@ -100,6 +100,10 @@ export const routes = {
 
   gestionVehicular: {
     root: "/gestion-vehicular",
+    solicitudes: "/gestion-vehicular/solicitudes",
+    nuevaSolicitud: "/gestion-vehicular/solicitudes/nueva",
+    editarSolicitud: (solicitudId: string) =>
+      `/gestion-vehicular/solicitudes/${solicitudId}/editar`,
     conductores: "/gestion-vehicular/conductores",
     tiposSolicitud: "/gestion-vehicular/tipos-solicitud",
   },
