@@ -83,6 +83,25 @@ public class SolicitudMantenimientoService {
     private final DocumentStorageService documentStorageService;
     private final com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService jasperReportService;
 
+    private record InterfazFiltros(UUID solicitanteId, UUID aprobadorId, UUID supervisorId, UUID responsableId) {}
+
+    private InterfazFiltros resolverFiltrosPorInterfaz(String interfaz) {
+        if (securityUtils.isAdmin()) {
+            return new InterfazFiltros(null, null, null, null);
+        }
+        UUID empleadoActual = obtenerEmpleadoIdActual();
+        if (interfaz == null || interfaz.isBlank() || "SolicitudesPage".equalsIgnoreCase(interfaz.trim())) {
+            return new InterfazFiltros(empleadoActual, null, null, null);
+        } else if ("AprobacionesPage".equalsIgnoreCase(interfaz.trim())) {
+            return new InterfazFiltros(null, empleadoActual, null, null);
+        } else if ("SupervisorMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+            return new InterfazFiltros(null, null, empleadoActual, null);
+        } else if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+            return new InterfazFiltros(null, null, null, empleadoActual);
+        }
+        return new InterfazFiltros(null, null, null, null);
+    }
+
     @Transactional(readOnly = true)
     public SolicitudMantenimientoResumenResponse obtenerResumen() {
         return obtenerResumen(null);
@@ -90,29 +109,13 @@ public class SolicitudMantenimientoService {
 
     @Transactional(readOnly = true)
     public SolicitudMantenimientoResumenResponse obtenerResumen(String interfaz) {
-        UUID solicitanteId = null;
-        UUID responsableId = null;
-        UUID supervisorId = null;
-        UUID aprobadorId = null;
-
-        if (!securityUtils.isAdmin()) {
-            UUID empleadoActual = obtenerEmpleadoIdActual();
-            if (interfaz == null || interfaz.isBlank() || "SolicitudesPage".equalsIgnoreCase(interfaz.trim())) {
-                solicitanteId = empleadoActual;
-            } else if ("AprobacionesPage".equalsIgnoreCase(interfaz.trim())) {
-                aprobadorId = empleadoActual;
-            } else if ("SupervisorMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
-                supervisorId = empleadoActual;
-            } else if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
-                responsableId = empleadoActual;
-            }
-        }
+        InterfazFiltros filtros = resolverFiltrosPorInterfaz(interfaz);
 
         SolicitudMantenimientoResumenProjection projection = repository.obtenerResumen(
-                solicitanteId,
-                aprobadorId,
-                supervisorId,
-                responsableId
+                filtros.solicitanteId(),
+                filtros.aprobadorId(),
+                filtros.supervisorId(),
+                filtros.responsableId()
         );
         return SolicitudMantenimientoResumenResponse.from(projection, interfaz);
     }
@@ -125,34 +128,17 @@ public class SolicitudMantenimientoService {
     @Transactional(readOnly = true)
     public PageResponse<SolicitudMantenimientoResponse> findAll(String q, String estado, String interfaz,
             PageRequestDto pageRequest) {
-        UUID solicitanteId = null;
-        UUID responsableId = null;
-        UUID supervisorId = null;
-        UUID aprobadorId = null;
-
-        if (!securityUtils.isAdmin()) {
-            UUID empleadoActual = obtenerEmpleadoIdActual();
-            if (interfaz == null || interfaz.isBlank() || "SolicitudesPage".equalsIgnoreCase(interfaz.trim())) {
-                solicitanteId = empleadoActual;
-            } else if ("AprobacionesPage".equalsIgnoreCase(interfaz.trim())) {
-                aprobadorId = empleadoActual;
-            } else if ("SupervisorMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
-                supervisorId = empleadoActual;
-            } else if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
-                responsableId = empleadoActual;
-            }
-        }
-
+        InterfazFiltros filtros = resolverFiltrosPorInterfaz(interfaz);
         List<String> estados = resolverEstados(estado, interfaz);
 
         SolicitudMantenimientoSearchCriteria criteria = new SolicitudMantenimientoSearchCriteria(
                 q,
                 estados,
-                solicitanteId,
-                responsableId,
-                supervisorId,
+                filtros.solicitanteId(),
+                filtros.responsableId(),
+                filtros.supervisorId(),
                 null,
-                aprobadorId);
+                filtros.aprobadorId());
         return findAll(criteria, pageRequest);
     }
 
@@ -322,7 +308,9 @@ public class SolicitudMantenimientoService {
         try {
             org.springframework.core.io.ClassPathResource logoResource = new org.springframework.core.io.ClassPathResource("reports/images/logo-ende-corani.png");
             if (logoResource.exists()) {
-                parameters.put("LOGO_EMPRESA", logoResource.getInputStream());
+                try (java.io.InputStream is = logoResource.getInputStream()) {
+                    parameters.put("LOGO_EMPRESA", is.readAllBytes());
+                }
             }
         } catch (Exception e) {
             log.warn("No se pudo cargar el logo para el reporte: {}", e.getMessage());
@@ -333,7 +321,16 @@ public class SolicitudMantenimientoService {
 
     @Transactional
     public SolicitudMantenimientoResponse create(SolicitudMantenimientoRequest dto) {
+        return createInternal(dto, Collections.emptyList());
+    }
 
+    @Transactional
+    public SolicitudMantenimientoResponse createWithFiles(SolicitudMantenimientoRequest request,
+            List<MultipartFile> files) {
+        return createInternal(request, files != null ? files : Collections.emptyList());
+    }
+
+    private SolicitudMantenimientoResponse createInternal(SolicitudMantenimientoRequest dto, List<MultipartFile> files) {
         String numero = correlativoService.generar(CorrelativoCodigo.SOLICITUD_MANTENIMIENTO,
                 LocalDateTime.now().getYear());
 
@@ -344,6 +341,26 @@ public class SolicitudMantenimientoService {
         solicitud.setEstado(ESTADO_BORRADOR);
 
         SolicitudMantenimiento guardado = repository.save(solicitud);
+
+        if (files != null && !files.isEmpty() && guardado.getId() != null) {
+            if (guardado.getAdjuntos() == null) {
+                guardado.setAdjuntos(new java.util.ArrayList<>());
+            }
+            for (MultipartFile file : files) {
+                if (file != null && !file.isEmpty()) {
+                    DocumentStorageService.StoredFile stored = documentStorageService.store(ADJUNTO_FOLDER,
+                            UUID.randomUUID(), file);
+                    SolicitudMantenimientoAdjunto adjunto = SolicitudMantenimientoAdjunto.builder()
+                            .solicitudMantenimientoId(guardado.getId())
+                            .nombreArchivo(stored.nombreOriginal())
+                            .tipoContenido(stored.mimeType())
+                            .size(stored.tamanoBytes())
+                            .url(stored.publicUrl())
+                            .build();
+                    guardado.getAdjuntos().add(adjunto);
+                }
+            }
+        }
 
         if (guardado.getId() != null) {
             Map<String, Object> variables = new HashMap<>();
@@ -376,44 +393,17 @@ public class SolicitudMantenimientoService {
     }
 
     @Transactional
-    public SolicitudMantenimientoResponse createWithFiles(SolicitudMantenimientoRequest request,
-            List<MultipartFile> files) {
-        SolicitudMantenimientoResponse response = create(request);
-
-        if (files == null || files.isEmpty()) {
-            return response;
-        }
-
-        SolicitudMantenimiento solicitud = obtenerPorId(response.id());
-
-        files.forEach(file -> {
-            DocumentStorageService.StoredFile stored = documentStorageService.store(ADJUNTO_FOLDER,
-                    UUID.randomUUID(), file);
-            SolicitudMantenimientoAdjunto adjunto = SolicitudMantenimientoAdjunto.builder()
-                    .solicitudMantenimientoId(response.id())
-                    .nombreArchivo(stored.nombreOriginal())
-                    .tipoContenido(stored.mimeType())
-                    .size(stored.tamanoBytes())
-                    .url(stored.publicUrl())
-                    .build();
-            solicitud.getAdjuntos().add(adjunto);
-        });
-
-        return toResponse(repository.save(solicitud));
-    }
-
-    @Transactional
     public SolicitudMantenimientoResponse update(UUID id, SolicitudMantenimientoRequest dto) {
         SolicitudMantenimiento actual = obtenerPorId(id);
 
-        // El mapper updateDomain de Request no existe, usualmente es de
-        // SolicitudMantenimientoUpdate,
-        // pero podemos crear uno nuevo de Request a Model, o simplemente usar toDomain.
-        // Dado que solo queremos mapear:
-        actual.setTitulo(dto.titulo());
-        actual.setDescripcion(dto.descripcion());
-        actual.setTipoFallas(dto.tipoFallas());
-        // Map other relationships if you want.
+        String estadoActual = actual.getEstado() != null ? actual.getEstado().toUpperCase() : "";
+        if (!"BORRADOR".equals(estadoActual) && !"OBSERVADO".equals(estadoActual)) {
+            throw new ConflictException(
+                    "SOLICITUD_NO_EDITABLE",
+                    "Solo se pueden editar solicitudes en estado BORRADOR u OBSERVADO");
+        }
+
+        mapper.updateDomainFromRequest(dto, actual);
 
         SolicitudMantenimiento actualizado = repository.save(actual);
         return toResponse(actualizado);

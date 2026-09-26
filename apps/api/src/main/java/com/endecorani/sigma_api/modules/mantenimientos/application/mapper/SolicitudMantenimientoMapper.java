@@ -49,6 +49,17 @@ public interface SolicitudMantenimientoMapper {
     void updateDomain(SolicitudMantenimientoUpdate dto, @MappingTarget SolicitudMantenimiento domain);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "numero", ignore = true)
+    @Mapping(target = "fechaSolicitud", ignore = true)
+    @Mapping(target = "estado", ignore = true)
+    @Mapping(target = "processInstanceId", ignore = true)
+    @Mapping(target = "activo.id", source = "activoId")
+    @Mapping(target = "tipoMantenimiento.id", source = "tipoMantenimientoId")
+    @Mapping(target = "prioridad.id", source = "prioridadId")
+    @Mapping(target = "solicitante.id", source = "solicitanteId")
+    void updateDomainFromRequest(SolicitudMantenimientoRequest dto, @MappingTarget SolicitudMantenimiento domain);
+
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "solicitudMantenimientoId", ignore = true)
     SolicitudMantenimientoAdjunto toAdjuntoDomain(SolicitudMantenimientoAdjuntoRequest dto);
 
