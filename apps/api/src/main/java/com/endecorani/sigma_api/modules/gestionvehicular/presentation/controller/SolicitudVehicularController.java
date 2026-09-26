@@ -15,9 +15,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -47,7 +50,7 @@ public class SolicitudVehicularController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener una solicitud vehicular por ID")
+    @Operation(summary = "Obtener una solicitud vehicular por ID (incluye adjuntos)")
     public ResponseEntity<ApiResponse<SolicitudVehicularResponse>> findById(
             @PathVariable UUID id
     ) {
@@ -65,6 +68,18 @@ public class SolicitudVehicularController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Solicitud vehicular creada correctamente", response));
+    }
+
+    @PostMapping(value = "/con-adjuntos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Crear una nueva solicitud vehicular con archivos adjuntos")
+    public ResponseEntity<ApiResponse<SolicitudVehicularResponse>> createWithFiles(
+            @Valid @RequestPart("data") SolicitudVehicularRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files
+    ) {
+        SolicitudVehicularResponse response = service.createWithFiles(request, files);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Solicitud vehicular creada con adjuntos correctamente", response));
     }
 
     @PutMapping("/{id}")

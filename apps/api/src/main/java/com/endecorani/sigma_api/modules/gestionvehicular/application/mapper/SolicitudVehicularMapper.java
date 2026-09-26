@@ -2,7 +2,10 @@ package com.endecorani.sigma_api.modules.gestionvehicular.application.mapper;
 
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request.SolicitudVehicularRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request.SolicitudVehicularUpdate;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularAdjuntoResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularResponse;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularSolicitanteInfo;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularTipoSolicitudInfo;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SolicitudVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.TipoSolicitudVehicular;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
@@ -11,6 +14,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
+
+import java.util.List;
 
 @Mapper(
         componentModel = "spring",
@@ -38,19 +43,29 @@ public interface SolicitudVehicularMapper {
     @Mapping(target = "observacion", source = "domain.observacion")
     @Mapping(target = "estado", source = "domain.estado")
     @Mapping(target = "processInstanceId", source = "domain.processInstanceId")
+    @Mapping(target = "adjuntos", source = "adjuntos")
     SolicitudVehicularResponse toResponse(
             SolicitudVehicular domain,
-            SolicitudVehicularResponse.TipoSolicitudVehicularInfo tipoSolicitud,
-            SolicitudVehicularResponse.SolicitanteInfo solicitante
+            SolicitudVehicularTipoSolicitudInfo tipoSolicitud,
+            SolicitudVehicularSolicitanteInfo solicitante,
+            List<SolicitudVehicularAdjuntoResponse> adjuntos
     );
 
-    default SolicitudVehicularResponse toResponse(SolicitudVehicular domain) {
-        return toResponse(domain, null, null);
+    default SolicitudVehicularResponse toResponse(
+            SolicitudVehicular domain,
+            SolicitudVehicularTipoSolicitudInfo tipoSolicitud,
+            SolicitudVehicularSolicitanteInfo solicitante
+    ) {
+        return toResponse(domain, tipoSolicitud, solicitante, null);
     }
 
-    SolicitudVehicularResponse.TipoSolicitudVehicularInfo toTipoInfo(TipoSolicitudVehicular tipo);
+    default SolicitudVehicularResponse toResponse(SolicitudVehicular domain) {
+        return toResponse(domain, null, null, null);
+    }
 
-    SolicitudVehicularResponse.SolicitanteInfo toSolicitanteInfo(Empleado empleado);
+    SolicitudVehicularTipoSolicitudInfo toTipoInfo(TipoSolicitudVehicular tipo);
+
+    SolicitudVehicularSolicitanteInfo toSolicitanteInfo(Empleado empleado);
 
     @Mapping(target = "id", ignore = true)
     void updateDomain(SolicitudVehicularUpdate dto, @MappingTarget SolicitudVehicular domain);

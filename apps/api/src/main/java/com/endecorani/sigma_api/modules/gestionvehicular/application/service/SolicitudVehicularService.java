@@ -2,7 +2,10 @@ package com.endecorani.sigma_api.modules.gestionvehicular.application.service;
 
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request.SolicitudVehicularRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request.SolicitudVehicularUpdate;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularAdjuntoResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularResponse;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularSolicitanteInfo;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularTipoSolicitudInfo;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.mapper.SolicitudVehicularMapper;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SolicitudVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.TipoSolicitudVehicular;
@@ -22,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -49,6 +53,7 @@ public class SolicitudVehicularService {
     private final TipoSolicitudVehicularRepository tipoSolicitudVehicularRepository;
     private final EmpleadoRepository empleadoRepository;
     private final SpringVEmpleadoRepository springVEmpleadoRepository;
+    private final SolicitudVehicularAdjuntoService adjuntoService;
     private final SolicitudVehicularMapper mapper;
 
     @Transactional(readOnly = true)
@@ -90,7 +95,8 @@ public class SolicitudVehicularService {
     @Transactional(readOnly = true)
     public SolicitudVehicularResponse findById(UUID id) {
         SolicitudVehicular solicitud = obtenerPorId(id);
-        return toResponse(solicitud);
+        List<SolicitudVehicularAdjuntoResponse> adjuntos = adjuntoService.findBySolicitudVehicularId(id);
+        return toResponse(solicitud, adjuntos);
     }
 
     @Transactional
@@ -116,7 +122,19 @@ public class SolicitudVehicularService {
         domain.setProcessInstanceId(StringUtils.normalize(dto.processInstanceId()));
 
         SolicitudVehicular guardado = repository.save(domain);
-        return toResponse(guardado, tipo, solicitante);
+        return toResponse(guardado, tipo, solicitante, List.of());
+    }
+
+    @Transactional
+    public SolicitudVehicularResponse createWithFiles(SolicitudVehicularRequest dto, List<MultipartFile> files) {
+        SolicitudVehicularResponse response = create(dto);
+
+        if (files != null && !files.isEmpty()) {
+            adjuntoService.uploadMultipleFiles(response.id(), files);
+            return findById(response.id());
+        }
+
+        return response;
     }
 
     @Transactional
@@ -141,7 +159,8 @@ public class SolicitudVehicularService {
         actual.setProcessInstanceId(StringUtils.normalize(dto.processInstanceId()));
 
         SolicitudVehicular actualizado = repository.save(actual);
-        return toResponse(actualizado, tipo, solicitante);
+        List<SolicitudVehicularAdjuntoResponse> adjuntos = adjuntoService.findBySolicitudVehicularId(id);
+        return toResponse(actualizado, tipo, solicitante, adjuntos);
     }
 
     @Transactional
@@ -166,12 +185,14 @@ public class SolicitudVehicularService {
         actual.setProcessInstanceId(StringUtils.normalize(dto.processInstanceId()));
 
         SolicitudVehicular actualizado = repository.save(actual);
-        return toResponse(actualizado, tipo, solicitante);
+        List<SolicitudVehicularAdjuntoResponse> adjuntos = adjuntoService.findBySolicitudVehicularId(id);
+        return toResponse(actualizado, tipo, solicitante, adjuntos);
     }
 
     @Transactional
     public void delete(UUID id) {
         obtenerPorId(id);
+        adjuntoService.deleteBySolicitudVehicularId(id);
         repository.deleteById(id);
     }
 
@@ -192,10 +213,10 @@ public class SolicitudVehicularService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<UUID, SolicitudVehicularResponse.TipoSolicitudVehicularInfo> tipoMap = new HashMap<>();
+        Map<UUID, SolicitudVehicularTipoSolicitudInfo> tipoMap = new HashMap<>();
         for (UUID tipoId : tipoIds) {
             tipoSolicitudVehicularRepository.findById(tipoId).ifPresent(t ->
-                    tipoMap.put(tipoId, new SolicitudVehicularResponse.TipoSolicitudVehicularInfo(
+                    tipoMap.put(tipoId, new SolicitudVehicularTipoSolicitudInfo(
                             t.getId(),
                             t.getCodigo(),
                             t.getNombre(),
@@ -206,12 +227,12 @@ public class SolicitudVehicularService {
             );
         }
 
-        Map<UUID, SolicitudVehicularResponse.SolicitanteInfo> solicitanteMap = solicitanteIds.isEmpty()
+        Map<UUID, SolicitudVehicularSolicitanteInfo> solicitanteMap = solicitanteIds.isEmpty()
                 ? Map.of()
                 : springVEmpleadoRepository.findAllById(solicitanteIds).stream()
                 .collect(Collectors.toMap(
                         VEmpleadoEntity::getEmpleadoId,
-                        ve -> new SolicitudVehicularResponse.SolicitanteInfo(
+                        ve -> new SolicitudVehicularSolicitanteInfo(
                                 ve.getEmpleadoId(),
                                 ve.getCodigo(),
                                 ve.getNombreCompleto(),
@@ -223,51 +244,56 @@ public class SolicitudVehicularService {
 
         List<SolicitudVehicularResponse> responses = content.stream()
                 .map(domain -> {
-                    SolicitudVehicularResponse.TipoSolicitudVehicularInfo tipoInfo =
+                    SolicitudVehicularTipoSolicitudInfo tipoInfo =
                             domain.getTipoSolicitudVehicularId() != null ? tipoMap.get(domain.getTipoSolicitudVehicularId()) : null;
-                    SolicitudVehicularResponse.SolicitanteInfo solicitanteInfo =
+                    SolicitudVehicularSolicitanteInfo solicitanteInfo =
                             domain.getSolicitanteId() != null ? solicitanteMap.get(domain.getSolicitanteId()) : null;
-                    return mapper.toResponse(domain, tipoInfo, solicitanteInfo);
+                    return mapper.toResponse(domain, tipoInfo, solicitanteInfo, null);
                 })
                 .toList();
 
         return PageResponse.of(responses, page);
     }
 
-    private SolicitudVehicularResponse toResponse(SolicitudVehicular domain) {
-        SolicitudVehicularResponse.TipoSolicitudVehicularInfo tipoInfo = domain.getTipoSolicitudVehicularId() != null
+    private SolicitudVehicularResponse toResponse(SolicitudVehicular domain, List<SolicitudVehicularAdjuntoResponse> adjuntos) {
+        SolicitudVehicularTipoSolicitudInfo tipoInfo = domain.getTipoSolicitudVehicularId() != null
                 ? obtenerTipoInfo(domain.getTipoSolicitudVehicularId())
                 : null;
-        SolicitudVehicularResponse.SolicitanteInfo solicitanteInfo = domain.getSolicitanteId() != null
+        SolicitudVehicularSolicitanteInfo solicitanteInfo = domain.getSolicitanteId() != null
                 ? obtenerSolicitanteInfo(domain.getSolicitanteId())
                 : null;
-        return mapper.toResponse(domain, tipoInfo, solicitanteInfo);
+        return mapper.toResponse(domain, tipoInfo, solicitanteInfo, adjuntos);
     }
 
-    private SolicitudVehicularResponse toResponse(SolicitudVehicular domain, TipoSolicitudVehicular tipo, Empleado solicitante) {
-        SolicitudVehicularResponse.TipoSolicitudVehicularInfo tipoInfo = tipo != null
+    private SolicitudVehicularResponse toResponse(
+            SolicitudVehicular domain,
+            TipoSolicitudVehicular tipo,
+            Empleado solicitante,
+            List<SolicitudVehicularAdjuntoResponse> adjuntos
+    ) {
+        SolicitudVehicularTipoSolicitudInfo tipoInfo = tipo != null
                 ? mapper.toTipoInfo(tipo)
                 : (domain.getTipoSolicitudVehicularId() != null ? obtenerTipoInfo(domain.getTipoSolicitudVehicularId()) : null);
 
-        SolicitudVehicularResponse.SolicitanteInfo solicitanteInfo = domain.getSolicitanteId() != null
+        SolicitudVehicularSolicitanteInfo solicitanteInfo = domain.getSolicitanteId() != null
                 ? obtenerSolicitanteInfo(domain.getSolicitanteId())
                 : (solicitante != null ? mapper.toSolicitanteInfo(solicitante) : null);
 
-        return mapper.toResponse(domain, tipoInfo, solicitanteInfo);
+        return mapper.toResponse(domain, tipoInfo, solicitanteInfo, adjuntos);
     }
 
-    private SolicitudVehicularResponse.TipoSolicitudVehicularInfo obtenerTipoInfo(UUID tipoId) {
+    private SolicitudVehicularTipoSolicitudInfo obtenerTipoInfo(UUID tipoId) {
         return tipoSolicitudVehicularRepository.findById(tipoId)
                 .map(mapper::toTipoInfo)
                 .orElse(null);
     }
 
-    private SolicitudVehicularResponse.SolicitanteInfo obtenerSolicitanteInfo(UUID solicitanteId) {
+    private SolicitudVehicularSolicitanteInfo obtenerSolicitanteInfo(UUID solicitanteId) {
         if (solicitanteId == null) {
             return null;
         }
         return springVEmpleadoRepository.findById(solicitanteId)
-                .map(ve -> new SolicitudVehicularResponse.SolicitanteInfo(
+                .map(ve -> new SolicitudVehicularSolicitanteInfo(
                         ve.getEmpleadoId(),
                         ve.getCodigo(),
                         ve.getNombreCompleto(),
@@ -275,7 +301,7 @@ public class SolicitudVehicularService {
                         ve.getArea()
                 ))
                 .orElseGet(() -> empleadoRepository.findById(solicitanteId)
-                        .map(emp -> new SolicitudVehicularResponse.SolicitanteInfo(
+                        .map(emp -> new SolicitudVehicularSolicitanteInfo(
                                 emp.getId(),
                                 emp.getCodigo(),
                                 emp.getNombreCompleto(),
