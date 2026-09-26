@@ -383,11 +383,13 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
             return null;
         }
 
+        String baseName = resourceName.replaceAll("(\\.bpmn20\\.xml|\\.bpmn|\\.xml)$", "");
         String[] possiblePaths = {
                 "/processes/" + resourceName,
-                "/processes/" + resourceName.replaceAll("\\.bpmn$", ".bpmn20.xml"),
-                "/processes/" + resourceName.replaceAll("\\.bpmn20\\.xml$", ".bpmn"),
-                "/processes/solicitudMantenimientoProcess.bpmn20.xml"
+                "/processes/" + baseName + ".bpmn20.xml",
+                "/processes/" + baseName + ".bpmn",
+                "/processes/" + baseName + ".xml",
+                resourceName.startsWith("/") ? resourceName : "/" + resourceName
         };
 
         for (String path : possiblePaths) {

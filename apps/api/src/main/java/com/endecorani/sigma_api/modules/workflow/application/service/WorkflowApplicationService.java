@@ -151,8 +151,8 @@ public class WorkflowApplicationService {
                 continue;
             }
 
-            // En acciones de observación o rechazo, los campos de asignación no aplican
-            if (esObservacionORechazo && esCampoDeAsignacion(field.id())) {
+            // En acciones de observación, rechazo o cancelación, no se exigen campos de selección o asignación técnica
+            if (esObservacionORechazo && esCampoOmitibleEnRechazo(field)) {
                 continue;
             }
 
@@ -185,20 +185,24 @@ public class WorkflowApplicationService {
             }
             String actionVal = val.toString().toUpperCase();
             String actionName = action.name() != null ? action.name().toUpperCase() : "";
-            return actionVal.contains("OBSERV") || actionVal.contains("RECHAZ") || actionVal.contains("CANCEL")
-                    || actionName.contains("OBSERV") || actionName.contains("RECHAZ") || actionName.contains("CANCEL");
+            return actionVal.contains("OBSERV") || actionVal.contains("RECHAZ") || actionVal.contains("CANCEL") || actionVal.contains("CORREG") || actionVal.contains("DEVUELV")
+                    || actionName.contains("OBSERV") || actionName.contains("RECHAZ") || actionName.contains("CANCEL") || actionName.contains("CORREG") || actionName.contains("DEVUELV");
         });
     }
 
-    private boolean esCampoDeAsignacion(String fieldId) {
-        if (fieldId == null) {
+    private boolean esCampoOmitibleEnRechazo(WorkflowFieldResponse field) {
+        if (field == null || field.id() == null) {
             return false;
         }
-        String lower = fieldId.toLowerCase();
-        return lower.contains("responsable")
-                || lower.contains("supervisor")
-                || lower.contains("tecnico")
-                || lower.contains("encargado");
+        String id = field.id().toLowerCase();
+        boolean esCampoTextoExplicativo = id.contains("comentario")
+                || id.contains("observacion")
+                || id.contains("motivo")
+                || id.contains("razon")
+                || id.contains("justificacion")
+                || id.contains("detalle");
+
+        return !esCampoTextoExplicativo;
     }
 
     private void validarVariablesPermitidas(
@@ -245,16 +249,27 @@ public class WorkflowApplicationService {
                     .forEach(variables::add);
         }
 
-        // Permitir variables de dominio estándar para notas, auditoría y asignaciones
+        // Permitir variables estándar de auditoría, control, comentarios y razones comunes a cualquier flujo BPMN
+        variables.add("action");
+        variables.add("comentario");
+        variables.add("observacion");
+        variables.add("motivo");
+        variables.add("razon");
+        variables.add("justificacion");
+        variables.add("nota");
+        variables.add("detalle");
+
+        // Compatibilidad con variables estándar de asignación e ids comunes
         variables.add("responsableId");
         variables.add("supervisorId");
-        variables.add("observacion");
+        variables.add("aprobadorId");
+        variables.add("solicitanteId");
+        variables.add("usuarioId");
+        variables.add("empleadoId");
         variables.add("observacionAprobacion");
-        variables.add("fechaEstimadaOt");
         variables.add("observacionValidacion");
         variables.add("observacionCierre");
-        variables.add("motivo");
-        variables.add("action");
+        variables.add("fechaEstimadaOt");
 
         return variables;
     }
