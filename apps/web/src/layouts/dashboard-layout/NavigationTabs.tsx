@@ -4,6 +4,7 @@ import {
   Boxes,
   Briefcase,
   Building2,
+  Car,
   CheckSquare,
   ChevronLeft,
   ChevronRight,
@@ -35,6 +36,8 @@ import {
 
 import { formatSegment } from "./breadcrumb.utils"
 import { useAuthStore } from "@/app/store/auth.store"
+import { useAllowedNavItems } from "@/shared/hooks/use-allowed-nav-items"
+import type { NavNode, NavSection } from "@/shared/types/nav.types"
 import { Button } from "@/shared/components/ui/button"
 import {
   DropdownMenu,
@@ -56,6 +59,84 @@ const MAX_TABS = 10
 
 function getStorageKey(userId?: string | null): string {
   return userId ? `${STORAGE_KEY}_${userId}` : STORAGE_KEY
+}
+
+export const PATH_TITLES: Record<string, string> = {
+  "/": "Inicio",
+  "/activos": "Activos",
+  "/activos/catalogo": "Catálogo de Activos",
+  "/activos/consulta-documentos": "Consulta de Documentos",
+  "/tipos-activo": "Tipos de Activo",
+  "/tipos-activo/historial": "Historial de Tipos de Activo",
+  "/categorias": "Categorías",
+  "/accesorios": "Accesorios",
+  "/tipos-documento": "Tipos de Documento",
+  "/inventarios": "Inventarios",
+  "/inventarios/tipos-insumo": "Tipos de Insumo",
+  "/inventarios/categorias": "Categorías de Insumo",
+  "/mantenimientos": "Mantenimientos",
+  "/mantenimientos/solicitudes": "Solicitudes de Mantenimiento",
+  "/mantenimientos/aprobaciones": "Aprobaciones",
+  "/mantenimientos/encargado": "Encargado de Mantenimiento",
+  "/mantenimientos/supervisor": "Supervisor de Mantenimiento",
+  "/mantenimientos/ordenes-trabajo": "Órdenes de Trabajo",
+  "/mantenimientos/actividades": "Actividades",
+  "/mantenimientos/tipos-mantenimiento": "Tipos de Mantenimiento",
+  "/mantenimientos/prioridades": "Prioridades",
+  "/mantenimientos/controles-activos": "Controles de Activos",
+  "/gestion-vehicular": "Gestión Vehicular",
+  "/gestion-vehicular/solicitudes": "Solicitudes de Vehículos",
+  "/gestion-vehicular/conductores": "Conductores",
+  "/gestion-vehicular/tipos-solicitud": "Tipos de Solicitud",
+  "/organizacion": "Organización",
+  "/organizacion/empleados": "Empleados",
+  "/organizacion/personas": "Personas",
+  "/organizacion/cargos": "Cargos",
+  "/organizacion/areas": "Áreas",
+  "/organizacion/responsabilidades": "Responsabilidades",
+  "/organizacion/grupos-aprobadores": "Grupos Aprobadores",
+  "/organizacion/migraciones": "Logs de Migración",
+  "/parametros": "Parámetros",
+  "/parametros/gestion": "Gestión de Parámetros",
+  "/parametros/catalogos": "Catálogos",
+  "/parametros/tipos-dato": "Tipos de Datos",
+  "/parametros/ubicaciones": "Ubicaciones",
+  "/parametros/unidades-medida": "Unidades de Medida",
+  "/seguridad": "Seguridad",
+  "/seguridad/usuarios": "Usuarios",
+  "/seguridad/roles": "Roles",
+  "/seguridad/menus": "Menús",
+  "/perfil": "Mi Perfil",
+}
+
+function findTitleInNav(nodes: (NavSection | NavNode)[], targetPath: string): string | null {
+  for (const node of nodes) {
+    if (node.to && node.to.toLowerCase() === targetPath.toLowerCase()) {
+      return node.title
+    }
+    if (node.children && node.children.length > 0) {
+      const found = findTitleInNav(node.children, targetPath)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+export function resolveTabTitle(pathname: string, navItems?: NavSection[]): string {
+  if (!pathname || pathname === "/") return "Inicio"
+
+  if (PATH_TITLES[pathname]) {
+    return PATH_TITLES[pathname]
+  }
+
+  if (navItems && navItems.length > 0) {
+    const navTitle = findTitleInNav(navItems, pathname)
+    if (navTitle) return navTitle
+  }
+
+  const segments = pathname.split("/").filter(Boolean)
+  const lastSegment = segments[segments.length - 1] || "Inicio"
+  return formatSegment(lastSegment)
 }
 
 /**
@@ -117,10 +198,13 @@ function loadInitialTabs(userId?: string | null): NavTabItem[] {
       if (stored) {
         const parsed = JSON.parse(stored) as NavTabItem[]
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Filtrar cualquier ruta de formulario previa guardada
-          const filtered = parsed.filter(
-            (t) => t.pathname === "/" || !isFormOrTransientPath(t.pathname),
-          )
+          // Filtrar cualquier ruta de formulario previa guardada y actualizar títulos
+          const filtered = parsed
+            .filter((t) => t.pathname === "/" || !isFormOrTransientPath(t.pathname))
+            .map((t) => ({
+              ...t,
+              title: resolveTabTitle(t.pathname),
+            }))
           if (filtered.length > 0) return filtered
         }
       }
@@ -138,6 +222,7 @@ function resolveTabIcon(pathname: string) {
   const p = pathname.toLowerCase()
 
   if (p === "/" || p === "") return Home
+  if (p.includes("gestion-vehicular") || p.includes("vehicul") || p.includes("conductor")) return Car
   if (p.includes("aprobaciones")) return ShieldCheck
   if (p.includes("encargado")) return UserCheck
   if (p.includes("supervisor")) return UserCog
@@ -175,6 +260,7 @@ export function NavigationTabs() {
   const navigate = useNavigate()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const user = useAuthStore((state) => state.user)
+  const { navItems } = useAllowedNavItems()
   const userId = user?.id
 
   const [tabs, setTabs] = useState<NavTabItem[]>(() => loadInitialTabs(userId))
@@ -201,9 +287,7 @@ export function NavigationTabs() {
       if (!isFormPage) {
         const exists = baseCleanTabs.some((tab) => tab.pathname === pathname)
         if (!exists) {
-          const segments = pathname.split("/").filter(Boolean)
-          const lastSegment = segments[segments.length - 1] || "Inicio"
-          const title = pathname === "/" ? "Inicio" : formatSegment(lastSegment)
+          const title = resolveTabTitle(pathname, navItems)
 
           const newTab: NavTabItem = {
             id: pathname,
@@ -232,6 +316,7 @@ export function NavigationTabs() {
       }
     }
   }
+
 
   // Guardar en sessionStorage para el usuario actual
   useEffect(() => {
@@ -330,6 +415,7 @@ export function NavigationTabs() {
           const isActive = pathname === tab.pathname
           const isHome = tab.pathname === "/"
           const Icon = resolveTabIcon(tab.pathname)
+          const tabTitle = tab.title || resolveTabTitle(tab.pathname, navItems)
 
           return (
             <Link
@@ -352,7 +438,7 @@ export function NavigationTabs() {
                 )}
               />
 
-              <span className="truncate max-w-36 tracking-tight">{tab.title}</span>
+              <span className="truncate max-w-36 tracking-tight">{tabTitle}</span>
 
               {/* Botón cerrar pestaña individual */}
               {!isHome && tabs.length > 1 && (
