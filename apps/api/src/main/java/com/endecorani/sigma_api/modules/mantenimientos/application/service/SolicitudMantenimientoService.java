@@ -572,12 +572,21 @@ public class SolicitudMantenimientoService {
                         solicitud.setFechaInicioMantenimiento(ahora);
                     }
                     break;
-                case "EN_REVISION":
+                case "EN_REVISION", "OBSERVADO_MANTENIMIENTO", "VALIDADO":
+                    if (solicitud.getFechaInicioMantenimiento() == null) {
+                        solicitud.setFechaInicioMantenimiento(ahora);
+                    }
                     if (solicitud.getFechaFinMantenimiento() == null) {
                         solicitud.setFechaFinMantenimiento(ahora);
                     }
                     break;
-                case "FINALIZADO":
+                case "TRABAJO_REALIZADO", "FINALIZADO", "CERRADO":
+                    if (solicitud.getFechaInicioMantenimiento() == null) {
+                        solicitud.setFechaInicioMantenimiento(ahora);
+                    }
+                    if (solicitud.getFechaFinMantenimiento() == null) {
+                        solicitud.setFechaFinMantenimiento(ahora);
+                    }
                     if (solicitud.getFechaCierre() == null) {
                         solicitud.setFechaCierre(ahora);
                     }

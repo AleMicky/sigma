@@ -7,4 +7,5 @@ public final class CorrelativoCodigo {
     public static final String SOLICITUD_MANTENIMIENTO = "SOLICITUD_MANTENIMIENTO";
     public static final String ORDEN_TRABAJO = "ORDEN_TRABAJO";
     public static final String ACTIVO = "ACTIVO";
+    public static final String SOLICITUD_VEHICULAR = "SOLICITUD_VEHICULAR";
 }
