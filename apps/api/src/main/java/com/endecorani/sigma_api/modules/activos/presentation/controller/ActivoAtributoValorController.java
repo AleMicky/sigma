@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,42 +27,27 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.API_V1 + "/activo-atributo-valores")
 @RequiredArgsConstructor
-@Tag(
-        name = "Valores de atributo de activo",
-        description = "Administración de valores de atributos personalizados por activo"
-)
+@Tag(name = "Valores de atributo de activo", description = "Administración de valores de atributos personalizados por activo")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class ActivoAtributoValorController
-        extends AbstractCrudController<
-        ActivoAtributoValorRequest,
-        ActivoAtributoValorResponse,
-        UUID
-        > {
+                extends AbstractCrudController<ActivoAtributoValorRequest, ActivoAtributoValorResponse, UUID> {
 
-    private final ActivoAtributoValorService activoAtributoValorService;
+        private final ActivoAtributoValorService activoAtributoValorService;
 
-    @Override
-    protected CrudService<
-            ActivoAtributoValorRequest,
-            ActivoAtributoValorResponse,
-            UUID
-            > service() {
-        return activoAtributoValorService;
-    }
+        @Override
+        protected CrudService<ActivoAtributoValorRequest, ActivoAtributoValorResponse, UUID> service() {
+                return activoAtributoValorService;
+        }
 
-    @GetMapping(params = "activoId")
-    @Operation(summary = "Listar valores de atributos filtrados por activo")
-    public ResponseEntity<ApiResponse<PageResponse<ActivoAtributoValorResponse>>> findByActivoId(
-            @RequestParam UUID activoId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        activoAtributoValorService.findByActivoId(
-                                activoId,
-                                pageRequest
-                        )
-                )
-        );
-    }
+        @GetMapping(params = "activoId")
+        @Operation(summary = "Listar valores de atributos filtrados por activo")
+        public ResponseEntity<ApiResponse<PageResponse<ActivoAtributoValorResponse>>> findByActivoId(
+                        @RequestParam UUID activoId,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                activoAtributoValorService.findByActivoId(
+                                                                activoId,
+                                                                pageRequest)));
+        }
 }

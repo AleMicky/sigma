@@ -155,7 +155,11 @@ public class InsumoService {
                 .collect(Collectors.toMap(UnidadMedida::getId, Function.identity(), (a, b) -> a));
 
         List<InsumoResponse> responses = content.stream()
-                .map(domain -> toResponse(domain, categoriaMap.get(domain.getCategoriaInsumoId()), unidadMap.get(domain.getUnidadMedidaId())))
+                .map(domain -> {
+                    CategoriaInsumo categoria = domain.getCategoriaInsumoId() != null ? categoriaMap.get(domain.getCategoriaInsumoId()) : null;
+                    UnidadMedida unidad = domain.getUnidadMedidaId() != null ? unidadMap.get(domain.getUnidadMedidaId()) : null;
+                    return toResponse(domain, categoria, unidad);
+                })
                 .toList();
 
         return PageResponse.of(responses, page);

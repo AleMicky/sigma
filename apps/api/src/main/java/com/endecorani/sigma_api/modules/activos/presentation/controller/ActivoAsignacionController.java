@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,7 +29,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Activo Asignaciones", description = "Administración de asignaciones de activos a empleados o áreas")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-public class ActivoAsignacionController extends AbstractCrudController<ActivoAsignacionRequest, ActivoAsignacionResponse, UUID> {
+public class ActivoAsignacionController
+        extends AbstractCrudController<ActivoAsignacionRequest, ActivoAsignacionResponse, UUID> {
 
     private final ActivoAsignacionService service;
 
@@ -44,8 +44,7 @@ public class ActivoAsignacionController extends AbstractCrudController<ActivoAsi
     public ResponseEntity<ApiResponse<PageResponse<ActivoAsignacionResponse>>> findByActivoId(
             @RequestParam UUID activoId,
             @RequestParam(required = false) String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
+            @Valid @ModelAttribute PageRequestDto pageRequest) {
         return ResponseEntity.ok(ApiResponse.success(service.find(activoId, q, pageRequest)));
     }
 }

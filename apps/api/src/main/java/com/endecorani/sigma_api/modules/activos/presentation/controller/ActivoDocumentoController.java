@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,7 +29,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Activo Documentos", description = "Administración de documentos de un activo con archivos físicos")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-public class ActivoDocumentoController extends AbstractCrudController<ActivoDocumentoRequest, ActivoDocumentoResponse, UUID> {
+public class ActivoDocumentoController
+        extends AbstractCrudController<ActivoDocumentoRequest, ActivoDocumentoResponse, UUID> {
 
     private final ActivoDocumentoService service;
 
@@ -42,18 +42,20 @@ public class ActivoDocumentoController extends AbstractCrudController<ActivoDocu
     @Override
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Crear documento sin archivo (no permitido)", description = "Los documentos deben registrarse con multipart/form-data incluyendo el archivo")
-    public ResponseEntity<ApiResponse<ActivoDocumentoResponse>> create(@Valid @RequestBody ActivoDocumentoRequest request) {
-        throw new BusinessException("DOCUMENTO_FILE_REQUIRED", "Los documentos deben registrarse con un archivo adjunto (multipart/form-data)");
+    public ResponseEntity<ApiResponse<ActivoDocumentoResponse>> create(
+            @Valid @RequestBody ActivoDocumentoRequest request) {
+        throw new BusinessException("DOCUMENTO_FILE_REQUIRED",
+                "Los documentos deben registrarse con un archivo adjunto (multipart/form-data)");
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Registrar un documento con su archivo físico")
     public ResponseEntity<ApiResponse<ActivoDocumentoResponse>> createWithFile(
             @RequestPart("file") MultipartFile file,
-            @Valid @RequestPart("data") ActivoDocumentoRequest request
-    ) {
+            @Valid @RequestPart("data") ActivoDocumentoRequest request) {
         ActivoDocumentoResponse response = service.createWithFile(request, file);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Documento creado correctamente", response));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Documento creado correctamente", response));
     }
 
     @GetMapping(params = "activoId")
@@ -61,8 +63,7 @@ public class ActivoDocumentoController extends AbstractCrudController<ActivoDocu
     public ResponseEntity<ApiResponse<PageResponse<ActivoDocumentoResponse>>> findByActivoId(
             @RequestParam UUID activoId,
             @RequestParam(required = false) String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
+            @Valid @ModelAttribute PageRequestDto pageRequest) {
         return ResponseEntity.ok(ApiResponse.success(service.find(activoId, null, q, pageRequest)));
     }
 
@@ -70,8 +71,8 @@ public class ActivoDocumentoController extends AbstractCrudController<ActivoDocu
     @Operation(summary = "Reemplazar el archivo de un documento existente")
     public ResponseEntity<ApiResponse<ActivoDocumentoResponse>> replaceFile(
             @PathVariable UUID id,
-            @RequestParam("file") MultipartFile file
-    ) {
-        return ResponseEntity.ok(ApiResponse.success("Archivo actualizado correctamente", service.replaceFile(id, file)));
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity
+                .ok(ApiResponse.success("Archivo actualizado correctamente", service.replaceFile(id, file)));
     }
 }

@@ -219,7 +219,11 @@ public class ActivoService {
                 .collect(Collectors.toMap(Ubicacion::getId, Function.identity(), (a, b) -> a));
 
         List<ActivoResponse> responses = content.stream()
-                .map(domain -> toResponse(domain, tipoMap.get(domain.getTipoActivoId()), ubicacionMap.get(domain.getUbicacionId())))
+                .map(domain -> {
+                    TipoActivo tipoActivo = domain.getTipoActivoId() != null ? tipoMap.get(domain.getTipoActivoId()) : null;
+                    Ubicacion ubicacion = domain.getUbicacionId() != null ? ubicacionMap.get(domain.getUbicacionId()) : null;
+                    return toResponse(domain, tipoActivo, ubicacion);
+                })
                 .toList();
 
         return PageResponse.of(responses, page);

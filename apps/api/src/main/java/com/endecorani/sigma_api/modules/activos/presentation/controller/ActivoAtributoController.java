@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,44 +27,29 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.API_V1 + "/activo-atributos")
 @RequiredArgsConstructor
-@Tag(
-        name = "Atributos de activo",
-        description = "Administración de atributos personalizados por tipo de activo"
-)
+@Tag(name = "Atributos de activo", description = "Administración de atributos personalizados por tipo de activo")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class ActivoAtributoController
-        extends AbstractCrudController<
-        ActivoAtributoRequest,
-        ActivoAtributoResponse,
-        UUID
-        > {
+                extends AbstractCrudController<ActivoAtributoRequest, ActivoAtributoResponse, UUID> {
 
-    private final ActivoAtributoService activoAtributoService;
+        private final ActivoAtributoService activoAtributoService;
 
-    @Override
-    protected CrudService<
-            ActivoAtributoRequest,
-            ActivoAtributoResponse,
-            UUID
-            > service() {
-        return activoAtributoService;
-    }
+        @Override
+        protected CrudService<ActivoAtributoRequest, ActivoAtributoResponse, UUID> service() {
+                return activoAtributoService;
+        }
 
-    @GetMapping(params = "tipoActivoId")
-    @Operation(summary = "Listar atributos filtrados por tipo de activo")
-    public ResponseEntity<ApiResponse<PageResponse<ActivoAtributoResponse>>> findByTipoActivoId(
-            @RequestParam UUID tipoActivoId,
-            @RequestParam(required = false) String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        activoAtributoService.findByTipoActivoId(
-                                tipoActivoId,
-                                q,
-                                pageRequest
-                        )
-                )
-        );
-    }
+        @GetMapping(params = "tipoActivoId")
+        @Operation(summary = "Listar atributos filtrados por tipo de activo")
+        public ResponseEntity<ApiResponse<PageResponse<ActivoAtributoResponse>>> findByTipoActivoId(
+                        @RequestParam UUID tipoActivoId,
+                        @RequestParam(required = false) String q,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                activoAtributoService.findByTipoActivoId(
+                                                                tipoActivoId,
+                                                                q,
+                                                                pageRequest)));
+        }
 }

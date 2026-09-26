@@ -254,7 +254,12 @@ public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoRes
                         .collect(Collectors.toMap(Cargo::getId, Function.identity(), (a, b) -> a));
 
         List<EmpleadoResponse> content = page.getContent().stream()
-                .map(e -> toResponse(e, personaMap.get(e.getPersonaId()), areaMap.get(e.getAreaId()), cargoMap.get(e.getCargoId())))
+                .map(e -> {
+                    Persona persona = e.getPersonaId() != null ? personaMap.get(e.getPersonaId()) : null;
+                    Area area = e.getAreaId() != null ? areaMap.get(e.getAreaId()) : null;
+                    Cargo cargo = e.getCargoId() != null ? cargoMap.get(e.getCargoId()) : null;
+                    return toResponse(e, persona, area, cargo);
+                })
                 .toList();
 
         return PageResponse.of(content, page);
