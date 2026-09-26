@@ -69,7 +69,7 @@ export function TipoSolicitudTableView({
           return (
             <div className="flex flex-col min-w-0 py-0.5">
               <span
-                className="text-xs sm:text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate"
+                className="text-xs sm:text-sm font-semibold text-foreground truncate"
                 title={item.nombre}
               >
                 {item.nombre}
@@ -161,7 +161,6 @@ export function TipoSolicitudTableView({
     <DataTable
       columns={columns}
       data={tiposSolicitud}
-      onRowClick={onEdit}
       isLoading={isLoading}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}
