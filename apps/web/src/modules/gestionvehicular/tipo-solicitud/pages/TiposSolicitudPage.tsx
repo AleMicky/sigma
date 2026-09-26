@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { FileText, Plus } from "lucide-react"
+import { AlertCircle, FileText, Plus, RotateCw, SearchX } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
@@ -35,16 +35,24 @@ export function TiposSolicitudPage() {
   const search = usePaginatedSearch()
   const deleteMutation = useDeleteTipoSolicitudVehicular()
 
-  const queryParams = {
-    page: search.page,
-    size: PAGE_SIZE,
-    sortBy: "codigo",
-    direction: "ASC" as const,
-    ...(search.query && { search: search.query }),
-  }
+  const queryParams = useMemo(
+    () => ({
+      page: search.page,
+      size: PAGE_SIZE,
+      sortBy: "codigo",
+      direction: "ASC" as const,
+      ...(search.query && { search: search.query }),
+    }),
+    [search.page, search.query]
+  )
 
   const tiposQuery = useQuery(tipoSolicitudVehicularQueries.list(queryParams))
-  const allTiposQuery = useQuery(tipoSolicitudVehicularQueries.list({ size: 1000 }))
+
+  // Cached long-lived query for global KPI metrics
+  const allTiposQuery = useQuery({
+    ...tipoSolicitudVehicularQueries.list({ size: 1000 }),
+    staleTime: 1000 * 60 * 3, // 3 minutes
+  })
 
   const tiposSolicitud = tiposQuery.data?.content ?? []
 
@@ -77,6 +85,13 @@ export function TiposSolicitudPage() {
     setDialogOpen(true)
   }
 
+  const handleCloseDialog = (open: boolean) => {
+    setDialogOpen(open)
+    if (!open) {
+      setEditing(null)
+    }
+  }
+
   const handleDelete = async () => {
     if (!deleting) return
     try {
@@ -95,25 +110,38 @@ export function TiposSolicitudPage() {
 
   const viewProps = {
     tiposSolicitud,
-    isLoading: tiposQuery.isFetching,
+    isLoading: tiposQuery.isLoading,
     onEdit: openEdit,
     onDelete: setDeleting,
     emptyTitle: hasActiveFilters
-      ? "No se encontraron tipos de solicitud"
+      ? "Sin resultados para tu búsqueda"
       : "No hay tipos de solicitud registrados",
     emptyDescription: hasActiveFilters
-      ? "No hay resultados que coincidan con la búsqueda."
-      : "Registra los motivos y clasificaciones de solicitud vehicular para la flota.",
-    emptyIcon: (
-      <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary/70 shadow-2xs">
+      ? `No se encontraron coincidencias para "${search.search}". Intenta con otro término o limpia el filtro.`
+      : "Registra los motivos y clasificaciones de solicitud vehicular para gestionar la flota.",
+    emptyIcon: hasActiveFilters ? (
+      <div className="flex size-12 items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground ring-1 ring-border/60 shadow-2xs">
+        <SearchX className="size-6 text-muted-foreground" />
+      </div>
+    ) : (
+      <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20 shadow-2xs">
         <FileText className="size-6" />
       </div>
     ),
-    emptyAction: !hasActiveFilters && (
+    emptyAction: hasActiveFilters ? (
+      <Button
+        onClick={resetFilters}
+        variant="outline"
+        size="sm"
+        className="mt-3.5 h-8 gap-1.5 rounded-lg text-xs font-medium border-border/70 hover:bg-muted/70 cursor-pointer shadow-2xs"
+      >
+        Limpiar búsqueda
+      </Button>
+    ) : (
       <Button
         onClick={openCreate}
         size="sm"
-        className="mt-3 gap-1.5 rounded-lg text-xs font-semibold"
+        className="mt-3.5 h-8 gap-1.5 rounded-lg text-xs font-semibold shadow-2xs cursor-pointer"
       >
         <Plus className="size-3.5" />
         Registrar Tipo de Solicitud
@@ -122,7 +150,7 @@ export function TiposSolicitudPage() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-3 px-1 sm:px-2 pt-1 pb-4">
+    <div className="flex w-full flex-col gap-3.5 px-2 sm:px-4 pt-2 pb-6 max-w-7xl mx-auto">
       {/* HEADER */}
       <TipoSolicitudHeader
         isRefreshing={tiposQuery.isFetching}
@@ -138,11 +166,32 @@ export function TiposSolicitudPage() {
         totalCount={kpiStats.total}
         conDescripcionCount={kpiStats.conDescripcion}
         sinDescripcionCount={kpiStats.sinDescripcion}
-        isLoading={allTiposQuery.isFetching && !allTiposQuery.data}
+        isLoading={allTiposQuery.isPending && !allTiposQuery.data}
       />
 
+      {/* ERROR BANNER IF QUERY FAILS */}
+      {tiposQuery.isError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive backdrop-blur-xs">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="size-4 shrink-0" />
+            <p className="font-medium">
+              Ocurrió un error al cargar los tipos de solicitud.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => tiposQuery.refetch()}
+            className="h-7 gap-1.5 rounded-md border-destructive/30 bg-background/80 text-destructive hover:bg-destructive/10 text-xs font-semibold cursor-pointer"
+          >
+            <RotateCw className="size-3" />
+            Reintentar
+          </Button>
+        </div>
+      )}
+
       {/* UNIFIED CONTAINER */}
-      <div className="flex-1 w-full overflow-hidden rounded-xl border border-border/70 bg-card/75 shadow-2xs flex flex-col">
+      <div className="flex-1 w-full overflow-hidden rounded-2xl border border-border/70 bg-card/85 shadow-xs backdrop-blur-sm flex flex-col transition-all">
         <TipoSolicitudFilters
           search={search.search}
           setSearch={search.setSearch}
@@ -154,7 +203,7 @@ export function TiposSolicitudPage() {
 
         <div className="flex-1 min-h-0">
           {viewMode === "grid" ? (
-            <div className="p-3">
+            <div className="p-3.5">
               <TipoSolicitudCardView {...viewProps} />
             </div>
           ) : (
@@ -164,10 +213,12 @@ export function TiposSolicitudPage() {
 
         {/* PAGINACIÓN UNIFICADA AL FINAL */}
         {tiposQuery.data && tiposSolicitud.length > 0 && (
-          <Pagination
-            page={tiposQuery.data}
-            onPageChange={search.setPage}
-          />
+          <div className="border-t border-border/60 bg-muted/20">
+            <Pagination
+              page={tiposQuery.data}
+              onPageChange={search.setPage}
+            />
+          </div>
         )}
       </div>
 
@@ -175,14 +226,14 @@ export function TiposSolicitudPage() {
       {dialogOpen && (
         <TipoSolicitudFormDialog
           open={dialogOpen}
-          onOpenChange={setDialogOpen}
+          onOpenChange={handleCloseDialog}
           tipoSolicitud={editing}
         />
       )}
 
       {deleting && (
         <ConfirmDeleteDialog
-          open={true}
+          open={Boolean(deleting)}
           onOpenChange={(isOpen) => !isOpen && setDeleting(null)}
           title="Eliminar tipo de solicitud"
           description={`¿Estás seguro de que deseas eliminar el tipo de solicitud "${deleting.nombre}" (${deleting.codigo})?`}

@@ -5,11 +5,13 @@ import {
   FileCode2,
   Pencil,
   Trash2,
+  X,
 } from "lucide-react"
 
 import { DataTable, DataTableColumnHeader } from "@/shared/components/data-table"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { Separator } from "@/shared/components/ui/separator"
 import { formatDate } from "@/shared/lib/format-date"
 
 import type { TipoSolicitudVehicular } from "../api/tipo-solicitud.service"
@@ -35,6 +37,35 @@ export function TipoSolicitudTableView({
   emptyIcon,
   emptyAction,
 }: TipoSolicitudTableViewProps) {
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
+
+  // Derive selectedItem directly from props during render (no effect needed)
+  const selectedItem = React.useMemo(
+    () => (selectedId ? tiposSolicitud.find((t) => t.id === selectedId) ?? null : null),
+    [tiposSolicitud, selectedId]
+  )
+
+  // Clear selection on Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedId(null)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
+
+  const rowSelection = React.useMemo(() => {
+    if (!selectedId) return {}
+    const index = tiposSolicitud.findIndex((t) => t.id === selectedId)
+    return index >= 0 ? { [String(index)]: true } : {}
+  }, [selectedId, tiposSolicitud])
+
+  const handleRowClick = React.useCallback((item: TipoSolicitudVehicular) => {
+    setSelectedId((prev) => (prev === item.id ? null : item.id))
+  }, [])
+
   const columns = React.useMemo<ColumnDef<TipoSolicitudVehicular>[]>(
     () => [
       {
@@ -168,60 +199,75 @@ export function TipoSolicitudTableView({
           )
         },
       },
-      {
-        id: "actions",
-        enableSorting: false,
-        header: () => (
-          <div className="text-right text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-            Acciones
-          </div>
-        ),
-        cell: ({ row }) => {
-          const item = row.original
-          return (
-            <div
-              className="flex items-center justify-end gap-1"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => onEdit(item)}
-                className="size-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                title="Editar tipo de solicitud"
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => onDelete(item)}
-                className="size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                title="Eliminar tipo de solicitud"
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            </div>
-          )
-        },
-      },
     ],
-    [onEdit, onDelete]
+    []
   )
 
   return (
-    <DataTable
-      columns={columns}
-      data={tiposSolicitud}
-      isLoading={isLoading}
-      emptyTitle={emptyTitle}
-      emptyDescription={emptyDescription}
-      emptyIcon={emptyIcon}
-      emptyAction={emptyAction}
-      density="compact"
-      stickyHeader
-      containerClassName="gap-0"
-      className="border-0 rounded-none shadow-none"
-    />
+    <div className="relative">
+      <DataTable
+        columns={columns}
+        data={tiposSolicitud}
+        isLoading={isLoading}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+        emptyIcon={emptyIcon}
+        emptyAction={emptyAction}
+        density="compact"
+        stickyHeader
+        containerClassName="gap-0"
+        className="border-0 rounded-none shadow-none"
+        onRowClick={handleRowClick}
+        rowSelection={rowSelection}
+      />
+
+      {/* Floating Action Bar upon Row Selection */}
+      {selectedItem && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex max-w-[92vw] items-center gap-2 sm:gap-3 rounded-2xl border border-border/80 bg-background/95 px-3.5 py-2.5 shadow-2xl backdrop-blur-md ring-1 ring-black/5 animate-in fade-in slide-in-from-bottom-5 duration-200">
+          <div className="flex items-center gap-2 min-w-0 pr-1">
+            <Badge
+              variant="outline"
+              className="font-mono text-xs font-bold px-2 py-0.5 bg-primary/10 text-primary border-primary/25 shrink-0"
+            >
+              {selectedItem.codigo}
+            </Badge>
+            <span className="text-xs sm:text-sm font-semibold text-foreground truncate max-w-[130px] sm:max-w-[220px]">
+              {selectedItem.nombre}
+            </span>
+          </div>
+
+          <Separator orientation="vertical" className="h-5" />
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              size="sm"
+              onClick={() => onEdit(selectedItem)}
+              className="h-8 gap-1.5 rounded-lg px-3 text-xs font-semibold shadow-2xs cursor-pointer"
+            >
+              <Pencil className="size-3.5" />
+              <span>Editar</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onDelete(selectedItem)}
+              className="h-8 gap-1.5 rounded-lg px-3 text-xs font-semibold shadow-2xs cursor-pointer"
+            >
+              <Trash2 className="size-3.5" />
+              <span>Eliminar</span>
+            </Button>
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => setSelectedId(null)}
+              className="size-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 ml-0.5 cursor-pointer"
+              title="Deseleccionar (Esc)"
+            >
+              <X className="size-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
