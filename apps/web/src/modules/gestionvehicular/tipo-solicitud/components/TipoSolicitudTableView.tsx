@@ -69,7 +69,7 @@ export function TipoSolicitudTableView({
           return (
             <div className="flex flex-col min-w-0 py-0.5">
               <span
-                className="text-xs sm:text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate"
+                className="text-xs sm:text-sm font-semibold text-foreground truncate"
                 title={item.nombre}
               >
                 {item.nombre}
@@ -90,11 +90,63 @@ export function TipoSolicitudTableView({
           }
           return (
             <span
-              className="text-xs text-muted-foreground truncate max-w-xs sm:max-w-md inline-block"
+              className="text-xs text-muted-foreground truncate max-w-xs inline-block"
               title={desc}
             >
               {desc}
             </span>
+          )
+        },
+      },
+      {
+        accessorKey: "diasAnticipacion",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Anticipación" hideSortMenu />
+        ),
+        cell: ({ row }) => {
+          const dias = row.original.diasAnticipacion ?? 0
+          return (
+            <div className="flex items-center gap-1.5 py-0.5 whitespace-nowrap">
+              <span className="text-xs font-medium text-foreground">
+                {dias === 0 ? (
+                  <span className="text-muted-foreground">Inmediato (0 d)</span>
+                ) : (
+                  <span>{dias} {dias === 1 ? "día" : "días"}</span>
+                )}
+              </span>
+            </div>
+          )
+        },
+      },
+      {
+        id: "requerimientos",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Requisitos" hideSortMenu />
+        ),
+        cell: ({ row }) => {
+          const { requiereRespaldo, requiereJustificacion } = row.original
+          if (!requiereRespaldo && !requiereJustificacion) {
+            return <span className="text-[11px] text-muted-foreground/60 italic">Ninguno</span>
+          }
+          return (
+            <div className="flex items-center gap-1.5 flex-wrap py-0.5">
+              {requiereRespaldo && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] font-medium px-1.5 py-0 bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                >
+                  Respaldo
+                </Badge>
+              )}
+              {requiereJustificacion && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] font-medium px-1.5 py-0 bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800"
+                >
+                  Justificación
+                </Badge>
+              )}
+            </div>
           )
         },
       },
@@ -161,7 +213,6 @@ export function TipoSolicitudTableView({
     <DataTable
       columns={columns}
       data={tiposSolicitud}
-      onRowClick={onEdit}
       isLoading={isLoading}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}

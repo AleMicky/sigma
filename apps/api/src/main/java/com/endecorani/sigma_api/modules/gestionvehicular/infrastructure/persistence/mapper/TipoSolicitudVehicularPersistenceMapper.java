@@ -17,6 +17,9 @@ public class TipoSolicitudVehicularPersistenceMapper {
         entity.setCodigo(domain.getCodigo());
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
+        entity.setDiasAnticipacion(domain.getDiasAnticipacion());
+        entity.setRequiereJustificacion(domain.getRequiereJustificacion());
+        entity.setRequiereRespaldo(domain.getRequiereRespaldo());
         return entity;
     }
 
@@ -30,6 +33,9 @@ public class TipoSolicitudVehicularPersistenceMapper {
                 .codigo(entity.getCodigo())
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
+                .diasAnticipacion(entity.getDiasAnticipacion())
+                .requiereJustificacion(entity.getRequiereJustificacion())
+                .requiereRespaldo(entity.getRequiereRespaldo())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())
@@ -39,3 +45,4 @@ public class TipoSolicitudVehicularPersistenceMapper {
                 .build();
     }
 }
+

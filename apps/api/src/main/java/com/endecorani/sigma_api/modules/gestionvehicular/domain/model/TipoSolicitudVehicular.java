@@ -20,4 +20,7 @@ public class TipoSolicitudVehicular extends AuditableModel {
     private String codigo;
     private String nombre;
     private String descripcion;
+    private Integer diasAnticipacion;
+    private Boolean requiereRespaldo;
+    private Boolean requiereJustificacion;
 }

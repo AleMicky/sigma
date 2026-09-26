@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { FileCode2, FileText } from "lucide-react"
+import { CalendarClock, FileCheck, FileCode2, FileSpreadsheet, FileText } from "lucide-react"
 
 import { isApiError } from "@/shared/api"
 import {
@@ -11,6 +11,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { cn } from "@/shared/lib/utils"
 
 import {
   useCreateTipoSolicitudVehicular,
@@ -46,6 +47,9 @@ export function TipoSolicitudFormDialog({
           codigo: tipoSolicitud.codigo,
           nombre: tipoSolicitud.nombre,
           descripcion: tipoSolicitud.descripcion ?? "",
+          diasAnticipacion: tipoSolicitud.diasAnticipacion ?? 0,
+          requiereRespaldo: tipoSolicitud.requiereRespaldo ?? false,
+          requiereJustificacion: tipoSolicitud.requiereJustificacion ?? false,
         }
       : defaultTipoSolicitudVehicularValues,
     validators: {
@@ -60,6 +64,9 @@ export function TipoSolicitudFormDialog({
           codigo: value.codigo.trim().toUpperCase(),
           nombre: value.nombre.trim(),
           descripcion: value.descripcion?.trim() || null,
+          diasAnticipacion: Number(value.diasAnticipacion) || 0,
+          requiereRespaldo: Boolean(value.requiereRespaldo),
+          requiereJustificacion: Boolean(value.requiereJustificacion),
         }
 
         const saved =
@@ -91,7 +98,7 @@ export function TipoSolicitudFormDialog({
       }
       description={
         isEditing
-          ? "Actualiza el código, denominación o descripción del tipo de solicitud."
+          ? "Actualiza la configuración, requerimientos y datos del tipo de solicitud."
           : "Define un nuevo motivo o tipo de solicitud para la flota vehicular."
       }
       formError={formError}
@@ -176,7 +183,121 @@ export function TipoSolicitudFormDialog({
           }}
         </form.Field>
 
-        {/* 3. Descripción */}
+        {/* 3. Días de Anticipación */}
+        <form.Field name="diasAnticipacion">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>
+                  <RequiredFieldLabel>Días de Anticipación Mínimos</RequiredFieldLabel>
+                </FieldLabel>
+                <div className="relative">
+                  <CalendarClock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onBlur={field.handleBlur}
+                    placeholder="0"
+                    className="pl-9"
+                    aria-invalid={isInvalid}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Cantidad mínima de días previos requeridos para registrar esta solicitud (0 = sin restricción).
+                </p>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+
+        {/* 4. Switches de Requerimientos */}
+        <div className="flex flex-col gap-2.5 pt-1">
+          {/* Requiere Respaldo */}
+          <form.Field name="requiereRespaldo">
+            {(field) => (
+              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 p-3">
+                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <FileSpreadsheet className="size-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-foreground">
+                      Requiere Respaldo Documental
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Exige adjuntar comprobantes o archivos de respaldo al solicitar
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={field.state.value}
+                  onClick={() => field.handleChange(!field.state.value)}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                    field.state.value ? "bg-primary" : "bg-muted-foreground/30"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block size-5 transform rounded-full bg-background shadow-md ring-0 transition duration-200 ease-in-out",
+                      field.state.value ? "translate-x-5" : "translate-x-0"
+                    )}
+                  />
+                </button>
+              </div>
+            )}
+          </form.Field>
+
+          {/* Requiere Justificación */}
+          <form.Field name="requiereJustificacion">
+            {(field) => (
+              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 p-3">
+                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <FileCheck className="size-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-foreground">
+                      Requiere Justificación Obligatoria
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Obliga al solicitante a redactar una justificación del viaje o comisión
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={field.state.value}
+                  onClick={() => field.handleChange(!field.state.value)}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                    field.state.value ? "bg-primary" : "bg-muted-foreground/30"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block size-5 transform rounded-full bg-background shadow-md ring-0 transition duration-200 ease-in-out",
+                      field.state.value ? "translate-x-5" : "translate-x-0"
+                    )}
+                  />
+                </button>
+              </div>
+            )}
+          </form.Field>
+        </div>
+
+        {/* 5. Descripción */}
         <form.Field name="descripcion">
           {(field) => {
             const isInvalid =
@@ -208,3 +329,4 @@ export function TipoSolicitudFormDialog({
     </FormDialog>
   )
 }
+

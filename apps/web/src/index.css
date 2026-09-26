@@ -53,137 +53,137 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SIGMA – Sistema de Mantenimiento Industrial
-   Light Theme: Steel / Slate tones + Industrial Blue primary
+   SIGMA – Sistema de Mantenimiento y Asignación de Flotas y Activos
+   Light Theme: Fleet Steel & Cobalt Blue + High-Vis Operations Accents
    ═══════════════════════════════════════════════════════════════ */
 :root {
-  /* Base */
-  --background: oklch(0.98 0.003 250);
-  --foreground: oklch(0.16 0.02 260);
+  /* Base Canvas */
+  --background: oklch(0.985 0.005 240);
+  --foreground: oklch(0.18 0.03 260);
 
-  /* Cards & Popovers */
-  --card: oklch(0.995 0.001 250);
-  --card-foreground: oklch(0.16 0.02 260);
-  --popover: oklch(0.995 0.001 250);
-  --popover-foreground: oklch(0.16 0.02 260);
+  /* Cards & Elevaciones */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.03 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.03 260);
 
-  /* Primary: Industrial Blue — confiable, profesional */
-  --primary: oklch(0.45 0.18 255);
+  /* Primary: Vibrant Fleet Cobalt Blue — Alta precisión y autoridad técnica */
+  --primary: oklch(0.46 0.22 258);
   --primary-foreground: oklch(0.98 0.005 250);
 
-  /* Secondary: Slate neutro */
-  --secondary: oklch(0.94 0.008 255);
-  --secondary-foreground: oklch(0.25 0.02 260);
+  /* Secondary: Slate Steel refinado */
+  --secondary: oklch(0.95 0.012 250);
+  --secondary-foreground: oklch(0.24 0.03 260);
 
-  /* Muted: Gris industrial suave */
-  --muted: oklch(0.95 0.005 250);
-  --muted-foreground: oklch(0.50 0.015 255);
+  /* Muted: Fondo de contraste para tablas y metadata */
+  --muted: oklch(0.955 0.008 245);
+  --muted-foreground: oklch(0.48 0.025 255);
 
-  /* Accent: Teal industrial — acción secundaria */
-  --accent: oklch(0.93 0.012 250);
-  --accent-foreground: oklch(0.20 0.03 255);
+  /* Accent: Azul aero y superficie interactiva */
+  --accent: oklch(0.94 0.018 250);
+  --accent-foreground: oklch(0.22 0.04 258);
 
-  /* Destructive: Rojo de alerta industrial */
-  --destructive: oklch(0.55 0.24 28);
+  /* Destructive: Rojo de seguridad industrial (averías críticas, bloqueos) */
+  --destructive: oklch(0.55 0.24 26);
 
-  /* Borders & Inputs */
-  --border: oklch(0.90 0.008 255);
-  --input: oklch(0.91 0.008 255);
-  --ring: oklch(0.50 0.18 255);
+  /* Borders & Inputs: Bordes limpios con contraste calibrado */
+  --border: oklch(0.89 0.012 250);
+  --input: oklch(0.90 0.012 250);
+  --ring: oklch(0.52 0.22 258);
 
-  /* Charts: Paleta industrial para dashboards de mantenimiento */
-  --chart-1: oklch(0.50 0.18 255);   /* Azul industrial (primary) */
-  --chart-2: oklch(0.62 0.15 165);   /* Teal — operativo */
-  --chart-3: oklch(0.65 0.17 80);    /* Ámbar — advertencia */
-  --chart-4: oklch(0.58 0.18 300);   /* Violeta — planificación */
-  --chart-5: oklch(0.55 0.20 25);    /* Rojo — crítico */
+  /* Charts & Operaciones de Flotas */
+  --chart-1: oklch(0.48 0.22 258);   /* Azul Cobalto Flota (Activos) */
+  --chart-2: oklch(0.62 0.17 155);   /* Esmeralda Operativo (Disponibles) */
+  --chart-3: oklch(0.70 0.18 75);    /* Ámbar Mantenimiento (Preventivo / OT) */
+  --chart-4: oklch(0.56 0.20 295);   /* Violeta Telemetría / Asignaciones */
+  --chart-5: oklch(0.56 0.23 25);    /* Rojo Alerta Crítica (Averías) */
 
   --radius: 0.625rem;
 
   /* Sidebar */
-  --sidebar: oklch(0.975 0.005 255);
-  --sidebar-foreground: oklch(0.16 0.02 260);
-  --sidebar-primary: oklch(0.45 0.18 255);
+  --sidebar: oklch(0.98 0.006 245);
+  --sidebar-foreground: oklch(0.20 0.03 260);
+  --sidebar-primary: oklch(0.46 0.22 258);
   --sidebar-primary-foreground: oklch(0.98 0.005 250);
-  --sidebar-accent: oklch(0.94 0.01 255);
-  --sidebar-accent-foreground: oklch(0.20 0.03 255);
-  --sidebar-border: oklch(0.91 0.008 255);
-  --sidebar-ring: oklch(0.50 0.18 255);
+  --sidebar-accent: oklch(0.935 0.015 250);
+  --sidebar-accent-foreground: oklch(0.22 0.04 258);
+  --sidebar-border: oklch(0.90 0.01 250);
+  --sidebar-ring: oklch(0.52 0.22 258);
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Dark Theme: Deep Slate + Luminous Industrial Blue
+   Dark Theme: Obsidian Steel + Luminous Fleet Cobalt
    ═══════════════════════════════════════════════════════════════ */
 .dark {
-  /* Base */
-  --background: oklch(0.14 0.015 260);
-  --foreground: oklch(0.96 0.005 250);
+  /* Base Obsidian */
+  --background: oklch(0.13 0.018 260);
+  --foreground: oklch(0.96 0.006 250);
 
-  /* Cards & Popovers */
-  --card: oklch(0.18 0.018 260);
-  --card-foreground: oklch(0.96 0.005 250);
-  --popover: oklch(0.19 0.018 260);
-  --popover-foreground: oklch(0.96 0.005 250);
+  /* Cards & Elevaciones oscuras */
+  --card: oklch(0.17 0.02 260);
+  --card-foreground: oklch(0.96 0.006 250);
+  --popover: oklch(0.18 0.02 260);
+  --popover-foreground: oklch(0.96 0.006 250);
 
-  /* Primary: Industrial Blue luminoso */
-  --primary: oklch(0.62 0.18 255);
+  /* Primary: Cobalt Luminoso para interfaces técnicas */
+  --primary: oklch(0.64 0.20 255);
   --primary-foreground: oklch(0.12 0.03 260);
 
   /* Secondary */
-  --secondary: oklch(0.22 0.015 260);
-  --secondary-foreground: oklch(0.94 0.005 250);
+  --secondary: oklch(0.22 0.02 260);
+  --secondary-foreground: oklch(0.94 0.008 250);
 
   /* Muted */
-  --muted: oklch(0.20 0.012 260);
-  --muted-foreground: oklch(0.65 0.015 255);
+  --muted: oklch(0.20 0.015 260);
+  --muted-foreground: oklch(0.66 0.02 255);
 
   /* Accent */
-  --accent: oklch(0.24 0.02 260);
-  --accent-foreground: oklch(0.96 0.005 250);
+  --accent: oklch(0.24 0.025 260);
+  --accent-foreground: oklch(0.96 0.006 250);
 
   /* Destructive */
   --destructive: oklch(0.62 0.22 25);
 
   /* Borders & Inputs */
-  --border: oklch(0.28 0.015 260 / 50%);
-  --input: oklch(0.30 0.018 260 / 60%);
-  --ring: oklch(0.62 0.18 255);
+  --border: oklch(0.28 0.02 260 / 60%);
+  --input: oklch(0.30 0.02 260 / 70%);
+  --ring: oklch(0.64 0.20 255);
 
-  /* Charts */
-  --chart-1: oklch(0.62 0.18 255);
-  --chart-2: oklch(0.68 0.15 165);
-  --chart-3: oklch(0.72 0.17 80);
-  --chart-4: oklch(0.65 0.18 300);
-  --chart-5: oklch(0.60 0.20 25);
+  /* Charts & Telemetría en Dark Mode */
+  --chart-1: oklch(0.64 0.20 255);   /* Cobalto */
+  --chart-2: oklch(0.68 0.17 155);   /* Esmeralda */
+  --chart-3: oklch(0.74 0.18 75);    /* Ámbar */
+  --chart-4: oklch(0.68 0.19 295);   /* Violeta */
+  --chart-5: oklch(0.62 0.22 25);    /* Rojo */
 
-  /* Sidebar */
-  --sidebar: oklch(0.15 0.018 262);
-  --sidebar-foreground: oklch(0.96 0.005 250);
-  --sidebar-primary: oklch(0.62 0.18 255);
+  /* Sidebar Dark */
+  --sidebar: oklch(0.145 0.02 262);
+  --sidebar-foreground: oklch(0.96 0.006 250);
+  --sidebar-primary: oklch(0.64 0.20 255);
   --sidebar-primary-foreground: oklch(0.12 0.03 260);
-  --sidebar-accent: oklch(0.22 0.02 260);
-  --sidebar-accent-foreground: oklch(0.96 0.005 250);
-  --sidebar-border: oklch(0.26 0.015 260 / 50%);
-  --sidebar-ring: oklch(0.62 0.18 255);
+  --sidebar-accent: oklch(0.22 0.025 260);
+  --sidebar-accent-foreground: oklch(0.96 0.006 250);
+  --sidebar-border: oklch(0.26 0.018 260 / 60%);
+  --sidebar-ring: oklch(0.64 0.20 255);
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Base Layer: Tipografía y estilos globales
+   Base Layer: Tipografía Outfit + Inter y Jerarquía Visual
    ═══════════════════════════════════════════════════════════════ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
     scrollbar-width: thin;
-    scrollbar-color: oklch(0 0 0 / 12%) transparent;
+    scrollbar-color: oklch(0 0 0 / 14%) transparent;
   }
 
   .dark * {
-    scrollbar-color: oklch(1 0 0 / 12%) transparent;
+    scrollbar-color: oklch(1 0 0 / 14%) transparent;
   }
 
   html {
     @apply font-sans;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -191,21 +191,28 @@
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
   }
 
+  /* Títulos con Outfit Variable: Limpios, contundentes y técnicos */
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading tracking-tight;
+    font-feature-settings: "cv02", "cv03", "cv04";
+  }
+
+  /* Tablas y métricas con números tabulares para alineación perfecta */
+  table, .tabular-nums, .font-mono {
+    font-variant-numeric: tabular-nums;
   }
 
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
   }
 
-  /* Scrollbar sutil */
+  /* Scrollbar Industrial Sutil */
   ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
@@ -213,27 +220,35 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: oklch(0 0 0 / 10%);
+    background: oklch(0 0 0 / 12%);
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0 0 0 / 22%);
+    background: oklch(0 0 0 / 24%);
   }
 
   .dark ::-webkit-scrollbar-thumb {
-    background: oklch(1 0 0 / 10%);
+    background: oklch(1 0 0 / 12%);
   }
 
   .dark ::-webkit-scrollbar-thumb:hover {
-    background: oklch(1 0 0 / 22%);
+    background: oklch(1 0 0 / 24%);
   }
 }
 
-/* Utilidades */
+/* Utilidades especializadas para gestión de flotas y activos */
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+@utility badge-fleet-glow {
+  box-shadow: 0 0 12px -2px var(--color-primary);
+}
+
+@utility card-subtle-glow {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
 }

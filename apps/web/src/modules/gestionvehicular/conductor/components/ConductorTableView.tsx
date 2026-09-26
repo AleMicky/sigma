@@ -98,7 +98,7 @@ export function ConductorTableView({
 
               <div className="flex min-w-0 flex-1 flex-col">
                 <span
-                  className="text-left text-xs sm:text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate"
+                  className="text-left text-xs sm:text-sm font-semibold text-foreground truncate"
                   title={nombre}
                 >
                   {nombre}
@@ -276,7 +276,6 @@ export function ConductorTableView({
     <DataTable
       columns={columns}
       data={conductores}
-      onRowClick={onEdit}
       isLoading={isLoading}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}

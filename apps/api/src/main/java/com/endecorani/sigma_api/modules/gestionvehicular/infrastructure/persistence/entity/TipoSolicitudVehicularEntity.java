@@ -48,4 +48,22 @@ public class TipoSolicitudVehicularEntity extends BaseEntity {
             length = 500
     )
     private String descripcion;
+
+    @Column(
+            name = "dias_anticipacion",
+            nullable = false
+    )
+    private Integer diasAnticipacion;
+
+    @Column(
+            name = "requiere_justificacion",
+            nullable = false
+    )
+    private Boolean requiereJustificacion;
+
+    @Column(
+            name = "requiere_respaldo",
+            nullable = false
+    )
+    private Boolean requiereRespaldo;
 }

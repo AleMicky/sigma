@@ -179,7 +179,10 @@ public class ConductorService {
                 ));
 
         List<ConductorResponse> responses = content.stream()
-                .map(domain -> mapper.toResponse(domain, empleadoMap.get(domain.getEmpleadoId())))
+                .map(domain -> {
+                    ConductorEmpleadoInfo empleadoInfo = domain.getEmpleadoId() != null ? empleadoMap.get(domain.getEmpleadoId()) : null;
+                    return mapper.toResponse(domain, empleadoInfo);
+                })
                 .toList();
 
         return PageResponse.of(responses, page);

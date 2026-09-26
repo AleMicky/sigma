@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,39 +27,25 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.API_V1 + "/categorias")
 @RequiredArgsConstructor
-@Tag(
-        name = "Categorías",
-        description = "Administración del catálogo de categorías de activos"
-)
+@Tag(name = "Categorías", description = "Administración del catálogo de categorías de activos")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class CategoriaController
-        extends AbstractCrudController<
-        CategoriaRequest,
-        CategoriaResponse,
-        UUID
-        > {
+                extends AbstractCrudController<CategoriaRequest, CategoriaResponse, UUID> {
 
-    private final CategoriaService categoriaService;
+        private final CategoriaService categoriaService;
 
-    @Override
-    protected CrudService<
-            CategoriaRequest,
-            CategoriaResponse,
-            UUID
-            > service() {
-        return categoriaService;
-    }
+        @Override
+        protected CrudService<CategoriaRequest, CategoriaResponse, UUID> service() {
+                return categoriaService;
+        }
 
-    @GetMapping(params = "q")
-    @Operation(summary = "Buscar categorías por código o nombre")
-    public ResponseEntity<ApiResponse<PageResponse<CategoriaResponse>>> search(
-            @RequestParam String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        categoriaService.search(q, pageRequest)
-                )
-        );
-    }
+        @GetMapping(params = "q")
+        @Operation(summary = "Buscar categorías por código o nombre")
+        public ResponseEntity<ApiResponse<PageResponse<CategoriaResponse>>> search(
+                        @RequestParam String q,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                categoriaService.search(q, pageRequest)));
+        }
 }
