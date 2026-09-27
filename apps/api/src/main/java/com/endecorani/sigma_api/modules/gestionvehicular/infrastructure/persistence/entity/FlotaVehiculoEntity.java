@@ -3,6 +3,7 @@ package com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persist
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
@@ -15,28 +16,28 @@ import java.util.UUID;
 @Entity
 @Table(
         schema = "gestion_vehicular",
-        name = "responsables_flota",
+        name = "flota_vehiculos",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_responsable_flota",
+                        name = "uk_flota_vehiculo",
                         columnNames = {
                                 "flota_vehicular_id",
-                                "empleado_id"
+                                "activo_id"
                         }
                 )
         },
         indexes = {
                 @Index(
-                        name = "idx_responsable_flota_flota",
+                        name = "idx_flota_vehiculo_flota",
                         columnList = "flota_vehicular_id"
                 ),
                 @Index(
-                        name = "idx_responsable_flota_empleado",
-                        columnList = "empleado_id"
+                        name = "idx_flota_vehiculo_activo",
+                        columnList = "activo_id"
                 )
         }
 )
-public class ResponsableFlotaEntity  extends BaseEntity {
+public class FlotaVehiculoEntity  extends BaseEntity {
     @Column(
             name = "flota_vehicular_id",
             nullable = false
@@ -44,8 +45,8 @@ public class ResponsableFlotaEntity  extends BaseEntity {
     private UUID flotaVehicularId;
 
     @Column(
-            name = "empleado_id",
+            name = "activo_id",
             nullable = false
     )
-    private UUID empleadoId;
+    private UUID activoId;
 }
