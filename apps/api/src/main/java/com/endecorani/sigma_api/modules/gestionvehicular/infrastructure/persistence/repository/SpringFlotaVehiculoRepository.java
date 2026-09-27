@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,10 @@ import java.util.UUID;
 public interface SpringFlotaVehiculoRepository extends JpaRepository<FlotaVehiculoEntity, UUID> {
 
     List<FlotaVehiculoEntity> findByFlotaVehicularId(UUID flotaVehicularId);
+
+    List<FlotaVehiculoEntity> findByFlotaVehicularIdAndActivoIdIn(UUID flotaVehicularId, Collection<UUID> activoIds);
+
+    void deleteByFlotaVehicularId(UUID flotaVehicularId);
 
     Optional<FlotaVehiculoEntity> findByFlotaVehicularIdAndActivoId(UUID flotaVehicularId, UUID activoId);
 

@@ -1,8 +1,10 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.request.FlotaVehiculoBatchRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.request.FlotaVehiculoRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.request.FlotaVehiculoUpdate;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.request.SincronizarFlotaVehiculosRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.response.FlotaVehiculoResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.service.FlotaVehiculoService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -67,18 +69,41 @@ public class FlotaVehiculoController {
     }
 
     @PostMapping
-    @Operation(summary = "Asignar un vehículo a una flota")
-    public ResponseEntity<ApiResponse<FlotaVehiculoResponse>> create(
+    @Operation(summary = "Asignar uno o múltiples vehículos a una flota")
+    public ResponseEntity<ApiResponse<List<FlotaVehiculoResponse>>> create(
             @Valid @RequestBody FlotaVehiculoRequest request
     ) {
-        FlotaVehiculoResponse response = service.create(request);
+        List<FlotaVehiculoResponse> response = service.create(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Vehículo asignado a la flota correctamente", response));
+                .body(ApiResponse.success("Vehículo(s) asignado(s) a la flota correctamente", response));
+    }
+
+    @PostMapping("/batch")
+    @Operation(summary = "Asignar una lista de múltiples vehículos a una flota")
+    public ResponseEntity<ApiResponse<List<FlotaVehiculoResponse>>> createBatch(
+            @Valid @RequestBody FlotaVehiculoBatchRequest request
+    ) {
+        List<FlotaVehiculoResponse> response = service.createBatch(request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Vehículos asignados a la flota correctamente", response));
+    }
+
+    @PutMapping("/flota/{flotaVehicularId}/sincronizar")
+    @Operation(summary = "Sincronizar/actualizar el conjunto completo de vehículos asignados a una flota")
+    public ResponseEntity<ApiResponse<List<FlotaVehiculoResponse>>> sincronizar(
+            @PathVariable UUID flotaVehicularId,
+            @Valid @RequestBody SincronizarFlotaVehiculosRequest request
+    ) {
+        List<FlotaVehiculoResponse> response = service.sincronizar(flotaVehicularId, request);
+        return ResponseEntity.ok(
+                ApiResponse.success("Vehículos de la flota sincronizados correctamente", response)
+        );
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Actualizar asignación de vehículo en flota")
+    @Operation(summary = "Actualizar asignación individual de vehículo en flota")
     public ResponseEntity<ApiResponse<FlotaVehiculoResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody FlotaVehiculoUpdate request

@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,6 +40,16 @@ public class FlotaVehiculoRepositoryAdapter implements FlotaVehiculoRepository {
     }
 
     @Override
+    public List<FlotaVehiculo> findByFlotaVehicularIdAndActivoIdIn(UUID flotaVehicularId, Collection<UUID> activoIds) {
+        if (activoIds == null || activoIds.isEmpty()) {
+            return List.of();
+        }
+        return springRepository.findByFlotaVehicularIdAndActivoIdIn(flotaVehicularId, activoIds).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public Optional<FlotaVehiculo> findById(UUID id) {
         return springRepository.findById(id).map(mapper::toDomain);
     }
@@ -56,8 +67,31 @@ public class FlotaVehiculoRepositoryAdapter implements FlotaVehiculoRepository {
     }
 
     @Override
+    public List<FlotaVehiculo> saveAll(List<FlotaVehiculo> flotaVehiculos) {
+        List<FlotaVehiculoEntity> entities = flotaVehiculos.stream()
+                .map(mapper::toEntity)
+                .toList();
+        return springRepository.saveAll(entities).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public void deleteById(UUID id) {
         springRepository.deleteById(id);
+    }
+
+    @Override
+    public void deleteAll(List<FlotaVehiculo> flotaVehiculos) {
+        List<FlotaVehiculoEntity> entities = flotaVehiculos.stream()
+                .map(mapper::toEntity)
+                .toList();
+        springRepository.deleteAll(entities);
+    }
+
+    @Override
+    public void deleteByFlotaVehicularId(UUID flotaVehicularId) {
+        springRepository.deleteByFlotaVehicularId(flotaVehicularId);
     }
 
     @Override

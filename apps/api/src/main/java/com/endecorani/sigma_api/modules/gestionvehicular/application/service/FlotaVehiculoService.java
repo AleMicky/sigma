@@ -2,8 +2,10 @@ package com.endecorani.sigma_api.modules.gestionvehicular.application.service;
 
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoRepository;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.request.FlotaVehiculoBatchRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.request.FlotaVehiculoRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.request.FlotaVehiculoUpdate;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.request.SincronizarFlotaVehiculosRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.response.FlotaVehiculoActivoInfo;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.response.FlotaVehiculoFlotaInfo;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.response.FlotaVehiculoResponse;
@@ -14,6 +16,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.Flota
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.FlotaVehiculoRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -69,20 +72,88 @@ public class FlotaVehiculoService {
     }
 
     @Transactional
-    public FlotaVehiculoResponse create(FlotaVehiculoRequest dto) {
+    public List<FlotaVehiculoResponse> create(FlotaVehiculoRequest dto) {
         validarFlotaExiste(dto.flotaVehicularId());
-        validarActivoExiste(dto.activoId());
-        validarVehiculoUnicoEnFlotaParaCrear(dto.flotaVehicularId(), dto.activoId());
 
-        FlotaVehiculo flotaVehiculo = mapper.toDomain(dto);
-        if (dto.activo() != null) {
-            flotaVehiculo.setActivo(dto.activo());
-        } else {
-            flotaVehiculo.setActivo(true);
+        List<UUID> targetActivoIds = new ArrayList<>();
+        if (dto.activoIds() != null && !dto.activoIds().isEmpty()) {
+            targetActivoIds.addAll(dto.activoIds().stream().filter(Objects::nonNull).distinct().toList());
+        } else if (dto.activoId() != null) {
+            targetActivoIds.add(dto.activoId());
         }
 
-        FlotaVehiculo guardado = repository.save(flotaVehiculo);
-        return toResponse(guardado);
+        if (targetActivoIds.isEmpty()) {
+            throw new BusinessException("Debe proporcionar al menos un ID de vehículo (activo)");
+        }
+
+        boolean estadoActivo = dto.activo() != null ? dto.activo() : true;
+        return procesarAsignacionVehiculos(dto.flotaVehicularId(), targetActivoIds, estadoActivo);
+    }
+
+    @Transactional
+    public List<FlotaVehiculoResponse> createBatch(FlotaVehiculoBatchRequest dto) {
+        validarFlotaExiste(dto.flotaVehicularId());
+        List<UUID> targetActivoIds = dto.activoIds().stream().filter(Objects::nonNull).distinct().toList();
+        if (targetActivoIds.isEmpty()) {
+            throw new BusinessException("Debe proporcionar al menos un ID de vehículo (activo)");
+        }
+
+        boolean estadoActivo = dto.activo() != null ? dto.activo() : true;
+        return procesarAsignacionVehiculos(dto.flotaVehicularId(), targetActivoIds, estadoActivo);
+    }
+
+    @Transactional
+    public List<FlotaVehiculoResponse> sincronizar(UUID flotaVehicularId, SincronizarFlotaVehiculosRequest dto) {
+        validarFlotaExiste(flotaVehicularId);
+
+        List<UUID> targetActivoIds = dto.activoIds() != null
+                ? dto.activoIds().stream().filter(Objects::nonNull).distinct().toList()
+                : List.of();
+
+        // Validar que todos los activos existan
+        if (!targetActivoIds.isEmpty()) {
+            for (UUID activoId : targetActivoIds) {
+                validarActivoExiste(activoId);
+            }
+        }
+
+        List<FlotaVehiculo> actuales = repository.findByFlotaVehicularId(flotaVehicularId);
+        Map<UUID, FlotaVehiculo> actualMap = actuales.stream()
+                .collect(Collectors.toMap(FlotaVehiculo::getActivoId, fv -> fv, (a, b) -> a));
+
+        Set<UUID> targetSet = new HashSet<>(targetActivoIds);
+
+        // Eliminar los que ya no están
+        List<FlotaVehiculo> paraEliminar = actuales.stream()
+                .filter(fv -> !targetSet.contains(fv.getActivoId()))
+                .toList();
+
+        if (!paraEliminar.isEmpty()) {
+            repository.deleteAll(paraEliminar);
+        }
+
+        // Agregar los nuevos o asegurar activos
+        List<FlotaVehiculo> paraGuardar = new ArrayList<>();
+        for (UUID activoId : targetActivoIds) {
+            FlotaVehiculo existente = actualMap.get(activoId);
+            if (existente == null) {
+                paraGuardar.add(FlotaVehiculo.builder()
+                        .flotaVehicularId(flotaVehicularId)
+                        .activoId(activoId)
+                        .activo(true)
+                        .build());
+            } else if (!existente.isActivo()) {
+                existente.setActivo(true);
+                paraGuardar.add(existente);
+            }
+        }
+
+        if (!paraGuardar.isEmpty()) {
+            repository.saveAll(paraGuardar);
+        }
+
+        List<FlotaVehiculo> actualizados = repository.findByFlotaVehicularId(flotaVehicularId);
+        return toListResponse(actualizados);
     }
 
     @Transactional
@@ -114,6 +185,34 @@ public class FlotaVehiculoService {
     public void delete(UUID id) {
         obtenerPorId(id);
         repository.deleteById(id);
+    }
+
+    private List<FlotaVehiculoResponse> procesarAsignacionVehiculos(UUID flotaVehicularId, List<UUID> activoIds, boolean estadoActivo) {
+        for (UUID activoId : activoIds) {
+            validarActivoExiste(activoId);
+        }
+
+        List<FlotaVehiculo> existentes = repository.findByFlotaVehicularIdAndActivoIdIn(flotaVehicularId, activoIds);
+        Map<UUID, FlotaVehiculo> existenteMap = existentes.stream()
+                .collect(Collectors.toMap(FlotaVehiculo::getActivoId, fv -> fv, (a, b) -> a));
+
+        List<FlotaVehiculo> paraGuardar = new ArrayList<>();
+        for (UUID activoId : activoIds) {
+            FlotaVehiculo existente = existenteMap.get(activoId);
+            if (existente != null) {
+                existente.setActivo(estadoActivo);
+                paraGuardar.add(existente);
+            } else {
+                paraGuardar.add(FlotaVehiculo.builder()
+                        .flotaVehicularId(flotaVehicularId)
+                        .activoId(activoId)
+                        .activo(estadoActivo)
+                        .build());
+            }
+        }
+
+        List<FlotaVehiculo> guardados = repository.saveAll(paraGuardar);
+        return toListResponse(guardados);
     }
 
     private PageResponse<FlotaVehiculoResponse> toPageResponse(Page<FlotaVehiculo> page) {
