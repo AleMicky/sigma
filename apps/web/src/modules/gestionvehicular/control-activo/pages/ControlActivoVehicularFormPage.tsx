@@ -203,9 +203,17 @@ export function ControlActivoVehicularFormPage({
     )
   }
 
+  const estado = (solicitud?.estado || "").toUpperCase()
+  const isPorSalir =
+    estado === "APROBADO" ||
+    estado === "APROBADA" ||
+    estado === "ASIGNADO" ||
+    estado === "BORRADOR" ||
+    estado === "PENDIENTE"
+
   const resolvedInitialTipo: TipoControlActivo =
     controlActivoQuery.data?.tipo ||
-    searchParams.tipo ||
+    (isPorSalir ? "ENTREGA" : searchParams.tipo) ||
     ((solicitud?.estado ?? "").toUpperCase() === "EN_VIAJE" ||
     (solicitud?.estado ?? "").toUpperCase() === "EN_CURSO" ||
     (solicitud?.estado ?? "").toUpperCase() === "RETORNO"
@@ -271,7 +279,15 @@ function ControlActivoVehicularFormContent({
   activoAccesorios = [],
   accesorioMap,
 }: ControlActivoVehicularFormContentProps) {
-  const [tipo, setTipo] = useState<TipoControlActivo>(() => initialTipo)
+  const estado = (solicitud?.estado || "").toUpperCase()
+  const isPorSalir =
+    estado === "APROBADO" ||
+    estado === "APROBADA" ||
+    estado === "ASIGNADO" ||
+    estado === "BORRADOR" ||
+    estado === "PENDIENTE"
+
+  const [tipo, setTipo] = useState<TipoControlActivo>(() => (isPorSalir ? "ENTREGA" : initialTipo))
 
   const [fecha, setFecha] = useState<string>(() => {
     if (initialControlActivo?.fecha) {
@@ -395,6 +411,12 @@ function ControlActivoVehicularFormContent({
   const [historialOpen, setHistorialOpen] = useState(false)
 
   function handleSelectTipo(newTipo: TipoControlActivo) {
+    if (isPorSalir && !isEditing && newTipo === "DEVOLUCION") {
+      toast.info(
+        `En estado ${solicitud?.estado || "APROBADO"} solo se puede registrar el Acta de Salida (Entrega).`
+      )
+      return
+    }
     if (tipo === newTipo) return
     setTipo(newTipo)
     if (newTipo === "ENTREGA" && activoAccesorios.length > 0) {
@@ -612,6 +634,13 @@ function ControlActivoVehicularFormContent({
       }
     }
 
+    if (isPorSalir && tipo === "DEVOLUCION" && !isEditing) {
+      toast.error(
+        `En estado ${solicitud?.estado || "APROBADO"} solo se puede registrar el Acta de Salida (Entrega).`
+      )
+      return
+    }
+
     const payload = {
       solicitudVehicularId: solicitudId,
       asignacionVehicularId: asignacion?.id || null,
@@ -812,13 +841,22 @@ function ControlActivoVehicularFormContent({
 
               <button
                 type="button"
+                disabled={isPorSalir && !isEditing}
                 onClick={() => handleSelectTipo("DEVOLUCION")}
                 className={cn(
-                  "flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                  "flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all",
+                  isPorSalir && !isEditing
+                    ? "opacity-50 cursor-not-allowed text-muted-foreground"
+                    : "cursor-pointer",
                   tipo === "DEVOLUCION"
                     ? "bg-emerald-600 text-white shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 )}
+                title={
+                  isPorSalir && !isEditing
+                    ? `En estado ${solicitud?.estado || "APROBADO"} solo se puede registrar el Acta de Salida (Entrega).`
+                    : undefined
+                }
               >
                 <RotateCcw className="size-3.5 stroke-[2.5]" />
                 <span>Acta Retorno / Devolución</span>

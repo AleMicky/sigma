@@ -41,7 +41,7 @@ export type SolicitudVehicularListItemProps = {
   onEdit?: (solicitud: SolicitudVehicular) => void
   onDelete?: (solicitud: SolicitudVehicular) => void
   onAssign?: (solicitud: SolicitudVehicular) => void
-  onControlActivo?: (solicitud: SolicitudVehicular) => void
+  onControlActivo?: (solicitud: SolicitudVehicular, hasControles?: boolean) => void
   onTraceability?: (solicitud: SolicitudVehicular) => void
   onActionSelect?: (
     solicitud: SolicitudVehicular,
@@ -379,7 +379,14 @@ export function SolicitudVehicularListItem({
                 {onControlActivo && (
                   <div className="pt-1.5 border-t border-amber-500/20 flex items-center justify-between gap-2">
                     <span className="text-[10.5px] text-muted-foreground flex items-center gap-1 min-w-0 truncate">
-                      <ClipboardCheck className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <ClipboardCheck
+                        className={cn(
+                          "size-3 shrink-0",
+                          controlesCount > 0
+                            ? "text-sky-600 dark:text-sky-400"
+                            : "text-emerald-600 dark:text-emerald-400"
+                        )}
+                      />
                       <span className="truncate">
                         {controlesCount > 0
                           ? `${controlesCount} control(es) de activo`
@@ -393,13 +400,26 @@ export function SolicitudVehicularListItem({
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation()
-                        onControlActivo(solicitud)
+                        onControlActivo(solicitud, controlesCount > 0)
                       }}
-                      className="h-6 gap-1 px-2 text-[10.5px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-2xs cursor-pointer transition-all shrink-0"
-                      title="Registrar o consultar inspección y control de accesorios del vehículo"
+                      className={cn(
+                        "h-6 gap-1 px-2 text-[10.5px] font-medium shadow-2xs cursor-pointer transition-all shrink-0",
+                        controlesCount > 0
+                          ? "bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/30"
+                          : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                      )}
+                      title={
+                        controlesCount > 0
+                          ? "Ver actas de control registradas para editar o eliminar"
+                          : "Registrar acta de control de activo vehicular"
+                      }
                     >
-                      <ClipboardCheck className="size-3 text-emerald-600 dark:text-emerald-400" />
-                      <span>Control Activo</span>
+                      {controlesCount > 0 ? (
+                        <Eye className="size-3 text-sky-600 dark:text-sky-400" />
+                      ) : (
+                        <ClipboardCheck className="size-3 text-emerald-600 dark:text-emerald-400" />
+                      )}
+                      <span>{controlesCount > 0 ? "Ver Control Activo" : "Control Activo"}</span>
                     </Button>
                   </div>
                 )}

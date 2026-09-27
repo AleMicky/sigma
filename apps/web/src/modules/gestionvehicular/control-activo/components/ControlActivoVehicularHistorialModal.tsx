@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
@@ -43,7 +44,6 @@ import type {
   ControlActivoVehicularDetalle,
   TipoControlActivo,
 } from "../api/control-activo.service"
-import { ControlActivoVehicularFormModal } from "./ControlActivoVehicularFormModal"
 
 export type ControlActivoVehicularHistorialModalProps = {
   open: boolean
@@ -357,10 +357,6 @@ export function ControlActivoVehicularHistorialModal({
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("ALL")
   const [controlToDelete, setControlToDelete] =
     useState<ControlActivoVehicular | null>(null)
-  const [formModalOpen, setFormModalOpen] = useState(false)
-  const [controlToEdit, setControlToEdit] =
-    useState<ControlActivoVehicular | null>(null)
-  const [targetTipo, setTargetTipo] = useState<TipoControlActivo>("ENTREGA")
 
   const deleteMutation = useDeleteControlActivoVehicular()
 
@@ -408,16 +404,29 @@ export function ControlActivoVehicularHistorialModal({
     return allControles.filter((c) => c.tipo === tipoFilter)
   }, [allControles, tipoFilter])
 
+  const navigate = useNavigate()
+
   function handleOpenCreate(tipo: TipoControlActivo) {
-    setControlToEdit(null)
-    setTargetTipo(isPorSalir ? "ENTREGA" : tipo)
-    setFormModalOpen(true)
+    onOpenChange(false)
+    navigate({
+      to: "/gestion-vehicular/controles-activos/nuevo",
+      search: {
+        solicitudId: solicitud?.id,
+        tipo: isPorSalir ? "ENTREGA" : tipo,
+      },
+    })
   }
 
   function handleOpenEdit(control: ControlActivoVehicular) {
-    setControlToEdit(control)
-    setTargetTipo(control.tipo)
-    setFormModalOpen(true)
+    onOpenChange(false)
+    navigate({
+      to: "/gestion-vehicular/controles-activos/nuevo",
+      search: {
+        id: control.id,
+        solicitudId: solicitud?.id,
+        tipo: control.tipo,
+      },
+    })
   }
 
   return (
@@ -636,18 +645,6 @@ export function ControlActivoVehicularHistorialModal({
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Modal Formulario de Creación / Edición */}
-      <ControlActivoVehicularFormModal
-        open={formModalOpen}
-        onOpenChange={setFormModalOpen}
-        solicitud={solicitud}
-        controlToEdit={controlToEdit}
-        initialTipo={targetTipo}
-        onSuccess={() => {
-          controlesQuery.refetch()
-        }}
-      />
 
       {/* Diálogo de Confirmación de Eliminación */}
       <ConfirmDeleteDialog
