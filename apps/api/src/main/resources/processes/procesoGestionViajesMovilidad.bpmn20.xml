@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:flowable="http://flowable.org/bpmn"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+  typeLanguage="http://www.w3.org/2001/XMLSchema"
+  expressionLanguage="http://www.w3.org/1999/XPath"
+  targetNamespace="http://endecorani.com/sigma/gestionvehicular"
+  exporter="Flowable Open Source Modeler"
+  exporterVersion="6.8.0">
+
+  <process id="procesoGestionViajesMovilidad" name="Proceso de Gestión de Viajes y Movilidad"
+    isExecutable="true">
+    <startEvent id="inicio" name="Inicio" flowable:formFieldValidation="true"></startEvent>
+
+    <!-- ESTADO BORRADOR: ASIGNAR APROBADOR RESPONSABLE -->
+    <userTask
+      id="borradorSolicitud"
+      name="BORRADOR - Asignar Aprobador Responsable"
+      flowable:assignee="${solicitanteId}"
+      flowable:formFieldValidation="true">
+      <extensionElements>
+        <!-- LISTADO DE APROBADORES ASIGNADOS AL EMPLEADO/SOLICITANTE -->
+        <flowable:formProperty
+          id="responsableAsignacionId"
+          name="Responsable de Asignación Vehicular"
+          type="string"
+          required="true"
+          writable="true"
+          xmlns:sigma="http://endecorani.com/sigma/workflow"
+          sigma:component="select"
+          sigma:source="rest"
+          sigma:url="/api/v1/empleado-responsabilidades/responsabilidades/ASIGNACION_VEHICULAR/empleados">
+        </flowable:formProperty>
+
+        <!-- COMENTARIO -->
+        <flowable:formProperty
+          id="comentario"
+          name="Comentario"
+          type="string"
+          required="false"
+          writable="true">
+        </flowable:formProperty>
+      </extensionElements>
+    </userTask>
+
+    <!-- ESTADO SOLICITADO: REVISAR SOLICITUD -->
+    <userTask
+      id="revisarSolicitud"
+      name="SOLICITADO - Revisar Solicitud"
+      flowable:assignee="${responsableAsignacionId}"
+      flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="comentario" name="Comentario de Revisión" type="string"
+          required="false" writable="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+
+    <exclusiveGateway id="decision" name="¿Aprobado?" default="flujo_observar"></exclusiveGateway>
+
+    <!-- ESTADO OBSERVADO: CORREGIR SOLICITUD -->
+    <userTask
+      id="corregirSolicitud"
+      name="OBSERVADO - Corregir Solicitud"
+      flowable:assignee="${solicitanteId}"
+      flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="comentario" name="Comentario de Ajuste" type="string"
+          required="true" writable="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+
+    <!-- ESTADO APROBADO: ASIGNAR VEHICULO Y CONDUCTOR -->
+    <userTask
+      id="asignarVehiculoConductor"
+      name="APROBADO - Asignar Vehículo y Conductor"
+      flowable:candidateGroups="responsable_flota"
+      flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="responsableAsignacionId" name="Responsable de asignación"
+          type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="conductorAsignadoId" name="Conductor asignado" type="string"
+          required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="comentario" name="Detalles de Asignación" type="string"
+          required="false" writable="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+
+    <!-- ESTADO EN CURSO: REGISTRAR SALIDA -->
+    <userTask
+      id="registrarSalida"
+      name="EN_CURSO - Registrar Salida de Viaje"
+      flowable:candidateGroups="responsable_flota,conductores"
+      flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="comentario" name="Observaciones de Salida" type="string"
+          required="false" writable="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+
+    <!-- ESTADO RETORNO: REGISTRAR RETORNO -->
+    <userTask
+      id="registrarRetorno"
+      name="RETORNO - Registrar Retorno de Viaje"
+      flowable:candidateGroups="responsable_flota,conductores"
+      flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="comentario" name="Observaciones de Retorno" type="string"
+          required="false" writable="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+
+    <endEvent id="finalizado" name="Viaje Finalizado"></endEvent>
+
+    <!-- TRANSICIONES -->
+    <sequenceFlow id="flujo_inicio_borrador" sourceRef="inicio" targetRef="borradorSolicitud"></sequenceFlow>
+    <sequenceFlow id="flujo_enviar" name="Enviar a revisión" sourceRef="borradorSolicitud"
+      targetRef="revisarSolicitud"></sequenceFlow>
+    <sequenceFlow id="flujo_revisar_decision" sourceRef="revisarSolicitud" targetRef="decision"></sequenceFlow>
+    <sequenceFlow id="flujo_aprobar" name="Aprobar" sourceRef="decision"
+      targetRef="asignarVehiculoConductor">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${accion == 'APROBAR'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flujo_observar" name="Observar" sourceRef="decision"
+      targetRef="corregirSolicitud"></sequenceFlow>
+    <sequenceFlow id="flujo_corregir_revisar" name="Reenviar a revisión"
+      sourceRef="corregirSolicitud" targetRef="revisarSolicitud"></sequenceFlow>
+    <sequenceFlow id="flujo_asignar_salida" name="Asignar vehículo y autorizar"
+      sourceRef="asignarVehiculoConductor" targetRef="registrarSalida"></sequenceFlow>
+    <sequenceFlow id="flujo_salida_retorno" name="Registrar salida" sourceRef="registrarSalida"
+      targetRef="registrarRetorno"></sequenceFlow>
+    <sequenceFlow id="flujo_retorno_finalizado" name="Registrar retorno y finalizar"
+      sourceRef="registrarRetorno" targetRef="finalizado"></sequenceFlow>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_procesoGestionViajesMovilidad">
+    <bpmndi:BPMNPlane bpmnElement="procesoGestionViajesMovilidad"
+      id="BPMNPlane_procesoGestionViajesMovilidad">
+      <bpmndi:BPMNShape bpmnElement="inicio" id="BPMNShape_inicio">
+        <omgdc:Bounds height="30.0" width="30.0" x="80.0" y="222.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="borradorSolicitud" id="BPMNShape_borradorSolicitud">
+        <omgdc:Bounds height="80.0" width="130.0" x="160.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="revisarSolicitud" id="BPMNShape_revisarSolicitud">
+        <omgdc:Bounds height="80.0" width="130.0" x="350.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="decision" id="BPMNShape_decision">
+        <omgdc:Bounds height="40.0" width="40.0" x="530.0" y="215.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="corregirSolicitud" id="BPMNShape_corregirSolicitud">
+        <omgdc:Bounds height="80.0" width="130.0" x="485.0" y="340.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="asignarVehiculoConductor"
+        id="BPMNShape_asignarVehiculoConductor">
+        <omgdc:Bounds height="80.0" width="160.0" x="640.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="registrarSalida" id="BPMNShape_registrarSalida">
+        <omgdc:Bounds height="80.0" width="130.0" x="860.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="registrarRetorno" id="BPMNShape_registrarRetorno">
+        <omgdc:Bounds height="80.0" width="130.0" x="1050.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="finalizado" id="BPMNShape_finalizado">
+        <omgdc:Bounds height="28.0" width="28.0" x="1240.0" y="222.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flujo_inicio_borrador" id="BPMNEdge_flujo_inicio_borrador">
+        <omgdi:waypoint x="110.0" y="237.0"></omgdi:waypoint>
+        <omgdi:waypoint x="160.0" y="240.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_enviar" id="BPMNEdge_flujo_enviar">
+        <omgdi:waypoint x="290.0" y="240.0"></omgdi:waypoint>
+        <omgdi:waypoint x="350.0" y="240.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_revisar_decision" id="BPMNEdge_flujo_revisar_decision">
+        <omgdi:waypoint x="480.0" y="240.0"></omgdi:waypoint>
+        <omgdi:waypoint x="530.0" y="235.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_aprobar" id="BPMNEdge_flujo_aprobar">
+        <omgdi:waypoint x="570.0" y="235.0"></omgdi:waypoint>
+        <omgdi:waypoint x="640.0" y="240.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_observar" id="BPMNEdge_flujo_observar">
+        <omgdi:waypoint x="550.0" y="255.0"></omgdi:waypoint>
+        <omgdi:waypoint x="550.0" y="340.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_corregir_revisar" id="BPMNEdge_flujo_corregir_revisar">
+        <omgdi:waypoint x="485.0" y="380.0"></omgdi:waypoint>
+        <omgdi:waypoint x="415.0" y="380.0"></omgdi:waypoint>
+        <omgdi:waypoint x="415.0" y="280.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_asignar_salida" id="BPMNEdge_flujo_asignar_salida">
+        <omgdi:waypoint x="800.0" y="240.0"></omgdi:waypoint>
+        <omgdi:waypoint x="860.0" y="240.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_salida_retorno" id="BPMNEdge_flujo_salida_retorno">
+        <omgdi:waypoint x="990.0" y="240.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1050.0" y="240.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_retorno_finalizado" id="BPMNEdge_flujo_retorno_finalizado">
+        <omgdi:waypoint x="1180.0" y="240.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1240.0" y="236.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

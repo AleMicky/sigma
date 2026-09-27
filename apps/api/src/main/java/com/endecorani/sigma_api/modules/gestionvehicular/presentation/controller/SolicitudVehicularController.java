@@ -82,6 +82,30 @@ public class SolicitudVehicularController {
                 .body(ApiResponse.success("Solicitud vehicular creada con adjuntos correctamente", response));
     }
 
+    @PostMapping("/{id}/enviar")
+    @Operation(summary = "Enviar solicitud vehicular para aprobación e iniciar flujo BPMN")
+    public ResponseEntity<ApiResponse<SolicitudVehicularResponse>> enviar(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request.EnviarSolicitudVehicularRequest request
+    ) {
+        SolicitudVehicularResponse response = service.enviar(id, request);
+        return ResponseEntity.ok(
+                ApiResponse.success("Solicitud vehicular enviada correctamente", response)
+        );
+    }
+
+    @PostMapping("/{id}/workflow/complete")
+    @Operation(summary = "Completar tarea de workflow para una solicitud vehicular")
+    public ResponseEntity<ApiResponse<SolicitudVehicularResponse>> completarWorkflow(
+            @PathVariable UUID id,
+            @RequestBody com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest request
+    ) {
+        SolicitudVehicularResponse response = service.completarWorkflow(id, request);
+        return ResponseEntity.ok(
+                ApiResponse.success("Tarea de workflow completada correctamente", response)
+        );
+    }
+
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar una solicitud vehicular existente")
     public ResponseEntity<ApiResponse<SolicitudVehicularResponse>> update(

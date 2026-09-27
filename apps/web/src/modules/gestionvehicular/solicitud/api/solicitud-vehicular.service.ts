@@ -22,6 +22,22 @@ export type SolicitudVehicularSolicitanteInfo = {
   area: string
 }
 
+export type SolicitudVehicularResponsableInfo = {
+  id: string
+  codigo: string
+  nombreCompleto: string
+  cargo: string
+  area: string
+}
+
+export type SolicitudVehicularConductorInfo = {
+  id: string
+  empleadoId?: string | null
+  nombreCompleto?: string | null
+  numeroLicencia?: string | null
+  categoriaLicencia?: string | null
+}
+
 export type SolicitudVehicularAdjunto = {
   id: string
   solicitudVehicularId: string
@@ -41,6 +57,10 @@ export type SolicitudVehicular = AuditableEntity & {
   tipoSolicitudVehicular?: SolicitudVehicularTipoInfo | null
   solicitanteId: string
   solicitante?: SolicitudVehicularSolicitanteInfo | null
+  responsableAsignacionId?: string | null
+  responsableAsignacion?: SolicitudVehicularResponsableInfo | null
+  conductorAsignadoId?: string | null
+  conductorAsignado?: SolicitudVehicularConductorInfo | null
   motivo: string
   justificacion?: string | null
   destino: string
@@ -57,6 +77,8 @@ export type SolicitudVehicularPayload = {
   numero?: string
   tipoSolicitudVehicularId: string
   solicitanteId: string
+  responsableAsignacionId?: string | null
+  conductorAsignadoId?: string | null
   motivo: string
   justificacion?: string | null
   destino: string
@@ -72,6 +94,8 @@ export type SolicitudVehicularUpdatePayload = {
   numero?: string
   tipoSolicitudVehicularId: string
   solicitanteId: string
+  responsableAsignacionId?: string | null
+  conductorAsignadoId?: string | null
   motivo: string
   justificacion?: string | null
   destino: string
@@ -139,3 +163,32 @@ export const updateSolicitudVehicular = (
 }
 
 export const deleteSolicitudVehicular = crud.remove
+
+export type CompleteWorkflowTaskPayload = {
+  variables: Record<string, unknown>
+}
+
+export type EnviarSolicitudVehicularPayload = {
+  aprobadorId: string
+  comentario?: string
+}
+
+export const enviarSolicitudVehicular = (
+  id: string,
+  payload: EnviarSolicitudVehicularPayload
+): Promise<SolicitudVehicular> => {
+  return http.post<SolicitudVehicular>(
+    solicitudVehicularEndpoints.enviar(id),
+    payload
+  )
+}
+
+export const completarWorkflowSolicitudVehicular = (
+  id: string,
+  payload: CompleteWorkflowTaskPayload
+): Promise<SolicitudVehicular> => {
+  return http.post<SolicitudVehicular>(
+    solicitudVehicularEndpoints.workflowComplete(id),
+    payload
+  )
+}

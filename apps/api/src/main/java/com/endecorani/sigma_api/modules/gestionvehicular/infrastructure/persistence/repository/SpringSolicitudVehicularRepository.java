@@ -18,12 +18,12 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
 
     Optional<SolicitudVehicularEntity> findByNumeroIgnoreCase(String numero);
 
-    @Query("""
+    @Query(value = """
         SELECT s
         FROM SolicitudVehicularEntity s
         LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.TipoSolicitudVehicularEntity tsv ON s.tipoSolicitudVehicularId = tsv.id
         LEFT JOIN com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity ve ON s.solicitanteId = ve.empleadoId
-        WHERE (:search IS NULL
+        WHERE (:hasSearch = false
             OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%'))
@@ -32,14 +32,36 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
             OR LOWER(tsv.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(ve.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%')))
-          AND (:estado IS NULL OR LOWER(s.estado) = LOWER(:estado))
-          AND (:tipoSolicitudVehicularId IS NULL OR s.tipoSolicitudVehicularId = :tipoSolicitudVehicularId)
-          AND (:solicitanteId IS NULL OR s.solicitanteId = :solicitanteId)
+          AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
+          AND (:hasTipo = false OR s.tipoSolicitudVehicularId = :tipoSolicitudVehicularId)
+          AND (:hasSolicitante = false OR s.solicitanteId = :solicitanteId)
+    """,
+    countQuery = """
+        SELECT count(s)
+        FROM SolicitudVehicularEntity s
+        LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.TipoSolicitudVehicularEntity tsv ON s.tipoSolicitudVehicularId = tsv.id
+        LEFT JOIN com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity ve ON s.solicitanteId = ve.empleadoId
+        WHERE (:hasSearch = false
+            OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(s.estado) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(tsv.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(tsv.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(ve.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%')))
+          AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
+          AND (:hasTipo = false OR s.tipoSolicitudVehicularId = :tipoSolicitudVehicularId)
+          AND (:hasSolicitante = false OR s.solicitanteId = :solicitanteId)
     """)
     Page<SolicitudVehicularEntity> searchWithFilters(
+            @Param("hasSearch") boolean hasSearch,
             @Param("search") String search,
+            @Param("hasEstado") boolean hasEstado,
             @Param("estado") String estado,
+            @Param("hasTipo") boolean hasTipo,
             @Param("tipoSolicitudVehicularId") UUID tipoSolicitudVehicularId,
+            @Param("hasSolicitante") boolean hasSolicitante,
             @Param("solicitanteId") UUID solicitanteId,
             Pageable pageable
     );

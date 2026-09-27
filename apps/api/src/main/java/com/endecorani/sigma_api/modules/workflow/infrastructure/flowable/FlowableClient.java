@@ -142,6 +142,21 @@ public class FlowableClient {
         );
     }
 
+    public void agregarComentarioTarea(String taskId, String message) {
+        if (taskId == null || taskId.isBlank() || message == null || message.isBlank()) {
+            return;
+        }
+        try {
+            restClient.post()
+                    .uri("/runtime/tasks/{taskId}/comments", taskId)
+                    .body(java.util.Map.of("message", message.trim(), "saveProcessInstanceId", true))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception ignored) {
+            // No bloquear la ejecución si la auditoría de comentarios en Flowable no responde
+        }
+    }
+
     private <T> T execute(Supplier<T> action, String errorMessage) {
         try {
             return action.get();

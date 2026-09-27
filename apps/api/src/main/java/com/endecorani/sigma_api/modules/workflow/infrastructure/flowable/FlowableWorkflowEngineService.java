@@ -28,6 +28,8 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
     private final EmpleadoRepository empleadoRepository;
     private final PersonaRepository personaRepository;
 
+    private final java.util.Map<String, String> bpmnCache = new java.util.concurrent.ConcurrentHashMap<>();
+
     @Override
     public String iniciarProceso(String processDefinitionKey, String businessKey, Map<String, Object> variables) {
 
@@ -114,21 +116,25 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                         processDefinition.resource()
                 );
 
-        String bpmnXml = cargarBpmnLocal(resourceName);
-        if (bpmnXml == null || !bpmnXml.contains("sigma:")) {
-            try {
-                String remoteBpmn = flowableClient.obtenerBpmn(
-                        processDefinition.deploymentId(),
-                        resourceName
-                );
-                if (remoteBpmn != null && remoteBpmn.contains("sigma:")) {
-                    bpmnXml = remoteBpmn;
-                } else if (bpmnXml == null) {
-                    bpmnXml = remoteBpmn;
+        String cacheKey = (processDefinition.deploymentId() != null ? processDefinition.deploymentId() : "") + ":" + resourceName;
+        String bpmnXml = bpmnCache.computeIfAbsent(cacheKey, k -> {
+            String xml = cargarBpmnLocal(resourceName);
+            if (xml == null || !xml.contains("sigma:")) {
+                try {
+                    String remoteBpmn = flowableClient.obtenerBpmn(
+                            processDefinition.deploymentId(),
+                            resourceName
+                    );
+                    if (remoteBpmn != null && remoteBpmn.contains("sigma:")) {
+                        xml = remoteBpmn;
+                    } else if (xml == null) {
+                        xml = remoteBpmn;
+                    }
+                } catch (Exception ignored) {
                 }
-            } catch (Exception ignored) {
             }
-        }
+            return xml != null ? xml : "";
+        });
 
         java.util.Map<String, Object> contextVariables = new java.util.HashMap<>();
         if (task.processInstanceId() != null && !task.processInstanceId().isBlank()) {
@@ -150,6 +156,8 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
 
         if (task.assignee() != null && !task.assignee().isBlank()) {
             contextVariables.putIfAbsent("assignee", task.assignee());
+            contextVariables.putIfAbsent("currentUser", task.assignee());
+            contextVariables.putIfAbsent("userId", task.assignee());
             contextVariables.putIfAbsent("aprobadorId", task.assignee());
             contextVariables.putIfAbsent("solicitanteId", task.assignee());
             contextVariables.putIfAbsent("responsableId", task.assignee());
@@ -199,31 +207,112 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
             );
         }
 
-        List<WorkflowHistoryItemResponse> items =
-                response.data()
-                        .stream()
-                        .sorted(HISTORIC_TASK_COMPARATOR)
-                        .map(task -> {
-                            String assigneeName = resolverNombreAsignado(task.assignee());
-                            return new WorkflowHistoryItemResponse(
-                                    task.id(),
-                                    task.taskDefinitionKey(),
-                                    task.name(),
-                                    task.assignee(),
-                                    assigneeName,
-                                    task.startTime(),
-                                    task.endTime(),
-                                    task.endTime() != null
-                                            ? "COMPLETADA"
-                                            : "ACTIVA"
-                            );
-                        })
-                        .toList();
+        List<HistoricTaskResponse> tasks = response.data()
+                .stream()
+                .sorted(HISTORIC_TASK_COMPARATOR)
+                .toList();
+
+        // Batch lookup de nombres de asignados para evitar consultas N+1 en DB
+        Map<String, String> assigneeNamesMap = resolverNombresAsignadosBatch(tasks);
+
+        List<WorkflowHistoryItemResponse> items = tasks.stream()
+                .map(task -> {
+                    String assigneeKey = task.assignee() != null ? task.assignee().trim() : null;
+                    String assigneeName = assigneeKey != null ? assigneeNamesMap.getOrDefault(assigneeKey, assigneeKey) : null;
+                    return new WorkflowHistoryItemResponse(
+                            task.id(),
+                            task.taskDefinitionKey(),
+                            task.name(),
+                            task.assignee(),
+                            assigneeName,
+                            task.startTime(),
+                            task.endTime(),
+                            task.endTime() != null
+                                    ? "COMPLETADA"
+                                    : "ACTIVA"
+                    );
+                })
+                .toList();
 
         return new WorkflowHistoryResponse(
                 processInstanceId,
                 items
         );
+    }
+
+    private Map<String, String> resolverNombresAsignadosBatch(List<HistoricTaskResponse> tasks) {
+        Map<String, String> result = new java.util.HashMap<>();
+        if (tasks == null || tasks.isEmpty()) {
+            return result;
+        }
+
+        java.util.Set<UUID> uuids = new java.util.HashSet<>();
+        for (HistoricTaskResponse t : tasks) {
+            if (t.assignee() != null && !t.assignee().isBlank()) {
+                String trimmed = t.assignee().trim();
+                try {
+                    uuids.add(UUID.fromString(trimmed));
+                } catch (IllegalArgumentException ignored) {
+                    result.put(trimmed, trimmed);
+                }
+            }
+        }
+
+        if (uuids.isEmpty()) {
+            return result;
+        }
+
+        // Buscar todos los empleados en una sola consulta
+        List<com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado> empleados = empleadoRepository.findAllById(uuids);
+        Map<UUID, com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado> empMap = empleados.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado::getId,
+                        e -> e,
+                        (e1, e2) -> e1
+                ));
+
+        java.util.Set<UUID> personaIds = new java.util.HashSet<>();
+        for (var emp : empleados) {
+            if (emp.getPersonaId() != null) {
+                personaIds.add(emp.getPersonaId());
+            }
+        }
+        for (UUID uid : uuids) {
+            if (!empMap.containsKey(uid)) {
+                personaIds.add(uid);
+            }
+        }
+
+        Map<UUID, String> personaNamesMap = new java.util.HashMap<>();
+        if (!personaIds.isEmpty()) {
+            List<com.endecorani.sigma_api.modules.organizacion.domain.model.Persona> personas = personaRepository.findAllById(personaIds);
+            for (var p : personas) {
+                if (p.getId() != null && p.getNombreCompleto() != null) {
+                    personaNamesMap.put(p.getId(), p.getNombreCompleto());
+                }
+            }
+        }
+
+        for (UUID uid : uuids) {
+            String key = uid.toString();
+            if (empMap.containsKey(uid)) {
+                var emp = empMap.get(uid);
+                String nombrePersona = emp.getPersonaId() != null ? personaNamesMap.get(emp.getPersonaId()) : null;
+                if (nombrePersona != null && !nombrePersona.isBlank()) {
+                    result.put(key, nombrePersona + (emp.getCodigo() != null ? " [" + emp.getCodigo() + "]" : ""));
+                } else if (emp.getCodigo() != null) {
+                    result.put(key, "Empleado " + emp.getCodigo());
+                } else {
+                    result.put(key, key);
+                }
+            } else if (personaNamesMap.containsKey(uid)) {
+                result.put(key, personaNamesMap.get(uid));
+            } else {
+                result.put(key, key);
+            }
+        }
+
+        return result;
     }
 
     private static final java.util.Comparator<HistoricTaskResponse> HISTORIC_TASK_COMPARATOR = (t1, t2) -> {
@@ -276,40 +365,6 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
         }
     }
 
-    private String resolverNombreAsignado(String assignee) {
-        if (assignee == null || assignee.isBlank()) {
-            return null;
-        }
-
-        try {
-            UUID id = UUID.fromString(assignee.trim());
-
-            var empleadoOpt = empleadoRepository.findById(id);
-            if (empleadoOpt.isPresent()) {
-                var emp = empleadoOpt.get();
-                var personaOpt = emp.getPersonaId() != null
-                        ? personaRepository.findById(emp.getPersonaId())
-                        : java.util.Optional.<com.endecorani.sigma_api.modules.organizacion.domain.model.Persona>empty();
-
-                String nombre = personaOpt.map(com.endecorani.sigma_api.modules.organizacion.domain.model.Persona::getNombreCompleto).orElse(null);
-                if (nombre != null && !nombre.isBlank()) {
-                    return nombre + (emp.getCodigo() != null ? " [" + emp.getCodigo() + "]" : "");
-                }
-                return emp.getCodigo() != null ? "Empleado " + emp.getCodigo() : null;
-            }
-
-            var personaOpt = personaRepository.findById(id);
-            if (personaOpt.isPresent()) {
-                return personaOpt.get().getNombreCompleto();
-            }
-
-        } catch (IllegalArgumentException ignored) {
-            // No es UUID, retornar assignee directamente si ya es un nombre o username
-        }
-
-        return assignee;
-    }
-
     @Override
     public void completarTarea(
             String taskId,
@@ -332,6 +387,15 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
                         "complete",
                         flowableVariables
                 );
+
+        // Registrar comentario en la auditoría nativa de Flowable si se envió alguno
+        for (String commentKey : List.of("comentario", "observacion", "observacionAprobacion", "observacionValidacion", "observacionCierre", "motivo", "razon", "justificacion")) {
+            Object commentVal = variables.get(commentKey);
+            if (commentVal != null && !commentVal.toString().isBlank()) {
+                flowableClient.agregarComentarioTarea(taskId, commentVal.toString().trim());
+                break;
+            }
+        }
 
         flowableClient.completarTarea(
                 taskId,
@@ -383,11 +447,13 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
             return null;
         }
 
+        String baseName = resourceName.replaceAll("(\\.bpmn20\\.xml|\\.bpmn|\\.xml)$", "");
         String[] possiblePaths = {
                 "/processes/" + resourceName,
-                "/processes/" + resourceName.replaceAll("\\.bpmn$", ".bpmn20.xml"),
-                "/processes/" + resourceName.replaceAll("\\.bpmn20\\.xml$", ".bpmn"),
-                "/processes/solicitudMantenimientoProcess.bpmn20.xml"
+                "/processes/" + baseName + ".bpmn20.xml",
+                "/processes/" + baseName + ".bpmn",
+                "/processes/" + baseName + ".xml",
+                resourceName.startsWith("/") ? resourceName : "/" + resourceName
         };
 
         for (String path : possiblePaths) {

@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record SolicitudVehicularRequest(
-        @NotBlank(message = "El número es obligatorio")
         @Size(max = 50, message = "El número no puede superar los 50 caracteres")
         String numero,
 
@@ -47,6 +46,10 @@ public record SolicitudVehicularRequest(
         String estado,
 
         @Size(max = 100, message = "El processInstanceId no puede superar los 100 caracteres")
-        String processInstanceId
+        String processInstanceId,
+
+        UUID responsableAsignacionId,
+
+        UUID conductorAsignadoId
 ) {
 }

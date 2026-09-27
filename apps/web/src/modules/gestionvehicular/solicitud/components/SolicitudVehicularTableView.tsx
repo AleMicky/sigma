@@ -39,6 +39,7 @@ type SolicitudVehicularTableViewProps = {
   onView: (solicitud: SolicitudVehicular) => void
   onEdit: (solicitud: SolicitudVehicular) => void
   onDelete: (solicitud: SolicitudVehicular) => void
+  onViewHistory?: (solicitud: SolicitudVehicular) => void
 }
 
 function getInitials(name?: string): string {
@@ -60,6 +61,7 @@ export function SolicitudVehicularTableView({
   onView,
   onEdit,
   onDelete,
+  onViewHistory,
 }: SolicitudVehicularTableViewProps) {
   const columns = useMemo<ColumnDef<SolicitudVehicular>[]>(
     () => [
@@ -250,6 +252,15 @@ export function SolicitudVehicularTableView({
                     <Eye className="size-3.5" />
                     <span>Ver detalle</span>
                   </DropdownMenuItem>
+                  {onViewHistory && (
+                    <DropdownMenuItem
+                      onClick={() => onViewHistory(item)}
+                      className="cursor-pointer gap-2 text-xs"
+                    >
+                      <Clock className="size-3.5" />
+                      <span>Historial de flujo</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={() => onEdit(item)}
                     className="cursor-pointer gap-2 text-xs"
@@ -273,7 +284,7 @@ export function SolicitudVehicularTableView({
         },
       },
     ],
-    [onView, onEdit, onDelete]
+    [onView, onEdit, onDelete, onViewHistory]
   )
 
   return (

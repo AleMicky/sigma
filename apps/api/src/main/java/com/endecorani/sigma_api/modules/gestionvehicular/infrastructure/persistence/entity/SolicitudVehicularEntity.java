@@ -104,4 +104,14 @@ public class SolicitudVehicularEntity extends BaseEntity {
     )
     private String processInstanceId;
 
+    @Column(
+            name = "responsable_asignacion_id"
+    )
+    private UUID responsableAsignacionId;
+
+    @Column(
+            name = "conductor_asignado_id"
+    )
+    private UUID conductorAsignadoId;
+
 }

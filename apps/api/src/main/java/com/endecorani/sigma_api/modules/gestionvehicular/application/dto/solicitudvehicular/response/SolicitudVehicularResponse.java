@@ -22,6 +22,10 @@ public record SolicitudVehicularResponse(
         String observacion,
         String estado,
         String processInstanceId,
+        UUID responsableAsignacionId,
+        SolicitudVehicularResponsableInfo responsableAsignacion,
+        UUID conductorAsignadoId,
+        SolicitudVehicularConductorInfo conductorAsignado,
         List<SolicitudVehicularAdjuntoResponse> adjuntos,
         AuditoriaResponse auditoria
 ) {

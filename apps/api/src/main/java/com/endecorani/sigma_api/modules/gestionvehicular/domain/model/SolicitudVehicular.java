@@ -29,4 +29,6 @@ public class SolicitudVehicular extends AuditableModel {
     private String observacion;
     private String estado;
     private String processInstanceId;
+    private UUID responsableAsignacionId;
+    private UUID conductorAsignadoId;
 }
