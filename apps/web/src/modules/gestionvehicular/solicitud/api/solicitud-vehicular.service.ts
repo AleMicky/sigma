@@ -139,3 +139,32 @@ export const updateSolicitudVehicular = (
 }
 
 export const deleteSolicitudVehicular = crud.remove
+
+export type CompleteWorkflowTaskPayload = {
+  variables: Record<string, any>
+}
+
+export type EnviarSolicitudVehicularPayload = {
+  aprobadorId: string
+  comentario?: string
+}
+
+export const enviarSolicitudVehicular = (
+  id: string,
+  payload: EnviarSolicitudVehicularPayload
+): Promise<SolicitudVehicular> => {
+  return http.post<SolicitudVehicular>(
+    solicitudVehicularEndpoints.enviar(id),
+    payload
+  )
+}
+
+export const completarWorkflowSolicitudVehicular = (
+  id: string,
+  payload: CompleteWorkflowTaskPayload
+): Promise<SolicitudVehicular> => {
+  return http.post<SolicitudVehicular>(
+    solicitudVehicularEndpoints.workflowComplete(id),
+    payload
+  )
+}

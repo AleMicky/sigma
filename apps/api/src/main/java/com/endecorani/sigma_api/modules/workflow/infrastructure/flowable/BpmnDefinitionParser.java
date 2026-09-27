@@ -42,29 +42,73 @@ public class BpmnDefinitionParser {
 
             document.getDocumentElement().normalize();
 
+            List<WorkflowActionResponse> actions = new ArrayList<>();
             String nextElementId = obtenerTargetDirecto(document, taskDefinitionKey);
-            if (nextElementId == null) {
-                return List.of();
+            if (nextElementId != null) {
+                Element nextElement = buscarElementoPorId(document, nextElementId);
+                if (nextElement != null) {
+                    String nodeName = nextElement.getNodeName();
+                    if (nodeName != null && (nodeName.endsWith("exclusiveGateway") || nodeName.endsWith("Gateway"))) {
+                        actions = obtenerAccionesGateway(document, nextElementId);
+                    } else {
+                        actions = obtenerAccionesDirectas(document, taskDefinitionKey);
+                    }
+                } else {
+                    actions = obtenerAccionesDirectas(document, taskDefinitionKey);
+                }
+            } else {
+                actions = obtenerAccionesDirectas(document, taskDefinitionKey);
             }
 
-            Element nextElement = buscarElementoPorId(document, nextElementId);
-            if (nextElement == null) {
-                return obtenerAccionesDirectas(document, taskDefinitionKey);
+            if (actions == null || actions.isEmpty()) {
+                Element taskElement = buscarElementoPorId(document, taskDefinitionKey);
+                if (taskElement != null) {
+                    actions = obtenerAccionesDesdeFormProperty(taskElement);
+                }
             }
 
-            String nodeName = nextElement.getNodeName();
-            if (nodeName != null && (nodeName.endsWith("exclusiveGateway") || nodeName.endsWith("Gateway"))) {
-                return obtenerAccionesGateway(document, nextElementId);
+            if (actions == null || actions.isEmpty()) {
+                actions = List.of(new WorkflowActionResponse("Completar", "action", "COMPLETAR"));
             }
 
-            return obtenerAccionesDirectas(document, taskDefinitionKey);
+            return actions;
 
         } catch (Exception ex) {
-            throw new IllegalStateException(
-                    "No se pudo analizar la definición BPMN",
-                    ex
-            );
+            return List.of(new WorkflowActionResponse("Completar", "action", "COMPLETAR"));
         }
+    }
+
+    private List<WorkflowActionResponse> obtenerAccionesDesdeFormProperty(Element taskElement) {
+        List<WorkflowActionResponse> actions = new ArrayList<>();
+        NodeList formProperties = taskElement.getElementsByTagName("flowable:formProperty");
+        if (formProperties.getLength() == 0) {
+            formProperties = taskElement.getElementsByTagName("formProperty");
+        }
+
+        for (int i = 0; i < formProperties.getLength(); i++) {
+            Element fp = (Element) formProperties.item(i);
+            String id = getAttributeValue(fp, "id");
+            String type = getAttributeValue(fp, "type");
+            if ("enum".equalsIgnoreCase(type) || "accion".equalsIgnoreCase(id) || "decision".equalsIgnoreCase(id)) {
+                NodeList values = fp.getElementsByTagName("flowable:value");
+                if (values.getLength() == 0) {
+                    values = fp.getElementsByTagName("value");
+                }
+                for (int j = 0; j < values.getLength(); j++) {
+                    Element val = (Element) values.item(j);
+                    String valId = getAttributeValue(val, "id");
+                    String valName = getAttributeValue(val, "name");
+                    if (valId != null && !valId.isBlank()) {
+                        actions.add(new WorkflowActionResponse(
+                                valName != null && !valName.isBlank() ? valName : valId,
+                                id != null && !id.isBlank() ? id : "accion",
+                                valId
+                        ));
+                    }
+                }
+            }
+        }
+        return actions;
     }
 
     public List<WorkflowFieldResponse> obtenerCampos(
@@ -264,6 +308,21 @@ public class BpmnDefinitionParser {
         List<WorkflowActionResponse> actions = new ArrayList<>();
         NodeList flows = document.getElementsByTagName("sequenceFlow");
 
+        String inferredVariable = "action";
+        for (int i = 0; i < flows.getLength(); i++) {
+            Element flow = (Element) flows.item(i);
+            if (gatewayId.equals(flow.getAttribute("sourceRef"))) {
+                String expression = obtenerConditionExpression(flow);
+                if (expression != null && !expression.isBlank()) {
+                    Matcher m = CONDITION_PATTERN.matcher(expression.trim());
+                    if (m.find()) {
+                        inferredVariable = m.group(1);
+                        break;
+                    }
+                }
+            }
+        }
+
         for (int i = 0; i < flows.getLength(); i++) {
             Element flow = (Element) flows.item(i);
             if (!gatewayId.equals(flow.getAttribute("sourceRef"))) {
@@ -278,7 +337,7 @@ public class BpmnDefinitionParser {
                 if (name != null && !name.isBlank()) {
                     actions.add(new WorkflowActionResponse(
                             name,
-                            "action",
+                            inferredVariable,
                             name.trim().toUpperCase().replaceAll("[^A-Z0-9]+", "_")
                     ));
                 }

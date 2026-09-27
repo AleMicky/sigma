@@ -38,6 +38,7 @@ type SolicitudVehicularCardViewProps = {
   onView: (solicitud: SolicitudVehicular) => void
   onEdit: (solicitud: SolicitudVehicular) => void
   onDelete: (solicitud: SolicitudVehicular) => void
+  onViewHistory?: (solicitud: SolicitudVehicular) => void
 }
 
 function getInitials(name?: string): string {
@@ -59,6 +60,7 @@ export function SolicitudVehicularCardView({
   onView,
   onEdit,
   onDelete,
+  onViewHistory,
 }: SolicitudVehicularCardViewProps) {
   if (isLoading && data.length === 0) {
     return (
@@ -184,6 +186,15 @@ export function SolicitudVehicularCardView({
                         <Eye className="size-3.5" />
                         <span>Ver detalle</span>
                       </DropdownMenuItem>
+                      {onViewHistory && (
+                        <DropdownMenuItem
+                          onClick={() => onViewHistory(solicitud)}
+                          className="cursor-pointer gap-2 text-xs"
+                        >
+                          <Clock className="size-3.5" />
+                          <span>Historial de flujo</span>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem
                         onClick={() => onEdit(solicitud)}
                         className="cursor-pointer gap-2 text-xs"

@@ -13,7 +13,13 @@ import {
   Users,
 } from "lucide-react"
 
-import { WorkflowStatusBadge } from "@/modules/workflow/components/WorkflowStatusBadge"
+import {
+  WorkflowStatusBadge,
+  useWorkflowActions,
+  getWorkflowActionVisuals,
+  type WorkflowAction,
+  type WorkflowField,
+} from "@/modules/workflow"
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -26,6 +32,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Separator } from "@/shared/components/ui/separator"
 import { formatDate } from "@/shared/lib/format-date"
+import { cn } from "@/shared/lib/utils"
 
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
 
@@ -34,6 +41,13 @@ type SolicitudVehicularDetailDialogProps = {
   onOpenChange: (open: boolean) => void
   solicitud?: SolicitudVehicular | null
   onEdit?: (solicitud: SolicitudVehicular) => void
+  onViewHistory?: (solicitud: SolicitudVehicular) => void
+  onActionSelect?: (
+    solicitud: SolicitudVehicular,
+    action: WorkflowAction,
+    taskName?: string,
+    fields?: WorkflowField[]
+  ) => void
 }
 
 function formatFileSize(bytes?: number): string {
@@ -58,7 +72,14 @@ export function SolicitudVehicularDetailDialog({
   onOpenChange,
   solicitud,
   onEdit,
+  onViewHistory,
+  onActionSelect,
 }: SolicitudVehicularDetailDialogProps) {
+  const { actions, fields, taskName } = useWorkflowActions(
+    solicitud?.processInstanceId,
+    { enabled: Boolean(open && solicitud?.processInstanceId) }
+  )
+
   if (!solicitud) return null
 
   const solicitante = solicitud.solicitante
@@ -317,28 +338,72 @@ export function SolicitudVehicularDetailDialog({
         </div>
 
         {/* PIE DEL MODAL */}
-        <div className="flex items-center justify-between p-4 bg-muted/20 border-t border-border/60">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="text-xs rounded-lg"
-          >
-            Cerrar
-          </Button>
-
-          {onEdit && (
+        <div className="flex items-center justify-between p-4 bg-muted/20 border-t border-border/60 gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
+              variant="outline"
               size="sm"
-              onClick={() => {
-                onOpenChange(false)
-                onEdit(solicitud)
-              }}
-              className="text-xs rounded-lg gap-1.5 shadow-2xs"
+              onClick={() => onOpenChange(false)}
+              className="text-xs rounded-lg"
             >
-              Editar Solicitud
+              Cerrar
             </Button>
-          )}
+            {onViewHistory && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onViewHistory(solicitud)
+                }}
+                className="text-xs rounded-lg gap-1.5"
+              >
+                <Clock className="size-3.5" />
+                <span>Historial de Flujo</span>
+              </Button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {actions.length > 0 && onActionSelect && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {actions.map((action) => {
+                  const visual = getWorkflowActionVisuals(action)
+                  const ActionIcon = visual.icon
+                  return (
+                    <Button
+                      key={`${action.variable}-${action.value}`}
+                      size="sm"
+                      onClick={() => {
+                        onOpenChange(false)
+                        onActionSelect(solicitud, action, taskName, fields)
+                      }}
+                      className={cn(
+                        "text-xs font-semibold gap-1.5 shadow-2xs cursor-pointer",
+                        visual.btnClass
+                      )}
+                    >
+                      <ActionIcon className="size-3.5" />
+                      <span>{action.name}</span>
+                    </Button>
+                  )
+                })}
+              </div>
+            )}
+
+            {onEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  onOpenChange(false)
+                  onEdit(solicitud)
+                }}
+                className="text-xs rounded-lg gap-1.5 shadow-2xs"
+              >
+                Editar Solicitud
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

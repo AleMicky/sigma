@@ -101,3 +101,59 @@ export function useDeleteSolicitudVehicular() {
     },
   })
 }
+
+export function useEnviarSolicitudVehicular() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string
+      payload: import("./solicitud-vehicular.service").EnviarSolicitudVehicularPayload
+    }) =>
+      import("./solicitud-vehicular.service").then((m) =>
+        m.enviarSolicitudVehicular(id, payload)
+      ),
+    onSuccess: () => {
+      toast.success("Solicitud vehicular enviada correctamente")
+      queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+    },
+    onError: (error) => {
+      toast.error(
+        isApiError(error)
+          ? error.message
+          : "Error al enviar la solicitud vehicular"
+      )
+    },
+  })
+}
+
+export function useCompletarWorkflowSolicitudVehicular() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string
+      payload: import("./solicitud-vehicular.service").CompleteWorkflowTaskPayload
+    }) =>
+      import("./solicitud-vehicular.service").then((m) =>
+        m.completarWorkflowSolicitudVehicular(id, payload)
+      ),
+    onSuccess: () => {
+      toast.success("Tarea de flujo completada correctamente")
+      queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+    },
+    onError: (error) => {
+      toast.error(
+        isApiError(error)
+          ? error.message
+          : "Error al procesar la acción del flujo"
+      )
+    },
+  })
+}
