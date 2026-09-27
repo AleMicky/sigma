@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.gestionvehicular.domain.model;
 
 import com.endecorani.sigma_api.shared.domain.model.AuditableModel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,4 +19,8 @@ public class ResponsableFlota extends AuditableModel {
     private UUID id;
     private UUID flotaVehicularId;
     private UUID empleadoId;
+    @Builder.Default
+    private boolean principal = false;
+    @Builder.Default
+    private boolean activo = true;
 }

@@ -2,9 +2,11 @@ package com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persist
 
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
-import jakarta.persistence.UniqueConstraint;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -29,6 +31,7 @@ import lombok.experimental.SuperBuilder;
         }
 )
 public class FlotaVehicularEntity extends BaseEntity {
+
     @Column(
             name = "codigo",
             nullable = false,
@@ -48,4 +51,21 @@ public class FlotaVehicularEntity extends BaseEntity {
             length = 500
     )
     private String descripcion;
+
+    @Builder.Default
+    @Column(
+            name = "activo",
+            nullable = false
+    )
+    private boolean activo = true;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "flota_vehicular_id", insertable = false, updatable = false)
+    @Builder.Default
+    private List<FlotaVehiculoEntity> vehiculos = new ArrayList<>();
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "flota_vehicular_id", insertable = false, updatable = false)
+    @Builder.Default
+    private List<ResponsableFlotaEntity> responsables = new ArrayList<>();
 }

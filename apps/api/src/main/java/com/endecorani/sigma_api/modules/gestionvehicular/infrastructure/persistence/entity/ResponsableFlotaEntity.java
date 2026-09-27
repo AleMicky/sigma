@@ -33,10 +33,15 @@ import java.util.UUID;
                 @Index(
                         name = "idx_responsable_flota_empleado",
                         columnList = "empleado_id"
+                ),
+                @Index(
+                        name = "idx_responsable_flota_activo",
+                        columnList = "activo"
                 )
         }
 )
-public class ResponsableFlotaEntity  extends BaseEntity {
+public class ResponsableFlotaEntity extends BaseEntity {
+
     @Column(
             name = "flota_vehicular_id",
             nullable = false
@@ -48,4 +53,22 @@ public class ResponsableFlotaEntity  extends BaseEntity {
             nullable = false
     )
     private UUID empleadoId;
+
+    @Builder.Default
+    @Column(
+            name = "principal",
+            nullable = false
+    )
+    private boolean principal = false;
+
+    @Builder.Default
+    @Column(
+            name = "activo",
+            nullable = false
+    )
+    private boolean activo = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "flota_vehicular_id", insertable = false, updatable = false)
+    private FlotaVehicularEntity flotaVehicular;
 }

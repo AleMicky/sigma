@@ -3,7 +3,6 @@ package com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persist
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
@@ -32,12 +31,17 @@ import java.util.UUID;
                         columnList = "flota_vehicular_id"
                 ),
                 @Index(
-                        name = "idx_flota_vehiculo_activo",
+                        name = "idx_flota_vehiculo_activo_id",
                         columnList = "activo_id"
+                ),
+                @Index(
+                        name = "idx_flota_vehiculo_activo",
+                        columnList = "activo"
                 )
         }
 )
-public class FlotaVehiculoEntity  extends BaseEntity {
+public class FlotaVehiculoEntity extends BaseEntity {
+
     @Column(
             name = "flota_vehicular_id",
             nullable = false
@@ -49,4 +53,15 @@ public class FlotaVehiculoEntity  extends BaseEntity {
             nullable = false
     )
     private UUID activoId;
+
+    @Builder.Default
+    @Column(
+            name = "activo",
+            nullable = false
+    )
+    private boolean activo = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "flota_vehicular_id", insertable = false, updatable = false)
+    private FlotaVehicularEntity flotaVehicular;
 }
