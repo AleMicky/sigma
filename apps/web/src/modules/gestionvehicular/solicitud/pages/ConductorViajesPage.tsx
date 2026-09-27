@@ -33,6 +33,7 @@ import {
   SolicitudVehicularListItem,
   SolicitudVehicularListItemSkeleton,
 } from "../components/SolicitudVehicularListItem"
+import { ControlActivoVehicularHistorialModal } from "../../control-activo/components/ControlActivoVehicularHistorialModal"
 
 type EstadoFiltro = "" | "ASIGNADO" | "EN_VIAJE" | "FINALIZADA"
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
@@ -40,6 +41,7 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 export function ConductorViajesPage() {
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("ASIGNADO")
   const [detailItem, setDetailItem] = useState<SolicitudVehicular | null>(null)
+  const [controlActivoItem, setControlActivoItem] = useState<SolicitudVehicular | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudVehicular | null>(null)
 
   const search = usePaginatedSearch({
@@ -249,6 +251,7 @@ export function ConductorViajesPage() {
                     showWorkflowActions={true}
                     onViewDetail={setDetailItem}
                     onSelect={setDetailItem}
+                    onControlActivo={setControlActivoItem}
                     onActionSelect={handleActionSelect}
                     onTraceability={setTraceabilityItem}
                   />
@@ -275,7 +278,17 @@ export function ConductorViajesPage() {
           if (!open) setDetailItem(null)
         }}
         solicitud={detailItem}
+        onControlActivo={setControlActivoItem}
         onViewHistory={setTraceabilityItem}
+      />
+
+      {/* Modal Historial y Registro de Control de Activo Vehicular */}
+      <ControlActivoVehicularHistorialModal
+        open={Boolean(controlActivoItem)}
+        onOpenChange={(open) => {
+          if (!open) setControlActivoItem(null)
+        }}
+        solicitud={controlActivoItem}
       />
 
       {/* Diálogo interactivo para completar tareas de workflow (Registrar Salida, Registrar Retorno) */}
