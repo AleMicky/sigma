@@ -51,6 +51,7 @@ export function SolicitudVehicularFormHeader(
             variant="outline"
             size="icon-xs"
             render={<Link to={routes.gestionVehicular.solicitudes} />}
+            disabled={context.isSubmitting}
             aria-label="Volver a solicitudes"
             className="shrink-0 rounded-lg shadow-2xs hover:bg-muted cursor-pointer size-7"
           >
