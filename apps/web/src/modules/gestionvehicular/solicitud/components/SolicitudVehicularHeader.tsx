@@ -130,7 +130,7 @@ export function SolicitudVehicularHeader({
                   <span>
                     {totalCount}{" "}
                     {totalCount === 1
-                      ? countLabel.replace(/es$/, "").replace(/s$/, "")
+                      ? countLabel.replace(/solicitudes/gi, "solicitud").replace(/es\b/g, "").replace(/s\b/g, "")
                       : countLabel}
                   </span>
                 </span>
@@ -138,7 +138,7 @@ export function SolicitudVehicularHeader({
             </div>
 
             {description && (
-              <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-1 leading-tight">
+              <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 sm:line-clamp-1 leading-snug">
                 {description}
               </p>
             )}

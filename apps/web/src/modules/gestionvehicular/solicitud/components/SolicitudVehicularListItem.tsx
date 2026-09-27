@@ -241,7 +241,8 @@ export function SolicitudVehicularListItem({
               title="Ver trazabilidad e historial de tareas de workflow"
             >
               <History className="size-3 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span>Trazabilidad</span>
+              <span className="hidden sm:inline-block">Trazabilidad</span>
+              <span className="sm:hidden">Historial</span>
             </Button>
           )}
 
@@ -255,11 +256,12 @@ export function SolicitudVehicularListItem({
                 e.stopPropagation()
                 handleViewDetail(solicitud)
               }}
-              className="h-6.5 gap-1 px-2.5 text-[11.5px] font-medium bg-background/90 hover:bg-muted text-foreground border-border/80 shadow-2xs cursor-pointer transition-all hover:scale-102 active:scale-98"
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/90 hover:bg-muted text-foreground border-border/80 shadow-2xs cursor-pointer transition-all hover:scale-102 active:scale-98"
               title="Ver detalles completos de la solicitud vehicular"
             >
               <Eye className="size-3 text-primary shrink-0" />
-              <span>Ver Detalle</span>
+              <span className="hidden sm:inline-block">Ver Detalle</span>
+              <span className="sm:hidden">Detalle</span>
             </Button>
           )}
 

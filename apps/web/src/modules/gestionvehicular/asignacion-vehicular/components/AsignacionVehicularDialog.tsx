@@ -98,7 +98,6 @@ export function AsignacionVehicularDialog({
     } else {
       setActivoId("")
       setConductorId("")
-      // Por defecto asignadoPorId si la solicitud tiene responsable asignado
       setAsignadoPorId(solicitud?.responsableAsignacionId || "")
       setObservacion("")
       setIsEditing(true)
@@ -212,19 +211,19 @@ export function AsignacionVehicularDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl p-0 gap-0 rounded-2xl overflow-hidden shadow-2xl">
-        {/* ENCABEZADO MODAL */}
-        <DialogHeader className="p-4 sm:p-5 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-b border-border/60">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-xs">
-                <KeyRound className="size-4.5" />
+      <DialogContent className="w-[calc(100vw-1rem)] sm:w-full max-w-xl p-0 gap-0 rounded-2xl overflow-hidden shadow-2xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col">
+        {/* ENCABEZADO RESPONSIVO */}
+        <DialogHeader className="p-3.5 sm:p-5 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-b border-border/60 shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-start sm:items-center gap-2.5">
+              <div className="flex size-8.5 sm:size-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-xs">
+                <KeyRound className="size-4 sm:size-4.5" />
               </div>
-              <div>
-                <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
-                  Asignación de Vehículo y Conductor
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-sm sm:text-base font-semibold text-foreground tracking-tight truncate">
+                  Asignación Vehicular
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground">
+                <DialogDescription className="text-xs text-muted-foreground line-clamp-1">
                   Solicitud <span className="font-mono font-bold text-foreground">{solicitud.numero}</span> • {solicitud.motivo}
                 </DialogDescription>
               </div>
@@ -233,52 +232,54 @@ export function AsignacionVehicularDialog({
             <Badge
               variant="outline"
               className={cn(
-                "text-[11px] font-semibold uppercase px-2 py-0.5",
+                "self-start sm:self-auto text-[10.5px] sm:text-[11px] font-semibold uppercase px-2 py-0.5 shrink-0",
                 asignacionActual
                   ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
                   : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
               )}
             >
-              {asignacionActual ? "Asignada" : "Pendiente de Asignación"}
+              {asignacionActual ? "Asignada" : "Pendiente"}
             </Badge>
           </div>
         </DialogHeader>
 
-        {/* RESUMEN DE LA SOLICITUD */}
-        <div className="bg-muted/30 px-4 sm:px-5 py-2.5 border-b border-border/50 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-          {solicitud.destino && (
-            <div className="flex items-center gap-1.5 font-medium text-foreground">
-              <MapPin className="size-3.5 text-primary shrink-0" />
-              <span>{solicitud.destino}</span>
-            </div>
-          )}
+        {/* RESUMEN DE LA SOLICITUD RESPONSIVO (GRID MÓVIL) */}
+        <div className="bg-muted/30 px-3.5 sm:px-5 py-2 border-b border-border/50 shrink-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-muted-foreground">
+            {solicitud.destino && (
+              <div className="flex items-center gap-1.5 font-medium text-foreground truncate">
+                <MapPin className="size-3.5 text-primary shrink-0" />
+                <span className="truncate">{solicitud.destino}</span>
+              </div>
+            )}
 
-          {solicitud.solicitante && (
-            <div className="flex items-center gap-1.5">
-              <User className="size-3.5 text-muted-foreground shrink-0" />
-              <span>{solicitud.solicitante.nombreCompleto}</span>
-            </div>
-          )}
+            {solicitud.solicitante && (
+              <div className="flex items-center gap-1.5 truncate">
+                <User className="size-3.5 text-muted-foreground shrink-0" />
+                <span className="truncate">{solicitud.solicitante.nombreCompleto}</span>
+              </div>
+            )}
 
-          {solicitud.fechaSalida && (
-            <div className="flex items-center gap-1.5">
-              <Calendar className="size-3.5 text-muted-foreground shrink-0" />
-              <span>Salida: {formatDate(solicitud.fechaSalida)}</span>
-            </div>
-          )}
+            {solicitud.fechaSalida && (
+              <div className="flex items-center gap-1.5 truncate">
+                <Calendar className="size-3.5 text-muted-foreground shrink-0" />
+                <span className="truncate">Salida: {formatDate(solicitud.fechaSalida)}</span>
+              </div>
+            )}
 
-          {solicitud.fechaRetornoEstimada && (
-            <div className="flex items-center gap-1.5">
-              <Clock className="size-3.5 text-muted-foreground shrink-0" />
-              <span>Retorno: {formatDate(solicitud.fechaRetornoEstimada)}</span>
-            </div>
-          )}
+            {solicitud.fechaRetornoEstimada && (
+              <div className="flex items-center gap-1.5 truncate">
+                <Clock className="size-3.5 text-muted-foreground shrink-0" />
+                <span className="truncate">Retorno: {formatDate(solicitud.fechaRetornoEstimada)}</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* CONTENIDO PRINCIPAL */}
-        <div className="p-4 sm:p-5 space-y-4 max-h-[calc(85vh-200px)] overflow-y-auto">
+        {/* CONTENIDO PRINCIPAL CON SCROLL SUAVE */}
+        <div className="p-3.5 sm:p-5 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1 overscroll-contain">
           {errorMessage && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs">
+            <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs">
               <AlertCircle className="size-4 shrink-0" />
               <span className="flex-1 font-medium">{errorMessage}</span>
             </div>
@@ -290,38 +291,38 @@ export function AsignacionVehicularDialog({
               <p className="text-xs">Cargando datos de asignación...</p>
             </div>
           ) : asignacionActual && !isEditing ? (
-            /* VISTA DE DETALLE DE ASIGNACIÓN EXISTENTE */
-            <div className="space-y-3.5">
-              <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-3 shadow-2xs">
+            /* VISTA DETALLE EN MÓVIL */
+            <div className="space-y-3">
+              <div className="rounded-xl border border-border/70 bg-card p-3 sm:p-3.5 space-y-2.5 shadow-2xs">
                 <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span className="text-xs font-semibold text-foreground">
                       Unidad y Conductor Asignados
                     </span>
                   </div>
                   {asignacionActual.fechaAsignacion && (
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="text-[10.5px] sm:text-[11px] text-muted-foreground shrink-0">
                       {formatDate(asignacionActual.fechaAsignacion)}
                     </span>
                   )}
                 </div>
 
                 {/* Tarjeta de Vehículo */}
-                <div className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/40 border border-border/50">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Car className="size-4" />
+                <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/50">
+                  <div className="flex size-7.5 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Car className="size-3.5 sm:size-4" />
                   </div>
-                  <div className="flex-1 min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold text-foreground">
-                        {asignacionActual.activo?.nombre || "Vehículo Asignado"}
-                      </span>
-                      <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.2 rounded">
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="text-xs font-semibold text-foreground truncate">
+                      {asignacionActual.activo?.nombre || "Vehículo Asignado"}
+                    </p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <code className="text-[9.5px] sm:text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
                         {asignacionActual.activo?.codigo}
                       </code>
                       {asignacionActual.activo?.placa && (
-                        <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded">
+                        <span className="text-[9.5px] sm:text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
                           Placa: {asignacionActual.activo.placa}
                         </span>
                       )}
@@ -330,42 +331,37 @@ export function AsignacionVehicularDialog({
                 </div>
 
                 {/* Tarjeta de Conductor */}
-                <div className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/40 border border-border/50">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400">
-                    <User className="size-4" />
+                <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/50">
+                  <div className="flex size-7.5 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                    <User className="size-3.5 sm:size-4" />
                   </div>
-                  <div className="flex-1 min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold text-foreground">
-                        {asignacionActual.conductor?.nombreCompleto || "Conductor Asignado"}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="text-xs font-semibold text-foreground truncate">
+                      {asignacionActual.conductor?.nombreCompleto || "Conductor Asignado"}
+                    </p>
+                    {asignacionActual.conductor?.numeroLicencia && (
+                      <span className="inline-block text-[9.5px] sm:text-[10.5px] font-mono font-semibold bg-background px-1.5 py-0.5 rounded border border-border/60">
+                        Lic. {asignacionActual.conductor.numeroLicencia} ({asignacionActual.conductor.categoriaLicencia})
                       </span>
-                      {asignacionActual.conductor?.numeroLicencia && (
-                        <span className="text-[10.5px] font-mono font-semibold bg-background px-1.5 py-0.2 rounded border border-border/60">
-                          Lic. {asignacionActual.conductor.numeroLicencia} ({asignacionActual.conductor.categoriaLicencia})
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Asignado Por */}
                 {asignacionActual.asignadoPor && (
-                  <div className="flex items-center gap-2 pt-1 text-[11px] text-muted-foreground">
-                    <span className="font-medium text-foreground/80">Asignado por:</span>
-                    <span>{asignacionActual.asignadoPor.nombreCompleto}</span>
-                    {asignacionActual.asignadoPor.cargo && (
-                      <span>({asignacionActual.asignadoPor.cargo})</span>
-                    )}
+                  <div className="flex items-center gap-1.5 pt-1 text-[11px] text-muted-foreground truncate">
+                    <span className="font-medium text-foreground/80 shrink-0">Asignado por:</span>
+                    <span className="truncate">{asignacionActual.asignadoPor.nombreCompleto}</span>
                   </div>
                 )}
 
                 {/* Observación */}
                 {asignacionActual.observacion && (
                   <div className="p-2.5 rounded-lg bg-muted/30 border border-border/40 text-xs space-y-1">
-                    <span className="font-semibold text-muted-foreground text-[10.5px] uppercase tracking-wider">
+                    <span className="font-semibold text-muted-foreground text-[10px] uppercase tracking-wider block">
                       Observación:
                     </span>
-                    <p className="text-foreground/90 whitespace-pre-wrap">
+                    <p className="text-foreground/90 text-xs whitespace-pre-wrap">
                       {asignacionActual.observacion}
                     </p>
                   </div>
@@ -373,32 +369,30 @@ export function AsignacionVehicularDialog({
               </div>
             </div>
           ) : (
-            /* FORMULARIO DE ASIGNACIÓN (CREAR / EDITAR) */
-            <form id="asignacion-form" onSubmit={handleSave} className="space-y-3.5">
-              {/* Selección de Vehículo (Activo) */}
+            /* FORMULARIO ADAPTADO */
+            <form id="asignacion-form" onSubmit={handleSave} className="space-y-3 sm:space-y-3.5">
               <Field>
-                <FieldLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <FieldLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5 mb-1">
                   <Car className="size-3.5 text-primary" />
                   <span>Vehículo / Unidad Móvil *</span>
                 </FieldLabel>
                 <ActivoCombobox
                   value={activoId}
                   onValueChange={(val) => setActivoId(val)}
-                  placeholder="Buscar y seleccionar vehículo por código, placa o nombre..."
+                  placeholder="Buscar vehículo por código, placa o nombre..."
                   className="w-full text-xs"
                 />
               </Field>
 
-              {/* Selección de Conductor */}
               <Field>
-                <FieldLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <FieldLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5 mb-1">
                   <User className="size-3.5 text-amber-600 dark:text-amber-400" />
                   <span>Conductor Designado *</span>
                 </FieldLabel>
                 <ConductorCombobox
                   value={conductorId}
                   onValueChange={(val) => setConductorId(val)}
-                  placeholder="Buscar y seleccionar conductor disponible..."
+                  placeholder="Buscar conductor disponible..."
                   className="w-full text-xs"
                   soloActivos={true}
                   fechaSalida={solicitud.fechaSalida}
@@ -406,11 +400,10 @@ export function AsignacionVehicularDialog({
                 />
               </Field>
 
-              {/* Empleado Asignador */}
               <Field>
-                <FieldLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <FieldLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5 mb-1">
                   <Users className="size-3.5 text-muted-foreground" />
-                  <span>Responsable de la Asignación *</span>
+                  <span>Responsable de Asignación *</span>
                 </FieldLabel>
                 <EmpleadoCombobox
                   value={asignadoPorId}
@@ -420,16 +413,15 @@ export function AsignacionVehicularDialog({
                 />
               </Field>
 
-              {/* Observación / Notas adicionales */}
               <Field>
-                <FieldLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <FieldLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5 mb-1">
                   <FileText className="size-3.5 text-muted-foreground" />
                   <span>Observaciones de Asignación</span>
                 </FieldLabel>
                 <Textarea
                   value={observacion}
                   onChange={(e) => setObservacion(e.target.value)}
-                  placeholder="Notas, condiciones del vehículo, kilometraje inicial u otras especificaciones..."
+                  placeholder="Condiciones, kilometraje inicial u otras especificaciones..."
                   rows={2}
                   className="text-xs resize-none"
                 />
@@ -438,8 +430,8 @@ export function AsignacionVehicularDialog({
           )}
         </div>
 
-        {/* PIE DE DIÁLOGO */}
-        <DialogFooter className="p-3 sm:p-4 bg-muted/20 border-t border-border/60 flex items-center justify-between sm:justify-between gap-2">
+        {/* PIE RESPONSIVO (STACK EN MÓVIL) */}
+        <DialogFooter className="p-3 sm:p-4 bg-muted/20 border-t border-border/60 shrink-0 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
           {asignacionActual && !isEditing ? (
             <>
               <Button
@@ -448,19 +440,19 @@ export function AsignacionVehicularDialog({
                 size="sm"
                 onClick={handleDelete}
                 disabled={isSubmitting}
-                className="gap-1.5 text-xs cursor-pointer"
+                className="w-full sm:w-auto gap-1.5 text-xs cursor-pointer order-2 sm:order-1"
               >
                 <Trash2 className="size-3.5" />
                 <span>Eliminar Asignación</span>
               </Button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end order-1 sm:order-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => onOpenChange(false)}
-                  className="text-xs cursor-pointer"
+                  className="flex-1 sm:flex-none text-xs cursor-pointer"
                 >
                   Cerrar
                 </Button>
@@ -469,10 +461,10 @@ export function AsignacionVehicularDialog({
                   variant="default"
                   size="sm"
                   onClick={handleStartEdit}
-                  className="gap-1.5 text-xs font-medium cursor-pointer"
+                  className="flex-1 sm:flex-none gap-1.5 text-xs font-medium cursor-pointer"
                 >
                   <Pencil className="size-3.5" />
-                  <span>Modificar Asignación</span>
+                  <span>Modificar</span>
                 </Button>
               </div>
             </>
@@ -484,7 +476,7 @@ export function AsignacionVehicularDialog({
                 size="sm"
                 onClick={handleCancelEdit}
                 disabled={isSubmitting}
-                className="text-xs cursor-pointer"
+                className="w-full sm:w-auto text-xs cursor-pointer"
               >
                 Cancelar
               </Button>
@@ -494,7 +486,7 @@ export function AsignacionVehicularDialog({
                 form="asignacion-form"
                 size="sm"
                 disabled={isSubmitting || !activoId || !conductorId || !asignadoPorId}
-                className="gap-1.5 text-xs font-medium cursor-pointer"
+                className="w-full sm:w-auto gap-1.5 text-xs font-medium cursor-pointer"
               >
                 {isSubmitting ? (
                   <>
