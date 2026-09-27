@@ -28,6 +28,7 @@ import { conductorQueries } from "../api/conductor.queries"
 import {
   listConductores,
   type Conductor,
+  type ConductorLicencia,
 } from "../api/conductor.service"
 
 export type ConductorComboboxProps = {
@@ -46,11 +47,20 @@ export type ConductorComboboxProps = {
   fechaRetorno?: string | null
 }
 
+function getPrimaryLicencia(cond: Conductor): ConductorLicencia | null {
+  const list = cond.licencias || []
+  if (list.length === 0) return null
+  return list.find((l) => l.estado === "VIGENTE") || list[0]
+}
+
 function getConductorNombre(cond: Conductor): string {
-  return (
-    cond.empleado?.nombreCompleto ||
-    `Conductor (Lic. ${cond.numeroLicencia})`
-  )
+  const primary = getPrimaryLicencia(cond)
+  if (cond.empleado?.nombreCompleto) {
+    return cond.empleado.nombreCompleto
+  }
+  return primary
+    ? `Conductor (Lic. ${primary.numeroLicencia})`
+    : "Conductor registrado"
 }
 
 function getInitials(name: string): string {
@@ -89,9 +99,9 @@ export function ConductorCombobox({
   const queryParams = {
     page,
     size: pageSize,
-    sortBy: "numeroLicencia",
-    direction: "ASC" as const,
-    ...(soloActivos ? { activo: true } : {}),
+    sortBy: "createdAt",
+    direction: "DESC" as const,
+    ...(soloActivos ? { activo: true, estado: "ACTIVO" } : {}),
     ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
   }
 
@@ -122,9 +132,13 @@ export function ConductorCombobox({
       const q = debouncedSearch.trim().toLowerCase()
       return list.filter((c) => {
         const nombre = (c.empleado?.nombreCompleto || "").toLowerCase()
-        const lic = (c.numeroLicencia || "").toLowerCase()
-        const cat = (c.categoriaLicencia || "").toLowerCase()
-        return nombre.includes(q) || lic.includes(q) || cat.includes(q)
+        const matchName = nombre.includes(q)
+        const matchLic = (c.licencias || []).some(
+          (l) =>
+            l.numeroLicencia.toLowerCase().includes(q) ||
+            l.categoriaLicencia.toLowerCase().includes(q)
+        )
+        return matchName || matchLic
       })
     }
     return standardQuery.data?.content ?? []
@@ -164,6 +178,7 @@ export function ConductorCombobox({
   if (selectedConductor) {
     const nombre = getConductorNombre(selectedConductor)
     const cargo = selectedConductor.empleado?.cargo || selectedConductor.empleado?.area
+    const primaryLic = getPrimaryLicencia(selectedConductor)
 
     return (
       <div
@@ -186,9 +201,11 @@ export function ConductorCombobox({
               >
                 {nombre}
               </span>
-              <span className="text-[10.5px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
-                Lic. {selectedConductor.numeroLicencia} ({selectedConductor.categoriaLicencia})
-              </span>
+              {primaryLic && (
+                <span className="text-[10.5px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
+                  Lic. {primaryLic.numeroLicencia} ({primaryLic.categoriaLicencia})
+                </span>
+              )}
             </div>
             {cargo ? (
               <div
@@ -227,11 +244,13 @@ export function ConductorCombobox({
     <Combobox
       items={pagedConductores}
       filter={() => true}
-      itemToStringLabel={(item: Conductor) =>
-        item
-          ? `${getConductorNombre(item)} Lic: ${item.numeroLicencia} Cat: ${item.categoriaLicencia}`
-          : ""
-      }
+      itemToStringLabel={(item: Conductor) => {
+        if (!item) return ""
+        const primary = getPrimaryLicencia(item)
+        return primary
+          ? `${getConductorNombre(item)} Lic: ${primary.numeroLicencia} Cat: ${primary.categoriaLicencia}`
+          : getConductorNombre(item)
+      }}
       itemToStringValue={(item: Conductor) => item?.id ?? ""}
       value={null}
       onValueChange={(val: Conductor | null) => {
@@ -303,6 +322,7 @@ export function ConductorCombobox({
             const nombre = getConductorNombre(item)
             const initials = getInitials(nombre)
             const cargo = item.empleado?.cargo || item.empleado?.area
+            const primaryLic = getPrimaryLicencia(item)
 
             return (
               <ComboboxItem
@@ -319,17 +339,19 @@ export function ConductorCombobox({
                       <span className="truncate text-xs font-semibold text-foreground">
                         {nombre}
                       </span>
-                      <span className="text-[10px] font-mono font-semibold bg-muted px-1.5 py-0.2 rounded border border-border/60">
-                        Lic: {item.numeroLicencia} ({item.categoriaLicencia})
-                      </span>
+                      {primaryLic && (
+                        <span className="text-[10px] font-mono font-semibold bg-muted px-1.5 py-0.2 rounded border border-border/60">
+                          Lic: {primaryLic.numeroLicencia} ({primaryLic.categoriaLicencia})
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
                       {cargo && <span className="truncate">{cargo}</span>}
-                      {item.fechaVencimiento && (
+                      {primaryLic?.fechaVencimiento && (
                         <span className="inline-flex items-center gap-1 text-[10px] opacity-75">
                           <Calendar className="size-2.5" />
-                          Vence: {formatDate(item.fechaVencimiento)}
+                          Vence: {formatDate(primaryLic.fechaVencimiento)}
                         </span>
                       )}
                     </div>

@@ -400,12 +400,18 @@ function NavSectionGroup({
                     ? "bg-primary text-primary-foreground font-semibold shadow-2xs hover:bg-primary/95"
                     : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
+                style={
+                  isSelfActive && section.color
+                    ? { backgroundColor: section.color, borderColor: section.color }
+                    : undefined
+                }
               >
                 <SectionIcon
                   className={cn(
                     "size-4 shrink-0 transition-colors",
                     isSelfActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground",
                   )}
+                  style={!isSelfActive && section.color ? { color: section.color } : undefined}
                 />
                 <span className="truncate">{section.title}</span>
               </SidebarMenuButton>
@@ -437,15 +443,21 @@ function NavSectionGroup({
                           ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
                           : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                       )}
+                      style={
+                        isSectionActive && section.color
+                          ? { backgroundColor: section.color }
+                          : undefined
+                      }
                     />
                   }
                 >
                   <SectionIcon
                     className={cn(
-                    "size-4 shrink-0 transition-colors",
-                    isSectionActive ? "text-primary-foreground" : "text-muted-foreground",
-                  )}
-                />
+                      "size-4 shrink-0 transition-colors",
+                      isSectionActive ? "text-primary-foreground" : "text-muted-foreground",
+                    )}
+                    style={!isSectionActive && section.color ? { color: section.color } : undefined}
+                  />
                   <span className="truncate">{section.title}</span>
                 </DropdownMenuTrigger>
 
@@ -456,7 +468,10 @@ function NavSectionGroup({
                   className="min-w-52 rounded-xl p-1.5 shadow-lg border-border/60 bg-popover/98 text-xs"
                 >
                   <DropdownMenuLabel className="flex items-center gap-2 px-2 py-1 text-xs font-bold text-foreground font-heading">
-                    <SectionIcon className="size-3.5 text-primary shrink-0" />
+                    <SectionIcon
+                      className="size-3.5 text-primary shrink-0"
+                      style={section.color ? { color: section.color } : undefined}
+                    />
                     <span className="truncate">{section.title}</span>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="my-1" />
@@ -466,6 +481,7 @@ function NavSectionGroup({
                         key={child.id ? `${child.id}-${child.to || child.title}` : (child.to || child.title)}
                         node={child}
                         pathname={pathname}
+                        parentColor={section.color}
                       />
                     ))}
                   </div>
@@ -482,7 +498,10 @@ function NavSectionGroup({
   return (
     <SidebarGroup className="p-0">
       <SidebarGroupLabel className="flex h-5 items-center gap-1.5 px-2 mb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 group-data-[collapsible=icon]:hidden select-none">
-        <span className="size-1 rounded-full bg-primary/40" />
+        <span
+          className="size-1.5 rounded-full shrink-0 transition-transform duration-200"
+          style={{ backgroundColor: section.color || "var(--primary)" }}
+        />
         <span className="truncate">{section.title}</span>
       </SidebarGroupLabel>
 
@@ -495,6 +514,7 @@ function NavSectionGroup({
               depth={0}
               pathname={pathname}
               isSearching={isSearching}
+              parentColor={section.color}
             />
           ))}
         </SidebarMenu>
@@ -510,11 +530,13 @@ function NavNodeItem({
   depth = 0,
   pathname,
   isSearching = false,
+  parentColor,
 }: {
   node: NavNode
   depth?: number
   pathname: string
   isSearching?: boolean
+  parentColor?: string | null
 }) {
   const hasChildren = Boolean(node.children && node.children.length > 0)
   const isSelfActive = node.to ? isPathActive(pathname, node.to) : false
@@ -522,6 +544,7 @@ function NavNodeItem({
     ? Boolean(node.children?.some((child) => isNavNodeActive(pathname, child)))
     : false
   const isActive = isSelfActive || isChildActive
+  const effectiveColor = node.color || parentColor
 
   const [isOpen, setIsOpen] = useState(isActive || isSearching)
   const [prevIsActive, setPrevIsActive] = useState(isActive)
@@ -559,6 +582,11 @@ function NavNodeItem({
               ? "bg-primary/10 text-primary font-semibold"
               : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
           )}
+          style={
+            isActive && !isOpen && effectiveColor
+              ? { backgroundColor: `${effectiveColor}18`, color: effectiveColor }
+              : undefined
+          }
         >
           <div className="flex min-w-0 items-center gap-2">
             <NodeIcon
@@ -567,6 +595,7 @@ function NavNodeItem({
                 depth === 0 ? "size-3.5" : "size-3",
                 isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
               )}
+              style={!isActive && effectiveColor ? { color: effectiveColor } : undefined}
             />
             <span className="truncate">{node.title}</span>
           </div>
@@ -574,7 +603,10 @@ function NavNodeItem({
           <div className="flex items-center gap-1 shrink-0 ml-1">
             {/* Indicador sutil de que contiene ruta activa si está cerrado */}
             {isChildActive && !isOpen && (
-              <span className="size-1 rounded-full bg-primary" />
+              <span
+                className="size-1 rounded-full bg-primary"
+                style={effectiveColor ? { backgroundColor: effectiveColor } : undefined}
+              />
             )}
             <ChevronRight
               className={cn(
@@ -594,6 +626,7 @@ function NavNodeItem({
                 depth={depth + 1}
                 pathname={pathname}
                 isSearching={isSearching}
+                parentColor={effectiveColor}
               />
             ))}
           </SidebarMenuSub>
@@ -617,12 +650,22 @@ function NavNodeItem({
               ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.75 before:rounded-r before:bg-primary"
               : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
           )}
+          style={
+            isSelfActive && effectiveColor
+              ? {
+                  backgroundColor: `${effectiveColor}18`,
+                  color: effectiveColor,
+                  borderLeftColor: effectiveColor,
+                }
+              : undefined
+          }
         >
           <NodeIcon
             className={cn(
               "size-3.5 shrink-0 transition-colors",
               isSelfActive ? "text-primary font-bold" : "text-muted-foreground group-hover:text-foreground",
             )}
+            style={effectiveColor ? { color: effectiveColor } : undefined}
           />
           <span className="truncate flex-1 text-left">{node.title}</span>
 
@@ -634,6 +677,11 @@ function NavNodeItem({
                   ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 tabular-nums"
                   : "bg-primary/10 text-primary border border-primary/20",
               )}
+              style={
+                typeof node.badge === "string" && !/^\d+$/.test(node.badge) && effectiveColor
+                  ? { backgroundColor: `${effectiveColor}18`, color: effectiveColor, borderColor: `${effectiveColor}33` }
+                  : undefined
+              }
             >
               {node.badge}
             </span>
@@ -656,12 +704,22 @@ function NavNodeItem({
             ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-0.75 before:rounded-r before:bg-primary"
             : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
         )}
+        style={
+          isSelfActive && effectiveColor
+            ? {
+                backgroundColor: `${effectiveColor}18`,
+                color: effectiveColor,
+                borderLeftColor: effectiveColor,
+              }
+            : undefined
+        }
       >
         <NodeIcon
           className={cn(
             "size-3 shrink-0 transition-colors",
             isSelfActive ? "text-primary font-bold" : "text-muted-foreground/70 group-hover:text-foreground",
           )}
+          style={effectiveColor ? { color: effectiveColor } : undefined}
         />
         <span className="truncate flex-1 text-left">{node.title}</span>
 
@@ -673,6 +731,11 @@ function NavNodeItem({
                 ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 tabular-nums"
                 : "bg-primary/10 text-primary border border-primary/20",
             )}
+            style={
+              typeof node.badge === "string" && !/^\d+$/.test(node.badge) && effectiveColor
+                ? { backgroundColor: `${effectiveColor}18`, color: effectiveColor, borderColor: `${effectiveColor}33` }
+                : undefined
+            }
           >
             {node.badge}
           </span>
@@ -687,14 +750,17 @@ function NavNodeItem({
 function DropdownRecursiveNode({
   node,
   pathname,
+  parentColor,
 }: {
   node: NavNode
   pathname: string
+  parentColor?: string | null
 }) {
   const hasChildren = Boolean(node.children && node.children.length > 0)
   const isSelfActive = node.to ? isPathActive(pathname, node.to) : false
   const isAnyDescendantActive = isNavNodeActive(pathname, node)
   const NodeIcon = node.icon || (hasChildren ? Folder : FileText)
+  const effectiveColor = node.color || parentColor
 
   if (hasChildren && node.children) {
     return (
@@ -706,12 +772,18 @@ function DropdownRecursiveNode({
               ? "bg-primary/10 text-primary font-semibold"
               : "text-foreground/80 hover:bg-accent",
           )}
+          style={
+            isAnyDescendantActive && effectiveColor
+              ? { backgroundColor: `${effectiveColor}18`, color: effectiveColor }
+              : undefined
+          }
         >
           <NodeIcon
             className={cn(
               "size-3.5 shrink-0",
               isAnyDescendantActive ? "text-primary" : "text-muted-foreground",
             )}
+            style={effectiveColor ? { color: effectiveColor } : undefined}
           />
           <span className="truncate flex-1 text-left">{node.title}</span>
         </DropdownMenuSubTrigger>
@@ -721,6 +793,7 @@ function DropdownRecursiveNode({
               key={child.id ? `${child.id}-${child.to || child.title}` : (child.to || child.title)}
               node={child}
               pathname={pathname}
+              parentColor={effectiveColor}
             />
           ))}
         </DropdownMenuSubContent>
@@ -738,12 +811,18 @@ function DropdownRecursiveNode({
           ? "bg-primary/10 text-primary font-semibold"
           : "text-foreground/80 hover:bg-accent",
       )}
+      style={
+        isSelfActive && effectiveColor
+          ? { backgroundColor: `${effectiveColor}18`, color: effectiveColor }
+          : undefined
+      }
     >
       <NodeIcon
         className={cn(
           "size-3.5 shrink-0",
           isSelfActive ? "text-primary" : "text-muted-foreground",
         )}
+        style={effectiveColor ? { color: effectiveColor } : undefined}
       />
       <span className="truncate">{node.title}</span>
     </DropdownMenuItem>

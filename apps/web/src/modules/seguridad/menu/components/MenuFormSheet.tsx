@@ -29,6 +29,17 @@ import { AVAILABLE_MENU_ICONS, DynamicLucideIcon } from "./DynamicLucideIcon"
 
 const NONE_PARENT = "__none__"
 
+const COLOR_PRESETS = [
+  { name: "Azul", value: "#3B82F6" },
+  { name: "Violeta", value: "#8B5CF6" },
+  { name: "Esmeralda", value: "#10B981" },
+  { name: "Ámbar", value: "#F59E0B" },
+  { name: "Cian", value: "#06B6D4" },
+  { name: "Rosa", value: "#EC4899" },
+  { name: "Pizarra", value: "#64748B" },
+  { name: "Rojo", value: "#EF4444" },
+] as const
+
 function getNextOrder(parentId: string | null | undefined, menus: Menu[]): number {
   const targetParentId = !parentId || parentId === NONE_PARENT ? null : parentId
   const siblings = menus.filter((m) => {
@@ -85,8 +96,13 @@ export function MenuFormSheet({
       ? {
           codigo: menu.codigo,
           nombre: menu.nombre,
+          tipo: (menu.tipo ?? "ITEM") as "MODULO" | "AGRUPADOR" | "ITEM",
           icono: menu.icono ?? "",
+          color: menu.color ?? "",
           ruta: menu.ruta ?? "",
+          badge: menu.badge ?? "",
+          descripcion: menu.descripcion ?? "",
+          visibleEnMenu: menu.visibleEnMenu ?? true,
           menuPadreId: initialParentId,
           orden: String(menu.orden ?? 0),
           activo: menu.activo,
@@ -94,6 +110,7 @@ export function MenuFormSheet({
       : {
           ...defaultMenuValues,
           icono: "",
+          color: "",
           menuPadreId: initialParentId,
           orden: String(autoOrder),
         },
@@ -120,8 +137,13 @@ export function MenuFormSheet({
                 payload: {
                   codigo: (value.codigo || menu.codigo).trim(),
                   nombre: value.nombre.trim(),
+                  tipo: value.tipo,
                   icono: value.icono?.trim() || null,
+                  color: value.color?.trim() || null,
                   ruta: value.ruta?.trim() || null,
+                  badge: value.badge?.trim() || null,
+                  descripcion: value.descripcion?.trim() || null,
+                  visibleEnMenu: value.visibleEnMenu ?? true,
                   menuPadreId: parentId,
                   orden: finalOrder,
                   activo: value.activo ?? true,
@@ -130,8 +152,13 @@ export function MenuFormSheet({
             : await createMutation.mutateAsync({
                 codigo: value.codigo.trim(),
                 nombre: value.nombre.trim(),
+                tipo: value.tipo,
                 icono: value.icono?.trim() || null,
+                color: value.color?.trim() || null,
                 ruta: value.ruta?.trim() || null,
+                badge: value.badge?.trim() || null,
+                descripcion: value.descripcion?.trim() || null,
+                visibleEnMenu: value.visibleEnMenu ?? true,
                 menuPadreId: parentId,
                 orden: finalOrder,
                 activo: value.activo ?? true,
@@ -155,8 +182,13 @@ export function MenuFormSheet({
       if (menu) {
         form.setFieldValue("codigo", menu.codigo)
         form.setFieldValue("nombre", menu.nombre)
+        form.setFieldValue("tipo", (menu.tipo ?? "ITEM") as "MODULO" | "AGRUPADOR" | "ITEM")
         form.setFieldValue("icono", menu.icono ?? "")
+        form.setFieldValue("color", menu.color ?? "")
         form.setFieldValue("ruta", menu.ruta ?? "")
+        form.setFieldValue("badge", menu.badge ?? "")
+        form.setFieldValue("descripcion", menu.descripcion ?? "")
+        form.setFieldValue("visibleEnMenu", menu.visibleEnMenu ?? true)
         form.setFieldValue("menuPadreId", menu.menuPadreId ?? NONE_PARENT)
         form.setFieldValue("orden", String(menu.orden ?? 0))
         form.setFieldValue("activo", menu.activo)
@@ -164,8 +196,13 @@ export function MenuFormSheet({
         const calculated = getNextOrder(initialParentId, availableMenus)
         form.setFieldValue("codigo", "")
         form.setFieldValue("nombre", "")
+        form.setFieldValue("tipo", initialParentId === NONE_PARENT ? "MODULO" : "ITEM")
         form.setFieldValue("icono", "")
+        form.setFieldValue("color", "")
         form.setFieldValue("ruta", "")
+        form.setFieldValue("badge", "")
+        form.setFieldValue("descripcion", "")
+        form.setFieldValue("visibleEnMenu", true)
         form.setFieldValue("menuPadreId", initialParentId)
         form.setFieldValue("orden", String(calculated))
         form.setFieldValue("activo", true)
@@ -481,8 +518,139 @@ export function MenuFormSheet({
             }}
           </form.Field>
 
-          {/* Orden & Estado Activo */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-1">
+          {/* Tipo de Menú & Color de Acento */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <form.Field name="tipo">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Tipo de Elemento</FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(val) => field.handleChange(val as "MODULO" | "AGRUPADOR" | "ITEM")}
+                  >
+                    <SelectTrigger id={field.name}>
+                      <SelectValue placeholder="Selecciona tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MODULO">
+                        <div className="flex items-center gap-2">
+                          <span className="size-2 rounded-full bg-blue-500" />
+                          <span>Módulo (Sección Principal)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="AGRUPADOR">
+                        <div className="flex items-center gap-2">
+                          <span className="size-2 rounded-full bg-amber-500" />
+                          <span>Agrupador / Carpeta (Sin Ruta)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="ITEM">
+                        <div className="flex items-center gap-2">
+                          <span className="size-2 rounded-full bg-emerald-500" />
+                          <span>Interfaz / Pantalla (Con Ruta)</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="color">
+              {(field) => (
+                <Field>
+                  <div className="flex items-center justify-between">
+                    <FieldLabel htmlFor={field.name}>Color de Acento</FieldLabel>
+                    {field.state.value && (
+                      <span
+                        className="size-3.5 rounded-full ring-1 ring-border"
+                        style={{ backgroundColor: field.state.value }}
+                      />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value ?? ""}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="#3B82F6"
+                      className="font-mono text-xs flex-1"
+                    />
+                    {field.state.value && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => field.handleChange("")}
+                        className="text-xs text-muted-foreground hover:text-destructive h-9 px-2"
+                      >
+                        Limpiar
+                      </Button>
+                    )}
+                  </div>
+                  {/* Preset swatches */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {COLOR_PRESETS.map((p) => (
+                      <button
+                        key={p.value}
+                        type="button"
+                        onClick={() => field.handleChange(p.value)}
+                        className={`size-6 rounded-md transition-all ring-offset-background cursor-pointer ${
+                          field.state.value?.toLowerCase() === p.value.toLowerCase()
+                            ? "ring-2 ring-primary scale-110"
+                            : "hover:scale-105 opacity-80 hover:opacity-100 ring-1 ring-black/10"
+                        }`}
+                        style={{ backgroundColor: p.value }}
+                        title={`${p.name} (${p.value})`}
+                      />
+                    ))}
+                  </div>
+                </Field>
+              )}
+            </form.Field>
+          </div>
+
+          {/* Badge & Descripción */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <form.Field name="badge">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Badge / Etiqueta</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value ?? ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Nuevo, Beta, Pro..."
+                    className="text-xs"
+                  />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="descripcion">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Descripción / Tooltip</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value ?? ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Descripción funcional del menú"
+                    className="text-xs"
+                  />
+                </Field>
+              )}
+            </form.Field>
+          </div>
+
+          {/* Orden & Estado Activo & Visible */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-1">
             <form.Field name="orden">
               {(field) => {
                 const isInvalid =
@@ -491,7 +659,7 @@ export function MenuFormSheet({
                 return (
                   <Field data-invalid={isInvalid || undefined}>
                     <div className="flex items-center justify-between">
-                      <FieldLabel htmlFor={field.name}>Orden de Presentación</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>Orden</FieldLabel>
                       <button
                         type="button"
                         onClick={() => {
@@ -523,19 +691,16 @@ export function MenuFormSheet({
                       className="font-mono text-xs"
                       aria-invalid={isInvalid}
                     />
-                    <p className="text-[11px] text-muted-foreground">
-                      Calculado automáticamente en orden correlativo (1, 2, 3...) para este nivel.
-                    </p>
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>
                 )
               }}
             </form.Field>
 
-            <form.Field name="activo">
+            <form.Field name="visibleEnMenu">
               {(field) => (
                 <Field className="justify-between">
-                  <FieldLabel htmlFor={field.name}>Estado del Menú</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Visibilidad</FieldLabel>
                   <div className="flex items-center gap-3 pt-2">
                     <label className="flex items-center gap-2 cursor-pointer text-sm">
                       <input
@@ -545,8 +710,30 @@ export function MenuFormSheet({
                         onChange={(e) => field.handleChange(e.target.checked)}
                         className="size-4 rounded border-border text-primary focus:ring-primary accent-primary"
                       />
-                      <span className="font-medium text-foreground">
-                        {field.state.value ? "Activo (Visible)" : "Inactivo"}
+                      <span className="font-medium text-foreground text-xs">
+                        Mostrar en Sidebar
+                      </span>
+                    </label>
+                  </div>
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="activo">
+              {(field) => (
+                <Field className="justify-between">
+                  <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
+                  <div className="flex items-center gap-3 pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        id={field.name}
+                        type="checkbox"
+                        checked={field.state.value ?? true}
+                        onChange={(e) => field.handleChange(e.target.checked)}
+                        className="size-4 rounded border-border text-primary focus:ring-primary accent-primary"
+                      />
+                      <span className="font-medium text-foreground text-xs">
+                        {field.state.value ? "Activo" : "Inactivo"}
                       </span>
                     </label>
                   </div>

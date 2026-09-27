@@ -57,8 +57,15 @@ export function MenuTreeNodeItem({
     menuPadreId: node.menuPadreId,
     codigo: node.codigo,
     nombre: node.nombre,
+    tipo: node.tipo,
     icono: node.icono,
+    color: node.color,
+    esFolder: node.esFolder ?? (node.tipo === "MODULO" || node.tipo === "AGRUPADOR" || !node.ruta),
+    esInterfaz: node.esInterfaz ?? (node.tipo === "ITEM" && Boolean(node.ruta)),
     ruta: node.ruta,
+    badge: node.badge,
+    descripcion: node.descripcion,
+    visibleEnMenu: node.visibleEnMenu,
     orden: node.orden,
     activo: node.activo,
     createdAt: "",
@@ -66,6 +73,8 @@ export function MenuTreeNodeItem({
     createdBy: "",
     updatedBy: "",
   }
+
+  const isFolder = node.esFolder ?? (node.tipo === "MODULO" || node.tipo === "AGRUPADOR" || !node.ruta)
 
   const query = searchQuery.trim().toLowerCase()
   const isHighlighted =
@@ -110,15 +119,25 @@ export function MenuTreeNodeItem({
           {node.icono ? (
             <div
               className={cn(
-                "flex size-7 items-center justify-center rounded-lg border shrink-0 transition-colors",
+                "flex size-7 items-center justify-center rounded-lg border shrink-0 transition-colors shadow-2xs",
                 level === 0
                   ? "bg-primary/10 border-primary/20 text-primary"
                   : "bg-muted/80 border-border text-muted-foreground",
               )}
+              style={node.color ? { color: node.color, borderColor: `${node.color}33`, backgroundColor: `${node.color}15` } : undefined}
             >
               <DynamicLucideIcon name={node.icono} className="size-3.5" />
             </div>
           ) : null}
+
+          {/* Color Indicator Dot if defined */}
+          {node.color && (
+            <span
+              className="size-2 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/20"
+              style={{ backgroundColor: node.color }}
+              title={`Color: ${node.color}`}
+            />
+          )}
 
           {/* Name and Code */}
           <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
@@ -133,6 +152,25 @@ export function MenuTreeNodeItem({
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border/40 shrink-0">
               {node.codigo}
             </code>
+
+            {/* Folder vs Interfaz Badge */}
+            <span
+              className={cn(
+                "hidden sm:inline-flex items-center gap-1 rounded-md px-1.5 py-0.2 text-[9.5px] font-medium shrink-0 border",
+                isFolder
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                  : "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+              )}
+            >
+              {isFolder ? "Carpeta" : "Interfaz"}
+            </span>
+
+            {/* Custom Badge if exists */}
+            {node.badge && (
+              <span className="hidden sm:inline-flex items-center rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 px-1.5 py-0.2 text-[9.5px] font-semibold shrink-0">
+                {node.badge}
+              </span>
+            )}
 
             {/* Route link preview */}
             {node.ruta && (

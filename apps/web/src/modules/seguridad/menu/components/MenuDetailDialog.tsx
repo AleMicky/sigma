@@ -74,7 +74,10 @@ export function MenuDetailDialog({
         <DialogHeader className="p-6 border-b bg-muted/20 pb-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs font-mono font-bold">
+              <div
+                className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs font-mono font-bold"
+                style={menu.color ? { color: menu.color, borderColor: `${menu.color}33`, backgroundColor: `${menu.color}15` } : undefined}
+              >
                 {menu.icono ? (
                   <DynamicLucideIcon name={menu.icono} className="size-6" />
                 ) : (
@@ -82,9 +85,16 @@ export function MenuDetailDialog({
                 )}
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold">
-                  {menu.nombre}
-                </DialogTitle>
+                <div className="flex items-center gap-2">
+                  <DialogTitle className="text-lg font-bold">
+                    {menu.nombre}
+                  </DialogTitle>
+                  {menu.badge && (
+                    <span className="rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 px-1.5 py-0.2 text-[10px] font-semibold">
+                      {menu.badge}
+                    </span>
+                  )}
+                </div>
                 <DialogDescription className="text-xs font-mono text-muted-foreground pt-0.5">
                   Código: {menu.codigo}
                 </DialogDescription>
@@ -117,7 +127,7 @@ export function MenuDetailDialog({
         {/* Content Details */}
         <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
           {/* General Attributes */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1">
               <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
                 <FolderTree className="size-3 text-primary" />
@@ -139,13 +149,42 @@ export function MenuDetailDialog({
             <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1">
               <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
                 <Hash className="size-3 text-primary" />
-                Orden de Visualización
+                Tipo de Menú
+              </span>
+              <p className="text-xs font-semibold text-foreground">
+                {menu.tipo ?? "ITEM"} ({menu.esFolder ? "Carpeta" : "Interfaz"})
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1">
+              <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                <Hash className="size-3 text-primary" />
+                Orden
               </span>
               <p className="text-xs font-mono font-semibold text-foreground">
                 Posición #{menu.orden}
               </p>
             </div>
           </div>
+
+          {/* Color & Descripción */}
+          {menu.color && (
+            <div className="rounded-xl border border-border/70 bg-card p-3 flex items-center gap-2">
+              <span className="text-[11px] font-medium text-muted-foreground">Color de acento:</span>
+              <span
+                className="size-3.5 rounded-full ring-1 ring-border"
+                style={{ backgroundColor: menu.color }}
+              />
+              <code className="text-xs font-mono text-muted-foreground">{menu.color}</code>
+            </div>
+          )}
+
+          {menu.descripcion && (
+            <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1">
+              <span className="text-[11px] font-medium text-muted-foreground">Descripción:</span>
+              <p className="text-xs text-foreground">{menu.descripcion}</p>
+            </div>
+          )}
 
           {/* Ruta */}
           <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1">
@@ -158,7 +197,7 @@ export function MenuDetailDialog({
                 <span className="text-primary hover:underline">{menu.ruta}</span>
               ) : (
                 <span className="text-muted-foreground italic">
-                  Sin ruta asignada (Contenedor de submenús)
+                  Sin ruta asignada (Contenedor de submenús / Carpeta)
                 </span>
               )}
             </p>

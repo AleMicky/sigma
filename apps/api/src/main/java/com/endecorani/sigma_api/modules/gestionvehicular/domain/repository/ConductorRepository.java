@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.domain.repository;
 
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoConductor;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.Conductor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,7 +16,7 @@ public interface ConductorRepository {
 
     Page<Conductor> search(String search, Pageable pageable);
 
-    Page<Conductor> searchWithFilters(String search, String categoria, Boolean activo, Pageable pageable);
+    Page<Conductor> searchWithFilters(String search, String categoria, EstadoConductor estado, Boolean activo, Pageable pageable);
 
     List<Conductor> findDisponibles(LocalDateTime fechaSalida, LocalDateTime fechaRetorno);
 
@@ -28,8 +29,4 @@ public interface ConductorRepository {
     boolean existsByEmpleadoId(UUID empleadoId);
 
     boolean existsByEmpleadoIdAndIdNot(UUID empleadoId, UUID id);
-
-    boolean existsByNumeroLicenciaIgnoreCase(String numeroLicencia);
-
-    boolean existsByNumeroLicenciaIgnoreCaseAndIdNot(String numeroLicencia, UUID id);
 }

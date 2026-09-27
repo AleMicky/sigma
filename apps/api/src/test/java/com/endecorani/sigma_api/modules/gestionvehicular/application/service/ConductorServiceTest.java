@@ -1,11 +1,15 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.service;
 
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.conductor.request.ConductorLicenciaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.conductor.request.ConductorRequest;
-import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.conductor.request.ConductorUpdate;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.conductor.response.ConductorEmpleadoInfo;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.conductor.response.ConductorLicenciaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.conductor.response.ConductorResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.mapper.ConductorMapper;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoConductor;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoLicenciaConductor;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.Conductor;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.ConductorLicencia;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ConductorRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
@@ -54,6 +58,7 @@ class ConductorServiceTest {
     private UUID conductorId;
     private UUID empleadoId;
     private Conductor conductorDomain;
+    private ConductorLicencia licenciaDomain;
     private Empleado empleadoDomain;
     private com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity vEmpleadoEntity;
     private ConductorResponse conductorResponse;
@@ -64,12 +69,23 @@ class ConductorServiceTest {
         conductorId = UUID.randomUUID();
         empleadoId = UUID.randomUUID();
 
+        licenciaDomain = ConductorLicencia.builder()
+                .id(UUID.randomUUID())
+                .conductorId(conductorId)
+                .categoriaLicencia("C")
+                .numeroLicencia("12345678-LP")
+                .fechaEmision(LocalDate.now().minusYears(1))
+                .fechaVencimiento(LocalDate.now().plusYears(2))
+                .estado(EstadoLicenciaConductor.VIGENTE)
+                .activo(true)
+                .build();
+
         conductorDomain = Conductor.builder()
                 .id(conductorId)
                 .empleadoId(empleadoId)
-                .numeroLicencia("12345678-LP")
-                .categoriaLicencia("C")
-                .fechaVencimiento(LocalDate.now().plusYears(2))
+                .estado(EstadoConductor.ACTIVO)
+                .observacion("Conductor asignado")
+                .licencias(List.of(licenciaDomain))
                 .activo(true)
                 .build();
 
@@ -96,14 +112,32 @@ class ConductorServiceTest {
                 "Transportes"
         );
 
+        ConductorLicenciaResponse licResponse = new ConductorLicenciaResponse(
+                licenciaDomain.getId(),
+                conductorId,
+                "C",
+                "12345678-LP",
+                LocalDate.now().minusYears(1),
+                LocalDate.now().plusYears(2),
+                EstadoLicenciaConductor.VIGENTE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true,
+                null
+        );
+
         conductorResponse = new ConductorResponse(
                 conductorId,
                 empleadoId,
                 empleadoInfo,
-                "12345678-LP",
-                "C",
-                LocalDate.now().plusYears(2),
+                EstadoConductor.ACTIVO,
+                "Conductor asignado",
                 true,
+                List.of(licResponse),
                 null
         );
     }
@@ -120,8 +154,8 @@ class ConductorServiceTest {
 
         assertNotNull(response);
         assertEquals(1, response.content().size());
-        assertEquals("12345678-LP", response.content().get(0).numeroLicencia());
         assertEquals("Juan Perez", response.content().get(0).empleado().nombreCompleto());
+        assertEquals(1, response.content().get(0).licencias().size());
     }
 
     @Test
@@ -135,7 +169,8 @@ class ConductorServiceTest {
 
         assertNotNull(result);
         assertEquals(conductorId, result.id());
-        assertEquals("12345678-LP", result.numeroLicencia());
+        assertEquals(EstadoConductor.ACTIVO, result.estado());
+        assertEquals(1, result.licencias().size());
     }
 
     @Test
@@ -149,17 +184,26 @@ class ConductorServiceTest {
     @Test
     @DisplayName("Debe crear un conductor exitosamente")
     void debeCrearConductorExitosamente() {
+        ConductorLicenciaRequest licReq = new ConductorLicenciaRequest(
+                null,
+                "C",
+                "12345678-LP",
+                LocalDate.now().minusYears(1),
+                LocalDate.now().plusYears(2),
+                EstadoLicenciaConductor.VIGENTE,
+                null, null, null, null, null, null, true
+        );
+
         ConductorRequest request = new ConductorRequest(
                 empleadoId,
-                "12345678-LP",
-                "C",
-                LocalDate.now().plusYears(2),
-                true
+                EstadoConductor.ACTIVO,
+                "Conductor asignado",
+                true,
+                List.of(licReq)
         );
 
         when(empleadoRepository.findById(empleadoId)).thenReturn(Optional.of(empleadoDomain));
         when(repository.existsByEmpleadoId(empleadoId)).thenReturn(false);
-        when(repository.existsByNumeroLicenciaIgnoreCase("12345678-LP")).thenReturn(false);
         when(mapper.toDomain(request)).thenReturn(conductorDomain);
         when(repository.save(any(Conductor.class))).thenReturn(conductorDomain);
         when(springVEmpleadoRepository.findById(empleadoId)).thenReturn(Optional.of(vEmpleadoEntity));
@@ -168,7 +212,7 @@ class ConductorServiceTest {
         ConductorResponse created = service.create(request);
 
         assertNotNull(created);
-        assertEquals("12345678-LP", created.numeroLicencia());
+        assertEquals(EstadoConductor.ACTIVO, created.estado());
         verify(repository, times(1)).save(any(Conductor.class));
     }
 
@@ -177,10 +221,10 @@ class ConductorServiceTest {
     void debeFallarSiEmpleadoYaTieneConductor() {
         ConductorRequest request = new ConductorRequest(
                 empleadoId,
-                "12345678-LP",
-                "C",
-                LocalDate.now().plusYears(2),
-                true
+                EstadoConductor.ACTIVO,
+                null,
+                true,
+                List.of()
         );
 
         when(empleadoRepository.findById(empleadoId)).thenReturn(Optional.of(empleadoDomain));

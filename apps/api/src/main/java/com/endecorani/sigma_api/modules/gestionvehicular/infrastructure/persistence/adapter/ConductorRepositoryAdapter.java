@@ -1,8 +1,10 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.adapter;
 
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoConductor;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.Conductor;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ConductorRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorEntity;
+import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.mapper.ConductorPersistenceMapper;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.repository.SpringConductorRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,9 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -33,8 +34,8 @@ public class ConductorRepositoryAdapter implements ConductorRepository {
     }
 
     @Override
-    public Page<Conductor> searchWithFilters(String search, String categoria, Boolean activo, Pageable pageable) {
-        return springRepository.searchWithFilters(search, categoria, activo, pageable).map(mapper::toDomain);
+    public Page<Conductor> searchWithFilters(String search, String categoria, EstadoConductor estado, Boolean activo, Pageable pageable) {
+        return springRepository.searchWithFilters(search, categoria, estado, activo, pageable).map(mapper::toDomain);
     }
 
     @Override
@@ -50,10 +51,61 @@ public class ConductorRepositoryAdapter implements ConductorRepository {
     }
 
     @Override
-    public Conductor save(Conductor conductor) {
-        ConductorEntity entity = mapper.toEntity(conductor);
-        ConductorEntity saved = springRepository.save(entity);
-        return mapper.toDomain(saved);
+    public Conductor save(Conductor domain) {
+        ConductorEntity entityToSave;
+
+        if (domain.getId() != null) {
+            Optional<ConductorEntity> existingEntityOpt = springRepository.findById(domain.getId());
+            if (existingEntityOpt.isPresent()) {
+                ConductorEntity existingEntity = existingEntityOpt.get();
+                existingEntity.setEmpleadoId(domain.getEmpleadoId());
+                existingEntity.setEstado(domain.getEstado());
+                existingEntity.setObservacion(domain.getObservacion());
+                existingEntity.setActivo(domain.isActivo());
+
+                if (domain.getLicencias() != null) {
+                    Map<UUID, ConductorLicenciaEntity> existingLicenciasMap = existingEntity.getLicencias().stream()
+                            .filter(l -> l.getId() != null)
+                            .collect(Collectors.toMap(ConductorLicenciaEntity::getId, l -> l));
+
+                    List<ConductorLicenciaEntity> updatedLicencias = new ArrayList<>();
+
+                    for (var licDomain : domain.getLicencias()) {
+                        if (licDomain.getId() != null && existingLicenciasMap.containsKey(licDomain.getId())) {
+                            ConductorLicenciaEntity existingLic = existingLicenciasMap.get(licDomain.getId());
+                            existingLic.setCategoriaLicencia(licDomain.getCategoriaLicencia());
+                            existingLic.setNumeroLicencia(licDomain.getNumeroLicencia());
+                            existingLic.setFechaEmision(licDomain.getFechaEmision());
+                            existingLic.setFechaVencimiento(licDomain.getFechaVencimiento());
+                            existingLic.setEstado(licDomain.getEstado());
+                            existingLic.setNombreArchivo(licDomain.getNombreArchivo());
+                            existingLic.setNombreOriginal(licDomain.getNombreOriginal());
+                            existingLic.setUrl(licDomain.getUrl());
+                            existingLic.setMimeType(licDomain.getMimeType());
+                            existingLic.setSize(licDomain.getSize());
+                            existingLic.setObservacion(licDomain.getObservacion());
+                            existingLic.setActivo(licDomain.isActivo());
+                            updatedLicencias.add(existingLic);
+                        } else {
+                            ConductorLicenciaEntity newLic = mapper.licenciaToEntity(licDomain);
+                            updatedLicencias.add(newLic);
+                        }
+                    }
+
+                    existingEntity.getLicencias().clear();
+                    existingEntity.getLicencias().addAll(updatedLicencias);
+                }
+
+                entityToSave = existingEntity;
+            } else {
+                entityToSave = mapper.toEntity(domain);
+            }
+        } else {
+            entityToSave = mapper.toEntity(domain);
+        }
+
+        ConductorEntity savedEntity = springRepository.save(entityToSave);
+        return mapper.toDomain(savedEntity);
     }
 
     @Override
@@ -69,15 +121,5 @@ public class ConductorRepositoryAdapter implements ConductorRepository {
     @Override
     public boolean existsByEmpleadoIdAndIdNot(UUID empleadoId, UUID id) {
         return springRepository.existsByEmpleadoIdAndIdNot(empleadoId, id);
-    }
-
-    @Override
-    public boolean existsByNumeroLicenciaIgnoreCase(String numeroLicencia) {
-        return springRepository.existsByNumeroLicenciaIgnoreCase(numeroLicencia);
-    }
-
-    @Override
-    public boolean existsByNumeroLicenciaIgnoreCaseAndIdNot(String numeroLicencia, UUID id) {
-        return springRepository.existsByNumeroLicenciaIgnoreCaseAndIdNot(numeroLicencia, id);
     }
 }

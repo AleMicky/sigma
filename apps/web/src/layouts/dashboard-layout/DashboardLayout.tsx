@@ -1,27 +1,56 @@
 import type { PropsWithChildren } from "react"
+import { useRouterState } from "@tanstack/react-router"
 
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/shared/components/ui/sidebar"
 import { TooltipProvider } from "@/shared/components/ui/tooltip"
+import { useAllowedNavItems } from "@/shared/hooks/use-allowed-nav-items"
 
 import { AppHeader } from "./AppHeader"
 import { AppSidebar } from "./AppSidebar"
-import { NavigationTabs } from "./NavigationTabs"
+import { NavigationTabs, resolveTabInfo } from "./NavigationTabs"
 import { PageTransition } from "./PageTransition"
 
 export function DashboardLayout({ children }: PropsWithChildren) {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+  const { navItems } = useAllowedNavItems()
+
+  // Resolver color del menú o módulo activo
+  const { color: activeColor } = resolveTabInfo(pathname, navItems)
+  const themeColor = activeColor || "#3B82F6"
+
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={true}>
-        <div className="flex h-svh w-full overflow-hidden bg-background select-none">
+        <div
+          className="flex h-svh w-full overflow-hidden bg-background select-none"
+          style={{ "--active-color": themeColor } as React.CSSProperties}
+        >
           <AppSidebar />
 
           <SidebarInset className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/10 dark:bg-zinc-950/20">
+            {/* Resplandor ambiental superior muy suave según el color del módulo activo */}
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-72 opacity-15 dark:opacity-20 transition-all duration-700 ease-out"
+              style={{
+                background: `radial-gradient(ellipse 80% 60% at 50% -20%, ${themeColor}, transparent)`,
+              }}
+            />
+
+            {/* Barra de acento superior sutil */}
+            <div
+              className="h-[1.5px] w-full shrink-0 transition-colors duration-500"
+              style={{ backgroundColor: `${themeColor}35` }}
+            />
+
             <AppHeader />
             <NavigationTabs />
-            <main className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-5 transition-all">
+
+            <main className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-5 transition-all">
               <PageTransition>{children}</PageTransition>
             </main>
           </SidebarInset>
@@ -30,4 +59,3 @@ export function DashboardLayout({ children }: PropsWithChildren) {
     </TooltipProvider>
   )
 }
-

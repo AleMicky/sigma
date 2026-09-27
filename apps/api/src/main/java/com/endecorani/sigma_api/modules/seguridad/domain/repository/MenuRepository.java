@@ -28,6 +28,10 @@ public interface MenuRepository {
 
     List<Menu> findByMenuPadreIdIsNull();
 
+    Optional<Menu> findByCodigoIgnoreCase(String codigo);
+
+    List<Menu> findByActivoTrue();
+
     boolean existsById(UUID id);
 
     boolean existsByCodigoIgnoreCase(String codigo);

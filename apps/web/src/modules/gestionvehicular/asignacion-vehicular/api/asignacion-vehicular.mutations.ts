@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
+import { workflowKeys } from "@/modules/workflow/api/workflow.keys"
 import { asignacionVehicularKeys } from "./asignacion-vehicular.keys"
 import {
   createAsignacionVehicular,
@@ -28,6 +29,9 @@ export const useCreateAsignacionVehicular = () => {
       }
       queryClient.invalidateQueries({
         queryKey: solicitudVehicularKeys.all,
+      })
+      queryClient.invalidateQueries({
+        queryKey: workflowKeys.all,
       })
       toast.success("Asignación vehicular registrada correctamente")
     },
@@ -63,6 +67,9 @@ export const useUpdateAsignacionVehicular = () => {
       queryClient.invalidateQueries({
         queryKey: solicitudVehicularKeys.all,
       })
+      queryClient.invalidateQueries({
+        queryKey: workflowKeys.all,
+      })
       toast.success("Asignación vehicular actualizada correctamente")
     },
     onError: () => {
@@ -82,6 +89,9 @@ export const useDeleteAsignacionVehicular = () => {
       })
       queryClient.invalidateQueries({
         queryKey: solicitudVehicularKeys.all,
+      })
+      queryClient.invalidateQueries({
+        queryKey: workflowKeys.all,
       })
       toast.success("Asignación vehicular eliminada correctamente")
     },

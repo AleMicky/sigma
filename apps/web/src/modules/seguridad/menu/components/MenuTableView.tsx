@@ -57,29 +57,55 @@ export function MenuTableView({
 
               const permisosCount = permisosCountByMenuId?.get(menu.id) ?? 0
 
+              const isFolder = menu.esFolder ?? (menu.tipo === "MODULO" || menu.tipo === "AGRUPADOR" || !menu.ruta)
+
               return (
                 <tr key={menu.id} className="group hover:bg-accent/40 transition-colors">
                   <td className="px-4 py-3 sm:px-6 font-medium">
                     <div className="flex items-center gap-2.5">
                       {menu.icono ? (
-                        <div className="flex size-7 items-center justify-center rounded-lg bg-muted border border-border/60 text-muted-foreground shrink-0">
+                        <div
+                          className="flex size-7 items-center justify-center rounded-lg bg-muted border border-border/60 text-muted-foreground shrink-0 shadow-2xs"
+                          style={menu.color ? { color: menu.color, borderColor: `${menu.color}33`, backgroundColor: `${menu.color}15` } : undefined}
+                        >
                           <DynamicLucideIcon name={menu.icono} className="size-3.5" />
                         </div>
                       ) : null}
-                      <button
-                        type="button"
-                        onClick={() => onQuickView(menu.id)}
-                        className="font-medium text-foreground hover:text-primary transition-colors text-left truncate max-w-[200px] cursor-pointer"
-                      >
-                        {menu.nombre}
-                      </button>
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onQuickView(menu.id)}
+                            className="font-medium text-foreground hover:text-primary transition-colors text-left truncate max-w-[200px] cursor-pointer"
+                          >
+                            {menu.nombre}
+                          </button>
+                          {menu.badge && (
+                            <span className="rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 px-1 py-0.2 text-[9px] font-semibold">
+                              {menu.badge}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </td>
 
                   <td className="px-4 py-3 sm:px-6 font-mono text-xs">
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground border border-border/40">
-                      {menu.codigo}
-                    </code>
+                    <div className="flex items-center gap-1.5">
+                      <code className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground border border-border/40">
+                        {menu.codigo}
+                      </code>
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-medium border",
+                          isFolder
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                            : "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+                        )}
+                      >
+                        {isFolder ? "Carpeta" : "Interfaz"}
+                      </span>
+                    </div>
                   </td>
 
                   <td className="px-4 py-3 sm:px-6 text-xs text-muted-foreground">

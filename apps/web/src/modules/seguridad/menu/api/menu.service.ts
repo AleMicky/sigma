@@ -10,6 +10,9 @@ export type Menu = AuditableEntity & {
   nombre: string
   tipo?: "MODULO" | "AGRUPADOR" | "ITEM"
   icono: string | null
+  color?: string | null
+  esFolder?: boolean
+  esInterfaz?: boolean
   ruta: string | null
   badge?: string | null
   descripcion?: string | null
@@ -25,6 +28,9 @@ export type MenuTreeNode = {
   nombre: string
   tipo?: "MODULO" | "AGRUPADOR" | "ITEM"
   icono: string | null
+  color?: string | null
+  esFolder?: boolean
+  esInterfaz?: boolean
   ruta: string | null
   badge?: string | null
   descripcion?: string | null
@@ -37,8 +43,13 @@ export type MenuTreeNode = {
 export type CreateMenuDto = {
   codigo: string
   nombre: string
+  tipo?: "MODULO" | "AGRUPADOR" | "ITEM"
   icono?: string | null
+  color?: string | null
   ruta?: string | null
+  badge?: string | null
+  descripcion?: string | null
+  visibleEnMenu?: boolean
   menuPadreId?: string | null
   orden?: number | null
   activo?: boolean
@@ -47,8 +58,13 @@ export type CreateMenuDto = {
 export type UpdateMenuDto = {
   codigo: string
   nombre: string
+  tipo?: "MODULO" | "AGRUPADOR" | "ITEM"
   icono?: string | null
+  color?: string | null
   ruta?: string | null
+  badge?: string | null
+  descripcion?: string | null
+  visibleEnMenu?: boolean
   menuPadreId?: string | null
   orden?: number | null
   activo?: boolean

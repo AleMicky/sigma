@@ -34,6 +34,7 @@ public class MenuService {
     private static final int NOMBRE_MIN_LENGTH = 2;
     private static final int NOMBRE_MAX_LENGTH = 150;
     private static final int ICONO_MAX_LENGTH = 100;
+    private static final int COLOR_MAX_LENGTH = 50;
     private static final int RUTA_MAX_LENGTH = 300;
 
     private static final Set<String> SORT_FIELDS = Set.of(
@@ -153,6 +154,7 @@ public class MenuService {
                 .nombre(requireNormalizedNombre(request.nombre()))
                 .tipo(request.tipo() != null ? request.tipo() : (request.ruta() != null && !request.ruta().isBlank() ? com.endecorani.sigma_api.modules.seguridad.domain.model.TipoMenu.ITEM : com.endecorani.sigma_api.modules.seguridad.domain.model.TipoMenu.AGRUPADOR))
                 .icono(normalizeIcono(request.icono()))
+                .color(normalizeColor(request.color()))
                 .ruta(normalizeRuta(request.ruta()))
                 .badge(StringUtils.normalize(request.badge()))
                 .descripcion(StringUtils.normalize(request.descripcion()))
@@ -193,6 +195,7 @@ public class MenuService {
             domain.setTipo(request.tipo());
         }
         domain.setIcono(normalizeIcono(request.icono()));
+        domain.setColor(normalizeColor(request.color()));
         domain.setRuta(normalizeRuta(request.ruta()));
         domain.setBadge(StringUtils.normalize(request.badge()));
         domain.setDescripcion(StringUtils.normalize(request.descripcion()));
@@ -212,6 +215,9 @@ public class MenuService {
                 menu.getNombre(),
                 menu.getTipo(),
                 menu.getIcono(),
+                menu.getColor(),
+                menu.esFolder(),
+                menu.esInterfaz(),
                 menu.getRuta(),
                 menu.getBadge(),
                 menu.getDescripcion(),
@@ -341,6 +347,20 @@ public class MenuService {
         return normalized;
     }
 
+    private String normalizeColor(String value) {
+        String normalized = StringUtils.normalize(value);
+
+        if (normalized != null && normalized.length() > COLOR_MAX_LENGTH) {
+            throw new BusinessException(
+                    "INVALID_MENU_COLOR",
+                    "El color no puede superar los %d caracteres"
+                            .formatted(COLOR_MAX_LENGTH)
+            );
+        }
+
+        return normalized;
+    }
+
     private String normalizeRuta(String value) {
         String normalized = StringUtils.normalize(value);
 
@@ -410,6 +430,9 @@ public class MenuService {
                 menu.getNombre(),
                 menu.getTipo(),
                 menu.getIcono(),
+                menu.getColor(),
+                menu.esFolder(),
+                menu.esInterfaz(),
                 menu.getRuta(),
                 menu.getBadge(),
                 menu.getDescripcion(),

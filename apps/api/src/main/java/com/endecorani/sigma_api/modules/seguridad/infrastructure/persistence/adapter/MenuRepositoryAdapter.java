@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class MenuRepositoryAdapter implements MenuRepository {
 
     private final MenuJpaRepository repository;
@@ -30,6 +32,7 @@ public class MenuRepositoryAdapter implements MenuRepository {
     }
 
     @Override
+    @Transactional
     public Menu save(Menu menu) {
         MenuEntity entity = mapper.toEntity(menu);
         MenuEntity saved = repository.save(entity);
@@ -37,6 +40,7 @@ public class MenuRepositoryAdapter implements MenuRepository {
     }
 
     @Override
+    @Transactional
     public void deleteById(UUID id) {
         repository.deleteById(id);
     }
@@ -94,6 +98,22 @@ public class MenuRepositoryAdapter implements MenuRepository {
     }
 
     @Override
+    public Optional<Menu> findByCodigoIgnoreCase(String codigo) {
+        return repository
+                .findByCodigoIgnoreCase(codigo)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public List<Menu> findByActivoTrue() {
+        return repository
+                .findByActivoTrueOrderByOrdenAsc()
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public boolean existsById(UUID id) {
         return repository.existsById(id);
     }
@@ -113,3 +133,4 @@ public class MenuRepositoryAdapter implements MenuRepository {
         return repository.existsByMenuPadreId(menuPadreId);
     }
 }
+

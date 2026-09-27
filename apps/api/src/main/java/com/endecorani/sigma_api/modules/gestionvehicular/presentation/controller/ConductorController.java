@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.conduct
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.conductor.request.ConductorUpdate;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.conductor.response.ConductorResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.service.ConductorService;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoConductor;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
@@ -36,15 +37,16 @@ public class ConductorController {
     private final ConductorService service;
 
     @GetMapping
-    @Operation(summary = "Listar conductores con paginación y búsqueda opcional")
+    @Operation(summary = "Listar conductores con paginación y filtros opcionales")
     public ResponseEntity<ApiResponse<PageResponse<ConductorResponse>>> listar(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String categoria,
+            @RequestParam(required = false) EstadoConductor estado,
             @RequestParam(required = false) Boolean activo,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(search, categoria, activo, pageRequest))
+                ApiResponse.success(service.listar(search, categoria, estado, activo, pageRequest))
         );
     }
 
@@ -76,8 +78,8 @@ public class ConductorController {
     ) {
         ConductorResponse response = service.create(request);
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Conductor creado correctamente", response));
+            .status(HttpStatus.CREATED)
+            .body(ApiResponse.success("Conductor creado correctamente", response));
     }
 
     @PutMapping("/{id}")

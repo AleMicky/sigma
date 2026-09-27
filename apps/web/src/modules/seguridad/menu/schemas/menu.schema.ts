@@ -11,12 +11,23 @@ export const menuSchema = z.object({
     .trim()
     .min(2, "El nombre debe tener al menos 2 caracteres")
     .max(150, "El nombre no puede superar los 150 caracteres"),
+  tipo: z.enum(["MODULO", "AGRUPADOR", "ITEM"]),
   icono: z
     .string()
     .max(100, "El icono no puede superar los 100 caracteres"),
+  color: z
+    .string()
+    .max(50, "El color no puede superar los 50 caracteres"),
   ruta: z
     .string()
     .max(300, "La ruta no puede superar los 300 caracteres"),
+  badge: z
+    .string()
+    .max(50, "El badge no puede superar los 50 caracteres"),
+  descripcion: z
+    .string()
+    .max(300, "La descripción no puede superar los 300 caracteres"),
+  visibleEnMenu: z.boolean(),
   menuPadreId: z.string(),
   orden: z
     .string()
@@ -36,8 +47,13 @@ export type MenuFormValues = z.infer<typeof menuSchema>
 export const defaultMenuValues: MenuFormValues = {
   codigo: "",
   nombre: "",
+  tipo: "ITEM",
   icono: "",
+  color: "",
   ruta: "",
+  badge: "",
+  descripcion: "",
+  visibleEnMenu: true,
   menuPadreId: "__none__",
   orden: "1",
   activo: true,

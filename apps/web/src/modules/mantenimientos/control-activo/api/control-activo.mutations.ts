@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { getErrorMessage } from "@/shared/api"
+import { workflowKeys } from "@/modules/workflow/api/workflow.keys"
+import { solicitudKeys } from "../../solicitud/api/solicitud.keys"
 
 import { controlActivoKeys } from "./control-activo.keys"
 import {
@@ -28,6 +30,8 @@ export function useCreateControlActivo() {
     mutationFn: createControlActivo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: controlActivoKeys.all })
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
       toast.success("Control de activo registrado correctamente")
     },
     onError: (error) => {
@@ -55,6 +59,8 @@ export function useCreateControlActivoWithDetalles() {
       queryClient.invalidateQueries({
         queryKey: controlActivoKeys.detalles.all,
       })
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
       toast.success(
         `Acta de ${data.tipo === "ENTREGA" ? "Entrega" : "Devolución"} guardada exitosamente`,
       )
@@ -85,6 +91,8 @@ export function useUpdateControlActivo() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: controlActivoKeys.all })
       queryClient.invalidateQueries({ queryKey: controlActivoKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
       toast.success("Control de activo actualizado correctamente")
     },
     onError: (error) => {
@@ -114,6 +122,8 @@ export function useUpdateControlActivoWithDetalles() {
       queryClient.invalidateQueries({
         queryKey: controlActivoKeys.detalles.all,
       })
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
       toast.success(
         `Acta de ${data.tipo === "ENTREGA" ? "Entrega" : "Devolución"} actualizada exitosamente`,
       )
@@ -131,6 +141,8 @@ export function useDeleteControlActivo() {
     mutationFn: deleteControlActivo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: controlActivoKeys.all })
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
       toast.success("Control de activo eliminado correctamente")
     },
     onError: (error) => {

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { isApiError } from "@/shared/api"
+import { workflowKeys } from "@/modules/workflow/api/workflow.keys"
 
 import { solicitudVehicularKeys } from "./solicitud-vehicular.keys"
 import {
@@ -22,6 +23,7 @@ export function useCreateSolicitudVehicular() {
     onSuccess: () => {
       toast.success("Solicitud vehicular creada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error) => {
       toast.error(
@@ -47,6 +49,7 @@ export function useCreateSolicitudVehicularWithFiles() {
     onSuccess: () => {
       toast.success("Solicitud vehicular creada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error) => {
       toast.error(
@@ -72,6 +75,7 @@ export function useUpdateSolicitudVehicular() {
     onSuccess: () => {
       toast.success("Solicitud vehicular actualizada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error) => {
       toast.error(
@@ -91,6 +95,7 @@ export function useDeleteSolicitudVehicular() {
     onSuccess: () => {
       toast.success("Solicitud vehicular eliminada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error) => {
       toast.error(
@@ -119,6 +124,7 @@ export function useEnviarSolicitudVehicular() {
     onSuccess: () => {
       toast.success("Solicitud vehicular enviada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error) => {
       toast.error(
@@ -147,6 +153,7 @@ export function useCompletarWorkflowSolicitudVehicular() {
     onSuccess: () => {
       toast.success("Tarea de flujo completada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error) => {
       toast.error(
