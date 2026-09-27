@@ -8,4 +8,8 @@ export type ConductorListFilters = PageParams & {
   activo?: boolean
 }
 
-export const conductorKeys = createResourceKeys<"conductores", ConductorListFilters>("conductores")
+export const conductorKeys = {
+  ...createResourceKeys<"conductores", ConductorListFilters>("conductores"),
+  disponibles: (fechaSalida?: string | null, fechaRetorno?: string | null) =>
+    ["conductores", "disponibles", { fechaSalida, fechaRetorno }] as const,
+}

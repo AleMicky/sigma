@@ -12,6 +12,7 @@ import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.Pro
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.TaskResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ConductorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,7 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
     private final BpmnDefinitionParser bpmnDefinitionParser;
     private final EmpleadoRepository empleadoRepository;
     private final PersonaRepository personaRepository;
+    private final ConductorRepository conductorRepository;
 
     private final java.util.Map<String, String> bpmnCache = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -308,7 +310,22 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
             } else if (personaNamesMap.containsKey(uid)) {
                 result.put(key, personaNamesMap.get(uid));
             } else {
-                result.put(key, key);
+                conductorRepository.findById(uid).ifPresentOrElse(conductor -> {
+                    if (conductor.getEmpleadoId() != null) {
+                        empleadoRepository.findById(conductor.getEmpleadoId()).ifPresentOrElse(condEmp -> {
+                            String nombre = condEmp.getPersonaId() != null
+                                    ? personaRepository.findById(condEmp.getPersonaId()).map(com.endecorani.sigma_api.modules.organizacion.domain.model.Persona::getNombreCompleto).orElse(null)
+                                    : null;
+                            if (nombre != null) {
+                                result.put(key, nombre + (condEmp.getCodigo() != null ? " [" + condEmp.getCodigo() + "]" : " (Conductor)"));
+                            } else {
+                                result.put(key, "Conductor Lic. " + conductor.getNumeroLicencia());
+                            }
+                        }, () -> result.put(key, "Conductor Lic. " + conductor.getNumeroLicencia()));
+                    } else {
+                        result.put(key, "Conductor Lic. " + conductor.getNumeroLicencia());
+                    }
+                }, () -> result.put(key, key));
             }
         }
 

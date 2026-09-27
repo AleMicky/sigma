@@ -45,6 +45,13 @@ export const listConductores = (filters?: ConductorListFilters): Promise<PageRes
   return http.get<PageResponse<Conductor>>(conductorEndpoints.root, { params: filters })
 }
 
+export const listConductoresDisponibles = (params: {
+  fechaSalida: string
+  fechaRetorno: string
+}): Promise<Conductor[]> => {
+  return http.get<Conductor[]>(conductorEndpoints.disponibles, { params })
+}
+
 export const getConductor = crud.get
 export const createConductor = crud.create
 export const updateConductor = (id: string, payload: ConductorUpdatePayload): Promise<Conductor> => {

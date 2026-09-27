@@ -34,351 +34,412 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AsignacionVehicularService {
 
-    private static final Set<String> SORT_FIELDS = Set.of(
-            "id",
-            "solicitudVehicularId",
-            "activoId",
-            "conductorId",
-            "asignadoPorId",
-            "fechaAsignacion",
-            "createdAt",
-            "updatedAt"
-    );
+        private static final Set<String> SORT_FIELDS = Set.of(
+                        "id",
+                        "solicitudVehicularId",
+                        "activoId",
+                        "conductorId",
+                        "asignadoPorId",
+                        "fechaAsignacion",
+                        "createdAt",
+                        "updatedAt");
 
-    private final AsignacionVehicularRepository repository;
-    private final SolicitudVehicularRepository solicitudVehicularRepository;
-    private final SpringActivoRepository springActivoRepository;
-    private final ConductorRepository conductorRepository;
-    private final EmpleadoRepository empleadoRepository;
-    private final SpringVEmpleadoRepository springVEmpleadoRepository;
-    private final AsignacionVehicularMapper mapper;
+        private final AsignacionVehicularRepository repository;
+        private final SolicitudVehicularRepository solicitudVehicularRepository;
+        private final SpringActivoRepository springActivoRepository;
+        private final ConductorRepository conductorRepository;
+        private final EmpleadoRepository empleadoRepository;
+        private final SpringVEmpleadoRepository springVEmpleadoRepository;
+        private final AsignacionVehicularMapper mapper;
 
-    @Transactional(readOnly = true)
-    public PageResponse<AsignacionVehicularResponse> listar(String search, PageRequestDto pageRequest) {
-        return listar(search, null, null, null, null, pageRequest);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<AsignacionVehicularResponse> listar(
-            String search,
-            UUID solicitudVehicularId,
-            UUID activoId,
-            UUID conductorId,
-            UUID asignadoPorId,
-            PageRequestDto pageRequest
-    ) {
-        String normalizedSearch = StringUtils.normalize(search);
-        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
-        Page<AsignacionVehicular> resultado = repository.searchWithFilters(
-                normalizedSearch,
-                solicitudVehicularId,
-                activoId,
-                conductorId,
-                asignadoPorId,
-                pageable
-        );
-
-        return toPageResponse(resultado);
-    }
-
-    @Transactional(readOnly = true)
-    public AsignacionVehicularResponse findById(UUID id) {
-        AsignacionVehicular asignacion = obtenerPorId(id);
-        return toResponse(asignacion);
-    }
-
-    @Transactional(readOnly = true)
-    public List<AsignacionVehicularResponse> findBySolicitudVehicularId(UUID solicitudVehicularId) {
-        return repository.findBySolicitudVehicularId(solicitudVehicularId).stream()
-                .map(this::toResponse)
-                .toList();
-    }
-
-    @Transactional
-    public AsignacionVehicularResponse create(AsignacionVehicularRequest dto) {
-        validarDependenciasExisten(
-                dto.solicitudVehicularId(),
-                dto.activoId(),
-                dto.conductorId(),
-                dto.asignadoPorId()
-        );
-
-        LocalDateTime fecha = dto.fechaAsignacion() != null ? dto.fechaAsignacion() : LocalDateTime.now();
-
-        AsignacionVehicular domain = mapper.toDomain(dto);
-        domain.setFechaAsignacion(fecha);
-        domain.setObservacion(StringUtils.normalize(dto.observacion()));
-
-        AsignacionVehicular guardado = repository.save(domain);
-        return toResponse(guardado);
-    }
-
-    @Transactional
-    public AsignacionVehicularResponse update(UUID id, AsignacionVehicularUpdate dto) {
-        AsignacionVehicular actual = obtenerPorId(id);
-
-        validarDependenciasExisten(
-                dto.solicitudVehicularId(),
-                dto.activoId(),
-                dto.conductorId(),
-                dto.asignadoPorId()
-        );
-
-        mapper.updateDomain(dto, actual);
-        if (dto.fechaAsignacion() != null) {
-            actual.setFechaAsignacion(dto.fechaAsignacion());
-        }
-        actual.setObservacion(StringUtils.normalize(dto.observacion()));
-
-        AsignacionVehicular actualizado = repository.save(actual);
-        return toResponse(actualizado);
-    }
-
-    @Transactional
-    public AsignacionVehicularResponse update(UUID id, AsignacionVehicularRequest dto) {
-        AsignacionVehicular actual = obtenerPorId(id);
-
-        validarDependenciasExisten(
-                dto.solicitudVehicularId(),
-                dto.activoId(),
-                dto.conductorId(),
-                dto.asignadoPorId()
-        );
-
-        mapper.updateDomainFromRequest(dto, actual);
-        if (dto.fechaAsignacion() != null) {
-            actual.setFechaAsignacion(dto.fechaAsignacion());
-        }
-        actual.setObservacion(StringUtils.normalize(dto.observacion()));
-
-        AsignacionVehicular actualizado = repository.save(actual);
-        return toResponse(actualizado);
-    }
-
-    @Transactional
-    public void delete(UUID id) {
-        obtenerPorId(id);
-        repository.deleteById(id);
-    }
-
-    private PageResponse<AsignacionVehicularResponse> toPageResponse(Page<AsignacionVehicular> page) {
-        if (page.isEmpty()) {
-            return PageResponse.of(List.of(), page);
+        @Transactional(readOnly = true)
+        public PageResponse<AsignacionVehicularResponse> listar(String search, PageRequestDto pageRequest) {
+                return listar(search, null, null, null, null, pageRequest);
         }
 
-        List<AsignacionVehicular> content = page.getContent();
+        @Transactional(readOnly = true)
+        public PageResponse<AsignacionVehicularResponse> listar(
+                        String search,
+                        UUID solicitudVehicularId,
+                        UUID activoId,
+                        UUID conductorId,
+                        UUID asignadoPorId,
+                        PageRequestDto pageRequest) {
+                String normalizedSearch = StringUtils.normalize(search);
+                Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+                Page<AsignacionVehicular> resultado = repository.searchWithFilters(
+                                normalizedSearch,
+                                solicitudVehicularId,
+                                activoId,
+                                conductorId,
+                                asignadoPorId,
+                                pageable);
 
-        Set<UUID> solicitudIds = content.stream()
-                .map(AsignacionVehicular::getSolicitudVehicularId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Set<UUID> activoIds = content.stream()
-                .map(AsignacionVehicular::getActivoId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Set<UUID> conductorIds = content.stream()
-                .map(AsignacionVehicular::getConductorId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Set<UUID> asignadoPorIds = content.stream()
-                .map(AsignacionVehicular::getAsignadoPorId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Map<UUID, AsignacionVehicularSolicitudInfo> solicitudMap = new HashMap<>();
-        for (UUID sId : solicitudIds) {
-            solicitudVehicularRepository.findById(sId).ifPresent(s ->
-                    solicitudMap.put(sId, new AsignacionVehicularSolicitudInfo(
-                            s.getId(),
-                            s.getNumero(),
-                            s.getMotivo(),
-                            s.getDestino(),
-                            s.getFechaSalida(),
-                            s.getFechaRetornoEstimada(),
-                            s.getEstado()
-                    ))
-            );
+                return toPageResponse(resultado);
         }
 
-        Map<UUID, AsignacionVehicularActivoInfo> activoMap = activoIds.isEmpty()
-                ? Map.of()
-                : springActivoRepository.findAllById(activoIds).stream()
-                .collect(Collectors.toMap(
-                        ActivoEntity::getId,
-                        a -> new AsignacionVehicularActivoInfo(
-                                a.getId(),
-                                a.getCodigo(),
-                                a.getNombre(),
-                                null
-                        ),
-                        (a, b) -> a
-                ));
+        @Transactional(readOnly = true)
+        public AsignacionVehicularResponse findById(UUID id) {
+                AsignacionVehicular asignacion = obtenerPorId(id);
+                return toResponse(asignacion);
+        }
 
-        Map<UUID, Conductor> conductorMap = new HashMap<>();
-        Set<UUID> conductorEmpleadoIds = new HashSet<>();
-        for (UUID cId : conductorIds) {
-            conductorRepository.findById(cId).ifPresent(c -> {
-                conductorMap.put(cId, c);
-                if (c.getEmpleadoId() != null) {
-                    conductorEmpleadoIds.add(c.getEmpleadoId());
+        @Transactional(readOnly = true)
+        public List<AsignacionVehicularResponse> findBySolicitudVehicularId(UUID solicitudVehicularId) {
+                return repository.findBySolicitudVehicularId(solicitudVehicularId).stream()
+                                .map(this::toResponse)
+                                .toList();
+        }
+
+        @Transactional
+        public AsignacionVehicularResponse create(AsignacionVehicularRequest dto) {
+                validarDependenciasExisten(
+                                dto.solicitudVehicularId(),
+                                dto.activoId(),
+                                dto.conductorId(),
+                                dto.asignadoPorId());
+
+                LocalDateTime fecha = dto.fechaAsignacion() != null ? dto.fechaAsignacion() : LocalDateTime.now();
+
+                AsignacionVehicular domain = mapper.toDomain(dto);
+                domain.setFechaAsignacion(fecha);
+                domain.setObservacion(StringUtils.normalize(dto.observacion()));
+
+                AsignacionVehicular guardado = repository.save(domain);
+
+                if (dto.solicitudVehicularId() != null) {
+                        solicitudVehicularRepository.findById(dto.solicitudVehicularId()).ifPresent(solicitud -> {
+                                solicitud.setResponsableAsignacionId(dto.asignadoPorId());
+                                solicitud.setConductorAsignadoId(dto.conductorId());
+                                solicitudVehicularRepository.save(solicitud);
+                        });
                 }
-            });
+
+                return toResponse(guardado);
         }
 
-        Set<UUID> allEmpleadoIds = new HashSet<>(asignadoPorIds);
-        allEmpleadoIds.addAll(conductorEmpleadoIds);
+        @Transactional
+        public AsignacionVehicularResponse update(UUID id, AsignacionVehicularUpdate dto) {
+                AsignacionVehicular actual = obtenerPorId(id);
 
-        Map<UUID, VEmpleadoEntity> vempleadoMap = allEmpleadoIds.isEmpty()
-                ? Map.of()
-                : springVEmpleadoRepository.findAllById(allEmpleadoIds).stream()
-                .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, ve -> ve, (a, b) -> a));
+                validarDependenciasExisten(
+                                dto.solicitudVehicularId(),
+                                dto.activoId(),
+                                dto.conductorId(),
+                                dto.asignadoPorId());
 
-        List<AsignacionVehicularResponse> responses = content.stream()
-                .map(domain -> {
-                    AsignacionVehicularSolicitudInfo solInfo = domain.getSolicitudVehicularId() != null
-                            ? solicitudMap.get(domain.getSolicitudVehicularId()) : null;
+                if (actual.getSolicitudVehicularId() != null
+                                && dto.solicitudVehicularId() != null
+                                && !actual.getSolicitudVehicularId().equals(dto.solicitudVehicularId())) {
+                        solicitudVehicularRepository.findById(actual.getSolicitudVehicularId()).ifPresent(oldSol -> {
+                                oldSol.setResponsableAsignacionId(null);
+                                oldSol.setConductorAsignadoId(null);
+                                solicitudVehicularRepository.save(oldSol);
+                        });
+                }
 
-                    AsignacionVehicularActivoInfo actInfo = domain.getActivoId() != null
-                            ? activoMap.get(domain.getActivoId()) : null;
+                LocalDateTime fechaAnterior = actual.getFechaAsignacion();
+                mapper.updateDomain(dto, actual);
+                if (dto.fechaAsignacion() != null) {
+                        actual.setFechaAsignacion(dto.fechaAsignacion());
+                } else if (actual.getFechaAsignacion() == null) {
+                        actual.setFechaAsignacion(fechaAnterior != null ? fechaAnterior : LocalDateTime.now());
+                }
+                actual.setObservacion(StringUtils.normalize(dto.observacion()));
 
-                    Conductor cond = domain.getConductorId() != null ? conductorMap.get(domain.getConductorId()) : null;
-                    AsignacionVehicularConductorInfo condInfo = null;
-                    if (cond != null) {
-                        VEmpleadoEntity ve = cond.getEmpleadoId() != null ? vempleadoMap.get(cond.getEmpleadoId()) : null;
-                        condInfo = new AsignacionVehicularConductorInfo(
-                                cond.getId(),
-                                cond.getEmpleadoId(),
-                                ve != null ? ve.getNombreCompleto() : null,
-                                cond.getNumeroLicencia(),
-                                cond.getCategoriaLicencia()
-                        );
-                    }
+                AsignacionVehicular actualizado = repository.save(actual);
 
-                    VEmpleadoEntity asigVe = domain.getAsignadoPorId() != null ? vempleadoMap.get(domain.getAsignadoPorId()) : null;
-                    AsignacionVehicularEmpleadoInfo asigInfo = asigVe != null
-                            ? new AsignacionVehicularEmpleadoInfo(
-                            asigVe.getEmpleadoId(),
-                            asigVe.getCodigo(),
-                            asigVe.getNombreCompleto(),
-                            asigVe.getCargo(),
-                            asigVe.getArea()
-                    ) : null;
+                if (dto.solicitudVehicularId() != null) {
+                        solicitudVehicularRepository.findById(dto.solicitudVehicularId()).ifPresent(solicitud -> {
+                                solicitud.setResponsableAsignacionId(dto.asignadoPorId());
+                                solicitud.setConductorAsignadoId(dto.conductorId());
+                                solicitudVehicularRepository.save(solicitud);
+                        });
+                }
 
-                    return mapper.toResponse(domain, solInfo, actInfo, condInfo, asigInfo);
-                })
-                .toList();
-
-        return PageResponse.of(responses, page);
-    }
-
-    private AsignacionVehicularResponse toResponse(AsignacionVehicular domain) {
-        AsignacionVehicularSolicitudInfo solInfo = domain.getSolicitudVehicularId() != null
-                ? obtenerSolicitudInfo(domain.getSolicitudVehicularId()) : null;
-
-        AsignacionVehicularActivoInfo actInfo = domain.getActivoId() != null
-                ? obtenerActivoInfo(domain.getActivoId()) : null;
-
-        AsignacionVehicularConductorInfo condInfo = domain.getConductorId() != null
-                ? obtenerConductorInfo(domain.getConductorId()) : null;
-
-        AsignacionVehicularEmpleadoInfo asigInfo = domain.getAsignadoPorId() != null
-                ? obtenerEmpleadoInfo(domain.getAsignadoPorId()) : null;
-
-        return mapper.toResponse(domain, solInfo, actInfo, condInfo, asigInfo);
-    }
-
-    private AsignacionVehicularSolicitudInfo obtenerSolicitudInfo(UUID solicitudId) {
-        return solicitudVehicularRepository.findById(solicitudId)
-                .map(s -> new AsignacionVehicularSolicitudInfo(
-                        s.getId(),
-                        s.getNumero(),
-                        s.getMotivo(),
-                        s.getDestino(),
-                        s.getFechaSalida(),
-                        s.getFechaRetornoEstimada(),
-                        s.getEstado()
-                ))
-                .orElse(null);
-    }
-
-    private AsignacionVehicularActivoInfo obtenerActivoInfo(UUID activoId) {
-        return springActivoRepository.findById(activoId)
-                .map(a -> new AsignacionVehicularActivoInfo(
-                        a.getId(),
-                        a.getCodigo(),
-                        a.getNombre(),
-                        null
-                ))
-                .orElse(null);
-    }
-
-    private AsignacionVehicularConductorInfo obtenerConductorInfo(UUID conductorId) {
-        return conductorRepository.findById(conductorId)
-                .map(c -> {
-                    String nombre = null;
-                    if (c.getEmpleadoId() != null) {
-                        nombre = springVEmpleadoRepository.findById(c.getEmpleadoId())
-                                .map(VEmpleadoEntity::getNombreCompleto)
-                                .orElseGet(() -> empleadoRepository.findById(c.getEmpleadoId())
-                                        .map(Empleado::getNombreCompleto)
-                                        .orElse(null));
-                    }
-                    return new AsignacionVehicularConductorInfo(
-                            c.getId(),
-                            c.getEmpleadoId(),
-                            nombre,
-                            c.getNumeroLicencia(),
-                            c.getCategoriaLicencia()
-                    );
-                })
-                .orElse(null);
-    }
-
-    private AsignacionVehicularEmpleadoInfo obtenerEmpleadoInfo(UUID empleadoId) {
-        return springVEmpleadoRepository.findById(empleadoId)
-                .map(ve -> new AsignacionVehicularEmpleadoInfo(
-                        ve.getEmpleadoId(),
-                        ve.getCodigo(),
-                        ve.getNombreCompleto(),
-                        ve.getCargo(),
-                        ve.getArea()
-                ))
-                .orElseGet(() -> empleadoRepository.findById(empleadoId)
-                        .map(emp -> new AsignacionVehicularEmpleadoInfo(
-                                emp.getId(),
-                                emp.getCodigo(),
-                                emp.getNombreCompleto(),
-                                emp.getCargo(),
-                                emp.getArea()
-                        ))
-                        .orElse(null));
-    }
-
-    private AsignacionVehicular obtenerPorId(UUID id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Asignación vehicular", id));
-    }
-
-    private void validarDependenciasExisten(
-            UUID solicitudVehicularId,
-            UUID activoId,
-            UUID conductorId,
-            UUID asignadoPorId
-    ) {
-        if (solicitudVehicularId != null && solicitudVehicularRepository.findById(solicitudVehicularId).isEmpty()) {
-            throw new ResourceNotFoundException("Solicitud vehicular", solicitudVehicularId);
+                return toResponse(actualizado);
         }
-        if (activoId != null && springActivoRepository.findById(activoId).isEmpty()) {
-            throw new ResourceNotFoundException("Activo (Vehículo)", activoId);
+
+        @Transactional
+        public AsignacionVehicularResponse update(UUID id, AsignacionVehicularRequest dto) {
+                AsignacionVehicular actual = obtenerPorId(id);
+
+                validarDependenciasExisten(
+                                dto.solicitudVehicularId(),
+                                dto.activoId(),
+                                dto.conductorId(),
+                                dto.asignadoPorId());
+
+                if (actual.getSolicitudVehicularId() != null
+                                && dto.solicitudVehicularId() != null
+                                && !actual.getSolicitudVehicularId().equals(dto.solicitudVehicularId())) {
+                        solicitudVehicularRepository.findById(actual.getSolicitudVehicularId()).ifPresent(oldSol -> {
+                                oldSol.setResponsableAsignacionId(null);
+                                oldSol.setConductorAsignadoId(null);
+                                solicitudVehicularRepository.save(oldSol);
+                        });
+                }
+
+                LocalDateTime fechaAnterior = actual.getFechaAsignacion();
+                mapper.updateDomainFromRequest(dto, actual);
+                if (dto.fechaAsignacion() != null) {
+                        actual.setFechaAsignacion(dto.fechaAsignacion());
+                } else if (actual.getFechaAsignacion() == null) {
+                        actual.setFechaAsignacion(fechaAnterior != null ? fechaAnterior : LocalDateTime.now());
+                }
+                actual.setObservacion(StringUtils.normalize(dto.observacion()));
+
+                AsignacionVehicular actualizado = repository.save(actual);
+
+                if (dto.solicitudVehicularId() != null) {
+                        solicitudVehicularRepository.findById(dto.solicitudVehicularId()).ifPresent(solicitud -> {
+                                solicitud.setResponsableAsignacionId(dto.asignadoPorId());
+                                solicitud.setConductorAsignadoId(dto.conductorId());
+                                solicitudVehicularRepository.save(solicitud);
+                        });
+                }
+
+                return toResponse(actualizado);
         }
-        if (conductorId != null && conductorRepository.findById(conductorId).isEmpty()) {
-            throw new ResourceNotFoundException("Conductor", conductorId);
+
+        @Transactional
+        public void delete(UUID id) {
+                AsignacionVehicular actual = obtenerPorId(id);
+                if (actual.getSolicitudVehicularId() != null) {
+                        solicitudVehicularRepository.findById(actual.getSolicitudVehicularId()).ifPresent(solicitud -> {
+                                solicitud.setResponsableAsignacionId(null);
+                                solicitud.setConductorAsignadoId(null);
+                                solicitudVehicularRepository.save(solicitud);
+                        });
+                }
+                repository.deleteById(id);
         }
-        if (asignadoPorId != null && empleadoRepository.findById(asignadoPorId).isEmpty() && springVEmpleadoRepository.findById(asignadoPorId).isEmpty()) {
-            throw new ResourceNotFoundException("Empleado asignador", asignadoPorId);
+
+        private PageResponse<AsignacionVehicularResponse> toPageResponse(Page<AsignacionVehicular> page) {
+                if (page.isEmpty()) {
+                        return PageResponse.of(List.of(), page);
+                }
+
+                List<AsignacionVehicular> content = page.getContent();
+
+                Set<UUID> solicitudIds = content.stream()
+                                .map(AsignacionVehicular::getSolicitudVehicularId)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet());
+
+                Set<UUID> activoIds = content.stream()
+                                .map(AsignacionVehicular::getActivoId)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet());
+
+                Set<UUID> conductorIds = content.stream()
+                                .map(AsignacionVehicular::getConductorId)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet());
+
+                Set<UUID> asignadoPorIds = content.stream()
+                                .map(AsignacionVehicular::getAsignadoPorId)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet());
+
+                Map<UUID, AsignacionVehicularSolicitudInfo> solicitudMap = new HashMap<>();
+                for (UUID sId : solicitudIds) {
+                        solicitudVehicularRepository.findById(sId)
+                                        .ifPresent(s -> solicitudMap.put(sId, new AsignacionVehicularSolicitudInfo(
+                                                        s.getId(),
+                                                        s.getNumero(),
+                                                        s.getMotivo(),
+                                                        s.getDestino(),
+                                                        s.getFechaSalida(),
+                                                        s.getFechaRetornoEstimada(),
+                                                        s.getEstado())));
+                }
+
+                Map<UUID, AsignacionVehicularActivoInfo> activoMap = activoIds.isEmpty()
+                                ? Map.of()
+                                : springActivoRepository.findAllById(activoIds).stream()
+                                                .collect(Collectors.toMap(
+                                                                ActivoEntity::getId,
+                                                                a -> new AsignacionVehicularActivoInfo(
+                                                                                a.getId(),
+                                                                                a.getCodigo(),
+                                                                                a.getNombre(),
+                                                                                null),
+                                                                (a, b) -> a));
+
+                Map<UUID, Conductor> conductorMap = new HashMap<>();
+                Set<UUID> conductorEmpleadoIds = new HashSet<>();
+                for (UUID cId : conductorIds) {
+                        conductorRepository.findById(cId).ifPresent(c -> {
+                                conductorMap.put(cId, c);
+                                if (c.getEmpleadoId() != null) {
+                                        conductorEmpleadoIds.add(c.getEmpleadoId());
+                                }
+                        });
+                }
+
+                Set<UUID> allEmpleadoIds = new HashSet<>(asignadoPorIds);
+                allEmpleadoIds.addAll(conductorEmpleadoIds);
+
+                Map<UUID, VEmpleadoEntity> vempleadoMap = allEmpleadoIds.isEmpty()
+                                ? Map.of()
+                                : springVEmpleadoRepository.findAllById(allEmpleadoIds).stream()
+                                                .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, ve -> ve,
+                                                                (a, b) -> a));
+
+                List<AsignacionVehicularResponse> responses = content.stream()
+                                .map(domain -> {
+                                        AsignacionVehicularSolicitudInfo solInfo = domain
+                                                        .getSolicitudVehicularId() != null
+                                                                        ? solicitudMap.get(domain
+                                                                                        .getSolicitudVehicularId())
+                                                                        : null;
+
+                                        AsignacionVehicularActivoInfo actInfo = domain.getActivoId() != null
+                                                        ? activoMap.get(domain.getActivoId())
+                                                        : null;
+
+                                        Conductor cond = domain.getConductorId() != null
+                                                        ? conductorMap.get(domain.getConductorId())
+                                                        : null;
+                                        AsignacionVehicularConductorInfo condInfo = null;
+                                        if (cond != null) {
+                                                VEmpleadoEntity ve = cond.getEmpleadoId() != null
+                                                                ? vempleadoMap.get(cond.getEmpleadoId())
+                                                                : null;
+                                                condInfo = new AsignacionVehicularConductorInfo(
+                                                                cond.getId(),
+                                                                cond.getEmpleadoId(),
+                                                                ve != null ? ve.getNombreCompleto() : null,
+                                                                cond.getNumeroLicencia(),
+                                                                cond.getCategoriaLicencia());
+                                        }
+
+                                        VEmpleadoEntity asigVe = domain.getAsignadoPorId() != null
+                                                        ? vempleadoMap.get(domain.getAsignadoPorId())
+                                                        : null;
+                                        AsignacionVehicularEmpleadoInfo asigInfo = asigVe != null
+                                                        ? new AsignacionVehicularEmpleadoInfo(
+                                                                        asigVe.getEmpleadoId(),
+                                                                        asigVe.getCodigo(),
+                                                                        asigVe.getNombreCompleto(),
+                                                                        asigVe.getCargo(),
+                                                                        asigVe.getArea())
+                                                        : null;
+
+                                        return mapper.toResponse(domain, solInfo, actInfo, condInfo, asigInfo);
+                                })
+                                .toList();
+
+                return PageResponse.of(responses, page);
         }
-    }
+
+        private AsignacionVehicularResponse toResponse(AsignacionVehicular domain) {
+                AsignacionVehicularSolicitudInfo solInfo = domain.getSolicitudVehicularId() != null
+                                ? obtenerSolicitudInfo(domain.getSolicitudVehicularId())
+                                : null;
+
+                AsignacionVehicularActivoInfo actInfo = domain.getActivoId() != null
+                                ? obtenerActivoInfo(domain.getActivoId())
+                                : null;
+
+                AsignacionVehicularConductorInfo condInfo = domain.getConductorId() != null
+                                ? obtenerConductorInfo(domain.getConductorId())
+                                : null;
+
+                AsignacionVehicularEmpleadoInfo asigInfo = domain.getAsignadoPorId() != null
+                                ? obtenerEmpleadoInfo(domain.getAsignadoPorId())
+                                : null;
+
+                return mapper.toResponse(domain, solInfo, actInfo, condInfo, asigInfo);
+        }
+
+        private AsignacionVehicularSolicitudInfo obtenerSolicitudInfo(UUID solicitudId) {
+                return solicitudVehicularRepository.findById(solicitudId)
+                                .map(s -> new AsignacionVehicularSolicitudInfo(
+                                                s.getId(),
+                                                s.getNumero(),
+                                                s.getMotivo(),
+                                                s.getDestino(),
+                                                s.getFechaSalida(),
+                                                s.getFechaRetornoEstimada(),
+                                                s.getEstado()))
+                                .orElse(null);
+        }
+
+        private AsignacionVehicularActivoInfo obtenerActivoInfo(UUID activoId) {
+                return springActivoRepository.findById(activoId)
+                                .map(a -> new AsignacionVehicularActivoInfo(
+                                                a.getId(),
+                                                a.getCodigo(),
+                                                a.getNombre(),
+                                                null))
+                                .orElse(null);
+        }
+
+        private AsignacionVehicularConductorInfo obtenerConductorInfo(UUID conductorId) {
+                return conductorRepository.findById(conductorId)
+                                .map(c -> {
+                                        String nombre = null;
+                                        if (c.getEmpleadoId() != null) {
+                                                nombre = springVEmpleadoRepository.findById(c.getEmpleadoId())
+                                                                .map(VEmpleadoEntity::getNombreCompleto)
+                                                                .orElseGet(() -> empleadoRepository
+                                                                                .findById(c.getEmpleadoId())
+                                                                                .map(Empleado::getNombreCompleto)
+                                                                                .orElse(null));
+                                        }
+                                        return new AsignacionVehicularConductorInfo(
+                                                        c.getId(),
+                                                        c.getEmpleadoId(),
+                                                        nombre,
+                                                        c.getNumeroLicencia(),
+                                                        c.getCategoriaLicencia());
+                                })
+                                .orElse(null);
+        }
+
+        private AsignacionVehicularEmpleadoInfo obtenerEmpleadoInfo(UUID empleadoId) {
+                return springVEmpleadoRepository.findById(empleadoId)
+                                .map(ve -> new AsignacionVehicularEmpleadoInfo(
+                                                ve.getEmpleadoId(),
+                                                ve.getCodigo(),
+                                                ve.getNombreCompleto(),
+                                                ve.getCargo(),
+                                                ve.getArea()))
+                                .orElseGet(() -> empleadoRepository.findById(empleadoId)
+                                                .map(emp -> new AsignacionVehicularEmpleadoInfo(
+                                                                emp.getId(),
+                                                                emp.getCodigo(),
+                                                                emp.getNombreCompleto(),
+                                                                emp.getCargo(),
+                                                                emp.getArea()))
+                                                .orElse(null));
+        }
+
+        private AsignacionVehicular obtenerPorId(UUID id) {
+                return repository.findById(id)
+                                .orElseThrow(() -> new ResourceNotFoundException("Asignación vehicular", id));
+        }
+
+        private void validarDependenciasExisten(
+                        UUID solicitudVehicularId,
+                        UUID activoId,
+                        UUID conductorId,
+                        UUID asignadoPorId) {
+                if (solicitudVehicularId != null
+                                && solicitudVehicularRepository.findById(solicitudVehicularId).isEmpty()) {
+                        throw new ResourceNotFoundException("Solicitud vehicular", solicitudVehicularId);
+                }
+                if (activoId != null && springActivoRepository.findById(activoId).isEmpty()) {
+                        throw new ResourceNotFoundException("Activo (Vehículo)", activoId);
+                }
+                if (conductorId != null && conductorRepository.findById(conductorId).isEmpty()) {
+                        throw new ResourceNotFoundException("Conductor", conductorId);
+                }
+                if (asignadoPorId != null && empleadoRepository.findById(asignadoPorId).isEmpty()
+                                && springVEmpleadoRepository.findById(asignadoPorId).isEmpty()) {
+                        throw new ResourceNotFoundException("Empleado asignador", asignadoPorId);
+                }
+        }
 }

@@ -6,6 +6,7 @@ export type SolicitudVehicularListFilters = PageParams & {
   estado?: string
   tipoSolicitudVehicularId?: string
   solicitanteId?: string
+  conductorAsignadoId?: string
 }
 
 export const solicitudVehicularKeys = createResourceKeys<

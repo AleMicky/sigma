@@ -1,7 +1,9 @@
 import {
   Calendar,
+  ClipboardCheck,
   Clock,
   Eye,
+  KeyRound,
   MapPin,
   Paperclip,
   Pencil,
@@ -28,6 +30,8 @@ export type SolicitudVehicularListItemProps = {
   onSelect?: (solicitud: SolicitudVehicular) => void
   onEdit?: (solicitud: SolicitudVehicular) => void
   onDelete?: (solicitud: SolicitudVehicular) => void
+  onAssign?: (solicitud: SolicitudVehicular) => void
+  onControlActivo?: (solicitud: SolicitudVehicular) => void
   onTraceability?: (solicitud: SolicitudVehicular) => void
   onActionSelect?: (
     solicitud: SolicitudVehicular,
@@ -46,6 +50,8 @@ export function SolicitudVehicularListItem({
   onSelect,
   onEdit,
   onDelete,
+  onAssign,
+  onControlActivo,
   onTraceability,
   onActionSelect,
   onlyWorkflowActionsOnBorrador = false,
@@ -166,6 +172,40 @@ export function SolicitudVehicularListItem({
       }
       extraActions={
         <>
+          {onAssign && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onAssign(solicitud)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 shadow-2xs cursor-pointer transition-all"
+              title="Gestionar asignación de vehículo y conductor"
+            >
+              <KeyRound className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>Asignar</span>
+            </Button>
+          )}
+
+          {onControlActivo && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onControlActivo(solicitud)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-2xs cursor-pointer transition-all"
+              title="Inspección y control de accesorios del vehículo"
+            >
+              <ClipboardCheck className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>Control Activo</span>
+            </Button>
+          )}
+
           {handleViewDetail && (
             <Button
               type="button"

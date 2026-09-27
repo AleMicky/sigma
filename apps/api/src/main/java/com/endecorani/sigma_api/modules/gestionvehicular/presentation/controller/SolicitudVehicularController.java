@@ -42,10 +42,11 @@ public class SolicitudVehicularController {
             @RequestParam(required = false) String estado,
             @RequestParam(required = false) UUID tipoSolicitudVehicularId,
             @RequestParam(required = false) UUID solicitanteId,
+            @RequestParam(required = false) UUID conductorAsignadoId,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(search, estado, tipoSolicitudVehicularId, solicitanteId, pageRequest))
+                ApiResponse.success(service.listar(search, estado, tipoSolicitudVehicularId, solicitanteId, conductorAsignadoId, pageRequest))
         );
     }
 

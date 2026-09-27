@@ -78,7 +78,7 @@ public class SolicitudVehicularService {
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudVehicularResponse> listar(String search, PageRequestDto pageRequest) {
-        return listar(search, null, null, null, pageRequest);
+        return listar(search, null, null, null, null, pageRequest);
     }
 
     @Transactional(readOnly = true)
@@ -87,6 +87,7 @@ public class SolicitudVehicularService {
             String estado,
             UUID tipoSolicitudVehicularId,
             UUID solicitanteId,
+            UUID conductorAsignadoId,
             PageRequestDto pageRequest
     ) {
         String normalizedSearch = StringUtils.normalize(search);
@@ -97,7 +98,8 @@ public class SolicitudVehicularService {
         if ((normalizedSearch == null || normalizedSearch.isBlank()) &&
                 (normalizedEstado == null || normalizedEstado.isBlank()) &&
                 tipoSolicitudVehicularId == null &&
-                solicitanteId == null) {
+                solicitanteId == null &&
+                conductorAsignadoId == null) {
             resultado = repository.findAll(pageable);
         } else {
             resultado = repository.searchWithFilters(
@@ -105,6 +107,7 @@ public class SolicitudVehicularService {
                     normalizedEstado,
                     tipoSolicitudVehicularId,
                     solicitanteId,
+                    conductorAsignadoId,
                     pageable
             );
         }
@@ -248,6 +251,13 @@ public class SolicitudVehicularService {
         Map<String, Object> effectiveVariables = new HashMap<>();
         if (request != null && request.variables() != null) {
             effectiveVariables.putAll(request.variables());
+        }
+
+        if (!effectiveVariables.containsKey("conductorAsignadoId") && solicitud.getConductorAsignadoId() != null) {
+            effectiveVariables.put("conductorAsignadoId", solicitud.getConductorAsignadoId().toString());
+        }
+        if (!effectiveVariables.containsKey("responsableAsignacionId") && solicitud.getResponsableAsignacionId() != null) {
+            effectiveVariables.put("responsableAsignacionId", solicitud.getResponsableAsignacionId().toString());
         }
 
         if (effectiveVariables.containsKey("responsableAsignacionId") && !effectiveVariables.containsKey("aprobadorId")) {

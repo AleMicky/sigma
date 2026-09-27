@@ -4,6 +4,8 @@ import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.Conductor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,6 +16,8 @@ public interface ConductorRepository {
     Page<Conductor> search(String search, Pageable pageable);
 
     Page<Conductor> searchWithFilters(String search, String categoria, Boolean activo, Pageable pageable);
+
+    List<Conductor> findDisponibles(LocalDateTime fechaSalida, LocalDateTime fechaRetorno);
 
     Optional<Conductor> findById(UUID id);
 

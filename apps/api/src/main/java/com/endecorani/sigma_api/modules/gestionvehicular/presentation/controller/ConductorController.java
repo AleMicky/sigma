@@ -14,10 +14,13 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -42,6 +45,17 @@ public class ConductorController {
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(service.listar(search, categoria, activo, pageRequest))
+        );
+    }
+
+    @GetMapping("/disponibles")
+    @Operation(summary = "Listar conductores disponibles para un rango de fechas de solicitud")
+    public ResponseEntity<ApiResponse<List<ConductorResponse>>> findDisponibles(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaSalida,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaRetorno
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findDisponibles(fechaSalida, fechaRetorno))
         );
     }
 
