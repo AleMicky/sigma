@@ -14,7 +14,6 @@ import { Button } from "@/shared/components/ui/button"
 import {
   WorkflowActionDialog,
   WorkflowHistoryDialog,
-  WorkflowListView,
   useWorkflowActionTarget,
   type WorkflowAction,
   type WorkflowField,
@@ -329,28 +328,26 @@ export function SolicitudesVehicularesPage() {
             />
           </div>
         ) : (
-          <div className="space-y-2.5">
-            {/* Contenedor de items con WorkflowListView */}
+          <div className="space-y-3">
+            {/* Contenedor de items con separación estética */}
             <div
               className={cn(
-                "transition-opacity duration-200",
+                "flex flex-col gap-3 sm:gap-3.5 transition-opacity duration-200",
                 query.isFetching && !query.isLoading && "opacity-75"
               )}
             >
-              <WorkflowListView>
-                {solicitudes.map((solicitud) => (
-                  <SolicitudVehicularListItem
-                    key={solicitud.id}
-                    solicitud={solicitud}
-                    onlyWorkflowActionsOnBorrador={true}
-                    onViewDetail={(sol) => setSelectedDetailId(sol.id)}
-                    onEdit={handleEdit}
-                    onDelete={setDeletingItem}
-                    onActionSelect={handleActionSelect}
-                    onTraceability={setHistoryItem}
-                  />
-                ))}
-              </WorkflowListView>
+              {solicitudes.map((solicitud) => (
+                <SolicitudVehicularListItem
+                  key={solicitud.id}
+                  solicitud={solicitud}
+                  onlyWorkflowActionsOnBorrador={true}
+                  onViewDetail={(sol) => setSelectedDetailId(sol.id)}
+                  onEdit={handleEdit}
+                  onDelete={setDeletingItem}
+                  onActionSelect={handleActionSelect}
+                  onTraceability={setHistoryItem}
+                />
+              ))}
             </div>
 
             {/* Paginación: cuando hay más de una página */}

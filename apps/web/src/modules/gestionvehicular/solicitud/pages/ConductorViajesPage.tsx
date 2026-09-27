@@ -11,7 +11,6 @@ import { Button } from "@/shared/components/ui/button"
 import {
   WorkflowActionDialog,
   WorkflowHistoryDialog,
-  WorkflowListView,
   useWorkflowActionTarget,
   type WorkflowAction,
   type WorkflowField,
@@ -278,26 +277,25 @@ export function ConductorViajesPage() {
             />
           </div>
         ) : (
-          <div className="space-y-2 sm:space-y-2.5">
+          <div className="space-y-3">
             <div
               className={cn(
-                query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200"
+                "flex flex-col gap-3 sm:gap-3.5 transition-opacity duration-200",
+                query.isFetching && !query.isLoading && "opacity-75"
               )}
             >
-              <WorkflowListView>
-                {solicitudes.map((solicitud) => (
-                  <ConductorViajeListItem
-                    key={solicitud.id}
-                    solicitud={solicitud}
-                    onViewDetail={(sol) => setSelectedDetailId(sol.id)}
-                    onSelect={(sol) => setSelectedDetailId(sol.id)}
-                    onAssign={setAssignItem}
-                    onControlActivo={setControlActivoItem}
-                    onActionSelect={handleActionSelect}
-                    onTraceability={setTraceabilityItem}
-                  />
-                ))}
-              </WorkflowListView>
+              {solicitudes.map((solicitud) => (
+                <ConductorViajeListItem
+                  key={solicitud.id}
+                  solicitud={solicitud}
+                  onViewDetail={(sol) => setSelectedDetailId(sol.id)}
+                  onSelect={(sol) => setSelectedDetailId(sol.id)}
+                  onAssign={setAssignItem}
+                  onControlActivo={setControlActivoItem}
+                  onActionSelect={handleActionSelect}
+                  onTraceability={setTraceabilityItem}
+                />
+              ))}
             </div>
 
             {/* Paginación */}

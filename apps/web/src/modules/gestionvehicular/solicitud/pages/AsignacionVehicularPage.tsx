@@ -11,7 +11,6 @@ import { Button } from "@/shared/components/ui/button"
 import {
   WorkflowActionDialog,
   WorkflowHistoryDialog,
-  WorkflowListView,
   useWorkflowActionTarget,
   type WorkflowAction,
   type WorkflowField,
@@ -275,34 +274,35 @@ export function AsignacionVehicularPage() {
             />
           </div>
         ) : (
-          <div className="space-y-2 sm:space-y-2.5">
+          <div className="space-y-3">
             <div
               className={cn(
-                query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200"
+                "flex flex-col gap-3 sm:gap-3.5 transition-opacity duration-200",
+                query.isFetching && !query.isLoading && "opacity-75"
               )}
             >
-              <WorkflowListView>
-                {solicitudes.map((solicitud) => {
-                  const estadoNorm = (solicitud.estado ?? "").trim().toUpperCase()
-                  const canShowWorkflow =
-                    estadoNorm === "SOLICITADO" ||
-                    estadoNorm === "PENDIENTE" ||
-                    estadoNorm === "OBSERVADO"
+              {solicitudes.map((solicitud) => {
+                const estadoNorm = (solicitud.estado ?? "").trim().toUpperCase()
+                const canShowWorkflow =
+                  estadoNorm === "SOLICITADO" ||
+                  estadoNorm === "PENDIENTE" ||
+                  estadoNorm === "OBSERVADO" ||
+                  estadoNorm === "APROBADO" ||
+                  estadoNorm === "APROBADA"
 
-                  return (
-                    <SolicitudVehicularListItem
-                      key={solicitud.id}
-                      solicitud={solicitud}
-                      showWorkflowActions={canShowWorkflow}
-                      onViewDetail={(sol) => setSelectedDetailId(sol.id)}
-                      onSelect={(sol) => setSelectedDetailId(sol.id)}
-                      onAssign={setAssignItem}
-                      onActionSelect={handleActionSelect}
-                      onTraceability={setTraceabilityItem}
-                    />
-                  )
-                })}
-              </WorkflowListView>
+                return (
+                  <SolicitudVehicularListItem
+                    key={solicitud.id}
+                    solicitud={solicitud}
+                    showWorkflowActions={canShowWorkflow}
+                    onViewDetail={(sol) => setSelectedDetailId(sol.id)}
+                    onSelect={(sol) => setSelectedDetailId(sol.id)}
+                    onAssign={setAssignItem}
+                    onActionSelect={handleActionSelect}
+                    onTraceability={setTraceabilityItem}
+                  />
+                )
+              })}
             </div>
 
             {query.data && query.data.totalPages > 1 && (
