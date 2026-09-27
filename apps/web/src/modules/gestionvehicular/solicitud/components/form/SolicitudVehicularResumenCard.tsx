@@ -1,9 +1,9 @@
 import {
   CheckCircle2,
+  ClipboardList,
   Clock,
   FileCheck,
   MapPin,
-  Sparkles,
   Users,
 } from "lucide-react"
 
@@ -62,38 +62,34 @@ export function SolicitudVehicularResumenCard() {
     >
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {(values: any) => {
-        const isFormStarted = Boolean(
-          values.destino?.trim() ||
-          values.motivo?.trim() ||
-          values.tipoSolicitudVehicularId ||
-          values.solicitanteId
+        const selectedTipo = tiposMap.get(values.tipoSolicitudVehicularId)
+        const isJustificacionRequired = Boolean(selectedTipo?.requiereJustificacion)
+
+        // Solo mostrar la ficha resumen cuando todos los campos requeridos estén completados
+        const isComplete = Boolean(
+          values.solicitanteId &&
+          values.tipoSolicitudVehicularId &&
+          values.destino?.trim() &&
+          values.motivo?.trim() &&
+          values.fechaSalida &&
+          values.fechaRetornoEstimada &&
+          (!isJustificacionRequired || values.justificacion?.trim())
         )
 
-        if (!isFormStarted) return null
+        if (!isComplete) return null
 
-        const selectedTipo = tiposMap.get(values.tipoSolicitudVehicularId)
         const selectedEmpleado = empleadosMap.get(values.solicitanteId)
         const totalAdjuntos = selectedFiles.length + existingAdjuntos.length
         const durationText = calculateDuration(values.fechaSalida, values.fechaRetornoEstimada)
 
-        // Contar campos requeridos completados
-        const requiredFilledCount = [
-          Boolean(values.solicitanteId),
-          Boolean(values.tipoSolicitudVehicularId),
-          Boolean(values.destino?.trim()),
-          Boolean(values.fechaSalida),
-          Boolean(values.fechaRetornoEstimada),
-          Boolean(values.motivo?.trim()),
-        ].filter(Boolean).length
-
         return (
           <div className="p-3 sm:p-3.5 pt-1 space-y-1.5 animate-in fade-in-50 duration-200">
-            <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/[0.04] via-card to-background p-2.5 sm:p-3 transition-all shadow-2xs space-y-2">
+            <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/[0.04] via-card to-background p-2.5 sm:p-3 transition-colors shadow-2xs space-y-2">
               {/* Header de Resumen */}
               <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5 flex-wrap">
                 <div className="flex items-center gap-1.5">
                   <div className="flex size-5 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-2xs">
-                    <Sparkles className="size-3" />
+                    <ClipboardList className="size-3" />
                   </div>
                   <h3 className="font-bold text-xs tracking-tight text-foreground">
                     Ficha Resumen
@@ -103,7 +99,7 @@ export function SolicitudVehicularResumenCard() {
                 <div className="flex items-center gap-2">
                   <span className="text-[10.5px] font-medium text-muted-foreground flex items-center gap-1">
                     <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
-                    <span>{requiredFilledCount}/6 campos clave</span>
+                    <span>Datos requeridos completos</span>
                   </span>
                   {selectedTipo && (
                     <Badge variant="outline" className="text-[9.5px] font-semibold px-1.5 py-0 bg-primary/10 text-primary border-primary/30">

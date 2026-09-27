@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  CalendarClock,
   FileIcon,
   FileText,
   MapPin,
@@ -147,17 +148,49 @@ export function SolicitudVehicularItinerarioSection() {
         </form.Field>
       </div>
 
-      {/* 2. FILA: FECHAS DE SALIDA Y RETORNO */}
+      {/* 2. FILA: FECHAS DE SALIDA Y RETORNO (Con validación de anticipación) */}
       <form.Subscribe
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        selector={(state: any) => ({
-          fechaSalida: state.values.fechaSalida,
-          fechaRetornoEstimada: state.values.fechaRetornoEstimada,
-        })}
+        selector={(state: any) =>
+          [
+            state.values.tipoSolicitudVehicularId,
+            state.values.fechaSalida,
+            state.values.fechaRetornoEstimada,
+          ] as const
+        }
       >
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(dates: any) => {
-          const duration = calculateDuration(dates.fechaSalida, dates.fechaRetornoEstimada)
+        {([tipoSolicitudVehicularId, fechaSalida, fechaRetornoEstimada]) => {
+          const selectedTipo = tiposMap.get(tipoSolicitudVehicularId)
+          const diasAnticipacion =
+            selectedTipo && typeof selectedTipo.diasAnticipacion === "number"
+              ? selectedTipo.diasAnticipacion
+              : 0
+
+          const minSalidaDate = (() => {
+            const d = new Date()
+            d.setHours(0, 0, 0, 0)
+            if (diasAnticipacion > 0) {
+              d.setDate(d.getDate() + diasAnticipacion)
+            }
+            return d
+          })()
+
+          const minRetornoDate = (() => {
+            if (fechaSalida) {
+              const s = new Date(fechaSalida)
+              if (!isNaN(s.getTime())) return s
+            }
+            return minSalidaDate
+          })()
+
+          const isAnticipacionInvalid = (() => {
+            if (!fechaSalida || diasAnticipacion <= 0) return false
+            const s = new Date(fechaSalida)
+            s.setHours(0, 0, 0, 0)
+            return s.getTime() < minSalidaDate.getTime()
+          })()
+
+          const duration = calculateDuration(fechaSalida, fechaRetornoEstimada)
 
           return (
             <div className="space-y-1.5">
@@ -166,10 +199,17 @@ export function SolicitudVehicularItinerarioSection() {
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {(field: any) => {
                     const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
+                      (field.state.meta.isTouched && !field.state.meta.isValid) ||
+                      isAnticipacionInvalid
                     return (
-                      <Field data-invalid={isInvalid || undefined} className="space-y-1">
-                        <RequiredFieldLabel htmlFor={field.name} className="text-xs">
+                      <Field
+                        data-invalid={isInvalid || undefined}
+                        className="space-y-1"
+                      >
+                        <RequiredFieldLabel
+                          htmlFor={field.name}
+                          className="text-xs"
+                        >
                           Fecha y Hora de Salida
                         </RequiredFieldLabel>
                         <DateTimePickerField
@@ -179,9 +219,20 @@ export function SolicitudVehicularItinerarioSection() {
                           onChange={(val) => field.handleChange(val)}
                           onBlur={field.handleBlur}
                           placeholder="dd/mm/aaaa --:--"
+                          minDate={minSalidaDate}
                           aria-invalid={isInvalid}
                         />
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                        {isInvalid && (
+                          <FieldError
+                            errors={
+                              isAnticipacionInvalid
+                                ? [
+                                    `Requiere al menos ${diasAnticipacion} día(s) de anticipación (mínimo ${minSalidaDate.toLocaleDateString("es-ES")})`,
+                                  ]
+                                : field.state.meta.errors
+                            }
+                          />
+                        )}
                       </Field>
                     )
                   }}
@@ -193,8 +244,14 @@ export function SolicitudVehicularItinerarioSection() {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
                     return (
-                      <Field data-invalid={isInvalid || undefined} className="space-y-1">
-                        <RequiredFieldLabel htmlFor={field.name} className="text-xs">
+                      <Field
+                        data-invalid={isInvalid || undefined}
+                        className="space-y-1"
+                      >
+                        <RequiredFieldLabel
+                          htmlFor={field.name}
+                          className="text-xs"
+                        >
                           Fecha y Hora Retorno Estimada
                         </RequiredFieldLabel>
                         <DateTimePickerField
@@ -204,20 +261,57 @@ export function SolicitudVehicularItinerarioSection() {
                           onChange={(val) => field.handleChange(val)}
                           onBlur={field.handleBlur}
                           placeholder="dd/mm/aaaa --:--"
+                          minDate={minRetornoDate}
                           aria-invalid={isInvalid}
                         />
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
                       </Field>
                     )
                   }}
                 </form.Field>
               </div>
 
+              {/* Mensaje de Anticipación según Tipo Seleccionado */}
+              {selectedTipo && (
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] border transition-colors",
+                    diasAnticipacion > 0
+                      ? "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60"
+                      : "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60"
+                  )}
+                >
+                  <CalendarClock className="size-3.5 shrink-0" />
+                  <span>
+                    {diasAnticipacion > 0 ? (
+                      <>
+                        Este tipo (<strong>{selectedTipo.nombre}</strong>) requiere{" "}
+                        <strong>
+                          {diasAnticipacion}{" "}
+                          {diasAnticipacion === 1 ? "día" : "días"}
+                        </strong>{" "}
+                        de anticipación. Salida mínima:{" "}
+                        <strong>
+                          {minSalidaDate.toLocaleDateString("es-ES")}
+                        </strong>
+                      </>
+                    ) : (
+                      <>
+                        Tipo <strong>{selectedTipo.nombre}</strong>: Salida inmediata
+                        permitida (<strong>0 días</strong> de anticipación).
+                      </>
+                    )}
+                  </span>
+                </div>
+              )}
+
               {/* Banner de Duración Calculada */}
               {duration && (
                 <div
                   className={cn(
-                    "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] transition-all animate-in fade-in-50 duration-200 border",
+                    "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] border transition-colors",
                     duration.isNegative
                       ? "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-800"
                       : "bg-primary/5 text-primary border-primary/20"
@@ -279,8 +373,13 @@ export function SolicitudVehicularItinerarioSection() {
       >
         {(tipoSolicitudVehicularId: string) => {
           const selectedTipo = tiposMap.get(tipoSolicitudVehicularId)
+          const isEmergencia =
+            selectedTipo?.codigo?.toUpperCase() === "EMERGENCIA" ||
+            selectedTipo?.diasAnticipacion === 0
+
           const requiereJustificacion = Boolean(selectedTipo?.requiereJustificacion)
-          const requiereRespaldo = Boolean(selectedTipo?.requiereRespaldo)
+          const requiereRespaldoEstricto = Boolean(selectedTipo?.requiereRespaldo) && !isEmergencia
+          const permiteRespaldoOpcional = Boolean(selectedTipo?.requiereRespaldo) && isEmergencia
 
           return (
             <div className="space-y-2.5">
@@ -362,12 +461,13 @@ export function SolicitudVehicularItinerarioSection() {
               </div>
 
               {/* 5. DROPZONE */}
-              {(requiereRespaldo ||
+              {(requiereRespaldoEstricto ||
+                permiteRespaldoOpcional ||
                 selectedFiles.length > 0 ||
                 (isEditing && existingAdjuntos && existingAdjuntos.length > 0)) && (
                 <div className="space-y-1.5 pt-1 border-t border-border/40 animate-in fade-in-50 duration-200">
                   <div className="flex items-center gap-2">
-                    {requiereRespaldo ? (
+                    {requiereRespaldoEstricto ? (
                       <RequiredFieldLabel
                         htmlFor="solicitud-vehicular-dropzone"
                         className="text-xs font-medium"
@@ -379,12 +479,17 @@ export function SolicitudVehicularItinerarioSection() {
                         htmlFor="solicitud-vehicular-dropzone"
                         className="text-xs font-medium"
                       >
-                        Archivos Adjuntos (Opcional)
+                        Documentos de Respaldo / Informe (Opcional)
                       </FieldLabel>
                     )}
-                    {requiereRespaldo && (
+                    {requiereRespaldoEstricto && (
                       <Badge variant="outline" className="text-[9.5px] px-1.5 py-0 bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900">
                         Obligatorio
+                      </Badge>
+                    )}
+                    {permiteRespaldoOpcional && (
+                      <Badge variant="outline" className="text-[9.5px] px-1.5 py-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900">
+                        Opcional (se puede adjuntar informe posterior)
                       </Badge>
                     )}
                   </div>
@@ -392,6 +497,15 @@ export function SolicitudVehicularItinerarioSection() {
                   {!isEditing && (
                     <div
                       id="solicitud-vehicular-dropzone"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => document.getElementById("solicitud-vehicular-file-input")?.click()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          document.getElementById("solicitud-vehicular-file-input")?.click()
+                        }
+                      }}
                       onDragOver={(e) => {
                         e.preventDefault()
                         setIsDragging(true)
@@ -399,10 +513,10 @@ export function SolicitudVehicularItinerarioSection() {
                       onDragLeave={() => setIsDragging(false)}
                       onDrop={handleDrop}
                       className={cn(
-                        "relative flex items-center justify-between gap-2.5 rounded-lg border border-dashed px-3 py-2 transition-all",
+                        "relative flex items-center justify-between gap-2.5 rounded-lg border border-dashed px-3 py-2 transition-all cursor-pointer",
                         isDragging
                           ? "border-primary bg-primary/10 shadow-xs"
-                          : requiereRespaldo
+                          : requiereRespaldoEstricto
                             ? "border-blue-300 dark:border-blue-800 bg-blue-50/20 dark:bg-blue-950/10 hover:border-primary/50"
                             : "border-border/80 bg-muted/15 hover:border-primary/50 hover:bg-muted/25"
                       )}

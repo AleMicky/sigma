@@ -28,6 +28,8 @@ export interface DateTimePickerFieldProps {
   disabled?: boolean
   className?: string
   "aria-invalid"?: boolean
+  minDate?: Date
+  maxDate?: Date
 }
 
 function parseDateTimeString(val?: string): { date?: Date; time: string } {
@@ -89,22 +91,36 @@ export function DateTimePickerField({
   disabled = false,
   className,
   "aria-invalid": isInvalid,
+  minDate,
+  maxDate,
 }: DateTimePickerFieldProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const { date, time } = React.useMemo(() => parseDateTimeString(value), [value])
 
-  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(date)
-  const [selectedTime, setSelectedTime] = React.useState<string>(time)
-
-  React.useEffect(() => {
-    setSelectedDate(date)
-    setSelectedTime(time)
-  }, [date, time])
+  const isDateDisabled = React.useCallback(
+    (day: Date) => {
+      if (minDate) {
+        const startOfMin = new Date(minDate)
+        startOfMin.setHours(0, 0, 0, 0)
+        const checkDay = new Date(day)
+        checkDay.setHours(0, 0, 0, 0)
+        if (checkDay.getTime() < startOfMin.getTime()) return true
+      }
+      if (maxDate) {
+        const endOfMax = new Date(maxDate)
+        endOfMax.setHours(23, 59, 59, 999)
+        const checkDay = new Date(day)
+        checkDay.setHours(0, 0, 0, 0)
+        if (checkDay.getTime() > endOfMax.getTime()) return true
+      }
+      return false
+    },
+    [minDate, maxDate]
+  )
 
   const handleDateSelect = (newDate?: Date) => {
-    setSelectedDate(newDate)
     if (newDate) {
-      const formatted = formatToInputValue(newDate, selectedTime)
+      const formatted = formatToInputValue(newDate, time)
       onChange(formatted)
     } else {
       onChange("")
@@ -112,27 +128,26 @@ export function DateTimePickerField({
   }
 
   const handleTimeChange = (newTime: string) => {
-    setSelectedTime(newTime)
-    const baseDate = selectedDate || new Date()
-    if (!selectedDate) {
-      setSelectedDate(baseDate)
+    let baseDate = date || new Date()
+    if (minDate && baseDate < minDate) {
+      baseDate = new Date(minDate)
     }
     const formatted = formatToInputValue(baseDate, newTime)
     onChange(formatted)
   }
 
   const handleSetCurrent = () => {
-    const now = new Date()
+    let targetDate = new Date()
+    if (minDate && targetDate < minDate) {
+      targetDate = new Date(minDate)
+    }
     const pad = (n: number) => String(n).padStart(2, "0")
-    const nowTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`
-    setSelectedDate(now)
-    setSelectedTime(nowTime)
-    onChange(formatToInputValue(now, nowTime))
+    const nowTime = `${pad(targetDate.getHours())}:${pad(targetDate.getMinutes())}`
+    onChange(formatToInputValue(targetDate, nowTime))
   }
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setSelectedDate(undefined)
     onChange("")
   }
 
@@ -151,7 +166,7 @@ export function DateTimePickerField({
             onBlur={onBlur}
             aria-invalid={isInvalid}
             className={cn(
-              "w-full h-8.5 justify-between text-left font-normal text-xs shadow-2xs rounded-lg px-2.5 transition-all",
+              "w-full h-8.5 justify-between text-left font-normal text-xs shadow-2xs rounded-lg px-2.5 transition-colors",
               !value && "text-muted-foreground",
               isInvalid && "border-destructive ring-destructive/20 ring-2",
               className
@@ -164,32 +179,38 @@ export function DateTimePickerField({
           <span className="truncate">{displayText || placeholder}</span>
         </span>
 
-        <span className="flex items-center gap-1 shrink-0">
-          {value && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer transition-colors"
-              title="Limpiar fecha"
-            >
-              <X className="size-3" />
-              <span className="sr-only">Limpiar fecha</span>
-            </button>
-          )}
-          <Clock2 className="size-3.5 text-muted-foreground/70 shrink-0 ml-1" />
-        </span>
+        {value ? (
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={handleClear}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                e.stopPropagation()
+                handleClear(e as unknown as React.MouseEvent)
+              }
+            }}
+            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer transition-colors shrink-0 inline-flex items-center justify-center"
+            title="Limpiar fecha"
+          >
+            <X className="size-3" />
+            <span className="sr-only">Limpiar fecha</span>
+          </span>
+        ) : null}
       </PopoverTrigger>
 
       <PopoverContent
         align="start"
         sideOffset={6}
-        className="w-auto p-0 bg-popover rounded-xl shadow-lg border border-border/80 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150"
+        className="w-auto p-0 bg-popover rounded-xl shadow-lg border border-border/80 overflow-hidden"
       >
         <div className="p-1">
           <Calendar
             mode="single"
-            selected={selectedDate}
+            selected={date}
             onSelect={handleDateSelect}
+            disabled={isDateDisabled}
             locale={es}
             className="p-1.5"
           />
@@ -206,7 +227,7 @@ export function DateTimePickerField({
                 id={`${id || name || "picker"}-time`}
                 type="time"
                 step="60"
-                value={selectedTime}
+                value={time}
                 onChange={(e) => handleTimeChange(e.target.value)}
                 className="text-xs h-7.5 appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
               />

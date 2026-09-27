@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select"
+import { cn } from "@/shared/lib/utils"
 import { useSolicitudVehicularFormContext } from "../../context/solicitud-vehicular-form.context"
 
 export function SolicitudVehicularGeneralSection() {
@@ -116,18 +117,31 @@ export function SolicitudVehicularGeneralSection() {
                   <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
                     <Badge
                       variant="outline"
-                      className="text-[9.5px] font-medium px-1.5 py-0 gap-1 bg-muted/50 text-muted-foreground border-border/70"
+                      className={cn(
+                        "text-[9.5px] font-medium px-1.5 py-0 gap-1 border",
+                        (selectedTipo.diasAnticipacion ?? 0) === 0
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900"
+                          : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900"
+                      )}
                     >
-                      <CalendarClock className="size-2.5 text-muted-foreground" />
-                      Anticipación: {selectedTipo.diasAnticipacion}d
+                      <CalendarClock className="size-2.5" />
+                      Anticipación: {selectedTipo.diasAnticipacion}d{" "}
+                      {(selectedTipo.diasAnticipacion ?? 0) === 0 ? "(Inmediato)" : ""}
                     </Badge>
                     {selectedTipo.requiereRespaldo && (
                       <Badge
                         variant="outline"
-                        className="text-[9.5px] font-medium px-1.5 py-0 gap-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900"
+                        className={cn(
+                          "text-[9.5px] font-medium px-1.5 py-0 gap-1 border",
+                          (selectedTipo.diasAnticipacion ?? 0) === 0
+                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900"
+                            : "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900"
+                        )}
                       >
-                        <FileCheck className="size-2.5 text-blue-600 dark:text-blue-400" />
-                        Requiere respaldo
+                        <FileCheck className="size-2.5" />
+                        {(selectedTipo.diasAnticipacion ?? 0) === 0
+                          ? "Respaldo opcional (informe posterior)"
+                          : "Requiere respaldo"}
                       </Badge>
                     )}
                     {selectedTipo.requiereJustificacion && (

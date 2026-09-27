@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -133,6 +134,8 @@ public class SolicitudVehicularService {
 
         TipoSolicitudVehicular tipo = obtenerTipoSolicitud(dto.tipoSolicitudVehicularId());
         Empleado solicitante = obtenerEmpleado(dto.solicitanteId());
+
+        validarReglasTipoSolicitud(tipo, dto.fechaSalida(), dto.fechaRetornoEstimada(), dto.justificacion());
 
         String estado = StringUtils.normalize(dto.estado());
         if (estado == null || estado.isBlank()) {
@@ -329,6 +332,8 @@ public class SolicitudVehicularService {
         TipoSolicitudVehicular tipo = obtenerTipoSolicitud(dto.tipoSolicitudVehicularId());
         Empleado solicitante = obtenerEmpleado(dto.solicitanteId());
 
+        validarReglasTipoSolicitud(tipo, dto.fechaSalida(), dto.fechaRetornoEstimada(), dto.justificacion());
+
         mapper.updateDomain(dto, actual);
         actual.setMotivo(StringUtils.normalize(dto.motivo()));
         actual.setJustificacion(StringUtils.normalize(dto.justificacion()));
@@ -372,6 +377,8 @@ public class SolicitudVehicularService {
 
         TipoSolicitudVehicular tipo = obtenerTipoSolicitud(dto.tipoSolicitudVehicularId());
         Empleado solicitante = obtenerEmpleado(dto.solicitanteId());
+
+        validarReglasTipoSolicitud(tipo, dto.fechaSalida(), dto.fechaRetornoEstimada(), dto.justificacion());
 
         mapper.updateDomainFromRequest(dto, actual);
         actual.setMotivo(StringUtils.normalize(dto.motivo()));
@@ -694,6 +701,49 @@ public class SolicitudVehicularService {
                     "SOLICITUD_VEHICULAR_NUMERO_ALREADY_EXISTS",
                     "Ya existe otra solicitud vehicular con el número '%s'".formatted(numero)
             );
+        }
+    }
+
+    private void validarReglasTipoSolicitud(
+            TipoSolicitudVehicular tipo,
+            LocalDateTime fechaSalida,
+            LocalDateTime fechaRetornoEstimada,
+            String justificacion
+    ) {
+        if (fechaSalida == null) {
+            throw new ConflictException("FECHA_SALIDA_REQUERIDA", "La fecha de salida es obligatoria");
+        }
+        if (fechaRetornoEstimada == null) {
+            throw new ConflictException("FECHA_RETORNO_REQUERIDA", "La fecha de retorno estimada es obligatoria");
+        }
+        if (fechaRetornoEstimada.isBefore(fechaSalida)) {
+            throw new ConflictException(
+                    "FECHAS_INVALIDAS",
+                    "La fecha de retorno estimada no puede ser anterior a la fecha de salida"
+            );
+        }
+
+        // Validación de días de anticipación
+        if (tipo != null && tipo.getDiasAnticipacion() != null && tipo.getDiasAnticipacion() > 0) {
+            LocalDate hoy = LocalDate.now();
+            LocalDate fechaMinima = hoy.plusDays(tipo.getDiasAnticipacion());
+            if (fechaSalida.toLocalDate().isBefore(fechaMinima)) {
+                throw new ConflictException(
+                        "SOLICITUD_ANTICIPACION_INSUFICIENTE",
+                        "El tipo de solicitud '%s' requiere al menos %d día(s) de anticipación. La fecha mínima de salida permitida es %s."
+                                .formatted(tipo.getNombre(), tipo.getDiasAnticipacion(), fechaMinima)
+                );
+            }
+        }
+
+        // Validación de justificación obligatoria
+        if (tipo != null && Boolean.TRUE.equals(tipo.getRequiereJustificacion())) {
+            if (justificacion == null || justificacion.trim().isBlank()) {
+                throw new ConflictException(
+                        "SOLICITUD_JUSTIFICACION_REQUERIDA",
+                        "La justificación técnica/operativa es obligatoria para el tipo de solicitud '%s'".formatted(tipo.getNombre())
+                );
+            }
         }
     }
 }
