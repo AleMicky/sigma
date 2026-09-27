@@ -30,10 +30,24 @@ export const flotaQueries = {
       enabled: Boolean(flotaId),
     }),
 
+  vehiculosByEmpleado: (empleadoId: string, activo?: boolean) =>
+    queryOptions({
+      queryKey: flotaKeys.vehiculosByEmpleado(empleadoId, activo),
+      queryFn: () => flotaService.listVehiculosByEmpleado(empleadoId, activo),
+      enabled: Boolean(empleadoId),
+    }),
+
   responsables: (flotaId: string) =>
     queryOptions({
       queryKey: flotaKeys.responsables(flotaId),
       queryFn: () => flotaService.listResponsablesByFlota(flotaId),
       enabled: Boolean(flotaId),
+    }),
+
+  flotasByEmpleado: (empleadoId: string) =>
+    queryOptions({
+      queryKey: flotaKeys.flotasByEmpleado(empleadoId),
+      queryFn: () => flotaService.listFlotasByEmpleado(empleadoId),
+      enabled: Boolean(empleadoId),
     }),
 }

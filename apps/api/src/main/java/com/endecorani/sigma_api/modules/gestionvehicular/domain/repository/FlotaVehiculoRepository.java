@@ -19,6 +19,8 @@ public interface FlotaVehiculoRepository {
 
     List<FlotaVehiculo> findByFlotaVehicularIdAndActivoIdIn(UUID flotaVehicularId, Collection<UUID> activoIds);
 
+    List<FlotaVehiculo> findByResponsableEmpleadoId(UUID empleadoId, Boolean activo);
+
     Optional<FlotaVehiculo> findById(UUID id);
 
     Optional<FlotaVehiculo> findByFlotaVehicularIdAndActivoId(UUID flotaVehicularId, UUID activoId);

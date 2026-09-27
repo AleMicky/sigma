@@ -50,6 +50,13 @@ public class FlotaVehiculoRepositoryAdapter implements FlotaVehiculoRepository {
     }
 
     @Override
+    public List<FlotaVehiculo> findByResponsableEmpleadoId(UUID empleadoId, Boolean activo) {
+        return springRepository.findByResponsableEmpleadoId(empleadoId, activo).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public Optional<FlotaVehiculo> findById(UUID id) {
         return springRepository.findById(id).map(mapper::toDomain);
     }

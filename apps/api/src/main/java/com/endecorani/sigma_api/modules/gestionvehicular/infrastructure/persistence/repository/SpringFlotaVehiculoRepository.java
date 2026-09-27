@@ -38,4 +38,16 @@ public interface SpringFlotaVehiculoRepository extends JpaRepository<FlotaVehicu
             @Param("activo") Boolean activo,
             Pageable pageable
     );
+
+    @Query("""
+        SELECT DISTINCT fv FROM FlotaVehiculoEntity fv
+        INNER JOIN ResponsableFlotaEntity rf ON rf.flotaVehicularId = fv.flotaVehicularId
+        WHERE rf.empleadoId = :empleadoId
+          AND (:activo IS NULL OR (fv.activo = :activo AND rf.activo = :activo))
+        ORDER BY fv.createdAt ASC
+    """)
+    List<FlotaVehiculoEntity> findByResponsableEmpleadoId(
+            @Param("empleadoId") UUID empleadoId,
+            @Param("activo") Boolean activo
+    );
 }

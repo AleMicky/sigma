@@ -180,6 +180,16 @@ export const flotaService = {
     return http.get<ResponsableFlota[]>(`${RESPONSABLES_URL}/flota/${flotaId}`)
   },
 
+  listFlotasByEmpleado: (empleadoId: string): Promise<ResponsableFlota[]> => {
+    return http.get<ResponsableFlota[]>(`${RESPONSABLES_URL}/empleado/${empleadoId}`)
+  },
+
+  listVehiculosByEmpleado: (empleadoId: string, activo?: boolean): Promise<FlotaVehiculo[]> => {
+    return http.get<FlotaVehiculo[]>(`${RESPONSABLES_URL}/empleado/${empleadoId}/vehiculos`, {
+      params: activo !== undefined ? { activo } : undefined,
+    })
+  },
+
   asignarResponsable: (data: ResponsableFlotaRequest): Promise<ResponsableFlota> => {
     return http.post<ResponsableFlota>(RESPONSABLES_URL, data)
   },

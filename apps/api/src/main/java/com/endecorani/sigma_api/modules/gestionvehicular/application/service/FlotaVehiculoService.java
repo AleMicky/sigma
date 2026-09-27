@@ -66,6 +66,12 @@ public class FlotaVehiculoService {
     }
 
     @Transactional(readOnly = true)
+    public List<FlotaVehiculoResponse> findByResponsableEmpleadoId(UUID empleadoId, Boolean activo) {
+        List<FlotaVehiculo> vehiculos = repository.findByResponsableEmpleadoId(empleadoId, activo);
+        return toListResponse(vehiculos);
+    }
+
+    @Transactional(readOnly = true)
     public FlotaVehiculoResponse findById(UUID id) {
         FlotaVehiculo flotaVehiculo = obtenerPorId(id);
         return toResponse(flotaVehiculo);

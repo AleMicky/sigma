@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.response.FlotaVehiculoResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.responsableflota.request.ResponsableFlotaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.responsableflota.request.ResponsableFlotaUpdate;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.responsableflota.response.ResponsableFlotaResponse;
@@ -64,6 +65,28 @@ public class ResponsableFlotaController {
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(service.findByEmpleadoId(empleadoId))
+        );
+    }
+
+    @GetMapping("/empleado/{empleadoId}/vehiculos")
+    @Operation(summary = "Listar vehículos (activos) asociados a las flotas de las que el empleado es responsable")
+    public ResponseEntity<ApiResponse<List<FlotaVehiculoResponse>>> findVehiculosByEmpleadoId(
+            @PathVariable UUID empleadoId,
+            @RequestParam(required = false) Boolean activo
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findVehiculosByEmpleadoId(empleadoId, activo))
+        );
+    }
+
+    @GetMapping("/empleado/{empleadoId}/activos")
+    @Operation(summary = "Alias para listar vehículos (activos) asociados a las flotas de las que el empleado es responsable")
+    public ResponseEntity<ApiResponse<List<FlotaVehiculoResponse>>> findActivosByEmpleadoId(
+            @PathVariable UUID empleadoId,
+            @RequestParam(required = false) Boolean activo
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findVehiculosByEmpleadoId(empleadoId, activo))
         );
     }
 

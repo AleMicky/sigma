@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.service;
 
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.response.FlotaVehiculoResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.responsableflota.request.ResponsableFlotaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.responsableflota.request.ResponsableFlotaUpdate;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.responsableflota.response.ResponsableFlotaEmpleadoInfo;
@@ -46,6 +47,7 @@ public class ResponsableFlotaService {
     private final FlotaVehicularRepository flotaVehicularRepository;
     private final EmpleadoRepository empleadoRepository;
     private final SpringVEmpleadoRepository springVEmpleadoRepository;
+    private final FlotaVehiculoService flotaVehiculoService;
     private final ResponsableFlotaMapper mapper;
 
     @Transactional(readOnly = true)
@@ -73,6 +75,12 @@ public class ResponsableFlotaService {
         validarEmpleadoExiste(empleadoId);
         List<ResponsableFlota> flotas = repository.findByEmpleadoId(empleadoId);
         return toListResponse(flotas);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FlotaVehiculoResponse> findVehiculosByEmpleadoId(UUID empleadoId, Boolean activo) {
+        validarEmpleadoExiste(empleadoId);
+        return flotaVehiculoService.findByResponsableEmpleadoId(empleadoId, activo);
     }
 
     @Transactional(readOnly = true)

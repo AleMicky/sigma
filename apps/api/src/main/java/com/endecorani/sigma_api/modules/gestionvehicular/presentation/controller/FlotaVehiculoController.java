@@ -58,6 +58,17 @@ public class FlotaVehiculoController {
         );
     }
 
+    @GetMapping("/empleado/{empleadoId}")
+    @Operation(summary = "Listar vehículos de las flotas asignadas a un empleado responsable")
+    public ResponseEntity<ApiResponse<List<FlotaVehiculoResponse>>> findByEmpleadoId(
+            @PathVariable UUID empleadoId,
+            @RequestParam(required = false) Boolean activo
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findByResponsableEmpleadoId(empleadoId, activo))
+        );
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Obtener asignación de vehículo a flota por ID")
     public ResponseEntity<ApiResponse<FlotaVehiculoResponse>> findById(
