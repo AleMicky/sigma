@@ -42,7 +42,7 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 export function SolicitudesVehicularesPage() {
   const navigate = useNavigate()
   const [selectedEstado, setSelectedEstado] = useState<string>("")
-  const [detailItem, setDetailItem] = useState<SolicitudVehicular | null>(null)
+  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null)
   const [historyItem, setHistoryItem] = useState<SolicitudVehicular | null>(null)
   const [deletingItem, setDeletingItem] = useState<SolicitudVehicular | null>(null)
 
@@ -64,6 +64,18 @@ export function SolicitudesVehicularesPage() {
     },
     [navigate]
   )
+
+  const handleAssign = useCallback(() => {
+    navigate({
+      to: routes.gestionVehicular.asignaciones,
+    })
+  }, [navigate])
+
+  const handleControlActivo = useCallback(() => {
+    navigate({
+      to: routes.mantenimientos.controlesActivos.nuevo,
+    })
+  }, [navigate])
 
   const handleDeleteConfirm = async () => {
     if (!deletingItem) return
@@ -95,8 +107,16 @@ export function SolicitudesVehicularesPage() {
     staleTime: 1000 * 60 * 2,
   })
 
+  // Consulta reactiva para el modal de detalle
+  const detailQuery = useQuery({
+    ...solicitudVehicularQueries.detail(selectedDetailId ?? ""),
+    enabled: Boolean(selectedDetailId),
+  })
+
   const solicitudes = query.data?.content ?? []
   const totalCount = allQuery.data?.totalElements ?? query.data?.totalElements ?? 0
+
+  const activeDetailItem = detailQuery.data ?? solicitudes.find((s) => s.id === selectedDetailId) ?? null
 
   const resumen = useMemo(() => {
     const list = allQuery.data?.content ?? solicitudes
@@ -137,7 +157,10 @@ export function SolicitudesVehicularesPage() {
   const handleRefresh = useCallback(() => {
     query.refetch()
     allQuery.refetch()
-  }, [query, allQuery])
+    if (selectedDetailId) {
+      detailQuery.refetch()
+    }
+  }, [query, allQuery, detailQuery, selectedDetailId])
 
   const handleActionSelect = useCallback(
     (
@@ -266,7 +289,7 @@ export function SolicitudesVehicularesPage() {
               className={cn(
                 query.isFetching &&
                   !query.isLoading &&
-                  "opacity-75 transition-opacity duration-200"
+                "opacity-75 transition-opacity duration-200"
               )}
             >
               <WorkflowListView>
@@ -275,8 +298,10 @@ export function SolicitudesVehicularesPage() {
                     key={solicitud.id}
                     solicitud={solicitud}
                     showWorkflowActions={true}
-                    onViewDetail={setDetailItem}
+                    onViewDetail={(sol) => setSelectedDetailId(sol.id)}
                     onEdit={handleEdit}
+                    onAssign={handleAssign}
+                    onControlActivo={handleControlActivo}
                     onDelete={setDeletingItem}
                     onActionSelect={handleActionSelect}
                     onTraceability={setHistoryItem}
@@ -285,27 +310,28 @@ export function SolicitudesVehicularesPage() {
               </WorkflowListView>
             </div>
 
-            {/* Paginación: cuando hay registros */}
-            {query.data &&
-              (query.data.totalElements > 10 || query.data.totalPages > 1) && (
-                <Pagination
-                  page={query.data}
-                  onPageChange={search.setPage}
-                  className="border-t pt-2 shrink-0 text-xs"
-                />
-              )}
+            {/* Paginación: cuando hay más de una página */}
+            {query.data && query.data.totalPages > 1 && (
+              <Pagination
+                page={query.data}
+                onPageChange={search.setPage}
+                className="border-t pt-2 shrink-0 text-xs"
+              />
+            )}
           </div>
         )}
       </div>
 
-      {/* Modal de Detalle Completo de Solicitud */}
+      {/* Modal de Detalle Completo de Solicitud (reactivo) */}
       <SolicitudVehicularDetailDialog
-        open={Boolean(detailItem)}
+        open={Boolean(selectedDetailId)}
         onOpenChange={(open) => {
-          if (!open) setDetailItem(null)
+          if (!open) setSelectedDetailId(null)
         }}
-        solicitud={detailItem}
+        solicitud={activeDetailItem}
         onEdit={handleEdit}
+        onAssign={handleAssign}
+        onControlActivo={handleControlActivo}
         onViewHistory={setHistoryItem}
         onActionSelect={handleActionSelect}
       />
