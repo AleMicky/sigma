@@ -6,6 +6,7 @@ import {
   FileCheck,
   FileIcon,
   FileText,
+  KeyRound,
   MapPin,
   Paperclip,
   Tag,
@@ -41,6 +42,7 @@ type SolicitudVehicularDetailDialogProps = {
   onOpenChange: (open: boolean) => void
   solicitud?: SolicitudVehicular | null
   onEdit?: (solicitud: SolicitudVehicular) => void
+  onAssign?: (solicitud: SolicitudVehicular) => void
   onViewHistory?: (solicitud: SolicitudVehicular) => void
   onActionSelect?: (
     solicitud: SolicitudVehicular,
@@ -72,6 +74,7 @@ export function SolicitudVehicularDetailDialog({
   onOpenChange,
   solicitud,
   onEdit,
+  onAssign,
   onViewHistory,
   onActionSelect,
 }: SolicitudVehicularDetailDialogProps) {
@@ -359,6 +362,20 @@ export function SolicitudVehicularDetailDialog({
               >
                 <Clock className="size-3.5" />
                 <span>Historial de Flujo</span>
+              </Button>
+            )}
+            {onAssign && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onOpenChange(false)
+                  onAssign(solicitud)
+                }}
+                className="text-xs rounded-lg gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 shadow-2xs cursor-pointer"
+              >
+                <KeyRound className="size-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Asignar Vehículo</span>
               </Button>
             )}
           </div>

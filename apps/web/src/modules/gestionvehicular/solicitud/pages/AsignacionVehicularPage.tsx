@@ -22,6 +22,7 @@ import { cn } from "@/shared/lib/utils"
 import { useCompletarWorkflowSolicitudVehicular } from "../api/solicitud-vehicular.mutations"
 import { solicitudVehicularQueries } from "../api/solicitud-vehicular.queries"
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
+import { AsignacionVehicularDialog } from "../../asignacion-vehicular/components/AsignacionVehicularDialog"
 import {
   AsignacionVehicularResumenCards,
   type AsignacionVehicularResumen,
@@ -40,6 +41,7 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 export function AsignacionVehicularPage() {
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("SOLICITADO")
   const [detailItem, setDetailItem] = useState<SolicitudVehicular | null>(null)
+  const [assignItem, setAssignItem] = useState<SolicitudVehicular | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudVehicular | null>(null)
 
   const search = usePaginatedSearch({
@@ -251,6 +253,7 @@ export function AsignacionVehicularPage() {
                       showWorkflowActions={isSolicitado}
                       onViewDetail={setDetailItem}
                       onSelect={setDetailItem}
+                      onAssign={setAssignItem}
                       onActionSelect={handleActionSelect}
                       onTraceability={setTraceabilityItem}
                     />
@@ -271,6 +274,16 @@ export function AsignacionVehicularPage() {
         )}
       </div>
 
+      {/* Modal de Asignación de Vehículo y Conductor */}
+      <AsignacionVehicularDialog
+        open={Boolean(assignItem)}
+        onOpenChange={(open) => {
+          if (!open) setAssignItem(null)
+        }}
+        solicitud={assignItem}
+        onSuccess={handleRefresh}
+      />
+
       {/* Modal de Detalle Completo de Solicitud */}
       <SolicitudVehicularDetailDialog
         open={Boolean(detailItem)}
@@ -278,6 +291,7 @@ export function AsignacionVehicularPage() {
           if (!open) setDetailItem(null)
         }}
         solicitud={detailItem}
+        onAssign={setAssignItem}
         onViewHistory={setTraceabilityItem}
       />
 
