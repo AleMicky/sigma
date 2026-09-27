@@ -22,13 +22,14 @@ import {
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
+import { tipoSolicitudVehicularQueries } from "@/modules/gestionvehicular/tipo-solicitud/api/tipo-solicitud.queries"
 import {
   useCompletarWorkflowSolicitudVehicular,
   useDeleteSolicitudVehicular,
 } from "../api/solicitud-vehicular.mutations"
 import { solicitudVehicularQueries } from "../api/solicitud-vehicular.queries"
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
-import { SolicitudVehicularDetailDialog } from "../components/SolicitudVehicularDetailDialog"
+import { SolicitudVehicularDetailSheet } from "../components/SolicitudVehicularDetailSheet"
 import { SolicitudVehicularFilterToolbar } from "../components/SolicitudVehicularFilterToolbar"
 import { SolicitudVehicularHeader } from "../components/SolicitudVehicularHeader"
 import {
@@ -42,19 +43,32 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 export function SolicitudesVehicularesPage() {
   const navigate = useNavigate()
   const [selectedEstado, setSelectedEstado] = useState<string>("")
+  const [selectedTipoId, setSelectedTipoId] = useState<string>("")
   const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null)
   const [historyItem, setHistoryItem] = useState<SolicitudVehicular | null>(null)
   const [deletingItem, setDeletingItem] = useState<SolicitudVehicular | null>(null)
 
   const search = usePaginatedSearch({
     debounceMs: 300,
-    resetKey: selectedEstado,
+    resetKey: `${selectedEstado}-${selectedTipoId}`,
   })
 
   const { target, isOpen, openAction, closeAction } =
     useWorkflowActionTarget<SolicitudVehicular>()
   const completarWorkflowMutation = useCompletarWorkflowSolicitudVehicular()
   const deleteMutation = useDeleteSolicitudVehicular()
+
+  // Consulta de Tipos de Solicitud para el filtro
+  const tiposQuery = useQuery({
+    ...tipoSolicitudVehicularQueries.list({ size: 100 }),
+    staleTime: 1000 * 60 * 5,
+  })
+  const tiposOptions = useMemo(() => {
+    return (tiposQuery.data?.content ?? []).map((t) => ({
+      id: t.id,
+      nombre: t.nombre,
+    }))
+  }, [tiposQuery.data])
 
   const handleEdit = useCallback(
     (sol: SolicitudVehicular) => {
@@ -95,8 +109,9 @@ export function SolicitudesVehicularesPage() {
       direction: "DESC" as const,
       ...(search.query ? { search: search.query } : {}),
       ...(selectedEstado ? { estado: selectedEstado } : {}),
+      ...(selectedTipoId ? { tipoSolicitudVehicularId: selectedTipoId } : {}),
     }),
-    [search.page, search.query, selectedEstado]
+    [search.page, search.query, selectedEstado, selectedTipoId]
   )
 
   const query = useQuery(solicitudVehicularQueries.list(queryParams))
@@ -116,7 +131,8 @@ export function SolicitudesVehicularesPage() {
   const solicitudes = query.data?.content ?? []
   const totalCount = allQuery.data?.totalElements ?? query.data?.totalElements ?? 0
 
-  const activeDetailItem = detailQuery.data ?? solicitudes.find((s) => s.id === selectedDetailId) ?? null
+  const activeDetailItem =
+    detailQuery.data ?? solicitudes.find((s) => s.id === selectedDetailId) ?? null
 
   const resumen = useMemo(() => {
     const list = allQuery.data?.content ?? solicitudes
@@ -154,6 +170,12 @@ export function SolicitudesVehicularesPage() {
     setSelectedEstado((prev) => (!estado || prev === estado ? "" : estado))
   }, [])
 
+  const handleClearAllFilters = useCallback(() => {
+    search.setSearch("")
+    setSelectedEstado("")
+    setSelectedTipoId("")
+  }, [search])
+
   const handleRefresh = useCallback(() => {
     query.refetch()
     allQuery.refetch()
@@ -177,7 +199,7 @@ export function SolicitudesVehicularesPage() {
   return (
     <PageShell
       layout="scroll"
-      className="w-full max-w-none px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 lg:px-6 space-y-2.5"
+      className="w-full max-w-none px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 lg:px-6 space-y-3"
     >
       {/* Encabezado principal */}
       <SolicitudVehicularHeader
@@ -187,7 +209,7 @@ export function SolicitudesVehicularesPage() {
         isRefreshing={query.isRefetching || allQuery.isRefetching}
       />
 
-      {/* Tarjetas KPI de Resumen interactivo */}
+      {/* Tarjetas KPI de Resumen interactivo con barra porcentual y elevación hover */}
       <SolicitudVehicularResumenCards
         resumen={resumen}
         isLoading={allQuery.isLoading && !allQuery.data}
@@ -195,12 +217,18 @@ export function SolicitudesVehicularesPage() {
         onSelectEstado={handleSelectEstado}
       />
 
-      {/* Barra de Búsqueda y Filtro activo */}
+      {/* Barra de Búsqueda, Filtro Avanzado por Tipo y Chips Activos */}
       <SolicitudVehicularFilterToolbar
         searchQuery={search.search}
         onSearchChange={search.setSearch}
         selectedEstado={selectedEstado}
         onClearEstado={() => setSelectedEstado("")}
+        selectedTipoId={selectedTipoId}
+        onSelectTipoId={setSelectedTipoId}
+        tiposSolicitud={tiposOptions}
+        totalResults={totalCount}
+        filteredCount={query.data?.totalElements}
+        onClearAll={handleClearAllFilters}
       />
 
       {/* Listado y Estados UX */}
@@ -244,29 +272,26 @@ export function SolicitudesVehicularesPage() {
               title={
                 search.debouncedSearch
                   ? "No se encontraron solicitudes coincidentes"
-                  : selectedEstado
-                    ? `No hay solicitudes con estado "${selectedEstado.replace(/_/g, " ")}"`
+                  : selectedEstado || selectedTipoId
+                    ? "No hay solicitudes con los filtros seleccionados"
                     : "No hay solicitudes de vehículos registradas"
               }
               description={
                 search.debouncedSearch
                   ? `No se hallaron resultados para "${search.debouncedSearch}". Prueba con otro término o limpia la búsqueda.`
-                  : selectedEstado
-                    ? "Puedes seleccionar otro estado en las tarjetas superiores o limpiar el filtro actual."
+                  : selectedEstado || selectedTipoId
+                    ? "Puedes seleccionar otros filtros o restablecer la búsqueda."
                     : "Crea una nueva solicitud vehicular para programar traslados y comisiones de viaje."
               }
               action={
-                search.debouncedSearch || selectedEstado ? (
+                search.debouncedSearch || selectedEstado || selectedTipoId ? (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      search.setSearch("")
-                      setSelectedEstado("")
-                    }}
-                    className="mt-2 text-xs font-medium cursor-pointer"
+                    onClick={handleClearAllFilters}
+                    className="mt-2 text-xs font-medium cursor-pointer shadow-2xs"
                   >
-                    Limpiar filtros
+                    Limpiar todos los filtros
                   </Button>
                 ) : (
                   <Link to={routes.gestionVehicular.nuevaSolicitud}>
@@ -287,9 +312,8 @@ export function SolicitudesVehicularesPage() {
             {/* Contenedor de items con WorkflowListView */}
             <div
               className={cn(
-                query.isFetching &&
-                  !query.isLoading &&
-                "opacity-75 transition-opacity duration-200"
+                "transition-opacity duration-200",
+                query.isFetching && !query.isLoading && "opacity-75"
               )}
             >
               <WorkflowListView>
@@ -322,8 +346,8 @@ export function SolicitudesVehicularesPage() {
         )}
       </div>
 
-      {/* Modal de Detalle Completo de Solicitud (reactivo) */}
-      <SolicitudVehicularDetailDialog
+      {/* Panel Lateral Maestro-Detalle Completo de Solicitud (Sheet) */}
+      <SolicitudVehicularDetailSheet
         open={Boolean(selectedDetailId)}
         onOpenChange={(open) => {
           if (!open) setSelectedDetailId(null)
