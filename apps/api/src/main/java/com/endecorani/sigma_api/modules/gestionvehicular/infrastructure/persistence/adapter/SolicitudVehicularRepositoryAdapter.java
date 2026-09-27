@@ -36,12 +36,14 @@ public class SolicitudVehicularRepositoryAdapter implements SolicitudVehicularRe
             String estado,
             UUID tipoSolicitudVehicularId,
             UUID solicitanteId,
+            UUID conductorAsignadoId,
             Pageable pageable
     ) {
         boolean hasSearch = search != null && !search.isBlank();
         boolean hasEstado = estado != null && !estado.isBlank();
         boolean hasTipo = tipoSolicitudVehicularId != null;
         boolean hasSolicitante = solicitanteId != null;
+        boolean hasConductor = conductorAsignadoId != null;
 
         return springRepository.searchWithFilters(
                 hasSearch,
@@ -52,6 +54,8 @@ public class SolicitudVehicularRepositoryAdapter implements SolicitudVehicularRe
                 tipoSolicitudVehicularId,
                 hasSolicitante,
                 solicitanteId,
+                hasConductor,
+                conductorAsignadoId,
                 pageable
         ).map(mapper::toDomain);
     }

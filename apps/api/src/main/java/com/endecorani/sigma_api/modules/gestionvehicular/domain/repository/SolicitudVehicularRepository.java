@@ -18,6 +18,7 @@ public interface SolicitudVehicularRepository {
             String estado,
             UUID tipoSolicitudVehicularId,
             UUID solicitanteId,
+            UUID conductorAsignadoId,
             Pageable pageable
     );
 
