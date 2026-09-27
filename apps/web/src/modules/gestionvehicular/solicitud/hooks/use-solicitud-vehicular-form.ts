@@ -205,6 +205,8 @@ export function useSolicitudVehicularForm({
           numero: value.numero?.trim() ? value.numero.trim().toUpperCase() : (solicitud?.numero || undefined),
           tipoSolicitudVehicularId: value.tipoSolicitudVehicularId.trim(),
           solicitanteId: value.solicitanteId.trim(),
+          responsableAsignacionId: solicitud?.responsableAsignacionId ?? null,
+          conductorAsignadoId: solicitud?.conductorAsignadoId ?? null,
           motivo: value.motivo.trim(),
           justificacion: value.justificacion?.trim() || null,
           destino: value.destino.trim(),

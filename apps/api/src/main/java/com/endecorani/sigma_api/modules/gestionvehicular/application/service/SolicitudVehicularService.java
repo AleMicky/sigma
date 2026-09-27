@@ -25,6 +25,7 @@ import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCo
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
+import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.FlowableClient;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -75,6 +76,7 @@ public class SolicitudVehicularService {
     private final SolicitudVehicularMapper mapper;
     private final CorrelativoService correlativoService;
     private final WorkflowApplicationService workflowApplicationService;
+    private final FlowableClient flowableClient;
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudVehicularResponse> listar(String search, PageRequestDto pageRequest) {
@@ -332,6 +334,9 @@ public class SolicitudVehicularService {
 
         validarReglasTipoSolicitud(tipo, dto.fechaSalida(), dto.fechaRetornoEstimada(), dto.justificacion());
 
+        UUID currentResponsable = actual.getResponsableAsignacionId();
+        UUID currentConductor = actual.getConductorAsignadoId();
+
         mapper.updateDomain(dto, actual);
         actual.setMotivo(StringUtils.normalize(dto.motivo()));
         actual.setJustificacion(StringUtils.normalize(dto.justificacion()));
@@ -345,9 +350,13 @@ public class SolicitudVehicularService {
         }
         if (dto.responsableAsignacionId() != null) {
             actual.setResponsableAsignacionId(dto.responsableAsignacionId());
+        } else if (actual.getResponsableAsignacionId() == null) {
+            actual.setResponsableAsignacionId(currentResponsable);
         }
         if (dto.conductorAsignadoId() != null) {
             actual.setConductorAsignadoId(dto.conductorAsignadoId());
+        } else if (actual.getConductorAsignadoId() == null) {
+            actual.setConductorAsignadoId(currentConductor);
         }
 
         SolicitudVehicular actualizado = repository.save(actual);
@@ -378,6 +387,9 @@ public class SolicitudVehicularService {
 
         validarReglasTipoSolicitud(tipo, dto.fechaSalida(), dto.fechaRetornoEstimada(), dto.justificacion());
 
+        UUID currentResponsable = actual.getResponsableAsignacionId();
+        UUID currentConductor = actual.getConductorAsignadoId();
+
         mapper.updateDomainFromRequest(dto, actual);
         actual.setMotivo(StringUtils.normalize(dto.motivo()));
         actual.setJustificacion(StringUtils.normalize(dto.justificacion()));
@@ -391,9 +403,13 @@ public class SolicitudVehicularService {
         }
         if (dto.responsableAsignacionId() != null) {
             actual.setResponsableAsignacionId(dto.responsableAsignacionId());
+        } else if (actual.getResponsableAsignacionId() == null) {
+            actual.setResponsableAsignacionId(currentResponsable);
         }
         if (dto.conductorAsignadoId() != null) {
             actual.setConductorAsignadoId(dto.conductorAsignadoId());
+        } else if (actual.getConductorAsignadoId() == null) {
+            actual.setConductorAsignadoId(currentConductor);
         }
 
         SolicitudVehicular actualizado = repository.save(actual);
@@ -421,6 +437,10 @@ public class SolicitudVehicularService {
         }
 
         List<SolicitudVehicular> content = page.getContent();
+        for (SolicitudVehicular item : content) {
+            resolverResponsableId(item);
+            resolverConductorId(item);
+        }
 
         Set<UUID> tipoIds = content.stream()
                 .map(SolicitudVehicular::getTipoSolicitudVehicularId)
@@ -545,11 +565,15 @@ public class SolicitudVehicularService {
         SolicitudVehicularSolicitanteInfo solicitanteInfo = domain.getSolicitanteId() != null
                 ? obtenerSolicitanteInfo(domain.getSolicitanteId())
                 : null;
-        SolicitudVehicularResponsableInfo responsableInfo = domain.getResponsableAsignacionId() != null
-                ? obtenerResponsableInfo(domain.getResponsableAsignacionId())
+
+        UUID respId = resolverResponsableId(domain);
+        SolicitudVehicularResponsableInfo responsableInfo = respId != null
+                ? obtenerResponsableInfo(respId)
                 : null;
-        SolicitudVehicularConductorInfo conductorInfo = domain.getConductorAsignadoId() != null
-                ? obtenerConductorInfo(domain.getConductorAsignadoId())
+
+        UUID condId = resolverConductorId(domain);
+        SolicitudVehicularConductorInfo conductorInfo = condId != null
+                ? obtenerConductorInfo(condId)
                 : null;
         return mapper.toResponse(domain, tipoInfo, solicitanteInfo, responsableInfo, conductorInfo, adjuntos);
     }
@@ -568,15 +592,73 @@ public class SolicitudVehicularService {
                 ? obtenerSolicitanteInfo(domain.getSolicitanteId())
                 : (solicitante != null ? mapper.toSolicitanteInfo(solicitante) : null);
 
-        SolicitudVehicularResponsableInfo responsableInfo = domain.getResponsableAsignacionId() != null
-                ? obtenerResponsableInfo(domain.getResponsableAsignacionId())
+        UUID respId = resolverResponsableId(domain);
+        SolicitudVehicularResponsableInfo responsableInfo = respId != null
+                ? obtenerResponsableInfo(respId)
                 : null;
 
-        SolicitudVehicularConductorInfo conductorInfo = domain.getConductorAsignadoId() != null
-                ? obtenerConductorInfo(domain.getConductorAsignadoId())
+        UUID condId = resolverConductorId(domain);
+        SolicitudVehicularConductorInfo conductorInfo = condId != null
+                ? obtenerConductorInfo(condId)
                 : null;
 
         return mapper.toResponse(domain, tipoInfo, solicitanteInfo, responsableInfo, conductorInfo, adjuntos);
+    }
+
+    private UUID resolverResponsableId(SolicitudVehicular domain) {
+        if (domain.getResponsableAsignacionId() != null) {
+            return domain.getResponsableAsignacionId();
+        }
+        if (domain.getProcessInstanceId() != null && !domain.getProcessInstanceId().isBlank()) {
+            try {
+                var vars = flowableClient.obtenerVariablesProceso(domain.getProcessInstanceId());
+                if (vars != null) {
+                    for (var varMap : vars) {
+                        Object name = varMap.get("name");
+                        Object val = varMap.get("value");
+                        if (("responsableAsignacionId".equals(name) || "aprobadorId".equals(name)) && val != null) {
+                            try {
+                                UUID resolved = UUID.fromString(val.toString().trim());
+                                domain.setResponsableAsignacionId(resolved);
+                                repository.save(domain);
+                                return resolved;
+                            } catch (Exception ignored) {
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    private UUID resolverConductorId(SolicitudVehicular domain) {
+        if (domain.getConductorAsignadoId() != null) {
+            return domain.getConductorAsignadoId();
+        }
+        if (domain.getProcessInstanceId() != null && !domain.getProcessInstanceId().isBlank()) {
+            try {
+                var vars = flowableClient.obtenerVariablesProceso(domain.getProcessInstanceId());
+                if (vars != null) {
+                    for (var varMap : vars) {
+                        Object name = varMap.get("name");
+                        Object val = varMap.get("value");
+                        if (("conductorAsignadoId".equals(name) || "conductorId".equals(name)) && val != null) {
+                            try {
+                                UUID resolved = UUID.fromString(val.toString().trim());
+                                domain.setConductorAsignadoId(resolved);
+                                repository.save(domain);
+                                return resolved;
+                            } catch (Exception ignored) {
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
     }
 
     private SolicitudVehicularTipoSolicitudInfo obtenerTipoInfo(UUID tipoId) {

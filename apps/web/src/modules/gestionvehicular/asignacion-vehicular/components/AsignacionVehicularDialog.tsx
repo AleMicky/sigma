@@ -428,7 +428,10 @@ function AsignacionVehicularForm({
   const [activoId, setActivoId] = React.useState(asignacionActual?.activoId || "")
   const [conductorId, setConductorId] = React.useState(asignacionActual?.conductorId || "")
   const [asignadoPorId, setAsignadoPorId] = React.useState(
-    asignacionActual?.asignadoPorId || solicitud?.responsableAsignacionId || ""
+    asignacionActual?.asignadoPorId ||
+      solicitud?.responsableAsignacionId ||
+      solicitud?.responsableAsignacion?.id ||
+      ""
   )
   const [observacion, setObservacion] = React.useState(asignacionActual?.observacion || "")
   const [formValidationWarning, setFormValidationWarning] = React.useState<string | null>(null)
