@@ -31,7 +31,12 @@ public interface SpringAsignacionVehicularRepository extends JpaRepository<Asign
             OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(c.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR EXISTS (
+                SELECT 1 
+                FROM com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity l
+                WHERE l.conductorId = a.conductorId
+                  AND LOWER(l.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+            )
             OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(COALESCE(a.observacion, '')) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:solicitudVehicularId IS NULL OR a.solicitudVehicularId = :solicitudVehicularId)

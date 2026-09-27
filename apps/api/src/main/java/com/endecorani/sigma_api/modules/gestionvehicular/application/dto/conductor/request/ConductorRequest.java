@@ -1,27 +1,25 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.dto.conductor.request;
 
-import jakarta.validation.constraints.NotBlank;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoConductor;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public record ConductorRequest(
         @NotNull(message = "El empleado es obligatorio")
         UUID empleadoId,
 
-        @NotBlank(message = "El número de licencia es obligatorio")
-        @Size(max = 50, message = "El número de licencia no puede superar los 50 caracteres")
-        String numeroLicencia,
+        EstadoConductor estado,
 
-        @NotBlank(message = "La categoría de licencia es obligatoria")
-        @Size(max = 20, message = "La categoría de licencia no puede superar los 20 caracteres")
-        String categoriaLicencia,
+        @Size(max = 1000, message = "La observación no puede superar los 1000 caracteres")
+        String observacion,
 
-        @NotNull(message = "La fecha de vencimiento es obligatoria")
-        LocalDate fechaVencimiento,
+        Boolean activo,
 
-        Boolean activo
+        @Valid
+        List<ConductorLicenciaRequest> licencias
 ) {
 }

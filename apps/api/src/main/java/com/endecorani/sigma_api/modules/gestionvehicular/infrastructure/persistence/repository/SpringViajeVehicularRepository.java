@@ -37,7 +37,12 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
             OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(c.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR EXISTS (
+                SELECT 1 
+                FROM com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity l
+                WHERE l.conductorId = a.conductorId
+                  AND LOWER(l.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+            )
             OR LOWER(COALESCE(v.observacion, '')) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:asignacionVehicularId IS NULL OR v.asignacionVehicularId = :asignacionVehicularId)
           AND (:conductorId IS NULL OR a.conductorId = :conductorId)

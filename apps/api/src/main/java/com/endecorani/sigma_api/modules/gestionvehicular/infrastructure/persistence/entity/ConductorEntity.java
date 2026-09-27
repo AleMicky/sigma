@@ -1,10 +1,8 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity;
 
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoConductor;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,7 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -28,10 +27,16 @@ import java.util.UUID;
                 @UniqueConstraint(
                         name = "uk_conductor_empleado",
                         columnNames = "empleado_id"
+                )
+        },
+        indexes = {
+                @Index(
+                        name = "idx_conductor_empleado",
+                        columnList = "empleado_id"
                 ),
-                @UniqueConstraint(
-                        name = "uk_conductor_numero_licencia",
-                        columnNames = "numero_licencia"
+                @Index(
+                        name = "idx_conductor_estado",
+                        columnList = "estado"
                 )
         }
 )
@@ -43,30 +48,29 @@ public class ConductorEntity extends BaseEntity {
     )
     private UUID empleadoId;
 
+    @Enumerated(EnumType.STRING)
     @Column(
-            name = "numero_licencia",
+            name = "estado",
             nullable = false,
-            length = 50
+            length = 30
     )
-    private String numeroLicencia;
+    private EstadoConductor estado;
 
     @Column(
-            name = "categoria_licencia",
-            nullable = false,
-            length = 20
+            name = "observacion",
+            length = 1000
     )
-    private String categoriaLicencia;
+    private String observacion;
 
-    @Column(
-            name = "fecha_vencimiento",
-            nullable = false
-    )
-    private LocalDate fechaVencimiento;
-
+    @Builder.Default
     @Column(
             name = "activo",
             nullable = false
     )
-    @Builder.Default
     private boolean activo = true;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "conductor_id", nullable = false)
+    @Builder.Default
+    private List<ConductorLicenciaEntity> licencias = new ArrayList<>();
 }

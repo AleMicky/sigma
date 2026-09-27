@@ -2,11 +2,11 @@ import * as React from "react"
 import {
   AlertTriangle,
   Building,
-  Calendar,
   CheckCircle2,
   Clock,
-  IdCard,
+  FileText,
   Pencil,
+  ShieldAlert,
   Trash2,
   XCircle,
 } from "lucide-react"
@@ -19,7 +19,7 @@ import { Skeleton } from "@/shared/components/ui/skeleton"
 import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
 
-import type { Conductor } from "../api/conductor.service"
+import type { Conductor, ConductorLicencia } from "../api/conductor.service"
 
 function getInitials(name?: string | null): string {
   const clean = (name || "").trim()
@@ -48,6 +48,58 @@ function getCategoryTheme(cat?: string | null) {
   }
 }
 
+function getEstadoConductorBadge(estado?: string | null) {
+  const est = (estado || "ACTIVO").toUpperCase()
+  switch (est) {
+    case "ACTIVO":
+      return (
+        <Badge
+          variant="outline"
+          className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold rounded-full px-2 py-0.2 shadow-2xs"
+        >
+          <CheckCircle2 className="size-3 shrink-0" />
+          Activo
+        </Badge>
+      )
+    case "INACTIVO":
+      return (
+        <Badge
+          variant="outline"
+          className="gap-1 border-zinc-500/30 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 text-[10px] font-semibold rounded-full px-2 py-0.2 shadow-2xs"
+        >
+          <XCircle className="size-3 shrink-0" />
+          Inactivo
+        </Badge>
+      )
+    case "SUSPENDIDO":
+      return (
+        <Badge
+          variant="outline"
+          className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-semibold rounded-full px-2 py-0.2 shadow-2xs"
+        >
+          <AlertTriangle className="size-3 shrink-0" />
+          Suspendido
+        </Badge>
+      )
+    case "BAJA":
+      return (
+        <Badge
+          variant="outline"
+          className="gap-1 border-destructive/30 bg-destructive/10 text-destructive text-[10px] font-semibold rounded-full px-2 py-0.2 shadow-2xs"
+        >
+          <ShieldAlert className="size-3 shrink-0" />
+          Baja
+        </Badge>
+      )
+    default:
+      return (
+        <Badge variant="outline" className="text-[10px]">
+          {est}
+        </Badge>
+      )
+  }
+}
+
 type ConductorCardViewProps = {
   conductores: Conductor[]
   onEdit: (conductor: Conductor) => void
@@ -71,11 +123,11 @@ export function ConductorCardView({
 }: ConductorCardViewProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card
             key={i}
-            className="overflow-hidden border-border/60 bg-card/60 p-3.5 space-y-3 rounded-xl shadow-2xs"
+            className="overflow-hidden border-border/60 bg-card/60 p-4 space-y-3 rounded-xl shadow-2xs"
           >
             <div className="flex items-center gap-2.5">
               <Skeleton className="size-9 rounded-xl" />
@@ -84,7 +136,7 @@ export function ConductorCardView({
                 <Skeleton className="h-3 w-1/2 rounded" />
               </div>
             </div>
-            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-16 w-full rounded-lg" />
             <div className="flex items-center justify-between pt-2 border-t border-border/40">
               <Skeleton className="h-5 w-20 rounded-full" />
               <Skeleton className="h-6 w-14 rounded-md" />
@@ -113,43 +165,22 @@ export function ConductorCardView({
 
   return (
     <div className="flex flex-1 flex-col justify-between">
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {conductores.map((conductor) => {
           const nombre = conductor.empleado?.nombreCompleto || "Empleado sin asignar"
           const codigo = conductor.empleado?.codigo || "-"
           const cargo = conductor.empleado?.cargo || null
           const area = conductor.empleado?.area || null
           const initials = getInitials(nombre)
-
-          const dateStr = conductor.fechaVencimiento
-          let isExpired = false
-          let isExpiringSoon = false
-          let diasRestantes = 0
-
-          if (dateStr) {
-            diasRestantes = Math.ceil(
-              (new Date(dateStr).getTime() - hoy.getTime()) / 86_400_000
-            )
-            isExpired = diasRestantes < 0
-            isExpiringSoon = diasRestantes >= 0 && diasRestantes <= 30
-          }
-
-          const categoryClasses = getCategoryTheme(conductor.categoriaLicencia)
+          const licencias: ConductorLicencia[] = conductor.licencias || []
 
           return (
             <Card
               key={conductor.id}
-              className={cn(
-                "group relative flex flex-col justify-between overflow-hidden rounded-xl border bg-card/90 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm",
-                isExpired
-                  ? "border-destructive/40 hover:border-destructive/70"
-                  : isExpiringSoon
-                  ? "border-amber-500/40 hover:border-amber-500/70"
-                  : "border-border/70 hover:border-primary/50"
-              )}
+              className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-card/90 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm hover:border-primary/50"
             >
-              <CardContent className="p-3.5 flex flex-col gap-2.5 flex-1">
-                {/* Header: Avatar, Name, Category */}
+              <CardContent className="p-4 flex flex-col gap-3 flex-1">
+                {/* Header: Avatar, Name, Employee Code & Conductor Estado */}
                 <div className="flex items-start justify-between gap-2.5">
                   <div className="flex items-start gap-2.5 min-w-0 flex-1">
                     <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/90 via-primary/70 to-primary/40 font-bold text-xs text-primary-foreground shadow-2xs ring-2 ring-background">
@@ -159,7 +190,7 @@ export function ConductorCardView({
                           "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background shadow-2xs",
                           conductor.activo ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
                         )}
-                        title={conductor.activo ? "Habilitado / Activo" : "Inactivo"}
+                        title={conductor.activo ? "Habilitado" : "Inactivo"}
                       />
                     </div>
 
@@ -185,101 +216,112 @@ export function ConductorCardView({
                     </div>
                   </div>
 
-                  {/* Category Pill */}
-                  <span
-                    className={cn(
-                      "inline-flex items-center justify-center rounded-lg font-bold text-[10px] px-2 py-0.5 border shadow-2xs shrink-0",
-                      categoryClasses
-                    )}
-                    title={`Categoría: ${conductor.categoriaLicencia}`}
-                  >
-                    Cat. {conductor.categoriaLicencia}
-                  </span>
+                  {getEstadoConductorBadge(conductor.estado)}
                 </div>
 
-                {/* Details Section */}
-                <div className="flex flex-col gap-1.5 pt-2 border-t border-border/50 text-xs">
-                  {/* License Row */}
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
-                      <IdCard className="size-3 text-muted-foreground/70" />
-                      Nº Licencia:
-                    </span>
-                    <span className="font-mono text-xs font-semibold text-foreground tracking-wide">
-                      {conductor.numeroLicencia}
+                {/* Detalle de Licencias */}
+                <div className="space-y-1.5 pt-2 border-t border-border/50">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <FileText className="size-3 text-primary" />
+                      Licencias ({licencias.length})
                     </span>
                   </div>
 
-                  {/* Expiration Row */}
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
-                      <Calendar className="size-3 text-muted-foreground/70" />
-                      Vencimiento:
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-medium text-foreground">
-                        {dateStr ? formatDate(dateStr) : "Sin fecha"}
-                      </span>
-                      {isExpired ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-destructive/10 px-1 py-0.2 text-[10px] font-semibold text-destructive">
-                          <AlertTriangle className="size-2.5" />
-                          Vencida ({Math.abs(diasRestantes)}d)
-                        </span>
-                      ) : isExpiringSoon ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1 py-0.2 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                          <Clock className="size-2.5" />
-                          Vence ({diasRestantes}d)
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1 py-0.2 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                          Vigente
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  {licencias.length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground italic py-1">
+                      Sin licencias registradas
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      {licencias.map((lic, idx) => {
+                        const catClasses = getCategoryTheme(lic.categoriaLicencia)
+                        let isExpired = false
+                        let isExpiringSoon = false
+                        let diasRestantes = 0
 
-                  {/* Area Row */}
-                  {area && (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
-                        <Building className="size-3 text-muted-foreground/70" />
-                        Área:
-                      </span>
-                      <span className="text-[11px] font-medium text-foreground text-right truncate max-w-[150px]" title={area}>
-                        {area}
-                      </span>
+                        if (lic.fechaVencimiento) {
+                          diasRestantes = Math.ceil(
+                            (new Date(lic.fechaVencimiento).getTime() - hoy.getTime()) / 86_400_000
+                          )
+                          isExpired = diasRestantes < 0
+                          isExpiringSoon = diasRestantes >= 0 && diasRestantes <= 30
+                        }
+
+                        return (
+                          <div
+                            key={lic.id || idx}
+                            className="flex items-center justify-between gap-2 rounded-lg bg-muted/30 border border-border/50 p-2 text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className={cn(
+                                  "inline-flex size-5 items-center justify-center rounded font-bold text-[9.5px] border shrink-0",
+                                  catClasses
+                                )}
+                              >
+                                {lic.categoriaLicencia}
+                              </span>
+                              <span className="font-mono text-xs font-semibold text-foreground truncate">
+                                {lic.numeroLicencia}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {lic.fechaVencimiento ? (
+                                isExpired ? (
+                                  <span className="inline-flex items-center gap-1 rounded bg-destructive/10 px-1.5 py-0.2 text-[9.5px] font-semibold text-destructive">
+                                    <AlertTriangle className="size-2.5" />
+                                    Vencida
+                                  </span>
+                                ) : isExpiringSoon ? (
+                                  <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.2 text-[9.5px] font-semibold text-amber-600 dark:text-amber-400">
+                                    <Clock className="size-2.5" />
+                                    {diasRestantes}d
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.2 text-[9.5px] font-medium text-emerald-600 dark:text-emerald-400">
+                                    {formatDate(lic.fechaVencimiento)}
+                                  </span>
+                                )
+                              ) : null}
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
 
-                {/* Footer: State & Actions */}
-                <div className="flex items-center justify-between pt-2 mt-auto border-t border-border/50">
-                  <div>
-                    {conductor.activo ? (
-                      <Badge
-                        variant="outline"
-                        className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium rounded-full px-2 py-0.2 shadow-2xs"
-                      >
-                        <CheckCircle2 className="size-3" />
-                        Habilitado
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="gap-1 border-zinc-500/30 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 text-[10px] font-medium rounded-full px-2 py-0.2 shadow-2xs"
-                      >
-                        <XCircle className="size-3" />
-                        Inactivo
-                      </Badge>
+                {/* Additional Info / Observación */}
+                {(conductor.observacion || area) && (
+                  <div className="text-[11px] text-muted-foreground flex flex-col gap-1 pt-1 border-t border-border/30">
+                    {area && (
+                      <div className="flex items-center gap-1.5">
+                        <Building className="size-3 text-muted-foreground/70 shrink-0" />
+                        <span className="truncate">{area}</span>
+                      </div>
+                    )}
+                    {conductor.observacion && (
+                      <p className="text-[10.5px] text-muted-foreground/80 italic line-clamp-1">
+                        &quot;{conductor.observacion}&quot;
+                      </p>
                     )}
                   </div>
+                )}
+
+                {/* Footer: Actions */}
+                <div className="flex items-center justify-between pt-2 mt-auto border-t border-border/50">
+                  <span className="text-[10px] text-muted-foreground">
+                    {conductor.activo ? "Habilitado en sistema" : "Deshabilitado"}
+                  </span>
 
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => onEdit(conductor)}
-                      className="h-7 gap-1 px-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                      className="h-7 gap-1 px-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
                       title="Editar conductor"
                     >
                       <Pencil className="size-3" />
@@ -289,7 +331,7 @@ export function ConductorCardView({
                       variant="ghost"
                       size="icon-xs"
                       onClick={() => onDelete(conductor)}
-                      className="size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      className="size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                       title="Eliminar conductor"
                     >
                       <Trash2 className="size-3" />
@@ -304,4 +346,3 @@ export function ConductorCardView({
     </div>
   )
 }
-

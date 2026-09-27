@@ -7,6 +7,7 @@ import {
   Clock,
   IdCard,
   Pencil,
+  ShieldAlert,
   Trash2,
   XCircle,
 } from "lucide-react"
@@ -17,7 +18,7 @@ import { Button } from "@/shared/components/ui/button"
 import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
 
-import type { Conductor } from "../api/conductor.service"
+import type { Conductor, ConductorLicencia } from "../api/conductor.service"
 
 function getInitials(name?: string | null): string {
   const clean = (name || "").trim()
@@ -43,6 +44,58 @@ function getCategoryColor(cat?: string | null) {
       return "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/25"
     default:
       return "bg-primary/15 text-primary border-primary/25"
+  }
+}
+
+function getEstadoConductorBadge(estado?: string | null) {
+  const est = (estado || "ACTIVO").toUpperCase()
+  switch (est) {
+    case "ACTIVO":
+      return (
+        <Badge
+          variant="outline"
+          className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold rounded-full px-2 py-0.2 shadow-2xs"
+        >
+          <CheckCircle2 className="size-3 shrink-0" />
+          Activo
+        </Badge>
+      )
+    case "INACTIVO":
+      return (
+        <Badge
+          variant="outline"
+          className="gap-1 border-zinc-500/30 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 text-[10px] font-semibold rounded-full px-2 py-0.2 shadow-2xs"
+        >
+          <XCircle className="size-3 shrink-0" />
+          Inactivo
+        </Badge>
+      )
+    case "SUSPENDIDO":
+      return (
+        <Badge
+          variant="outline"
+          className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-semibold rounded-full px-2 py-0.2 shadow-2xs"
+        >
+          <AlertTriangle className="size-3 shrink-0" />
+          Suspendido
+        </Badge>
+      )
+    case "BAJA":
+      return (
+        <Badge
+          variant="outline"
+          className="gap-1 border-destructive/30 bg-destructive/10 text-destructive text-[10px] font-semibold rounded-full px-2 py-0.2 shadow-2xs"
+        >
+          <ShieldAlert className="size-3 shrink-0" />
+          Baja
+        </Badge>
+      )
+    default:
+      return (
+        <Badge variant="outline" className="text-[10px]">
+          {est}
+        </Badge>
+      )
   }
 }
 
@@ -92,7 +145,7 @@ export function ConductorTableView({
                     "absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-background shadow-2xs",
                     c.activo ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
                   )}
-                  title={c.activo ? "Habilitado / Activo" : "Inactivo"}
+                  title={c.activo ? "Habilitado" : "Deshabilitado"}
                 />
               </div>
 
@@ -130,71 +183,124 @@ export function ConductorTableView({
         },
       },
       {
-        id: "licencia",
-        accessorFn: (row) => row.numeroLicencia,
+        id: "licencias",
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Licencia" hideSortMenu />
+          <DataTableColumnHeader column={column} title="Licencias Registradas" hideSortMenu />
         ),
         cell: ({ row }) => {
-          const c = row.original
-          const colorClasses = getCategoryColor(c.categoriaLicencia)
+          const licencias: ConductorLicencia[] = row.original.licencias || []
+
+          if (licencias.length === 0) {
+            return (
+              <span className="text-xs text-muted-foreground italic">
+                Sin licencias registradas
+              </span>
+            )
+          }
 
           return (
-            <div className="flex items-center gap-2 whitespace-nowrap">
-              <span
-                className={cn(
-                  "inline-flex size-6 items-center justify-center rounded-lg font-bold text-[10px] border shadow-2xs",
-                  colorClasses
-                )}
-                title={`Categoría ${c.categoriaLicencia}`}
-              >
-                {c.categoriaLicencia}
-              </span>
-              <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-foreground/90">
-                <IdCard className="size-3.5 text-muted-foreground/60 shrink-0 hidden sm:inline" />
-                <span className="tracking-wide">{c.numeroLicencia}</span>
-              </div>
+            <div className="flex flex-col gap-1.5 py-1">
+              {licencias.map((lic, idx) => {
+                const colorClasses = getCategoryColor(lic.categoriaLicencia)
+                const isVigente = lic.estado === "VIGENTE"
+
+                return (
+                  <div
+                    key={lic.id || idx}
+                    className="flex items-center gap-2 flex-wrap"
+                  >
+                    <span
+                      className={cn(
+                        "inline-flex size-5.5 items-center justify-center rounded-md font-bold text-[10px] border shadow-2xs shrink-0",
+                        colorClasses
+                      )}
+                      title={`Categoría ${lic.categoriaLicencia}`}
+                    >
+                      {lic.categoriaLicencia}
+                    </span>
+                    <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-foreground/90">
+                      <IdCard className="size-3 text-muted-foreground/60 shrink-0 hidden sm:inline" />
+                      <span className="tracking-wide">{lic.numeroLicencia}</span>
+                    </div>
+
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-[9.5px] font-medium px-1.5 py-0 rounded border",
+                        isVigente
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+                          : "bg-destructive/10 text-destructive border-destructive/25"
+                      )}
+                    >
+                      {lic.estado || "VIGENTE"}
+                    </Badge>
+                  </div>
+                )
+              })}
             </div>
           )
         },
       },
       {
-        accessorKey: "fechaVencimiento",
+        id: "vencimiento",
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Vencimiento" hideSortMenu />
+          <DataTableColumnHeader column={column} title="Próximo Vencimiento" hideSortMenu />
         ),
         cell: ({ row }) => {
-          const dateStr = row.original.fechaVencimiento
-          if (!dateStr) return <span className="text-xs text-muted-foreground">-</span>
+          const licencias: ConductorLicencia[] = row.original.licencias || []
+          if (licencias.length === 0) {
+            return <span className="text-xs text-muted-foreground">-</span>
+          }
 
-          const vencimiento = new Date(dateStr)
+          // Encontrar la licencia con vencimiento más próximo o vencida
           const hoy = new Date()
           hoy.setHours(0, 0, 0, 0)
-          const diasRestantes = Math.ceil((vencimiento.getTime() - hoy.getTime()) / 86_400_000)
 
-          const isExpired = diasRestantes < 0
-          const isExpiringSoon = diasRestantes >= 0 && diasRestantes <= 30
+          let proxima: ConductorLicencia | null = null
+          let minDiff = Infinity
+
+          for (const l of licencias) {
+            if (l.fechaVencimiento) {
+              const diff = Math.ceil(
+                (new Date(l.fechaVencimiento).getTime() - hoy.getTime()) / 86_400_000
+              )
+              if (diff < minDiff) {
+                minDiff = diff
+                proxima = l
+              }
+            }
+          }
+
+          if (!proxima || !proxima.fechaVencimiento) {
+            return <span className="text-xs text-muted-foreground">-</span>
+          }
+
+          const isExpired = minDiff < 0
+          const isExpiringSoon = minDiff >= 0 && minDiff <= 30
 
           return (
             <div className="flex flex-col gap-0.5 whitespace-nowrap">
               <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
                 <Calendar className="size-3 text-muted-foreground/70 shrink-0" />
-                <span>{formatDate(dateStr)}</span>
+                <span>{formatDate(proxima.fechaVencimiento)}</span>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  (Cat. {proxima.categoriaLicencia})
+                </span>
               </div>
               {isExpired ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-destructive">
                   <AlertTriangle className="size-2.5 shrink-0" />
-                  Vencida ({Math.abs(diasRestantes)}d)
+                  Vencida hace {Math.abs(minDiff)} días
                 </span>
               ) : isExpiringSoon ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
                   <Clock className="size-2.5 shrink-0" />
-                  Vence ({diasRestantes}d)
+                  Vence en {minDiff} días
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600/90 dark:text-emerald-400/90">
                   <span className="size-1 rounded-full bg-emerald-500" />
-                  Vigente ({diasRestantes}d)
+                  Vigente ({minDiff} días)
                 </span>
               )}
             </div>
@@ -202,29 +308,21 @@ export function ConductorTableView({
         },
       },
       {
-        accessorKey: "activo",
+        accessorKey: "estado",
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Estado" hideSortMenu />
+          <DataTableColumnHeader column={column} title="Estado Conductor" hideSortMenu />
         ),
         cell: ({ row }) => {
-          const activo = row.original.activo
+          const c = row.original
           return (
-            <div className="whitespace-nowrap">
-              {activo ? (
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              {getEstadoConductorBadge(c.estado)}
+              {!c.activo && (
                 <Badge
                   variant="outline"
-                  className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium rounded-full px-2 py-0.2 shadow-2xs"
+                  className="text-[9.5px] border-zinc-500/20 bg-zinc-500/5 text-zinc-500"
                 >
-                  <CheckCircle2 className="size-3 shrink-0" />
-                  Habilitado
-                </Badge>
-              ) : (
-                <Badge
-                  variant="outline"
-                  className="gap-1 border-zinc-500/30 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 text-[10px] font-medium rounded-full px-2 py-0.2 shadow-2xs"
-                >
-                  <XCircle className="size-3 shrink-0" />
-                  Inactivo
+                  Deshabilitado
                 </Badge>
               )}
             </div>
@@ -250,8 +348,8 @@ export function ConductorTableView({
                 variant="ghost"
                 size="icon-xs"
                 onClick={() => onEdit(c)}
-                className="size-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                title="Editar conductor"
+                className="size-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                title="Editar conductor y licencias"
               >
                 <Pencil className="size-3.5" />
               </Button>
@@ -259,7 +357,7 @@ export function ConductorTableView({
                 variant="ghost"
                 size="icon-xs"
                 onClick={() => onDelete(c)}
-                className="size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                className="size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                 title="Eliminar conductor"
               >
                 <Trash2 className="size-3.5" />

@@ -13,7 +13,7 @@ import {
 
 import { useDeleteConductor } from "../api/conductor.mutations"
 import { conductorQueries } from "../api/conductor.queries"
-import type { Conductor } from "../api/conductor.service"
+import type { Conductor, ConductorLicencia } from "../api/conductor.service"
 import { ConductorCardView } from "../components/ConductorCardView"
 import { ConductorFormDialog } from "../components/ConductorFormDialog"
 import { ConductoresFilters, type ViewMode } from "../components/ConductoresFilters"
@@ -43,7 +43,7 @@ export function ConductoresPage() {
     direction: "DESC" as const,
     ...(search.query && { search: search.query }),
     ...(selectedCategoria && { categoria: selectedCategoria }),
-    ...(selectedEstado && { activo: selectedEstado === "ACTIVO" }),
+    ...(selectedEstado && { estado: selectedEstado }),
   }
 
   const conductoresQuery = useQuery(conductorQueries.list(queryParams))
@@ -52,7 +52,7 @@ export function ConductoresPage() {
   const conductores = conductoresQuery.data?.content ?? []
 
   const kpiStats = useMemo(() => {
-    const list = allConductoresQuery.data?.content ?? conductores
+    const list: Conductor[] = allConductoresQuery.data?.content ?? conductores
     const total = allConductoresQuery.data?.totalElements ?? list.length
     const hoy = new Date()
     hoy.setHours(0, 0, 0, 0)
@@ -62,13 +62,16 @@ export function ConductoresPage() {
     let vencidas = 0
 
     for (const c of list) {
-      if (c.activo) activos++
-      if (c.fechaVencimiento) {
-        const diffDays = Math.ceil(
-          (new Date(c.fechaVencimiento).getTime() - hoy.getTime()) / 86_400_000
-        )
-        if (diffDays < 0) vencidas++
-        else if (diffDays <= 30) porVencer++
+      if (c.activo && c.estado === "ACTIVO") activos++
+      const licencias: ConductorLicencia[] = c.licencias || []
+      for (const lic of licencias) {
+        if (lic.fechaVencimiento) {
+          const diffDays = Math.ceil(
+            (new Date(lic.fechaVencimiento).getTime() - hoy.getTime()) / 86_400_000
+          )
+          if (diffDays < 0 || lic.estado === "VENCIDA") vencidas++
+          else if (diffDays <= 30) porVencer++
+        }
       }
     }
     return { total, activos, porVencer, vencidas }
@@ -116,14 +119,14 @@ export function ConductoresPage() {
       : "No hay conductores registrados",
     emptyDescription: hasActiveFilters
       ? "No hay resultados que coincidan con los filtros seleccionados."
-      : "Registra conductores autorizados para gestionar la flota vehicular.",
+      : "Registra conductores autorizados y sus licencias para gestionar la flota vehicular.",
     emptyIcon: (
       <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary/70 shadow-2xs">
         <Car className="size-6" />
       </div>
     ),
     emptyAction: !hasActiveFilters && (
-      <Button onClick={openCreate} size="sm" className="mt-3 gap-1.5 rounded-lg text-xs font-semibold">
+      <Button onClick={openCreate} size="sm" className="mt-3 gap-1.5 rounded-lg text-xs font-semibold cursor-pointer">
         <Plus className="size-3.5" />
         Registrar Conductor
       </Button>
@@ -199,7 +202,7 @@ export function ConductoresPage() {
           open={true}
           onOpenChange={(isOpen) => !isOpen && setDeleting(null)}
           title="Eliminar conductor"
-          description={`¿Estás seguro de que deseas eliminar al conductor con licencia "${deleting.numeroLicencia}" (${deleting.empleado?.nombreCompleto || "Empleado asignado"})?`}
+          description={`¿Estás seguro de que deseas eliminar al conductor "${deleting.empleado?.nombreCompleto || "Empleado seleccionado"}" y todas sus licencias asociadas?`}
           onConfirm={handleDelete}
           isPending={deleteMutation.isPending}
         />
@@ -207,4 +210,3 @@ export function ConductoresPage() {
     </div>
   )
 }
-

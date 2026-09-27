@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select"
+import { ESTADOS_CONDUCTOR } from "../schemas/conductor.schema"
 
 export type ViewMode = "grid" | "table"
 
@@ -92,7 +93,7 @@ export function ConductoresFilters({
             value={estado || "ALL"}
             onValueChange={(val) => setEstado(val === "ALL" || !val ? "" : val)}
           >
-            <SelectTrigger className="h-8 w-[130px] text-xs rounded-lg bg-background/70 border-border/60 shadow-2xs font-medium">
+            <SelectTrigger className="h-8 w-[145px] text-xs rounded-lg bg-background/70 border-border/60 shadow-2xs font-medium">
               <div className="flex items-center gap-1.5 truncate">
                 <span className="text-muted-foreground font-normal">Estado:</span>
                 <SelectValue placeholder="Todos" />
@@ -100,8 +101,11 @@ export function ConductoresFilters({
             </SelectTrigger>
             <SelectContent className="rounded-xl text-xs">
               <SelectItem value="ALL">Todos los estados</SelectItem>
-              <SelectItem value="ACTIVO">Habilitados</SelectItem>
-              <SelectItem value="INACTIVO">Inactivos</SelectItem>
+              {ESTADOS_CONDUCTOR.map((est) => (
+                <SelectItem key={est.value} value={est.value}>
+                  {est.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -113,7 +117,7 @@ export function ConductoresFilters({
             variant={viewMode === "table" ? "secondary" : "ghost"}
             type="button"
             onClick={() => onViewModeChange("table")}
-            className="h-6.5 px-2.5 text-xs gap-1.5 rounded-md font-medium transition-all"
+            className="h-6.5 px-2.5 text-xs gap-1.5 rounded-md font-medium transition-all cursor-pointer"
             title="Vista tabular compacta"
           >
             <List className="size-3.5" />
@@ -125,7 +129,7 @@ export function ConductoresFilters({
             variant={viewMode === "grid" ? "secondary" : "ghost"}
             type="button"
             onClick={() => onViewModeChange("grid")}
-            className="h-6.5 px-2.5 text-xs gap-1.5 rounded-md font-medium transition-all"
+            className="h-6.5 px-2.5 text-xs gap-1.5 rounded-md font-medium transition-all cursor-pointer"
             title="Vista en tarjetas"
           >
             <LayoutGrid className="size-3.5" />
@@ -179,7 +183,7 @@ export function ConductoresFilters({
               variant="secondary"
               className="h-6 gap-1 rounded-lg px-2 text-[11px] font-medium bg-background border border-border/60"
             >
-              <span>Estado: {estado === "ACTIVO" ? "Habilitado" : "Inactivo"}</span>
+              <span>Estado: {ESTADOS_CONDUCTOR.find((e) => e.value === estado)?.label || estado}</span>
               <button
                 type="button"
                 onClick={() => setEstado("")}
@@ -194,7 +198,7 @@ export function ConductoresFilters({
             variant="ghost"
             size="sm"
             onClick={resetFilters}
-            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-destructive gap-1 ml-auto"
+            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-destructive gap-1 ml-auto cursor-pointer"
           >
             <FilterX className="size-3" />
             Limpiar todo
