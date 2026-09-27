@@ -64,19 +64,10 @@ export function OrdenTrabajoFormPage({
 }: OrdenTrabajoFormPageProps) {
   const navigate = useNavigate()
 
-  let searchParams: {
+  const searchParams = (useSearch({ strict: false }) ?? {}) as {
     solicitudId?: string
     activoId?: string
     responsableId?: string
-  } = {}
-  try {
-    searchParams = useSearch({ strict: false }) as {
-      solicitudId?: string
-      activoId?: string
-      responsableId?: string
-    }
-  } catch {
-    // Non-route context fallback
   }
 
   const initialSolicitudId =

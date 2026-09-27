@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
@@ -28,8 +28,11 @@ import { routes } from "@/app/config/routes"
 import { accesorioQueries } from "@/modules/activos/accesorio/api/accesorio.queries"
 import type { Accesorio } from "@/modules/activos/accesorio/api/accesorio.service"
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
+import type { Activo } from "@/modules/activos/activo/api/activo.service"
 import { activoAccesorioQueries } from "@/modules/activos/activo-accesorio/api/activo-accesorio.queries"
+import type { ActivoAccesorio } from "@/modules/activos/activo-accesorio/api/activo-accesorio.service"
 import { solicitudQueries } from "@/modules/mantenimientos/solicitud/api/solicitud.queries"
+import type { SolicitudMantenimiento } from "@/modules/mantenimientos/solicitud/api/solicitud.service"
 import { getPrioridadBadgeStyles } from "@/modules/mantenimientos/solicitud/lib/solicitud.utils"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { PageShell } from "@/shared/components/page-shell"
@@ -46,7 +49,11 @@ import {
   useUpdateControlActivoWithDetalles,
 } from "../api/control-activo.mutations"
 import { controlActivoQueries } from "../api/control-activo.queries"
-import type { TipoControlActivo } from "../api/control-activo.service"
+import type {
+  ControlActivo,
+  ControlActivoDetalle,
+  TipoControlActivo,
+} from "../api/control-activo.service"
 import { AccesorioSelectDialog } from "../components/AccesorioSelectDialog"
 import { ControlActivoHistorialModal } from "../components/ControlActivoHistorialModal"
 
@@ -66,32 +73,26 @@ type ControlActivoFormPageProps = {
   initialTipo?: TipoControlActivo
 }
 
+function getDefaultFecha(): string {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+  return now.toISOString().slice(0, 16)
+}
+
 export function ControlActivoFormPage({
   id: propId,
   solicitudId: propSolicitudId,
   initialTipo = "ENTREGA",
 }: ControlActivoFormPageProps) {
-  const navigate = useNavigate()
-
-  let searchParams: {
+  const searchParams = (useSearch({ strict: false }) ?? {}) as {
     id?: string
     solicitudId?: string
     tipo?: TipoControlActivo
-  } = {}
-  try {
-    searchParams = useSearch({ strict: false }) as {
-      id?: string
-      solicitudId?: string
-      tipo?: TipoControlActivo
-    }
-  } catch {
-    // Sin context directo
   }
 
   const controlActivoId = propId || searchParams.id || ""
   const isEditing = Boolean(controlActivoId)
 
-  // Consulta de la cabecera si está en edición
   // Consulta de la cabecera si está en edición
   const controlActivoQuery = useQuery({
     ...controlActivoQueries.detail(controlActivoId),
@@ -112,7 +113,7 @@ export function ControlActivoFormPage({
     return map
   }, [allAccesoriosQuery.data])
 
-  // Consulta de detalles/accesorios existentes si está en edición (como fallback secundario)
+  // Consulta de detalles/accesorios existentes si está en edición
   const controlActivoDetallesQuery = useQuery({
     ...controlActivoQueries.detallesList({
       controlActivoId,
@@ -126,10 +127,6 @@ export function ControlActivoFormPage({
     searchParams.solicitudId ||
     controlActivoQuery.data?.solicitudMantenimientoId ||
     ""
-
-  const [tipo, setTipo] = useState<TipoControlActivo>(
-    searchParams.tipo || initialTipo,
-  )
 
   // Consulta de la solicitud
   const solicitudQuery = useQuery({
@@ -149,7 +146,6 @@ export function ControlActivoFormPage({
     ...activoQueries.detail(activoId ?? ""),
     enabled: Boolean(activoId),
   })
-  const activoDetail = activoDetailQuery.data
 
   // Consulta de accesorios pre-asignados al activo
   const activoAccesoriosQuery = useQuery({
@@ -181,195 +177,224 @@ export function ControlActivoFormPage({
     enabled: Boolean(actaEntregaPrevia?.id && !isEditing),
   })
 
-  // Estado del formulario
+  if (solicitudQuery.isLoading || (isEditing && controlActivoQuery.isLoading)) {
+    return (
+      <PageShell className="p-4">
+        <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin text-primary" />
+          <p className="text-xs font-medium">Cargando datos...</p>
+        </div>
+      </PageShell>
+    )
+  }
+
+  const resolvedInitialTipo: TipoControlActivo =
+    controlActivoQuery.data?.tipo ||
+    searchParams.tipo ||
+    ((solicitud?.estado ?? "").toUpperCase() === "ASIGNADO"
+      ? "ENTREGA"
+      : initialTipo)
+
+  return (
+    <ControlActivoFormContent
+      key={controlActivoId || solicitudId || "new"}
+      isEditing={isEditing}
+      controlActivoId={controlActivoId}
+      solicitudId={solicitudId}
+      activoId={activoId}
+      initialTipo={resolvedInitialTipo}
+      initialControlActivo={controlActivoQuery.data}
+      initialDetalles={
+        controlActivoQuery.data?.detalles &&
+        controlActivoQuery.data.detalles.length > 0
+          ? controlActivoQuery.data.detalles
+          : (controlActivoDetallesQuery.data?.content ?? [])
+      }
+      solicitud={solicitud}
+      activoDetail={activoDetailQuery.data}
+      actaEntregaPrevia={actaEntregaPrevia}
+      actaEntregaDetalles={actaEntregaDetallesQuery.data?.content ?? []}
+      activoAccesorios={activoAccesoriosQuery.data?.content ?? []}
+      accesorioMap={accesorioMap}
+    />
+  )
+}
+
+type ControlActivoFormContentProps = {
+  isEditing: boolean
+  controlActivoId: string
+  solicitudId: string
+  activoId: string
+  initialTipo: TipoControlActivo
+  initialControlActivo?: ControlActivo | null
+  initialDetalles?: ControlActivoDetalle[]
+  solicitud?: SolicitudMantenimiento | null
+  activoDetail?: Activo | null
+  actaEntregaPrevia?: ControlActivo | null
+  actaEntregaDetalles?: ControlActivoDetalle[]
+  activoAccesorios?: ActivoAccesorio[]
+  accesorioMap: Map<string, Accesorio>
+}
+
+function ControlActivoFormContent({
+  isEditing,
+  controlActivoId,
+  solicitudId,
+  activoId,
+  initialTipo,
+  initialControlActivo,
+  initialDetalles = [],
+  solicitud,
+  activoDetail,
+  actaEntregaPrevia,
+  actaEntregaDetalles = [],
+  activoAccesorios = [],
+  accesorioMap,
+}: ControlActivoFormContentProps) {
+  const navigate = useNavigate()
+  const isAsignado = (solicitud?.estado ?? "").toUpperCase() === "ASIGNADO"
+
+  // Estado del formulario inicializado directamente sin efectos sincronizadores
+  const [tipo, setTipo] = useState<TipoControlActivo>(() => initialTipo)
+
   const [fecha, setFecha] = useState<string>(() => {
-    const now = new Date()
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-    return now.toISOString().slice(0, 16)
+    if (initialControlActivo?.fecha) {
+      return initialControlActivo.fecha.slice(0, 16)
+    }
+    return getDefaultFecha()
   })
-  const [entregadoPorId, setEntregadoPorId] = useState<string>("")
-  const [recibidoPorId, setRecibidoPorId] = useState<string>("")
-  const [conformeGeneral, setConformeGeneral] = useState<boolean>(true)
-  const [observacionGeneral, setObservacionGeneral] = useState<string>("")
+
+  const [entregadoPorId, setEntregadoPorId] = useState<string>(() => {
+    if (initialControlActivo) {
+      return (
+        initialControlActivo.entregadoPorId ||
+        initialControlActivo.entregadoPor?.id ||
+        ""
+      )
+    }
+    if (initialTipo === "ENTREGA" || isAsignado) {
+      return solicitud?.solicitante?.id || ""
+    }
+    return (
+      actaEntregaPrevia?.recibidoPor?.id || solicitud?.responsable?.id || ""
+    )
+  })
+
+  const [recibidoPorId, setRecibidoPorId] = useState<string>(() => {
+    if (initialControlActivo) {
+      return (
+        initialControlActivo.recibidoPorId ||
+        initialControlActivo.recibidoPor?.id ||
+        ""
+      )
+    }
+    if (initialTipo === "ENTREGA" || isAsignado) {
+      return solicitud?.responsable?.id || ""
+    }
+    return (
+      actaEntregaPrevia?.entregadoPor?.id || solicitud?.solicitante?.id || ""
+    )
+  })
+
+  const [conformeGeneral, setConformeGeneral] = useState<boolean>(() => {
+    if (initialControlActivo) {
+      return initialControlActivo.conforme ?? true
+    }
+    if (
+      initialTipo === "DEVOLUCION" &&
+      actaEntregaPrevia?.conforme !== undefined &&
+      actaEntregaPrevia?.conforme !== null
+    ) {
+      return actaEntregaPrevia.conforme
+    }
+    return true
+  })
+
+  const [observacionGeneral, setObservacionGeneral] = useState<string>(() => {
+    return initialControlActivo?.observacion || ""
+  })
 
   // Lista de accesorios a controlar
-  const [items, setItems] = useState<AccesorioItemState[]>([])
-  const [hasLoadedDefaultAccesorios, setHasLoadedDefaultAccesorios] =
-    useState(false)
+  const [items, setItems] = useState<AccesorioItemState[]>(() => {
+    if (isEditing) {
+      if (initialDetalles.length > 0) {
+        return initialDetalles.map((det) => {
+          const accId = det.accesorioId || det.accesorio?.id || ""
+          const accCatalog = accesorioMap.get(accId)
+          return {
+            accesorioId: accId,
+            codigo: det.accesorio?.codigo || accCatalog?.codigo || "ACC",
+            nombre: det.accesorio?.nombre || accCatalog?.nombre || "Accesorio",
+            cantidadEsperada: det.cantidadEsperada ?? 1,
+            cantidadEncontrada: det.cantidadEncontrada ?? 1,
+            conforme: det.conforme ?? true,
+            observacion: det.observacion ?? "",
+          }
+        })
+      }
+      return []
+    }
+
+    if (initialTipo === "DEVOLUCION") {
+      if (actaEntregaDetalles.length > 0) {
+        return actaEntregaDetalles.map((det) => ({
+          accesorioId: det.accesorio?.id ?? "",
+          codigo: det.accesorio?.codigo ?? "ACC",
+          nombre: det.accesorio?.nombre ?? "Accesorio",
+          cantidadEsperada:
+            det.cantidadEncontrada ?? det.cantidadEsperada ?? 1,
+          cantidadEncontrada:
+            det.cantidadEncontrada ?? det.cantidadEsperada ?? 1,
+          conforme: det.conforme ?? true,
+          observacion: det.observacion
+            ? `Nota entrega: ${det.observacion}`
+            : "",
+        }))
+      }
+      if (activoAccesorios.length > 0) {
+        return activoAccesorios.map((rel) => ({
+          accesorioId: rel.accesorio?.id ?? "",
+          codigo: rel.accesorio?.codigo ?? "ACC",
+          nombre: rel.accesorio?.nombre ?? "Accesorio",
+          cantidadEsperada: rel.cantidad ?? 1,
+          cantidadEncontrada: rel.cantidad ?? 1,
+          conforme: true,
+          observacion: rel.observacion ?? "",
+        }))
+      }
+      return []
+    }
+
+    // Tipo ENTREGA
+    if (activoAccesorios.length > 0) {
+      return activoAccesorios.map((rel) => ({
+        accesorioId: rel.accesorio?.id ?? "",
+        codigo: rel.accesorio?.codigo ?? "ACC",
+        nombre: rel.accesorio?.nombre ?? "Accesorio",
+        cantidadEsperada: rel.cantidad ?? 1,
+        cantidadEncontrada: rel.cantidad ?? 1,
+        conforme: true,
+        observacion: rel.observacion ?? "",
+      }))
+    }
+
+    return []
+  })
 
   // Modales
   const [selectAccesorioOpen, setSelectAccesorioOpen] = useState(false)
   const [historialOpen, setHistorialOpen] = useState(false)
 
-  const isAsignado = (solicitud?.estado ?? "").toUpperCase() === "ASIGNADO"
   const targetRoute =
     tipo === "DEVOLUCION"
       ? routes.mantenimientos.solicitudes
       : routes.mantenimientos.encargado
 
-  // Cargar datos del control existente cuando está en modo edición
-  useEffect(() => {
-    if (isEditing && controlActivoQuery.data) {
-      const data = controlActivoQuery.data
-      setTipo(data.tipo)
-      if (data.fecha) {
-        setFecha(data.fecha.slice(0, 16))
-      }
-      setEntregadoPorId(data.entregadoPorId || data.entregadoPor?.id || "")
-      setRecibidoPorId(data.recibidoPorId || data.recibidoPor?.id || "")
-      setConformeGeneral(data.conforme ?? true)
-      setObservacionGeneral(data.observacion || "")
-    }
-  }, [isEditing, controlActivoQuery.data])
-
-  // Cargar items existentes cuando está en modo edición
-  useEffect(() => {
-    if (!isEditing || hasLoadedDefaultAccesorios) return
-
-    const rawDetalles =
-      controlActivoQuery.data?.detalles && controlActivoQuery.data.detalles.length > 0
-        ? controlActivoQuery.data.detalles
-        : (controlActivoDetallesQuery.data?.content ?? [])
-
-    if (rawDetalles.length > 0) {
-      const loaded: AccesorioItemState[] = rawDetalles.map((det) => {
-        const accId = det.accesorioId || det.accesorio?.id || ""
-        const accCatalog = accesorioMap.get(accId)
-        return {
-          accesorioId: accId,
-          codigo: det.accesorio?.codigo || accCatalog?.codigo || "ACC",
-          nombre: det.accesorio?.nombre || accCatalog?.nombre || "Accesorio",
-          cantidadEsperada: det.cantidadEsperada ?? 1,
-          cantidadEncontrada: det.cantidadEncontrada ?? 1,
-          conforme: det.conforme ?? true,
-          observacion: det.observacion ?? "",
-        }
-      })
-      setItems(loaded)
-      setHasLoadedDefaultAccesorios(true)
-    }
-  }, [
-    isEditing,
-    controlActivoQuery.data?.detalles,
-    controlActivoDetallesQuery.data,
-    accesorioMap,
-    hasLoadedDefaultAccesorios,
-  ])
-
-  // Auto-cargar datos iniciales de responsables de la solicitud (solo si es nuevo)
-  useEffect(() => {
-    if (solicitud && !isEditing) {
-      const effectiveTipo = isAsignado ? "ENTREGA" : tipo
-      if (isAsignado && tipo !== "ENTREGA") {
-        setTipo("ENTREGA")
-      }
-
-      if (effectiveTipo === "ENTREGA") {
-        if (!entregadoPorId && solicitud.solicitante?.id) {
-          setEntregadoPorId(solicitud.solicitante.id)
-        }
-        if (!recibidoPorId && solicitud.responsable?.id) {
-          setRecibidoPorId(solicitud.responsable.id)
-        }
-      } else {
-        if (!entregadoPorId && (actaEntregaPrevia?.recibidoPor?.id || solicitud.responsable?.id)) {
-          setEntregadoPorId(actaEntregaPrevia?.recibidoPor?.id || solicitud.responsable?.id || "")
-        }
-        if (!recibidoPorId && (actaEntregaPrevia?.entregadoPor?.id || solicitud.solicitante?.id)) {
-          setRecibidoPorId(actaEntregaPrevia?.entregadoPor?.id || solicitud.solicitante?.id || "")
-        }
-      }
-    }
-  }, [solicitud, tipo, isAsignado, isEditing, actaEntregaPrevia, entregadoPorId, recibidoPorId])
-
-  // Cargar accesorios: Si es Devolución, recupera del Acta de Entrega; si es Entrega, del activo
-  useEffect(() => {
-    if (isEditing) return
-
-    if (tipo === "DEVOLUCION") {
-      if (
-        actaEntregaPrevia &&
-        actaEntregaPrevia.conforme !== undefined &&
-        actaEntregaPrevia.conforme !== null &&
-        !hasLoadedDefaultAccesorios
-      ) {
-        setConformeGeneral(actaEntregaPrevia.conforme)
-      }
-
-      const detallesEntrega = actaEntregaDetallesQuery.data?.content ?? []
-      if (detallesEntrega.length > 0 && !hasLoadedDefaultAccesorios) {
-        const recovered: AccesorioItemState[] = detallesEntrega.map((det) => ({
-          accesorioId: det.accesorio?.id ?? "",
-          codigo: det.accesorio?.codigo ?? "ACC",
-          nombre: det.accesorio?.nombre ?? "Accesorio",
-          cantidadEsperada: det.cantidadEncontrada ?? det.cantidadEsperada ?? 1,
-          cantidadEncontrada: det.cantidadEncontrada ?? det.cantidadEsperada ?? 1,
-          conforme: det.conforme ?? true,
-          observacion: det.observacion ? `Nota entrega: ${det.observacion}` : "",
-        }))
-        setItems(recovered)
-        setHasLoadedDefaultAccesorios(true)
-      } else if (
-        !actaEntregaPrevia &&
-        activoAccesoriosQuery.data &&
-        !hasLoadedDefaultAccesorios &&
-        items.length === 0
-      ) {
-        // Fallback si no hubo acta de entrega registrada
-        const defaultItems: AccesorioItemState[] = (
-          activoAccesoriosQuery.data.content ?? []
-        ).map((rel) => ({
-          accesorioId: rel.accesorio?.id ?? "",
-          codigo: rel.accesorio?.codigo ?? "ACC",
-          nombre: rel.accesorio?.nombre ?? "Accesorio",
-          cantidadEsperada: rel.cantidad ?? 1,
-          cantidadEncontrada: rel.cantidad ?? 1,
-          conforme: true,
-          observacion: rel.observacion ?? "",
-        }))
-        if (defaultItems.length > 0) {
-          setItems(defaultItems)
-          setHasLoadedDefaultAccesorios(true)
-        }
-      }
-    } else {
-      // Tipo ENTREGA
-      if (
-        activoAccesoriosQuery.data &&
-        !hasLoadedDefaultAccesorios &&
-        items.length === 0
-      ) {
-        const defaultItems: AccesorioItemState[] = (
-          activoAccesoriosQuery.data.content ?? []
-        ).map((rel) => ({
-          accesorioId: rel.accesorio?.id ?? "",
-          codigo: rel.accesorio?.codigo ?? "ACC",
-          nombre: rel.accesorio?.nombre ?? "Accesorio",
-          cantidadEsperada: rel.cantidad ?? 1,
-          cantidadEncontrada: rel.cantidad ?? 1,
-          conforme: true,
-          observacion: rel.observacion ?? "",
-        }))
-
-        if (defaultItems.length > 0) {
-          setItems(defaultItems)
-          setHasLoadedDefaultAccesorios(true)
-        }
-      }
-    }
-  }, [
-    isEditing,
-    tipo,
-    actaEntregaPrevia,
-    actaEntregaDetallesQuery.data,
-    activoAccesoriosQuery.data,
-    hasLoadedDefaultAccesorios,
-    items.length,
-  ])
-
   function handleRecuperarDatosEntrega() {
     if (!actaEntregaPrevia) {
-      toast.info("No se encontró un Acta de Entrega previa registrada para esta solicitud")
+      toast.info(
+        "No se encontró un Acta de Entrega previa registrada para esta solicitud",
+      )
       return
     }
 
@@ -379,24 +404,33 @@ export function ControlActivoFormPage({
     if (actaEntregaPrevia.entregadoPor?.id) {
       setRecibidoPorId(actaEntregaPrevia.entregadoPor.id)
     }
-    if (actaEntregaPrevia.conforme !== undefined && actaEntregaPrevia.conforme !== null) {
+    if (
+      actaEntregaPrevia.conforme !== undefined &&
+      actaEntregaPrevia.conforme !== null
+    ) {
       setConformeGeneral(actaEntregaPrevia.conforme)
     }
 
-    const detallesEntrega = actaEntregaDetallesQuery.data?.content ?? []
-    if (detallesEntrega.length > 0) {
-      const recovered: AccesorioItemState[] = detallesEntrega.map((det) => ({
-        accesorioId: det.accesorio?.id ?? "",
-        codigo: det.accesorio?.codigo ?? "ACC",
-        nombre: det.accesorio?.nombre ?? "Accesorio",
-        cantidadEsperada: det.cantidadEncontrada ?? det.cantidadEsperada ?? 1,
-        cantidadEncontrada: det.cantidadEncontrada ?? det.cantidadEsperada ?? 1,
-        conforme: det.conforme ?? true,
-        observacion: det.observacion ? `Nota entrega: ${det.observacion}` : "",
-      }))
+    if (actaEntregaDetalles.length > 0) {
+      const recovered: AccesorioItemState[] = actaEntregaDetalles.map(
+        (det) => ({
+          accesorioId: det.accesorio?.id ?? "",
+          codigo: det.accesorio?.codigo ?? "ACC",
+          nombre: det.accesorio?.nombre ?? "Accesorio",
+          cantidadEsperada:
+            det.cantidadEncontrada ?? det.cantidadEsperada ?? 1,
+          cantidadEncontrada:
+            det.cantidadEncontrada ?? det.cantidadEsperada ?? 1,
+          conforme: det.conforme ?? true,
+          observacion: det.observacion
+            ? `Nota entrega: ${det.observacion}`
+            : "",
+        }),
+      )
       setItems(recovered)
-      setHasLoadedDefaultAccesorios(true)
-      toast.success("Accesorios, conformidad y responsables recuperados del Acta de Entrega")
+      toast.success(
+        "Accesorios, conformidad y responsables recuperados del Acta de Entrega",
+      )
     }
   }
 
@@ -414,9 +448,10 @@ export function ControlActivoFormPage({
         if (i !== index) return item
         const updated = { ...item, ...partial }
 
-        // Si se modifica la cantidad encontrada y no se especificó 'conforme' manualmente:
-        if (partial.cantidadEncontrada !== undefined && partial.conforme === undefined) {
-          // Si la cantidad encontrada es diferente a la esperada o es 0, pasa automáticamente a Observado (false)
+        if (
+          partial.cantidadEncontrada !== undefined &&
+          partial.conforme === undefined
+        ) {
           updated.conforme =
             partial.cantidadEncontrada === item.cantidadEsperada &&
             partial.cantidadEncontrada > 0
@@ -425,7 +460,6 @@ export function ControlActivoFormPage({
         return updated
       })
 
-      // Sincronizar automáticamente el dictamen general: si algún accesorio no está conforme o difiere en cantidad
       const allItemsConformes =
         next.length === 0 ||
         next.every(
@@ -477,7 +511,7 @@ export function ControlActivoFormPage({
     })
   }
 
-  // Cálculos reactivos de métricas
+  // Métricas
   const totalItems = items.length
   const itemsConformes = useMemo(
     () => items.filter((i) => i.conforme).length,
@@ -562,19 +596,13 @@ export function ControlActivoFormPage({
     }
   }
 
-  if (solicitudQuery.isLoading || (isEditing && controlActivoQuery.isLoading)) {
-    return (
-      <PageShell className="p-4">
-        <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
-          <Loader2 className="size-6 animate-spin text-primary" />
-          <p className="text-xs font-medium">Cargando datos...</p>
-        </div>
-      </PageShell>
-    )
-  }
-
   return (
-    <PageShell size="full" padding="none" layout="auto" className="w-full max-w-5xl mx-auto space-y-3 pb-10">
+    <PageShell
+      size="full"
+      padding="none"
+      layout="auto"
+      className="w-full max-w-5xl mx-auto space-y-3 pb-10"
+    >
       {/* Top Header Compacto */}
       <header className="flex shrink-0 items-center justify-between gap-2 border-b pb-2 pt-0.5">
         <div className="flex items-center gap-2 min-w-0">
@@ -639,7 +667,9 @@ export function ControlActivoFormPage({
                     </span>
                   )}
                   <span className="font-heading text-sm font-bold text-foreground truncate">
-                    {solicitud?.activo?.nombre || activoDetail?.nombre || "Activo no especificado"}
+                    {solicitud?.activo?.nombre ||
+                      activoDetail?.nombre ||
+                      "Activo no especificado"}
                   </span>
                   {solicitud?.prioridad && (
                     <span
@@ -662,12 +692,18 @@ export function ControlActivoFormPage({
                   )}
                   {solicitud?.solicitante && (
                     <span className="truncate">
-                      Solicitante: <strong className="text-foreground font-medium">{solicitud.solicitante.nombre}</strong>
+                      Solicitante:{" "}
+                      <strong className="text-foreground font-medium">
+                        {solicitud.solicitante.nombre}
+                      </strong>
                     </span>
                   )}
                   {solicitud?.tipoMantenimiento && (
                     <span className="hidden md:inline truncate">
-                      Tipo: <strong className="text-foreground font-medium">{solicitud.tipoMantenimiento.nombre}</strong>
+                      Tipo:{" "}
+                      <strong className="text-foreground font-medium">
+                        {solicitud.tipoMantenimiento.nombre}
+                      </strong>
                     </span>
                   )}
                 </div>
@@ -763,7 +799,10 @@ export function ControlActivoFormPage({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-start">
             {/* Fecha y Hora */}
             <div className="space-y-1">
-              <Label htmlFor="fechaControl" className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+              <Label
+                htmlFor="fechaControl"
+                className="text-[11px] font-semibold text-foreground flex items-center gap-1"
+              >
                 <Calendar className="size-3 text-muted-foreground" />
                 <span>Fecha / Hora</span>
                 <span className="text-destructive">*</span>
@@ -781,7 +820,9 @@ export function ControlActivoFormPage({
             {/* Entregado Por */}
             <div className="space-y-1">
               <Label className="text-[11px] font-semibold text-foreground">
-                {tipo === "ENTREGA" ? "Entrega (Solicitante)" : "Entrega (Técnico)"}
+                {tipo === "ENTREGA"
+                  ? "Entrega (Solicitante)"
+                  : "Entrega (Técnico)"}
               </Label>
               <EmpleadoCombobox
                 value={entregadoPorId}
@@ -794,7 +835,9 @@ export function ControlActivoFormPage({
             {/* Recibido Por */}
             <div className="space-y-1">
               <Label className="text-[11px] font-semibold text-foreground">
-                {tipo === "ENTREGA" ? "Recibe (Técnico)" : "Recibe (Solicitante)"}
+                {tipo === "ENTREGA"
+                  ? "Recibe (Técnico)"
+                  : "Recibe (Solicitante)"}
               </Label>
               <EmpleadoCombobox
                 value={recibidoPorId}
@@ -859,9 +902,12 @@ export function ControlActivoFormPage({
           {/* Lista de Accesorios */}
           {items.length === 0 ? (
             <div className="py-6 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/10 p-3">
-              <p className="font-semibold text-foreground">No hay accesorios en la lista</p>
+              <p className="font-semibold text-foreground">
+                No hay accesorios en la lista
+              </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Puede añadir accesorios del catálogo usando el botón "+ Agregar".
+                Puede añadir accesorios del catálogo usando el botón "+
+                Agregar".
               </p>
             </div>
           ) : (
@@ -879,7 +925,8 @@ export function ControlActivoFormPage({
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {items.map((item, idx) => {
-                    const hasMismatch = item.cantidadEsperada !== item.cantidadEncontrada
+                    const hasMismatch =
+                      item.cantidadEsperada !== item.cantidadEncontrada
                     const isOk = item.conforme && !hasMismatch
 
                     return (
@@ -918,7 +965,10 @@ export function ControlActivoFormPage({
                               className="size-5 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
                               onClick={() =>
                                 handleUpdateItem(idx, {
-                                  cantidadEncontrada: Math.max(0, item.cantidadEncontrada - 1),
+                                  cantidadEncontrada: Math.max(
+                                    0,
+                                    item.cantidadEncontrada - 1,
+                                  ),
                                 })
                               }
                             >
@@ -927,7 +977,9 @@ export function ControlActivoFormPage({
                             <span
                               className={cn(
                                 "w-6 text-center text-xs font-mono font-bold",
-                                hasMismatch ? "text-amber-600 dark:text-amber-400" : "text-foreground",
+                                hasMismatch
+                                  ? "text-amber-600 dark:text-amber-400"
+                                  : "text-foreground",
                               )}
                             >
                               {item.cantidadEncontrada}
@@ -937,7 +989,8 @@ export function ControlActivoFormPage({
                               className="size-5 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
                               onClick={() =>
                                 handleUpdateItem(idx, {
-                                  cantidadEncontrada: item.cantidadEncontrada + 1,
+                                  cantidadEncontrada:
+                                    item.cantidadEncontrada + 1,
                                 })
                               }
                             >
@@ -951,7 +1004,9 @@ export function ControlActivoFormPage({
                           <button
                             type="button"
                             onClick={() =>
-                              handleUpdateItem(idx, { conforme: !item.conforme })
+                              handleUpdateItem(idx, {
+                                conforme: !item.conforme,
+                              })
                             }
                             className={cn(
                               "inline-flex items-center gap-1 h-6.5 px-2 rounded-md font-bold text-[10.5px] border transition-all cursor-pointer",
@@ -965,7 +1020,9 @@ export function ControlActivoFormPage({
                             ) : (
                               <AlertTriangle className="size-3 text-amber-600 dark:text-amber-400" />
                             )}
-                            <span>{item.conforme ? "Conforme" : "Observado"}</span>
+                            <span>
+                              {item.conforme ? "Conforme" : "Observado"}
+                            </span>
                           </button>
                         </td>
 
@@ -975,7 +1032,9 @@ export function ControlActivoFormPage({
                             placeholder="Nota opcional..."
                             value={item.observacion}
                             onChange={(e) =>
-                              handleUpdateItem(idx, { observacion: e.target.value })
+                              handleUpdateItem(idx, {
+                                observacion: e.target.value,
+                              })
                             }
                             className="h-6.5 text-xs px-2 bg-background/80"
                           />
@@ -1048,7 +1107,10 @@ export function ControlActivoFormPage({
             {/* Observaciones (2 Columnas) */}
             <div className="space-y-1 md:col-span-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="obsGeneral" className="text-[11px] font-semibold text-foreground">
+                <Label
+                  htmlFor="obsGeneral"
+                  className="text-[11px] font-semibold text-foreground"
+                >
                   Observaciones Generales del Acta
                 </Label>
                 <span className="text-[10px] text-muted-foreground">
@@ -1073,7 +1135,9 @@ export function ControlActivoFormPage({
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Info className="size-4 text-primary shrink-0" />
             <span>
-              Acta de <strong>{tipo === "ENTREGA" ? "Entrega" : "Devolución"}</strong> • {itemsConformes}/{totalItems} accesorios OK
+              Acta de{" "}
+              <strong>{tipo === "ENTREGA" ? "Entrega" : "Devolución"}</strong> •{" "}
+              {itemsConformes}/{totalItems} accesorios OK
             </span>
           </div>
 
