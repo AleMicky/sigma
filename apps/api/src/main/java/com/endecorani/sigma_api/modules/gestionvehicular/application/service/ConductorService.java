@@ -13,6 +13,7 @@ import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -77,6 +79,18 @@ public class ConductorService {
         }
 
         return toPageResponse(resultado);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ConductorResponse> findDisponibles(LocalDateTime fechaSalida, LocalDateTime fechaRetorno) {
+        if (fechaSalida == null || fechaRetorno == null) {
+            throw new BusinessException("Las fechas de salida y retorno son obligatorias");
+        }
+        if (fechaRetorno.isBefore(fechaSalida)) {
+            throw new BusinessException("La fecha de retorno no puede ser anterior a la fecha de salida");
+        }
+        List<Conductor> disponibles = repository.findDisponibles(fechaSalida, fechaRetorno);
+        return toListResponse(disponibles);
     }
 
     @Transactional(readOnly = true)
@@ -156,8 +170,15 @@ public class ConductorService {
         if (page.isEmpty()) {
             return PageResponse.of(List.of(), page);
         }
+        List<ConductorResponse> responses = toListResponse(page.getContent());
+        return PageResponse.of(responses, page);
+    }
 
-        List<Conductor> content = page.getContent();
+    private List<ConductorResponse> toListResponse(List<Conductor> content) {
+        if (content.isEmpty()) {
+            return List.of();
+        }
+
         Set<UUID> empleadoIds = content.stream()
                 .map(Conductor::getEmpleadoId)
                 .filter(Objects::nonNull)
@@ -178,14 +199,12 @@ public class ConductorService {
                         (a, b) -> a
                 ));
 
-        List<ConductorResponse> responses = content.stream()
+        return content.stream()
                 .map(domain -> {
                     ConductorEmpleadoInfo empleadoInfo = domain.getEmpleadoId() != null ? empleadoMap.get(domain.getEmpleadoId()) : null;
                     return mapper.toResponse(domain, empleadoInfo);
                 })
                 .toList();
-
-        return PageResponse.of(responses, page);
     }
 
     private ConductorResponse toResponse(Conductor conductor) {

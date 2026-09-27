@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public interface SpringConductorRepository extends JpaRepository<ConductorEntity, UUID> {
@@ -48,4 +50,22 @@ public interface SpringConductorRepository extends JpaRepository<ConductorEntity
            OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%'))
     """)
     Page<ConductorEntity> search(@Param("search") String search, Pageable pageable);
+
+    @Query("""
+        SELECT c
+        FROM ConductorEntity c
+        WHERE c.activo = true
+          AND NOT EXISTS (
+              SELECT 1
+              FROM AsignacionVehicularEntity a
+              JOIN SolicitudVehicularEntity s ON s.id = a.solicitudVehicularId
+              WHERE a.conductorId = c.id
+                AND s.fechaSalida < :fechaRetorno
+                AND s.fechaRetornoEstimada > :fechaSalida
+          )
+    """)
+    List<ConductorEntity> findDisponibles(
+            @Param("fechaSalida") LocalDateTime fechaSalida,
+            @Param("fechaRetorno") LocalDateTime fechaRetorno
+    );
 }

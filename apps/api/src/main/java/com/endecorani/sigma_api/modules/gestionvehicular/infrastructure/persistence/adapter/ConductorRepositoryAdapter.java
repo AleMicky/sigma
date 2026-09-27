@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,6 +35,13 @@ public class ConductorRepositoryAdapter implements ConductorRepository {
     @Override
     public Page<Conductor> searchWithFilters(String search, String categoria, Boolean activo, Pageable pageable) {
         return springRepository.searchWithFilters(search, categoria, activo, pageable).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<Conductor> findDisponibles(LocalDateTime fechaSalida, LocalDateTime fechaRetorno) {
+        return springRepository.findDisponibles(fechaSalida, fechaRetorno).stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 
     @Override
