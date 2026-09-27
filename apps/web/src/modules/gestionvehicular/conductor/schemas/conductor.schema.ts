@@ -49,17 +49,14 @@ export const conductorLicenciaSchema = z.object({
 
 export type ConductorLicenciaFormValues = z.infer<typeof conductorLicenciaSchema>
 
-export const conductorSchema = z.object({
+export const conductorBasicSchema = z.object({
   empleadoId: z.string().min(1, "Debes seleccionar un empleado titular"),
   estado: z.enum(["ACTIVO", "INACTIVO", "SUSPENDIDO", "BAJA"]),
   observacion: z.string().max(1000, "La observación no puede superar los 1000 caracteres").optional().nullable(),
   activo: z.boolean(),
-  licencias: z
-    .array(conductorLicenciaSchema)
-    .min(1, "Debes registrar al menos una licencia de conducir"),
 })
 
-export type ConductorFormValues = z.infer<typeof conductorSchema>
+export type ConductorBasicFormValues = z.infer<typeof conductorBasicSchema>
 
 export const defaultLicenciaValue: ConductorLicenciaFormValues = {
   categoriaLicencia: "C",
@@ -71,10 +68,9 @@ export const defaultLicenciaValue: ConductorLicenciaFormValues = {
   activo: true,
 }
 
-export const defaultConductorValues: ConductorFormValues = {
+export const defaultConductorBasicValues: ConductorBasicFormValues = {
   empleadoId: "",
   estado: "ACTIVO",
   observacion: "",
   activo: true,
-  licencias: [defaultLicenciaValue],
 }

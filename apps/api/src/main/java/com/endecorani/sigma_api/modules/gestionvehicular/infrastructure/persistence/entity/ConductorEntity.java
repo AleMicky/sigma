@@ -69,8 +69,8 @@ public class ConductorEntity extends BaseEntity {
     )
     private boolean activo = true;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "conductor_id", nullable = false)
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conductor_id", insertable = false, updatable = false)
     @Builder.Default
     private List<ConductorLicenciaEntity> licencias = new ArrayList<>();
 }

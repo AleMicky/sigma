@@ -37,9 +37,7 @@ public class ConductorLicenciaEntity extends BaseEntity {
 
     @Column(
             name = "conductor_id",
-            nullable = false,
-            insertable = false,
-            updatable = false
+            nullable = false
     )
     private UUID conductorId;
 

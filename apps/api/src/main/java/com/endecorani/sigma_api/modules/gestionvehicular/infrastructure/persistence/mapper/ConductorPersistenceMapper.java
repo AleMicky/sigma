@@ -69,6 +69,7 @@ public class ConductorPersistenceMapper {
 
         ConductorLicenciaEntity entity = new ConductorLicenciaEntity();
         entity.setId(domain.getId());
+        entity.setConductorId(domain.getConductorId());
         entity.setCategoriaLicencia(domain.getCategoriaLicencia());
         entity.setNumeroLicencia(domain.getNumeroLicencia());
         entity.setFechaEmision(domain.getFechaEmision());
