@@ -19,10 +19,37 @@ public class Menu extends AuditableModel {
     private String nombre;
     private TipoMenu tipo;
     private String icono;
+    private String color;
     private String ruta;
     private String badge;
     private String descripcion;
     private boolean visibleEnMenu;
     private Integer orden;
     private boolean activo;
+
+    public boolean esRaiz() {
+        return this.menuPadreId == null;
+    }
+
+    public boolean esFolder() {
+        return TipoMenu.MODULO.equals(this.tipo)
+                || TipoMenu.AGRUPADOR.equals(this.tipo)
+                || (this.ruta == null || this.ruta.isBlank());
+    }
+
+    public boolean esInterfaz() {
+        return !esFolder();
+    }
+
+    public boolean esContenedor() {
+        return esFolder();
+    }
+
+    public void activar() {
+        this.activo = true;
+    }
+
+    public void desactivar() {
+        this.activo = false;
+    }
 }

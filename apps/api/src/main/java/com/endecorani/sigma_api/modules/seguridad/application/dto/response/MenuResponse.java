@@ -49,6 +49,24 @@ public record MenuResponse(
         String icono,
 
         @Schema(
+                description = "Color de acento o personalización visual del menú",
+                example = "#3B82F6"
+        )
+        String color,
+
+        @Schema(
+                description = "Indica si el elemento actúa como carpeta/agrupador",
+                example = "false"
+        )
+        boolean esFolder,
+
+        @Schema(
+                description = "Indica si el elemento es una interfaz o pantalla navegable",
+                example = "true"
+        )
+        boolean esInterfaz,
+
+        @Schema(
                 description = "Ruta del menú",
                 example = "/seguridad/usuarios"
         )

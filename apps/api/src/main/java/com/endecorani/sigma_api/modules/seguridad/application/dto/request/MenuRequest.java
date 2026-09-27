@@ -58,6 +58,16 @@ public record MenuRequest(
         String icono,
 
         @Schema(
+                description = "Color de acento o personalización visual del menú",
+                example = "#3B82F6"
+        )
+        @Size(
+                max = 50,
+                message = "El color no puede superar los 50 caracteres"
+        )
+        String color,
+
+        @Schema(
                 description = "Ruta del menú",
                 example = "/seguridad/usuarios"
         )
@@ -82,8 +92,8 @@ public record MenuRequest(
                 example = "Gestión integral de usuarios del sistema"
         )
         @Size(
-                max = 255,
-                message = "La descripción no puede superar los 255 caracteres"
+                max = 300,
+                message = "La descripción no puede superar los 300 caracteres"
         )
         String descripcion,
 

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -19,6 +20,10 @@ public interface MenuJpaRepository
     boolean existsByCodigoIgnoreCaseAndIdNot(String codigo, UUID id);
 
     boolean existsByMenuPadreId(UUID menuPadreId);
+
+    Optional<MenuEntity> findByCodigoIgnoreCase(String codigo);
+
+    List<MenuEntity> findByActivoTrueOrderByOrdenAsc();
 
     List<MenuEntity> findByMenuPadreId(UUID menuPadreId);
 

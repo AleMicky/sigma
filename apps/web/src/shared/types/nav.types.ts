@@ -13,8 +13,9 @@ export interface NavNode {
   title: string
   to?: string
   icon?: LucideIcon
+  color?: string | null
   children?: NavNode[]
-  badge?: string | number
+  badge?: string | number | null
   order?: number
 }
 
@@ -24,7 +25,9 @@ export interface NavSection {
   code?: string
   to?: string
   icon?: LucideIcon
+  color?: string | null
   children?: NavNode[]
+  badge?: string | number | null
   order?: number
 }
 

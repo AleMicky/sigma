@@ -169,6 +169,7 @@ function mapTreeNodeToNavNode(node: MenuTreeNode, currentDepth = 1): NavNode {
     title: node.nombre.trim(),
     to: node.ruta || undefined,
     icon: Icon,
+    color: node.color || undefined,
     badge: node.badge || undefined,
     order: node.orden,
     children: mappedChildren ? deduplicateNavNodes(mappedChildren) : undefined,
@@ -293,6 +294,7 @@ function convertTreeToNavSections(nodes: MenuTreeNode[] | unknown): NavSection[]
       code: root.codigo,
       to: isHome ? (root.ruta || routes.home) : root.ruta || undefined,
       icon: Icon,
+      color: root.color || undefined,
       order: root.orden,
       children: simplifiedChildren && simplifiedChildren.length > 0 ? simplifiedChildren : undefined,
     })

@@ -6,6 +6,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(
         name = "menus",
@@ -15,7 +18,8 @@ import lombok.experimental.SuperBuilder;
         },
         indexes = {
                 @Index(name = "idx_menus_menu_padre_id", columnList = "menu_padre_id"),
-                @Index(name = "idx_menus_activo", columnList = "activo"),
+                @Index(name = "idx_menus_activo_visible", columnList = "activo, visible_en_menu"),
+                @Index(name = "idx_menus_padre_orden", columnList = "menu_padre_id, orden"),
                 @Index(name = "idx_menus_tipo", columnList = "tipo")
         }
 )
@@ -24,7 +28,10 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
+@ToString(exclude = {"menuPadre", "submenus"})
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class MenuEntity extends BaseEntity {
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "menu_padre_id",
@@ -32,6 +39,12 @@ public class MenuEntity extends BaseEntity {
     )
     private MenuEntity menuPadre;
 
+    @OneToMany(mappedBy = "menuPadre", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OrderBy("orden ASC")
+    @Builder.Default
+    private List<MenuEntity> submenus = new ArrayList<>();
+
+    @EqualsAndHashCode.Include
     @Column(name = "codigo", nullable = false, length = 100)
     private String codigo;
 
@@ -46,13 +59,16 @@ public class MenuEntity extends BaseEntity {
     @Column(name = "icono", length = 100)
     private String icono;
 
+    @Column(name = "color", length = 50)
+    private String color;
+
     @Column(name = "ruta", length = 300)
     private String ruta;
 
     @Column(name = "badge", length = 50)
     private String badge;
 
-    @Column(name = "descripcion", length = 255)
+    @Column(name = "descripcion", length = 300)
     private String descripcion;
 
     @Builder.Default
@@ -66,4 +82,19 @@ public class MenuEntity extends BaseEntity {
     @Builder.Default
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
+
+    public boolean esRaiz() {
+        return this.menuPadre == null;
+    }
+
+    public boolean esFolder() {
+        return TipoMenu.MODULO.equals(this.tipo)
+                || TipoMenu.AGRUPADOR.equals(this.tipo)
+                || (this.ruta == null || this.ruta.isBlank());
+    }
+
+    public boolean esInterfaz() {
+        return !esFolder();
+    }
 }
+
