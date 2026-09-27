@@ -158,6 +158,8 @@ export function AsignacionVehicularDialog({
             activoId,
             conductorId,
             asignadoPorId,
+            fechaAsignacion:
+              asignacionActual.fechaAsignacion || new Date().toISOString(),
             observacion: observacion.trim() || undefined,
           },
         })
@@ -167,6 +169,7 @@ export function AsignacionVehicularDialog({
           activoId,
           conductorId,
           asignadoPorId,
+          fechaAsignacion: new Date().toISOString(),
           observacion: observacion.trim() || undefined,
         })
       }

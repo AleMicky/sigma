@@ -9,11 +9,13 @@ import com.endecorani.sigma_api.shared.application.mapper.AuditoriaResponseMappe
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(
         componentModel = "spring",
         uses = AuditoriaResponseMapper.class,
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
         unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 public interface AsignacionVehicularMapper {

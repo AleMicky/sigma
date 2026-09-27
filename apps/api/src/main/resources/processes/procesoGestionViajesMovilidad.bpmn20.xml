@@ -77,13 +77,10 @@
     <userTask
       id="asignarVehiculoConductor"
       name="APROBADO - Asignar Vehículo y Conductor"
+      flowable:assignee="${responsableAsignacionId}"
       flowable:candidateGroups="responsable_flota"
       flowable:formFieldValidation="true">
       <extensionElements>
-        <flowable:formProperty id="responsableAsignacionId" name="Responsable de asignación"
-          type="string" required="false" writable="true"></flowable:formProperty>
-        <flowable:formProperty id="conductorAsignadoId" name="Conductor asignado" type="string"
-          required="false" writable="true"></flowable:formProperty>
         <flowable:formProperty id="comentario" name="Detalles de Asignación" type="string"
           required="false" writable="true"></flowable:formProperty>
       </extensionElements>
@@ -93,6 +90,7 @@
     <userTask
       id="registrarSalida"
       name="EN_CURSO - Registrar Salida de Viaje"
+      flowable:assignee="${conductorAsignadoId}"
       flowable:candidateGroups="responsable_flota,conductores"
       flowable:formFieldValidation="true">
       <extensionElements>
@@ -105,6 +103,7 @@
     <userTask
       id="registrarRetorno"
       name="RETORNO - Registrar Retorno de Viaje"
+      flowable:assignee="${conductorAsignadoId}"
       flowable:candidateGroups="responsable_flota,conductores"
       flowable:formFieldValidation="true">
       <extensionElements>

@@ -250,6 +250,13 @@ public class SolicitudVehicularService {
             effectiveVariables.putAll(request.variables());
         }
 
+        if (!effectiveVariables.containsKey("conductorAsignadoId") && solicitud.getConductorAsignadoId() != null) {
+            effectiveVariables.put("conductorAsignadoId", solicitud.getConductorAsignadoId().toString());
+        }
+        if (!effectiveVariables.containsKey("responsableAsignacionId") && solicitud.getResponsableAsignacionId() != null) {
+            effectiveVariables.put("responsableAsignacionId", solicitud.getResponsableAsignacionId().toString());
+        }
+
         if (effectiveVariables.containsKey("responsableAsignacionId") && !effectiveVariables.containsKey("aprobadorId")) {
             effectiveVariables.put("aprobadorId", effectiveVariables.get("responsableAsignacionId"));
         } else if (effectiveVariables.containsKey("aprobadorId") && !effectiveVariables.containsKey("responsableAsignacionId")) {
