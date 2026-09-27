@@ -393,6 +393,16 @@ export function ControlActivoVehicularHistorialModal({
     [allControles]
   )
 
+  const estado = (solicitud?.estado || "").toUpperCase()
+  const isPorSalir =
+    estado === "APROBADO" ||
+    estado === "APROBADA" ||
+    estado === "ASIGNADO" ||
+    estado === "BORRADOR" ||
+    estado === "PENDIENTE"
+
+  const effectiveAllowedTipo = isPorSalir ? "ENTREGA" : allowedTipo
+
   const filteredControles = useMemo(() => {
     if (tipoFilter === "ALL") return allControles
     return allControles.filter((c) => c.tipo === tipoFilter)
@@ -400,7 +410,7 @@ export function ControlActivoVehicularHistorialModal({
 
   function handleOpenCreate(tipo: TipoControlActivo) {
     setControlToEdit(null)
-    setTargetTipo(tipo)
+    setTargetTipo(isPorSalir ? "ENTREGA" : tipo)
     setFormModalOpen(true)
   }
 
@@ -438,7 +448,9 @@ export function ControlActivoVehicularHistorialModal({
                   Sin Control de Activo Registrado
                 </p>
                 <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
-                  No hay actas de Salida (Entrega) ni Retorno (Devolución) registradas para este viaje vehicular.
+                  {isPorSalir
+                    ? "Antes de iniciar el viaje, debe registrar el Acta de Entrega (Salida) del vehículo e inspección de accesorios."
+                    : "No hay actas de Salida (Entrega) ni Retorno (Devolución) registradas para este viaje vehicular."}
                 </p>
               </div>
               {solicitud?.id && !readOnly && (
@@ -452,15 +464,17 @@ export function ControlActivoVehicularHistorialModal({
                     <Plus className="size-3.5" />
                     <span>Acta de Entrega (Salida)</span>
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => handleOpenCreate("DEVOLUCION")}
-                    className="h-8 gap-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow-xs"
-                  >
-                    <Plus className="size-3.5" />
-                    <span>Acta de Retorno (Devolución)</span>
-                  </Button>
+                  {!isPorSalir && (effectiveAllowedTipo === "ALL" || effectiveAllowedTipo === "DEVOLUCION") && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleOpenCreate("DEVOLUCION")}
+                      className="h-8 gap-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow-xs"
+                    >
+                      <Plus className="size-3.5" />
+                      <span>Acta de Retorno (Devolución)</span>
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -509,7 +523,7 @@ export function ControlActivoVehicularHistorialModal({
 
                     {!readOnly && (
                       <>
-                        {(allowedTipo === "ALL" || allowedTipo === "ENTREGA") &&
+                        {(effectiveAllowedTipo === "ALL" || effectiveAllowedTipo === "ENTREGA") &&
                           entregasCount === 0 && (
                             <Button
                               type="button"
@@ -522,7 +536,7 @@ export function ControlActivoVehicularHistorialModal({
                             </Button>
                           )}
 
-                        {(allowedTipo === "ALL" || allowedTipo === "DEVOLUCION") &&
+                        {!isPorSalir && (effectiveAllowedTipo === "ALL" || effectiveAllowedTipo === "DEVOLUCION") &&
                           devolucionesCount === 0 && (
                             <Button
                               type="button"

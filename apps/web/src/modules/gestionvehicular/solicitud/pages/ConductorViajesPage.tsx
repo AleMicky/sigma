@@ -28,7 +28,6 @@ import {
 import { SolicitudVehicularDetailSheet } from "../components/SolicitudVehicularDetailSheet"
 import { SolicitudVehicularFilterToolbar } from "../components/SolicitudVehicularFilterToolbar"
 import { SolicitudVehicularHeader } from "../components/SolicitudVehicularHeader"
-import { AsignacionVehicularDialog } from "../../asignacion-vehicular/components/AsignacionVehicularDialog"
 import {
   ConductorViajeListItem,
 } from "../components/ConductorViajeListItem"
@@ -43,7 +42,6 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 export function ConductorViajesPage() {
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("ASIGNADO")
   const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null)
-  const [assignItem, setAssignItem] = useState<SolicitudVehicular | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudVehicular | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudVehicular | null>(null)
 
@@ -290,7 +288,6 @@ export function ConductorViajesPage() {
                   solicitud={solicitud}
                   onViewDetail={(sol) => setSelectedDetailId(sol.id)}
                   onSelect={(sol) => setSelectedDetailId(sol.id)}
-                  onAssign={setAssignItem}
                   onControlActivo={setControlActivoItem}
                   onActionSelect={handleActionSelect}
                   onTraceability={setTraceabilityItem}
@@ -310,16 +307,6 @@ export function ConductorViajesPage() {
         )}
       </div>
 
-      {/* Modal de Asignación Vehicular Técnica */}
-      <AsignacionVehicularDialog
-        open={Boolean(assignItem)}
-        onOpenChange={(open) => {
-          if (!open) setAssignItem(null)
-        }}
-        solicitud={assignItem}
-        onSuccess={handleRefresh}
-      />
-
       {/* Panel Lateral de Detalle Completo de Solicitud */}
       <SolicitudVehicularDetailSheet
         open={Boolean(selectedDetailId)}
@@ -327,7 +314,6 @@ export function ConductorViajesPage() {
           if (!open) setSelectedDetailId(null)
         }}
         solicitud={activeDetailItem}
-        onAssign={setAssignItem}
         onControlActivo={setControlActivoItem}
         onViewHistory={setTraceabilityItem}
         onActionSelect={handleActionSelect}

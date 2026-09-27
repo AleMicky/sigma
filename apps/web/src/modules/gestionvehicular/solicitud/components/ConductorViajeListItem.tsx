@@ -29,6 +29,7 @@ import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
 
 import { asignacionVehicularQueries } from "../../asignacion-vehicular/api/asignacion-vehicular.queries"
+import { controlActivoVehicularQueries } from "../../control-activo/api/control-activo.queries"
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
 
 export type ConductorViajeListItemProps = {
@@ -79,6 +80,14 @@ export function ConductorViajeListItem({
   const asignacion = asignacionQuery.data?.[0]
   const vehiculo = asignacion?.activo
   const conductor = asignacion?.conductor || solicitud.conductorAsignado
+
+  // Consulta los controles de activos de esta solicitud
+  const controlesQuery = useQuery({
+    ...controlActivoVehicularQueries.bySolicitud(solicitud.id),
+    staleTime: 1000 * 60 * 2,
+    enabled: Boolean(solicitud.id),
+  })
+  const controlesCount = (controlesQuery.data ?? []).length
 
   const solicitanteNombre = solicitud.solicitante?.nombreCompleto || ""
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
@@ -137,40 +146,6 @@ export function ConductorViajeListItem({
 
         {/* Acciones Rápidas Superior */}
         <div className="flex items-center gap-1 flex-wrap justify-end">
-          {onAssign && (
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation()
-                onAssign(solicitud)
-              }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 shadow-2xs cursor-pointer transition-all"
-              title="Gestionar asignación vehicular"
-            >
-              <KeyRound className="size-3 text-amber-600 dark:text-amber-400" />
-              <span>{vehiculo ? "Editar Asignación" : "Asignar"}</span>
-            </Button>
-          )}
-
-          {onControlActivo && (
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation()
-                onControlActivo(solicitud)
-              }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-2xs cursor-pointer transition-all"
-              title="Inspección y control de accesorios"
-            >
-              <ClipboardCheck className="size-3 text-emerald-600 dark:text-emerald-400" />
-              <span>Control Activo</span>
-            </Button>
-          )}
-
           {onTraceability && (
             <Button
               type="button"
@@ -327,6 +302,34 @@ export function ConductorViajeListItem({
                         </span>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {onControlActivo && (
+                  <div className="pt-1.5 border-t border-amber-500/20 flex items-center justify-between gap-2">
+                    <span className="text-[10.5px] text-muted-foreground flex items-center gap-1 min-w-0 truncate">
+                      <ClipboardCheck className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="truncate">
+                        {controlesCount > 0
+                          ? `${controlesCount} control(es) de activo`
+                          : "Control de activo vehicular"}
+                      </span>
+                    </span>
+
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onControlActivo(solicitud)
+                      }}
+                      className="h-6 gap-1 px-2 text-[10.5px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-2xs cursor-pointer transition-all shrink-0"
+                      title="Registrar o consultar inspección y control de accesorios del vehículo"
+                    >
+                      <ClipboardCheck className="size-3 text-emerald-600 dark:text-emerald-400" />
+                      <span>Control Activo</span>
+                    </Button>
                   </div>
                 )}
               </div>
