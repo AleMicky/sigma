@@ -59,6 +59,7 @@ export const SEGMENT_LABELS: Record<string, string> = {
 
   // Gestión Vehicular
   "gestion-vehicular": "Gestión Vehicular",
+  asignaciones: "Asignación Vehicular",
   conductores: "Conductores",
   "tipos-solicitud": "Tipos de Solicitud",
   "solicitudes-vehiculares": "Solicitudes Vehiculares",
