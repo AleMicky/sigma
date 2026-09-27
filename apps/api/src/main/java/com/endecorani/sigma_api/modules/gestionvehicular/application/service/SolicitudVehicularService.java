@@ -5,11 +5,15 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicit
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request.SolicitudVehicularUpdate;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularAdjuntoResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularResponse;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularConductorInfo;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularResponsableInfo;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularSolicitanteInfo;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularTipoSolicitudInfo;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.mapper.SolicitudVehicularMapper;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.Conductor;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SolicitudVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.TipoSolicitudVehicular;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ConductorRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.SolicitudVehicularRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.TipoSolicitudVehicularRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
@@ -50,6 +54,8 @@ public class SolicitudVehicularService {
             "numero",
             "tipoSolicitudVehicularId",
             "solicitanteId",
+            "responsableAsignacionId",
+            "conductorAsignadoId",
             "motivo",
             "destino",
             "fechaSalida",
@@ -64,6 +70,7 @@ public class SolicitudVehicularService {
     private final TipoSolicitudVehicularRepository tipoSolicitudVehicularRepository;
     private final EmpleadoRepository empleadoRepository;
     private final SpringVEmpleadoRepository springVEmpleadoRepository;
+    private final ConductorRepository conductorRepository;
     private final SolicitudVehicularAdjuntoService adjuntoService;
     private final SolicitudVehicularMapper mapper;
     private final CorrelativoService correlativoService;
@@ -201,6 +208,7 @@ public class SolicitudVehicularService {
         variables.put("solicitudId", solicitud.getId().toString());
         variables.put("solicitanteId", solicitud.getSolicitanteId().toString());
         variables.put("aprobadorId", aprobadorId.toString());
+        variables.put("responsableAsignacionId", aprobadorId.toString());
         if (request.comentario() != null && !request.comentario().isBlank()) {
             variables.put("comentario", request.comentario().trim());
         }
@@ -220,6 +228,7 @@ public class SolicitudVehicularService {
             );
         }
 
+        solicitud.setResponsableAsignacionId(aprobadorId);
         solicitud.setEstado(ESTADO_SOLICITADO);
         SolicitudVehicular actualizado = repository.save(solicitud);
         return findById(actualizado.getId());
@@ -241,6 +250,12 @@ public class SolicitudVehicularService {
             effectiveVariables.putAll(request.variables());
         }
 
+        if (effectiveVariables.containsKey("responsableAsignacionId") && !effectiveVariables.containsKey("aprobadorId")) {
+            effectiveVariables.put("aprobadorId", effectiveVariables.get("responsableAsignacionId"));
+        } else if (effectiveVariables.containsKey("aprobadorId") && !effectiveVariables.containsKey("responsableAsignacionId")) {
+            effectiveVariables.put("responsableAsignacionId", effectiveVariables.get("aprobadorId"));
+        }
+
         CompleteWorkflowTaskRequest effectiveRequest = new CompleteWorkflowTaskRequest(effectiveVariables);
 
         WorkflowTaskActionsResponse resultado = workflowApplicationService.completarTarea(
@@ -251,6 +266,30 @@ public class SolicitudVehicularService {
         String nuevoEstado = resultado.status() != null ? resultado.status().trim().toUpperCase() : null;
         if (nuevoEstado != null) {
             solicitud.setEstado(nuevoEstado);
+        }
+
+        if (effectiveVariables.containsKey("responsableAsignacionId")) {
+            Object val = effectiveVariables.get("responsableAsignacionId");
+            if (val != null && !val.toString().isBlank()) {
+                try {
+                    solicitud.setResponsableAsignacionId(UUID.fromString(val.toString().trim()));
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
+        if (effectiveVariables.containsKey("conductorAsignadoId")) {
+            Object val = effectiveVariables.get("conductorAsignadoId");
+            if (val != null && !val.toString().isBlank()) {
+                try {
+                    solicitud.setConductorAsignadoId(UUID.fromString(val.toString().trim()));
+                } catch (IllegalArgumentException ignored) {}
+            }
+        } else if (effectiveVariables.containsKey("conductorId")) {
+            Object val = effectiveVariables.get("conductorId");
+            if (val != null && !val.toString().isBlank()) {
+                try {
+                    solicitud.setConductorAsignadoId(UUID.fromString(val.toString().trim()));
+                } catch (IllegalArgumentException ignored) {}
+            }
         }
 
         SolicitudVehicular guardado = repository.save(solicitud);
@@ -288,6 +327,12 @@ public class SolicitudVehicularService {
         }
         if (dto.processInstanceId() != null && !dto.processInstanceId().isBlank()) {
             actual.setProcessInstanceId(StringUtils.normalize(dto.processInstanceId()));
+        }
+        if (dto.responsableAsignacionId() != null) {
+            actual.setResponsableAsignacionId(dto.responsableAsignacionId());
+        }
+        if (dto.conductorAsignadoId() != null) {
+            actual.setConductorAsignadoId(dto.conductorAsignadoId());
         }
 
         SolicitudVehicular actualizado = repository.save(actual);
@@ -327,6 +372,12 @@ public class SolicitudVehicularService {
         if (dto.processInstanceId() != null && !dto.processInstanceId().isBlank()) {
             actual.setProcessInstanceId(StringUtils.normalize(dto.processInstanceId()));
         }
+        if (dto.responsableAsignacionId() != null) {
+            actual.setResponsableAsignacionId(dto.responsableAsignacionId());
+        }
+        if (dto.conductorAsignadoId() != null) {
+            actual.setConductorAsignadoId(dto.conductorAsignadoId());
+        }
 
         SolicitudVehicular actualizado = repository.save(actual);
         List<SolicitudVehicularAdjuntoResponse> adjuntos = adjuntoService.findBySolicitudVehicularId(id);
@@ -365,6 +416,16 @@ public class SolicitudVehicularService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
+        Set<UUID> responsableIds = content.stream()
+                .map(SolicitudVehicular::getResponsableAsignacionId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<UUID> conductorIds = content.stream()
+                .map(SolicitudVehicular::getConductorAsignadoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
         Map<UUID, SolicitudVehicularTipoSolicitudInfo> tipoMap = new HashMap<>();
         for (UUID tipoId : tipoIds) {
             tipoSolicitudVehicularRepository.findById(tipoId).ifPresent(t ->
@@ -379,28 +440,78 @@ public class SolicitudVehicularService {
             );
         }
 
-        Map<UUID, SolicitudVehicularSolicitanteInfo> solicitanteMap = solicitanteIds.isEmpty()
+        Set<UUID> todosEmpleadoIds = new HashSet<>(solicitanteIds);
+        todosEmpleadoIds.addAll(responsableIds);
+
+        Map<UUID, Conductor> conductorMap = new HashMap<>();
+        Set<UUID> conductorEmpleadoIds = new HashSet<>();
+        for (UUID cId : conductorIds) {
+            conductorRepository.findById(cId).ifPresent(c -> {
+                conductorMap.put(cId, c);
+                if (c.getEmpleadoId() != null) {
+                    conductorEmpleadoIds.add(c.getEmpleadoId());
+                }
+            });
+        }
+        todosEmpleadoIds.addAll(conductorEmpleadoIds);
+
+        Map<UUID, VEmpleadoEntity> vempleadoMap = todosEmpleadoIds.isEmpty()
                 ? Map.of()
-                : springVEmpleadoRepository.findAllById(solicitanteIds).stream()
-                .collect(Collectors.toMap(
-                        VEmpleadoEntity::getEmpleadoId,
-                        ve -> new SolicitudVehicularSolicitanteInfo(
-                                ve.getEmpleadoId(),
-                                ve.getCodigo(),
-                                ve.getNombreCompleto(),
-                                ve.getCargo(),
-                                ve.getArea()
-                        ),
-                        (a, b) -> a
-                ));
+                : springVEmpleadoRepository.findAllById(todosEmpleadoIds).stream()
+                .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, ve -> ve, (a, b) -> a));
 
         List<SolicitudVehicularResponse> responses = content.stream()
                 .map(domain -> {
                     SolicitudVehicularTipoSolicitudInfo tipoInfo =
                             domain.getTipoSolicitudVehicularId() != null ? tipoMap.get(domain.getTipoSolicitudVehicularId()) : null;
-                    SolicitudVehicularSolicitanteInfo solicitanteInfo =
-                            domain.getSolicitanteId() != null ? solicitanteMap.get(domain.getSolicitanteId()) : null;
-                    return mapper.toResponse(domain, tipoInfo, solicitanteInfo, null);
+
+                    VEmpleadoEntity solVe = domain.getSolicitanteId() != null ? vempleadoMap.get(domain.getSolicitanteId()) : null;
+                    SolicitudVehicularSolicitanteInfo solicitanteInfo = solVe != null
+                            ? new SolicitudVehicularSolicitanteInfo(
+                            solVe.getEmpleadoId(),
+                            solVe.getCodigo(),
+                            solVe.getNombreCompleto(),
+                            solVe.getCargo(),
+                            solVe.getArea()
+                    ) : null;
+
+                    VEmpleadoEntity respVe = domain.getResponsableAsignacionId() != null ? vempleadoMap.get(domain.getResponsableAsignacionId()) : null;
+                    SolicitudVehicularResponsableInfo responsableInfo = respVe != null
+                            ? new SolicitudVehicularResponsableInfo(
+                            respVe.getEmpleadoId(),
+                            respVe.getCodigo(),
+                            respVe.getNombreCompleto(),
+                            respVe.getCargo(),
+                            respVe.getArea()
+                    ) : null;
+
+                    SolicitudVehicularConductorInfo conductorInfo = null;
+                    if (domain.getConductorAsignadoId() != null) {
+                        Conductor cond = conductorMap.get(domain.getConductorAsignadoId());
+                        if (cond != null) {
+                            VEmpleadoEntity condVe = cond.getEmpleadoId() != null ? vempleadoMap.get(cond.getEmpleadoId()) : null;
+                            conductorInfo = new SolicitudVehicularConductorInfo(
+                                    cond.getId(),
+                                    cond.getEmpleadoId(),
+                                    condVe != null ? condVe.getNombreCompleto() : null,
+                                    cond.getNumeroLicencia(),
+                                    cond.getCategoriaLicencia()
+                            );
+                        } else {
+                            VEmpleadoEntity condVe = vempleadoMap.get(domain.getConductorAsignadoId());
+                            if (condVe != null) {
+                                conductorInfo = new SolicitudVehicularConductorInfo(
+                                        domain.getConductorAsignadoId(),
+                                        condVe.getEmpleadoId(),
+                                        condVe.getNombreCompleto(),
+                                        null,
+                                        null
+                                );
+                            }
+                        }
+                    }
+
+                    return mapper.toResponse(domain, tipoInfo, solicitanteInfo, responsableInfo, conductorInfo, null);
                 })
                 .toList();
 
@@ -414,7 +525,13 @@ public class SolicitudVehicularService {
         SolicitudVehicularSolicitanteInfo solicitanteInfo = domain.getSolicitanteId() != null
                 ? obtenerSolicitanteInfo(domain.getSolicitanteId())
                 : null;
-        return mapper.toResponse(domain, tipoInfo, solicitanteInfo, adjuntos);
+        SolicitudVehicularResponsableInfo responsableInfo = domain.getResponsableAsignacionId() != null
+                ? obtenerResponsableInfo(domain.getResponsableAsignacionId())
+                : null;
+        SolicitudVehicularConductorInfo conductorInfo = domain.getConductorAsignadoId() != null
+                ? obtenerConductorInfo(domain.getConductorAsignadoId())
+                : null;
+        return mapper.toResponse(domain, tipoInfo, solicitanteInfo, responsableInfo, conductorInfo, adjuntos);
     }
 
     private SolicitudVehicularResponse toResponse(
@@ -431,7 +548,15 @@ public class SolicitudVehicularService {
                 ? obtenerSolicitanteInfo(domain.getSolicitanteId())
                 : (solicitante != null ? mapper.toSolicitanteInfo(solicitante) : null);
 
-        return mapper.toResponse(domain, tipoInfo, solicitanteInfo, adjuntos);
+        SolicitudVehicularResponsableInfo responsableInfo = domain.getResponsableAsignacionId() != null
+                ? obtenerResponsableInfo(domain.getResponsableAsignacionId())
+                : null;
+
+        SolicitudVehicularConductorInfo conductorInfo = domain.getConductorAsignadoId() != null
+                ? obtenerConductorInfo(domain.getConductorAsignadoId())
+                : null;
+
+        return mapper.toResponse(domain, tipoInfo, solicitanteInfo, responsableInfo, conductorInfo, adjuntos);
     }
 
     private SolicitudVehicularTipoSolicitudInfo obtenerTipoInfo(UUID tipoId) {
@@ -461,6 +586,70 @@ public class SolicitudVehicularService {
                                 emp.getArea()
                         ))
                         .orElse(null));
+    }
+
+    private SolicitudVehicularResponsableInfo obtenerResponsableInfo(UUID responsableId) {
+        if (responsableId == null) {
+            return null;
+        }
+        return springVEmpleadoRepository.findById(responsableId)
+                .map(ve -> new SolicitudVehicularResponsableInfo(
+                        ve.getEmpleadoId(),
+                        ve.getCodigo(),
+                        ve.getNombreCompleto(),
+                        ve.getCargo(),
+                        ve.getArea()
+                ))
+                .orElseGet(() -> empleadoRepository.findById(responsableId)
+                        .map(emp -> new SolicitudVehicularResponsableInfo(
+                                emp.getId(),
+                                emp.getCodigo(),
+                                emp.getNombreCompleto(),
+                                emp.getCargo(),
+                                emp.getArea()
+                        ))
+                        .orElse(null));
+    }
+
+    private SolicitudVehicularConductorInfo obtenerConductorInfo(UUID conductorId) {
+        if (conductorId == null) {
+            return null;
+        }
+        return conductorRepository.findById(conductorId)
+                .map(c -> {
+                    String nombre = null;
+                    if (c.getEmpleadoId() != null) {
+                        nombre = springVEmpleadoRepository.findById(c.getEmpleadoId())
+                                .map(VEmpleadoEntity::getNombreCompleto)
+                                .orElseGet(() -> empleadoRepository.findById(c.getEmpleadoId())
+                                        .map(Empleado::getNombreCompleto)
+                                        .orElse(null));
+                    }
+                    return new SolicitudVehicularConductorInfo(
+                            c.getId(),
+                            c.getEmpleadoId(),
+                            nombre,
+                            c.getNumeroLicencia(),
+                            c.getCategoriaLicencia()
+                    );
+                })
+                .orElseGet(() -> springVEmpleadoRepository.findById(conductorId)
+                        .map(ve -> new SolicitudVehicularConductorInfo(
+                                conductorId,
+                                ve.getEmpleadoId(),
+                                ve.getNombreCompleto(),
+                                null,
+                                null
+                        ))
+                        .orElseGet(() -> empleadoRepository.findById(conductorId)
+                                .map(emp -> new SolicitudVehicularConductorInfo(
+                                        conductorId,
+                                        emp.getId(),
+                                        emp.getNombreCompleto(),
+                                        null,
+                                        null
+                                ))
+                                .orElse(null)));
     }
 
     private SolicitudVehicular obtenerPorId(UUID id) {

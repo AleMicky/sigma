@@ -12,7 +12,8 @@
   exporter="Flowable Open Source Modeler"
   exporterVersion="6.8.0">
 
-  <process id="procesoGestionViajesMovilidad" name="Proceso de Gestión de Viajes y Movilidad" isExecutable="true">
+  <process id="procesoGestionViajesMovilidad" name="Proceso de Gestión de Viajes y Movilidad"
+    isExecutable="true">
     <startEvent id="inicio" name="Inicio" flowable:formFieldValidation="true"></startEvent>
 
     <!-- ESTADO BORRADOR: ASIGNAR APROBADOR RESPONSABLE -->
@@ -24,15 +25,15 @@
       <extensionElements>
         <!-- LISTADO DE APROBADORES ASIGNADOS AL EMPLEADO/SOLICITANTE -->
         <flowable:formProperty
-          id="aprobadorId"
-          name="Aprobador responsable"
+          id="responsableAsignacionId"
+          name="Responsable de Asignación Vehicular"
           type="string"
           required="true"
           writable="true"
           xmlns:sigma="http://endecorani.com/sigma/workflow"
           sigma:component="select"
           sigma:source="rest"
-          sigma:url="/api/v1/grupos-aprobadores/empleados/${solicitanteId}/aprobadores/select">
+          sigma:url="/api/v1/empleado-responsabilidades/responsabilidades/ASIGNACION_VEHICULAR/empleados">
         </flowable:formProperty>
 
         <!-- COMENTARIO -->
@@ -50,10 +51,11 @@
     <userTask
       id="revisarSolicitud"
       name="SOLICITADO - Revisar Solicitud"
-      flowable:assignee="${aprobadorId}"
+      flowable:assignee="${responsableAsignacionId}"
       flowable:formFieldValidation="true">
       <extensionElements>
-        <flowable:formProperty id="comentario" name="Comentario de Revisión" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="comentario" name="Comentario de Revisión" type="string"
+          required="false" writable="true"></flowable:formProperty>
       </extensionElements>
     </userTask>
 
@@ -66,7 +68,8 @@
       flowable:assignee="${solicitanteId}"
       flowable:formFieldValidation="true">
       <extensionElements>
-        <flowable:formProperty id="comentario" name="Comentario de Ajuste" type="string" required="true" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="comentario" name="Comentario de Ajuste" type="string"
+          required="true" writable="true"></flowable:formProperty>
       </extensionElements>
     </userTask>
 
@@ -77,7 +80,12 @@
       flowable:candidateGroups="responsable_flota"
       flowable:formFieldValidation="true">
       <extensionElements>
-        <flowable:formProperty id="comentario" name="Detalles de Asignación" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="responsableAsignacionId" name="Responsable de asignación"
+          type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="conductorAsignadoId" name="Conductor asignado" type="string"
+          required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="comentario" name="Detalles de Asignación" type="string"
+          required="false" writable="true"></flowable:formProperty>
       </extensionElements>
     </userTask>
 
@@ -88,7 +96,8 @@
       flowable:candidateGroups="responsable_flota,conductores"
       flowable:formFieldValidation="true">
       <extensionElements>
-        <flowable:formProperty id="comentario" name="Observaciones de Salida" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="comentario" name="Observaciones de Salida" type="string"
+          required="false" writable="true"></flowable:formProperty>
       </extensionElements>
     </userTask>
 
@@ -99,7 +108,8 @@
       flowable:candidateGroups="responsable_flota,conductores"
       flowable:formFieldValidation="true">
       <extensionElements>
-        <flowable:formProperty id="comentario" name="Observaciones de Retorno" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="comentario" name="Observaciones de Retorno" type="string"
+          required="false" writable="true"></flowable:formProperty>
       </extensionElements>
     </userTask>
 
@@ -107,20 +117,28 @@
 
     <!-- TRANSICIONES -->
     <sequenceFlow id="flujo_inicio_borrador" sourceRef="inicio" targetRef="borradorSolicitud"></sequenceFlow>
-    <sequenceFlow id="flujo_enviar" name="Enviar a revisión" sourceRef="borradorSolicitud" targetRef="revisarSolicitud"></sequenceFlow>
+    <sequenceFlow id="flujo_enviar" name="Enviar a revisión" sourceRef="borradorSolicitud"
+      targetRef="revisarSolicitud"></sequenceFlow>
     <sequenceFlow id="flujo_revisar_decision" sourceRef="revisarSolicitud" targetRef="decision"></sequenceFlow>
-    <sequenceFlow id="flujo_aprobar" name="Aprobar" sourceRef="decision" targetRef="asignarVehiculoConductor">
+    <sequenceFlow id="flujo_aprobar" name="Aprobar" sourceRef="decision"
+      targetRef="asignarVehiculoConductor">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${accion == 'APROBAR'}]]></conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="flujo_observar" name="Observar" sourceRef="decision" targetRef="corregirSolicitud"></sequenceFlow>
-    <sequenceFlow id="flujo_corregir_revisar" name="Reenviar a revisión" sourceRef="corregirSolicitud" targetRef="revisarSolicitud"></sequenceFlow>
-    <sequenceFlow id="flujo_asignar_salida" name="Asignar vehículo y autorizar" sourceRef="asignarVehiculoConductor" targetRef="registrarSalida"></sequenceFlow>
-    <sequenceFlow id="flujo_salida_retorno" name="Registrar salida" sourceRef="registrarSalida" targetRef="registrarRetorno"></sequenceFlow>
-    <sequenceFlow id="flujo_retorno_finalizado" name="Registrar retorno y finalizar" sourceRef="registrarRetorno" targetRef="finalizado"></sequenceFlow>
+    <sequenceFlow id="flujo_observar" name="Observar" sourceRef="decision"
+      targetRef="corregirSolicitud"></sequenceFlow>
+    <sequenceFlow id="flujo_corregir_revisar" name="Reenviar a revisión"
+      sourceRef="corregirSolicitud" targetRef="revisarSolicitud"></sequenceFlow>
+    <sequenceFlow id="flujo_asignar_salida" name="Asignar vehículo y autorizar"
+      sourceRef="asignarVehiculoConductor" targetRef="registrarSalida"></sequenceFlow>
+    <sequenceFlow id="flujo_salida_retorno" name="Registrar salida" sourceRef="registrarSalida"
+      targetRef="registrarRetorno"></sequenceFlow>
+    <sequenceFlow id="flujo_retorno_finalizado" name="Registrar retorno y finalizar"
+      sourceRef="registrarRetorno" targetRef="finalizado"></sequenceFlow>
   </process>
 
   <bpmndi:BPMNDiagram id="BPMNDiagram_procesoGestionViajesMovilidad">
-    <bpmndi:BPMNPlane bpmnElement="procesoGestionViajesMovilidad" id="BPMNPlane_procesoGestionViajesMovilidad">
+    <bpmndi:BPMNPlane bpmnElement="procesoGestionViajesMovilidad"
+      id="BPMNPlane_procesoGestionViajesMovilidad">
       <bpmndi:BPMNShape bpmnElement="inicio" id="BPMNShape_inicio">
         <omgdc:Bounds height="30.0" width="30.0" x="80.0" y="222.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
@@ -136,7 +154,8 @@
       <bpmndi:BPMNShape bpmnElement="corregirSolicitud" id="BPMNShape_corregirSolicitud">
         <omgdc:Bounds height="80.0" width="130.0" x="485.0" y="340.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="asignarVehiculoConductor" id="BPMNShape_asignarVehiculoConductor">
+      <bpmndi:BPMNShape bpmnElement="asignarVehiculoConductor"
+        id="BPMNShape_asignarVehiculoConductor">
         <omgdc:Bounds height="80.0" width="160.0" x="640.0" y="200.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="registrarSalida" id="BPMNShape_registrarSalida">

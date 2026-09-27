@@ -261,6 +261,11 @@ public class WorkflowApplicationService {
 
         // Compatibilidad con variables estándar de asignación e ids comunes
         variables.add("responsableId");
+        variables.add("responsableAsignacionId");
+        variables.add("conductorAsignadoId");
+        variables.add("conductorId");
+        variables.add("activoId");
+        variables.add("vehiculoId");
         variables.add("supervisorId");
         variables.add("aprobadorId");
         variables.add("solicitanteId");

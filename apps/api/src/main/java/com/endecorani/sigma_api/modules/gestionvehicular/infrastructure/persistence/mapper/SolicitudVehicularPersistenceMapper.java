@@ -26,6 +26,8 @@ public class SolicitudVehicularPersistenceMapper {
         entity.setObservacion(domain.getObservacion());
         entity.setEstado(domain.getEstado());
         entity.setProcessInstanceId(domain.getProcessInstanceId());
+        entity.setResponsableAsignacionId(domain.getResponsableAsignacionId());
+        entity.setConductorAsignadoId(domain.getConductorAsignadoId());
         return entity;
     }
 
@@ -48,6 +50,8 @@ public class SolicitudVehicularPersistenceMapper {
                 .observacion(entity.getObservacion())
                 .estado(entity.getEstado())
                 .processInstanceId(entity.getProcessInstanceId())
+                .responsableAsignacionId(entity.getResponsableAsignacionId())
+                .conductorAsignadoId(entity.getConductorAsignadoId())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())

@@ -47,6 +47,10 @@ public record SolicitudVehicularUpdate(
         String estado,
 
         @Size(max = 100, message = "El processInstanceId no puede superar los 100 caracteres")
-        String processInstanceId
+        String processInstanceId,
+
+        UUID responsableAsignacionId,
+
+        UUID conductorAsignadoId
 ) {
 }

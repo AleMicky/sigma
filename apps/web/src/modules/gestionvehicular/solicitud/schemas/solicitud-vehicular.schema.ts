@@ -64,6 +64,16 @@ export const solicitudVehicularSchema = z
       .max(100, "El processInstanceId no puede superar los 100 caracteres")
       .optional()
       .or(z.literal("")),
+    responsableAsignacionId: z
+      .string()
+      .trim()
+      .optional()
+      .or(z.literal("")),
+    conductorAsignadoId: z
+      .string()
+      .trim()
+      .optional()
+      .or(z.literal("")),
   })
   .refine(
     (data) => {
@@ -86,6 +96,8 @@ export const defaultSolicitudVehicularValues: SolicitudVehicularFormValues = {
   numero: "",
   tipoSolicitudVehicularId: "",
   solicitanteId: "",
+  responsableAsignacionId: "",
+  conductorAsignadoId: "",
   motivo: "",
   justificacion: "",
   destino: "",
