@@ -1,5 +1,7 @@
+import { useQuery } from "@tanstack/react-query"
 import {
   Calendar,
+  Car,
   ChevronRight,
   ClipboardCheck,
   Clock,
@@ -41,6 +43,7 @@ import {
 import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
 
+import { asignacionVehicularQueries } from "../../asignacion-vehicular/api/asignacion-vehicular.queries"
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
 
 export interface SolicitudVehicularDetailSheetProps {
@@ -93,13 +96,21 @@ export function SolicitudVehicularDetailSheet({
     { enabled: Boolean(open && solicitud?.processInstanceId) }
   )
 
+  const asignacionQuery = useQuery({
+    ...asignacionVehicularQueries.bySolicitud(solicitud?.id ?? ""),
+    enabled: Boolean(open && solicitud?.id),
+    staleTime: 1000 * 60 * 2,
+  })
+
   if (!solicitud) return null
 
+  const asignacion = asignacionQuery.data?.[0]
+  const vehiculo = asignacion?.activo
+  const conductor = asignacion?.conductor || solicitud.conductorAsignado
+  const responsable = asignacion?.asignadoPor || solicitud.responsableAsignacion
   const solicitante = solicitud.solicitante
   const tipo = solicitud.tipoSolicitudVehicular
   const adjuntos = solicitud.adjuntos ?? []
-  const conductor = solicitud.conductorAsignado
-  const responsable = solicitud.responsableAsignacion
 
   const isEmergencia =
     tipo?.codigo?.toUpperCase() === "EMERGENCIA" ||
@@ -298,9 +309,9 @@ export function SolicitudVehicularDetailSheet({
             <div className="flex items-center justify-between">
               <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <UserCheck className="size-3.5 text-muted-foreground/70" />
-                Asignación Vehicular
+                Asignación Técnica Vehicular
               </h4>
-              {conductor ? (
+              {vehiculo || conductor ? (
                 <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25 text-xs font-semibold">
                   Asignado
                 </Badge>
@@ -311,22 +322,74 @@ export function SolicitudVehicularDetailSheet({
               )}
             </div>
 
-            {conductor ? (
-              <div className="flex items-start gap-3 p-3 rounded-xl bg-card/60 border border-border/60 shadow-2xs">
-                <Avatar className="size-9 shrink-0">
-                  <AvatarFallback className="bg-emerald-500/10 text-emerald-600 font-bold text-xs">
-                    {getInitials(conductor.nombreCompleto || "")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-foreground text-sm">
-                    {conductor.nombreCompleto}
+            {vehiculo || conductor ? (
+              <div className="space-y-2.5">
+                {/* Tarjeta de Vehículo Asignado */}
+                {vehiculo ? (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-card/60 border border-border/60 shadow-2xs">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Car className="size-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                        Vehículo / Unidad Móvil
+                      </span>
+                      <div className="font-semibold text-foreground text-sm truncate">
+                        {vehiculo.nombre}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <code className="text-[10.5px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
+                          {vehiculo.codigo}
+                        </code>
+                        {vehiculo.placa && (
+                          <span className="text-[10.5px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                            Placa: {vehiculo.placa}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    Licencia: <strong className="text-foreground/90">{conductor.numeroLicencia || "No registrada"}</strong>
-                    {conductor.categoriaLicencia && ` (Cat. ${conductor.categoriaLicencia})`}
+                ) : (
+                  <div className="p-2.5 rounded-lg bg-muted/20 border border-dashed border-border/70 text-muted-foreground text-xs italic">
+                    Vehículo pendiente de asignación
                   </div>
-                </div>
+                )}
+
+                {/* Tarjeta de Conductor Designado */}
+                {conductor ? (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-card/60 border border-border/60 shadow-2xs">
+                    <Avatar className="size-9 shrink-0">
+                      <AvatarFallback className="bg-emerald-500/10 text-emerald-600 font-bold text-xs">
+                        {getInitials(conductor.nombreCompleto || "")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                        Conductor Designado
+                      </span>
+                      <div className="font-semibold text-foreground text-sm">
+                        {conductor.nombreCompleto}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Licencia: <strong className="text-foreground/90">{conductor.numeroLicencia || "No registrada"}</strong>
+                        {conductor.categoriaLicencia && ` (Cat. ${conductor.categoriaLicencia})`}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-lg bg-muted/20 border border-dashed border-border/70 text-muted-foreground text-xs italic">
+                    Conductor pendiente de asignación
+                  </div>
+                )}
+
+                {asignacion?.observacion && (
+                  <div className="p-2.5 rounded-lg bg-muted/20 border border-border/40 text-xs">
+                    <span className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider block mb-0.5">
+                      Observaciones de asignación:
+                    </span>
+                    <p className="text-foreground/90">{asignacion.observacion}</p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/20 border border-dashed border-border/70 text-muted-foreground text-xs">
@@ -350,7 +413,7 @@ export function SolicitudVehicularDetailSheet({
             )}
 
             {responsable && (
-              <div className="text-xs text-muted-foreground flex items-center justify-between px-1">
+              <div className="text-xs text-muted-foreground flex items-center justify-between px-1 pt-1">
                 <span>Responsable de asignación:</span>
                 <strong className="text-foreground">{responsable.nombreCompleto}</strong>
               </div>
