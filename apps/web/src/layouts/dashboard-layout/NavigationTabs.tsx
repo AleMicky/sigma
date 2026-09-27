@@ -52,6 +52,7 @@ export interface NavTabItem {
   id: string
   pathname: string
   title: string
+  color?: string | null
 }
 
 const STORAGE_KEY = "sigma_recent_nav_tabs"
@@ -110,34 +111,46 @@ export const PATH_TITLES: Record<string, string> = {
   "/perfil": "Mi Perfil",
 }
 
-function findTitleInNav(nodes: (NavSection | NavNode)[], targetPath: string): string | null {
+export function findNavNode(
+  nodes: (NavSection | NavNode)[],
+  targetPath: string,
+  parentColor?: string | null,
+): { title: string; color?: string | null } | null {
   for (const node of nodes) {
+    const currentColor = node.color || parentColor
     if (node.to && node.to.toLowerCase() === targetPath.toLowerCase()) {
-      return node.title
+      return { title: node.title, color: currentColor }
     }
     if (node.children && node.children.length > 0) {
-      const found = findTitleInNav(node.children, targetPath)
+      const found = findNavNode(node.children, targetPath, currentColor)
       if (found) return found
     }
   }
   return null
 }
 
-export function resolveTabTitle(pathname: string, navItems?: NavSection[]): string {
-  if (!pathname || pathname === "/") return "Inicio"
-
-  if (PATH_TITLES[pathname]) {
-    return PATH_TITLES[pathname]
-  }
+export function resolveTabInfo(
+  pathname: string,
+  navItems?: NavSection[],
+): { title: string; color?: string | null } {
+  if (!pathname || pathname === "/") return { title: "Inicio", color: "#3B82F6" }
 
   if (navItems && navItems.length > 0) {
-    const navTitle = findTitleInNav(navItems, pathname)
-    if (navTitle) return navTitle
+    const found = findNavNode(navItems, pathname)
+    if (found) return found
+  }
+
+  if (PATH_TITLES[pathname]) {
+    return { title: PATH_TITLES[pathname], color: null }
   }
 
   const segments = pathname.split("/").filter(Boolean)
   const lastSegment = segments[segments.length - 1] || "Inicio"
-  return formatSegment(lastSegment)
+  return { title: formatSegment(lastSegment), color: null }
+}
+
+export function resolveTabTitle(pathname: string, navItems?: NavSection[]): string {
+  return resolveTabInfo(pathname, navItems).title
 }
 
 /**
@@ -199,13 +212,17 @@ function loadInitialTabs(userId?: string | null): NavTabItem[] {
       if (stored) {
         const parsed = JSON.parse(stored) as NavTabItem[]
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Filtrar cualquier ruta de formulario previa guardada y actualizar títulos
+          // Filtrar cualquier ruta de formulario previa guardada y actualizar títulos/colores
           const filtered = parsed
             .filter((t) => t.pathname === "/" || !isFormOrTransientPath(t.pathname))
-            .map((t) => ({
-              ...t,
-              title: resolveTabTitle(t.pathname),
-            }))
+            .map((t) => {
+              const info = resolveTabInfo(t.pathname)
+              return {
+                ...t,
+                title: t.title || info.title,
+                color: t.color || info.color,
+              }
+            })
           if (filtered.length > 0) return filtered
         }
       }
@@ -213,7 +230,7 @@ function loadInitialTabs(userId?: string | null): NavTabItem[] {
   } catch {
     // Ignorar errores de parsing
   }
-  return [{ id: "/", pathname: "/", title: "Inicio" }]
+  return [{ id: "/", pathname: "/", title: "Inicio", color: "#3B82F6" }]
 }
 
 /**
@@ -288,12 +305,13 @@ export function NavigationTabs() {
       if (!isFormPage) {
         const exists = baseCleanTabs.some((tab) => tab.pathname === pathname)
         if (!exists) {
-          const title = resolveTabTitle(pathname, navItems)
+          const { title, color } = resolveTabInfo(pathname, navItems)
 
           const newTab: NavTabItem = {
             id: pathname,
             pathname,
             title,
+            color,
           }
 
           const updated = [...baseCleanTabs, newTab]
@@ -312,7 +330,7 @@ export function NavigationTabs() {
         setTabs(
           baseCleanTabs.length > 0
             ? baseCleanTabs
-            : [{ id: "/", pathname: "/", title: "Inicio" }],
+            : [{ id: "/", pathname: "/", title: "Inicio", color: "#3B82F6" }],
         )
       }
     }
@@ -365,15 +383,22 @@ export function NavigationTabs() {
   }
 
   function closeOtherTabs() {
+    const currentInfo = resolveTabInfo(pathname, navItems)
     const currentTab = tabs.find((t) => t.pathname === pathname) || {
       id: pathname,
       pathname,
-      title: formatSegment(pathname.split("/").pop() || "Inicio"),
+      title: currentInfo.title,
+      color: currentInfo.color,
     }
-    const homeTab = tabs.find((t) => t.pathname === "/")
+    const homeTab = tabs.find((t) => t.pathname === "/") || {
+      id: "/",
+      pathname: "/",
+      title: "Inicio",
+      color: "#3B82F6",
+    }
 
     const newTabs =
-      homeTab && homeTab.pathname !== currentTab.pathname
+      homeTab.pathname !== currentTab.pathname
         ? [homeTab, currentTab]
         : [currentTab]
 
@@ -381,7 +406,7 @@ export function NavigationTabs() {
   }
 
   function closeAllTabs() {
-    setTabs([{ id: "/", pathname: "/", title: "Inicio" }])
+    setTabs([{ id: "/", pathname: "/", title: "Inicio", color: "#3B82F6" }])
     void navigate({ to: "/" })
   }
 
@@ -416,7 +441,9 @@ export function NavigationTabs() {
           const isActive = pathname === tab.pathname
           const isHome = tab.pathname === "/"
           const Icon = resolveTabIcon(tab.pathname)
-          const tabTitle = tab.title || resolveTabTitle(tab.pathname, navItems)
+          const tabInfo = resolveTabInfo(tab.pathname, navItems)
+          const tabTitle = tabInfo.title || tab.title
+          const tabColor = tabInfo.color || tab.color
 
           return (
             <Link
@@ -424,12 +451,31 @@ export function NavigationTabs() {
               to={tab.pathname}
               data-tab-active={isActive}
               className={cn(
-                "group relative flex h-6.5 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[11.5px] font-medium transition-colors border",
+                "group relative flex h-6.5 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[11.5px] font-medium transition-all border select-none",
                 isActive
                   ? "bg-background text-foreground border-border shadow-2xs font-semibold"
                   : "bg-transparent text-muted-foreground border-transparent hover:bg-background/60 hover:text-foreground",
               )}
+              style={
+                isActive && tabColor
+                  ? {
+                      borderColor: `${tabColor}40`,
+                      backgroundColor: `${tabColor}10`,
+                    }
+                  : undefined
+              }
             >
+              {/* Indicador de color: dot sutil */}
+              {tabColor ? (
+                <span
+                  className={cn(
+                    "size-1.5 rounded-full shrink-0 transition-transform duration-200",
+                    isActive ? "scale-110 ring-1 ring-background" : "opacity-75 group-hover:opacity-100",
+                  )}
+                  style={{ backgroundColor: tabColor }}
+                />
+              ) : null}
+
               <Icon
                 className={cn(
                   "size-3 shrink-0 transition-colors",
@@ -437,6 +483,7 @@ export function NavigationTabs() {
                     ? "text-primary"
                     : "text-muted-foreground/70 group-hover:text-foreground",
                 )}
+                style={tabColor ? { color: tabColor } : undefined}
               />
 
               <span className="truncate max-w-36 tracking-tight">{tabTitle}</span>
