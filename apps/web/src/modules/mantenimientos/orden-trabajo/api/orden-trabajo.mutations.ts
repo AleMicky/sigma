@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { getErrorMessage } from "@/shared/api"
+import { workflowKeys } from "@/modules/workflow/api/workflow.keys"
+import { solicitudKeys } from "../../solicitud/api/solicitud.keys"
 
 import { ordenTrabajoKeys } from "./orden-trabajo.keys"
 import {
@@ -32,6 +34,8 @@ export function useCreateOrdenTrabajo() {
     mutationFn: (payload: OrdenTrabajoPayload) => createOrdenTrabajo(payload),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ordenTrabajoKeys.all })
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
       toast.success(`Orden de Trabajo ${data.numero ?? ""} creada exitosamente`)
     },
     onError: (err) => {
@@ -52,6 +56,8 @@ export function useUpdateOrdenTrabajo() {
     }) => updateOrdenTrabajo(id, payload),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ordenTrabajoKeys.all })
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
       toast.success(
         `Orden de Trabajo ${data.numero ?? ""} actualizada correctamente`,
       )
@@ -70,7 +76,9 @@ export function useDeleteOrdenTrabajo() {
     mutationFn: (id: string) => deleteOrdenTrabajo(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ordenTrabajoKeys.all })
-      toast.success("Orden de trabajo eliminada correctamente")
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
+      toast.success("Orden de Trabajo eliminada correctamente")
     },
     onError: (err) => {
       toast.error(

@@ -20,9 +20,15 @@ export function useCompleteWorkflowTask() {
   return useMutation({
     mutationFn: ({ processInstanceId, payload }: CompleteWorkflowTaskVariables) =>
       completeWorkflowTask(processInstanceId, payload),
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: workflowKeys.instance(variables.processInstanceId),
+        queryKey: workflowKeys.all,
+      })
+      queryClient.invalidateQueries({
+        queryKey: ["solicitudes-mantenimiento"],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ["solicitudes-vehiculares"],
       })
       toast.success("Tarea de workflow completada correctamente")
     },

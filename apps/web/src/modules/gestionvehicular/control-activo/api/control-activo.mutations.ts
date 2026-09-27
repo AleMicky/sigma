@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
+import { workflowKeys } from "@/modules/workflow/api/workflow.keys"
+import { solicitudVehicularKeys } from "../../solicitud/api/solicitud-vehicular.keys"
 import { controlActivoVehicularKeys } from "./control-activo.keys"
 import {
   createControlActivoVehicular,
@@ -31,6 +33,8 @@ export function useCreateControlActivoVehicular() {
           ),
         })
       }
+      queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error: Error) => {
       toast.error(error.message || "Error al crear el control de activo")
@@ -69,6 +73,8 @@ export function useCreateControlActivoVehicularWithDetalles() {
           ),
         })
       }
+      queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error: Error) => {
       toast.error(error.message || "Error al registrar el control de activo")
@@ -107,6 +113,8 @@ export function useUpdateControlActivoVehicularWithDetalles() {
           ),
         })
       }
+      queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error: Error) => {
       toast.error(
@@ -139,6 +147,8 @@ export function useUpdateControlActivoVehicular() {
           ),
         })
       }
+      queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error: Error) => {
       toast.error(error.message || "Error al actualizar el control de activo")
@@ -156,6 +166,8 @@ export function useDeleteControlActivoVehicular() {
       queryClient.invalidateQueries({
         queryKey: controlActivoVehicularKeys.all,
       })
+      queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
+      queryClient.invalidateQueries({ queryKey: workflowKeys.all })
     },
     onError: (error: Error) => {
       toast.error(error.message || "Error al eliminar el control de activo")
