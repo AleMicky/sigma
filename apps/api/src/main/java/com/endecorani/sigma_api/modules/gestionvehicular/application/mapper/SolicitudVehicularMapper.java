@@ -13,9 +13,11 @@ import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SolicitudV
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.TipoSolicitudVehicular;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaResponseMapper;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 
 import java.util.List;
@@ -87,9 +89,11 @@ public interface SolicitudVehicularMapper {
 
     SolicitudVehicularResponsableInfo toResponsableInfo(Empleado empleado);
 
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     void updateDomain(SolicitudVehicularUpdate dto, @MappingTarget SolicitudVehicular domain);
 
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     void updateDomainFromRequest(SolicitudVehicularRequest dto, @MappingTarget SolicitudVehicular domain);
 }

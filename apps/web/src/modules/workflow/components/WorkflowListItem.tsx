@@ -248,14 +248,14 @@ export function WorkflowListItem({
         )}
       </div>
 
-      {/* Columna Derecha: Acciones Rápidas (Arriba) y Acciones Workflow (Abajo) */}
+      {/* Columna Derecha / Fila Inferior en móvil: Acciones Rápidas y Acciones Workflow */}
       {(extraActions || onTraceability || processInstanceId || hasWorkflowElements) && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-between gap-2 shrink-0 sm:pl-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40"
+          className="flex flex-wrap sm:flex-col items-center sm:items-end justify-between gap-2 w-full sm:w-auto shrink-0 sm:pl-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40"
         >
-          {/* Fila de Botones Extras y Trazabilidad (Borde superior derecho) */}
-          <div className="flex items-center gap-1 shrink-0">
+          {/* Fila de Botones Extras y Trazabilidad */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             {extraActions}
 
             {/* Botón Trazabilidad de Tareas / Historial */}
@@ -277,9 +277,9 @@ export function WorkflowListItem({
             )}
           </div>
 
-          {/* Fila de Botones de Workflow (Borde inferior derecho) */}
+          {/* Fila de Botones de Workflow */}
           {showWorkflowTrigger && (
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 flex-wrap justify-end ml-auto sm:ml-0">
               {isWorkflowLoading ? (
                 <div className="h-7 px-2.5 flex items-center justify-center rounded-lg bg-muted/60 border border-border/50 shadow-2xs">
                   <Loader2 className="size-3 animate-spin text-primary opacity-80" />

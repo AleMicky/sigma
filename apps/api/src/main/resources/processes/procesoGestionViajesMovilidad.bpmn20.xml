@@ -68,8 +68,27 @@
       flowable:assignee="${solicitanteId}"
       flowable:formFieldValidation="true">
       <extensionElements>
-        <flowable:formProperty id="comentario" name="Comentario de Ajuste" type="string"
-          required="true" writable="true"></flowable:formProperty>
+        <!-- LISTADO DE APROBADORES ASIGNADOS AL EMPLEADO/SOLICITANTE -->
+        <flowable:formProperty
+          id="responsableAsignacionId"
+          name="Responsable de Asignación Vehicular"
+          type="string"
+          required="true"
+          writable="true"
+          xmlns:sigma="http://endecorani.com/sigma/workflow"
+          sigma:component="select"
+          sigma:source="rest"
+          sigma:url="/api/v1/empleado-responsabilidades/responsabilidades/ASIGNACION_VEHICULAR/empleados">
+        </flowable:formProperty>
+
+        <!-- COMENTARIO DE AJUSTE -->
+        <flowable:formProperty
+          id="comentario"
+          name="Comentario de Ajuste"
+          type="string"
+          required="true"
+          writable="true">
+        </flowable:formProperty>
       </extensionElements>
     </userTask>
 

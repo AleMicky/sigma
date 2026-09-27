@@ -158,7 +158,36 @@ export function useSolicitudVehicularForm({
       }
 
       if (
-        selectedTipo?.requiereRespaldo &&
+        selectedTipo &&
+        typeof selectedTipo.diasAnticipacion === "number" &&
+        selectedTipo.diasAnticipacion > 0
+      ) {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const minDate = new Date(today)
+        minDate.setDate(minDate.getDate() + selectedTipo.diasAnticipacion)
+
+        const salidaDate = new Date(value.fechaSalida)
+        salidaDate.setHours(0, 0, 0, 0)
+
+        if (salidaDate < minDate) {
+          const formattedMinDate = `${String(minDate.getDate()).padStart(2, "0")}/${String(minDate.getMonth() + 1).padStart(2, "0")}/${minDate.getFullYear()}`
+          setFormError(
+            `El tipo de solicitud "${selectedTipo.nombre}" requiere al menos ${selectedTipo.diasAnticipacion} día(s) de anticipación. La fecha mínima de salida permitida es ${formattedMinDate}.`
+          )
+          return
+        }
+      }
+
+      const isEmergencia =
+        selectedTipo?.codigo?.toUpperCase() === "EMERGENCIA" ||
+        selectedTipo?.diasAnticipacion === 0
+
+      const requiereRespaldoEstricto =
+        Boolean(selectedTipo?.requiereRespaldo) && !isEmergencia
+
+      if (
+        requiereRespaldoEstricto &&
         !isEditing &&
         selectedFiles.length === 0
       ) {
@@ -176,6 +205,8 @@ export function useSolicitudVehicularForm({
           numero: value.numero?.trim() ? value.numero.trim().toUpperCase() : (solicitud?.numero || undefined),
           tipoSolicitudVehicularId: value.tipoSolicitudVehicularId.trim(),
           solicitanteId: value.solicitanteId.trim(),
+          responsableAsignacionId: solicitud?.responsableAsignacionId ?? null,
+          conductorAsignadoId: solicitud?.conductorAsignadoId ?? null,
           motivo: value.motivo.trim(),
           justificacion: value.justificacion?.trim() || null,
           destino: value.destino.trim(),
@@ -255,6 +286,7 @@ export function useSolicitudVehicularForm({
     if (e.target.files && e.target.files.length > 0) {
       const filesArr = Array.from(e.target.files)
       setSelectedFiles((prev) => [...prev, ...filesArr])
+      e.target.value = ""
     }
   }
 

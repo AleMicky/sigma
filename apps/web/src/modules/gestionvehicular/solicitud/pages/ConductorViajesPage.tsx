@@ -11,7 +11,6 @@ import { Button } from "@/shared/components/ui/button"
 import {
   WorkflowActionDialog,
   WorkflowHistoryDialog,
-  WorkflowListView,
   useWorkflowActionTarget,
   type WorkflowAction,
   type WorkflowField,
@@ -29,8 +28,11 @@ import {
 import { SolicitudVehicularDetailSheet } from "../components/SolicitudVehicularDetailSheet"
 import { SolicitudVehicularFilterToolbar } from "../components/SolicitudVehicularFilterToolbar"
 import { SolicitudVehicularHeader } from "../components/SolicitudVehicularHeader"
+import { AsignacionVehicularDialog } from "../../asignacion-vehicular/components/AsignacionVehicularDialog"
 import {
-  SolicitudVehicularListItem,
+  ConductorViajeListItem,
+} from "../components/ConductorViajeListItem"
+import {
   SolicitudVehicularListItemSkeleton,
 } from "../components/SolicitudVehicularListItem"
 import { ControlActivoVehicularHistorialModal } from "../../control-activo/components/ControlActivoVehicularHistorialModal"
@@ -40,7 +42,8 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function ConductorViajesPage() {
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("ASIGNADO")
-  const [detailItem, setDetailItem] = useState<SolicitudVehicular | null>(null)
+  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null)
+  const [assignItem, setAssignItem] = useState<SolicitudVehicular | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudVehicular | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudVehicular | null>(null)
 
@@ -60,22 +63,40 @@ export function ConductorViajesPage() {
   })
 
   // Consulta filtrada según el estado seleccionado y paginación
-  const queryParams = useMemo(
-    () => ({
+  const queryParams = useMemo(() => {
+    let estadoFilter: string | undefined = undefined
+    if (selectedEstado === "ASIGNADO") {
+      estadoFilter = "ASIGNADO,APROBADO,APROBADA"
+    } else if (selectedEstado === "EN_VIAJE") {
+      estadoFilter = "EN_VIAJE,EN_CURSO,EN_PROCESO"
+    } else if (selectedEstado === "FINALIZADA") {
+      estadoFilter = "FINALIZADA,FINALIZADO,COMPLETADA,RETORNO"
+    } else if (selectedEstado) {
+      estadoFilter = selectedEstado
+    }
+
+    return {
       page: search.page,
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC" as const,
-      ...(selectedEstado ? { estado: selectedEstado } : {}),
+      ...(estadoFilter ? { estado: estadoFilter } : {}),
       ...(search.query ? { search: search.query } : {}),
-    }),
-    [search.page, search.query, selectedEstado]
-  )
+    }
+  }, [search.page, search.query, selectedEstado])
 
   const query = useQuery(solicitudVehicularQueries.list(queryParams))
 
+  // Detalle reactivo para el Drawer/Sheet
+  const detailQuery = useQuery({
+    ...solicitudVehicularQueries.detail(selectedDetailId ?? ""),
+    enabled: Boolean(selectedDetailId),
+  })
+
   const solicitudes = query.data?.content ?? []
-  const totalElements = query.data?.totalElements ?? 0
+  const totalElements = allQuery.data?.totalElements ?? query.data?.totalElements ?? 0
+  const activeDetailItem =
+    detailQuery.data ?? solicitudes.find((s) => s.id === selectedDetailId) ?? null
 
   useClampPage(search.page, search.setPage, query.data?.totalPages)
 
@@ -91,7 +112,12 @@ export function ConductorViajesPage() {
         porSalir++
       } else if (estado === "EN_VIAJE" || estado === "EN_CURSO" || estado === "EN_PROCESO") {
         enViaje++
-      } else if (estado === "FINALIZADA" || estado === "COMPLETADA" || estado === "RETORNO") {
+      } else if (
+        estado === "FINALIZADA" ||
+        estado === "FINALIZADO" ||
+        estado === "COMPLETADA" ||
+        estado === "RETORNO"
+      ) {
         finalizados++
       }
     }
@@ -107,11 +133,19 @@ export function ConductorViajesPage() {
   const handleRefresh = useCallback(() => {
     query.refetch()
     allQuery.refetch()
-  }, [query, allQuery])
+    if (selectedDetailId) {
+      detailQuery.refetch()
+    }
+  }, [query, allQuery, detailQuery, selectedDetailId])
 
   const handleSelectEstado = useCallback((estado: string) => {
-    setSelectedEstado(estado as EstadoFiltro)
+    setSelectedEstado((prev) => (prev === estado ? "" : (estado as EstadoFiltro)))
   }, [])
+
+  const handleClearAll = useCallback(() => {
+    search.setSearch("")
+    setSelectedEstado("")
+  }, [search])
 
   const handleActionSelect = useCallback(
     (
@@ -125,10 +159,20 @@ export function ConductorViajesPage() {
     [openAction]
   )
 
+  const selectedEstadoLabel = useMemo(() => {
+    if (!selectedEstado) return undefined
+    const map: Record<string, string> = {
+      ASIGNADO: "Por Salir (Asignados)",
+      EN_VIAJE: "En Viaje / En Curso",
+      FINALIZADA: "Finalizados / Retorno",
+    }
+    return map[selectedEstado] ?? selectedEstado.replace(/_/g, " ")
+  }, [selectedEstado])
+
   return (
     <PageShell
       layout="scroll"
-      className="w-full max-w-none px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 lg:px-6 space-y-2.5"
+      className="w-full max-w-none px-2 py-1.5 sm:px-4 sm:py-2.5 md:px-5 lg:px-6 space-y-2 sm:space-y-2.5"
     >
       {/* Encabezado Principal */}
       <SolicitudVehicularHeader
@@ -139,8 +183,8 @@ export function ConductorViajesPage() {
             <Navigation className="size-3.5 sm:size-4" />
           </div>
         }
-        totalCount={totalElements}
-        countLabel="viajes en este estado"
+        totalCount={query.data?.totalElements ?? totalElements}
+        countLabel={selectedEstado ? "viajes en este estado" : "viajes registrados"}
         showCreate={false}
         queries={[query, allQuery]}
         onRefresh={handleRefresh}
@@ -150,7 +194,7 @@ export function ConductorViajesPage() {
       {/* Tarjetas de Resumen de Viajes */}
       <ConductorViajesResumenCards
         resumen={resumen}
-        isLoading={allQuery.isLoading}
+        isLoading={allQuery.isLoading && !allQuery.data}
         selectedEstado={selectedEstado}
         onSelectEstado={handleSelectEstado}
       />
@@ -160,20 +204,16 @@ export function ConductorViajesPage() {
         searchQuery={search.search}
         onSearchChange={search.setSearch}
         selectedEstado={selectedEstado}
-        selectedEstadoLabel={
-          selectedEstado === "ASIGNADO"
-            ? "Por Salir (Asignados)"
-            : selectedEstado === "EN_VIAJE"
-              ? "En Viaje / En Curso"
-              : selectedEstado === "FINALIZADA"
-                ? "Finalizados"
-                : undefined
-        }
+        selectedEstadoLabel={selectedEstadoLabel}
+        onClearEstado={() => setSelectedEstado("")}
+        totalResults={totalElements}
+        filteredCount={query.data?.totalElements}
+        onClearAll={handleClearAll}
         placeholder="Buscar por número, motivo, solicitante o destino del viaje..."
       />
 
       {/* Listado de Viajes */}
-      <div className="relative flex flex-col space-y-2.5">
+      <div className="relative flex flex-col space-y-2 sm:space-y-2.5">
         {/* Barra indicadora de actualización */}
         {query.isFetching && !query.isLoading && (
           <div className="absolute -top-1 left-0 right-0 z-10 h-0.5 overflow-hidden bg-primary/10 rounded-full">
@@ -188,9 +228,9 @@ export function ConductorViajesPage() {
             ))}
           </div>
         ) : query.isError ? (
-          <div className="flex flex-1 items-center justify-center p-6">
+          <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
             <EmptyState
-              icon={<AlertCircle className="size-8 text-destructive" />}
+              icon={<AlertCircle className="size-7 sm:size-8 text-destructive" />}
               title="Error al consultar los viajes asignados"
               description={getErrorMessage(query.error)}
               action={
@@ -207,9 +247,9 @@ export function ConductorViajesPage() {
             />
           </div>
         ) : solicitudes.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center p-6">
+          <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
             <EmptyState
-              icon={<Car className="size-8 text-muted-foreground/60" />}
+              icon={<Car className="size-7 sm:size-8 text-muted-foreground/60" />}
               title="No hay viajes en esta bandeja"
               description={
                 search.debouncedSearch
@@ -223,40 +263,39 @@ export function ConductorViajesPage() {
                         : "No se encontraron viajes asignados."
               }
               action={
-                search.debouncedSearch ? (
+                search.debouncedSearch || selectedEstado ? (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => search.setSearch("")}
-                    className="mt-2 text-xs font-medium cursor-pointer"
+                    onClick={handleClearAll}
+                    className="mt-2 text-xs font-medium cursor-pointer shadow-2xs"
                   >
-                    Limpiar búsqueda
+                    {search.debouncedSearch ? "Limpiar búsqueda" : "Ver todos los viajes"}
                   </Button>
                 ) : undefined
               }
             />
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             <div
               className={cn(
-                query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200"
+                "flex flex-col gap-3 sm:gap-3.5 transition-opacity duration-200",
+                query.isFetching && !query.isLoading && "opacity-75"
               )}
             >
-              <WorkflowListView>
-                {solicitudes.map((solicitud) => (
-                  <SolicitudVehicularListItem
-                    key={solicitud.id}
-                    solicitud={solicitud}
-                    showWorkflowActions={true}
-                    onViewDetail={setDetailItem}
-                    onSelect={setDetailItem}
-                    onControlActivo={setControlActivoItem}
-                    onActionSelect={handleActionSelect}
-                    onTraceability={setTraceabilityItem}
-                  />
-                ))}
-              </WorkflowListView>
+              {solicitudes.map((solicitud) => (
+                <ConductorViajeListItem
+                  key={solicitud.id}
+                  solicitud={solicitud}
+                  onViewDetail={(sol) => setSelectedDetailId(sol.id)}
+                  onSelect={(sol) => setSelectedDetailId(sol.id)}
+                  onAssign={setAssignItem}
+                  onControlActivo={setControlActivoItem}
+                  onActionSelect={handleActionSelect}
+                  onTraceability={setTraceabilityItem}
+                />
+              ))}
             </div>
 
             {/* Paginación */}
@@ -271,15 +310,27 @@ export function ConductorViajesPage() {
         )}
       </div>
 
+      {/* Modal de Asignación Vehicular Técnica */}
+      <AsignacionVehicularDialog
+        open={Boolean(assignItem)}
+        onOpenChange={(open) => {
+          if (!open) setAssignItem(null)
+        }}
+        solicitud={assignItem}
+        onSuccess={handleRefresh}
+      />
+
       {/* Panel Lateral de Detalle Completo de Solicitud */}
       <SolicitudVehicularDetailSheet
-        open={Boolean(detailItem)}
+        open={Boolean(selectedDetailId)}
         onOpenChange={(open) => {
-          if (!open) setDetailItem(null)
+          if (!open) setSelectedDetailId(null)
         }}
-        solicitud={detailItem}
+        solicitud={activeDetailItem}
+        onAssign={setAssignItem}
         onControlActivo={setControlActivoItem}
         onViewHistory={setTraceabilityItem}
+        onActionSelect={handleActionSelect}
       />
 
       {/* Modal Historial y Registro de Control de Activo Vehicular */}

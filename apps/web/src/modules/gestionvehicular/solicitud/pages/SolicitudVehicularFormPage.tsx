@@ -33,6 +33,7 @@ function SolicitudVehicularFormContent() {
     isEditing,
     isLoading,
     isEditable,
+    isSubmitting,
     solicitud,
     handleSubmit,
   } = useSolicitudVehicularFormContext()
@@ -66,14 +67,20 @@ function SolicitudVehicularFormContent() {
         {/* Tarjeta contenedora del formulario con división de secciones */}
         <Card className="border border-border/70 bg-card/95 backdrop-blur-xs shadow-2xs rounded-xl overflow-hidden">
           <form onSubmit={handleSubmit} className="divide-y divide-border/40">
-            {/* SECCIÓN 1: Clasificación y Solicitante */}
-            <SolicitudVehicularGeneralSection />
+            <fieldset
+              disabled={isSubmitting}
+              aria-busy={isSubmitting}
+              className="contents disabled:pointer-events-none disabled:opacity-75 transition-opacity"
+            >
+              {/* SECCIÓN 1: Clasificación y Solicitante */}
+              <SolicitudVehicularGeneralSection />
 
-            {/* SECCIÓN 2: Itinerario y Requerimientos */}
-            <SolicitudVehicularItinerarioSection />
+              {/* SECCIÓN 2: Itinerario y Requerimientos */}
+              <SolicitudVehicularItinerarioSection />
 
-            {/* SECCIÓN 3: Ficha Resumen dinámica */}
-            <SolicitudVehicularResumenCard />
+              {/* SECCIÓN 3: Ficha Resumen dinámica */}
+              <SolicitudVehicularResumenCard />
+            </fieldset>
 
             {/* Acciones de pie de página */}
             <SolicitudVehicularFormFooter />
