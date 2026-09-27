@@ -55,24 +55,24 @@ function SolicitudVehicularFormContent() {
   }
 
   return (
-    <PageShell className="h-full min-h-0 w-full overflow-y-auto p-2 sm:p-3 md:p-4">
-      <div className="w-full max-w-5xl mx-auto space-y-2.5 pb-4">
-        {/* Encabezado */}
+    <PageShell className="h-full min-h-0 w-full overflow-y-auto px-2.5 py-2 sm:px-4 sm:py-3 md:px-6 space-y-2.5">
+      <div className="w-full max-w-5xl mx-auto space-y-2.5 pb-6">
+        {/* Encabezado y Navegación */}
         <SolicitudVehicularFormHeader />
 
         {/* Banner de error global */}
         <SolicitudVehicularFormErrorBanner />
 
-        {/* Tarjeta contenedora del formulario */}
-        <Card className="border border-border/80 bg-card shadow-2xs rounded-lg overflow-hidden">
-          <form onSubmit={handleSubmit} className="divide-y divide-border/50">
+        {/* Tarjeta contenedora del formulario con división de secciones */}
+        <Card className="border border-border/70 bg-card/95 backdrop-blur-xs shadow-2xs rounded-xl overflow-hidden">
+          <form onSubmit={handleSubmit} className="divide-y divide-border/40">
             {/* SECCIÓN 1: Clasificación y Solicitante */}
             <SolicitudVehicularGeneralSection />
 
             {/* SECCIÓN 2: Itinerario y Requerimientos */}
             <SolicitudVehicularItinerarioSection />
 
-            {/* SECCIÓN 3: Resumen dinámico */}
+            {/* SECCIÓN 3: Ficha Resumen dinámica */}
             <SolicitudVehicularResumenCard />
 
             {/* Acciones de pie de página */}

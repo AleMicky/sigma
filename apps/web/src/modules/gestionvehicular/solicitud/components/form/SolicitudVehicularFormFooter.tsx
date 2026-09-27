@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { Check, Loader2, Plus } from "lucide-react"
+import { Check, Loader2, Plus, X } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
 import { Button } from "@/shared/components/ui/button"
@@ -19,39 +19,44 @@ export function SolicitudVehicularFormFooter(
   const isSubmitting = props.isSubmitting ?? context.isSubmitting
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-muted/30 p-3.5 sm:px-5 rounded-b-xl">
-      <p className="text-xs text-muted-foreground">
-        Los campos marcados con{" "}
-        <span className="text-destructive font-bold">*</span> son obligatorios para el registro.
-      </p>
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-muted/30 p-3 sm:px-4 rounded-b-xl border-t border-border/40">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span className="flex size-1.5 rounded-full bg-primary animate-pulse" />
+        <span>
+          Campos con <strong className="text-destructive">*</strong> obligatorios.
+        </span>
+      </div>
 
-      <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
         <Button
           type="button"
           variant="outline"
           render={<Link to={routes.gestionVehicular.solicitudes} />}
-          className="w-full sm:w-auto text-xs"
+          disabled={isSubmitting}
+          className="w-full sm:w-auto h-8 text-xs font-medium cursor-pointer rounded-lg"
         >
-          Cancelar
+          <X className="size-3 mr-1" />
+          <span>Cancelar</span>
         </Button>
+
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="w-full sm:w-auto h-9 gap-1.5 px-5 text-xs font-semibold shadow-2xs cursor-pointer"
+          className="w-full sm:w-auto h-8 gap-1.5 px-4 text-xs font-semibold shadow-xs cursor-pointer rounded-lg transition-all"
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="size-3.5 animate-spin" />
+              <Loader2 className="size-3 animate-spin" />
               <span>Guardando...</span>
             </>
           ) : (
             <>
               {isEditing ? (
-                <Check className="size-3.5" />
+                <Check className="size-3" />
               ) : (
-                <Plus className="size-3.5" />
+                <Plus className="size-3" />
               )}
-              <span>{isEditing ? "Guardar Cambios" : "Crear Solicitud"}</span>
+              <span>{isEditing ? "Guardar Cambios" : "Registrar Solicitud"}</span>
             </>
           )}
         </Button>
