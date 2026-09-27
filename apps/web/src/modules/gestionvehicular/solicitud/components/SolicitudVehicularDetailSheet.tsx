@@ -7,6 +7,7 @@ import {
   FileCheck,
   FileIcon,
   FileText,
+  Flame,
   History,
   KeyRound,
   MapPin,
@@ -14,6 +15,7 @@ import {
   Pencil,
   ShieldAlert,
   Tag,
+  Trash2,
   User,
   UserCheck,
   Users,
@@ -46,6 +48,7 @@ export interface SolicitudVehicularDetailSheetProps {
   onOpenChange: (open: boolean) => void
   solicitud?: SolicitudVehicular | null
   onEdit?: (solicitud: SolicitudVehicular) => void
+  onDelete?: (solicitud: SolicitudVehicular) => void
   onAssign?: (solicitud: SolicitudVehicular) => void
   onControlActivo?: (solicitud: SolicitudVehicular) => void
   onViewHistory?: (solicitud: SolicitudVehicular) => void
@@ -79,6 +82,7 @@ export function SolicitudVehicularDetailSheet({
   onOpenChange,
   solicitud,
   onEdit,
+  onDelete,
   onAssign,
   onControlActivo,
   onViewHistory,
@@ -97,6 +101,11 @@ export function SolicitudVehicularDetailSheet({
   const conductor = solicitud.conductorAsignado
   const responsable = solicitud.responsableAsignacion
 
+  const isEmergencia =
+    tipo?.codigo?.toUpperCase() === "EMERGENCIA" ||
+    (typeof tipo?.diasAnticipacion === "number" && tipo.diasAnticipacion === 0) ||
+    Boolean(tipo?.nombre?.toUpperCase().includes("EMERGENCIA"))
+
   const estadoNorm = (solicitud.estado ?? "").toUpperCase()
   const isCancelled =
     estadoNorm === "CANCELADO" ||
@@ -104,6 +113,8 @@ export function SolicitudVehicularDetailSheet({
     estadoNorm === "ANULADO"
   const isBorrador = estadoNorm === "BORRADOR" || estadoNorm === "PENDIENTE"
   const isObservado = estadoNorm === "OBSERVADO"
+  const isEditable = isBorrador || isObservado
+  const isDeletable = isBorrador
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -122,6 +133,12 @@ export function SolicitudVehicularDetailSheet({
                 status={solicitud.estado || "PENDIENTE"}
                 size="md"
               />
+              {isEmergencia && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-rose-500/15 text-rose-700 dark:text-rose-300 dark:bg-rose-950/60 border border-rose-500/40 px-2 py-0.5 text-[10.5px] font-bold shadow-2xs">
+                  <Flame className="size-3 text-rose-600 dark:text-rose-400 animate-pulse" />
+                  <span>EMERGENCIA</span>
+                </span>
+              )}
             </div>
 
             {solicitud.auditoria?.createdAt && (
@@ -143,6 +160,21 @@ export function SolicitudVehicularDetailSheet({
               </SheetDescription>
             )}
           </div>
+
+          {/* Banner de Emergencia destacada */}
+          {isEmergencia && (
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/40 text-xs font-semibold shadow-xs animate-in fade-in-50">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                <Flame className="size-4 animate-pulse text-rose-600 dark:text-rose-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-rose-700 dark:text-rose-300">Solicitud de Emergencia (Salida Inmediata)</p>
+                <p className="text-[11px] text-rose-600/90 dark:text-rose-400/90 font-normal">
+                  Requiere atención prioritaria. No requiere días de anticipación y los respaldos pueden adjuntarse posteriormente.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Banner de tarea actual de Workflow */}
           {taskName && !isCancelled && (
@@ -189,18 +221,33 @@ export function SolicitudVehicularDetailSheet({
 
             {tipo && (
               <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground/90 bg-muted/80 px-2.5 py-1 rounded-md border border-border/70">
-                  <Tag className="size-3 text-purple-600 dark:text-purple-400 shrink-0" />
-                  <span>{tipo.nombre}</span>
-                </span>
+                {isEmergencia ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-500/15 px-2.5 py-1 rounded-md border border-rose-500/40 shadow-2xs">
+                    <Flame className="size-3.5 text-rose-600 dark:text-rose-400 shrink-0 animate-pulse" />
+                    <span>{tipo.nombre}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground/90 bg-muted/80 px-2.5 py-1 rounded-md border border-border/70">
+                    <Tag className="size-3 text-primary shrink-0" />
+                    <span>{tipo.nombre}</span>
+                  </span>
+                )}
                 {tipo.diasAnticipacion !== undefined && (
-                  <span className="text-xs text-muted-foreground">
-                    ({tipo.diasAnticipacion === 0 ? "Inmediato" : `${tipo.diasAnticipacion} días de anticipación`})
+                  <span className={cn("text-xs font-medium", isEmergencia ? "text-rose-700 dark:text-rose-400 font-semibold" : "text-muted-foreground")}>
+                    ({tipo.diasAnticipacion === 0 ? "Inmediato - Sin anticipación" : `${tipo.diasAnticipacion} días de anticipación`})
                   </span>
                 )}
                 {tipo.requiereRespaldo && (
-                  <Badge variant="outline" className="text-[10.5px] px-1.5 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                    Req. Respaldo
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[10.5px] px-1.5 py-0.5",
+                      isEmergencia
+                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                        : "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                    )}
+                  >
+                    {isEmergencia ? "Respaldo opcional (posterior)" : "Req. Respaldo"}
                   </Badge>
                 )}
               </div>
@@ -453,8 +500,24 @@ export function SolicitudVehicularDetailSheet({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Botón Eliminar si es Borrador/Pendiente */}
+            {isDeletable && onDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onOpenChange(false)
+                  onDelete(solicitud)
+                }}
+                className="h-8 text-xs font-semibold rounded-lg gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 border-destructive/30 cursor-pointer px-3 shadow-2xs"
+              >
+                <Trash2 className="size-3.5 text-destructive" />
+                <span>Eliminar</span>
+              </Button>
+            )}
+
             {/* Botones de acción directa del Workflow */}
-            {actions.length > 0 && onActionSelect && (
+            {isEditable && actions.length > 0 && onActionSelect && (
               <div className="flex items-center gap-2">
                 {actions.map((action) => {
                   const visual = getWorkflowActionVisuals(action)
@@ -480,7 +543,7 @@ export function SolicitudVehicularDetailSheet({
               </div>
             )}
 
-            {(isBorrador || isObservado) && onEdit && (
+            {isEditable && onEdit && (
               <Button
                 size="sm"
                 variant="outline"

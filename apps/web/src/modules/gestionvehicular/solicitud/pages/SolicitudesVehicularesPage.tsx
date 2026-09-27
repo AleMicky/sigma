@@ -79,18 +79,6 @@ export function SolicitudesVehicularesPage() {
     [navigate]
   )
 
-  const handleAssign = useCallback(() => {
-    navigate({
-      to: routes.gestionVehicular.asignaciones,
-    })
-  }, [navigate])
-
-  const handleControlActivo = useCallback(() => {
-    navigate({
-      to: routes.mantenimientos.controlesActivos.nuevo,
-    })
-  }, [navigate])
-
   const handleDeleteConfirm = async () => {
     if (!deletingItem) return
     try {
@@ -354,11 +342,9 @@ export function SolicitudesVehicularesPage() {
                   <SolicitudVehicularListItem
                     key={solicitud.id}
                     solicitud={solicitud}
-                    showWorkflowActions={true}
+                    showWorkflowActions={false}
                     onViewDetail={(sol) => setSelectedDetailId(sol.id)}
                     onEdit={handleEdit}
-                    onAssign={handleAssign}
-                    onControlActivo={handleControlActivo}
                     onDelete={setDeletingItem}
                     onActionSelect={handleActionSelect}
                     onTraceability={setHistoryItem}
@@ -387,8 +373,7 @@ export function SolicitudesVehicularesPage() {
         }}
         solicitud={activeDetailItem}
         onEdit={handleEdit}
-        onAssign={handleAssign}
-        onControlActivo={handleControlActivo}
+        onDelete={setDeletingItem}
         onViewHistory={setHistoryItem}
         onActionSelect={handleActionSelect}
       />
@@ -424,7 +409,7 @@ export function SolicitudesVehicularesPage() {
         title="Trazabilidad de Solicitud Vehicular"
       />
 
-      {/* Diálogo de confirmación para eliminar solicitud en borrador */}
+      {/* Diálogo de confirmación para eliminar solicitud en borrador/pendiente */}
       <ConfirmDeleteDialog
         open={Boolean(deletingItem)}
         onOpenChange={(open) => {

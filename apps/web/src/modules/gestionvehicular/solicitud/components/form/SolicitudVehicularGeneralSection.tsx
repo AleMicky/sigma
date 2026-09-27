@@ -1,4 +1,4 @@
-import { CalendarClock, FileCheck, Layers, Loader2, ShieldAlert } from "lucide-react"
+import { CalendarClock, FileCheck, Flame, Layers, Loader2, ShieldAlert } from "lucide-react"
 
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
@@ -113,48 +113,59 @@ export function SolicitudVehicularGeneralSection() {
                 )}
 
                 {/* Resumen dinámico del tipo seleccionado */}
-                {selectedTipo && (
-                  <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-[9.5px] font-medium px-1.5 py-0 gap-1 border",
-                        (selectedTipo.diasAnticipacion ?? 0) === 0
-                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900"
-                          : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900"
-                      )}
-                    >
-                      <CalendarClock className="size-2.5" />
-                      Anticipación: {selectedTipo.diasAnticipacion}d{" "}
-                      {(selectedTipo.diasAnticipacion ?? 0) === 0 ? "(Inmediato)" : ""}
-                    </Badge>
-                    {selectedTipo.requiereRespaldo && (
+                {selectedTipo && (() => {
+                  const isEmergencia =
+                    selectedTipo.codigo?.toUpperCase() === "EMERGENCIA" ||
+                    (selectedTipo.diasAnticipacion ?? 0) === 0 ||
+                    selectedTipo.nombre?.toUpperCase().includes("EMERGENCIA")
+
+                  return (
+                    <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
                       <Badge
                         variant="outline"
                         className={cn(
                           "text-[9.5px] font-medium px-1.5 py-0 gap-1 border",
-                          (selectedTipo.diasAnticipacion ?? 0) === 0
-                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900"
-                            : "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900"
+                          isEmergencia
+                            ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-900 font-bold shadow-2xs"
+                            : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900"
                         )}
                       >
-                        <FileCheck className="size-2.5" />
-                        {(selectedTipo.diasAnticipacion ?? 0) === 0
-                          ? "Respaldo opcional (informe posterior)"
-                          : "Requiere respaldo"}
+                        {isEmergencia ? (
+                          <Flame className="size-2.5 text-rose-600 dark:text-rose-400 animate-pulse" />
+                        ) : (
+                          <CalendarClock className="size-2.5" />
+                        )}
+                        Anticipación: {selectedTipo.diasAnticipacion}d{" "}
+                        {isEmergencia ? "(Inmediato - Emergencia)" : ""}
                       </Badge>
-                    )}
-                    {selectedTipo.requiereJustificacion && (
-                      <Badge
-                        variant="outline"
-                        className="text-[9.5px] font-medium px-1.5 py-0 gap-1 bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-900"
-                      >
-                        <ShieldAlert className="size-2.5 text-purple-600 dark:text-purple-400" />
-                        Justificación req.
-                      </Badge>
-                    )}
-                  </div>
-                )}
+                      {selectedTipo.requiereRespaldo && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[9.5px] font-medium px-1.5 py-0 gap-1 border",
+                            isEmergencia
+                              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900"
+                              : "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900"
+                          )}
+                        >
+                          <FileCheck className="size-2.5" />
+                          {isEmergencia
+                            ? "Respaldo opcional (informe posterior)"
+                            : "Requiere respaldo"}
+                        </Badge>
+                      )}
+                      {selectedTipo.requiereJustificacion && (
+                        <Badge
+                          variant="outline"
+                          className="text-[9.5px] font-medium px-1.5 py-0 gap-1 bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-900"
+                        >
+                          <ShieldAlert className="size-2.5 text-purple-600 dark:text-purple-400" />
+                          Justificación req.
+                        </Badge>
+                      )}
+                    </div>
+                  )
+                })()}
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )

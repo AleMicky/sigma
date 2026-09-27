@@ -3,6 +3,7 @@ import {
   ClipboardCheck,
   Clock,
   Eye,
+  Flame,
   History,
   KeyRound,
   MapPin,
@@ -22,6 +23,7 @@ import {
 } from "@/modules/workflow"
 import { Button } from "@/shared/components/ui/button"
 import { formatDate } from "@/shared/lib/format-date"
+import { cn } from "@/shared/lib/utils"
 
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
 
@@ -62,9 +64,17 @@ export function SolicitudVehicularListItem({
   const estadoNorm = (solicitud.estado ?? "").trim().toLowerCase()
   const isBorrador = estadoNorm === "borrador" || estadoNorm === "pendiente"
   const isObservado = estadoNorm === "observado"
+  const isEditable = isBorrador || isObservado
+  const isDeletable = isBorrador
+
+  const tipo = solicitud.tipoSolicitudVehicular
+  const isEmergencia =
+    tipo?.codigo?.toUpperCase() === "EMERGENCIA" ||
+    (typeof tipo?.diasAnticipacion === "number" && tipo.diasAnticipacion === 0) ||
+    Boolean(tipo?.nombre?.toUpperCase().includes("EMERGENCIA"))
 
   const shouldShowWorkflowActions = onlyWorkflowActionsOnBorrador
-    ? isBorrador || isObservado
+    ? isEditable
     : showWorkflowActions
 
   const { actions, taskName, fields, isLoading: isWorkflowLoading } =
@@ -86,14 +96,24 @@ export function SolicitudVehicularListItem({
       processInstanceId={solicitud.processInstanceId}
       title={solicitud.motivo}
       description={solicitud.justificacion || solicitud.observacion}
+      isCritical={isEmergencia}
+      className={cn(
+        isEmergencia && "border-l-rose-500 bg-rose-500/[0.04] hover:bg-rose-500/[0.07] dark:bg-rose-950/[0.2] dark:hover:bg-rose-950/[0.3]",
+        className
+      )}
       badges={
         <>
-          {solicitud.tipoSolicitudVehicular?.nombre && (
+          {isEmergencia ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-rose-500/15 text-rose-700 dark:text-rose-300 dark:bg-rose-950/60 border border-rose-500/40 px-1.5 py-0.5 text-[10.5px] font-bold shrink-0 shadow-2xs">
+              <Flame className="size-3 text-rose-600 dark:text-rose-400 shrink-0 animate-pulse" />
+              <span>{tipo?.nombre || "Emergencia"}</span>
+            </span>
+          ) : tipo?.nombre ? (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-1.5 py-0.5 text-[10.5px] font-medium text-foreground/80 border border-border/70 shrink-0 shadow-2xs">
               <Tag className="size-2.5 opacity-60 shrink-0 text-primary" />
-              <span>{solicitud.tipoSolicitudVehicular.nombre}</span>
+              <span>{tipo.nombre}</span>
             </span>
-          )}
+          ) : null}
 
           {solicitud.cantidadPasajeros !== undefined && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10.5px] font-medium text-muted-foreground border border-border/60 shrink-0">
@@ -171,7 +191,7 @@ export function SolicitudVehicularListItem({
       }
       extraActions={
         <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Botón Asignar */}
+          {/* Botón Asignar (solo en páginas de asignación) */}
           {onAssign && (
             <Button
               type="button"
@@ -189,7 +209,7 @@ export function SolicitudVehicularListItem({
             </Button>
           )}
 
-          {/* Botón Control Activo */}
+          {/* Botón Control Activo (solo en páginas de viajes/control) */}
           {onControlActivo && (
             <Button
               type="button"
@@ -244,7 +264,7 @@ export function SolicitudVehicularListItem({
           )}
 
           {/* Botón Editar */}
-          {(isBorrador || isObservado) && onEdit && (
+          {isEditable && onEdit && (
             <Button
               type="button"
               size="xs"
@@ -257,7 +277,7 @@ export function SolicitudVehicularListItem({
               title={
                 isObservado
                   ? "Editar solicitud vehicular observada"
-                  : "Editar borrador de solicitud vehicular"
+                  : "Editar solicitud vehicular"
               }
             >
               <Pencil className="size-3 text-muted-foreground shrink-0" />
@@ -266,7 +286,7 @@ export function SolicitudVehicularListItem({
           )}
 
           {/* Botón Eliminar */}
-          {isBorrador && onDelete && (
+          {isDeletable && onDelete && (
             <Button
               type="button"
               size="xs"
@@ -276,7 +296,7 @@ export function SolicitudVehicularListItem({
                 onDelete(solicitud)
               }}
               className="h-6.5 gap-1 px-2 text-[11px] font-medium text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 border-destructive/30 shadow-2xs cursor-pointer transition-all"
-              title="Eliminar borrador de solicitud"
+              title="Eliminar solicitud vehicular"
             >
               <Trash2 className="size-3 text-destructive shrink-0" />
               <span>Eliminar</span>
@@ -287,7 +307,6 @@ export function SolicitudVehicularListItem({
       showWorkflowTrigger={
         shouldShowWorkflowActions && Boolean(solicitud.processInstanceId)
       }
-      className={className}
     />
   )
 }

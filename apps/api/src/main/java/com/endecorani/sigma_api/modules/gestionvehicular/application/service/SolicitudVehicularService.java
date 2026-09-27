@@ -195,10 +195,11 @@ public class SolicitudVehicularService {
     public SolicitudVehicularResponse enviar(UUID id, EnviarSolicitudVehicularRequest request) {
         SolicitudVehicular solicitud = obtenerPorId(id);
 
-        if (!ESTADO_BORRADOR.equalsIgnoreCase(solicitud.getEstado())) {
+        String estadoActual = solicitud.getEstado() != null ? solicitud.getEstado().toUpperCase() : "";
+        if (!"BORRADOR".equals(estadoActual) && !"PENDIENTE".equals(estadoActual)) {
             throw new ConflictException(
                     "SOLICITUD_ESTADO_INVALIDO",
-                    "Solo se puede enviar una solicitud en estado BORRADOR"
+                    "Solo se puede enviar una solicitud en estado BORRADOR o PENDIENTE"
             );
         }
 

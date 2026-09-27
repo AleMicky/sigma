@@ -3,12 +3,14 @@ import {
   ClipboardList,
   Clock,
   FileCheck,
+  Flame,
   MapPin,
   Users,
 } from "lucide-react"
 
 import type { Empleado } from "@/modules/organizacion/empleado/api/empleado.service"
 import { Badge } from "@/shared/components/ui/badge"
+import { cn } from "@/shared/lib/utils"
 import { formatDateTime } from "@/shared/utils/date.utils"
 import { useSolicitudVehicularFormContext } from "../../context/solicitud-vehicular-form.context"
 
@@ -64,6 +66,12 @@ export function SolicitudVehicularResumenCard() {
       {(values: any) => {
         const selectedTipo = tiposMap.get(values.tipoSolicitudVehicularId)
         const isJustificacionRequired = Boolean(selectedTipo?.requiereJustificacion)
+        const isEmergencia = Boolean(
+          selectedTipo &&
+          ((selectedTipo.diasAnticipacion ?? 0) === 0 ||
+           selectedTipo.codigo?.toUpperCase() === "EMERGENCIA" ||
+           selectedTipo.nombre?.toUpperCase().includes("EMERGENCIA"))
+        )
 
         // Solo mostrar la ficha resumen cuando todos los campos requeridos estén completados
         const isComplete = Boolean(
@@ -84,12 +92,24 @@ export function SolicitudVehicularResumenCard() {
 
         return (
           <div className="p-3 sm:p-3.5 pt-1 space-y-1.5 animate-in fade-in-50 duration-200">
-            <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/[0.04] via-card to-background p-2.5 sm:p-3 transition-colors shadow-2xs space-y-2">
+            <div
+              className={cn(
+                "rounded-lg border p-2.5 sm:p-3 transition-colors shadow-2xs space-y-2",
+                isEmergencia
+                  ? "border-rose-500/40 bg-gradient-to-br from-rose-500/[0.07] via-card to-background shadow-rose-500/5"
+                  : "border-primary/20 bg-gradient-to-br from-primary/[0.04] via-card to-background"
+              )}
+            >
               {/* Header de Resumen */}
               <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5 flex-wrap">
                 <div className="flex items-center gap-1.5">
-                  <div className="flex size-5 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-2xs">
-                    <ClipboardList className="size-3" />
+                  <div
+                    className={cn(
+                      "flex size-5 items-center justify-center rounded-md text-white shadow-2xs",
+                      isEmergencia ? "bg-rose-600 dark:bg-rose-500" : "bg-primary text-primary-foreground"
+                    )}
+                  >
+                    {isEmergencia ? <Flame className="size-3 animate-pulse" /> : <ClipboardList className="size-3" />}
                   </div>
                   <h3 className="font-bold text-xs tracking-tight text-foreground">
                     Ficha Resumen
@@ -102,7 +122,16 @@ export function SolicitudVehicularResumenCard() {
                     <span>Datos requeridos completos</span>
                   </span>
                   {selectedTipo && (
-                    <Badge variant="outline" className="text-[9.5px] font-semibold px-1.5 py-0 bg-primary/10 text-primary border-primary/30">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-[9.5px] font-semibold px-1.5 py-0 gap-1",
+                        isEmergencia
+                          ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-400 dark:border-rose-800 font-bold"
+                          : "bg-primary/10 text-primary border-primary/30"
+                      )}
+                    >
+                      {isEmergencia && <Flame className="size-2.5 text-rose-600 dark:text-rose-400 animate-pulse" />}
                       {selectedTipo.nombre}
                     </Badge>
                   )}
