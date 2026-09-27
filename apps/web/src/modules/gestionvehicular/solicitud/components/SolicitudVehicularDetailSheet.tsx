@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   Clock,
   Download,
+  Eye,
   FileCheck,
   FileIcon,
   FileText,
@@ -44,6 +45,7 @@ import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
 
 import { asignacionVehicularQueries } from "../../asignacion-vehicular/api/asignacion-vehicular.queries"
+import { controlActivoVehicularQueries } from "../../control-activo/api/control-activo.queries"
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
 
 export interface SolicitudVehicularDetailSheetProps {
@@ -53,7 +55,7 @@ export interface SolicitudVehicularDetailSheetProps {
   onEdit?: (solicitud: SolicitudVehicular) => void
   onDelete?: (solicitud: SolicitudVehicular) => void
   onAssign?: (solicitud: SolicitudVehicular) => void
-  onControlActivo?: (solicitud: SolicitudVehicular) => void
+  onControlActivo?: (solicitud: SolicitudVehicular, hasControles?: boolean) => void
   onViewHistory?: (solicitud: SolicitudVehicular) => void
   onActionSelect?: (
     solicitud: SolicitudVehicular,
@@ -101,6 +103,13 @@ export function SolicitudVehicularDetailSheet({
     enabled: Boolean(open && solicitud?.id),
     staleTime: 1000 * 60 * 2,
   })
+
+  const controlesQuery = useQuery({
+    ...controlActivoVehicularQueries.bySolicitud(solicitud?.id ?? ""),
+    enabled: Boolean(open && solicitud?.id),
+    staleTime: 1000 * 60 * 2,
+  })
+  const controlesCount = (controlesQuery.data ?? []).length
 
   if (!solicitud) return null
 
@@ -552,12 +561,21 @@ export function SolicitudVehicularDetailSheet({
                 size="sm"
                 onClick={() => {
                   onOpenChange(false)
-                  onControlActivo(solicitud)
+                  onControlActivo(solicitud, controlesCount > 0)
                 }}
-                className="h-8 text-xs font-semibold rounded-lg gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 cursor-pointer px-3 shadow-2xs"
+                className={cn(
+                  "h-8 text-xs font-semibold rounded-lg gap-1.5 cursor-pointer px-3 shadow-2xs",
+                  controlesCount > 0
+                    ? "bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/30"
+                    : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                )}
               >
-                <ClipboardCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Control Activo</span>
+                {controlesCount > 0 ? (
+                  <Eye className="size-3.5 text-sky-600 dark:text-sky-400" />
+                ) : (
+                  <ClipboardCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                )}
+                <span>{controlesCount > 0 ? "Ver Control Activo" : "Control Activo"}</span>
               </Button>
             )}
           </div>

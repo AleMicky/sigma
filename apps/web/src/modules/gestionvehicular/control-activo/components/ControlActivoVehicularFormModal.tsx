@@ -77,6 +77,13 @@ export function ControlActivoVehicularFormModal({
   onSuccess,
 }: ControlActivoVehicularFormModalProps) {
   const isEditing = Boolean(controlToEdit?.id)
+  const estado = (solicitud?.estado || "").toUpperCase()
+  const isPorSalir =
+    estado === "APROBADO" ||
+    estado === "APROBADA" ||
+    estado === "ASIGNADO" ||
+    estado === "BORRADOR" ||
+    estado === "PENDIENTE"
 
   // Consultar asignación del vehículo para obtener el activoId y conductor
   const asignacionQuery = useQuery({
@@ -181,7 +188,7 @@ export function ControlActivoVehicularFormModal({
         setHasLoadedDefaults(true)
       }
     } else {
-      setTipo(initialTipo)
+      setTipo(isPorSalir ? "ENTREGA" : initialTipo)
       const now = new Date()
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
       setFecha(now.toISOString().slice(0, 16))
@@ -195,7 +202,7 @@ export function ControlActivoVehicularFormModal({
         setRecibidoPorId(solicitud.solicitanteId)
       }
     }
-  }, [open, controlToEdit, initialTipo, asignacion, solicitud, accesorioMap])
+  }, [open, controlToEdit, initialTipo, isPorSalir, asignacion, solicitud, accesorioMap])
 
   // Cargar accesorios por defecto cuando es nuevo
   useEffect(() => {
@@ -348,6 +355,13 @@ export function ControlActivoVehicularFormModal({
       }
     }
 
+    if (isPorSalir && tipo === "DEVOLUCION" && !isEditing) {
+      toast.error(
+        `En estado ${solicitud.estado || "APROBADO"} solo se puede registrar el Acta de Entrega (Salida).`
+      )
+      return
+    }
+
     const payload = {
       solicitudVehicularId: solicitud.id,
       asignacionVehicularId: asignacion?.id || null,
@@ -466,13 +480,30 @@ export function ControlActivoVehicularFormModal({
 
                     <button
                       type="button"
-                      onClick={() => setTipo("DEVOLUCION")}
+                      disabled={isPorSalir && !isEditing}
+                      onClick={() => {
+                        if (isPorSalir && !isEditing) {
+                          toast.info(
+                            `En estado ${solicitud?.estado || "APROBADO"} solo se puede registrar el Acta de Entrega (Salida).`
+                          )
+                          return
+                        }
+                        setTipo("DEVOLUCION")
+                      }}
                       className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all",
+                        isPorSalir && !isEditing
+                          ? "opacity-50 cursor-not-allowed text-muted-foreground"
+                          : "cursor-pointer",
                         tipo === "DEVOLUCION"
                           ? "bg-emerald-600 text-white shadow-xs"
                           : "text-muted-foreground hover:text-foreground"
                       )}
+                      title={
+                        isPorSalir && !isEditing
+                          ? `En estado ${solicitud?.estado || "APROBADO"} solo se puede registrar el Acta de Entrega (Salida).`
+                          : undefined
+                      }
                     >
                       <RotateCcw className="size-3.5" />
                       <span>Retorno / Devolución</span>

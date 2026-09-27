@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { AlertCircle, Car, Navigation, RefreshCw } from "lucide-react"
 
@@ -28,7 +29,6 @@ import {
 import { SolicitudVehicularDetailSheet } from "../components/SolicitudVehicularDetailSheet"
 import { SolicitudVehicularFilterToolbar } from "../components/SolicitudVehicularFilterToolbar"
 import { SolicitudVehicularHeader } from "../components/SolicitudVehicularHeader"
-import { AsignacionVehicularDialog } from "../../asignacion-vehicular/components/AsignacionVehicularDialog"
 import {
   ConductorViajeListItem,
 } from "../components/ConductorViajeListItem"
@@ -41,11 +41,12 @@ type EstadoFiltro = "" | "ASIGNADO" | "EN_VIAJE" | "FINALIZADA"
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function ConductorViajesPage() {
+  const navigate = useNavigate()
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("ASIGNADO")
   const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null)
-  const [assignItem, setAssignItem] = useState<SolicitudVehicular | null>(null)
-  const [controlActivoItem, setControlActivoItem] = useState<SolicitudVehicular | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudVehicular | null>(null)
+  const [controlActivoHistorialItem, setControlActivoHistorialItem] =
+    useState<SolicitudVehicular | null>(null)
 
   const search = usePaginatedSearch({
     debounceMs: 300,
@@ -157,6 +158,32 @@ export function ConductorViajesPage() {
       openAction(solicitud, action, taskName, fields)
     },
     [openAction]
+  )
+
+  const handleControlActivo = useCallback(
+    (solicitud: SolicitudVehicular, hasControles?: boolean) => {
+      if (hasControles) {
+        setControlActivoHistorialItem(solicitud)
+        return
+      }
+
+      const isPorSalir = [
+        "APROBADO",
+        "APROBADA",
+        "ASIGNADO",
+        "BORRADOR",
+        "PENDIENTE",
+      ].includes((solicitud.estado || "").toUpperCase())
+
+      navigate({
+        to: "/gestion-vehicular/controles-activos/nuevo",
+        search: {
+          solicitudId: solicitud.id,
+          tipo: isPorSalir ? "ENTREGA" : undefined,
+        },
+      })
+    },
+    [navigate]
   )
 
   const selectedEstadoLabel = useMemo(() => {
@@ -290,8 +317,7 @@ export function ConductorViajesPage() {
                   solicitud={solicitud}
                   onViewDetail={(sol) => setSelectedDetailId(sol.id)}
                   onSelect={(sol) => setSelectedDetailId(sol.id)}
-                  onAssign={setAssignItem}
-                  onControlActivo={setControlActivoItem}
+                  onControlActivo={handleControlActivo}
                   onActionSelect={handleActionSelect}
                   onTraceability={setTraceabilityItem}
                 />
@@ -310,16 +336,6 @@ export function ConductorViajesPage() {
         )}
       </div>
 
-      {/* Modal de Asignación Vehicular Técnica */}
-      <AsignacionVehicularDialog
-        open={Boolean(assignItem)}
-        onOpenChange={(open) => {
-          if (!open) setAssignItem(null)
-        }}
-        solicitud={assignItem}
-        onSuccess={handleRefresh}
-      />
-
       {/* Panel Lateral de Detalle Completo de Solicitud */}
       <SolicitudVehicularDetailSheet
         open={Boolean(selectedDetailId)}
@@ -327,19 +343,9 @@ export function ConductorViajesPage() {
           if (!open) setSelectedDetailId(null)
         }}
         solicitud={activeDetailItem}
-        onAssign={setAssignItem}
-        onControlActivo={setControlActivoItem}
+        onControlActivo={handleControlActivo}
         onViewHistory={setTraceabilityItem}
         onActionSelect={handleActionSelect}
-      />
-
-      {/* Modal Historial y Registro de Control de Activo Vehicular */}
-      <ControlActivoVehicularHistorialModal
-        open={Boolean(controlActivoItem)}
-        onOpenChange={(open) => {
-          if (!open) setControlActivoItem(null)
-        }}
-        solicitud={controlActivoItem}
       />
 
       {/* Diálogo interactivo para completar tareas de workflow (Registrar Salida, Registrar Retorno) */}
@@ -372,6 +378,15 @@ export function ConductorViajesPage() {
         processInstanceId={traceabilityItem?.processInstanceId}
         entityCode={traceabilityItem?.numero}
         title="Trazabilidad de Solicitud Vehicular"
+      />
+
+      {/* Modal de Historial y Edición/Eliminación de Controles de Activos */}
+      <ControlActivoVehicularHistorialModal
+        open={Boolean(controlActivoHistorialItem)}
+        onOpenChange={(open) => {
+          if (!open) setControlActivoHistorialItem(null)
+        }}
+        solicitud={controlActivoHistorialItem}
       />
     </PageShell>
   )

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
@@ -43,7 +44,6 @@ import type {
   ControlActivoVehicularDetalle,
   TipoControlActivo,
 } from "../api/control-activo.service"
-import { ControlActivoVehicularFormModal } from "./ControlActivoVehicularFormModal"
 
 export type ControlActivoVehicularHistorialModalProps = {
   open: boolean
@@ -357,10 +357,6 @@ export function ControlActivoVehicularHistorialModal({
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("ALL")
   const [controlToDelete, setControlToDelete] =
     useState<ControlActivoVehicular | null>(null)
-  const [formModalOpen, setFormModalOpen] = useState(false)
-  const [controlToEdit, setControlToEdit] =
-    useState<ControlActivoVehicular | null>(null)
-  const [targetTipo, setTargetTipo] = useState<TipoControlActivo>("ENTREGA")
 
   const deleteMutation = useDeleteControlActivoVehicular()
 
@@ -393,21 +389,44 @@ export function ControlActivoVehicularHistorialModal({
     [allControles]
   )
 
+  const estado = (solicitud?.estado || "").toUpperCase()
+  const isPorSalir =
+    estado === "APROBADO" ||
+    estado === "APROBADA" ||
+    estado === "ASIGNADO" ||
+    estado === "BORRADOR" ||
+    estado === "PENDIENTE"
+
+  const effectiveAllowedTipo = isPorSalir ? "ENTREGA" : allowedTipo
+
   const filteredControles = useMemo(() => {
     if (tipoFilter === "ALL") return allControles
     return allControles.filter((c) => c.tipo === tipoFilter)
   }, [allControles, tipoFilter])
 
+  const navigate = useNavigate()
+
   function handleOpenCreate(tipo: TipoControlActivo) {
-    setControlToEdit(null)
-    setTargetTipo(tipo)
-    setFormModalOpen(true)
+    onOpenChange(false)
+    navigate({
+      to: "/gestion-vehicular/controles-activos/nuevo",
+      search: {
+        solicitudId: solicitud?.id,
+        tipo: isPorSalir ? "ENTREGA" : tipo,
+      },
+    })
   }
 
   function handleOpenEdit(control: ControlActivoVehicular) {
-    setControlToEdit(control)
-    setTargetTipo(control.tipo)
-    setFormModalOpen(true)
+    onOpenChange(false)
+    navigate({
+      to: "/gestion-vehicular/controles-activos/nuevo",
+      search: {
+        id: control.id,
+        solicitudId: solicitud?.id,
+        tipo: control.tipo,
+      },
+    })
   }
 
   return (
@@ -438,7 +457,9 @@ export function ControlActivoVehicularHistorialModal({
                   Sin Control de Activo Registrado
                 </p>
                 <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
-                  No hay actas de Salida (Entrega) ni Retorno (Devolución) registradas para este viaje vehicular.
+                  {isPorSalir
+                    ? "Antes de iniciar el viaje, debe registrar el Acta de Entrega (Salida) del vehículo e inspección de accesorios."
+                    : "No hay actas de Salida (Entrega) ni Retorno (Devolución) registradas para este viaje vehicular."}
                 </p>
               </div>
               {solicitud?.id && !readOnly && (
@@ -452,15 +473,17 @@ export function ControlActivoVehicularHistorialModal({
                     <Plus className="size-3.5" />
                     <span>Acta de Entrega (Salida)</span>
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => handleOpenCreate("DEVOLUCION")}
-                    className="h-8 gap-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow-xs"
-                  >
-                    <Plus className="size-3.5" />
-                    <span>Acta de Retorno (Devolución)</span>
-                  </Button>
+                  {!isPorSalir && (effectiveAllowedTipo === "ALL" || effectiveAllowedTipo === "DEVOLUCION") && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleOpenCreate("DEVOLUCION")}
+                      className="h-8 gap-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow-xs"
+                    >
+                      <Plus className="size-3.5" />
+                      <span>Acta de Retorno (Devolución)</span>
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -509,7 +532,7 @@ export function ControlActivoVehicularHistorialModal({
 
                     {!readOnly && (
                       <>
-                        {(allowedTipo === "ALL" || allowedTipo === "ENTREGA") &&
+                        {(effectiveAllowedTipo === "ALL" || effectiveAllowedTipo === "ENTREGA") &&
                           entregasCount === 0 && (
                             <Button
                               type="button"
@@ -522,7 +545,7 @@ export function ControlActivoVehicularHistorialModal({
                             </Button>
                           )}
 
-                        {(allowedTipo === "ALL" || allowedTipo === "DEVOLUCION") &&
+                        {!isPorSalir && (effectiveAllowedTipo === "ALL" || effectiveAllowedTipo === "DEVOLUCION") &&
                           devolucionesCount === 0 && (
                             <Button
                               type="button"
@@ -622,18 +645,6 @@ export function ControlActivoVehicularHistorialModal({
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Modal Formulario de Creación / Edición */}
-      <ControlActivoVehicularFormModal
-        open={formModalOpen}
-        onOpenChange={setFormModalOpen}
-        solicitud={solicitud}
-        controlToEdit={controlToEdit}
-        initialTipo={targetTipo}
-        onSuccess={() => {
-          controlesQuery.refetch()
-        }}
-      />
 
       {/* Diálogo de Confirmación de Eliminación */}
       <ConfirmDeleteDialog
