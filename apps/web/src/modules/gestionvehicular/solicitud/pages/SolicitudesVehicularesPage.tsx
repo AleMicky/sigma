@@ -138,28 +138,43 @@ export function SolicitudesVehicularesPage() {
     const list = allQuery.data?.content ?? solicitudes
 
     let borradores = 0
-    let enProceso = 0
+    let solicitados = 0
+    let aprobados = 0
+    let enRuta = 0
     let finalizadas = 0
 
     for (const item of list) {
-      const estado = (item.estado || "").toUpperCase()
+      const estado = (item.estado || "").toUpperCase().trim()
       if (estado === "BORRADOR" || estado === "PENDIENTE") {
         borradores++
+      } else if (estado === "SOLICITADO" || estado === "OBSERVADO") {
+        solicitados++
+      } else if (estado === "APROBADO" || estado === "APROBADA") {
+        aprobados++
+      } else if (
+        estado === "EN_CURSO" ||
+        estado === "EN_VIAJE" ||
+        estado === "RETORNO" ||
+        estado === "EN_RUTA"
+      ) {
+        enRuta++
       } else if (
         estado === "FINALIZADA" ||
         estado === "COMPLETADA" ||
-        estado === "APROBADA"
+        estado === "FINALIZADO"
       ) {
         finalizadas++
       } else {
-        enProceso++
+        solicitados++
       }
     }
 
     return {
       total: allQuery.data?.totalElements ?? list.length,
       borradores,
-      enProceso,
+      solicitados,
+      aprobados,
+      enRuta,
       finalizadas,
     }
   }, [allQuery.data, solicitudes])
@@ -175,6 +190,23 @@ export function SolicitudesVehicularesPage() {
     setSelectedEstado("")
     setSelectedTipoId("")
   }, [search])
+
+  const selectedEstadoLabel = useMemo(() => {
+    if (!selectedEstado) return undefined
+    const map: Record<string, string> = {
+      BORRADOR: "Borradores",
+      "SOLICITADO,OBSERVADO": "Por Revisar",
+      SOLICITADO: "Solicitados",
+      OBSERVADO: "Observados",
+      APROBADO: "Aprobados",
+      "EN_CURSO,RETORNO": "En Ruta",
+      EN_CURSO: "En Curso",
+      RETORNO: "En Retorno",
+      FINALIZADA: "Finalizadas",
+      COMPLETADA: "Completadas",
+    }
+    return map[selectedEstado] ?? selectedEstado.replace(/_/g, " ")
+  }, [selectedEstado])
 
   const handleRefresh = useCallback(() => {
     query.refetch()
@@ -222,6 +254,7 @@ export function SolicitudesVehicularesPage() {
         searchQuery={search.search}
         onSearchChange={search.setSearch}
         selectedEstado={selectedEstado}
+        selectedEstadoLabel={selectedEstadoLabel}
         onClearEstado={() => setSelectedEstado("")}
         selectedTipoId={selectedTipoId}
         onSelectTipoId={setSelectedTipoId}
