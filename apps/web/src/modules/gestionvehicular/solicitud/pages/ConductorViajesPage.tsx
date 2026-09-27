@@ -26,7 +26,7 @@ import {
   ConductorViajesResumenCards,
   type ConductorViajesResumen,
 } from "../components/ConductorViajesResumenCards"
-import { SolicitudVehicularDetailDialog } from "../components/SolicitudVehicularDetailDialog"
+import { SolicitudVehicularDetailSheet } from "../components/SolicitudVehicularDetailSheet"
 import { SolicitudVehicularFilterToolbar } from "../components/SolicitudVehicularFilterToolbar"
 import { SolicitudVehicularHeader } from "../components/SolicitudVehicularHeader"
 import {
@@ -271,8 +271,8 @@ export function ConductorViajesPage() {
         )}
       </div>
 
-      {/* Modal de Detalle Completo de Solicitud */}
-      <SolicitudVehicularDetailDialog
+      {/* Panel Lateral de Detalle Completo de Solicitud */}
+      <SolicitudVehicularDetailSheet
         open={Boolean(detailItem)}
         onOpenChange={(open) => {
           if (!open) setDetailItem(null)

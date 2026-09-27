@@ -32,7 +32,7 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
             OR LOWER(tsv.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(ve.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%')))
-          AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
+          AND (:hasEstados = false OR UPPER(s.estado) IN (:estados))
           AND (:hasTipo = false OR s.tipoSolicitudVehicularId = :tipoSolicitudVehicularId)
           AND (:hasSolicitante = false OR s.solicitanteId = :solicitanteId)
           AND (:hasConductor = false OR s.conductorAsignadoId = :conductorAsignadoId)
@@ -51,7 +51,7 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
             OR LOWER(tsv.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(ve.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%')))
-          AND (:hasEstado = false OR LOWER(s.estado) = LOWER(:estado))
+          AND (:hasEstados = false OR UPPER(s.estado) IN (:estados))
           AND (:hasTipo = false OR s.tipoSolicitudVehicularId = :tipoSolicitudVehicularId)
           AND (:hasSolicitante = false OR s.solicitanteId = :solicitanteId)
           AND (:hasConductor = false OR s.conductorAsignadoId = :conductorAsignadoId)
@@ -59,8 +59,8 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
     Page<SolicitudVehicularEntity> searchWithFilters(
             @Param("hasSearch") boolean hasSearch,
             @Param("search") String search,
-            @Param("hasEstado") boolean hasEstado,
-            @Param("estado") String estado,
+            @Param("hasEstados") boolean hasEstados,
+            @Param("estados") java.util.Collection<String> estados,
             @Param("hasTipo") boolean hasTipo,
             @Param("tipoSolicitudVehicularId") UUID tipoSolicitudVehicularId,
             @Param("hasSolicitante") boolean hasSolicitante,

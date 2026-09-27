@@ -3,6 +3,7 @@ import {
   ClipboardCheck,
   Clock,
   Eye,
+  History,
   KeyRound,
   MapPin,
   Paperclip,
@@ -71,9 +72,7 @@ export function SolicitudVehicularListItem({
       enabled: Boolean(solicitud.processInstanceId && shouldShowWorkflowActions),
     })
 
-  const solicitanteNombre =
-    solicitud.solicitante?.nombreCompleto || ""
-
+  const solicitanteNombre = solicitud.solicitante?.nombreCompleto || ""
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
   const handleViewDetail = onViewDetail || onSelect
 
@@ -91,7 +90,7 @@ export function SolicitudVehicularListItem({
         <>
           {solicitud.tipoSolicitudVehicular?.nombre && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-1.5 py-0.5 text-[10.5px] font-medium text-foreground/80 border border-border/70 shrink-0 shadow-2xs">
-              <Tag className="size-2.5 opacity-60 shrink-0" />
+              <Tag className="size-2.5 opacity-60 shrink-0 text-primary" />
               <span>{solicitud.tipoSolicitudVehicular.nombre}</span>
             </span>
           )}
@@ -171,7 +170,8 @@ export function SolicitudVehicularListItem({
         </>
       }
       extraActions={
-        <>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Botón Asignar */}
           {onAssign && (
             <Button
               type="button"
@@ -181,7 +181,7 @@ export function SolicitudVehicularListItem({
                 e.stopPropagation()
                 onAssign(solicitud)
               }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 shadow-2xs cursor-pointer transition-all"
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 shadow-2xs cursor-pointer transition-all hover:scale-102 active:scale-98"
               title="Gestionar asignación de vehículo y conductor"
             >
               <KeyRound className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
@@ -189,6 +189,7 @@ export function SolicitudVehicularListItem({
             </Button>
           )}
 
+          {/* Botón Control Activo */}
           {onControlActivo && (
             <Button
               type="button"
@@ -198,7 +199,7 @@ export function SolicitudVehicularListItem({
                 e.stopPropagation()
                 onControlActivo(solicitud)
               }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-2xs cursor-pointer transition-all"
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-2xs cursor-pointer transition-all hover:scale-102 active:scale-98"
               title="Inspección y control de accesorios del vehículo"
             >
               <ClipboardCheck className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -206,6 +207,25 @@ export function SolicitudVehicularListItem({
             </Button>
           )}
 
+          {/* Botón Trazabilidad */}
+          {onTraceability && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onTraceability(solicitud)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 shadow-2xs cursor-pointer transition-all hover:scale-102 active:scale-98"
+              title="Ver trazabilidad e historial de tareas de workflow"
+            >
+              <History className="size-3 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span>Trazabilidad</span>
+            </Button>
+          )}
+
+          {/* Botón Ver Detalle */}
           {handleViewDetail && (
             <Button
               type="button"
@@ -215,7 +235,7 @@ export function SolicitudVehicularListItem({
                 e.stopPropagation()
                 handleViewDetail(solicitud)
               }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background/90 hover:bg-muted text-foreground border-border/80 shadow-2xs cursor-pointer transition-all"
+              className="h-6.5 gap-1 px-2.5 text-[11.5px] font-medium bg-background/90 hover:bg-muted text-foreground border-border/80 shadow-2xs cursor-pointer transition-all hover:scale-102 active:scale-98"
               title="Ver detalles completos de la solicitud vehicular"
             >
               <Eye className="size-3 text-primary shrink-0" />
@@ -223,6 +243,7 @@ export function SolicitudVehicularListItem({
             </Button>
           )}
 
+          {/* Botón Editar */}
           {(isBorrador || isObservado) && onEdit && (
             <Button
               type="button"
@@ -244,6 +265,7 @@ export function SolicitudVehicularListItem({
             </Button>
           )}
 
+          {/* Botón Eliminar */}
           {isBorrador && onDelete && (
             <Button
               type="button"
@@ -260,10 +282,7 @@ export function SolicitudVehicularListItem({
               <span>Eliminar</span>
             </Button>
           )}
-        </>
-      }
-      onTraceability={
-        onTraceability ? () => onTraceability(solicitud) : undefined
+        </div>
       }
       showWorkflowTrigger={
         shouldShowWorkflowActions && Boolean(solicitud.processInstanceId)

@@ -276,6 +276,8 @@ public class SolicitudVehicularService {
         String nuevoEstado = resultado.status() != null ? resultado.status().trim().toUpperCase() : null;
         if (nuevoEstado != null) {
             solicitud.setEstado(nuevoEstado);
+        } else {
+            solicitud.setEstado("FINALIZADA");
         }
 
         if (effectiveVariables.containsKey("responsableAsignacionId")) {

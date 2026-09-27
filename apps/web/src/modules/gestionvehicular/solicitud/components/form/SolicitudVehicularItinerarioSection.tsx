@@ -1,26 +1,52 @@
 import {
-  Clock,
+  AlertCircle,
   FileIcon,
   FileText,
-  ImageIcon,
   MapPin,
   Paperclip,
+  UploadCloud,
   Users,
   X,
 } from "lucide-react"
 
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
+import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
 import { useSolicitudVehicularFormContext } from "../../context/solicitud-vehicular-form.context"
+import { DateTimePickerField } from "./DateTimePickerField"
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function calculateDuration(salida?: string, retorno?: string): { text: string; isNegative: boolean } | null {
+  if (!salida || !retorno) return null
+  const dSalida = new Date(salida)
+  const dRetorno = new Date(retorno)
+  if (isNaN(dSalida.getTime()) || isNaN(dRetorno.getTime())) return null
+
+  const diffMs = dRetorno.getTime() - dSalida.getTime()
+  if (diffMs < 0) {
+    return { text: "La fecha de retorno no puede ser anterior a la salida", isNegative: true }
+  }
+
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
+  const days = Math.floor(diffMinutes / (24 * 60))
+  const hours = Math.floor((diffMinutes % (24 * 60)) / 60)
+  const minutes = diffMinutes % 60
+
+  const parts: string[] = []
+  if (days > 0) parts.push(`${days} ${days === 1 ? "día" : "días"}`)
+  if (hours > 0) parts.push(`${hours} ${hours === 1 ? "hora" : "horas"}`)
+  if (minutes > 0 && days === 0) parts.push(`${minutes} min`)
+
+  return { text: parts.length > 0 ? parts.join(", ") : "< 1 min", isNegative: false }
 }
 
 export function SolicitudVehicularItinerarioSection() {
@@ -40,12 +66,13 @@ export function SolicitudVehicularItinerarioSection() {
   return (
     <div className="p-3 sm:p-3.5 space-y-2.5">
       {/* Encabezado de Sección */}
-      <div className="flex items-center gap-1.5 pb-1 border-b border-border/40">
-        <div className="flex size-5.5 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
-          <MapPin className="size-3" />
+      <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
+        <div className="flex size-5 items-center justify-center rounded-md bg-primary/10 text-primary font-bold text-[10.5px] ring-1 ring-primary/20 shrink-0">
+          2
         </div>
-        <h2 className="text-xs font-semibold text-foreground tracking-tight">
-          2. Itinerario y Requerimientos del Viaje
+        <h2 className="text-xs font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+          <span>Itinerario y Requerimientos</span>
+          <MapPin className="size-3 text-muted-foreground/60" />
         </h2>
       </div>
 
@@ -58,9 +85,9 @@ export function SolicitudVehicularItinerarioSection() {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid || undefined}>
+                <Field data-invalid={isInvalid || undefined} className="space-y-1">
                   <RequiredFieldLabel htmlFor={field.name} className="text-xs">
-                    Destino del Viaje
+                    Destino o Ruta del Viaje
                   </RequiredFieldLabel>
                   <div className="relative">
                     <MapPin className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -70,8 +97,8 @@ export function SolicitudVehicularItinerarioSection() {
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
-                      placeholder="Ej. Planta Corani - Cochabamba"
-                      className="pl-8 h-8.5 text-xs shadow-2xs"
+                      placeholder="Ej. Planta Hidroeléctrica Corani / Subestación Santiváñez"
+                      className="pl-8 h-8.5 text-xs shadow-2xs rounded-lg"
                       aria-invalid={isInvalid}
                     />
                   </div>
@@ -90,7 +117,7 @@ export function SolicitudVehicularItinerarioSection() {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid || undefined}>
+              <Field data-invalid={isInvalid || undefined} className="space-y-1">
                 <RequiredFieldLabel htmlFor={field.name} className="text-xs">
                   N° Pasajeros
                 </RequiredFieldLabel>
@@ -101,12 +128,13 @@ export function SolicitudVehicularItinerarioSection() {
                     name={field.name}
                     type="number"
                     min={1}
+                    max={50}
                     step={1}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(Number(e.target.value))}
                     onBlur={field.handleBlur}
                     placeholder="1"
-                    className="pl-8 h-8.5 text-xs shadow-2xs"
+                    className="pl-8 h-8.5 text-xs shadow-2xs rounded-lg"
                     aria-invalid={isInvalid}
                   />
                 </div>
@@ -120,65 +148,99 @@ export function SolicitudVehicularItinerarioSection() {
       </div>
 
       {/* 2. FILA: FECHAS DE SALIDA Y RETORNO */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start">
-        <form.Field name="fechaSalida">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <RequiredFieldLabel htmlFor={field.name} className="text-xs">
-                  Fecha y Hora de Salida
-                </RequiredFieldLabel>
-                <div className="relative">
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type="datetime-local"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    className="h-8.5 text-xs shadow-2xs pr-8"
-                    aria-invalid={isInvalid}
-                  />
-                  <Clock className="pointer-events-none absolute right-2.5 top-2.5 size-3.5 text-muted-foreground" />
-                </div>
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
+      <form.Subscribe
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        selector={(state: any) => ({
+          fechaSalida: state.values.fechaSalida,
+          fechaRetornoEstimada: state.values.fechaRetornoEstimada,
+        })}
+      >
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {(dates: any) => {
+          const duration = calculateDuration(dates.fechaSalida, dates.fechaRetornoEstimada)
 
-        <form.Field name="fechaRetornoEstimada">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <RequiredFieldLabel htmlFor={field.name} className="text-xs">
-                  Fecha y Hora Retorno Estimada
-                </RequiredFieldLabel>
-                <div className="relative">
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type="datetime-local"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    className="h-8.5 text-xs shadow-2xs pr-8"
-                    aria-invalid={isInvalid}
-                  />
-                  <Clock className="pointer-events-none absolute right-2.5 top-2.5 size-3.5 text-muted-foreground" />
+          return (
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start">
+                <form.Field name="fechaSalida">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {(field: any) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid || undefined} className="space-y-1">
+                        <RequiredFieldLabel htmlFor={field.name} className="text-xs">
+                          Fecha y Hora de Salida
+                        </RequiredFieldLabel>
+                        <DateTimePickerField
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onChange={(val) => field.handleChange(val)}
+                          onBlur={field.handleBlur}
+                          placeholder="dd/mm/aaaa --:--"
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
+
+                <form.Field name="fechaRetornoEstimada">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {(field: any) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid || undefined} className="space-y-1">
+                        <RequiredFieldLabel htmlFor={field.name} className="text-xs">
+                          Fecha y Hora Retorno Estimada
+                        </RequiredFieldLabel>
+                        <DateTimePickerField
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onChange={(val) => field.handleChange(val)}
+                          onBlur={field.handleBlur}
+                          placeholder="dd/mm/aaaa --:--"
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
+              </div>
+
+              {/* Banner de Duración Calculada */}
+              {duration && (
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] transition-all animate-in fade-in-50 duration-200 border",
+                    duration.isNegative
+                      ? "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-800"
+                      : "bg-primary/5 text-primary border-primary/20"
+                  )}
+                >
+                  {duration.isNegative && (
+                    <AlertCircle className="size-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
+                  )}
+                  <span className="font-medium">
+                    {duration.isNegative ? (
+                      duration.text
+                    ) : (
+                      <>
+                        Duración estimada: <strong>{duration.text}</strong>
+                      </>
+                    )}
+                  </span>
                 </div>
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
-      </div>
+              )}
+            </div>
+          )
+        }}
+      </form.Subscribe>
 
       {/* 3. MOTIVO */}
       <form.Field name="motivo">
@@ -187,7 +249,7 @@ export function SolicitudVehicularItinerarioSection() {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
           return (
-            <Field data-invalid={isInvalid || undefined}>
+            <Field data-invalid={isInvalid || undefined} className="space-y-1">
               <RequiredFieldLabel htmlFor={field.name} className="text-xs">
                 Motivo / Asunto del Viaje
               </RequiredFieldLabel>
@@ -199,8 +261,8 @@ export function SolicitudVehicularItinerarioSection() {
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
-                  placeholder="Ej. Inspección de turbinas en Central Hidroeléctrica Corani"
-                  className="pl-8 h-8.5 text-xs shadow-2xs"
+                  placeholder="Ej. Inspección y mantenimiento preventivo de generadores en Planta Corani"
+                  className="pl-8 h-8.5 text-xs shadow-2xs rounded-lg"
                   aria-invalid={isInvalid}
                 />
               </div>
@@ -210,7 +272,7 @@ export function SolicitudVehicularItinerarioSection() {
         }}
       </form.Field>
 
-      {/* 4. JUSTIFICACIÓN Y OBSERVACIONES DINÁMICAS SEGÚN TIPO */}
+      {/* 4. JUSTIFICACIÓN Y OBSERVACIONES */}
       <form.Subscribe
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         selector={(state: any) => state.values.tipoSolicitudVehicularId}
@@ -222,7 +284,6 @@ export function SolicitudVehicularItinerarioSection() {
 
           return (
             <div className="space-y-2.5">
-              {/* Campos de texto (Justificación si aplica + Observaciones) */}
               <div
                 className={cn(
                   "grid gap-2.5 items-start",
@@ -238,10 +299,10 @@ export function SolicitudVehicularItinerarioSection() {
                       const isInvalid =
                         field.state.meta.isTouched && !field.state.meta.isValid
                       return (
-                        <Field data-invalid={isInvalid || undefined}>
+                        <Field data-invalid={isInvalid || undefined} className="space-y-1">
                           <div className="flex items-center justify-between">
                             <RequiredFieldLabel htmlFor={field.name} className="text-xs">
-                              <span>Justificación Operativa / Técnica</span>
+                              Justificación Operativa
                             </RequiredFieldLabel>
                             <span className="text-[10px] text-muted-foreground">
                               {field.state.value?.length || 0}/1000
@@ -253,10 +314,10 @@ export function SolicitudVehicularItinerarioSection() {
                             value={field.state.value}
                             onChange={(e) => field.handleChange(e.target.value)}
                             onBlur={field.handleBlur}
-                            placeholder="Detalla los motivos técnicos u operativos..."
+                            placeholder="Detalla los motivos técnicos de urgencia o necesidad..."
                             rows={2}
                             maxLength={1000}
-                            className="text-xs shadow-2xs resize-y min-h-[58px]"
+                            className="text-xs shadow-2xs resize-y min-h-[58px] rounded-lg"
                             aria-invalid={isInvalid}
                           />
                           {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -272,10 +333,10 @@ export function SolicitudVehicularItinerarioSection() {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
                     return (
-                      <Field data-invalid={isInvalid || undefined}>
+                      <Field data-invalid={isInvalid || undefined} className="space-y-1">
                         <div className="flex items-center justify-between">
                           <FieldLabel htmlFor={field.name} className="text-xs">
-                            <span>Observaciones Adicionales</span>
+                            Observaciones Adicionales
                           </FieldLabel>
                           <span className="text-[10px] text-muted-foreground">
                             {field.state.value?.length || 0}/1000
@@ -287,10 +348,10 @@ export function SolicitudVehicularItinerarioSection() {
                           value={field.state.value}
                           onChange={(e) => field.handleChange(e.target.value)}
                           onBlur={field.handleBlur}
-                          placeholder="Equipos a transportar, chofer, paradas..."
+                          placeholder="Equipos a transportar, paradas intermedias..."
                           rows={2}
                           maxLength={1000}
-                          className="text-xs shadow-2xs resize-y min-h-[58px]"
+                          className="text-xs shadow-2xs resize-y min-h-[58px] rounded-lg"
                           aria-invalid={isInvalid}
                         />
                         {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -300,31 +361,31 @@ export function SolicitudVehicularItinerarioSection() {
                 </form.Field>
               </div>
 
-              {/* 5. ARCHIVOS Y DOCUMENTOS DE RESPALDO (DINÁMICO: OCULTO POR DEFECTO, VISIBLE SOLO SI EL TIPO LO REQUIERE O HAY ARCHIVOS) */}
+              {/* 5. DROPZONE */}
               {(requiereRespaldo ||
                 selectedFiles.length > 0 ||
                 (isEditing && existingAdjuntos && existingAdjuntos.length > 0)) && (
-                <div className="space-y-1.5 pt-0.5 animate-in fade-in-50 duration-200">
+                <div className="space-y-1.5 pt-1 border-t border-border/40 animate-in fade-in-50 duration-200">
                   <div className="flex items-center gap-2">
                     {requiereRespaldo ? (
                       <RequiredFieldLabel
                         htmlFor="solicitud-vehicular-dropzone"
-                        className="text-[11.5px] font-medium"
+                        className="text-xs font-medium"
                       >
-                        Archivos y Respaldos Adjuntos
+                        Documentos de Respaldo
                       </RequiredFieldLabel>
                     ) : (
                       <FieldLabel
                         htmlFor="solicitud-vehicular-dropzone"
-                        className="text-[11.5px] font-medium"
+                        className="text-xs font-medium"
                       >
-                        Archivos Adjuntos
+                        Archivos Adjuntos (Opcional)
                       </FieldLabel>
                     )}
                     {requiereRespaldo && (
-                      <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
-                        (Obligatorio para este tipo)
-                      </span>
+                      <Badge variant="outline" className="text-[9.5px] px-1.5 py-0 bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900">
+                        Obligatorio
+                      </Badge>
                     )}
                   </div>
 
@@ -338,12 +399,12 @@ export function SolicitudVehicularItinerarioSection() {
                       onDragLeave={() => setIsDragging(false)}
                       onDrop={handleDrop}
                       className={cn(
-                        "relative flex items-center justify-between rounded-lg border border-dashed px-3 py-2 transition-all",
+                        "relative flex items-center justify-between gap-2.5 rounded-lg border border-dashed px-3 py-2 transition-all",
                         isDragging
-                          ? "border-primary bg-primary/5"
+                          ? "border-primary bg-primary/10 shadow-xs"
                           : requiereRespaldo
-                            ? "border-blue-300 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/20 hover:border-primary/50"
-                            : "border-border/80 bg-muted/15 hover:bg-muted/25 hover:border-primary/50"
+                            ? "border-blue-300 dark:border-blue-800 bg-blue-50/20 dark:bg-blue-950/10 hover:border-primary/50"
+                            : "border-border/80 bg-muted/15 hover:border-primary/50 hover:bg-muted/25"
                       )}
                     >
                       <input
@@ -356,43 +417,43 @@ export function SolicitudVehicularItinerarioSection() {
                       />
 
                       <div className="flex items-center gap-2.5 pointer-events-none">
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground border shadow-2xs">
-                          <ImageIcon className="size-3.5 text-primary" />
+                        <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary border border-primary/20 shadow-2xs">
+                          <UploadCloud className="size-3.5" />
                         </div>
 
                         <p className="text-xs text-muted-foreground">
                           <label
                             htmlFor="solicitud-vehicular-file-input"
-                            className="cursor-pointer text-primary underline underline-offset-2 hover:text-primary/80 font-medium pointer-events-auto"
+                            className="cursor-pointer text-primary underline underline-offset-2 hover:text-primary/80 font-semibold pointer-events-auto"
                           >
-                            Seleccionar archivos
+                            Selecciona archivos
                           </label>{" "}
-                          o arrastra aquí (PNG, JPG, PDF máx 10MB)
+                          o arrastra aquí (PDF, JPG, PNG máx 10MB)
                         </p>
                       </div>
                     </div>
                   )}
 
-                  {/* Archivos seleccionados listos para enviar */}
+                  {/* Listado de archivos */}
                   {selectedFiles.length > 0 && (
-                    <div className="space-y-1 pt-1">
-                      <p className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
+                    <div className="space-y-1 pt-0.5">
+                      <p className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
                         <Paperclip className="size-3 text-primary" />
-                        Archivos ({selectedFiles.length})
+                        <span>Archivos ({selectedFiles.length})</span>
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                         {selectedFiles.map((file, idx) => (
                           <div
                             key={`${file.name}-${idx}`}
-                            className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1 border border-border/70 text-xs"
+                            className="flex items-center justify-between gap-2 rounded-md bg-card px-2.5 py-1.5 border border-border/80 text-xs shadow-2xs"
                           >
-                            <div className="flex items-center gap-1.5 truncate min-w-0">
-                              <FileText className="size-3 text-primary shrink-0" />
+                            <div className="flex items-center gap-2 truncate min-w-0">
+                              <FileText className="size-3.5 text-primary shrink-0" />
                               <div className="truncate min-w-0 flex items-center gap-1.5">
-                                <p className="font-medium text-foreground truncate text-[11px]">
+                                <p className="font-medium text-foreground truncate text-xs">
                                   {file.name}
                                 </p>
-                                <span className="text-[9.5px] text-muted-foreground">
+                                <span className="text-[10px] text-muted-foreground">
                                   ({formatFileSize(file.size)})
                                 </span>
                               </div>
@@ -402,9 +463,10 @@ export function SolicitudVehicularItinerarioSection() {
                               variant="ghost"
                               size="icon-xs"
                               onClick={() => removeFile(idx)}
-                              className="size-4.5 text-muted-foreground hover:text-destructive shrink-0"
+                              className="size-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded cursor-pointer shrink-0"
+                              title="Remover"
                             >
-                              <X className="size-2.5" />
+                              <X className="size-3" />
                               <span className="sr-only">Remover</span>
                             </Button>
                           </div>
@@ -413,31 +475,31 @@ export function SolicitudVehicularItinerarioSection() {
                     </div>
                   )}
 
-                  {/* Adjuntos existentes en edición */}
+                  {/* Adjuntos guardados */}
                   {isEditing && existingAdjuntos && existingAdjuntos.length > 0 && (
                     <div className="space-y-1 pt-1.5 border-t border-border/50">
-                      <p className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
+                      <p className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
                         <Paperclip className="size-3 text-muted-foreground" />
-                        Adjuntos asociados ({existingAdjuntos.length})
+                        <span>Adjuntos guardados ({existingAdjuntos.length})</span>
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                         {existingAdjuntos.map((adj) => (
                           <div
                             key={adj.id}
-                            className="flex items-center justify-between gap-2 rounded-md bg-card px-2 py-1 border border-border text-xs"
+                            className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2.5 py-1.5 border border-border/70 text-xs"
                           >
-                            <div className="flex items-center gap-1.5 truncate min-w-0">
-                              <FileIcon className="size-3 text-muted-foreground shrink-0" />
+                            <div className="flex items-center gap-2 truncate min-w-0">
+                              <FileIcon className="size-3.5 text-muted-foreground shrink-0" />
                               <a
                                 href={adj.url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="font-medium text-primary hover:underline truncate text-[11px]"
+                                className="font-medium text-primary hover:underline truncate text-xs"
                               >
                                 {adj.nombreOriginal || adj.nombreArchivo}
                               </a>
                             </div>
-                            <span className="text-[9.5px] text-muted-foreground shrink-0">
+                            <span className="text-[10px] text-muted-foreground shrink-0">
                               {formatFileSize(adj.size)}
                             </span>
                           </div>

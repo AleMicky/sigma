@@ -22,6 +22,7 @@ import { Skeleton } from "@/shared/components/ui/skeleton"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -467,24 +468,26 @@ function NavSectionGroup({
                   sideOffset={8}
                   className="min-w-52 rounded-xl p-1.5 shadow-lg border-border/60 bg-popover/98 text-xs"
                 >
-                  <DropdownMenuLabel className="flex items-center gap-2 px-2 py-1 text-xs font-bold text-foreground font-heading">
-                    <SectionIcon
-                      className="size-3.5 text-primary shrink-0"
-                      style={section.color ? { color: section.color } : undefined}
-                    />
-                    <span className="truncate">{section.title}</span>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="my-1" />
-                  <div className="flex flex-col gap-0.5">
-                    {section.children?.map((child) => (
-                      <DropdownRecursiveNode
-                        key={child.id ? `${child.id}-${child.to || child.title}` : (child.to || child.title)}
-                        node={child}
-                        pathname={pathname}
-                        parentColor={section.color}
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="flex items-center gap-2 px-2 py-1 text-xs font-bold text-foreground font-heading">
+                      <SectionIcon
+                        className="size-3.5 text-primary shrink-0"
+                        style={section.color ? { color: section.color } : undefined}
                       />
-                    ))}
-                  </div>
+                      <span className="truncate">{section.title}</span>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="my-1" />
+                    <div className="flex flex-col gap-0.5">
+                      {section.children?.map((child) => (
+                        <DropdownRecursiveNode
+                          key={child.id ? `${child.id}-${child.to || child.title}` : (child.to || child.title)}
+                          node={child}
+                          pathname={pathname}
+                          parentColor={section.color}
+                        />
+                      ))}
+                    </div>
+                  </DropdownMenuGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
             </SidebarMenuItem>

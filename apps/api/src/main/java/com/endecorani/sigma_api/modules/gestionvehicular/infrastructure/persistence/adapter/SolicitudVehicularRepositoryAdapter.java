@@ -30,6 +30,8 @@ public class SolicitudVehicularRepositoryAdapter implements SolicitudVehicularRe
         return springRepository.search(search, pageable).map(mapper::toDomain);
     }
 
+    private static final java.util.List<String> DUMMY_ESTADOS = java.util.List.of("__NONE__");
+
     @Override
     public Page<SolicitudVehicular> searchWithFilters(
             String search,
@@ -40,7 +42,15 @@ public class SolicitudVehicularRepositoryAdapter implements SolicitudVehicularRe
             Pageable pageable
     ) {
         boolean hasSearch = search != null && !search.isBlank();
-        boolean hasEstado = estado != null && !estado.isBlank();
+        java.util.List<String> estadosList = (estado != null && !estado.isBlank())
+                ? java.util.Arrays.stream(estado.split(","))
+                        .map(String::trim)
+                        .map(String::toUpperCase)
+                        .filter(s -> !s.isEmpty())
+                        .toList()
+                : java.util.List.of();
+        boolean hasEstados = !estadosList.isEmpty();
+        java.util.Collection<String> effectiveEstados = hasEstados ? estadosList : DUMMY_ESTADOS;
         boolean hasTipo = tipoSolicitudVehicularId != null;
         boolean hasSolicitante = solicitanteId != null;
         boolean hasConductor = conductorAsignadoId != null;
@@ -48,8 +58,8 @@ public class SolicitudVehicularRepositoryAdapter implements SolicitudVehicularRe
         return springRepository.searchWithFilters(
                 hasSearch,
                 hasSearch ? search : "",
-                hasEstado,
-                hasEstado ? estado : "",
+                hasEstados,
+                effectiveEstados,
                 hasTipo,
                 tipoSolicitudVehicularId,
                 hasSolicitante,
