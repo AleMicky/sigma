@@ -342,7 +342,7 @@ export function SolicitudesVehicularesPage() {
                   <SolicitudVehicularListItem
                     key={solicitud.id}
                     solicitud={solicitud}
-                    showWorkflowActions={false}
+                    onlyWorkflowActionsOnBorrador={true}
                     onViewDetail={(sol) => setSelectedDetailId(sol.id)}
                     onEdit={handleEdit}
                     onDelete={setDeletingItem}
