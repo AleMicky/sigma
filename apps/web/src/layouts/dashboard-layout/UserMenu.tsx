@@ -83,14 +83,14 @@ export function UserMenu() {
               </span>
               {subtitle && (
                 <div className="flex items-center gap-1">
-                  <span className="inline-block size-1 rounded-full bg-emerald-500" />
-                  <span className="truncate text-[10px] font-medium text-muted-foreground">
+                  <span className="inline-block size-1 rounded-full bg-emerald-400" />
+                  <span className="truncate text-[10px] font-medium text-sidebar-foreground/65">
                     {subtitle}
                   </span>
                 </div>
               )}
             </div>
-            <ChevronsUpDown className="ml-auto size-3.5 text-muted-foreground transition-colors group-hover:text-foreground group-data-[collapsible=icon]:hidden" />
+            <ChevronsUpDown className="ml-auto size-3.5 text-sidebar-foreground/50 transition-colors group-hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="min-w-56 rounded-xl p-1.5 shadow-lg border-border/60 bg-popover/98 text-xs"

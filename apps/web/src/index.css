@@ -54,61 +54,61 @@
 
 /* ═══════════════════════════════════════════════════════════════
    SIGMA – Sistema de Mantenimiento y Asignación de Flotas y Activos
-   Light Theme: Fleet Steel & Cobalt Blue + High-Vis Operations Accents
+   Enterprise Pro: Dark Navy Slate Sidebar (#0f172a) + Floating Pure White Cards on #f1f5f9
    ═══════════════════════════════════════════════════════════════ */
 :root {
-  /* Base Canvas */
-  --background: oklch(0.985 0.005 240);
-  --foreground: oklch(0.18 0.03 260);
+  /* Fondo de Trabajo: Gris Suave Calibrado (#f1f5f9) */
+  --background: oklch(0.962 0.008 250);
+  --foreground: oklch(0.15 0.025 260);
 
-  /* Cards & Elevaciones */
+  /* Tarjetas y Contenedores: Blanco Puro (#ffffff) con relieve flotante */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.03 260);
+  --card-foreground: oklch(0.15 0.025 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.03 260);
+  --popover-foreground: oklch(0.15 0.025 260);
 
-  /* Primary: Vibrant Fleet Cobalt Blue — Alta precisión y autoridad técnica */
-  --primary: oklch(0.46 0.22 258);
-  --primary-foreground: oklch(0.98 0.005 250);
+  /* Primary: Cobalt Blue Corporativo (#2563eb / #1d4ed8) */
+  --primary: oklch(0.48 0.24 255);
+  --primary-foreground: oklch(0.99 0 0);
 
-  /* Secondary: Slate Steel refinado */
-  --secondary: oklch(0.95 0.012 250);
-  --secondary-foreground: oklch(0.24 0.03 260);
+  /* Secondary: Slate Suave (#e2e8f0) */
+  --secondary: oklch(0.92 0.012 250);
+  --secondary-foreground: oklch(0.18 0.025 260);
 
-  /* Muted: Fondo de contraste para tablas y metadata */
-  --muted: oklch(0.955 0.008 245);
-  --muted-foreground: oklch(0.48 0.025 255);
+  /* Muted: Fondo para tablas, cabeceras y metadata */
+  --muted: oklch(0.935 0.010 250);
+  --muted-foreground: oklch(0.44 0.025 255);
 
-  /* Accent: Azul aero y superficie interactiva */
-  --accent: oklch(0.94 0.018 250);
-  --accent-foreground: oklch(0.22 0.04 258);
+  /* Accent: Superficie interactiva */
+  --accent: oklch(0.92 0.015 250);
+  --accent-foreground: oklch(0.15 0.03 258);
 
-  /* Destructive: Rojo de seguridad industrial (averías críticas, bloqueos) */
-  --destructive: oklch(0.55 0.24 26);
+  /* Destructive: Rojo de alerta de alta visibilidad (#dc2626) */
+  --destructive: oklch(0.56 0.24 25);
 
-  /* Borders & Inputs: Bordes limpios con contraste calibrado */
-  --border: oklch(0.89 0.012 250);
-  --input: oklch(0.90 0.012 250);
-  --ring: oklch(0.52 0.22 258);
+  /* Bordes & Inputs: Bordes limpios y calibrados (#e2e8f0) */
+  --border: oklch(0.88 0.012 250);
+  --input: oklch(0.89 0.012 250);
+  --ring: oklch(0.48 0.24 255);
 
-  /* Charts & Operaciones de Flotas */
-  --chart-1: oklch(0.48 0.22 258);   /* Azul Cobalto Flota (Activos) */
-  --chart-2: oklch(0.62 0.17 155);   /* Esmeralda Operativo (Disponibles) */
-  --chart-3: oklch(0.70 0.18 75);    /* Ámbar Mantenimiento (Preventivo / OT) */
-  --chart-4: oklch(0.56 0.20 295);   /* Violeta Telemetría / Asignaciones */
-  --chart-5: oklch(0.56 0.23 25);    /* Rojo Alerta Crítica (Averías) */
+  /* Estados de Flotas y Gráficos */
+  --chart-1: oklch(0.48 0.24 255);   /* Cobalto / En Ruta */
+  --chart-2: oklch(0.60 0.19 155);   /* Esmeralda Operativo / Aprobado */
+  --chart-3: oklch(0.68 0.20 75);    /* Ámbar Mantenimiento / Pendiente */
+  --chart-4: oklch(0.56 0.22 295);   /* Violeta Telemetría */
+  --chart-5: oklch(0.56 0.24 25);    /* Rojo Alerta Crítica */
 
   --radius: 0.625rem;
 
-  /* Sidebar */
-  --sidebar: oklch(0.98 0.006 245);
-  --sidebar-foreground: oklch(0.20 0.03 260);
-  --sidebar-primary: oklch(0.46 0.22 258);
-  --sidebar-primary-foreground: oklch(0.98 0.005 250);
-  --sidebar-accent: oklch(0.935 0.015 250);
-  --sidebar-accent-foreground: oklch(0.22 0.04 258);
-  --sidebar-border: oklch(0.90 0.01 250);
-  --sidebar-ring: oklch(0.52 0.22 258);
+  /* Menú Lateral (Sidebar): Azul Noche / Slate Oscuro (#0f172a) con textos blancos */
+  --sidebar: oklch(0.185 0.035 258);
+  --sidebar-foreground: oklch(0.93 0.012 250);
+  --sidebar-primary: oklch(0.58 0.24 255);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.26 0.035 258);
+  --sidebar-accent-foreground: oklch(0.99 0 0);
+  --sidebar-border: oklch(0.27 0.028 258 / 55%);
+  --sidebar-ring: oklch(0.58 0.24 255);
 }
 
 /* ═══════════════════════════════════════════════════════════════

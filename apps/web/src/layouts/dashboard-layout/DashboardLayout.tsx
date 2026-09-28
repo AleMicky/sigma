@@ -32,7 +32,7 @@ export function DashboardLayout({ children }: PropsWithChildren) {
         >
           <AppSidebar />
 
-          <SidebarInset className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/10 dark:bg-zinc-950/20">
+          <SidebarInset className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
             {/* Resplandor ambiental superior muy suave según el color del módulo activo */}
             <div
               className="pointer-events-none absolute inset-x-0 top-0 h-72 opacity-15 dark:opacity-20 transition-all duration-700 ease-out"
