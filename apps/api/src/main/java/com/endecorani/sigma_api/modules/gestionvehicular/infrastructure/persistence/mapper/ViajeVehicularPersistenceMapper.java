@@ -17,8 +17,10 @@ public class ViajeVehicularPersistenceMapper {
         entity.setAsignacionVehicularId(domain.getAsignacionVehicularId());
         entity.setFechaSalidaReal(domain.getFechaSalidaReal());
         entity.setKilometrajeSalida(domain.getKilometrajeSalida());
+        entity.setNivelCombustibleSalida(domain.getNivelCombustibleSalida());
         entity.setFechaRetornoReal(domain.getFechaRetornoReal());
         entity.setKilometrajeRetorno(domain.getKilometrajeRetorno());
+        entity.setNivelCombustibleRetorno(domain.getNivelCombustibleRetorno());
         entity.setEstado(domain.getEstado());
         entity.setObservacion(domain.getObservacion());
         return entity;
@@ -34,8 +36,10 @@ public class ViajeVehicularPersistenceMapper {
                 .asignacionVehicularId(entity.getAsignacionVehicularId())
                 .fechaSalidaReal(entity.getFechaSalidaReal())
                 .kilometrajeSalida(entity.getKilometrajeSalida())
+                .nivelCombustibleSalida(entity.getNivelCombustibleSalida())
                 .fechaRetornoReal(entity.getFechaRetornoReal())
                 .kilometrajeRetorno(entity.getKilometrajeRetorno())
+                .nivelCombustibleRetorno(entity.getNivelCombustibleRetorno())
                 .estado(entity.getEstado())
                 .observacion(entity.getObservacion())
                 .createdAt(entity.getCreatedAt())

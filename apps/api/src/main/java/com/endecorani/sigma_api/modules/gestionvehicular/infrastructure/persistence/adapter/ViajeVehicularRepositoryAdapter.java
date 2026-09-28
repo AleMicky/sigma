@@ -31,6 +31,8 @@ public class ViajeVehicularRepositoryAdapter implements ViajeVehicularRepository
     public Page<ViajeVehicular> searchWithFilters(
             String search,
             UUID asignacionVehicularId,
+            UUID solicitudVehicularId,
+            UUID activoId,
             UUID conductorId,
             EstadoViajeVehicular estado,
             Pageable pageable
@@ -38,6 +40,8 @@ public class ViajeVehicularRepositoryAdapter implements ViajeVehicularRepository
         return springRepository.searchWithFilters(
                 search,
                 asignacionVehicularId,
+                solicitudVehicularId,
+                activoId,
                 conductorId,
                 estado,
                 pageable
@@ -55,10 +59,27 @@ public class ViajeVehicularRepositoryAdapter implements ViajeVehicularRepository
     }
 
     @Override
+    public Optional<ViajeVehicular> findBySolicitudVehicularId(UUID solicitudVehicularId) {
+        return springRepository.findBySolicitudVehicularId(solicitudVehicularId).map(mapper::toDomain);
+    }
+
+    @Override
     public List<ViajeVehicular> findByConductorId(UUID conductorId) {
         return springRepository.findByConductorId(conductorId).stream()
                 .map(mapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public List<ViajeVehicular> findByActivoId(UUID activoId) {
+        return springRepository.findByActivoId(activoId).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public Optional<ViajeVehicular> findUltimoByActivoId(UUID activoId) {
+        return springRepository.findUltimoByActivoId(activoId).map(mapper::toDomain);
     }
 
     @Override

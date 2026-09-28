@@ -162,7 +162,10 @@ export function ConductorViajesPage() {
 
   const handleControlActivo = useCallback(
     (solicitud: SolicitudVehicular, hasControles?: boolean) => {
-      if (hasControles) {
+      const estado = (solicitud.estado || "").toUpperCase()
+      const isEnCurso = ["EN_CURSO", "EN_VIAJE", "EN_PROCESO"].includes(estado)
+
+      if (hasControles || isEnCurso) {
         setControlActivoHistorialItem(solicitud)
         return
       }
@@ -173,7 +176,7 @@ export function ConductorViajesPage() {
         "ASIGNADO",
         "BORRADOR",
         "PENDIENTE",
-      ].includes((solicitud.estado || "").toUpperCase())
+      ].includes(estado)
 
       navigate({
         to: "/gestion-vehicular/controles-activos/nuevo",
@@ -387,6 +390,14 @@ export function ConductorViajesPage() {
           if (!open) setControlActivoHistorialItem(null)
         }}
         solicitud={controlActivoHistorialItem}
+        readOnly={
+          Boolean(
+            controlActivoHistorialItem &&
+              ["EN_CURSO", "EN_VIAJE", "EN_PROCESO"].includes(
+                (controlActivoHistorialItem.estado || "").toUpperCase()
+              )
+          )
+        }
       />
     </PageShell>
   )

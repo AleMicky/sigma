@@ -113,6 +113,12 @@
       flowable:candidateGroups="responsable_flota,conductores"
       flowable:formFieldValidation="true">
       <extensionElements>
+        <flowable:formProperty id="fechaSalidaReal" name="Fecha y Hora de Salida Real" type="string"
+          required="true" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="kilometrajeSalida" name="Kilometraje de Salida (km)" type="long"
+          required="true" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="nivelCombustibleSalida" name="Nivel de Combustible Salida (%)" type="long"
+          required="true" writable="true"></flowable:formProperty>
         <flowable:formProperty id="comentario" name="Observaciones de Salida" type="string"
           required="false" writable="true"></flowable:formProperty>
       </extensionElements>
@@ -126,6 +132,12 @@
       flowable:candidateGroups="responsable_flota,conductores"
       flowable:formFieldValidation="true">
       <extensionElements>
+        <flowable:formProperty id="fechaRetornoReal" name="Fecha y Hora de Retorno Real" type="string"
+          required="true" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="kilometrajeRetorno" name="Kilometraje de Retorno (km)" type="long"
+          required="true" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="nivelCombustibleRetorno" name="Nivel de Combustible Retorno (%)" type="long"
+          required="true" writable="true"></flowable:formProperty>
         <flowable:formProperty id="comentario" name="Observaciones de Retorno" type="string"
           required="false" writable="true"></flowable:formProperty>
       </extensionElements>

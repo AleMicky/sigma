@@ -10,12 +10,17 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicit
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularSolicitanteInfo;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularTipoSolicitudInfo;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.mapper.SolicitudVehicularMapper;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoViajeVehicular;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.AsignacionVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.Conductor;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SolicitudVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.TipoSolicitudVehicular;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.ViajeVehicular;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.AsignacionVehicularRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ConductorRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.SolicitudVehicularRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.TipoSolicitudVehicularRepository;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ViajeVehicularRepository;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
@@ -40,6 +45,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -72,6 +78,8 @@ public class SolicitudVehicularService {
     private final EmpleadoRepository empleadoRepository;
     private final SpringVEmpleadoRepository springVEmpleadoRepository;
     private final ConductorRepository conductorRepository;
+    private final AsignacionVehicularRepository asignacionVehicularRepository;
+    private final ViajeVehicularRepository viajeVehicularRepository;
     private final SolicitudVehicularAdjuntoService adjuntoService;
     private final SolicitudVehicularMapper mapper;
     private final CorrelativoService correlativoService;
@@ -308,7 +316,160 @@ public class SolicitudVehicularService {
         }
 
         SolicitudVehicular guardado = repository.save(solicitud);
+
+        // Sincronizar registro de viaje vehicular (asignacionVehicularId, salida, retorno)
+        sincronizarViajeVehicular(guardado, effectiveVariables, nuevoEstado);
+
         return findById(guardado.getId());
+    }
+
+    private void sincronizarViajeVehicular(
+            SolicitudVehicular solicitud,
+            Map<String, Object> variables,
+            String nuevoEstado) {
+        if (solicitud == null || solicitud.getId() == null || variables == null) {
+            return;
+        }
+
+        List<AsignacionVehicular> asignaciones = asignacionVehicularRepository
+                .findBySolicitudVehicularId(solicitud.getId());
+        if (asignaciones.isEmpty()) {
+            return;
+        }
+
+        AsignacionVehicular asignacion = asignaciones.get(0);
+        UUID asignacionId = asignacion.getId();
+
+        ViajeVehicular viaje = viajeVehicularRepository.findByAsignacionVehicularId(asignacionId)
+                .orElseGet(() -> ViajeVehicular.builder()
+                        .asignacionVehicularId(asignacionId)
+                        .estado(EstadoViajeVehicular.PROGRAMADO)
+                        .build());
+
+        boolean modificado = false;
+
+        // 1. Datos de salida (Registrar Salida / Estado EN_CURSO)
+        boolean hasSalidaData = variables.containsKey("kilometrajeSalida")
+                || variables.containsKey("fechaSalidaReal")
+                || variables.containsKey("nivelCombustibleSalida")
+                || "EN_CURSO".equalsIgnoreCase(nuevoEstado)
+                || "EN_VIAJE".equalsIgnoreCase(nuevoEstado);
+
+        if (hasSalidaData) {
+            if (variables.containsKey("kilometrajeSalida") && variables.get("kilometrajeSalida") != null) {
+                try {
+                    viaje.setKilometrajeSalida(
+                            Long.parseLong(variables.get("kilometrajeSalida").toString().trim()));
+                    modificado = true;
+                } catch (Exception ignored) {
+                }
+            }
+            if (variables.containsKey("nivelCombustibleSalida") && variables.get("nivelCombustibleSalida") != null) {
+                try {
+                    viaje.setNivelCombustibleSalida(
+                            Integer.parseInt(variables.get("nivelCombustibleSalida").toString().trim()));
+                    modificado = true;
+                } catch (Exception ignored) {
+                }
+            }
+            if (variables.containsKey("fechaSalidaReal") && variables.get("fechaSalidaReal") != null) {
+                try {
+                    viaje.setFechaSalidaReal(
+                            parseLocalDateTime(variables.get("fechaSalidaReal").toString().trim()));
+                    modificado = true;
+                } catch (Exception ignored) {
+                }
+            }
+            if (viaje.getFechaSalidaReal() == null && (modificado || "EN_CURSO".equalsIgnoreCase(nuevoEstado))) {
+                viaje.setFechaSalidaReal(LocalDateTime.now());
+                modificado = true;
+            }
+            if (viaje.getEstado() == null || viaje.getEstado() == EstadoViajeVehicular.PROGRAMADO) {
+                viaje.setEstado(EstadoViajeVehicular.EN_CURSO);
+                modificado = true;
+            }
+        }
+
+        // 2. Datos de retorno (Registrar Retorno / Estado FINALIZADA)
+        boolean hasRetornoData = variables.containsKey("kilometrajeRetorno")
+                || variables.containsKey("fechaRetornoReal")
+                || variables.containsKey("nivelCombustibleRetorno")
+                || "FINALIZADA".equalsIgnoreCase(nuevoEstado)
+                || "FINALIZADO".equalsIgnoreCase(nuevoEstado);
+
+        if (hasRetornoData) {
+            if (variables.containsKey("kilometrajeRetorno") && variables.get("kilometrajeRetorno") != null) {
+                try {
+                    viaje.setKilometrajeRetorno(
+                            Long.parseLong(variables.get("kilometrajeRetorno").toString().trim()));
+                    modificado = true;
+                } catch (Exception ignored) {
+                }
+            }
+            if (variables.containsKey("nivelCombustibleRetorno") && variables.get("nivelCombustibleRetorno") != null) {
+                try {
+                    viaje.setNivelCombustibleRetorno(
+                            Integer.parseInt(variables.get("nivelCombustibleRetorno").toString().trim()));
+                    modificado = true;
+                } catch (Exception ignored) {
+                }
+            }
+            if (variables.containsKey("fechaRetornoReal") && variables.get("fechaRetornoReal") != null) {
+                try {
+                    viaje.setFechaRetornoReal(
+                            parseLocalDateTime(variables.get("fechaRetornoReal").toString().trim()));
+                    modificado = true;
+                } catch (Exception ignored) {
+                }
+            }
+            if (viaje.getKilometrajeSalida() != null && viaje.getKilometrajeRetorno() != null
+                    && viaje.getKilometrajeRetorno() < viaje.getKilometrajeSalida()) {
+                throw new ConflictException("KILOMETRAJE_RETORNO_INVALIDO",
+                        "El kilometraje de retorno (" + viaje.getKilometrajeRetorno()
+                                + " km) no puede ser menor al kilometraje de salida ("
+                                + viaje.getKilometrajeSalida() + " km)");
+            }
+            if (viaje.getFechaRetornoReal() == null && (modificado || "FINALIZADA".equalsIgnoreCase(nuevoEstado))) {
+                viaje.setFechaRetornoReal(LocalDateTime.now());
+                modificado = true;
+            }
+            if ("FINALIZADA".equalsIgnoreCase(nuevoEstado) || "FINALIZADO".equalsIgnoreCase(nuevoEstado)) {
+                viaje.setEstado(EstadoViajeVehicular.FINALIZADO);
+                modificado = true;
+            }
+        }
+
+        // 3. Comentarios / Observaciones
+        if (variables.containsKey("comentario") && variables.get("comentario") != null) {
+            String com = variables.get("comentario").toString().trim();
+            if (!com.isBlank()) {
+                viaje.setObservacion(StringUtils.normalize(com));
+                modificado = true;
+            }
+        }
+
+        if (modificado) {
+            viajeVehicularRepository.save(viaje);
+        }
+    }
+
+    private LocalDateTime parseLocalDateTime(String str) {
+        if (str == null || str.isBlank()) {
+            return LocalDateTime.now();
+        }
+        try {
+            return LocalDateTime.parse(str);
+        } catch (Exception e1) {
+            try {
+                return LocalDateTime.parse(str, DateTimeFormatter.ISO_DATE_TIME);
+            } catch (Exception e2) {
+                try {
+                    return LocalDate.parse(str).atStartOfDay();
+                } catch (Exception e3) {
+                    return LocalDateTime.now();
+                }
+            }
+        }
     }
 
     @Transactional

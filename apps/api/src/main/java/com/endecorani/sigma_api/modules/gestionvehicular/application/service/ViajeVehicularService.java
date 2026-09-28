@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.service;
 
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.asignacionvehicular.response.AsignacionVehicularResponse;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.viajevehicular.request.CancelarViajeRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.viajevehicular.request.RegistrarRetornoViajeRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.viajevehicular.request.RegistrarSalidaViajeRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.viajevehicular.request.ViajeVehicularRequest;
@@ -36,8 +37,10 @@ public class ViajeVehicularService {
             "asignacionVehicularId",
             "fechaSalidaReal",
             "kilometrajeSalida",
+            "nivelCombustibleSalida",
             "fechaRetornoReal",
             "kilometrajeRetorno",
+            "nivelCombustibleRetorno",
             "estado",
             "createdAt",
             "updatedAt"
@@ -52,6 +55,8 @@ public class ViajeVehicularService {
     public PageResponse<ViajeVehicularResponse> listar(
             String search,
             UUID asignacionVehicularId,
+            UUID solicitudVehicularId,
+            UUID activoId,
             UUID conductorId,
             EstadoViajeVehicular estado,
             PageRequestDto pageRequest
@@ -61,6 +66,8 @@ public class ViajeVehicularService {
         Page<ViajeVehicular> resultado = repository.searchWithFilters(
                 normalizedSearch,
                 asignacionVehicularId,
+                solicitudVehicularId,
+                activoId,
                 conductorId,
                 estado,
                 pageable
@@ -83,10 +90,31 @@ public class ViajeVehicularService {
     }
 
     @Transactional(readOnly = true)
+    public ViajeVehicularResponse findBySolicitudVehicularId(UUID solicitudVehicularId) {
+        return repository.findBySolicitudVehicularId(solicitudVehicularId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Viaje de la solicitud vehicular", solicitudVehicularId));
+    }
+
+    @Transactional(readOnly = true)
     public List<ViajeVehicularResponse> findByConductorId(UUID conductorId) {
         return repository.findByConductorId(conductorId).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ViajeVehicularResponse> findByActivoId(UUID activoId) {
+        return repository.findByActivoId(activoId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ViajeVehicularResponse findUltimoByActivoId(UUID activoId) {
+        return repository.findUltimoByActivoId(activoId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Último viaje del activo vehicular", activoId));
     }
 
     @Transactional
@@ -135,6 +163,9 @@ public class ViajeVehicularService {
 
         viaje.setFechaSalidaReal(dto.fechaSalidaReal() != null ? dto.fechaSalidaReal() : LocalDateTime.now());
         viaje.setKilometrajeSalida(dto.kilometrajeSalida());
+        if (dto.nivelCombustibleSalida() != null) {
+            viaje.setNivelCombustibleSalida(dto.nivelCombustibleSalida());
+        }
         viaje.setEstado(EstadoViajeVehicular.EN_CURSO);
 
         if (dto.observacion() != null && !dto.observacion().isBlank()) {
@@ -160,10 +191,36 @@ public class ViajeVehicularService {
 
         viaje.setFechaRetornoReal(dto.fechaRetornoReal() != null ? dto.fechaRetornoReal() : LocalDateTime.now());
         viaje.setKilometrajeRetorno(dto.kilometrajeRetorno());
+        if (dto.nivelCombustibleRetorno() != null) {
+            viaje.setNivelCombustibleRetorno(dto.nivelCombustibleRetorno());
+        }
         viaje.setEstado(EstadoViajeVehicular.FINALIZADO);
 
         if (dto.observacion() != null && !dto.observacion().isBlank()) {
             viaje.setObservacion(StringUtils.normalize(dto.observacion()));
+        }
+
+        ViajeVehicular guardado = repository.save(viaje);
+        return toResponse(guardado);
+    }
+
+    @Transactional
+    public ViajeVehicularResponse cancelar(UUID id, CancelarViajeRequest dto) {
+        ViajeVehicular viaje = obtenerPorId(id);
+
+        if (viaje.getEstado() == EstadoViajeVehicular.FINALIZADO) {
+            throw new BusinessException("No se puede cancelar un viaje que ya ha sido finalizado");
+        }
+        if (viaje.getEstado() == EstadoViajeVehicular.CANCELADO) {
+            throw new BusinessException("El viaje ya se encuentra cancelado");
+        }
+
+        viaje.setEstado(EstadoViajeVehicular.CANCELADO);
+        String motivo = StringUtils.normalize(dto.motivoCancelacion());
+        if (viaje.getObservacion() != null && !viaje.getObservacion().isBlank()) {
+            viaje.setObservacion(viaje.getObservacion() + " | Cancelado: " + motivo);
+        } else {
+            viaje.setObservacion("Cancelado: " + motivo);
         }
 
         ViajeVehicular guardado = repository.save(viaje);
