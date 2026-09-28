@@ -29,8 +29,10 @@ public interface ViajeVehicularMapper {
     @Mapping(target = "asignacionVehicular", source = "asignacionVehicular")
     @Mapping(target = "fechaSalidaReal", source = "domain.fechaSalidaReal")
     @Mapping(target = "kilometrajeSalida", source = "domain.kilometrajeSalida")
+    @Mapping(target = "nivelCombustibleSalida", source = "domain.nivelCombustibleSalida")
     @Mapping(target = "fechaRetornoReal", source = "domain.fechaRetornoReal")
     @Mapping(target = "kilometrajeRetorno", source = "domain.kilometrajeRetorno")
+    @Mapping(target = "nivelCombustibleRetorno", source = "domain.nivelCombustibleRetorno")
     @Mapping(target = "estado", source = "domain.estado")
     @Mapping(target = "observacion", source = "domain.observacion")
     ViajeVehicularResponse toResponse(

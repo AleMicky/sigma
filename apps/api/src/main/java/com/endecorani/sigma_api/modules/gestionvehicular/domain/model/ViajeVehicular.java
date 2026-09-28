@@ -18,11 +18,18 @@ import java.util.UUID;
 @SuperBuilder
 public class ViajeVehicular extends AuditableModel {
     private UUID id;
+
     private UUID asignacionVehicularId;
+
     private LocalDateTime fechaSalidaReal;
     private Long kilometrajeSalida;
+    private Integer nivelCombustibleSalida;
+
     private LocalDateTime fechaRetornoReal;
     private Long kilometrajeRetorno;
+    private Integer nivelCombustibleRetorno;
+
     private EstadoViajeVehicular estado;
+
     private String observacion;
 }

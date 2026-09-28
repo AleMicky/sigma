@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.viajevehicular.request.CancelarViajeRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.viajevehicular.request.RegistrarRetornoViajeRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.viajevehicular.request.RegistrarSalidaViajeRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.viajevehicular.request.ViajeVehicularRequest;
@@ -41,12 +42,14 @@ public class ViajeVehicularController {
     public ResponseEntity<ApiResponse<PageResponse<ViajeVehicularResponse>>> listar(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) UUID asignacionVehicularId,
+            @RequestParam(required = false) UUID solicitudVehicularId,
+            @RequestParam(required = false) UUID activoId,
             @RequestParam(required = false) UUID conductorId,
             @RequestParam(required = false) EstadoViajeVehicular estado,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(search, asignacionVehicularId, conductorId, estado, pageRequest))
+                ApiResponse.success(service.listar(search, asignacionVehicularId, solicitudVehicularId, activoId, conductorId, estado, pageRequest))
         );
     }
 
@@ -70,6 +73,16 @@ public class ViajeVehicularController {
         );
     }
 
+    @GetMapping("/solicitud/{solicitudVehicularId}")
+    @Operation(summary = "Obtener el viaje asociado a una solicitud vehicular")
+    public ResponseEntity<ApiResponse<ViajeVehicularResponse>> findBySolicitudVehicularId(
+            @PathVariable UUID solicitudVehicularId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findBySolicitudVehicularId(solicitudVehicularId))
+        );
+    }
+
     @GetMapping("/conductor/{conductorId}")
     @Operation(summary = "Listar viajes asignados a un conductor")
     public ResponseEntity<ApiResponse<List<ViajeVehicularResponse>>> findByConductorId(
@@ -77,6 +90,26 @@ public class ViajeVehicularController {
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(service.findByConductorId(conductorId))
+        );
+    }
+
+    @GetMapping("/activo/{activoId}")
+    @Operation(summary = "Listar viajes de un activo o vehículo")
+    public ResponseEntity<ApiResponse<List<ViajeVehicularResponse>>> findByActivoId(
+            @PathVariable UUID activoId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findByActivoId(activoId))
+        );
+    }
+
+    @GetMapping("/activo/{activoId}/ultimo")
+    @Operation(summary = "Obtener el último viaje registrado de un vehículo/activo")
+    public ResponseEntity<ApiResponse<ViajeVehicularResponse>> findUltimoByActivoId(
+            @PathVariable UUID activoId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findUltimoByActivoId(activoId))
         );
     }
 
@@ -104,7 +137,7 @@ public class ViajeVehicularController {
     }
 
     @PatchMapping("/{id}/salida")
-    @Operation(summary = "Registrar la salida real de un viaje vehicular (fecha y kilometraje inicial)")
+    @Operation(summary = "Registrar la salida real de un viaje vehicular (fecha, kilometraje y nivel combustible inicial)")
     public ResponseEntity<ApiResponse<ViajeVehicularResponse>> registrarSalida(
             @PathVariable UUID id,
             @Valid @RequestBody RegistrarSalidaViajeRequest request
@@ -116,7 +149,7 @@ public class ViajeVehicularController {
     }
 
     @PatchMapping("/{id}/retorno")
-    @Operation(summary = "Registrar el retorno real de un viaje vehicular (fecha y kilometraje final)")
+    @Operation(summary = "Registrar el retorno real de un viaje vehicular (fecha, kilometraje y nivel combustible final)")
     public ResponseEntity<ApiResponse<ViajeVehicularResponse>> registrarRetorno(
             @PathVariable UUID id,
             @Valid @RequestBody RegistrarRetornoViajeRequest request
@@ -124,6 +157,18 @@ public class ViajeVehicularController {
         ViajeVehicularResponse response = service.registrarRetorno(id, request);
         return ResponseEntity.ok(
                 ApiResponse.success("Retorno de viaje registrado correctamente", response)
+        );
+    }
+
+    @PatchMapping("/{id}/cancelar")
+    @Operation(summary = "Cancelar un viaje vehicular con motivo de cancelación")
+    public ResponseEntity<ApiResponse<ViajeVehicularResponse>> cancelar(
+            @PathVariable UUID id,
+            @Valid @RequestBody CancelarViajeRequest request
+    ) {
+        ViajeVehicularResponse response = service.cancelar(id, request);
+        return ResponseEntity.ok(
+                ApiResponse.success("Viaje vehicular cancelado correctamente", response)
         );
     }
 

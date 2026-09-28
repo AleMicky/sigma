@@ -22,9 +22,37 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
         SELECT v
         FROM ViajeVehicularEntity v
         JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.AsignacionVehicularEntity a ON v.asignacionVehicularId = a.id
+        WHERE a.solicitudVehicularId = :solicitudVehicularId
+    """)
+    Optional<ViajeVehicularEntity> findBySolicitudVehicularId(@Param("solicitudVehicularId") UUID solicitudVehicularId);
+
+    @Query("""
+        SELECT v
+        FROM ViajeVehicularEntity v
+        JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.AsignacionVehicularEntity a ON v.asignacionVehicularId = a.id
         WHERE a.conductorId = :conductorId
+        ORDER BY v.createdAt DESC
     """)
     List<ViajeVehicularEntity> findByConductorId(@Param("conductorId") UUID conductorId);
+
+    @Query("""
+        SELECT v
+        FROM ViajeVehicularEntity v
+        JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.AsignacionVehicularEntity a ON v.asignacionVehicularId = a.id
+        WHERE a.activoId = :activoId
+        ORDER BY v.createdAt DESC
+    """)
+    List<ViajeVehicularEntity> findByActivoId(@Param("activoId") UUID activoId);
+
+    @Query("""
+        SELECT v
+        FROM ViajeVehicularEntity v
+        JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.AsignacionVehicularEntity a ON v.asignacionVehicularId = a.id
+        WHERE a.activoId = :activoId
+        ORDER BY COALESCE(v.fechaRetornoReal, v.fechaSalidaReal, v.createdAt) DESC
+        LIMIT 1
+    """)
+    Optional<ViajeVehicularEntity> findUltimoByActivoId(@Param("activoId") UUID activoId);
 
     @Query("""
         SELECT v
@@ -45,12 +73,16 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
             )
             OR LOWER(COALESCE(v.observacion, '')) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:asignacionVehicularId IS NULL OR v.asignacionVehicularId = :asignacionVehicularId)
+          AND (:solicitudVehicularId IS NULL OR a.solicitudVehicularId = :solicitudVehicularId)
+          AND (:activoId IS NULL OR a.activoId = :activoId)
           AND (:conductorId IS NULL OR a.conductorId = :conductorId)
           AND (:estado IS NULL OR v.estado = :estado)
     """)
     Page<ViajeVehicularEntity> searchWithFilters(
             @Param("search") String search,
             @Param("asignacionVehicularId") UUID asignacionVehicularId,
+            @Param("solicitudVehicularId") UUID solicitudVehicularId,
+            @Param("activoId") UUID activoId,
             @Param("conductorId") UUID conductorId,
             @Param("estado") EstadoViajeVehicular estado,
             Pageable pageable

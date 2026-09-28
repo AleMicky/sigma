@@ -16,6 +16,8 @@ public interface ViajeVehicularRepository {
     Page<ViajeVehicular> searchWithFilters(
             String search,
             UUID asignacionVehicularId,
+            UUID solicitudVehicularId,
+            UUID activoId,
             UUID conductorId,
             EstadoViajeVehicular estado,
             Pageable pageable
@@ -25,7 +27,13 @@ public interface ViajeVehicularRepository {
 
     Optional<ViajeVehicular> findByAsignacionVehicularId(UUID asignacionVehicularId);
 
+    Optional<ViajeVehicular> findBySolicitudVehicularId(UUID solicitudVehicularId);
+
     List<ViajeVehicular> findByConductorId(UUID conductorId);
+
+    List<ViajeVehicular> findByActivoId(UUID activoId);
+
+    Optional<ViajeVehicular> findUltimoByActivoId(UUID activoId);
 
     ViajeVehicular save(ViajeVehicular viajeVehicular);
 

@@ -43,6 +43,10 @@ public class ViajeVehicularEntity extends BaseEntity {
     )
     private UUID asignacionVehicularId;
 
+    // =========================
+    // SALIDA
+    // =========================
+
     @Column(
             name = "fecha_salida_real"
     )
@@ -54,6 +58,15 @@ public class ViajeVehicularEntity extends BaseEntity {
     private Long kilometrajeSalida;
 
     @Column(
+            name = "nivel_combustible_salida"
+    )
+    private Integer nivelCombustibleSalida;
+
+    // =========================
+    // RETORNO
+    // =========================
+
+    @Column(
             name = "fecha_retorno_real"
     )
     private LocalDateTime fechaRetornoReal;
@@ -62,6 +75,15 @@ public class ViajeVehicularEntity extends BaseEntity {
             name = "kilometraje_retorno"
     )
     private Long kilometrajeRetorno;
+
+    @Column(
+            name = "nivel_combustible_retorno"
+    )
+    private Integer nivelCombustibleRetorno;
+
+    // =========================
+    // ESTADO
+    // =========================
 
     @Enumerated(EnumType.STRING)
     @Column(
