@@ -57,8 +57,8 @@
    Enterprise Pro: Dark Navy Slate Sidebar (#0f172a) + Floating Pure White Cards on #f1f5f9
    ═══════════════════════════════════════════════════════════════ */
 :root {
-  /* Fondo de Trabajo: Gris Suave Calibrado (#f1f5f9) */
-  --background: oklch(0.962 0.008 250);
+  /* Fondo de Trabajo: Gris Suave Calibrado (~#eef2f6) para resaltar tarjetas blancas */
+  --background: oklch(0.952 0.008 250);
   --foreground: oklch(0.15 0.025 260);
 
   /* Tarjetas y Contenedores: Blanco Puro (#ffffff) con relieve flotante */

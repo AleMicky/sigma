@@ -87,31 +87,31 @@ export function MenuTreeNodeItem({
     <li className="flex flex-col min-w-0">
       <div
         className={cn(
-          "group relative flex items-center justify-between gap-2 rounded-xl border border-transparent px-3 py-2 text-sm transition-all duration-150 hover:border-border/80 hover:bg-accent/40",
+          "group relative flex items-center justify-between gap-1.5 rounded-lg border border-transparent px-2.5 py-1 text-xs sm:text-sm transition-all duration-150 hover:border-border/80 hover:bg-accent/40",
           !node.activo && "opacity-60 hover:opacity-100 bg-muted/20",
           isHighlighted && "bg-primary/10 border-primary/40 font-medium shadow-2xs",
         )}
-        style={{ paddingLeft: `${level * 22 + 10}px` }}
+        style={{ paddingLeft: `${level * 18 + 6}px` }}
       >
         {/* Left Side: Toggle button, Icon, Name, Code, Route, Active status */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {/* Expand/Collapse Toggle */}
           {hasChildren ? (
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+              className="flex size-5.5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
               aria-label={expanded ? "Colapsar submenús" : "Expandir submenús"}
             >
               {expanded ? (
-                <ChevronDown className="size-4" />
+                <ChevronDown className="size-3.5" />
               ) : (
-                <ChevronRight className="size-4" />
+                <ChevronRight className="size-3.5" />
               )}
             </button>
           ) : (
-            <span className="size-6 shrink-0 flex items-center justify-center">
-              <span className="size-1.5 rounded-full bg-border" />
+            <span className="size-5.5 shrink-0 flex items-center justify-center">
+              <span className="size-1 rounded-full bg-border" />
             </span>
           )}
 
@@ -119,21 +119,21 @@ export function MenuTreeNodeItem({
           {node.icono ? (
             <div
               className={cn(
-                "flex size-7 items-center justify-center rounded-lg border shrink-0 transition-colors shadow-2xs",
+                "flex size-6.5 items-center justify-center rounded-md border shrink-0 transition-colors shadow-2xs",
                 level === 0
                   ? "bg-primary/10 border-primary/20 text-primary"
                   : "bg-muted/80 border-border text-muted-foreground",
               )}
               style={node.color ? { color: node.color, borderColor: `${node.color}33`, backgroundColor: `${node.color}15` } : undefined}
             >
-              <DynamicLucideIcon name={node.icono} className="size-3.5" />
+              <DynamicLucideIcon name={node.icono} className="size-3" />
             </div>
           ) : null}
 
           {/* Color Indicator Dot if defined */}
           {node.color && (
             <span
-              className="size-2 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/20"
+              className="size-1.5 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/20"
               style={{ backgroundColor: node.color }}
               title={`Color: ${node.color}`}
             />
@@ -220,14 +220,14 @@ export function MenuTreeNodeItem({
         </div>
 
         {/* Right Side: Quick Action Buttons */}
-        <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity shrink-0">
+        <div className="flex items-center gap-0.5 opacity-70 group-hover:opacity-100 transition-opacity shrink-0">
           {onManagePermisos && (
             <Button
               size="icon-xs"
               variant="ghost"
               title="Gestionar permisos de API de este menú"
               onClick={() => onManagePermisos(menuObj)}
-              className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer"
+              className="h-6.5 w-6.5 text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer"
             >
               <KeyRound className="size-3.5" />
             </Button>
@@ -238,7 +238,7 @@ export function MenuTreeNodeItem({
             variant="ghost"
             title="Agregar submenú hijo"
             onClick={() => onAddChild(node)}
-            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+            className="h-6.5 w-6.5 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
           >
             <Plus className="size-3.5" />
           </Button>
@@ -248,7 +248,7 @@ export function MenuTreeNodeItem({
             variant="ghost"
             title="Ver detalles del menú"
             onClick={() => onQuickView(node.id)}
-            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+            className="h-6.5 w-6.5 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
           >
             <Eye className="size-3.5" />
           </Button>
@@ -266,7 +266,7 @@ export function MenuTreeNodeItem({
 
       {/* Recursive Children List */}
       {hasChildren && expanded ? (
-        <ul className="relative ml-4 flex flex-col border-l border-border/50 pl-1 mt-0.5 gap-0.5">
+        <ul className="relative ml-3 flex flex-col border-l border-border/50 pl-0.5 mt-0.5 gap-0.5">
           {node.hijos.map((childNode) => (
             <MenuTreeNodeItem
               key={childNode.id}

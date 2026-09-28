@@ -47,7 +47,7 @@ export function MenuFilterToolbar({
   onCollapseAll,
 }: MenuFilterToolbarProps) {
   return (
-    <div className="flex flex-col gap-2.5 py-3 sm:flex-row sm:items-center sm:justify-between shrink-0">
+    <div className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
       {/* Left: Search input and Status filter */}
       <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
         <SearchField
@@ -63,7 +63,7 @@ export function MenuFilterToolbar({
             value={statusFilter}
             onValueChange={(val) => onStatusFilterChange(val as MenuStatusFilter)}
           >
-            <SelectTrigger className="h-9 w-[150px] text-xs">
+            <SelectTrigger className="h-8.5 w-[145px] text-xs">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
@@ -91,7 +91,7 @@ export function MenuFilterToolbar({
               variant="ghost"
               size="sm"
               onClick={onResetFilters}
-              className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+              className="h-8.5 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground"
             >
               <RotateCcw className="size-3.5" />
               <span className="hidden sm:inline">Limpiar</span>
@@ -110,7 +110,7 @@ export function MenuFilterToolbar({
                 size="xs"
                 variant="outline"
                 onClick={onExpandAll}
-                className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7.5 gap-1 text-xs text-muted-foreground hover:text-foreground"
                 title="Expandir todos los niveles"
               >
                 <ChevronsDown className="size-3.5" />
@@ -123,7 +123,7 @@ export function MenuFilterToolbar({
                 size="xs"
                 variant="outline"
                 onClick={onCollapseAll}
-                className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7.5 gap-1 text-xs text-muted-foreground hover:text-foreground"
                 title="Colapsar todos los niveles"
               >
                 <ChevronsUp className="size-3.5" />
@@ -139,7 +139,7 @@ export function MenuFilterToolbar({
             size="xs"
             variant={viewMode === "tree" ? "secondary" : "ghost"}
             onClick={() => onViewModeChange("tree")}
-            className="h-7 gap-1.5 px-2.5 text-xs font-medium"
+            className="h-6.5 gap-1.5 px-2.5 text-xs font-medium"
           >
             <FolderTree className="size-3.5" />
             <span>Árbol</span>
@@ -149,7 +149,7 @@ export function MenuFilterToolbar({
             size="xs"
             variant={viewMode === "table" ? "secondary" : "ghost"}
             onClick={() => onViewModeChange("table")}
-            className="h-7 gap-1.5 px-2.5 text-xs font-medium"
+            className="h-6.5 gap-1.5 px-2.5 text-xs font-medium"
           >
             <List className="size-3.5" />
             <span>Tabla</span>
