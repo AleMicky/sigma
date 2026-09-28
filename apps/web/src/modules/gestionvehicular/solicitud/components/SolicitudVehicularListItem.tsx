@@ -71,6 +71,10 @@ export function SolicitudVehicularListItem({
   const estadoNorm = (solicitud.estado ?? "").trim().toLowerCase()
   const isBorrador = estadoNorm === "borrador" || estadoNorm === "pendiente"
   const isObservado = estadoNorm === "observado"
+  const isRetorno =
+    estadoNorm === "retorno" ||
+    estadoNorm === "en_retorno" ||
+    estadoNorm === "en retorno"
   const isEditable = isBorrador || isObservado
   const isDeletable = isBorrador
 
@@ -81,7 +85,7 @@ export function SolicitudVehicularListItem({
     Boolean(tipo?.nombre?.toUpperCase().includes("EMERGENCIA"))
 
   const shouldShowWorkflowActions = onlyWorkflowActionsOnBorrador
-    ? isEditable
+    ? isEditable || isRetorno
     : showWorkflowActions
 
   const { actions, taskName, fields } = useWorkflowActions(
