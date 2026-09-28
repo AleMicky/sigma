@@ -155,6 +155,13 @@ function WorkflowActionDialogContent({
         const val = (field as any).defaultValue ?? (field as any).value
         if (val !== undefined && val !== null) {
           initial[field.id] = val
+        } else if (
+          field.id === "fechaSalidaReal" ||
+          field.id === "fechaRetornoReal"
+        ) {
+          const now = new Date()
+          now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+          initial[field.id] = now.toISOString().slice(0, 16)
         }
       }
     }
@@ -529,7 +536,15 @@ export function WorkflowDynamicFieldRenderer({
   const lowerId = fieldId.toLowerCase()
   const lowerType = (field.type || "").toLowerCase()
   const isRestSource = Boolean(field.url) || field.source === "rest"
+  const isDateTime =
+    lowerType === "datetime" ||
+    lowerType === "datetime-local" ||
+    lowerId.includes("fechasalidareal") ||
+    lowerId.includes("fecharetornoreal") ||
+    lowerId.includes("horasalida") ||
+    lowerId.includes("horaretorno")
   const isDateField =
+    isDateTime ||
     lowerType === "date" ||
     lowerId.startsWith("fecha") ||
     lowerId.includes("fecha")
@@ -577,10 +592,9 @@ export function WorkflowDynamicFieldRenderer({
         />
       ) : isDateField ? (
         <Input
-          type="date"
+          type={isDateTime ? "datetime-local" : "date"}
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
-          min={new Date().toISOString().split("T")[0]}
           className="h-9 text-xs bg-background"
         />
       ) : field.type === "textarea" ||

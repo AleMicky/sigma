@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Edit2,
+  Eye,
   FileText,
   Hash,
   ListChecks,
@@ -396,6 +397,12 @@ export function ControlActivoVehicularHistorialModal({
     estado === "ASIGNADO" ||
     estado === "BORRADOR" ||
     estado === "PENDIENTE"
+  const isEnCurso =
+    estado === "EN_CURSO" ||
+    estado === "EN_VIAJE" ||
+    estado === "EN_PROCESO"
+
+  const effectiveReadOnly = readOnly || isEnCurso
 
   const effectiveAllowedTipo = isPorSalir ? "ENTREGA" : allowedTipo
 
@@ -462,7 +469,7 @@ export function ControlActivoVehicularHistorialModal({
                     : "No hay actas de Salida (Entrega) ni Retorno (Devolución) registradas para este viaje vehicular."}
                 </p>
               </div>
-              {solicitud?.id && !readOnly && (
+              {solicitud?.id && !effectiveReadOnly && (
                 <div className="flex items-center gap-2 mt-2">
                   <Button
                     type="button"
@@ -509,6 +516,12 @@ export function ControlActivoVehicularHistorialModal({
                       <span className="text-xs text-muted-foreground font-semibold">
                         ({allControles.length})
                       </span>
+                      {effectiveReadOnly && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground border border-border/70">
+                          <Eye className="size-3 text-primary" />
+                          <span>Solo Consulta</span>
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -530,7 +543,7 @@ export function ControlActivoVehicularHistorialModal({
                       />
                     </Button>
 
-                    {!readOnly && (
+                    {!effectiveReadOnly && (
                       <>
                         {(effectiveAllowedTipo === "ALL" || effectiveAllowedTipo === "ENTREGA") &&
                           entregasCount === 0 && (
@@ -613,7 +626,7 @@ export function ControlActivoVehicularHistorialModal({
                   <ControlItemCard
                     key={control.id}
                     control={control}
-                    readOnly={readOnly}
+                    readOnly={effectiveReadOnly}
                     defaultExpanded={idx === 0}
                     accesorioMap={accesorioMap}
                     onEdit={handleOpenEdit}
