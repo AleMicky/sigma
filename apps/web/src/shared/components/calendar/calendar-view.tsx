@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import FullCalendar from "@fullcalendar/react"
 import dayGridPlugin from "@fullcalendar/daygrid"
 import timeGridPlugin from "@fullcalendar/timegrid"
@@ -15,10 +16,12 @@ import {
   Clock,
   ExternalLink,
   Filter,
+  Info,
   LayoutGrid,
   List,
   MapPin,
   RefreshCw,
+  RotateCcw,
 } from "lucide-react"
 
 import { cn } from "@/shared/lib/utils"
@@ -93,43 +96,58 @@ export interface CalendarViewProps {
   renderEventDialog?: (event: CalendarEvent, onClose: () => void) => React.ReactNode
 }
 
+interface HoverCardState {
+  event: CalendarEvent
+  x: number
+  y: number
+  placement: "top" | "bottom"
+  timeText?: string
+}
+
 const variantDotMap: Record<
   StatusBadgeVariant,
   {
     dot: string
     text: string
     badgeBg: string
+    border: string
   }
 > = {
   success: {
-    dot: "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.7)]",
+    dot: "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]",
     text: "text-emerald-700 dark:text-emerald-300",
     badgeBg: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    border: "border-emerald-500/30",
   },
   warning: {
-    dot: "bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.7)]",
+    dot: "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]",
     text: "text-amber-700 dark:text-amber-300",
     badgeBg: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+    border: "border-amber-500/30",
   },
   danger: {
-    dot: "bg-rose-500 shadow-[0_0_5px_rgba(244,63,94,0.7)]",
+    dot: "bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]",
     text: "text-rose-700 dark:text-rose-300",
     badgeBg: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+    border: "border-rose-500/30",
   },
   info: {
-    dot: "bg-sky-500 shadow-[0_0_5px_rgba(14,165,233,0.7)]",
+    dot: "bg-sky-500 shadow-[0_0_6px_rgba(14,165,233,0.8)]",
     text: "text-sky-700 dark:text-sky-300",
     badgeBg: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+    border: "border-sky-500/30",
   },
   indigo: {
-    dot: "bg-indigo-500 shadow-[0_0_5px_rgba(99,102,241,0.7)]",
+    dot: "bg-indigo-500 shadow-[0_0_6px_rgba(99,102,241,0.8)]",
     text: "text-indigo-700 dark:text-indigo-300",
     badgeBg: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
+    border: "border-indigo-500/30",
   },
   neutral: {
     dot: "bg-zinc-400 dark:bg-zinc-500",
     text: "text-muted-foreground",
     badgeBg: "bg-muted text-muted-foreground",
+    border: "border-border",
   },
 }
 
@@ -166,6 +184,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     filterOptions?.[0]?.value || "ALL",
   )
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
+  const [hoverCard, setHoverCard] = useState<HoverCardState | null>(null)
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const activeFilter = controlledFilter ?? internalFilter
 
@@ -246,6 +266,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, [filteredEvents])
 
   const handleCalendarEventClick = (arg: EventClickArg) => {
+    setHoverCard(null)
     const rawData = (arg.event.extendedProps || {}) as CalendarEvent
     const clickedEvent: CalendarEvent = {
       ...rawData,
@@ -259,7 +280,47 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     onEventClick?.(clickedEvent)
   }
 
-  // Google Calendar style: Sleek text row with colored status dot
+  const handleEventMouseEnter = (
+    e: React.MouseEvent,
+    eventData: CalendarEvent,
+    timeText?: string,
+  ) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+
+    const rect = e.currentTarget.getBoundingClientRect()
+    const cardWidth = 288
+    const cardHeight = 180
+
+    // Horizontal centering & viewport boundary clamping
+    let posX = rect.left + rect.width / 2
+    if (posX - cardWidth / 2 < 16) posX = cardWidth / 2 + 16
+    if (posX + cardWidth / 2 > window.innerWidth - 16) posX = window.innerWidth - cardWidth / 2 - 16
+
+    // Vertical positioning: default to above, if near window top show below
+    let posY = rect.top - 8
+    let placement: "top" | "bottom" = "top"
+
+    if (rect.top - cardHeight < 20) {
+      posY = rect.bottom + 8
+      placement = "bottom"
+    }
+
+    setHoverCard({
+      event: eventData,
+      x: posX,
+      y: posY,
+      placement,
+      timeText,
+    })
+  }
+
+  const handleEventMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoverCard(null)
+    }, 100)
+  }
+
+  // Google Calendar style: Sleek text row with colored status dot & Hover Card trigger
   const renderEventContent = (arg: EventContentArg) => {
     const props = arg.event.extendedProps as CalendarEvent & {
       variant: StatusBadgeVariant
@@ -267,19 +328,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const variant = props.variant || resolveStatusVariant(props.estado)
     const style = variantDotMap[variant] || variantDotMap.neutral
 
-    const fullTooltip = [
-      props.subtitle ? `[${props.subtitle}]` : null,
-      arg.event.title,
-      props.estado ? `Estado: ${props.estado}` : null,
-      props.location ? `Ubicación: ${props.location}` : null,
-    ]
-      .filter(Boolean)
-      .join(" • ")
+    const fullEvent: CalendarEvent = {
+      ...props,
+      id: arg.event.id || props.id,
+      title: arg.event.title || props.title,
+      start: arg.event.startStr || arg.event.start || props.start || "",
+      end: arg.event.endStr || arg.event.end || props.end,
+      allDay: arg.event.allDay ?? props.allDay,
+    }
 
     return (
       <div
-        className="group relative flex w-full items-center gap-1.5 overflow-hidden rounded-md px-1.5 py-0.5 text-xs transition-colors duration-100 hover:bg-muted/80 cursor-pointer select-none"
-        title={fullTooltip}
+        className="group relative flex w-full items-center gap-1.5 overflow-hidden rounded-md px-1.5 py-0.5 text-xs transition-all duration-100 hover:bg-muted/90 active:scale-[0.99] cursor-pointer select-none"
+        onMouseEnter={(e) => handleEventMouseEnter(e, fullEvent, arg.timeText)}
+        onMouseLeave={handleEventMouseLeave}
       >
         {/* Status Colored Dot */}
         <span className={cn("size-2 shrink-0 rounded-full", style.dot)} />
@@ -314,6 +376,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       timeStyle: d.getHours() || d.getMinutes() ? "short" : undefined,
     }).format(d)
   }
+
+  const isFilteringActive =
+    activeFilter !== "ALL" && activeFilter !== "TODOS" && filterOptions && filterOptions.length > 0
+  const isFilterEmpty = isFilteringActive && filteredEvents.length === 0 && events.length > 0
 
   return (
     <div
@@ -381,7 +447,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               variant="ghost"
               size="xs"
               onClick={handleToday}
-              className="px-2 font-medium text-xs rounded-lg h-7 text-foreground hover:bg-card transition-all cursor-pointer"
+              className="px-2.5 font-medium text-xs rounded-lg h-7 text-foreground hover:bg-card transition-all cursor-pointer"
             >
               Hoy
             </Button>
@@ -490,8 +556,38 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       )}
 
+      {/* Filter Empty State Banner */}
+      {isFilterEmpty && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs text-amber-900 dark:text-amber-200 mb-2 shrink-0 animate-in fade-in-50 duration-200">
+          <div className="flex items-center gap-2">
+            <Info className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>
+              No hay registros con estado <strong>{filterOptions?.find((f) => f.value === activeFilter)?.label}</strong> en este período.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleSelectFilter(filterOptions?.[0]?.value || "TODOS")}
+            className="flex items-center gap-1 rounded-md bg-amber-500/20 px-2 py-0.5 text-xs font-semibold hover:bg-amber-500/30 transition-colors cursor-pointer shrink-0"
+          >
+            <RotateCcw className="size-3" />
+            <span>Ver Todos</span>
+          </button>
+        </div>
+      )}
+
       {/* Main FullCalendar container - Expands 100% height */}
       <div className="relative flex-1 min-h-[350px] sm:min-h-0 w-full overflow-hidden rounded-xl border border-border/80 bg-card/60 calendar-system-root shadow-xs">
+        {/* Loading Overlay Shimmer */}
+        {isLoading && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60 backdrop-blur-xs transition-opacity duration-200">
+            <div className="flex items-center gap-2.5 rounded-2xl border border-border/80 bg-card/90 px-4 py-2.5 shadow-lg">
+              <RefreshCw className="size-4 text-primary animate-spin" />
+              <span className="text-xs font-medium text-foreground">Actualizando eventos...</span>
+            </div>
+          </div>
+        )}
+
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -510,6 +606,82 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           eventContent={renderEventContent}
         />
       </div>
+
+      {/* Hover Preview Card Popover via Portal: NEVER clipped by container overflow */}
+      {typeof document !== "undefined" &&
+        hoverCard &&
+        createPortal(
+          <div
+            className={cn(
+              "pointer-events-none fixed z-50 w-72 -translate-x-1/2 rounded-2xl border border-border/80 bg-card/95 p-3.5 shadow-2xl backdrop-blur-xl transition-all duration-150 animate-in fade-in-50 zoom-in-95",
+              hoverCard.placement === "top" ? "-translate-y-full" : "translate-y-0",
+            )}
+            style={{
+              left: `${hoverCard.x}px`,
+              top: `${hoverCard.y}px`,
+            }}
+          >
+            {/* Popover Header */}
+            <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2 mb-2">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    "size-2 rounded-full",
+                    variantDotMap[hoverCard.event.variant || resolveStatusVariant(hoverCard.event.estado)].dot,
+                  )}
+                />
+                <span className="text-[11px] font-semibold capitalize text-foreground">
+                  {hoverCard.event.estado || "Programado"}
+                </span>
+              </div>
+              {hoverCard.event.subtitle && (
+                <span className="font-mono text-[10px] font-bold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-md border border-border/50">
+                  {hoverCard.event.subtitle}
+                </span>
+              )}
+            </div>
+
+            {/* Popover Title */}
+            <h4 className="font-heading text-xs font-bold text-foreground leading-snug line-clamp-2 mb-2">
+              {hoverCard.event.title}
+            </h4>
+
+            {/* Popover Metadata */}
+            <div className="space-y-1.5 text-[11px] text-muted-foreground">
+              {/* Schedule */}
+              <div className="flex items-center gap-1.5">
+                <Clock className="size-3 text-primary shrink-0" />
+                <span className="truncate">
+                  {formatEventDate(hoverCard.event.start)}
+                </span>
+              </div>
+
+              {/* Location */}
+              {hoverCard.event.location && (
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="size-3 text-rose-500 shrink-0" />
+                  <span className="truncate">{hoverCard.event.location}</span>
+                </div>
+              )}
+
+              {/* Driver or Custom details preview */}
+              {hoverCard.event.details?.[0] && (
+                <div className="flex items-center gap-1.5 pt-0.5 border-t border-border/40 text-[10.5px]">
+                  <span className="font-medium text-foreground">
+                    {hoverCard.event.details[0].label}:
+                  </span>
+                  <span className="truncate">{hoverCard.event.details[0].value}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-2.5 pt-1.5 border-t border-border/50 flex items-center justify-between text-[10px] text-primary font-medium">
+              <span>Clic para ver detalle</span>
+              <ExternalLink className="size-3 opacity-80" />
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {/* Modern Event Details Modal */}
       <Dialog
@@ -686,6 +858,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           }
         }
 
+        /* Day Numbers & Today Highlight Badge */
         .calendar-system-root .fc-daygrid-day-number {
           padding: 0.25rem 0.4rem;
           font-size: 0.75rem;
@@ -700,13 +873,34 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           }
         }
 
+        /* Today Day Cell: Glowing Circle & Subtle Tint */
         .calendar-system-root .fc-daygrid-day.fc-day-today {
           background-color: var(--fc-today-bg-color) !important;
         }
 
         .calendar-system-root .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-          color: var(--primary);
+          color: var(--primary-foreground) !important;
+          background-color: var(--primary) !important;
+          border-radius: 9999px;
+          min-width: 1.5rem;
+          height: 1.5rem;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin: 2px 4px;
           font-weight: 800;
+          box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 50%, transparent);
+        }
+
+        /* Weekend Columns: Subtle Soft Tint */
+        .calendar-system-root .fc-day-sat,
+        .calendar-system-root .fc-day-sun {
+          background-color: color-mix(in srgb, var(--muted) 15%, transparent);
+        }
+
+        /* Other Month Days: Reduced Opacity */
+        .calendar-system-root .fc-day-other {
+          opacity: 0.45;
         }
 
         .calendar-system-root .fc-daygrid-day:hover {
