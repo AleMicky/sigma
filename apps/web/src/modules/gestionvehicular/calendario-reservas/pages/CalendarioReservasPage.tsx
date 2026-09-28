@@ -1,18 +1,58 @@
 import { useMemo } from "react"
-import { Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
-import { ListFilter } from "lucide-react"
+import { Car, User, Users } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
 import { PageShell } from "@/shared/components/page-shell"
-import { Button } from "@/shared/components/ui/button"
 import {
   CalendarView,
   type CalendarEvent,
+  type CalendarFilterOption,
+  type CalendarLegendItem,
 } from "@/shared/components/calendar/calendar-view"
 import { solicitudVehicularQueries } from "@/modules/gestionvehicular/solicitud/api/solicitud-vehicular.queries"
 import type { SolicitudVehicular } from "@/modules/gestionvehicular/solicitud/api/solicitud-vehicular.service"
 import { resolveStatusVariant } from "@/shared/components/status-badge"
+
+const VEHICULAR_FILTERS: CalendarFilterOption[] = [
+  { label: "Todos", value: "TODOS" },
+  {
+    label: "Aprobados",
+    value: "APROBADO",
+    filterFn: (e) => (e.estado || "").toUpperCase().includes("APROB"),
+  },
+  {
+    label: "En Ruta",
+    value: "EN_RUTA",
+    filterFn: (e) => {
+      const est = (e.estado || "").toUpperCase()
+      return est.includes("RUTA") || est.includes("CURSO") || est.includes("RETORNO")
+    },
+  },
+  {
+    label: "Pendientes",
+    value: "PENDIENTE",
+    filterFn: (e) => {
+      const est = (e.estado || "").toUpperCase()
+      return est.includes("PEND") || est.includes("SOLIC") || est.includes("OBSERV")
+    },
+  },
+  {
+    label: "Finalizados",
+    value: "FINALIZADA",
+    filterFn: (e) => {
+      const est = (e.estado || "").toUpperCase()
+      return est.includes("FINAL") || est.includes("COMPLET")
+    },
+  },
+]
+
+const VEHICULAR_LEGEND: CalendarLegendItem[] = [
+  { label: "Aprobado", color: "bg-emerald-500" },
+  { label: "En Ruta", color: "bg-sky-500" },
+  { label: "Pendiente", color: "bg-amber-500" },
+  { label: "Finalizado", color: "bg-zinc-400" },
+]
 
 export function CalendarioReservasPage() {
   const {
@@ -29,8 +69,7 @@ export function CalendarioReservasPage() {
     return list.map((sol: SolicitudVehicular) => {
       const variant = resolveStatusVariant(sol.estado)
       const numeroTxt = sol.numero || "SOL"
-      const destinoTxt = sol.destino || "Sin destino especificado"
-      const title = `${numeroTxt} • ${destinoTxt}`
+      const destinoTxt = sol.destino || sol.motivo || "Solicitud de Transporte"
 
       const conductorLic = sol.conductorAsignado?.numeroLicencia
         ? `${sol.conductorAsignado.numeroLicencia}${
@@ -40,24 +79,43 @@ export function CalendarioReservasPage() {
           }`
         : undefined
 
+      const details = []
+
+      if (sol.solicitante?.nombreCompleto) {
+        details.push({
+          label: "Solicitante",
+          value: `${sol.solicitante.nombreCompleto}${sol.solicitante.area ? ` - ${sol.solicitante.area}` : ""}`,
+          icon: User,
+        })
+      }
+
+      if (sol.conductorAsignado?.nombreCompleto) {
+        details.push({
+          label: "Conductor Asignado",
+          value: `${sol.conductorAsignado.nombreCompleto}${conductorLic ? ` (${conductorLic})` : ""}`,
+          icon: Car,
+        })
+      }
+
+      if (sol.cantidadPasajeros && sol.cantidadPasajeros > 0) {
+        details.push({
+          label: "Pasajeros",
+          value: `${sol.cantidadPasajeros} personas`,
+          icon: Users,
+        })
+      }
+
       return {
         id: sol.id,
-        numero: sol.numero,
-        title,
+        title: destinoTxt,
+        subtitle: numeroTxt,
         start: sol.fechaSalida,
         end: sol.fechaRetornoEstimada || undefined,
         estado: sol.estado,
         variant,
         location: sol.destino,
-        solicitante: sol.solicitante?.nombreCompleto || undefined,
-        cargoSolicitante: sol.solicitante?.cargo || undefined,
-        areaSolicitante: sol.solicitante?.area || undefined,
-        conductor: sol.conductorAsignado?.nombreCompleto || undefined,
-        licenciaConductor: conductorLic,
-        pasajeros: sol.cantidadPasajeros,
         description: sol.motivo || sol.justificacion || undefined,
-        observacion: sol.observacion || undefined,
-        tipoSolicitud: sol.tipoSolicitudVehicular?.nombre || undefined,
+        details,
         url: routes.gestionVehicular.editarSolicitud(sol.id),
       }
     })
@@ -69,23 +127,11 @@ export function CalendarioReservasPage() {
         title="Reporte de Calendario y Reservas"
         description="Tablero de consulta integral de itinerarios, asignaciones y solicitudes de transporte vehicular"
         events={events}
+        filterOptions={VEHICULAR_FILTERS}
+        legendItems={VEHICULAR_LEGEND}
         isLoading={isLoading || isRefetching}
         onRefresh={() => void refetch()}
-        headerActions={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              render={<Link to={routes.gestionVehicular.solicitudes} />}
-              className="gap-1.5 h-8.5 rounded-lg text-xs"
-            >
-              <ListFilter className="size-3.5 text-muted-foreground" />
-              <span>Ver Solicitudes</span>
-            </Button>
-          </div>
-        }
       />
     </PageShell>
   )
 }
-
