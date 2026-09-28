@@ -266,6 +266,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, [filteredEvents])
 
   const handleCalendarEventClick = (arg: EventClickArg) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
     setHoverCard(null)
     const rawData = (arg.event.extendedProps || {}) as CalendarEvent
     const clickedEvent: CalendarEvent = {
@@ -276,8 +277,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       end: arg.event.endStr || arg.event.end || rawData.end,
       allDay: arg.event.allDay ?? rawData.allDay,
     }
-    setSelectedEvent(clickedEvent)
-    onEventClick?.(clickedEvent)
+    if (onEventClick) {
+      onEventClick(clickedEvent)
+    } else {
+      setSelectedEvent(clickedEvent)
+    }
   }
 
   const handleEventMouseEnter = (
@@ -317,7 +321,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const handleEventMouseLeave = () => {
     hoverTimeoutRef.current = setTimeout(() => {
       setHoverCard(null)
-    }, 100)
+    }, 200)
   }
 
   // Google Calendar style: Sleek text row with colored status dot & Hover Card trigger
@@ -501,12 +505,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
       {/* Row 3: Status Filters & Legend Bar */}
       {showFilterToolbar && (
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2.5 py-2.5 shrink-0">
-          {/* Status Filter Pills with Horizontal Scrolling */}
-          <div className="w-full md:w-auto overflow-x-auto pb-0.5 scrollbar-none">
-            {filterOptions && filterOptions.length > 0 && (
-              <div className="flex items-center gap-1.5 min-w-max rounded-xl bg-muted/40 p-1 border border-border/60">
-                <Filter className="size-3 text-muted-foreground ml-1 mr-0.5 hidden sm:inline" />
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 shrink-0">
+          {/* Status Filter Pills */}
+          {filterOptions && filterOptions.length > 0 && (
+            <div className="flex items-center max-w-full overflow-x-auto py-0.5 scrollbar-none min-w-0">
+              <div className="flex items-center gap-1 rounded-xl bg-muted/40 p-1 border border-border/60">
+                <Filter className="size-3 text-muted-foreground ml-1 mr-0.5 shrink-0 hidden sm:inline" />
                 {filterOptions.map((item) => {
                   const isActive = activeFilter === item.value
                   const count = filterCounts[item.value]
@@ -516,9 +520,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       type="button"
                       onClick={() => handleSelectFilter(item.value)}
                       className={cn(
-                        "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all duration-150 cursor-pointer select-none whitespace-nowrap",
+                        "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all duration-150 cursor-pointer select-none whitespace-nowrap shrink-0",
                         isActive
-                          ? "bg-primary text-primary-foreground font-semibold shadow-xs scale-[1.02]"
+                          ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                           : "text-muted-foreground hover:text-foreground hover:bg-background/80",
                       )}
                     >
@@ -526,7 +530,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       {count !== undefined && (
                         <span
                           className={cn(
-                            "text-[10px] rounded-full px-1.5 py-0.2 font-mono font-bold leading-none",
+                            "text-[10px] rounded-full px-1.5 py-0.5 font-mono font-bold leading-none",
                             isActive
                               ? "bg-primary-foreground/20 text-primary-foreground"
                               : "bg-muted-foreground/15 text-muted-foreground",
@@ -539,15 +543,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   )
                 })}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Legend Indicators */}
           {showLegend && legendItems && legendItems.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 sm:gap-3.5 text-[11px] sm:text-xs text-muted-foreground shrink-0">
+            <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-[11px] sm:text-xs text-muted-foreground py-0.5">
               {legendItems.map((item) => (
-                <div key={item.label} className="flex items-center gap-1.5">
-                  <span className={cn("size-2 rounded-full ring-2 ring-background", item.color)} />
+                <div key={item.label} className="flex items-center gap-1.5 whitespace-nowrap">
+                  <span className={cn("size-2 rounded-full ring-2 ring-background shrink-0", item.color)} />
                   <span className="font-medium">{item.label}</span>
                 </div>
               ))}
@@ -612,13 +616,41 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         hoverCard &&
         createPortal(
           <div
+            role="button"
+            tabIndex={0}
             className={cn(
-              "pointer-events-none fixed z-50 w-72 -translate-x-1/2 rounded-2xl border border-border/80 bg-card/95 p-3.5 shadow-2xl backdrop-blur-xl transition-all duration-150 animate-in fade-in-50 zoom-in-95",
+              "fixed z-50 w-72 -translate-x-1/2 rounded-2xl border border-border/80 bg-card/95 p-3.5 shadow-2xl backdrop-blur-xl transition-all duration-150 animate-in fade-in-50 zoom-in-95 cursor-pointer hover:border-primary/50 hover:shadow-primary/5 select-none",
               hoverCard.placement === "top" ? "-translate-y-full" : "translate-y-0",
             )}
             style={{
               left: `${hoverCard.x}px`,
               top: `${hoverCard.y}px`,
+            }}
+            onMouseEnter={() => {
+              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+            }}
+            onMouseLeave={handleEventMouseLeave}
+            onClick={(e) => {
+              e.stopPropagation()
+              const evt = hoverCard.event
+              setHoverCard(null)
+              if (onEventClick) {
+                onEventClick(evt)
+              } else {
+                setSelectedEvent(evt)
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                const evt = hoverCard.event
+                setHoverCard(null)
+                if (onEventClick) {
+                  onEventClick(evt)
+                } else {
+                  setSelectedEvent(evt)
+                }
+              }
             }}
           >
             {/* Popover Header */}
@@ -675,9 +707,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               )}
             </div>
 
-            <div className="mt-2.5 pt-1.5 border-t border-border/50 flex items-center justify-between text-[10px] text-primary font-medium">
-              <span>Clic para ver detalle</span>
-              <ExternalLink className="size-3 opacity-80" />
+            <div className="mt-2.5 pt-1.5 border-t border-border/50 flex items-center justify-between text-[10px] text-primary font-medium group">
+              <span className="group-hover:underline">Clic para ver detalle</span>
+              <ExternalLink className="size-3 opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </div>
           </div>,
           document.body,

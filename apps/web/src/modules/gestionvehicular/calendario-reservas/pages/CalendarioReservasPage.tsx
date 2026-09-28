@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Link, useNavigate } from "@tanstack/react-router"
-import { Car, Plus, User, Users } from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
+import { Car, User, Users } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
 import { PageShell } from "@/shared/components/page-shell"
-import { Button } from "@/shared/components/ui/button"
 import {
   CalendarView,
   type CalendarEvent,
@@ -159,16 +158,6 @@ export function CalendarioReservasPage() {
             setSelectedSolicitud(sol)
           }
         }}
-        headerActions={
-          <Button
-            render={<Link to={routes.gestionVehicular.nuevaSolicitud} />}
-            size="sm"
-            className="h-8 gap-1.5 rounded-lg text-xs font-semibold shadow-xs"
-          >
-            <Plus className="size-3.5" />
-            <span className="hidden sm:inline">Nueva Solicitud</span>
-          </Button>
-        }
       />
 
       <SolicitudVehicularDetailSheet
