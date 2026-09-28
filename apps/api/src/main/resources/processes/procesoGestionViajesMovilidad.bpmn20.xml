@@ -61,6 +61,8 @@
 
     <exclusiveGateway id="decision" name="¿Aprobado?" default="flujo_observar"></exclusiveGateway>
 
+    <endEvent id="rechazado" name="Solicitud Rechazada"></endEvent>
+
     <!-- ESTADO OBSERVADO: CORREGIR SOLICITUD -->
     <userTask
       id="corregirSolicitud"
@@ -114,11 +116,11 @@
       flowable:formFieldValidation="true">
       <extensionElements>
         <flowable:formProperty id="fechaSalidaReal" name="Fecha y Hora de Salida Real" type="string"
-          required="true" writable="true"></flowable:formProperty>
+          required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="datetime"></flowable:formProperty>
         <flowable:formProperty id="kilometrajeSalida" name="Kilometraje de Salida (km)" type="long"
-          required="true" writable="true"></flowable:formProperty>
+          required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="number" sigma:min="0"></flowable:formProperty>
         <flowable:formProperty id="nivelCombustibleSalida" name="Nivel de Combustible Salida (%)" type="long"
-          required="true" writable="true"></flowable:formProperty>
+          required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="slider" sigma:min="0" sigma:max="100"></flowable:formProperty>
         <flowable:formProperty id="comentario" name="Observaciones de Salida" type="string"
           required="false" writable="true"></flowable:formProperty>
       </extensionElements>
@@ -133,11 +135,11 @@
       flowable:formFieldValidation="true">
       <extensionElements>
         <flowable:formProperty id="fechaRetornoReal" name="Fecha y Hora de Retorno Real" type="string"
-          required="true" writable="true"></flowable:formProperty>
+          required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="datetime"></flowable:formProperty>
         <flowable:formProperty id="kilometrajeRetorno" name="Kilometraje de Retorno (km)" type="long"
-          required="true" writable="true"></flowable:formProperty>
+          required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="number" sigma:min="0"></flowable:formProperty>
         <flowable:formProperty id="nivelCombustibleRetorno" name="Nivel de Combustible Retorno (%)" type="long"
-          required="true" writable="true"></flowable:formProperty>
+          required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="slider" sigma:min="0" sigma:max="100"></flowable:formProperty>
         <flowable:formProperty id="comentario" name="Observaciones de Retorno" type="string"
           required="false" writable="true"></flowable:formProperty>
       </extensionElements>
@@ -153,6 +155,10 @@
     <sequenceFlow id="flujo_aprobar" name="Aprobar" sourceRef="decision"
       targetRef="asignarVehiculoConductor">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${accion == 'APROBAR'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flujo_rechazar" name="Rechazar" sourceRef="decision"
+      targetRef="rechazado">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${accion == 'RECHAZAR'}]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flujo_observar" name="Observar" sourceRef="decision"
       targetRef="corregirSolicitud"></sequenceFlow>
@@ -180,6 +186,9 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="decision" id="BPMNShape_decision">
         <omgdc:Bounds height="40.0" width="40.0" x="530.0" y="215.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="rechazado" id="BPMNShape_rechazado">
+        <omgdc:Bounds height="28.0" width="28.0" x="536.0" y="110.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="corregirSolicitud" id="BPMNShape_corregirSolicitud">
         <omgdc:Bounds height="80.0" width="130.0" x="485.0" y="340.0"></omgdc:Bounds>
@@ -212,6 +221,10 @@
       <bpmndi:BPMNEdge bpmnElement="flujo_aprobar" id="BPMNEdge_flujo_aprobar">
         <omgdi:waypoint x="570.0" y="235.0"></omgdi:waypoint>
         <omgdi:waypoint x="640.0" y="240.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_rechazar" id="BPMNEdge_flujo_rechazar">
+        <omgdi:waypoint x="550.0" y="215.0"></omgdi:waypoint>
+        <omgdi:waypoint x="550.0" y="138.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flujo_observar" id="BPMNEdge_flujo_observar">
         <omgdi:waypoint x="550.0" y="255.0"></omgdi:waypoint>
