@@ -185,7 +185,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   )
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [hoverCard, setHoverCard] = useState<HoverCardState | null>(null)
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const activeFilter = controlledFilter ?? internalFilter
 
