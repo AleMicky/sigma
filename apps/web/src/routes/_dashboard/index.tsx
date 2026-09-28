@@ -94,6 +94,24 @@ const moduleMeta: Record<
     gradient: "from-rose-500/10 via-rose-500/5 to-transparent",
     borderHover: "hover:border-rose-500/40",
   },
+  "Gestión Vehicular": {
+    description:
+      "Administración de flota automotriz, conductores, solicitudes de viaje, asignaciones y calendario.",
+    color: "text-indigo-500 dark:text-indigo-400 bg-indigo-500/10",
+    badgeColor:
+      "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20",
+    gradient: "from-indigo-500/10 via-indigo-500/5 to-transparent",
+    borderHover: "hover:border-indigo-500/40",
+  },
+  "Gestion Vehicular": {
+    description:
+      "Administración de flota automotriz, conductores, solicitudes de viaje, asignaciones y calendario.",
+    color: "text-indigo-500 dark:text-indigo-400 bg-indigo-500/10",
+    badgeColor:
+      "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20",
+    gradient: "from-indigo-500/10 via-indigo-500/5 to-transparent",
+    borderHover: "hover:border-indigo-500/40",
+  },
 }
 
 function getGreeting(date = new Date()) {
@@ -279,7 +297,7 @@ function HomePage() {
                     return (
                       <Link
                         key={item.to}
-                        to={item.to as any}
+                        to={item.to}
                         className="group flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-muted"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -318,7 +336,7 @@ function HomePage() {
           {quickShortcuts.map((sc) => (
             <Link
               key={sc.to}
-              to={sc.to as any}
+              to={sc.to}
               className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/60 bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/40"
             >
               <div className="flex items-start gap-3">
@@ -435,7 +453,7 @@ function HomePage() {
                       return (
                         <Link
                           key={link.to}
-                          to={link.to as any}
+                          to={link.to}
                           className="group flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150 hover:bg-muted/80 hover:translate-x-0.5"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -464,7 +482,7 @@ function HomePage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    render={<Link to={links[0]?.to as any || (module.to as any)} />}
+                    render={<Link to={links[0]?.to || module.to || routes.home} />}
                     className="h-7 text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10 gap-1 px-2.5 rounded-lg"
                   >
                     <span>Explorar</span>
