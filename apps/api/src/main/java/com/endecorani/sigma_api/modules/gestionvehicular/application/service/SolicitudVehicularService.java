@@ -606,12 +606,24 @@ public class SolicitudVehicularService {
         repository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
+    public List<SolicitudVehicularResponse> listarParaCalendario(LocalDateTime fechaInicio, LocalDateTime fechaFin) {
+        List<SolicitudVehicular> lista = repository.findParaCalendario(fechaInicio, fechaFin);
+        return toResponseList(lista);
+    }
+
     private PageResponse<SolicitudVehicularResponse> toPageResponse(Page<SolicitudVehicular> page) {
         if (page.isEmpty()) {
             return PageResponse.of(List.of(), page);
         }
+        return PageResponse.of(toResponseList(page.getContent()), page);
+    }
 
-        List<SolicitudVehicular> content = page.getContent();
+    private List<SolicitudVehicularResponse> toResponseList(List<SolicitudVehicular> content) {
+        if (content == null || content.isEmpty()) {
+            return List.of();
+        }
+
         for (SolicitudVehicular item : content) {
             resolverResponsableId(item);
             resolverConductorId(item);
@@ -669,7 +681,7 @@ public class SolicitudVehicularService {
                 : springVEmpleadoRepository.findAllById(todosEmpleadoIds).stream()
                         .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, ve -> ve, (a, b) -> a));
 
-        List<SolicitudVehicularResponse> responses = content.stream()
+        return content.stream()
                 .map(domain -> {
                     SolicitudVehicularTipoSolicitudInfo tipoInfo = domain.getTipoSolicitudVehicularId() != null
                             ? tipoMap.get(domain.getTipoSolicitudVehicularId())
@@ -728,8 +740,6 @@ public class SolicitudVehicularService {
                     return mapper.toResponse(domain, tipoInfo, solicitanteInfo, responsableInfo, conductorInfo, null);
                 })
                 .toList();
-
-        return PageResponse.of(responses, page);
     }
 
     private SolicitudVehicularResponse toResponse(SolicitudVehicular domain,

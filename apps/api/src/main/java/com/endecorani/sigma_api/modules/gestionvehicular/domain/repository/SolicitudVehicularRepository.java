@@ -33,4 +33,6 @@ public interface SolicitudVehicularRepository {
     boolean existsByNumeroIgnoreCase(String numero);
 
     boolean existsByNumeroIgnoreCaseAndIdNot(String numero, UUID id);
+
+    java.util.List<SolicitudVehicular> findParaCalendario(java.time.LocalDateTime fechaInicio, java.time.LocalDateTime fechaFin);
 }

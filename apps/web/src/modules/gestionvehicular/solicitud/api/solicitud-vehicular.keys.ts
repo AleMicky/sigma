@@ -9,7 +9,11 @@ export type SolicitudVehicularListFilters = PageParams & {
   conductorAsignadoId?: string
 }
 
-export const solicitudVehicularKeys = createResourceKeys<
-  "solicitudes-vehiculares",
-  SolicitudVehicularListFilters
->("solicitudes-vehiculares")
+export const solicitudVehicularKeys = {
+  ...createResourceKeys<
+    "solicitudes-vehiculares",
+    SolicitudVehicularListFilters
+  >("solicitudes-vehiculares"),
+  calendario: (filters?: Record<string, unknown>) =>
+    ["solicitudes-vehiculares", "calendario", filters] as const,
+}

@@ -7,6 +7,8 @@ import {
 import {
   getSolicitudVehicular,
   listSolicitudesVehiculares,
+  listSolicitudesVehicularesCalendario,
+  type SolicitudVehicularCalendarioFilters,
 } from "./solicitud-vehicular.service"
 
 export const solicitudVehicularQueries = {
@@ -23,6 +25,12 @@ export const solicitudVehicularQueries = {
           ...(normalizedEstado && { estado: normalizedEstado }),
         })
       },
+    }),
+
+  calendario: (filters?: SolicitudVehicularCalendarioFilters) =>
+    queryOptions({
+      queryKey: solicitudVehicularKeys.calendario(filters),
+      queryFn: () => listSolicitudesVehicularesCalendario(filters),
     }),
 
   detail: (id: string) =>

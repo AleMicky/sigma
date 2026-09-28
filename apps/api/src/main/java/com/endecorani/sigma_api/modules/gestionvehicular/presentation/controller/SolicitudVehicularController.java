@@ -14,12 +14,14 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +36,17 @@ import java.util.UUID;
 public class SolicitudVehicularController {
 
     private final SolicitudVehicularService service;
+
+    @GetMapping("/calendario")
+    @Operation(summary = "Listar solicitudes vehiculares activas para el calendario (excluye estado BORRADOR)")
+    public ResponseEntity<ApiResponse<List<SolicitudVehicularResponse>>> listarParaCalendario(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.listarParaCalendario(fechaInicio, fechaFin))
+        );
+    }
 
     @GetMapping
     @Operation(summary = "Listar solicitudes vehiculares con paginación y filtros opcionales")
