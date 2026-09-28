@@ -101,4 +101,14 @@ public class SolicitudVehicularRepositoryAdapter implements SolicitudVehicularRe
     public boolean existsByNumeroIgnoreCaseAndIdNot(String numero, UUID id) {
         return springRepository.existsByNumeroIgnoreCaseAndIdNot(numero, id);
     }
+
+    @Override
+    public java.util.List<SolicitudVehicular> findParaCalendario(java.time.LocalDateTime fechaInicio, java.time.LocalDateTime fechaFin) {
+        boolean hasFechaInicio = fechaInicio != null;
+        boolean hasFechaFin = fechaFin != null;
+        return springRepository.findParaCalendario(hasFechaInicio, fechaInicio, hasFechaFin, fechaFin)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
 }

@@ -85,4 +85,19 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
            OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%'))
     """)
     Page<SolicitudVehicularEntity> search(@Param("search") String search, Pageable pageable);
+
+    @Query("""
+        SELECT s
+        FROM SolicitudVehicularEntity s
+        WHERE UPPER(s.estado) <> 'BORRADOR'
+          AND (:hasFechaInicio = false OR s.fechaRetornoEstimada >= :fechaInicio)
+          AND (:hasFechaFin = false OR s.fechaSalida <= :fechaFin)
+        ORDER BY s.fechaSalida ASC
+    """)
+    java.util.List<SolicitudVehicularEntity> findParaCalendario(
+            @Param("hasFechaInicio") boolean hasFechaInicio,
+            @Param("fechaInicio") java.time.LocalDateTime fechaInicio,
+            @Param("hasFechaFin") boolean hasFechaFin,
+            @Param("fechaFin") java.time.LocalDateTime fechaFin
+    );
 }

@@ -89,15 +89,15 @@ export function MenuTreeView({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/70 bg-card p-4 shadow-2xs">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/70 bg-card p-3 sm:p-3.5 shadow-2xs">
       {/* Header Info */}
-      <div className="flex items-center justify-between border-b pb-3 mb-3 shrink-0">
+      <div className="flex items-center justify-between border-b pb-2 mb-2 shrink-0">
         <div className="flex items-center gap-2">
-          <FolderTree className="size-4 text-primary" />
-          <span className="text-sm font-semibold text-foreground">
+          <FolderTree className="size-3.5 text-primary" />
+          <span className="text-xs font-semibold text-foreground">
             Jerarquía y Submenús
           </span>
-          <span className="text-xs text-muted-foreground font-mono">
+          <span className="text-[11px] text-muted-foreground font-mono">
             ({filteredTree.length} {filteredTree.length === 1 ? "raíz" : "raíces"})
           </span>
         </div>
@@ -105,7 +105,7 @@ export function MenuTreeView({
 
       {/* Tree Nodes List */}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-        <ul className="flex flex-col gap-1" key={expandedAll ? "expanded" : "collapsed"}>
+        <ul className="flex flex-col gap-0.5" key={expandedAll ? "expanded" : "collapsed"}>
           {filteredTree.map((node) => (
             <MenuTreeNodeItem
               key={node.id}

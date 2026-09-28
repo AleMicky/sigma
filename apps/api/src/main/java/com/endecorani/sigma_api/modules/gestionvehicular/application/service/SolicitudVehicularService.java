@@ -281,11 +281,24 @@ public class SolicitudVehicularService {
                 solicitud.getProcessInstanceId(),
                 effectiveRequest);
 
+        String accionEnviada = effectiveVariables.get("accion") != null
+                ? effectiveVariables.get("accion").toString().trim().toUpperCase()
+                : "";
+
         String nuevoEstado = resultado.status() != null ? resultado.status().trim().toUpperCase() : null;
-        if (nuevoEstado != null) {
+        if ("RECHAZAR".equals(accionEnviada)) {
+            solicitud.setEstado("RECHAZADA");
+        } else if (nuevoEstado != null) {
             solicitud.setEstado(nuevoEstado);
         } else {
             solicitud.setEstado("FINALIZADA");
+        }
+
+        if (effectiveVariables.containsKey("comentario") && effectiveVariables.get("comentario") != null) {
+            String com = effectiveVariables.get("comentario").toString().trim();
+            if (!com.isBlank()) {
+                solicitud.setObservacion(StringUtils.normalize(com));
+            }
         }
 
         if (effectiveVariables.containsKey("responsableAsignacionId")) {
@@ -348,12 +361,13 @@ public class SolicitudVehicularService {
 
         boolean modificado = false;
 
-        // 1. Datos de salida (Registrar Salida / Estado EN_CURSO)
+        // 1. Datos de salida (Registrar Salida / Estado EN_CURSO o RETORNO)
         boolean hasSalidaData = variables.containsKey("kilometrajeSalida")
                 || variables.containsKey("fechaSalidaReal")
                 || variables.containsKey("nivelCombustibleSalida")
                 || "EN_CURSO".equalsIgnoreCase(nuevoEstado)
-                || "EN_VIAJE".equalsIgnoreCase(nuevoEstado);
+                || "EN_VIAJE".equalsIgnoreCase(nuevoEstado)
+                || "RETORNO".equalsIgnoreCase(nuevoEstado);
 
         if (hasSalidaData) {
             if (variables.containsKey("kilometrajeSalida") && variables.get("kilometrajeSalida") != null) {
@@ -592,12 +606,24 @@ public class SolicitudVehicularService {
         repository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
+    public List<SolicitudVehicularResponse> listarParaCalendario(LocalDateTime fechaInicio, LocalDateTime fechaFin) {
+        List<SolicitudVehicular> lista = repository.findParaCalendario(fechaInicio, fechaFin);
+        return toResponseList(lista);
+    }
+
     private PageResponse<SolicitudVehicularResponse> toPageResponse(Page<SolicitudVehicular> page) {
         if (page.isEmpty()) {
             return PageResponse.of(List.of(), page);
         }
+        return PageResponse.of(toResponseList(page.getContent()), page);
+    }
 
-        List<SolicitudVehicular> content = page.getContent();
+    private List<SolicitudVehicularResponse> toResponseList(List<SolicitudVehicular> content) {
+        if (content == null || content.isEmpty()) {
+            return List.of();
+        }
+
         for (SolicitudVehicular item : content) {
             resolverResponsableId(item);
             resolverConductorId(item);
@@ -655,7 +681,7 @@ public class SolicitudVehicularService {
                 : springVEmpleadoRepository.findAllById(todosEmpleadoIds).stream()
                         .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, ve -> ve, (a, b) -> a));
 
-        List<SolicitudVehicularResponse> responses = content.stream()
+        return content.stream()
                 .map(domain -> {
                     SolicitudVehicularTipoSolicitudInfo tipoInfo = domain.getTipoSolicitudVehicularId() != null
                             ? tipoMap.get(domain.getTipoSolicitudVehicularId())
@@ -714,8 +740,6 @@ public class SolicitudVehicularService {
                     return mapper.toResponse(domain, tipoInfo, solicitanteInfo, responsableInfo, conductorInfo, null);
                 })
                 .toList();
-
-        return PageResponse.of(responses, page);
     }
 
     private SolicitudVehicularResponse toResponse(SolicitudVehicular domain,

@@ -61,6 +61,9 @@ export const SEGMENT_LABELS: Record<string, string> = {
   "gestion-vehicular": "Gestión Vehicular",
   asignaciones: "Asignación Vehicular",
   conductores: "Conductores",
+  flotas: "Flotas",
+  "mis-viajes": "Mis Viajes",
+  "calendario-reservas": "Calendario de Reservas",
   "tipos-solicitud": "Tipos de Solicitud",
   "solicitudes-vehiculares": "Solicitudes Vehiculares",
 

@@ -140,15 +140,15 @@ export function MenusPage() {
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
       {/* Header */}
-      <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:gap-4 sm:py-6 md:flex-row md:items-start md:justify-between md:py-8">
-        <div className="min-w-0 flex flex-1 flex-col gap-1.5">
-          <div className="flex items-start justify-between gap-3">
+      <header className="flex shrink-0 flex-col gap-2.5 border-b py-3 sm:gap-3 sm:py-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0 flex flex-1 flex-col gap-1">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="flex size-9 sm:size-10 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-2xs">
-                <FolderTree className="size-5 sm:size-5.5" />
+              <div className="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-2xs">
+                <FolderTree className="size-4 sm:size-4.5" />
               </div>
               <div>
-                <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+                <h1 className="font-heading text-xl font-bold tracking-tight sm:text-2xl">
                   Administración de Menús
                 </h1>
               </div>
@@ -186,13 +186,13 @@ export function MenusPage() {
             </div>
           </div>
 
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Estructura jerárquica, iconos, rutas, orden y permisos de seguridad por menú.
           </p>
         </div>
 
         {/* Desktop Actions */}
-        <div className="hidden shrink-0 self-start md:flex md:items-center md:gap-2">
+        <div className="hidden shrink-0 items-center gap-2 md:flex">
           <RefreshButton
             size="sm"
             queries={[

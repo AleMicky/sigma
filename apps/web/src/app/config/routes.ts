@@ -107,6 +107,12 @@ export const routes = {
       `/gestion-vehicular/solicitudes/${solicitudId}/editar`,
     conductores: "/gestion-vehicular/conductores",
     tiposSolicitud: "/gestion-vehicular/tipos-solicitud",
+    flotas: "/gestion-vehicular/flotas",
+    misViajes: "/gestion-vehicular/mis-viajes",
+    calendarioReservas: "/gestion-vehicular/calendario-reservas",
+    controlesActivos: {
+      nuevo: "/gestion-vehicular/controles-activos/nuevo",
+    },
   },
 } as const
 

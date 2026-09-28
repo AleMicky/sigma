@@ -75,7 +75,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           to="/"
           className="group flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 transition-colors hover:bg-sidebar-accent group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0.5"
         >
-          <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-white p-1 shadow-2xs ring-1 ring-border/80 transition-all group-hover:scale-105 dark:bg-white/95">
+          <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-white p-1 shadow-2xs ring-1 ring-white/10 transition-all group-hover:scale-105">
             <img
               src={logoEndeCorani}
               alt={appConfig.shortName}
@@ -84,16 +84,16 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           </div>
           <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold tracking-tight text-foreground font-heading">
+              <span className="text-xs font-bold tracking-tight text-white font-heading">
                 {appConfig.shortName}
               </span>
-              <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-1 py-0.2 text-[9px] font-semibold text-primary">
+              <span className="inline-flex items-center gap-1 rounded bg-primary/25 px-1 py-0.2 text-[9px] font-semibold text-white">
                 v{appConfig.version}
               </span>
             </div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-              <span className="truncate text-[10.5px] font-medium text-muted-foreground">
+              <span className="size-1.5 rounded-full bg-emerald-400" />
+              <span className="truncate text-[10.5px] font-medium text-slate-400">
                 {appConfig.companyName}
               </span>
             </div>
@@ -156,7 +156,7 @@ function SidebarSearch({
             <Button
               variant="ghost"
               size="icon"
-              className="size-8.5 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-foreground mx-auto transition-colors"
+              className="size-8.5 rounded-xl text-slate-400 hover:bg-sidebar-accent hover:text-white mx-auto transition-colors"
               onClick={() => {
                 setOpen(true)
                 setTimeout(() => inputRef.current?.focus(), 150)
@@ -175,7 +175,7 @@ function SidebarSearch({
 
   return (
     <div className="relative group-data-[collapsible=icon]:hidden">
-      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground/70" />
+      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
       <SidebarInput
         ref={inputRef}
         value={query}
@@ -188,19 +188,19 @@ function SidebarSearch({
           }
         }}
         placeholder="Buscar menú…"
-        className="h-8.5 rounded-lg border-border/50 bg-background/50 pl-8 pr-8 text-xs shadow-none placeholder:text-muted-foreground/60 transition-all focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/50"
+        className="h-8.5 rounded-lg border-white/10 bg-white/5 pl-8 pr-8 text-xs text-white placeholder:text-slate-400 shadow-none transition-all focus-visible:bg-white/10 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary"
       />
       {query ? (
         <button
           type="button"
           onClick={() => onQueryChange("")}
-          className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-0.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-0.5 text-slate-400 hover:text-white hover:bg-sidebar-accent transition-colors"
           title="Limpiar búsqueda"
         >
           <X className="size-3.5" />
         </button>
       ) : (
-        <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border/60 bg-muted/60 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-muted-foreground">
+        <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-white/10 bg-white/10 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-slate-300">
           ⌘K
         </kbd>
       )}
@@ -500,7 +500,7 @@ function NavSectionGroup({
   // Vista expandida → Encabezado de sección + Menús hijos
   return (
     <SidebarGroup className="p-0">
-      <SidebarGroupLabel className="flex h-5 items-center gap-1.5 px-2 mb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 group-data-[collapsible=icon]:hidden select-none">
+      <SidebarGroupLabel className="flex h-5 items-center gap-1.5 px-2 mb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 group-data-[collapsible=icon]:hidden select-none">
         <span
           className="size-1.5 rounded-full shrink-0 transition-transform duration-200"
           style={{ backgroundColor: section.color || "var(--primary)" }}
@@ -582,12 +582,12 @@ function NavNodeItem({
             "group relative flex items-center justify-between rounded-md px-2 font-medium transition-colors",
             depth === 0 ? "h-8 text-[12.5px]" : "h-7.5 text-[12px]",
             isActive && !isOpen
-              ? "bg-primary/10 text-primary font-semibold"
-              : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              ? "bg-white/10 text-white font-semibold"
+              : "text-slate-300 hover:bg-white/10 hover:text-white",
           )}
           style={
             isActive && !isOpen && effectiveColor
-              ? { backgroundColor: `${effectiveColor}18`, color: effectiveColor }
+              ? { backgroundColor: `${effectiveColor}25`, color: "#ffffff" }
               : undefined
           }
         >
@@ -596,7 +596,7 @@ function NavNodeItem({
               className={cn(
                 "shrink-0 transition-colors",
                 depth === 0 ? "size-3.5" : "size-3",
-                isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                isActive ? "text-primary" : "text-slate-400 group-hover:text-white",
               )}
               style={!isActive && effectiveColor ? { color: effectiveColor } : undefined}
             />
@@ -613,15 +613,15 @@ function NavNodeItem({
             )}
             <ChevronRight
               className={cn(
-                "size-3 text-muted-foreground/60 transition-transform duration-150 shrink-0 group-hover:text-foreground",
-                isOpen && "rotate-90 text-foreground",
+                "size-3 text-slate-500 transition-transform duration-150 shrink-0 group-hover:text-white",
+                isOpen && "rotate-90 text-white",
               )}
             />
           </div>
         </SidebarMenuButton>
 
         {isOpen && node.children && (
-          <SidebarMenuSub className="relative ml-3 border-l border-sidebar-border/60 pl-2 mt-0.5 gap-0.5 transition-all">
+          <SidebarMenuSub className="relative ml-3 border-l border-white/10 pl-2 mt-0.5 gap-0.5 transition-all">
             {node.children.map((child) => (
               <NavNodeItem
                 key={child.id ? `${child.id}-${child.to || child.title}` : (child.to || child.title)}
@@ -650,15 +650,14 @@ function NavNodeItem({
           className={cn(
             "group relative h-8 rounded-md px-2 text-[12.5px] font-medium transition-colors",
             isSelfActive
-              ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.75 before:rounded-r before:bg-primary"
-              : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              ? "bg-primary text-white font-semibold shadow-xs"
+              : "text-slate-300 hover:bg-white/10 hover:text-white",
           )}
           style={
             isSelfActive && effectiveColor
               ? {
-                  backgroundColor: `${effectiveColor}18`,
-                  color: effectiveColor,
-                  borderLeftColor: effectiveColor,
+                  backgroundColor: effectiveColor,
+                  color: "#ffffff",
                 }
               : undefined
           }
@@ -666,9 +665,9 @@ function NavNodeItem({
           <NodeIcon
             className={cn(
               "size-3.5 shrink-0 transition-colors",
-              isSelfActive ? "text-primary font-bold" : "text-muted-foreground group-hover:text-foreground",
+              isSelfActive ? "text-white font-bold" : "text-slate-400 group-hover:text-white",
             )}
-            style={effectiveColor ? { color: effectiveColor } : undefined}
+            style={!isSelfActive && effectiveColor ? { color: effectiveColor } : undefined}
           />
           <span className="truncate flex-1 text-left">{node.title}</span>
 
@@ -677,12 +676,12 @@ function NavNodeItem({
               className={cn(
                 "ml-auto shrink-0 px-1.5 py-0.2 text-[9.5px] font-bold uppercase tracking-tight rounded-md",
                 typeof node.badge === "number" || /^\d+$/.test(String(node.badge))
-                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 tabular-nums"
-                  : "bg-primary/10 text-primary border border-primary/20",
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 tabular-nums"
+                  : "bg-white/20 text-white border border-white/30",
               )}
               style={
                 typeof node.badge === "string" && !/^\d+$/.test(node.badge) && effectiveColor
-                  ? { backgroundColor: `${effectiveColor}18`, color: effectiveColor, borderColor: `${effectiveColor}33` }
+                  ? { backgroundColor: `${effectiveColor}25`, color: "#ffffff", borderColor: `${effectiveColor}40` }
                   : undefined
               }
             >
@@ -704,14 +703,14 @@ function NavNodeItem({
         className={cn(
           "group relative h-7 rounded-md px-2 text-[11.5px] font-medium transition-colors",
           isSelfActive
-            ? "bg-primary/10 text-primary font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-0.75 before:rounded-r before:bg-primary"
-            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
+            ? "bg-primary/25 text-white font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-0.75 before:rounded-r before:bg-primary"
+            : "text-slate-400 hover:bg-white/10 hover:text-white",
         )}
         style={
           isSelfActive && effectiveColor
             ? {
-                backgroundColor: `${effectiveColor}18`,
-                color: effectiveColor,
+                backgroundColor: `${effectiveColor}25`,
+                color: "#ffffff",
                 borderLeftColor: effectiveColor,
               }
             : undefined
@@ -720,7 +719,7 @@ function NavNodeItem({
         <NodeIcon
           className={cn(
             "size-3 shrink-0 transition-colors",
-            isSelfActive ? "text-primary font-bold" : "text-muted-foreground/70 group-hover:text-foreground",
+            isSelfActive ? "text-primary font-bold" : "text-slate-400 group-hover:text-white",
           )}
           style={effectiveColor ? { color: effectiveColor } : undefined}
         />
@@ -731,12 +730,12 @@ function NavNodeItem({
             className={cn(
               "ml-auto shrink-0 px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-tight rounded",
               typeof node.badge === "number" || /^\d+$/.test(String(node.badge))
-                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 tabular-nums"
-                : "bg-primary/10 text-primary border border-primary/20",
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 tabular-nums"
+                : "bg-white/20 text-white border border-white/30",
             )}
             style={
               typeof node.badge === "string" && !/^\d+$/.test(node.badge) && effectiveColor
-                ? { backgroundColor: `${effectiveColor}18`, color: effectiveColor, borderColor: `${effectiveColor}33` }
+                ? { backgroundColor: `${effectiveColor}25`, color: "#ffffff", borderColor: `${effectiveColor}40` }
                 : undefined
             }
           >

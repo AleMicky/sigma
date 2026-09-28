@@ -111,11 +111,25 @@ const crud = createCrudService<SolicitudVehicular, SolicitudVehicularPayload>(
   solicitudVehicularEndpoints
 )
 
+export type SolicitudVehicularCalendarioFilters = {
+  fechaInicio?: string
+  fechaFin?: string
+}
+
 export const listSolicitudesVehiculares = (
   filters?: SolicitudVehicularListFilters
 ): Promise<PageResponse<SolicitudVehicular>> => {
   return http.get<PageResponse<SolicitudVehicular>>(
     solicitudVehicularEndpoints.root,
+    { params: filters }
+  )
+}
+
+export const listSolicitudesVehicularesCalendario = (
+  filters?: SolicitudVehicularCalendarioFilters
+): Promise<SolicitudVehicular[]> => {
+  return http.get<SolicitudVehicular[]>(
+    solicitudVehicularEndpoints.calendario,
     { params: filters }
   )
 }
