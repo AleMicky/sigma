@@ -41,6 +41,8 @@ export function SolicitudesPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [selectedEstado, setSelectedEstado] = useState<string>("")
+  const [sortBy, setSortBy] = useState<string>("createdAt")
+  const [direction, setDirection] = useState<"ASC" | "DESC">("DESC")
   const [detailItem, setDetailItem] = useState<SolicitudMantenimiento | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudMantenimiento | null>(null)
   const [controlActivoItem, setControlActivoItem] = useState<SolicitudMantenimiento | null>(null)
@@ -55,7 +57,7 @@ export function SolicitudesPage() {
 
   const search = usePaginatedSearch({
     debounceMs: 300,
-    resetKey: selectedEstado,
+    resetKey: `${selectedEstado}-${sortBy}-${direction}`,
   })
 
   const { target, isOpen, openAction, closeAction } =
@@ -86,6 +88,8 @@ export function SolicitudesPage() {
     interfaz: "SolicitudesPage",
     page: search.page,
     size: PAGE_SIZE,
+    sortBy,
+    direction,
     ...(selectedEstado ? { estado: selectedEstado } : {}),
     ...(search.query ? { q: search.query } : {}),
   })
@@ -173,12 +177,16 @@ export function SolicitudesPage() {
         onSelectEstado={handleSelectEstado}
       />
 
-      {/* Barra de Búsqueda y Filtro activo */}
+      {/* Barra de Búsqueda, Filtro activo y Ordenación */}
       <SolicitudFilterToolbar
         searchQuery={search.search}
         onSearchChange={search.setSearch}
         selectedEstado={selectedEstado}
         onClearEstado={() => setSelectedEstado("")}
+        sortBy={sortBy}
+        onSortByChange={setSortBy}
+        direction={direction}
+        onDirectionChange={setDirection}
       />
 
       {/* Listado y Estados UX */}

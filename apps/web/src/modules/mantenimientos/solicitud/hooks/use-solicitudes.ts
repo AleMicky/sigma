@@ -6,7 +6,7 @@ import type { SolicitudMantenimientoFilters } from "../types/solicitud.type"
 const DEFAULT_FILTERS: SolicitudMantenimientoFilters = {
   page: 0,
   size: 20,
-  sortBy: "id",
+  sortBy: "createdAt",
   direction: "DESC",
 }
 

@@ -191,7 +191,12 @@ export function OrdenTrabajoMasterPanel({
       </div>
 
       {/* Solicitudes List */}
-      <div className="min-h-0 flex-1 overflow-y-auto p-2.5 space-y-2 overscroll-contain">
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto p-2.5 space-y-2 overscroll-contain",
+          isFetching && !isLoading && "opacity-75 transition-opacity duration-200",
+        )}
+      >
         {isLoading ? (
           <ListSkeleton rows={5} rowClassName="h-22 rounded-xl" className="space-y-2" />
         ) : errorMessage ? (
