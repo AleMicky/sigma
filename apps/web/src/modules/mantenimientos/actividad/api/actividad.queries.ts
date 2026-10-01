@@ -13,7 +13,7 @@ export const actividadQueries = {
         const { q, search, ...rest } = filters ?? {}
         const queryTerm = (q || search)?.trim()
         return listActividades(
-          queryTerm ? { ...rest, q: queryTerm, search: queryTerm } : rest,
+          queryTerm ? { ...rest, q: queryTerm } : rest,
         )
       },
     }),
