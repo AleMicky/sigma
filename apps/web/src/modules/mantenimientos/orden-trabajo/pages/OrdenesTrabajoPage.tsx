@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, ClipboardList, Wrench } from "lucide-react"
+import { ArrowLeft, Wrench } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
@@ -33,13 +33,13 @@ export function OrdenesTrabajoPage() {
     }),
   )
 
-  const rawSolicitudes = solicitudesQuery.data?.content ?? []
   const solicitudes = useMemo(() => {
+    const rawSolicitudes = solicitudesQuery.data?.content ?? []
     return rawSolicitudes.filter((sol) => {
       const norm = (sol.estado ?? "").toLowerCase().trim()
       return norm !== "borrador" && norm !== "solicitado"
     })
-  }, [rawSolicitudes])
+  }, [solicitudesQuery.data?.content])
   const totalCount = solicitudes.length
 
   useClampPage(search.page, search.setPage, solicitudesQuery.data?.totalPages)
@@ -75,7 +75,7 @@ export function OrdenesTrabajoPage() {
                 masterDetail.mobileShowDetail &&
                 masterDetail.selected
                   ? `Reporte OT - ${masterDetail.selected.numero}`
-                  : "Reporte de Órdenes de Trabajo"}
+                  : "Órdenes de Trabajo"}
               </h1>
               {totalCount > 0 && (
                 <span className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0 text-[10.5px] font-bold text-sky-700 dark:text-sky-300 border border-sky-500/30">

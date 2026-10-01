@@ -1,12 +1,8 @@
 import { useMemo, useState } from "react"
 import {
   Calendar,
-  CheckCircle2,
   ClipboardList,
-  Clock,
-  Filter,
   Search,
-  Sparkles,
   User,
   Wrench,
   X,
