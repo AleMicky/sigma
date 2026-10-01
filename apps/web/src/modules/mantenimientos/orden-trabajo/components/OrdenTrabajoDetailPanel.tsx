@@ -10,7 +10,6 @@ import {
   ExternalLink,
   FileCheck2,
   FileText,
-  History,
   Image as ImageIcon,
   Loader2,
   MessageSquareQuote,
@@ -43,7 +42,6 @@ import {
   type OrdenTrabajoActividad,
 } from "../api/orden-trabajo.service"
 import { formatEstadoLabel } from "./OrdenTrabajoMasterPanel"
-import { OrdenTrabajoHistorialModal } from "./OrdenTrabajoHistorialModal"
 
 type OrdenTrabajoDetailPanelProps = {
   solicitud: SolicitudMantenimiento | null
@@ -54,7 +52,6 @@ export function OrdenTrabajoDetailPanel({
 }: OrdenTrabajoDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<string>("actividades")
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
-  const [historialOpen, setHistorialOpen] = useState(false)
   const [previewImage, setPreviewImage] = useState<{
     open: boolean
     url: string
@@ -214,22 +211,11 @@ export function OrdenTrabajoDetailPanel({
                 )}
                 <span>PDF</span>
               </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setHistorialOpen(true)}
-                className="h-7.5 gap-1.5 text-xs font-medium bg-background hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600 hover:border-indigo-300 transition-all cursor-pointer shadow-2xs"
-              >
-                <History className="size-3.5 text-indigo-600" />
-                <span>Historial</span>
-              </Button>
             </div>
           )}
         </div>
 
-        {/* Row 2: Title & Brief Description */}
+        {/* Row 2: Title */}
         <div>
           <h2 className="text-sm sm:text-base font-bold text-foreground leading-tight">
             {solicitud.titulo}
@@ -305,35 +291,75 @@ export function OrdenTrabajoDetailPanel({
             onValueChange={setActiveTab}
             className="flex min-h-0 flex-1 flex-col overflow-hidden"
           >
-            <div className="border-b px-4 sm:px-6 bg-muted/15 shrink-0">
-              <TabsList className="h-9 bg-transparent p-0 gap-6">
+            {/* Segmented Capsule Tabs Navigation */}
+            <div className="border-b px-4 py-2 sm:px-6 bg-muted/20 shrink-0">
+              <TabsList className="h-8.5 bg-muted/50 p-0.5 rounded-xl gap-1 inline-flex max-w-full overflow-x-auto border border-border/50">
                 <TabsTrigger
                   value="actividades"
-                  className="h-9 rounded-none border-b-2 border-transparent px-1 text-xs font-medium data-[state=active]:border-sky-600 data-[state=active]:bg-transparent data-[state=active]:text-sky-600 data-[state=active]:font-bold cursor-pointer"
+                  className={cn(
+                    "h-7 px-3 text-xs font-medium rounded-lg transition-all gap-1.5 cursor-pointer",
+                    "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-2xs data-[state=active]:font-semibold",
+                    "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <CheckCircle2 className="size-3.5 mr-1.5" />
-                  Actividades ({actividades.length})
+                  <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Actividades</span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center justify-center px-1.5 py-0 text-[10px] font-bold rounded-full",
+                      actividades.length > 0
+                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {actividades.length}
+                  </span>
                 </TabsTrigger>
+
                 <TabsTrigger
                   value="adjuntos"
-                  className="h-9 rounded-none border-b-2 border-transparent px-1 text-xs font-medium data-[state=active]:border-sky-600 data-[state=active]:bg-transparent data-[state=active]:text-sky-600 data-[state=active]:font-bold cursor-pointer"
+                  className={cn(
+                    "h-7 px-3 text-xs font-medium rounded-lg transition-all gap-1.5 cursor-pointer",
+                    "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-2xs data-[state=active]:font-semibold",
+                    "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <Paperclip className="size-3.5 mr-1.5" />
-                  Adjuntos ({adjuntos.length})
+                  <Paperclip className="size-3.5 text-sky-600 dark:text-sky-400" />
+                  <span>Adjuntos</span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center justify-center px-1.5 py-0 text-[10px] font-bold rounded-full",
+                      adjuntos.length > 0
+                        ? "bg-sky-500/15 text-sky-700 dark:text-sky-300"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {adjuntos.length}
+                  </span>
                 </TabsTrigger>
+
                 <TabsTrigger
                   value="diagnostico"
-                  className="h-9 rounded-none border-b-2 border-transparent px-1 text-xs font-medium data-[state=active]:border-sky-600 data-[state=active]:bg-transparent data-[state=active]:text-sky-600 data-[state=active]:font-bold cursor-pointer"
+                  className={cn(
+                    "h-7 px-3 text-xs font-medium rounded-lg transition-all gap-1.5 cursor-pointer",
+                    "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-2xs data-[state=active]:font-semibold",
+                    "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <FileText className="size-3.5 mr-1.5" />
-                  Diagnóstico y Trabajo
+                  <FileText className="size-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>Diagnóstico y Trabajo</span>
                 </TabsTrigger>
+
                 <TabsTrigger
                   value="solicitud"
-                  className="h-9 rounded-none border-b-2 border-transparent px-1 text-xs font-medium data-[state=active]:border-sky-600 data-[state=active]:bg-transparent data-[state=active]:text-sky-600 data-[state=active]:font-bold cursor-pointer"
+                  className={cn(
+                    "h-7 px-3 text-xs font-medium rounded-lg transition-all gap-1.5 cursor-pointer",
+                    "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-2xs data-[state=active]:font-semibold",
+                    "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <FileCheck2 className="size-3.5 mr-1.5" />
-                  Ficha Solicitud
+                  <FileCheck2 className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>Ficha Solicitud</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -343,7 +369,7 @@ export function OrdenTrabajoDetailPanel({
               value="actividades"
               className="flex min-h-0 flex-1 flex-col overflow-hidden m-0 p-3.5 sm:p-5"
             >
-              <div className="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1 overscroll-contain">
+              <div className="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1 overscroll-contain max-w-5xl">
                 {actividadesQuery.isLoading ? (
                   <div className="p-8 text-center text-xs text-muted-foreground">
                     <Loader2 className="size-5 animate-spin mx-auto mb-2 text-sky-600" />
@@ -378,7 +404,7 @@ export function OrdenTrabajoDetailPanel({
               value="adjuntos"
               className="flex min-h-0 flex-1 flex-col overflow-hidden m-0 p-3.5 sm:p-5"
             >
-              <div className="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1 overscroll-contain">
+              <div className="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1 overscroll-contain max-w-5xl">
                 {adjuntosQuery.isLoading ? (
                   <div className="p-8 text-center text-xs text-muted-foreground">
                     <Loader2 className="size-5 animate-spin mx-auto mb-2 text-sky-600" />
@@ -435,7 +461,7 @@ export function OrdenTrabajoDetailPanel({
             {/* TAB 3: Diagnostico y Trabajos */}
             <TabsContent
               value="diagnostico"
-              className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3.5 sm:p-5 space-y-3 overscroll-contain"
+              className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3.5 sm:p-5 space-y-3 overscroll-contain max-w-5xl"
             >
               <div className="rounded-xl border bg-card p-3.5 space-y-1.5 shadow-2xs">
                 <div className="flex items-center gap-2 text-foreground font-bold text-xs">
@@ -477,7 +503,7 @@ export function OrdenTrabajoDetailPanel({
             {/* TAB 4: Detalle Solicitud */}
             <TabsContent
               value="solicitud"
-              className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3.5 sm:p-5 space-y-3 overscroll-contain"
+              className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3.5 sm:p-5 space-y-3 overscroll-contain max-w-5xl"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                 <div className="border rounded-xl p-3 bg-card space-y-0.5 shadow-2xs">
@@ -558,14 +584,6 @@ export function OrdenTrabajoDetailPanel({
           </div>
         </DialogContent>
       </Dialog>
-
-      <OrdenTrabajoHistorialModal
-        open={historialOpen}
-        onOpenChange={setHistorialOpen}
-        solicitudId={solicitud.id}
-        solicitudNumero={solicitud.numero}
-        solicitudActivoId={solicitud.activo?.id}
-      />
     </div>
   )
 }
