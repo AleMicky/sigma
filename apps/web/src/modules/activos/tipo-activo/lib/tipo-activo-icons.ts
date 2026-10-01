@@ -1,4 +1,5 @@
-import { icons, Tags, type LucideIcon } from "lucide-react"
+import { createElement } from "react"
+import { icons, Tags, type LucideIcon, type LucideProps } from "lucide-react"
 
 export const TIPO_ACTIVO_ICON_OPTIONS = [
   "Tags",
@@ -53,3 +54,13 @@ export function getTipoActivoIcon(
 
   return (icons as Record<string, LucideIcon>)[name] ?? Tags
 }
+
+export interface TipoActivoIconProps extends Omit<LucideProps, "name"> {
+  name?: string | null
+}
+
+export function TipoActivoIcon({ name, ...props }: TipoActivoIconProps) {
+  return createElement(getTipoActivoIcon(name), props)
+}
+
+

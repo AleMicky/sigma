@@ -6,13 +6,15 @@ import { actividadKeys } from "./actividad.keys"
 import { getActividad, listActividades } from "./actividad.service"
 
 export const actividadQueries = {
-  list: (filters?: PageParams) =>
+  list: (filters?: PageParams & { search?: string }) =>
     queryOptions({
       queryKey: actividadKeys.list(filters),
       queryFn: () => {
-        const { q, ...rest } = filters ?? {}
-        const trimmed = q?.trim()
-        return listActividades(trimmed ? { ...rest, q: trimmed } : rest)
+        const { q, search, ...rest } = filters ?? {}
+        const queryTerm = (q || search)?.trim()
+        return listActividades(
+          queryTerm ? { ...rest, q: queryTerm, search: queryTerm } : rest,
+        )
       },
     }),
 

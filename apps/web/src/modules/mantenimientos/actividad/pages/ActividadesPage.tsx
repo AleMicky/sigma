@@ -1,17 +1,14 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Plus } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
-import { MasterDetailLayout } from "@/shared/components/master-detail"
-import { RefreshButton } from "@/shared/components/refresh-button"
-import { Button } from "@/shared/components/ui/button"
 import { useMasterDetail } from "@/shared/hooks/use-master-detail"
 import {
   useClampPage,
   usePaginatedSearch,
 } from "@/shared/hooks/use-paginated-search"
+import { cn } from "@/shared/lib/utils"
 
 import { actividadQueries } from "../api/actividad.queries"
 import type { ActividadMantenimiento } from "../api/actividad.service"
@@ -48,50 +45,32 @@ export function ActividadesPage() {
 
   const masterDetail = useMasterDetail(actividades)
 
-  function openCreateActividad() {
+  const openCreateActividad = () => {
     setEditingActividad(null)
     setActividadDialogOpen(true)
   }
 
-  function openEditActividad(actividad: ActividadMantenimiento) {
+  const openEditActividad = (actividad: ActividadMantenimiento) => {
     setEditingActividad(actividad)
     setActividadDialogOpen(true)
   }
 
   return (
-    <div className="flex h-full flex-col min-h-0">
-      <MasterDetailLayout
-        title={
-          masterDetail.isMobile &&
-            masterDetail.mobileShowDetail &&
-            masterDetail.selected
-            ? masterDetail.selected.nombre
-            : "Actividades de Mantenimiento"
-        }
-        showMaster={masterDetail.showMaster}
-        showDetail={masterDetail.showDetail}
-        showBack={masterDetail.isMobile && masterDetail.mobileShowDetail}
-        backLabel="Volver a actividades"
-        onBack={masterDetail.backToMaster}
-        headerAction={
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <RefreshButton
-              size="sm"
-              queries={[actividadesQuery]}
-            />
-
-            <Button
-              size="sm"
-              type="button"
-              onClick={openCreateActividad}
-              className="shrink-0 gap-1 shadow-2xs"
-            >
-              <Plus className="size-3.5" />
-              <span>Nueva Actividad</span>
-            </Button>
-          </div>
-        }
-        master={
+    <div className="-m-3 sm:-m-4 md:-m-5 flex h-[calc(100%+1.5rem)] sm:h-[calc(100%+2rem)] md:h-[calc(100%+2.5rem)] w-[calc(100%+1.5rem)] sm:w-[calc(100%+2rem)] md:w-[calc(100%+2.5rem)] min-h-0 flex-1 overflow-hidden bg-background">
+      <div
+        className={cn(
+          "grid min-h-0 flex-1 overflow-hidden w-full h-full",
+          "md:grid-cols-[minmax(300px,360px)_1fr]",
+        )}
+      >
+        {/* Panel Maestro (Izquierdo) */}
+        <div
+          className={cn(
+            "h-full min-h-0 min-w-0 flex-col overflow-hidden border-r border-border/40",
+            masterDetail.showMaster ? "flex" : "hidden",
+            "md:flex",
+          )}
+        >
           <ActividadMasterPanel
             actividades={actividades}
             page={actividadesQuery.data}
@@ -109,31 +88,66 @@ export function ActividadesPage() {
             onCreate={openCreateActividad}
             onEdit={openEditActividad}
             onPageChange={actividadSearch.setPage}
+            onRefresh={() => actividadesQuery.refetch()}
           />
-        }
-        detail={
+        </div>
+
+        {/* Panel Detalle (Derecho) */}
+        <div
+          className={cn(
+            "h-full min-h-0 min-w-0 flex-col overflow-hidden",
+            masterDetail.showDetail ? "flex" : "hidden",
+            "md:flex",
+          )}
+        >
           <ActividadDetailPanel
             actividad={masterDetail.selected}
-            hidePrimaryAction={
-              masterDetail.isMobile && masterDetail.mobileShowDetail
-            }
             onEdit={openEditActividad}
+            onBack={masterDetail.isMobile ? masterDetail.backToMaster : undefined}
+            onPrev={
+              masterDetail.selectedId &&
+              actividades.findIndex((a) => a.id === masterDetail.selectedId) > 0
+                ? () => {
+                    const idx = actividades.findIndex(
+                      (a) => a.id === masterDetail.selectedId,
+                    )
+                    if (idx > 0) masterDetail.select(actividades[idx - 1].id)
+                  }
+                : undefined
+            }
+            onNext={
+              masterDetail.selectedId &&
+              actividades.findIndex((a) => a.id === masterDetail.selectedId) <
+                actividades.length - 1
+                ? () => {
+                    const idx = actividades.findIndex(
+                      (a) => a.id === masterDetail.selectedId,
+                    )
+                    if (idx < actividades.length - 1)
+                      masterDetail.select(actividades[idx + 1].id)
+                  }
+                : undefined
+            }
           />
-        }
-      />
+        </div>
+      </div>
 
       {/* Form Dialog Modal */}
-      <ActividadFormDialog
-        key={editingActividad?.id ?? "new-actividad"}
-        open={actividadDialogOpen}
-        onOpenChange={setActividadDialogOpen}
-        actividad={editingActividad}
-        onSuccess={() => {
-          if (!editingActividad) {
-            actividadSearch.setPage(0)
-          }
-        }}
-      />
+      {actividadDialogOpen && (
+        <ActividadFormDialog
+          key={editingActividad?.id ?? "new-actividad"}
+          open={actividadDialogOpen}
+          onOpenChange={setActividadDialogOpen}
+          actividad={editingActividad}
+          onSuccess={(saved) => {
+            masterDetail.revealDetail(saved.id)
+            if (!editingActividad) {
+              actividadSearch.setPage(0)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }
+

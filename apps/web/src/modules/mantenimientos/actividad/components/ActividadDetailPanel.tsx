@@ -1,15 +1,17 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
+  ArrowLeft,
   Check,
   CheckSquare,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Copy,
   Cpu,
   FileText,
-  Info,
   Layers,
+  MoreHorizontal,
   Pencil,
   Plus,
   Trash2,
@@ -22,15 +24,10 @@ import type { Componente } from "@/modules/activos/componente/api/componente.ser
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
-import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
+import { TipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
 import { getErrorMessage } from "@/shared/api"
 import { AuditInfo } from "@/shared/components/audit-info"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
-import {
-  DetailPanelHeader,
-  DetailPanelShell,
-  PaginatedList,
-} from "@/shared/components/master-detail"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
@@ -53,14 +50,18 @@ type EnrichedAplicacion = ActividadAplicacion & {
 
 type ActividadDetailPanelProps = {
   actividad: ActividadMantenimiento | null
-  hidePrimaryAction?: boolean
   onEdit?: (actividad: ActividadMantenimiento) => void
+  onPrev?: () => void
+  onNext?: () => void
+  onBack?: () => void
 }
 
 export function ActividadDetailPanel({
   actividad,
-  hidePrimaryAction = false,
   onEdit,
+  onPrev,
+  onNext,
+  onBack,
 }: ActividadDetailPanelProps) {
   const [showAddAplicacionDialog, setShowAddAplicacionDialog] = useState(false)
   const [aplicacionToDelete, setAplicacionToDelete] =
@@ -121,25 +122,25 @@ export function ActividadDetailPanel({
           tipoFromMap ||
           (app.tipoActivo
             ? {
-              id: app.tipoActivo.id,
-              nombre: app.tipoActivo.nombre,
-              categoriaId: "",
-              descripcion: null,
-              color: null,
-              icono: null,
-            }
+                id: app.tipoActivo.id,
+                nombre: app.tipoActivo.nombre,
+                categoriaId: "",
+                descripcion: null,
+                color: null,
+                icono: null,
+              }
             : undefined),
         componente:
           compFromMap ||
           (app.componente
             ? {
-              id: app.componente.id,
-              tipoActivoId: app.tipoActivo?.id ?? "",
-              nombre: app.componente.nombre,
-              codigo: "",
-              descripcion: null,
-              activo: true,
-            }
+                id: app.componente.id,
+                tipoActivoId: app.tipoActivo?.id ?? "",
+                nombre: app.componente.nombre,
+                codigo: "",
+                descripcion: null,
+                activo: true,
+              }
             : null),
       }
     })
@@ -147,7 +148,6 @@ export function ActividadDetailPanel({
 
   const totalAplicaciones =
     aplicacionesQuery.data?.totalElements ?? rawAplicaciones.length
-
   const hasAplicacion = totalAplicaciones > 0
 
   function copyActividadCode() {
@@ -173,255 +173,348 @@ export function ActividadDetailPanel({
     setShowChecklistDialog(true)
   }
 
+  if (!actividad) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-8 text-center bg-background/50">
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-muted/40 text-muted-foreground mb-3 shadow-2xs">
+          <Wrench className="size-6" />
+        </div>
+        <h3 className="font-semibold text-sm text-foreground">
+          Ninguna actividad seleccionada
+        </h3>
+        <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+          Selecciona una actividad del catálogo izquierdo para ver su alcance operativo y checklist de verificación.
+        </p>
+      </div>
+    )
+  }
+
   return (
-    <DetailPanelShell
-      hasSelection={Boolean(actividad)}
-      emptySelectionMessage="Selecciona una actividad de mantenimiento de la lista para ver su alcance operativo y checklist de verificación."
-      header={
-        actividad ? (
-          <DetailPanelHeader
-            title={
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-2xs">
-                  <Wrench className="size-4" />
-                </span>
-                <span className="truncate font-heading text-base sm:text-lg font-bold text-foreground">
-                  {actividad.nombre}
-                </span>
-                <div className="flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 border border-border/70">
-                  <code className="font-mono text-xs font-bold text-foreground">
-                    {actividad.codigo}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={copyActividadCode}
-                    className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-background hover:text-foreground cursor-pointer"
-                    title="Copiar código de la actividad"
-                  >
-                    {copiedCode ? (
-                      <Check className="size-3 text-emerald-500" />
-                    ) : (
-                      <Copy className="size-3" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            }
-            subtitle={
-              <div className="flex items-center gap-2 pt-0.5">
-                <Badge
-                  variant={hasAplicacion ? "secondary" : "outline"}
-                  className="text-[11px] text-muted-foreground font-medium gap-1 px-2 py-0.5 border border-border/50"
-                >
-                  <Layers className="size-3 text-primary" />
-                  <span>
-                    {hasAplicacion
-                      ? "1 alcance configurado"
-                      : "Sin alcance configurado"}
-                  </span>
-                </Badge>
-              </div>
-            }
-            action={
-              <div className="flex items-center gap-1.5">
-                {onEdit && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    type="button"
-                    onClick={() => onEdit(actividad)}
-                    className="gap-1.5 h-8 text-xs font-medium"
-                  >
-                    <Pencil className="size-3.5" />
-                    <span>Editar</span>
-                  </Button>
-                )}
+    <div className="flex h-full flex-col bg-background overflow-y-auto">
+      {/* 1. Breadcrumbs & Top Toolbar */}
+      <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-2 text-xs">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          {onBack && (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={onBack}
+              className="size-6.5 rounded-lg text-muted-foreground hover:text-foreground md:hidden"
+            >
+              <ArrowLeft className="size-3.5" />
+            </Button>
+          )}
+          <span className="hover:text-foreground transition-colors cursor-pointer text-xs">
+            Actividades
+          </span>
+          <span className="opacity-40">/</span>
+          <span className="font-medium text-foreground truncate max-w-[240px] text-xs">
+            {actividad.nombre}
+          </span>
+        </div>
 
-                <Button
-                  size="sm"
-                  variant="outline"
+        <div className="flex items-center gap-0.5">
+          {onPrev && (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={onPrev}
+              className="size-6.5 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+              title="Actividad anterior"
+            >
+              <ChevronLeft className="size-3.5" />
+            </Button>
+          )}
+          {onNext && (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={onNext}
+              className="size-6.5 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+              title="Siguiente actividad"
+            >
+              <ChevronRight className="size-3.5" />
+            </Button>
+          )}
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => onEdit(actividad)}
+              className="size-6.5 rounded-lg text-muted-foreground hover:text-foreground ml-0.5 cursor-pointer"
+              title="Editar actividad"
+            >
+              <MoreHorizontal className="size-3.5" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* 2. Main Content Area */}
+      <div className="flex-1 p-4 sm:p-6 space-y-4.5 w-full max-w-5xl">
+        {/* Header Block with Icon + Title + Actions */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2">
+            {/* Top Icon Badge */}
+            <div className="flex size-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20 shadow-2xs">
+              <Wrench className="size-4" />
+            </div>
+
+            {/* Supertitle */}
+            <div className="space-y-0.5">
+              <span className="text-[9.5px] font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
+                PROCEDIMIENTO DE MANTENIMIENTO
+              </span>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                {actividad.nombre}
+              </h1>
+            </div>
+
+            {/* Description */}
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
+              {actividad.descripcion ||
+                "Procedimiento estandarizado para la ejecución de tareas de mantenimiento preventivo y correctivo de unidades vehiculares y componentes."}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(actividad)}
+                className="gap-1.5 rounded-lg border-border/80 text-xs font-semibold px-2.5 py-1 h-7.5 hover:bg-muted shadow-2xs cursor-pointer"
+              >
+                <Pencil className="size-3" />
+                Editar
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDeleteActividadDialog(true)}
+              className="gap-1.5 rounded-lg border-destructive/30 text-destructive hover:bg-destructive/10 text-xs font-semibold px-2.5 py-1 h-7.5 shadow-2xs cursor-pointer"
+              title="Eliminar actividad"
+            >
+              <Trash2 className="size-3" />
+              Eliminar
+            </Button>
+          </div>
+        </div>
+
+        {/* 3. Metadata Grid Card */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-border/60 bg-muted/15 p-0.5 divide-y sm:divide-y-0 sm:divide-x divide-border/50 shadow-2xs">
+          {/* Código Identificador */}
+          <div className="flex flex-col gap-1 p-2.5">
+            <span className="text-[9.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+              CÓDIGO IDENTIFICADOR
+            </span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 rounded-md bg-muted px-2 py-0.5 border border-border/70">
+                <code className="font-mono text-xs font-bold text-foreground">
+                  {actividad.codigo}
+                </code>
+                <button
                   type="button"
-                  onClick={() => setShowDeleteActividadDialog(true)}
-                  className="gap-1.5 h-8 text-xs font-medium text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
-                  title="Eliminar esta actividad"
+                  onClick={copyActividadCode}
+                  className="inline-flex size-3.5 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground cursor-pointer"
+                  title="Copiar código"
                 >
-                  <Trash2 className="size-3.5" />
-                  <span>Eliminar</span>
-                </Button>
+                  {copiedCode ? (
+                    <Check className="size-3 text-emerald-500" />
+                  ) : (
+                    <Copy className="size-3" />
+                  )}
+                </button>
               </div>
-            }
-          />
-        ) : null
-      }
-      footer={
-        <>
-          {/* Dialog eliminar actividad */}
-          <ConfirmDeleteDialog
-            open={showDeleteActividadDialog}
-            onOpenChange={setShowDeleteActividadDialog}
-            title="Eliminar actividad de mantenimiento"
-            description={
-              actividad
-                ? `¿Seguro que deseas eliminar "${actividad.nombre}"? Sus tipos de activos asociados e ítems de checklist se eliminarán permanentemente.`
-                : "¿Seguro que deseas eliminar esta actividad?"
-            }
-            isPending={deleteActividadMutation.isPending}
-            onConfirm={async () => {
-              if (!actividad) return
-              await deleteActividadMutation.mutateAsync(actividad.id)
-              setShowDeleteActividadDialog(false)
-            }}
-          />
+              <span className="text-[10px] text-muted-foreground font-medium">
+                {copiedCode ? "Copiado!" : "Referencia"}
+              </span>
+            </div>
+          </div>
 
-          {/* Dialog desvincular aplicación */}
-          <ConfirmDeleteDialog
-            open={Boolean(aplicacionToDelete)}
-            onOpenChange={(open) => {
-              if (!open) setAplicacionToDelete(null)
-            }}
-            title="Desvincular alcance de la actividad"
-            description={
-              aplicacionToDelete
-                ? `¿Seguro que deseas desvincular el alcance "${aplicacionToDelete.componente?.nombre || aplicacionToDelete.tipoActivo?.nombre || "asignado"}"? Sus pasos de verificación asociados también se eliminarán.`
-                : "¿Seguro que deseas eliminar esta asignación?"
-            }
-            isPending={deleteAplicacionMutation.isPending}
-            onConfirm={async () => {
-              if (!aplicacionToDelete) return
-              await deleteAplicacionMutation.mutateAsync(aplicacionToDelete.id)
-              setAplicacionToDelete(null)
-            }}
-          />
+          {/* Alcance Operativo */}
+          <div className="flex flex-col gap-1 p-2.5">
+            <span className="text-[9.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+              ALCANCE CONFIGURADO
+            </span>
+            <div className="flex items-center gap-2 h-6">
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  hasAplicacion ? "bg-emerald-500" : "bg-zinc-400",
+                )}
+              />
+              <span className="text-xs font-semibold text-foreground">
+                {hasAplicacion
+                  ? `${totalAplicaciones} ${totalAplicaciones === 1 ? "Alcance asignado" : "Alcances asignados"}`
+                  : "Sin alcance configurado"}
+              </span>
+            </div>
+          </div>
 
-          {/* Dialog eliminar ítem de checklist */}
-          <ConfirmDeleteDialog
-            open={Boolean(checklistItemToDelete)}
-            onOpenChange={(open) => {
-              if (!open) setChecklistItemToDelete(null)
-            }}
-            title="Eliminar paso de checklist"
-            description={
-              checklistItemToDelete
-                ? `¿Seguro que deseas eliminar el paso "${checklistItemToDelete.nombre}"?`
-                : "¿Seguro que deseas eliminar este paso?"
-            }
-            isPending={deleteChecklistItemMutation.isPending}
-            onConfirm={async () => {
-              if (!checklistItemToDelete) return
-              await deleteChecklistItemMutation.mutateAsync(
-                checklistItemToDelete.id,
-              )
-              setChecklistItemToDelete(null)
-            }}
-          />
-        </>
-      }
-    >
-      {actividad ? (
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Descripción general compacta */}
-          {actividad.descripcion && (
-            <div className="flex items-start gap-2.5 rounded-lg border border-border/70 bg-muted/25 px-3.5 py-2.5 text-xs text-foreground/90">
-              <Info className="size-4 text-muted-foreground shrink-0 mt-0.5" />
-              <p className="leading-relaxed">{actividad.descripcion}</p>
+          {/* Estado de Checklist */}
+          <div className="flex flex-col gap-1 p-2.5">
+            <span className="text-[9.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+              ESTADO DEL PROCEDIMIENTO
+            </span>
+            <div className="flex items-center gap-2 h-6">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span className="text-xs font-semibold text-foreground">
+                Activo / Estandarizado
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. SECCIÓN: Alcance Operativo & Checklist */}
+        <div className="space-y-3 pt-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layers className="size-3.5 text-blue-500" />
+              <h3 className="text-xs font-bold tracking-tight text-foreground uppercase">
+                Alcance Operativo & Checklist
+              </h3>
+              <Badge
+                variant={hasAplicacion ? "secondary" : "outline"}
+                className="text-[9.5px] font-bold h-4.5 px-1.5 ml-0.5"
+              >
+                {hasAplicacion ? `${totalAplicaciones} Asignado` : "0"}
+              </Badge>
+            </div>
+
+            {!hasAplicacion && (
+              <Button
+                size="sm"
+                onClick={() => setShowAddAplicacionDialog(true)}
+                className="gap-1.5 text-xs font-semibold h-7.5 rounded-lg shadow-2xs cursor-pointer px-2.5"
+              >
+                <Plus className="size-3" />
+                Asociar Alcance
+              </Button>
+            )}
+          </div>
+
+          {/* Lista de Aplicaciones / Alcances */}
+          {aplicacionesQuery.isLoading ? (
+            <div className="rounded-xl border border-border/60 p-6 text-center text-xs text-muted-foreground bg-card">
+              Cargando alcance operativo...
+            </div>
+          ) : aplicacionesQuery.isError ? (
+            <div className="rounded-xl border border-destructive/40 p-4 text-center text-xs text-destructive bg-destructive/5">
+              {getErrorMessage(aplicacionesQuery.error)}
+            </div>
+          ) : !hasAplicacion ? (
+            <div className="flex flex-col items-center justify-center p-6 rounded-xl border border-dashed border-border/80 bg-muted/10 text-center space-y-2">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <Layers className="size-4" />
+              </div>
+              <div className="space-y-0.5 max-w-sm">
+                <p className="text-xs font-bold text-foreground">
+                  Sin alcance operativo configurado
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Asocia un Tipo de Activo y opcionalmente un Componente para definir sus pasos de verificación.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setShowAddAplicacionDialog(true)}
+                className="gap-1 text-xs font-semibold h-7 rounded-lg shadow-2xs cursor-pointer px-2.5 mt-1"
+              >
+                <Plus className="size-3" />
+                Asociar Alcance
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {aplicaciones.map((app) => (
+                <AplicacionItemCard
+                  key={app.id}
+                  aplicacion={app}
+                  onAddChecklistItem={() => handleOpenAddChecklistItem(app)}
+                  onEditChecklistItem={(item) =>
+                    handleOpenEditChecklistItem(app, item)
+                  }
+                  onDeleteChecklistItem={(item) =>
+                    setChecklistItemToDelete(item)
+                  }
+                  onDeleteAplicacion={() => setAplicacionToDelete(app)}
+                  deleteAplicacionPending={deleteAplicacionMutation.isPending}
+                  deleteChecklistItemPending={deleteChecklistItemMutation.isPending}
+                />
+              ))}
             </div>
           )}
-
-          {/* SECCIÓN: Alcance y Checklist */}
-          <section className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2">
-                <Layers className="size-4 text-primary" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  Alcance Operativo & Checklist
-                </h3>
-                <Badge
-                  variant={hasAplicacion ? "secondary" : "outline"}
-                  className="text-[10px] font-bold h-4 px-1.5"
-                >
-                  {hasAplicacion ? "1 Asignado" : "0"}
-                </Badge>
-              </div>
-
-              {!hidePrimaryAction && !hasAplicacion && (
-                <Button
-                  size="sm"
-                  type="button"
-                  onClick={() => setShowAddAplicacionDialog(true)}
-                  className="gap-1.5 h-8 text-xs font-semibold shadow-2xs self-start sm:self-auto"
-                >
-                  <Plus className="size-3.5" />
-                  <span>Asociar Alcance (Tipo / Componente)</span>
-                </Button>
-              )}
-            </div>
-
-            {/* Lista de aplicaciones */}
-            <div className="rounded-lg border border-border/70 overflow-hidden bg-card">
-              <PaginatedList
-                items={aplicaciones}
-                page={
-                  aplicacionesQuery.data?.totalPages &&
-                  aplicacionesQuery.data.totalPages > 1
-                    ? aplicacionesQuery.data
-                    : undefined
-                }
-                isLoading={aplicacionesQuery.isLoading}
-                isFetching={aplicacionesQuery.isFetching}
-                errorMessage={
-                  aplicacionesQuery.isError
-                    ? getErrorMessage(aplicacionesQuery.error)
-                    : null
-                }
-                onPageChange={() => {}}
-                getKey={(app) => app.id}
-                skeletonRowClassName="h-16"
-                listClassName="p-2.5 space-y-2.5"
-                empty={{
-                  icon: <Layers className="size-5 text-muted-foreground" />,
-                  title: "Sin alcance configurado",
-                  description:
-                    "Asocia un Tipo de Activo y opcionalmente un Componente para definir sus pasos de verificación.",
-                  actionLabel: "Asociar Alcance",
-                  onAction: () => setShowAddAplicacionDialog(true),
-                }}
-              >
-                {(app: EnrichedAplicacion) => (
-                  <AplicacionItemCard
-                    key={app.id}
-                    aplicacion={app}
-                    onAddChecklistItem={() => handleOpenAddChecklistItem(app)}
-                    onEditChecklistItem={(item) =>
-                      handleOpenEditChecklistItem(app, item)
-                    }
-                    onDeleteChecklistItem={(item) =>
-                      setChecklistItemToDelete(item)
-                    }
-                    onDeleteAplicacion={() => setAplicacionToDelete(app)}
-                    deleteAplicacionPending={
-                      deleteAplicacionMutation.isPending
-                    }
-                    deleteChecklistItemPending={
-                      deleteChecklistItemMutation.isPending
-                    }
-                  />
-                )}
-              </PaginatedList>
-            </div>
-          </section>
-
-          {/* SECCIÓN: Auditoría compacta */}
-          <section className="pt-2 border-t border-border/60">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-              <FileText className="size-3" />
-              <span>Auditoría</span>
-            </div>
-            <div className="rounded-lg border border-border/50 bg-muted/15 p-2 text-xs">
-              <AuditInfo data={actividad} />
-            </div>
-          </section>
         </div>
-      ) : null}
+
+        {/* 5. SECCIÓN: Auditoría */}
+        <div className="space-y-1.5 pt-2 border-t border-border/60">
+          <div className="flex items-center gap-1.5 text-[9.5px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <FileText className="size-3" />
+            <span>Auditoría y Trazabilidad</span>
+          </div>
+          <div className="rounded-xl border border-border/50 bg-muted/15 p-2.5 text-xs">
+            <AuditInfo data={actividad} />
+          </div>
+        </div>
+      </div>
+
+      {/* Dialog eliminar actividad */}
+      <ConfirmDeleteDialog
+        open={showDeleteActividadDialog}
+        onOpenChange={setShowDeleteActividadDialog}
+        title="Eliminar actividad de mantenimiento"
+        description={
+          actividad
+            ? `¿Seguro que deseas eliminar "${actividad.nombre}"? Sus tipos de activos asociados e ítems de checklist se eliminarán permanentemente.`
+            : "¿Seguro que deseas eliminar esta actividad?"
+        }
+        isPending={deleteActividadMutation.isPending}
+        onConfirm={async () => {
+          if (!actividad) return
+          await deleteActividadMutation.mutateAsync(actividad.id)
+          setShowDeleteActividadDialog(false)
+        }}
+      />
+
+      {/* Dialog desvincular aplicación */}
+      {aplicacionToDelete && (
+        <ConfirmDeleteDialog
+          open={Boolean(aplicacionToDelete)}
+          onOpenChange={(open) => {
+            if (!open) setAplicacionToDelete(null)
+          }}
+          title="Desvincular alcance de la actividad"
+          description={`¿Seguro que deseas desvincular el alcance "${aplicacionToDelete.componente?.nombre || aplicacionToDelete.tipoActivo?.nombre || "asignado"}"? Sus pasos de verificación asociados también se eliminarán.`}
+          isPending={deleteAplicacionMutation.isPending}
+          onConfirm={async () => {
+            if (!aplicacionToDelete) return
+            await deleteAplicacionMutation.mutateAsync(aplicacionToDelete.id)
+            setAplicacionToDelete(null)
+          }}
+        />
+      )}
+
+      {/* Dialog eliminar ítem de checklist */}
+      {checklistItemToDelete && (
+        <ConfirmDeleteDialog
+          open={Boolean(checklistItemToDelete)}
+          onOpenChange={(open) => {
+            if (!open) setChecklistItemToDelete(null)
+          }}
+          title="Eliminar paso de checklist"
+          description={`¿Seguro que deseas eliminar el paso "${checklistItemToDelete.nombre}"?`}
+          isPending={deleteChecklistItemMutation.isPending}
+          onConfirm={async () => {
+            if (!checklistItemToDelete) return
+            await deleteChecklistItemMutation.mutateAsync(
+              checklistItemToDelete.id,
+            )
+            setChecklistItemToDelete(null)
+          }}
+        />
+      )}
 
       {/* Form Modal de Asociación */}
       <ActividadAplicacionFormDialog
@@ -443,7 +536,7 @@ export function ActividadDetailPanel({
           }
         }}
       />
-    </DetailPanelShell>
+    </div>
   )
 }
 
@@ -483,80 +576,79 @@ function AplicacionItemCard({
   const tipo = aplicacion.tipoActivo
   const componente = aplicacion.componente
   const color = tipo?.color || DEFAULT_TIPO_ACTIVO_COLOR
-  const TipoIcon = getTipoActivoIcon(tipo?.icono)
 
   return (
-    <div className="rounded-lg border border-border/80 bg-card shadow-2xs overflow-hidden transition-all">
+    <div className="rounded-xl border border-border/70 bg-card/60 shadow-2xs overflow-hidden transition-all hover:border-border">
       {/* Header de la Aplicación */}
-      <div className="flex items-center justify-between px-3 py-2.5 bg-muted/20 border-b border-border/60 gap-2">
+      <div className="flex items-center justify-between px-3 py-2 bg-muted/20 border-b border-border/50 gap-2">
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-2.5 text-left cursor-pointer group min-w-0 flex-1"
         >
           {isExpanded ? (
-            <ChevronDown className="size-4 text-muted-foreground group-hover:text-foreground shrink-0 transition-transform" />
+            <ChevronDown className="size-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-transform" />
           ) : (
-            <ChevronRight className="size-4 text-muted-foreground group-hover:text-foreground shrink-0 transition-transform" />
+            <ChevronRight className="size-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-transform" />
           )}
 
-          <span
-            className="flex size-7 shrink-0 items-center justify-center rounded-md text-white shadow-2xs"
+          <div
+            className="flex size-7.5 shrink-0 items-center justify-center rounded-lg text-white shadow-2xs transition-transform group-hover:scale-105"
             style={{ backgroundColor: componente ? "var(--primary)" : color }}
           >
             {componente ? (
-              <Cpu className="size-4" />
+              <Cpu className="size-3.5" />
             ) : (
-              <TipoIcon className="size-3.5" />
+              <TipoActivoIcon name={tipo?.icono} className="size-3.5" />
             )}
-          </span>
+          </div>
 
           <div className="min-w-0 flex-1">
             {componente ? (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-bold text-xs text-foreground group-hover:text-primary transition-colors">
                   {componente.nombre}
                 </span>
                 {componente.codigo && (
-                  <code className="text-[10px] font-mono font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border/60">
+                  <code className="text-[9.5px] font-mono font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border/60">
                     {componente.codigo}
                   </code>
                 )}
                 <Badge
                   variant="secondary"
-                  className="text-[10px] font-medium gap-1 px-1.5 py-0 h-4.5 border border-border/60"
+                  className="text-[9.5px] font-medium gap-1 px-1.5 py-0 h-4 border border-border/60"
                 >
                   <Layers className="size-2.5 text-primary" />
                   <span>{tipo?.nombre || "Tipo de Activo"}</span>
                 </Badge>
               </div>
             ) : (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-bold text-xs text-foreground group-hover:text-primary transition-colors">
                   {tipo?.nombre || "Tipo de Activo"}
                 </span>
                 <Badge
                   variant="outline"
-                  className="text-[10px] text-muted-foreground font-normal px-1.5 py-0 h-4.5 border-dashed"
+                  className="text-[9.5px] text-muted-foreground font-normal px-1.5 py-0 h-4 border-dashed"
                 >
-                  Toda la unidad (Sin componente)
+                  Toda la unidad
                 </Badge>
               </div>
             )}
           </div>
         </button>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <Badge
             variant="outline"
             className={cn(
-              "text-[10px] font-semibold px-2 py-0 h-5 gap-1",
+              "text-[9.5px] font-semibold px-1.5 py-0 h-4.5 gap-1",
               totalItems > 0
                 ? "text-primary border-primary/30 bg-primary/5"
                 : "text-muted-foreground border-border/60",
             )}
           >
-            <CheckSquare className="size-3" />
+            <CheckSquare className="size-2.5" />
             <span>
               {totalItems} paso{totalItems !== 1 ? "s" : ""}
             </span>
@@ -567,10 +659,10 @@ function AplicacionItemCard({
             variant="outline"
             type="button"
             onClick={onAddChecklistItem}
-            className="h-7 px-2 text-xs gap-1 text-primary hover:bg-primary/10 border-primary/30 font-medium"
+            className="h-6 px-2 text-[11px] gap-1 text-primary hover:bg-primary/10 border-primary/30 font-medium rounded-lg shadow-2xs cursor-pointer"
             title="Agregar paso de verificación"
           >
-            <Plus className="size-3" />
+            <Plus className="size-2.5" />
             <span>Paso</span>
           </Button>
 
@@ -580,72 +672,72 @@ function AplicacionItemCard({
             type="button"
             onClick={onDeleteAplicacion}
             disabled={deleteAplicacionPending}
-            className="size-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            className="size-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
             title="Desvincular este alcance"
           >
-            <Trash2 className="size-3.5" />
+            <Trash2 className="size-3" />
           </Button>
         </div>
       </div>
 
       {/* Checklist desplegable */}
       {isExpanded && (
-        <div className="p-2.5 bg-background/50">
+        <div className="p-2 bg-muted/5">
           {checklistQuery.isLoading ? (
-            <div className="py-3 text-center text-xs text-muted-foreground">
-              Cargando checklist...
+            <div className="py-2 text-center text-xs text-muted-foreground">
+              Cargando pasos de verificación...
             </div>
           ) : totalItems === 0 ? (
-            <div className="flex items-center justify-between p-3 rounded-lg border border-dashed border-border/70 text-xs text-muted-foreground bg-muted/10">
-              <span className="text-xs">
-                Sin pasos de verificación registrados para este alcance.
+            <div className="flex items-center justify-between p-2.5 rounded-lg border border-dashed border-border/70 text-xs text-muted-foreground bg-muted/10">
+              <span className="text-[11px]">
+                Sin pasos de verificación registrados.
               </span>
               <Button
                 size="sm"
                 variant="outline"
                 type="button"
                 onClick={onAddChecklistItem}
-                className="h-7 text-xs gap-1 border-border/80 font-medium"
+                className="h-6 text-[11px] gap-1 border-border/80 font-medium rounded-lg cursor-pointer px-2"
               >
-                <Plus className="size-3" />
+                <Plus className="size-2.5" />
                 <span>Agregar Paso</span>
               </Button>
             </div>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {checklistItems.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-2 rounded-md border border-border/60 bg-card hover:bg-muted/20 hover:border-border transition-colors gap-2.5"
+                  className="flex items-center justify-between p-2 rounded-lg border border-border/50 bg-card/80 hover:bg-muted/30 hover:border-border/80 transition-all gap-2 shadow-2xs group"
                 >
-                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground font-mono text-[10px] font-bold border border-border/70 mt-0.5">
+                  <div className="flex items-start gap-2 min-w-0 flex-1">
+                    <span className="flex size-4.5 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground font-mono text-[9px] font-bold border border-border/70 mt-0.5">
                       {item.orden}
                     </span>
                     <div className="min-w-0 space-y-0.5">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-semibold text-xs text-foreground">
                           {item.nombre}
                         </span>
                       </div>
                       {item.descripcion && (
-                        <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                        <p className="text-[10.5px] text-muted-foreground line-clamp-2 leading-relaxed">
                           {item.descripcion}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
                       size="sm"
                       variant="ghost"
                       type="button"
                       onClick={() => onEditChecklistItem(item)}
-                      className="size-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+                      className="size-6 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md cursor-pointer"
                       title="Editar paso"
                     >
-                      <Pencil className="size-3" />
+                      <Pencil className="size-2.5" />
                     </Button>
                     <Button
                       size="sm"
@@ -653,10 +745,10 @@ function AplicacionItemCard({
                       type="button"
                       onClick={() => onDeleteChecklistItem(item)}
                       disabled={deleteChecklistItemPending}
-                      className="size-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      className="size-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md cursor-pointer"
                       title="Eliminar paso"
                     >
-                      <Trash2 className="size-3" />
+                      <Trash2 className="size-2.5" />
                     </Button>
                   </div>
                 </div>
