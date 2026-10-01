@@ -209,7 +209,7 @@ export function ConductorViajesPage() {
         title="Mis Viajes (Conductor)"
         description="Bandeja de viajes y traslados asignados. Registra la salida, monitorea la ruta y completa el retorno del viaje."
         icon={
-          <div className="flex size-7.5 sm:size-8.5 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-emerald-500/5 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs">
+          <div className="flex size-7.5 sm:size-8.5 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-emerald-500/20 via-emerald-500/10 to-emerald-500/5 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs">
             <Navigation className="size-3.5 sm:size-4" />
           </div>
         }

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import { isValidElement, type ComponentType, type ReactNode } from "react"
 import type { LucideIcon } from "lucide-react"
 
 import { cn } from "@/shared/lib/utils"
@@ -7,7 +7,7 @@ export type FormSectionProps = {
   step?: number | string
   title: string
   description?: string
-  icon?: LucideIcon | ReactNode
+  icon?: LucideIcon | ReactNode | ComponentType<{ className?: string }>
   badge?: ReactNode
   action?: ReactNode
   children: ReactNode
@@ -39,11 +39,11 @@ export function FormSection({
 
   const renderIcon = () => {
     if (!Icon) return null
-    if (typeof Icon === "function") {
-      const LucideComp = Icon as LucideIcon
-      return <LucideComp className="size-4 text-primary shrink-0" />
+    if (isValidElement(Icon)) {
+      return <span className="shrink-0">{Icon}</span>
     }
-    return <span className="shrink-0">{Icon}</span>
+    const IconComponent = Icon as ComponentType<{ className?: string }>
+    return <IconComponent className="size-4 text-primary shrink-0" />
   }
 
   return (
