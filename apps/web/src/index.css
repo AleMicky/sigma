@@ -235,9 +235,40 @@
   .dark ::-webkit-scrollbar-thumb:hover {
     background: oklch(1 0 0 / 24%);
   }
+
+  /* Scrollbar visible para Sidebar (fondo oscuro en ambos temas) */
+  [data-sidebar="content"],
+  [data-slot="sidebar-content"],
+  [data-sidebar="sidebar"],
+  [data-slot="sidebar-inner"],
+  .bg-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(1 0 0 / 20%) transparent;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar-thumb,
+  [data-slot="sidebar-content"]::-webkit-scrollbar-thumb,
+  [data-sidebar="sidebar"]::-webkit-scrollbar-thumb,
+  [data-slot="sidebar-inner"]::-webkit-scrollbar-thumb,
+  .bg-sidebar::-webkit-scrollbar-thumb {
+    background: oklch(1 0 0 / 20%);
+    border-radius: 9999px;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar-thumb:hover,
+  [data-slot="sidebar-content"]::-webkit-scrollbar-thumb:hover,
+  [data-sidebar="sidebar"]::-webkit-scrollbar-thumb:hover,
+  [data-slot="sidebar-inner"]::-webkit-scrollbar-thumb:hover,
+  .bg-sidebar::-webkit-scrollbar-thumb:hover {
+    background: oklch(1 0 0 / 35%);
+  }
 }
 
 /* Utilidades especializadas para gestión de flotas y activos */
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar {
