@@ -25,7 +25,7 @@ import {
   getPrioridadBadgeStyles,
 } from "@/modules/mantenimientos/solicitud/lib/solicitud.utils"
 
-type FilterTab = "todos" | "concluidos" | "en_proceso" | "pendientes"
+type FilterTab = "todos" | "concluidos" | "en_proceso" | "observados"
 
 type OrdenTrabajoMasterPanelProps = {
   solicitudes: SolicitudMantenimiento[]
@@ -71,7 +71,7 @@ export function OrdenTrabajoMasterPanel({
     onSearchChange("")
   }
 
-  // Filtrado local por pestaña rápida de estado
+  // Filtrado local por pestaña rápida de estado (sin Borrador ni Solicitado)
   const filteredSolicitudes = useMemo(() => {
     if (activeFilterTab === "todos") return solicitudes
 
@@ -94,15 +94,15 @@ export function OrdenTrabajoMasterPanel({
           norm === "en_ejecucion" ||
           norm === "en ejecucion" ||
           norm === "en_revision" ||
-          norm === "asignado"
+          norm === "asignado" ||
+          norm === "por_iniciar"
         )
       }
-      if (activeFilterTab === "pendientes") {
+      if (activeFilterTab === "observados") {
         return (
-          norm === "borrador" ||
-          norm === "solicitado" ||
+          norm.includes("observad") ||
           norm === "observado" ||
-          norm === "por_aprobar"
+          norm === "observadas_mantenimiento"
         )
       }
       return true
@@ -174,15 +174,15 @@ export function OrdenTrabajoMasterPanel({
           </button>
           <button
             type="button"
-            onClick={() => setActiveFilterTab("pendientes")}
+            onClick={() => setActiveFilterTab("observados")}
             className={cn(
               "px-2.5 py-1 rounded-lg font-medium transition-all shrink-0 cursor-pointer",
-              activeFilterTab === "pendientes"
-                ? "bg-slate-700 dark:bg-slate-600 text-white shadow-2xs font-semibold"
+              activeFilterTab === "observados"
+                ? "bg-rose-700 dark:bg-rose-600 text-white shadow-2xs font-semibold"
                 : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            Pendientes
+            Observados
           </button>
         </div>
 

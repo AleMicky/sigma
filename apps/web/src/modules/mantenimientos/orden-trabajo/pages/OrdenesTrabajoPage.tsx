@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft, ClipboardList, Wrench } from "lucide-react"
 
@@ -32,8 +33,14 @@ export function OrdenesTrabajoPage() {
     }),
   )
 
-  const solicitudes = solicitudesQuery.data?.content ?? []
-  const totalCount = solicitudesQuery.data?.totalElements ?? solicitudes.length
+  const rawSolicitudes = solicitudesQuery.data?.content ?? []
+  const solicitudes = useMemo(() => {
+    return rawSolicitudes.filter((sol) => {
+      const norm = (sol.estado ?? "").toLowerCase().trim()
+      return norm !== "borrador" && norm !== "solicitado"
+    })
+  }, [rawSolicitudes])
+  const totalCount = solicitudes.length
 
   useClampPage(search.page, search.setPage, solicitudesQuery.data?.totalPages)
 

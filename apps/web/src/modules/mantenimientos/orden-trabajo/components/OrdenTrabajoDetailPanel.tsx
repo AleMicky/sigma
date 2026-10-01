@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
   Calendar,
+  Camera,
   CheckCircle2,
   Circle,
   Clock,
@@ -11,6 +12,7 @@ import {
   FileCheck2,
   FileText,
   Image as ImageIcon,
+  Layers,
   Loader2,
   MessageSquareQuote,
   Paperclip,
@@ -52,24 +54,27 @@ export function OrdenTrabajoDetailPanel({
 }: OrdenTrabajoDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<string>("actividades")
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+  const [selectedOTId, setSelectedOTId] = useState<string | null>(null)
   const [previewImage, setPreviewImage] = useState<{
     open: boolean
     url: string
     title: string
   }>({ open: false, url: "", title: "" })
 
-  // Query OT for the selected solicitud
+  // Query all OTs for the selected solicitud (support multiple OTs / history)
   const otsQuery = useQuery({
     ...ordenTrabajoQueries.list({
       solicitudMantenimientoId: solicitud?.id,
-      size: 1,
+      size: 50,
       sortBy: "createdAt",
       direction: "DESC",
     }),
     enabled: Boolean(solicitud?.id),
   })
 
-  const currentOT = otsQuery.data?.content?.[0] ?? null
+  const otsList = otsQuery.data?.content ?? []
+  const currentOT =
+    otsList.find((ot) => ot.id === selectedOTId) ?? otsList[0] ?? null
   const otId = currentOT?.id ?? ""
 
   // Query detailed OT info
@@ -262,6 +267,49 @@ export function OrdenTrabajoDetailPanel({
             </div>
           )}
         </div>
+
+        {/* Row 4: Multiple OTs History Selector */}
+        {otsList.length > 1 && (
+          <div className="flex items-center gap-2 pt-2 border-t border-border/50 overflow-x-auto">
+            <span className="text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider shrink-0 flex items-center gap-1">
+              <Layers className="size-3 text-sky-600" />
+              Órdenes de Trabajo ({otsList.length}):
+            </span>
+            <div className="flex items-center gap-1.5 flex-nowrap">
+              {otsList.map((ot, idx) => {
+                const isSelected = ot.id === otId
+                return (
+                  <button
+                    key={ot.id}
+                    type="button"
+                    onClick={() => setSelectedOTId(ot.id)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer shadow-2xs",
+                      isSelected
+                        ? "bg-sky-600 text-white ring-1 ring-sky-600"
+                        : "bg-muted/70 text-foreground/80 hover:bg-muted hover:text-foreground border border-border/60",
+                    )}
+                  >
+                    <Wrench className={cn("size-3", isSelected ? "text-white" : "text-sky-600")} />
+                    <span>{ot.numero}</span>
+                    {idx === 0 && (
+                      <span
+                        className={cn(
+                          "text-[9px] px-1 py-0 rounded font-sans font-medium",
+                          isSelected
+                            ? "bg-white/20 text-white"
+                            : "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+                        )}
+                      >
+                        Más reciente
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Content Area */}
@@ -293,11 +341,11 @@ export function OrdenTrabajoDetailPanel({
           >
             {/* Segmented Capsule Tabs Navigation */}
             <div className="border-b px-4 py-2 sm:px-6 bg-muted/20 shrink-0">
-              <TabsList className="h-8.5 bg-muted/50 p-0.5 rounded-xl gap-1 inline-flex max-w-full overflow-x-auto border border-border/50">
+              <TabsList className="h-auto bg-muted/50 p-1 rounded-xl gap-1 inline-flex max-w-full overflow-hidden border border-border/50">
                 <TabsTrigger
                   value="actividades"
                   className={cn(
-                    "h-7 px-3 text-xs font-medium rounded-lg transition-all gap-1.5 cursor-pointer",
+                    "h-7 px-3 text-xs font-medium rounded-lg transition-all gap-1.5 cursor-pointer select-none",
                     "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-2xs data-[state=active]:font-semibold",
                     "text-muted-foreground hover:text-foreground",
                   )}
@@ -329,12 +377,12 @@ export function OrdenTrabajoDetailPanel({
                   <span
                     className={cn(
                       "inline-flex items-center justify-center px-1.5 py-0 text-[10px] font-bold rounded-full",
-                      adjuntos.length > 0
+                      adjuntos.length + (solicitud.adjuntos?.length ?? 0) > 0
                         ? "bg-sky-500/15 text-sky-700 dark:text-sky-300"
                         : "bg-muted text-muted-foreground",
                     )}
                   >
-                    {adjuntos.length}
+                    {adjuntos.length + (solicitud.adjuntos?.length ?? 0)}
                   </span>
                 </TabsTrigger>
 
@@ -404,55 +452,109 @@ export function OrdenTrabajoDetailPanel({
               value="adjuntos"
               className="flex min-h-0 flex-1 flex-col overflow-hidden m-0 p-3.5 sm:p-5"
             >
-              <div className="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1 overscroll-contain max-w-5xl">
+              <div className="min-h-0 flex-1 overflow-y-auto space-y-4 pr-1 overscroll-contain max-w-5xl">
                 {adjuntosQuery.isLoading ? (
                   <div className="p-8 text-center text-xs text-muted-foreground">
                     <Loader2 className="size-5 animate-spin mx-auto mb-2 text-sky-600" />
-                    Cargando archivos...
+                    Cargando archivos adjuntos...
                   </div>
-                ) : adjuntos.length === 0 ? (
+                ) : adjuntos.length === 0 && (!solicitud.adjuntos || solicitud.adjuntos.length === 0) ? (
                   <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground border rounded-2xl border-dashed bg-muted/5">
                     <Paperclip className="size-8 opacity-40 mb-2 text-sky-600" />
                     <p className="text-xs font-semibold text-foreground">
                       Sin archivos adjuntos
                     </p>
                     <p className="text-[11px] text-muted-foreground max-w-sm mt-0.5">
-                      No se han adjuntado documentos a esta orden de trabajo.
+                      No se han adjuntado documentos a esta orden de trabajo ni a la solicitud.
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {adjuntos.map((adj) => (
-                      <div
-                        key={adj.id}
-                        className="flex items-center justify-between gap-3 p-3 rounded-xl border bg-card hover:border-sky-300 transition-all text-xs shadow-2xs"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
-                            <FileText className="size-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-semibold text-foreground truncate text-xs">
-                              {adj.nombreArchivo}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {adj.descripcion || "Documento adjunto"}
-                            </p>
-                          </div>
+                  <div className="space-y-4">
+                    {/* OT Attachments */}
+                    {adjuntos.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                          <Wrench className="size-3.5 text-sky-600" />
+                          <span>Adjuntos de la Orden de Trabajo ({adjuntos.length})</span>
                         </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {adjuntos.map((adj) => (
+                            <div
+                              key={adj.id}
+                              className="flex items-center justify-between gap-3 p-3 rounded-xl border bg-card hover:border-sky-300 transition-all text-xs shadow-2xs"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                                  <FileText className="size-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-foreground truncate text-xs">
+                                    {adj.nombreArchivo}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground truncate">
+                                    {adj.descripcion || "Documento técnico"}
+                                  </p>
+                                </div>
+                              </div>
 
-                        <a
-                          href={adj.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-600 hover:text-sky-700 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 px-2 py-1 rounded-md transition-colors shrink-0"
-                          title="Ver o descargar"
-                        >
-                          <span>Ver</span>
-                          <ExternalLink className="size-3" />
-                        </a>
+                              <a
+                                href={adj.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-600 hover:text-sky-700 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 px-2 py-1 rounded-md transition-colors shrink-0"
+                                title="Ver o descargar"
+                              >
+                                <span>Ver</span>
+                                <ExternalLink className="size-3" />
+                              </a>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* Solicitud Initial Attachments */}
+                    {solicitud.adjuntos && solicitud.adjuntos.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                          <Paperclip className="size-3.5 text-indigo-600" />
+                          <span>Adjuntos de la Solicitud Inicial ({solicitud.adjuntos.length})</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {solicitud.adjuntos.map((adj) => (
+                            <div
+                              key={adj.id}
+                              className="flex items-center justify-between gap-3 p-3 rounded-xl border bg-card hover:border-indigo-300 transition-all text-xs shadow-2xs"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                                  <FileText className="size-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-foreground truncate text-xs">
+                                    {adj.nombreArchivo}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground truncate">
+                                    {adj.descripcion || "Documento de solicitud"}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <a
+                                href={adj.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 px-2 py-1 rounded-md transition-colors shrink-0"
+                                title="Ver o descargar"
+                              >
+                                <span>Ver</span>
+                                <ExternalLink className="size-3" />
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -642,6 +744,15 @@ function ActivityReportItem({
                 {actividad.actividadMantenimiento.codigo}
               </Badge>
             )}
+            {evidencias.length > 0 ? (
+              <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold text-sky-700 dark:text-sky-300 bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 rounded-md">
+                <Camera className="size-2.5" /> {evidencias.length} {evidencias.length === 1 ? "foto" : "fotos"}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[9.5px] text-muted-foreground/60 bg-muted/40 px-1.5 py-0.2 rounded-md">
+                <Camera className="size-2.5 opacity-40" /> Sin fotos
+              </span>
+            )}
           </div>
 
           {hasDistinctObservation && (
@@ -661,14 +772,14 @@ function ActivityReportItem({
         </div>
       </div>
 
-      {/* Evidencias thumbnails strip */}
+      {/* Evidencias thumbnails gallery */}
       {evidencias.length > 0 && (
         <div className="flex items-center gap-2 pt-1.5 border-t border-border/40 overflow-x-auto">
           <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 shrink-0">
             <ImageIcon className="size-3 text-sky-600" />
-            Evidencias ({evidencias.length}):
+            Evidencias Fotográficas ({evidencias.length}):
           </span>
-          <div className="flex items-center gap-1.5 flex-nowrap">
+          <div className="flex items-center gap-2 flex-nowrap">
             {evidencias.map((ev) => (
               <button
                 key={ev.id}
@@ -679,14 +790,17 @@ function ActivityReportItem({
                     `${actividad.descripcion} - ${ev.nombreArchivo}`,
                   )
                 }
-                className="block size-10 rounded-lg overflow-hidden border border-border/80 shadow-2xs hover:ring-2 hover:ring-sky-500 transition-all bg-muted shrink-0 cursor-pointer"
-                title="Ver imagen"
+                className="group relative block size-11 rounded-lg overflow-hidden border border-border/80 shadow-2xs hover:ring-2 hover:ring-sky-500 hover:scale-105 transition-all bg-muted shrink-0 cursor-pointer"
+                title="Ver evidencia en pantalla completa"
               >
                 <img
                   src={ev.url}
                   alt={ev.nombreArchivo}
                   className="size-full object-cover"
                 />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                  <Camera className="size-3.5" />
+                </div>
               </button>
             ))}
           </div>
