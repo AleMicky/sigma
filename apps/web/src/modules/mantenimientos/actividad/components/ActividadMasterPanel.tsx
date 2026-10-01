@@ -65,7 +65,7 @@ export function ActividadMasterPanel({
     useState<ActividadMantenimiento | null>(null)
 
   return (
-    <div className="flex h-full flex-col bg-card/40 select-none">
+    <div className="flex h-full flex-col bg-card/40">
       {/* Header estilo Notion / Linear compacto */}
       <div className="flex flex-col gap-2 p-3 border-b border-border/40">
         <div className="flex items-center justify-between">
@@ -117,7 +117,7 @@ export function ActividadMasterPanel({
       </div>
 
       {/* Lista de Items */}
-      <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
+      <div className="flex-1 overflow-y-auto p-1.5 space-y-1">
         {isLoading ? (
           <div className="flex h-28 items-center justify-center text-xs text-muted-foreground">
             Cargando actividades...
@@ -155,9 +155,9 @@ export function ActividadMasterPanel({
                 key={actividad.id}
                 onClick={() => onSelect(actividad.id)}
                 className={cn(
-                  "group relative flex items-start gap-2.5 rounded-lg p-2 cursor-pointer transition-all",
+                  "group relative flex items-start gap-2.5 rounded-lg p-2.5 cursor-pointer transition-all",
                   isSelected
-                    ? "bg-muted/70 shadow-2xs border border-border/70"
+                    ? "bg-muted/80 shadow-2xs border border-border/80"
                     : "hover:bg-muted/30 border border-transparent",
                 )}
               >
@@ -173,29 +173,32 @@ export function ActividadMasterPanel({
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-semibold text-xs text-foreground truncate">
-                      {actividad.nombre}
-                    </span>
-                    <code className="text-[9.5px] font-mono font-bold text-muted-foreground shrink-0 bg-muted/80 px-1.5 py-0.5 rounded border border-border/60">
-                      {actividad.codigo}
-                    </code>
-                  </div>
+                  <h3
+                    className="font-semibold text-xs text-foreground leading-snug break-words line-clamp-2"
+                    title={actividad.nombre}
+                  >
+                    {actividad.nombre}
+                  </h3>
 
-                  <p className="text-[10.5px] text-muted-foreground line-clamp-1 mt-0.5 leading-snug">
-                    {actividad.descripcion || "Procedimiento estándar de mantenimiento"}
-                  </p>
+                  {actividad.descripcion && (
+                    <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5 leading-snug">
+                      {actividad.descripcion}
+                    </p>
+                  )}
 
-                  <div className="flex items-center justify-between mt-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="size-1.5 rounded-full bg-emerald-500" />
-                      <span className="text-[10px] text-muted-foreground font-medium">
+                  <div className="flex items-center justify-between mt-1.5 gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                      <code className="text-[9.5px] font-mono font-semibold text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded border border-border/50 shrink-0">
+                        {actividad.codigo}
+                      </code>
+                      <span className="size-1 rounded-full bg-emerald-500 shrink-0" />
+                      <span className="text-[10px] text-muted-foreground font-medium shrink-0">
                         Estandarizado
                       </span>
                     </div>
 
                     <div
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <RowActions

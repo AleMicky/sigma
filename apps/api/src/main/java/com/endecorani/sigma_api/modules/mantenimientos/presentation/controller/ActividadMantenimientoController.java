@@ -40,10 +40,12 @@ public class ActividadMantenimientoController {
     @Operation(summary = "Listar actividades de mantenimiento con paginación y búsqueda opcional")
     public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoResponse>>> listar(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String q,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        String searchTerm = (search != null && !search.isBlank()) ? search : q;
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(search, pageRequest))
+                ApiResponse.success(service.listar(searchTerm, pageRequest))
         );
     }
 
