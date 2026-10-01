@@ -1,18 +1,12 @@
-import { useId, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import {
   AlertCircle,
   AlertTriangle,
-  Calendar,
   CheckCircle2,
   CheckSquare,
   Clock,
-  DollarSign,
   FileCheck2,
   FileEdit,
-  FileText,
-  Fuel,
-  Gauge,
-  Layers,
   Loader2,
   Play,
   RotateCcw,
@@ -153,6 +147,22 @@ function WorkflowActionDialogContent({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const formId = useId()
+  const formRef = useRef<HTMLFormElement>(null)
+
+  // Auto-focus first interactive field on open
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formRef.current) {
+        const firstInput = formRef.current.querySelector<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement
+        >(
+          "input:not([type='hidden']):not([disabled]), textarea:not([disabled]), select:not([disabled])"
+        )
+        firstInput?.focus()
+      }
+    }, 80)
+    return () => clearTimeout(timer)
+  }, [])
 
   const [formValues, setFormValues] = useState<Record<string, unknown>>(() => {
     const initial: Record<string, unknown> = {}
@@ -251,6 +261,13 @@ function WorkflowActionDialogContent({
     })
   }
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault()
+      formRef.current?.requestSubmit()
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!action) return
@@ -338,23 +355,11 @@ function WorkflowActionDialogContent({
   }
 
   return (
-    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 border-border/80 shadow-2xl rounded-2xl">
-      {/* Dynamic Header */}
-      <DialogHeader
-        className={cn(
-          "px-5 py-4 border-b flex flex-col gap-1.5 text-left transition-colors",
-          isAprobar && "bg-emerald-500/10 border-emerald-500/20",
-          isObservar && "bg-amber-500/10 border-amber-500/20",
-          isCorregir && "bg-orange-500/10 border-orange-500/20",
-          isIniciar && "bg-sky-500/10 border-sky-500/20",
-          isRevision && "bg-indigo-500/10 border-indigo-500/20",
-          isValidar && "bg-teal-500/10 border-teal-500/20",
-          isCerrar && "bg-emerald-500/15 border-emerald-500/30",
-          isRechazar && "bg-rose-500/10 border-rose-500/20",
-        )}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+    <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 border-border/80 shadow-2xl rounded-2xl">
+      {/* Header */}
+      <DialogHeader className="px-5 py-4 border-b bg-muted/15 flex flex-col gap-1.5 text-left">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5">
             <span
               className={cn(
                 "flex size-9 items-center justify-center rounded-xl shadow-xs shrink-0 font-bold",
@@ -381,25 +386,24 @@ function WorkflowActionDialogContent({
                 <FileCheck2 className="size-5" />
               )}
             </span>
-            <div>
+            <div className="space-y-0.5">
               <DialogTitle className="text-base font-heading font-bold text-foreground">
                 {cleanActionName}
               </DialogTitle>
               {cleanTaskName && (
-                <p className="text-xs text-muted-foreground font-medium">
-                  Paso del flujo:{" "}
-                  <strong className="text-foreground">{cleanTaskName}</strong>
+                <p className="text-xs text-muted-foreground">
+                  Paso del flujo: <span className="font-semibold text-foreground">{cleanTaskName}</span>
                 </p>
               )}
             </div>
           </div>
 
-          <Badge variant="outline" className="text-[11px] font-mono shrink-0">
+          <Badge variant="outline" className="text-[11px] font-mono shrink-0 bg-background/50">
             {action.variable}: {action.value}
           </Badge>
         </div>
 
-        <DialogDescription className="text-xs text-muted-foreground leading-relaxed pt-1">
+        <DialogDescription className="text-xs text-muted-foreground leading-relaxed pt-0.5">
           {description ||
             (isAprobar
               ? `¿Estás seguro de que deseas confirmar la acción "${cleanActionName}" para esta solicitud?`
@@ -420,7 +424,13 @@ function WorkflowActionDialogContent({
       </DialogHeader>
 
       {/* Form Content */}
-      <form id={formId} onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+      <form
+        ref={formRef}
+        id={formId}
+        onSubmit={handleSubmit}
+        onKeyDown={handleKeyDown}
+        className="p-5 space-y-4 text-xs"
+      >
         {/* Observaciones obligatorias si es OBSERVAR / CORREGIR y no hay campos específicos */}
         {(isObservar || isCorregir) &&
           !activeFields.some(
@@ -452,12 +462,7 @@ function WorkflowActionDialogContent({
 
         {/* Dynamic Camunda / Flowable BPMN Form Fields */}
         {activeFields.length > 0 && (
-          <div className="space-y-3 pt-1">
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Layers className="size-3 text-primary" />
-              <span>Campos del Formulario BPMN</span>
-            </h4>
-
+          <div className="space-y-3.5">
             {activeFields.map((field) => (
               <WorkflowDynamicFieldRenderer
                 key={field.id}
@@ -485,40 +490,46 @@ function WorkflowActionDialogContent({
       </form>
 
       {/* Footer */}
-      <DialogFooter className="px-5 py-3 border-t bg-muted/20 flex flex-row items-center justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => onOpenChange(false)}
-          disabled={isSubmitting}
-          className="h-8 text-xs font-semibold px-3 cursor-pointer"
-        >
-          Cancelar
-        </Button>
+      <DialogFooter className="px-5 py-3.5 border-t bg-muted/10 flex flex-row items-center justify-between sm:justify-end gap-2">
+        <span className="text-[10px] text-muted-foreground hidden sm:inline-flex items-center gap-1">
+          <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono border border-border">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono border border-border">↵</kbd>
+        </span>
 
-        <Button
-          type="submit"
-          form={formId}
-          size="sm"
-          disabled={isSubmitting}
-          className={cn(
-            "h-8 text-xs font-bold px-4 gap-1.5 cursor-pointer shadow-md transition-all",
-            actionColorClass,
-          )}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="size-3.5 animate-spin" />
-              <span>Procesando...</span>
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="size-3.5" />
-              <span>Confirmar {cleanActionName}</span>
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+            className="h-8.5 text-xs font-semibold px-3 cursor-pointer"
+          >
+            Cancelar
+          </Button>
+
+          <Button
+            type="submit"
+            form={formId}
+            size="sm"
+            disabled={isSubmitting}
+            className={cn(
+              "h-8.5 text-xs font-bold px-4 gap-1.5 cursor-pointer shadow-sm transition-all",
+              actionColorClass,
+            )}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" />
+                <span>Procesando...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="size-3.5" />
+                <span>Confirmar {cleanActionName}</span>
+              </>
+            )}
+          </Button>
+        </div>
       </DialogFooter>
     </DialogContent>
   )
@@ -591,31 +602,12 @@ export function WorkflowDynamicFieldRenderer({
     onChange(isDateTime ? now.toISOString().slice(0, 16) : now.toISOString().slice(0, 10))
   }
 
-  // Fuel percentage calculations for visual indicators
-  const numericFuelVal = parseFloat(stringValue)
-  const fuelPercent = isNaN(numericFuelVal) ? 0 : Math.min(Math.max(numericFuelVal, 0), 100)
-  const fuelColor =
-    fuelPercent > 50
-      ? "bg-emerald-500"
-      : fuelPercent > 20
-        ? "bg-amber-500"
-        : "bg-rose-500"
+  const fuelPresets = [25, 50, 75, 100]
 
   return (
-    <div key={fieldId} className="space-y-1.5 p-3 rounded-xl border border-border/50 bg-card/40 hover:border-border/80 transition-all">
-      <div className="flex items-center justify-between gap-2">
-        <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-          {isFuel ? (
-            <Fuel className="size-3.5 text-amber-500 shrink-0" />
-          ) : isKm ? (
-            <Gauge className="size-3.5 text-sky-500 shrink-0" />
-          ) : isDateField ? (
-            <Calendar className="size-3.5 text-blue-500 shrink-0" />
-          ) : isCurrency ? (
-            <DollarSign className="size-3.5 text-emerald-500 shrink-0" />
-          ) : isTextarea ? (
-            <FileText className="size-3.5 text-muted-foreground shrink-0" />
-          ) : null}
+    <div key={fieldId} className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
           <span>{fieldName}</span>
           {isRequired && <span className="text-destructive font-bold">*</span>}
         </Label>
@@ -624,7 +616,7 @@ export function WorkflowDynamicFieldRenderer({
           <button
             type="button"
             onClick={handleSetCurrentDate}
-            className="text-[10px] font-medium text-primary hover:underline flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
+            className="text-[11px] font-medium text-primary hover:underline flex items-center gap-1 cursor-pointer transition-colors"
           >
             <Clock className="size-3" />
             <span>Ahora</span>
@@ -632,9 +624,9 @@ export function WorkflowDynamicFieldRenderer({
         )}
       </div>
 
-      {/* Fuel Level with quick preset buttons & gauge */}
+      {/* Fuel Level */}
       {isFuel ? (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div className="relative flex items-center">
             <Input
               type="number"
@@ -645,71 +637,55 @@ export function WorkflowDynamicFieldRenderer({
               placeholder={field.placeholder || "0 - 100"}
               value={stringValue}
               onChange={(e) => onChange(e.target.value)}
-              className="h-9 text-xs bg-background pr-9 font-semibold"
+              className="h-9 text-xs bg-background pr-8"
             />
-            <span className="absolute right-3 text-xs font-bold text-muted-foreground pointer-events-none">
+            <span className="absolute right-3 text-xs font-medium text-muted-foreground pointer-events-none">
               %
             </span>
           </div>
 
-          {/* Quick presets for Fuel */}
-          <div className="flex items-center gap-1.5">
-            {[
-              { label: "25% (1/4)", val: 25 },
-              { label: "50% (1/2)", val: 50 },
-              { label: "75% (3/4)", val: 75 },
-              { label: "100% (Lleno)", val: 100 },
-            ].map((preset) => {
-              const isSelected = String(preset.val) === stringValue
+          <div className="grid grid-cols-4 gap-1.5">
+            {fuelPresets.map((pct) => {
+              const active = stringValue === String(pct)
               return (
                 <button
-                  key={preset.val}
+                  key={pct}
                   type="button"
-                  onClick={() => onChange(preset.val)}
+                  onClick={() => onChange(pct)}
                   className={cn(
-                    "flex-1 py-1 px-1.5 text-[11px] font-medium rounded-md border transition-all cursor-pointer text-center",
-                    isSelected
-                      ? "bg-primary text-primary-foreground border-primary font-bold shadow-xs"
+                    "h-6 text-[11px] font-medium rounded-md border transition-all cursor-pointer",
+                    active
+                      ? "bg-primary text-primary-foreground border-primary shadow-xs font-semibold"
                       : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-border/60",
                   )}
                 >
-                  {preset.label}
+                  {pct}%
                 </button>
               )
             })}
           </div>
-
-          {/* Mini Visual Fuel Level Bar */}
-          {stringValue !== "" && !isNaN(numericFuelVal) && (
-            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-              <div
-                className={cn("h-full transition-all duration-300 rounded-full", fuelColor)}
-                style={{ width: `${fuelPercent}%` }}
-              />
-            </div>
-          )}
         </div>
       ) : isKm ? (
-        /* Kilometrage / Odometer with unit badge */
+        /* Kilometrage */
         <div className="relative flex items-center">
           <Input
             type="number"
             inputMode="numeric"
             min={0}
             step="any"
-            placeholder={field.placeholder || "Ej. 45200"}
+            placeholder={field.placeholder || "Ingrese kilometraje (km)..."}
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
-            className="h-9 text-xs bg-background pr-12 font-mono font-medium"
+            className="h-9 text-xs bg-background pr-10 font-mono"
           />
-          <div className="absolute right-2 flex items-center px-1.5 py-0.5 rounded bg-muted/70 text-[11px] font-bold text-muted-foreground pointer-events-none border border-border/50">
+          <span className="absolute right-3 text-xs font-medium text-muted-foreground pointer-events-none">
             km
-          </div>
+          </span>
         </div>
       ) : isCurrency ? (
-        /* Currency input */
+        /* Currency */
         <div className="relative flex items-center">
-          <span className="absolute left-3 text-xs font-bold text-muted-foreground pointer-events-none">
+          <span className="absolute left-3 text-xs font-medium text-muted-foreground pointer-events-none">
             S/.
           </span>
           <Input
@@ -720,7 +696,7 @@ export function WorkflowDynamicFieldRenderer({
             placeholder={field.placeholder || "0.00"}
             value={stringValue}
             onChange={(e) => onChange(e.target.value)}
-            className="h-9 text-xs bg-background pl-9 font-mono"
+            className="h-9 text-xs bg-background pl-8 font-mono"
           />
         </div>
       ) : isRestSource && field.url ? (
