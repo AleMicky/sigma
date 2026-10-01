@@ -2,16 +2,22 @@ import { useId, useState } from "react"
 import {
   AlertCircle,
   AlertTriangle,
+  Calendar,
   CheckCircle2,
   CheckSquare,
+  Clock,
+  DollarSign,
+  FileCheck2,
   FileEdit,
+  FileText,
+  Fuel,
+  Gauge,
   Layers,
   Loader2,
   Play,
   RotateCcw,
   Send,
   ShieldCheck,
-  Sparkles,
   XCircle,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -372,7 +378,7 @@ function WorkflowActionDialogContent({
               ) : isRechazar ? (
                 <XCircle className="size-5" />
               ) : (
-                <Sparkles className="size-5" />
+                <FileCheck2 className="size-5" />
               )}
             </span>
             <div>
@@ -535,8 +541,27 @@ export function WorkflowDynamicFieldRenderer({
   const fieldName = fixWorkflowEncoding(field.name || field.id)
   const isRequired = Boolean(field.required)
   const lowerId = fieldId.toLowerCase()
+  const lowerName = fieldName.toLowerCase()
   const lowerType = (field.type || "").toLowerCase()
   const isRestSource = Boolean(field.url) || field.source === "rest"
+
+  const isFuel =
+    lowerId.includes("combustible") ||
+    lowerId.includes("gasolina") ||
+    lowerName.includes("combustible")
+
+  const isKm =
+    lowerId.includes("kilometraj") ||
+    lowerId.includes("odometro") ||
+    lowerName.includes("kilometraj") ||
+    lowerId.endsWith("km")
+
+  const isCurrency =
+    lowerId.includes("costo") ||
+    lowerId.includes("precio") ||
+    lowerId.includes("monto") ||
+    lowerId.includes("tarifa")
+
   const isDateTime =
     lowerType === "datetime" ||
     lowerType === "datetime-local" ||
@@ -544,22 +569,161 @@ export function WorkflowDynamicFieldRenderer({
     lowerId.includes("fecharetornoreal") ||
     lowerId.includes("horasalida") ||
     lowerId.includes("horaretorno")
+
   const isDateField =
     isDateTime ||
     lowerType === "date" ||
     lowerId.startsWith("fecha") ||
     lowerId.includes("fecha")
 
+  const isTextarea =
+    field.type === "textarea" ||
+    lowerId.includes("observacion") ||
+    lowerId.includes("motivo") ||
+    lowerId.includes("comentario") ||
+    lowerId.includes("descripcion")
+
   const stringValue = value != null ? String(value) : ""
 
-  return (
-    <div key={fieldId} className="space-y-1.5">
-      <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
-        <span>{fieldName}</span>
-        {isRequired && <span className="text-destructive font-bold">*</span>}
-      </Label>
+  const handleSetCurrentDate = () => {
+    const now = new Date()
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+    onChange(isDateTime ? now.toISOString().slice(0, 16) : now.toISOString().slice(0, 10))
+  }
 
-      {isRestSource && field.url ? (
+  // Fuel percentage calculations for visual indicators
+  const numericFuelVal = parseFloat(stringValue)
+  const fuelPercent = isNaN(numericFuelVal) ? 0 : Math.min(Math.max(numericFuelVal, 0), 100)
+  const fuelColor =
+    fuelPercent > 50
+      ? "bg-emerald-500"
+      : fuelPercent > 20
+        ? "bg-amber-500"
+        : "bg-rose-500"
+
+  return (
+    <div key={fieldId} className="space-y-1.5 p-3 rounded-xl border border-border/50 bg-card/40 hover:border-border/80 transition-all">
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+          {isFuel ? (
+            <Fuel className="size-3.5 text-amber-500 shrink-0" />
+          ) : isKm ? (
+            <Gauge className="size-3.5 text-sky-500 shrink-0" />
+          ) : isDateField ? (
+            <Calendar className="size-3.5 text-blue-500 shrink-0" />
+          ) : isCurrency ? (
+            <DollarSign className="size-3.5 text-emerald-500 shrink-0" />
+          ) : isTextarea ? (
+            <FileText className="size-3.5 text-muted-foreground shrink-0" />
+          ) : null}
+          <span>{fieldName}</span>
+          {isRequired && <span className="text-destructive font-bold">*</span>}
+        </Label>
+
+        {isDateField && (
+          <button
+            type="button"
+            onClick={handleSetCurrentDate}
+            className="text-[10px] font-medium text-primary hover:underline flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
+          >
+            <Clock className="size-3" />
+            <span>Ahora</span>
+          </button>
+        )}
+      </div>
+
+      {/* Fuel Level with quick preset buttons & gauge */}
+      {isFuel ? (
+        <div className="space-y-2">
+          <div className="relative flex items-center">
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={100}
+              step={1}
+              placeholder={field.placeholder || "0 - 100"}
+              value={stringValue}
+              onChange={(e) => onChange(e.target.value)}
+              className="h-9 text-xs bg-background pr-9 font-semibold"
+            />
+            <span className="absolute right-3 text-xs font-bold text-muted-foreground pointer-events-none">
+              %
+            </span>
+          </div>
+
+          {/* Quick presets for Fuel */}
+          <div className="flex items-center gap-1.5">
+            {[
+              { label: "25% (1/4)", val: 25 },
+              { label: "50% (1/2)", val: 50 },
+              { label: "75% (3/4)", val: 75 },
+              { label: "100% (Lleno)", val: 100 },
+            ].map((preset) => {
+              const isSelected = String(preset.val) === stringValue
+              return (
+                <button
+                  key={preset.val}
+                  type="button"
+                  onClick={() => onChange(preset.val)}
+                  className={cn(
+                    "flex-1 py-1 px-1.5 text-[11px] font-medium rounded-md border transition-all cursor-pointer text-center",
+                    isSelected
+                      ? "bg-primary text-primary-foreground border-primary font-bold shadow-xs"
+                      : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-border/60",
+                  )}
+                >
+                  {preset.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Mini Visual Fuel Level Bar */}
+          {stringValue !== "" && !isNaN(numericFuelVal) && (
+            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+              <div
+                className={cn("h-full transition-all duration-300 rounded-full", fuelColor)}
+                style={{ width: `${fuelPercent}%` }}
+              />
+            </div>
+          )}
+        </div>
+      ) : isKm ? (
+        /* Kilometrage / Odometer with unit badge */
+        <div className="relative flex items-center">
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step="any"
+            placeholder={field.placeholder || "Ej. 45200"}
+            value={stringValue}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-9 text-xs bg-background pr-12 font-mono font-medium"
+          />
+          <div className="absolute right-2 flex items-center px-1.5 py-0.5 rounded bg-muted/70 text-[11px] font-bold text-muted-foreground pointer-events-none border border-border/50">
+            km
+          </div>
+        </div>
+      ) : isCurrency ? (
+        /* Currency input */
+        <div className="relative flex items-center">
+          <span className="absolute left-3 text-xs font-bold text-muted-foreground pointer-events-none">
+            S/.
+          </span>
+          <Input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.01"
+            placeholder={field.placeholder || "0.00"}
+            value={stringValue}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-9 text-xs bg-background pl-9 font-mono"
+          />
+        </div>
+      ) : isRestSource && field.url ? (
         <WorkflowRestSelect
           url={field.url}
           params={field.params}
@@ -600,11 +764,7 @@ export function WorkflowDynamicFieldRenderer({
           onChange={(e) => onChange(e.target.value)}
           className="h-9 text-xs bg-background"
         />
-      ) : field.type === "textarea" ||
-        lowerId.includes("observacion") ||
-        lowerId.includes("motivo") ||
-        lowerId.includes("comentario") ||
-        lowerId.includes("descripcion") ? (
+      ) : isTextarea ? (
         <Textarea
           rows={3}
           placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
@@ -623,8 +783,8 @@ export function WorkflowDynamicFieldRenderer({
       )}
 
       {error && (
-        <p className="text-[11px] font-semibold text-destructive flex items-center gap-1">
-          <AlertCircle className="size-3" />
+        <p className="text-[11px] font-semibold text-destructive flex items-center gap-1 pt-0.5">
+          <AlertCircle className="size-3 shrink-0" />
           <span>{error}</span>
         </p>
       )}
