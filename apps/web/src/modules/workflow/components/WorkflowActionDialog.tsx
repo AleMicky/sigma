@@ -44,8 +44,8 @@ import type { WorkflowAction, WorkflowField } from "../types/workflow.types"
 import { fixWorkflowEncoding, getWorkflowActionVisuals } from "../utils/workflow.utils"
 
 export type WorkflowActionDialogChildrenProps = {
-  formValues: Record<string, any>
-  setFieldValue: (key: string, value: any) => void
+  formValues: Record<string, unknown>
+  setFieldValue: (key: string, value: unknown) => void
   formErrors: Record<string, string>
   setFieldError: (key: string, error: string | null) => void
   isSubmitting: boolean
@@ -73,12 +73,12 @@ export type WorkflowActionDialogProps = {
   /**
    * Optional custom validation before executing
    */
-  onValidate?: (formValues: Record<string, any>) => Record<string, string> | null
+  onValidate?: (formValues: Record<string, unknown>) => Record<string, string> | null
   onExecute: (payload: {
     action: WorkflowAction
-    variables: Record<string, any>
+    variables: Record<string, unknown>
     entityId?: string
-  }) => Promise<any>
+  }) => Promise<unknown>
   onSuccess?: () => void
 }
 
@@ -136,23 +136,23 @@ function WorkflowActionDialogContent({
   children?:
   | React.ReactNode
   | ((props: WorkflowActionDialogChildrenProps) => React.ReactNode)
-  onValidate?: (formValues: Record<string, any>) => Record<string, string> | null
+  onValidate?: (formValues: Record<string, unknown>) => Record<string, string> | null
   onOpenChange: (open: boolean) => void
   onExecute: (payload: {
     action: WorkflowAction
-    variables: Record<string, any>
+    variables: Record<string, unknown>
     entityId?: string
-  }) => Promise<any>
+  }) => Promise<unknown>
   onSuccess?: () => void
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const formId = useId()
 
-  const [formValues, setFormValues] = useState<Record<string, any>>(() => {
-    const initial: Record<string, any> = {}
+  const [formValues, setFormValues] = useState<Record<string, unknown>>(() => {
+    const initial: Record<string, unknown> = {}
     if (Array.isArray(fields)) {
       for (const field of fields) {
-        const val = (field as any).defaultValue ?? (field as any).value
+        const val = field.defaultValue ?? (field as Record<string, unknown>).value
         if (val !== undefined && val !== null) {
           initial[field.id] = val
         } else if (
@@ -222,7 +222,7 @@ function WorkflowActionDialogContent({
     return true
   })
 
-  function setFieldValue(fieldId: string, val: any) {
+  function setFieldValue(fieldId: string, val: unknown) {
     setFormValues((prev) => ({ ...prev, [fieldId]: val }))
     if (formErrors[fieldId]) {
       setFormErrors((prev) => {
@@ -299,7 +299,7 @@ function WorkflowActionDialogContent({
       return
     }
 
-    const payloadVariables: Record<string, any> = {
+    const payloadVariables: Record<string, unknown> = {
       [action.variable]: action.value,
     }
 
@@ -319,10 +319,11 @@ function WorkflowActionDialogContent({
       toast.success(`Acción "${cleanActionName}" completada correctamente.`)
       onOpenChange(false)
       onSuccess?.()
-    } catch (err: any) {
+    } catch (err) {
+      const errObj = err as { response?: { data?: { message?: string } }; message?: string }
       const message =
-        err?.response?.data?.message ||
-        err?.message ||
+        errObj?.response?.data?.message ||
+        errObj?.message ||
         "Error al completar la tarea de workflow."
       toast.error(message)
     } finally {
@@ -430,7 +431,7 @@ function WorkflowActionDialogContent({
               <Textarea
                 rows={3}
                 placeholder="Escribe detalladamente las observaciones o motivos para corregir..."
-                value={formValues.observacion || ""}
+                value={formValues.observacion != null ? String(formValues.observacion) : ""}
                 onChange={(e) => setFieldValue("observacion", e.target.value)}
                 className="text-xs bg-background leading-relaxed resize-none"
               />
@@ -519,9 +520,9 @@ function WorkflowActionDialogContent({
 
 export type WorkflowDynamicFieldRendererProps = {
   field: WorkflowField
-  value: any
+  value?: unknown
   error?: string
-  onChange: (value: any) => void
+  onChange: (value: unknown) => void
 }
 
 export function WorkflowDynamicFieldRenderer({
@@ -549,6 +550,8 @@ export function WorkflowDynamicFieldRenderer({
     lowerId.startsWith("fecha") ||
     lowerId.includes("fecha")
 
+  const stringValue = value != null ? String(value) : ""
+
   return (
     <div key={fieldId} className="space-y-1.5">
       <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
@@ -560,13 +563,13 @@ export function WorkflowDynamicFieldRenderer({
         <WorkflowRestSelect
           url={field.url}
           params={field.params}
-          value={value || ""}
+          value={stringValue}
           onValueChange={(val) => onChange(val ?? "")}
           placeholder={field.placeholder || `Seleccionar ${fieldName.toLowerCase()}...`}
         />
       ) : field.type === "enum" || (field.options && field.options.length > 0) ? (
         <Select
-          value={value || ""}
+          value={stringValue}
           onValueChange={(val) => onChange(val || "")}
         >
           <SelectTrigger className="h-9 text-xs bg-background">
@@ -586,14 +589,14 @@ export function WorkflowDynamicFieldRenderer({
         </Select>
       ) : lowerType === "empleado" ? (
         <EmpleadoCombobox
-          value={value || ""}
+          value={stringValue}
           onValueChange={(val) => onChange(val ?? "")}
           placeholder={field.placeholder || `Seleccionar ${fieldName.toLowerCase()}...`}
         />
       ) : isDateField ? (
         <Input
           type={isDateTime ? "datetime-local" : "date"}
-          value={value || ""}
+          value={stringValue}
           onChange={(e) => onChange(e.target.value)}
           className="h-9 text-xs bg-background"
         />
@@ -605,7 +608,7 @@ export function WorkflowDynamicFieldRenderer({
         <Textarea
           rows={3}
           placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
-          value={value || ""}
+          value={stringValue}
           onChange={(e) => onChange(e.target.value)}
           className="text-xs bg-background resize-none leading-relaxed"
         />
@@ -613,7 +616,7 @@ export function WorkflowDynamicFieldRenderer({
         <Input
           type={field.type === "long" || field.type === "number" ? "number" : "text"}
           placeholder={field.placeholder || `Ingrese ${fieldName.toLowerCase()}...`}
-          value={value || ""}
+          value={stringValue}
           onChange={(e) => onChange(e.target.value)}
           className="h-9 text-xs bg-background"
         />
