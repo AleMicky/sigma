@@ -1,13 +1,5 @@
-import { Text, View } from "react-native";
+import {LoginScreen} from "@/src/features/auth/screens/LoginScreen";
 
-export default function HomeScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-background-0">
-      <Text className="text-3xl font-bold">SIGMA</Text>
-
-      <Text className="mt-2 text-typography-500">
-        Sistema Integrado de Gestión
-      </Text>
-    </View>
-  );
+export default function Index() {
+  return <LoginScreen />;
 }
