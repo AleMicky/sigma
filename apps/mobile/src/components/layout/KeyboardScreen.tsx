@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { StatusBar, type StatusBarStyle } from "expo-status-bar";
-import { colors, spacing, type SpacingKey } from "@/theme";
+import { spacing, useAppTheme, type SpacingKey } from "@/theme";
 
 export type KeyboardScreenProps = {
   children: ReactNode;
@@ -33,13 +33,23 @@ export function KeyboardScreen({
   withPadding = true,
   keyboardOffset = Platform.OS === "ios" ? 10 : 0,
   edges = ["top", "bottom", "left", "right"],
-  statusBarStyle = "dark",
+  statusBarStyle,
   refreshing,
   onRefresh,
 }: KeyboardScreenProps) {
+  const { colors, isDark } = useAppTheme();
+  const effectiveStatusBarStyle = statusBarStyle ?? (isDark ? "light" : "dark");
+
   return (
-    <SafeAreaView edges={edges} style={[styles.safeArea, style]}>
-      <StatusBar style={statusBarStyle} />
+    <SafeAreaView
+      edges={edges}
+      style={[
+        styles.safeArea,
+        { backgroundColor: colors.background },
+        style,
+      ]}
+    >
+      <StatusBar style={effectiveStatusBarStyle} />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -74,7 +84,6 @@ export function KeyboardScreen({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,

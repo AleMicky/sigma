@@ -1,5 +1,6 @@
 export const ROUTES = {
   ROOT: "/",
+  DEMO: "/demo",
 
   AUTH: {
     LOGIN: "/(auth)/login",
