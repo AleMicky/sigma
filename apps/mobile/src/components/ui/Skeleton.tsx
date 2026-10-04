@@ -5,7 +5,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from "react-native";
-import { colors, radius } from "@/theme";
+import { radius, useAppTheme } from "@/theme";
 
 export type SkeletonVariant = "rectangular" | "circular" | "text";
 
@@ -24,6 +24,7 @@ export function Skeleton({
   variant = "rectangular",
   style,
 }: SkeletonProps) {
+  const { colors, isDark } = useAppTheme();
   const opacityAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export function Skeleton({
       style={[
         styles.skeleton,
         {
+          backgroundColor: isDark ? colors.surfaceSecondary : colors.borderDark,
           width,
           height,
           borderRadius: resolvedRadius,
@@ -73,7 +75,5 @@ export function Skeleton({
 }
 
 const styles = StyleSheet.create({
-  skeleton: {
-    backgroundColor: colors.borderDark,
-  },
+  skeleton: {},
 });

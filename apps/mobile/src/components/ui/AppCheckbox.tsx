@@ -7,7 +7,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { colors, radius, spacing, typography } from "@/theme";
+import { radius, spacing, typography, useAppTheme } from "@/theme";
 
 export type AppCheckboxProps = {
   label?: string;
@@ -26,6 +26,8 @@ export function AppCheckbox({
   disabled = false,
   style,
 }: AppCheckboxProps) {
+  const { colors } = useAppTheme();
+
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -39,7 +41,15 @@ export function AppCheckbox({
         style,
       ]}
     >
-      <View style={[styles.box, checked && styles.boxChecked]}>
+      <View
+        style={[
+          styles.box,
+          {
+            backgroundColor: checked ? colors.primary : colors.background,
+            borderColor: checked ? colors.primary : colors.borderDark,
+          },
+        ]}
+      >
         {checked ? (
           <Ionicons name="checkmark" size={15} color={colors.white} />
         ) : null}
@@ -47,9 +57,13 @@ export function AppCheckbox({
 
       {label || description ? (
         <View style={styles.textContainer}>
-          {label ? <Text style={styles.label}>{label}</Text> : null}
+          {label ? (
+            <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+          ) : null}
           {description ? (
-            <Text style={styles.description}>{description}</Text>
+            <Text style={[styles.description, { color: colors.textSecondary }]}>
+              {description}
+            </Text>
           ) : null}
         </View>
       ) : null}
@@ -67,29 +81,21 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 1.5,
-    borderColor: colors.borderDark,
     borderRadius: radius.sm,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.background,
     marginTop: 2,
-  },
-  boxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
   },
   textContainer: {
     flex: 1,
     gap: 2,
   },
   label: {
-    color: colors.text,
     fontSize: typography.fontSize.sm,
     lineHeight: typography.lineHeight.sm,
     fontWeight: typography.fontWeight.medium,
   },
   description: {
-    color: colors.textSecondary,
     fontSize: typography.fontSize.xs,
     lineHeight: typography.lineHeight.xs,
   },

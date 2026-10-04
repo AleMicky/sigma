@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { AppButton } from "./AppButton";
-import { colors, radius, spacing, typography } from "@/theme";
+import { radius, spacing, typography, useAppTheme } from "@/theme";
 
 export type EmptyStateProps = {
   title?: string;
@@ -36,6 +36,8 @@ export function EmptyState({
   titleStyle,
   descriptionStyle,
 }: EmptyStateProps) {
+  const { colors } = useAppTheme();
+
   return (
     <View
       style={[
@@ -47,15 +49,15 @@ export function EmptyState({
       {customIcon ? (
         customIcon
       ) : icon ? (
-        <View style={styles.iconCircle}>
+        <View style={[styles.iconCircle, { backgroundColor: colors.surfaceSecondary }]}>
           <Ionicons name={icon} size={32} color={colors.textSecondary} />
         </View>
       ) : null}
 
-      <Text style={[styles.title, titleStyle]}>{title}</Text>
+      <Text style={[styles.title, { color: colors.text }, titleStyle]}>{title}</Text>
 
       {description ? (
-        <Text style={[styles.description, descriptionStyle]}>
+        <Text style={[styles.description, { color: colors.textSecondary }, descriptionStyle]}>
           {description}
         </Text>
       ) : null}
@@ -87,7 +89,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceSecondary,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: spacing.sm,
@@ -96,13 +97,11 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     lineHeight: typography.lineHeight.lg,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.text,
     textAlign: "center",
   },
   description: {
     fontSize: typography.fontSize.sm,
     lineHeight: typography.lineHeight.sm,
-    color: colors.textSecondary,
     textAlign: "center",
     maxWidth: 280,
   },

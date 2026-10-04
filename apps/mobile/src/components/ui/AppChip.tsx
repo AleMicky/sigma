@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { colors, radius, spacing, typography } from "@/theme";
+import { radius, spacing, typography, useAppTheme } from "@/theme";
 
 export type AppChipProps = {
   label: string;
@@ -27,6 +27,8 @@ export function AppChip({
   onRemove,
   style,
 }: AppChipProps) {
+  const { colors } = useAppTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -34,14 +36,23 @@ export function AppChip({
       onPress={onPress}
       style={({ pressed }) => [
         styles.container,
-        selected && styles.selected,
+        {
+          backgroundColor: selected ? colors.primary : colors.surfaceSecondary,
+          borderColor: selected ? colors.primary : colors.border,
+        },
         pressed && styles.pressed,
         style,
       ]}
     >
       {leftIcon ? <View style={styles.leftIcon}>{leftIcon}</View> : null}
 
-      <Text style={[styles.text, selected && styles.selectedText]}>
+      <Text
+        style={[
+          styles.text,
+          { color: selected ? colors.white : colors.text },
+          selected && styles.selectedText,
+        ]}
+      >
         {label}
       </Text>
 
@@ -71,14 +82,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceSecondary,
     borderWidth: 1,
-    borderColor: colors.border,
     gap: spacing.xs,
-  },
-  selected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
   },
   pressed: {
     opacity: 0.85,
@@ -89,11 +94,10 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: typography.fontSize.sm,
-    color: colors.text,
     fontWeight: typography.fontWeight.medium,
   },
   selectedText: {
-    color: colors.white,
+    fontWeight: typography.fontWeight.semibold,
   },
   removeButton: {
     marginLeft: 2,

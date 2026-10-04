@@ -7,7 +7,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { colors, spacing, typography } from "@/theme";
+import { spacing, typography, useAppTheme } from "@/theme";
 
 export type AppSwitchProps = {
   label?: string;
@@ -26,13 +26,19 @@ export function AppSwitch({
   disabled = false,
   style,
 }: AppSwitchProps) {
+  const { colors } = useAppTheme();
+
   return (
     <View style={[styles.container, disabled && styles.disabled, style]}>
       {label || description ? (
         <View style={styles.textContainer}>
-          {label ? <Text style={styles.label}>{label}</Text> : null}
+          {label ? (
+            <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+          ) : null}
           {description ? (
-            <Text style={styles.description}>{description}</Text>
+            <Text style={[styles.description, { color: colors.textSecondary }]}>
+              {description}
+            </Text>
           ) : null}
         </View>
       ) : null}
@@ -71,13 +77,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   label: {
-    color: colors.text,
     fontSize: typography.fontSize.md,
     lineHeight: typography.lineHeight.md,
     fontWeight: typography.fontWeight.medium,
   },
   description: {
-    color: colors.textSecondary,
     fontSize: typography.fontSize.xs,
     lineHeight: typography.lineHeight.xs,
   },

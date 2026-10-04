@@ -9,7 +9,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { colors, radius, spacing, typography } from "@/theme";
+import { radius, spacing, typography, useAppTheme } from "@/theme";
 
 export type SearchInputProps = {
   value: string;
@@ -28,6 +28,7 @@ export function SearchInput({
   loading = false,
   style,
 }: SearchInputProps) {
+  const { colors } = useAppTheme();
   const [isFocused, setIsFocused] = useState(false);
 
   const handleClear = () => {
@@ -39,7 +40,11 @@ export function SearchInput({
     <View
       style={[
         styles.container,
-        isFocused && styles.focused,
+        {
+          backgroundColor: colors.background,
+          borderColor: isFocused ? colors.primary : colors.borderDark,
+          borderWidth: isFocused ? 1.5 : 1,
+        },
         style,
       ]}
     >
@@ -57,7 +62,7 @@ export function SearchInput({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         returnKeyType="search"
-        style={styles.input}
+        style={[styles.input, { color: colors.text }]}
       />
 
       {loading ? (
@@ -83,18 +88,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderDark,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
-  },
-  focused: {
-    borderColor: colors.primary,
-    borderWidth: 1.5,
   },
   input: {
     flex: 1,
-    color: colors.text,
     fontSize: typography.fontSize.md,
     paddingVertical: 0,
   },

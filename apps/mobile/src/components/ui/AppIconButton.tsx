@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,7 +9,7 @@ import {
   ViewStyle,
   type PressableProps,
 } from "react-native";
-import { colors, radius, type ColorKey } from "@/theme";
+import { radius, useAppTheme, type ColorKey } from "@/theme";
 
 export type IconButtonVariant =
   | "ghost"
@@ -54,6 +53,7 @@ export function AppIconButton({
   style,
   ...props
 }: AppIconButtonProps) {
+  const { colors } = useAppTheme();
   const currentSize = sizeMap[size];
   const finalIconSize = iconSize ?? currentSize.icon;
 
@@ -70,6 +70,26 @@ export function AppIconButton({
 
   const isDisabled = disabled || loading;
 
+  const getVariantStyle = (): ViewStyle => {
+    switch (variant) {
+      case "tonal":
+        return { backgroundColor: colors.surfaceSecondary };
+      case "outline":
+        return {
+          backgroundColor: "transparent",
+          borderWidth: 1,
+          borderColor: colors.border,
+        };
+      case "filled":
+        return { backgroundColor: colors.primary };
+      case "danger":
+        return { backgroundColor: colors.dangerLight };
+      case "ghost":
+      default:
+        return { backgroundColor: "transparent" };
+    }
+  };
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -78,7 +98,7 @@ export function AppIconButton({
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.base,
-        styles[variant],
+        getVariantStyle(),
         {
           width: currentSize.button,
           height: currentSize.button,
@@ -96,13 +116,29 @@ export function AppIconButton({
           <Ionicons name={icon} size={finalIconSize} color={resolvedColor} />
 
           {badgeCount && badgeCount > 0 ? (
-            <View style={styles.badge}>
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor: colors.danger,
+                  borderColor: colors.background,
+                },
+              ]}
+            >
               <Text style={styles.badgeText}>
                 {badgeCount > 99 ? "99+" : badgeCount}
               </Text>
             </View>
           ) : badgeDot ? (
-            <View style={styles.badgeDot} />
+            <View
+              style={[
+                styles.badgeDot,
+                {
+                  backgroundColor: colors.danger,
+                  borderColor: colors.background,
+                },
+              ]}
+            />
           ) : null}
         </>
       )}
@@ -117,25 +153,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     position: "relative",
   },
-  // Variantes
-  ghost: {
-    backgroundColor: "transparent",
-  },
-  tonal: {
-    backgroundColor: colors.surfaceSecondary,
-  },
-  outline: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filled: {
-    backgroundColor: colors.primary,
-  },
-  danger: {
-    backgroundColor: colors.dangerLight,
-  },
-  // Estados
   pressed: {
     opacity: 0.75,
     transform: [{ scale: 0.94 }],
@@ -143,7 +160,6 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.4,
   },
-  // Badges
   badge: {
     position: "absolute",
     top: 2,
@@ -151,15 +167,13 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.danger,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 3,
     borderWidth: 1.5,
-    borderColor: colors.white,
   },
   badgeText: {
-    color: colors.white,
+    color: "#FFFFFF",
     fontSize: 9,
     fontWeight: "700",
   },
@@ -170,8 +184,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.danger,
     borderWidth: 1.5,
-    borderColor: colors.white,
   },
 });

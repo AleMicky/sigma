@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, type ReactNode } from "react";
+import { forwardRef, useState, type ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native";
-import { colors, radius, spacing, typography } from "../../theme";
+import { radius, spacing, typography, useAppTheme } from "@/theme";
 
 export type AppInputProps = Omit<TextInputProps, "style"> & {
   label?: string;
@@ -51,6 +51,7 @@ export const AppInput = forwardRef<TextInput, AppInputProps>(
     },
     ref
   ) => {
+    const { colors } = useAppTheme();
     const [isFocused, setIsFocused] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -68,14 +69,26 @@ export const AppInput = forwardRef<TextInput, AppInputProps>(
 
     return (
       <View style={[styles.container, containerStyle]}>
-        {label ? <Text style={[styles.label, labelStyle]}>{label}</Text> : null}
+        {label ? (
+          <Text style={[styles.label, { color: colors.text }, labelStyle]}>
+            {label}
+          </Text>
+        ) : null}
 
         <View
           style={[
             styles.inputWrapper,
-            isFocused && styles.focusedWrapper,
-            !editable && styles.disabledWrapper,
-            error ? styles.errorWrapper : null,
+            {
+              backgroundColor: editable ? colors.background : colors.surfaceSecondary,
+              borderColor: error
+                ? colors.danger
+                : isFocused
+                  ? colors.primary
+                  : editable
+                    ? colors.borderDark
+                    : colors.border,
+              borderWidth: isFocused ? 1.5 : 1,
+            },
             inputWrapperStyle,
           ]}
         >
@@ -91,7 +104,7 @@ export const AppInput = forwardRef<TextInput, AppInputProps>(
             onBlur={handleBlur}
             style={[
               styles.input,
-              !editable && styles.disabledInput,
+              { color: editable ? colors.text : colors.textSecondary },
               inputStyle,
             ]}
             {...props}
@@ -105,7 +118,7 @@ export const AppInput = forwardRef<TextInput, AppInputProps>(
               accessibilityRole="button"
               accessibilityLabel="Limpiar texto"
             >
-              <Text style={styles.clearText}>✕</Text>
+              <Text style={[styles.clearText, { color: colors.textMuted }]}>✕</Text>
             </Pressable>
           ) : null}
 
@@ -117,7 +130,7 @@ export const AppInput = forwardRef<TextInput, AppInputProps>(
               accessibilityRole="button"
               accessibilityLabel={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
             >
-              <Text style={styles.passwordToggleText}>
+              <Text style={[styles.passwordToggleText, { color: colors.primary }]}>
                 {showPassword ? "Ocultar" : "Ver"}
               </Text>
             </Pressable>
@@ -127,9 +140,9 @@ export const AppInput = forwardRef<TextInput, AppInputProps>(
         </View>
 
         {error ? (
-          <Text style={styles.error}>{error}</Text>
+          <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
         ) : hint ? (
-          <Text style={styles.hint}>{hint}</Text>
+          <Text style={[styles.hint, { color: colors.textSecondary }]}>{hint}</Text>
         ) : null}
       </View>
     );
@@ -146,38 +159,19 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     lineHeight: typography.lineHeight.sm,
     fontWeight: typography.fontWeight.medium,
-    color: colors.text,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     height: 48,
-    borderWidth: 1,
-    borderColor: colors.borderDark,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
     paddingHorizontal: spacing.md,
-  },
-  focusedWrapper: {
-    borderColor: colors.primary,
-    borderWidth: 1.5,
-  },
-  disabledWrapper: {
-    backgroundColor: colors.surfaceSecondary,
-    borderColor: colors.border,
-  },
-  errorWrapper: {
-    borderColor: colors.danger,
   },
   input: {
     flex: 1,
     height: "100%",
     fontSize: typography.fontSize.md,
-    color: colors.text,
     paddingVertical: 0,
-  },
-  disabledInput: {
-    color: colors.textSecondary,
   },
   leftIconContainer: {
     marginRight: spacing.sm,
@@ -190,22 +184,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   clearText: {
-    color: colors.textMuted,
     fontSize: typography.fontSize.sm,
   },
   passwordToggleText: {
-    color: colors.primary,
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.semibold,
   },
   error: {
     fontSize: typography.fontSize.xs,
     lineHeight: typography.lineHeight.xs,
-    color: colors.danger,
   },
   hint: {
     fontSize: typography.fontSize.xs,
     lineHeight: typography.lineHeight.xs,
-    color: colors.textSecondary,
   },
 });

@@ -1,4 +1,4 @@
-import React, { type ReactNode } from "react";
+import { type ReactNode } from "react";
 import {
   StyleProp,
   StyleSheet,
@@ -7,7 +7,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { colors, radius, spacing, typography } from "@/theme";
+import { radius, spacing, typography, useAppTheme } from "@/theme";
 
 export type BadgeVariant =
   | "default"
@@ -40,29 +40,106 @@ export function AppBadge({
   style,
   textStyle,
 }: AppBadgeProps) {
-  const containerStyle = [
-    styles.badge,
-    sizeStyles[size].badge,
-    variantStyles[appearance][variant].badge,
-    style,
-  ];
+  const { colors, isDark } = useAppTheme();
 
-  const labelStyle = [
-    styles.text,
-    sizeStyles[size].text,
-    variantStyles[appearance][variant].text,
-    textStyle,
-  ];
+  const getVariantStyles = () => {
+    if (appearance === "solid") {
+      switch (variant) {
+        case "primary":
+          return {
+            badge: { backgroundColor: colors.primary },
+            text: { color: colors.white },
+            dotColor: colors.white,
+          };
+        case "success":
+          return {
+            badge: { backgroundColor: colors.success },
+            text: { color: colors.white },
+            dotColor: colors.white,
+          };
+        case "warning":
+          return {
+            badge: { backgroundColor: colors.warning },
+            text: { color: colors.white },
+            dotColor: colors.white,
+          };
+        case "danger":
+          return {
+            badge: { backgroundColor: colors.danger },
+            text: { color: colors.white },
+            dotColor: colors.white,
+          };
+        case "default":
+        default:
+          return {
+            badge: { backgroundColor: colors.surfaceSecondary },
+            text: { color: colors.text },
+            dotColor: colors.text,
+          };
+      }
+    }
 
-  const dotColor = variantStyles[appearance][variant].dotColor;
+    // Subtle appearance
+    switch (variant) {
+      case "primary":
+        return {
+          badge: { backgroundColor: colors.primaryLight },
+          text: { color: isDark ? colors.primary : colors.primaryDark },
+          dotColor: colors.primary,
+        };
+      case "success":
+        return {
+          badge: { backgroundColor: isDark ? "#064E3B" : "#DCFCE7" },
+          text: { color: isDark ? "#4ADE80" : "#15803D" },
+          dotColor: colors.success,
+        };
+      case "warning":
+        return {
+          badge: { backgroundColor: isDark ? "#78350F" : "#FEF3C7" },
+          text: { color: isDark ? "#FCD34D" : "#B45309" },
+          dotColor: colors.warning,
+        };
+      case "danger":
+        return {
+          badge: { backgroundColor: colors.dangerLight },
+          text: { color: colors.danger },
+          dotColor: colors.danger,
+        };
+      case "default":
+      default:
+        return {
+          badge: { backgroundColor: colors.surfaceSecondary },
+          text: { color: colors.textSecondary },
+          dotColor: colors.textSecondary,
+        };
+    }
+  };
+
+  const vStyles = getVariantStyles();
 
   return (
-    <View style={containerStyle}>
+    <View
+      style={[
+        styles.badge,
+        size === "sm" ? styles.size_sm : styles.size_md,
+        vStyles.badge,
+        style,
+      ]}
+    >
       {dot ? (
-        <View style={[styles.dot, { backgroundColor: dotColor }]} />
+        <View style={[styles.dot, { backgroundColor: vStyles.dotColor }]} />
       ) : null}
       {leftIcon ? <View style={styles.iconContainer}>{leftIcon}</View> : null}
-      <Text style={labelStyle}>{label}</Text>
+      <Text
+        style={[
+          styles.text,
+          size === "sm" ? styles.text_sm : styles.text_md,
+          vStyles.text,
+          textStyle,
+        ]}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
@@ -73,6 +150,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "flex-start",
     borderRadius: radius.full,
+  },
+  size_sm: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  size_md: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 4,
   },
   dot: {
     width: 6,
@@ -86,84 +171,12 @@ const styles = StyleSheet.create({
   text: {
     fontWeight: typography.fontWeight.semibold,
   },
+  text_sm: {
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  text_md: {
+    fontSize: typography.fontSize.xs,
+    lineHeight: typography.lineHeight.xs,
+  },
 });
-
-const sizeStyles = {
-  sm: StyleSheet.create({
-    badge: {
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 2,
-    },
-    text: {
-      fontSize: 11,
-      lineHeight: 14,
-    },
-  }),
-  md: StyleSheet.create({
-    badge: {
-      paddingHorizontal: spacing.sm + 2,
-      paddingVertical: 4,
-    },
-    text: {
-      fontSize: typography.fontSize.xs,
-      lineHeight: typography.lineHeight.xs,
-    },
-  }),
-};
-
-const variantStyles = {
-  subtle: {
-    default: {
-      badge: { backgroundColor: colors.surfaceSecondary },
-      text: { color: colors.textSecondary },
-      dotColor: colors.textSecondary,
-    },
-    primary: {
-      badge: { backgroundColor: colors.primaryLight },
-      text: { color: colors.primaryDark },
-      dotColor: colors.primary,
-    },
-    success: {
-      badge: { backgroundColor: "#DCFCE7" },
-      text: { color: "#15803D" },
-      dotColor: colors.success,
-    },
-    warning: {
-      badge: { backgroundColor: "#FEF3C7" },
-      text: { color: "#B45309" },
-      dotColor: colors.warning,
-    },
-    danger: {
-      badge: { backgroundColor: colors.dangerLight },
-      text: { color: colors.danger },
-      dotColor: colors.danger,
-    },
-  },
-  solid: {
-    default: {
-      badge: { backgroundColor: colors.surfaceSecondary },
-      text: { color: colors.text },
-      dotColor: colors.text,
-    },
-    primary: {
-      badge: { backgroundColor: colors.primary },
-      text: { color: colors.white },
-      dotColor: colors.white,
-    },
-    success: {
-      badge: { backgroundColor: colors.success },
-      text: { color: colors.white },
-      dotColor: colors.white,
-    },
-    warning: {
-      badge: { backgroundColor: colors.warning },
-      text: { color: colors.white },
-      dotColor: colors.white,
-    },
-    danger: {
-      badge: { backgroundColor: colors.danger },
-      text: { color: colors.white },
-      dotColor: colors.white,
-    },
-  },
-};

@@ -1,4 +1,4 @@
-import React, { type ReactNode } from "react";
+import { type ReactNode } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { colors, radius, shadows, spacing, typography } from "@/theme";
+import { radius, shadows, spacing, typography, useAppTheme } from "@/theme";
 
 export type ModalSize = "sm" | "md" | "lg" | "fullscreen";
 
@@ -50,6 +50,7 @@ export function AppModal({
   contentStyle,
   testID,
 }: AppModalProps) {
+  const { colors } = useAppTheme();
   const isFullscreen = size === "fullscreen";
 
   const renderContent = () => (
@@ -57,6 +58,7 @@ export function AppModal({
       testID={testID}
       style={[
         styles.content,
+        { backgroundColor: colors.background },
         sizeStyles[size],
         isFullscreen && styles.fullscreenContent,
         contentStyle,
@@ -69,12 +71,18 @@ export function AppModal({
 
           <View style={styles.headerText}>
             {title ? (
-              <Text style={styles.title} numberOfLines={2}>
+              <Text
+                style={[styles.title, { color: colors.text }]}
+                numberOfLines={2}
+              >
                 {title}
               </Text>
             ) : null}
             {subtitle ? (
-              <Text style={styles.subtitle} numberOfLines={2}>
+              <Text
+                style={[styles.subtitle, { color: colors.textSecondary }]}
+                numberOfLines={2}
+              >
                 {subtitle}
               </Text>
             ) : null}
@@ -91,6 +99,7 @@ export function AppModal({
                 accessibilityLabel="Cerrar modal"
                 style={({ pressed }) => [
                   styles.closeButton,
+                  { backgroundColor: colors.surfaceSecondary },
                   pressed && styles.closeButtonPressed,
                 ]}
               >
@@ -114,7 +123,11 @@ export function AppModal({
       )}
 
       {/* Footer */}
-      {footer ? <View style={styles.footer}>{footer}</View> : null}
+      {footer ? (
+        <View style={[styles.footer, { borderTopColor: colors.border }]}>
+          {footer}
+        </View>
+      ) : null}
     </View>
   );
 
@@ -168,7 +181,6 @@ const styles = StyleSheet.create({
   },
   content: {
     width: "100%",
-    backgroundColor: colors.background,
     borderRadius: radius.xl,
     padding: spacing.lg,
     gap: spacing.md,
@@ -200,19 +212,16 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     lineHeight: typography.lineHeight.lg,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.text,
   },
   subtitle: {
     fontSize: typography.fontSize.xs,
     lineHeight: typography.lineHeight.xs,
-    color: colors.textSecondary,
     marginTop: 2,
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceSecondary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -229,6 +238,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
 });

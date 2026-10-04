@@ -9,7 +9,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { colors, radius, shadows, spacing, typography } from "@/theme";
+import { radius, shadows, spacing, typography, useAppTheme } from "@/theme";
 
 export type ListItemVariant = "card" | "flat" | "bordered";
 
@@ -36,11 +36,40 @@ export function ListItem({
   style,
   titleStyle,
 }: ListItemProps) {
+  const { colors } = useAppTheme();
   const isClickable = !!onPress;
 
   const defaultRight = isClickable ? (
     <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
   ) : null;
+
+  const getVariantContainerStyle = (): ViewStyle => {
+    switch (variant) {
+      case "card":
+        return {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderRadius: radius.lg,
+          borderWidth: 1,
+          ...shadows.sm,
+        };
+      case "flat":
+        return {
+          backgroundColor: colors.background,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border,
+          paddingHorizontal: spacing.xs,
+        };
+      case "bordered":
+      default:
+        return {
+          backgroundColor: colors.background,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: radius.lg,
+        };
+    }
+  };
 
   return (
     <Pressable
@@ -49,7 +78,7 @@ export function ListItem({
       disabled={!isClickable}
       style={({ pressed }) => [
         styles.base,
-        styles[variant],
+        getVariantContainerStyle(),
         pressed && isClickable && styles.pressed,
         style,
       ]}
@@ -57,18 +86,27 @@ export function ListItem({
       {left ? <View style={styles.left}>{left}</View> : null}
 
       <View style={styles.content}>
-        <Text numberOfLines={1} style={[styles.title, titleStyle]}>
+        <Text
+          numberOfLines={1}
+          style={[styles.title, { color: colors.text }, titleStyle]}
+        >
           {title}
         </Text>
 
         {subtitle ? (
-          <Text numberOfLines={2} style={styles.subtitle}>
+          <Text
+            numberOfLines={2}
+            style={[styles.subtitle, { color: colors.textSecondary }]}
+          >
             {subtitle}
           </Text>
         ) : null}
 
         {caption ? (
-          <Text numberOfLines={1} style={styles.caption}>
+          <Text
+            numberOfLines={1}
+            style={[styles.caption, { color: colors.textMuted }]}
+          >
             {caption}
           </Text>
         ) : null}
@@ -87,23 +125,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    backgroundColor: colors.background,
-  },
-  bordered: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-  },
-  card: {
-    borderRadius: radius.lg,
-    ...shadows.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  flat: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    paddingHorizontal: spacing.xs,
   },
   pressed: {
     opacity: 0.85,
@@ -121,16 +142,13 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     lineHeight: typography.lineHeight.md,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.text,
   },
   subtitle: {
     fontSize: typography.fontSize.sm,
     lineHeight: typography.lineHeight.sm,
-    color: colors.textSecondary,
   },
   caption: {
     fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
     marginTop: 2,
   },
 });

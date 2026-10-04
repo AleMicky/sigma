@@ -1,4 +1,4 @@
-import React, { type ReactNode } from "react";
+import { type ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,7 +10,7 @@ import {
   ViewStyle,
   type PressableProps,
 } from "react-native";
-import { colors, radius, spacing, typography } from "../../theme";
+import { radius, spacing, typography, useAppTheme } from "@/theme";
 
 export type ButtonVariant =
   | "primary"
@@ -43,7 +43,44 @@ export function AppButton({
   textStyle,
   ...props
 }: AppButtonProps) {
+  const { colors } = useAppTheme();
   const isDisabled = disabled || loading;
+
+  const getVariantContainerStyle = (): ViewStyle => {
+    switch (variant) {
+      case "secondary":
+        return { backgroundColor: colors.surfaceSecondary };
+      case "outline":
+        return {
+          backgroundColor: "transparent",
+          borderWidth: 1,
+          borderColor: colors.border,
+        };
+      case "ghost":
+        return { backgroundColor: "transparent" };
+      case "danger":
+        return { backgroundColor: colors.danger };
+      case "primary":
+      default:
+        return { backgroundColor: colors.primary };
+    }
+  };
+
+  const getVariantTextStyle = (): TextStyle => {
+    switch (variant) {
+      case "secondary":
+        return { color: colors.text };
+      case "outline":
+        return { color: colors.text };
+      case "ghost":
+        return { color: colors.primary };
+      case "danger":
+        return { color: colors.white };
+      case "primary":
+      default:
+        return { color: colors.white };
+    }
+  };
 
   const loaderColor =
     variant === "outline" || variant === "ghost"
@@ -57,7 +94,7 @@ export function AppButton({
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.base,
-        styles[variant],
+        getVariantContainerStyle(),
         styles[size],
         pressed && styles.pressed,
         isDisabled && styles.disabled,
@@ -73,8 +110,8 @@ export function AppButton({
           <Text
             style={[
               styles.textBase,
-              textVariantStyles[variant],
-              textSizeStyles[size],
+              getVariantTextStyle(),
+              styles[`text_${size}`],
               textStyle,
             ]}
           >
@@ -101,24 +138,6 @@ const styles = StyleSheet.create({
   icon: {
     marginHorizontal: spacing.xs,
   },
-  // Variantes
-  primary: {
-    backgroundColor: colors.primary,
-  },
-  secondary: {
-    backgroundColor: colors.surfaceSecondary,
-  },
-  outline: {
-    backgroundColor: colors.transparent,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  ghost: {
-    backgroundColor: colors.transparent,
-  },
-  danger: {
-    backgroundColor: colors.danger,
-  },
   // Tamaños
   sm: {
     height: 38,
@@ -143,18 +162,13 @@ const styles = StyleSheet.create({
   textBase: {
     fontWeight: typography.fontWeight.semibold,
   },
-});
-
-const textVariantStyles = StyleSheet.create({
-  primary: { color: colors.white },
-  secondary: { color: colors.text },
-  outline: { color: colors.text },
-  ghost: { color: colors.primary },
-  danger: { color: colors.white },
-});
-
-const textSizeStyles = StyleSheet.create({
-  sm: { fontSize: typography.fontSize.sm },
-  md: { fontSize: typography.fontSize.md },
-  lg: { fontSize: typography.fontSize.lg },
+  text_sm: {
+    fontSize: typography.fontSize.sm,
+  },
+  text_md: {
+    fontSize: typography.fontSize.md,
+  },
+  text_lg: {
+    fontSize: typography.fontSize.lg,
+  },
 });

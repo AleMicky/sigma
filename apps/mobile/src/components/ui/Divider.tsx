@@ -1,4 +1,4 @@
- import {
+import {
   StyleProp,
   StyleSheet,
   Text,
@@ -6,7 +6,7 @@
   View,
   ViewStyle,
 } from "react-native";
-import { colors, spacing, typography, type ColorKey, type SpacingKey } from "@/theme";
+import { spacing, typography, useAppTheme, type ColorKey, type SpacingKey } from "@/theme";
 
 export type DividerProps = {
   orientation?: "horizontal" | "vertical";
@@ -27,6 +27,7 @@ export function Divider({
   style,
   labelStyle,
 }: DividerProps) {
+  const { colors } = useAppTheme();
   const resolvedColor = colors[color as ColorKey] ?? color;
 
   if (orientation === "vertical") {
@@ -55,7 +56,9 @@ export function Divider({
         ]}
       >
         <View style={[styles.horizontalLine, { backgroundColor: resolvedColor }]} />
-        <Text style={[styles.labelText, labelStyle]}>{label}</Text>
+        <Text style={[styles.labelText, { color: colors.textSecondary }, labelStyle]}>
+          {label}
+        </Text>
         <View style={[styles.horizontalLine, { backgroundColor: resolvedColor }]} />
       </View>
     );
@@ -97,7 +100,6 @@ const styles = StyleSheet.create({
   labelText: {
     paddingHorizontal: spacing.md,
     fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
     fontWeight: typography.fontWeight.medium,
   },
 });

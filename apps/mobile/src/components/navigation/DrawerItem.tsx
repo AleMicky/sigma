@@ -1,4 +1,4 @@
-import React, { type ReactNode } from "react";
+import { type ReactNode } from "react";
 import {
   Pressable,
   StyleProp,
@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { colors, radius, spacing, typography } from "@/theme";
+import { radius, spacing, typography, useAppTheme } from "@/theme";
 import { AppBadge, BadgeAppearance, BadgeVariant } from "../ui/AppBadge";
 
 export type DrawerItemProps = {
@@ -56,6 +56,8 @@ export function DrawerItem({
   testID,
   accessibilityLabel,
 }: DrawerItemProps) {
+  const { colors, isDark } = useAppTheme();
+
   const iconColor = active
     ? colors.primary
     : disabled
@@ -87,11 +89,10 @@ export function DrawerItem({
       style={({ pressed }) => [
         styles.container,
         active && [
-          styles.active,
-          activeBackgroundColor ? { backgroundColor: activeBackgroundColor } : null,
+          { backgroundColor: activeBackgroundColor || (isDark ? colors.surfaceSecondary : colors.primaryLight) },
         ],
         disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
+        pressed && !disabled && [styles.pressed, { backgroundColor: colors.surfaceSecondary }],
         style,
       ]}
     >
@@ -101,8 +102,9 @@ export function DrawerItem({
         <Text
           style={[
             styles.label,
-            active && styles.labelActive,
-            disabled && styles.labelDisabled,
+            { color: colors.text },
+            active && [styles.labelActive, { color: isDark ? colors.primary : colors.primaryDark }],
+            disabled && { color: colors.textMuted },
             labelStyle,
           ]}
           numberOfLines={1}
@@ -114,7 +116,8 @@ export function DrawerItem({
           <Text
             style={[
               styles.subtitle,
-              disabled && styles.labelDisabled,
+              { color: colors.textSecondary },
+              disabled && { color: colors.textMuted },
               subtitleStyle,
             ]}
             numberOfLines={1}
@@ -158,12 +161,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
   },
-  active: {
-    backgroundColor: colors.primaryLight,
-  },
   pressed: {
     opacity: 0.75,
-    backgroundColor: colors.surfaceSecondary,
   },
   disabled: {
     opacity: 0.5,
@@ -179,20 +178,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: typography.fontSize.md,
     lineHeight: typography.lineHeight.md,
-    color: colors.text,
     fontWeight: typography.fontWeight.regular,
   },
   labelActive: {
-    color: colors.primaryDark,
     fontWeight: typography.fontWeight.semibold,
-  },
-  labelDisabled: {
-    color: colors.textMuted,
   },
   subtitle: {
     fontSize: typography.fontSize.xs,
     lineHeight: typography.lineHeight.xs,
-    color: colors.textSecondary,
     marginTop: 1,
   },
   rightContainer: {
