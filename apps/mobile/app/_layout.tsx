@@ -8,9 +8,12 @@ import { useAppTheme } from "@/theme";
 import { setupApiInterceptors } from "@/api/interceptors";
 import { apiConfigService } from "@/services/api-config.service";
 import { useRestoreSession } from "@/features/auth/hooks/useRestoreSession";
+import { useAuthStore } from "@/features/auth/store/auth.store";
+import { AppSplashScreen } from "@/components/feedback/AppSplashScreen";
 
 function RootApp() {
   const { colors, isDark } = useAppTheme();
+  const isInitialized = useAuthStore((state) => state.isInitialized);
 
   useRestoreSession();
 
@@ -18,6 +21,10 @@ function RootApp() {
     apiConfigService.init();
     setupApiInterceptors();
   }, []);
+
+  if (!isInitialized) {
+    return <AppSplashScreen statusMessage="Iniciando SIGMA..." />;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>

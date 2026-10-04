@@ -22,4 +22,5 @@ export * from "./Pagination";
 export * from "./RefreshControl";
 export * from "./SearchInput";
 export * from "./Skeleton";
+export * from "./SigmaLogo";
 

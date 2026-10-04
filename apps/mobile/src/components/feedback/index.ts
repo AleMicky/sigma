@@ -6,4 +6,5 @@ export * from "./OfflineBanner";
 export * from "./SuccessMessage";
 export * from "./Toast";
 export * from "./WarningMessage";
+export * from "./AppSplashScreen";
 
