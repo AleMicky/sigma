@@ -18,8 +18,13 @@ import {
 } from "@/components/feedback";
 import {
   DateInput,
+  FormCheckbox,
+  FormDate,
   FormError,
   FormInput,
+  FormSection,
+  FormSelect,
+  FormSwitch,
   PasswordInput,
   SelectInput,
 } from "@/components/form";
@@ -59,13 +64,14 @@ import {
 } from "@/components/ui";
 import { colors, radius, spacing } from "@/theme";
 
-
 type FormDemoData = {
   fullName: string;
   email: string;
   password: string;
   department: string;
   startDate: string;
+  receiveNotifications: boolean;
+  agreeTerms: boolean;
 };
 
 export default function HomeScreen() {
@@ -96,7 +102,6 @@ export default function HomeScreen() {
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
 
-
   // Estados de Banners
   const [showSuccessBanner, setShowSuccessBanner] = useState(true);
   const [showWarningBanner, setShowWarningBanner] = useState(true);
@@ -113,7 +118,6 @@ export default function HomeScreen() {
     control,
     handleSubmit,
     setValue,
-    watch,
     formState: { isSubmitting },
   } = useForm<FormDemoData>({
     defaultValues: {
@@ -122,11 +126,11 @@ export default function HomeScreen() {
       password: "",
       department: "",
       startDate: "2026-10-15",
+      receiveNotifications: true,
+      agreeTerms: false,
     },
   });
 
-  const selectedDepartment = watch("department");
-  const selectedDate = watch("startDate");
 
   const onSubmitForm = (data: FormDemoData) => {
     setToastMessage({
@@ -517,62 +521,101 @@ export default function HomeScreen() {
         {/* ==================================================== */}
         <Section
           title="📝 Formularios (React Hook Form)"
-          description="Integración de FormInput, PasswordInput, SelectInput y DateInput"
+          description="FormSection, FormInput, PasswordInput, FormSelect, FormDate, FormSwitch y FormCheckbox"
           withDivider
         >
-          <AppCard variant="outlined">
-            <FormInput
-              control={control}
-              name="fullName"
-              label="Nombre Completo"
-              placeholder="Juan Pérez"
-              clearable
-              rules={{ required: "El nombre es obligatorio" }}
-            />
+          <AppCard variant="outlined" style={styles.gapMd}>
+            <FormSection
+              title="1. Datos de Cuenta"
+              description="Información básica y credenciales de acceso"
+              withDivider
+            >
+              <FormInput
+                control={control}
+                name="fullName"
+                label="Nombre Completo"
+                placeholder="Juan Pérez"
+                clearable
+                rules={{ required: "El nombre es obligatorio" }}
+              />
 
-            <FormInput
-              control={control}
-              name="email"
-              label="Correo Corporativo"
-              placeholder="juan@empresa.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              clearable
-              rules={{
-                required: "El correo es obligatorio",
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Formato de correo no válido",
-                },
-              }}
-            />
+              <FormInput
+                control={control}
+                name="email"
+                label="Correo Corporativo"
+                placeholder="juan@empresa.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                clearable
+                rules={{
+                  required: "El correo es obligatorio",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Formato de correo no válido",
+                  },
+                }}
+              />
 
-            <PasswordInput
-              control={control}
-              name="password"
-              label="Contraseña de Acceso"
-              rules={{
-                required: "La contraseña es requerida",
-                minLength: {
-                  value: 6,
-                  message: "Debe contener al menos 6 caracteres",
-                },
-              }}
-            />
+              <PasswordInput
+                control={control}
+                name="password"
+                label="Contraseña de Acceso"
+                rules={{
+                  required: "La contraseña es requerida",
+                  minLength: {
+                    value: 6,
+                    message: "Debe contener al menos 6 caracteres",
+                  },
+                }}
+              />
+            </FormSection>
 
-            <SelectInput
-              label="Departamento"
-              value={selectedDepartment}
-              placeholder="Seleccionar área..."
-              onPress={handleSelectDepartment}
-              hint="Área a la que pertenece el usuario"
-            />
+            <FormSection
+              title="2. Información Laboral"
+              description="Asignación de área y fecha de ingreso"
+              withDivider
+            >
+              <FormSelect
+                control={control}
+                name="department"
+                label="Departamento"
+                placeholder="Seleccionar área..."
+                onPress={handleSelectDepartment}
+                hint="Área a la que pertenece el colaborador"
+                rules={{ required: "Debes seleccionar un departamento" }}
+              />
 
-            <DateInput
-              label="Fecha de Ingreso"
-              value={selectedDate}
-              onPress={handleSelectDate}
-            />
+              <FormDate
+                control={control}
+                name="startDate"
+                label="Fecha de Ingreso"
+                onPress={handleSelectDate}
+                rules={{ required: "La fecha de ingreso es requerida" }}
+              />
+            </FormSection>
+
+            <FormSection
+              title="3. Preferencias y Consentimiento"
+              description="Configuración de notificaciones y términos"
+            >
+              <FormSwitch
+                control={control}
+                name="receiveNotifications"
+                label="Notificaciones Push"
+                description="Recibir alertas de solicitudes y estados en tiempo real"
+              />
+
+              <FormCheckbox
+                control={control}
+                name="agreeTerms"
+                label="Acepto los Términos y Condiciones"
+                description="He leído las políticas de seguridad y privacidad"
+                rules={{
+                  validate: (val) =>
+                    Boolean(val) || "Debes aceptar los términos para continuar",
+                }}
+              />
+            </FormSection>
 
             <FormError message="Asegúrate de completar todos los campos obligatorios." />
 
