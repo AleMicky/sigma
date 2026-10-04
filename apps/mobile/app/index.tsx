@@ -34,13 +34,19 @@ import { DrawerItem } from "@/components/navigation";
 import {
   AppAvatar,
   AppBadge,
+  AppBottomSheet,
   AppButton,
   AppCard,
   AppCheckbox,
   AppChip,
   AppIconButton,
   AppInput,
+  AppLink,
+  AppModal,
+  AppPressable,
   AppRadio,
+  AppRefreshControl,
+  AppSpacer,
   AppSwitch,
   AppText,
   Divider,
@@ -51,7 +57,8 @@ import {
   SearchInput,
   Skeleton,
 } from "@/components/ui";
-import { colors, spacing } from "@/theme";
+import { colors, radius, spacing } from "@/theme";
+
 
 type FormDemoData = {
   fullName: string;
@@ -68,6 +75,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [cardPressCount, setCardPressCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(3);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Estados de Nuevos Componentes UI & Navegación
   const [activeDrawer, setActiveDrawer] = useState("inicio");
@@ -78,13 +86,16 @@ export default function HomeScreen() {
   const [selectedChips, setSelectedChips] = useState<string[]>(["urgente", "qa"]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const [pressableCounter, setPressableCounter] = useState(0);
 
-
-  // Estados de Feedback Modals & Overlays
+  // Estados de Modales y BottomSheet
+  const [showAppModal, setShowAppModal] = useState(false);
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDangerModal, setShowDangerModal] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
+
 
   // Estados de Banners
   const [showSuccessBanner, setShowSuccessBanner] = useState(true);
@@ -195,8 +206,30 @@ export default function HomeScreen() {
     );
   };
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+      setToastMessage({
+        title: "¡Catálogo Actualizado!",
+        message: "Todos los componentes del sistema se han refrescado con éxito.",
+        variant: "success",
+      });
+    }, 1200);
+  };
+
   return (
-    <Screen scrollable withPadding={false}>
+    <Screen
+      scrollable
+      withPadding={false}
+      refreshControl={
+        <AppRefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          title="Actualizando catálogo..."
+        />
+      }
+    >
       {/* 1. Header principal */}
       <AppHeader
         title="Design System"
@@ -576,6 +609,21 @@ export default function HomeScreen() {
             />
           </View>
 
+          <View style={styles.buttonRow}>
+            <AppButton
+              title="Abrir AppModal"
+              variant="outline"
+              style={styles.flex1}
+              onPress={() => setShowAppModal(true)}
+            />
+            <AppButton
+              title="Abrir BottomSheet"
+              variant="outline"
+              style={styles.flex1}
+              onPress={() => setShowBottomSheet(true)}
+            />
+          </View>
+
           <AppButton
             title="Mostrar Loading Overlay (2s)"
             variant="outline"
@@ -589,6 +637,7 @@ export default function HomeScreen() {
         <Section
           title="🧭 Elementos de Navegación"
           description="DrawerItem con estados interactivos, badges y subtítulos"
+          withDivider
         >
           <AppCard variant="outlined">
             <AppText variant="caption" style={styles.mbSm}>
@@ -652,7 +701,149 @@ export default function HomeScreen() {
             />
           </AppCard>
         </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN I: ENLACES & ELEMENTOS TÁCTILES (LINK/PRESS) */}
+        {/* ==================================================== */}
+        <Section
+          title="🔗 Enlaces & Feedback Táctil"
+          description="AppLink, AppPressable y AppSpacer"
+        >
+          <AppCard variant="outlined">
+            <AppText variant="subtitle">Enlaces Tipográficos (AppLink):</AppText>
+            <View style={styles.linkRow}>
+              <AppLink onPress={() => Alert.alert("Link", "Abriendo enlace principal")}>
+                Enlace Primario
+              </AppLink>
+              <AppLink
+                variant="secondary"
+                underline
+                onPress={() => Alert.alert("Términos", "Ver términos y condiciones")}
+              >
+                Términos y Condiciones
+              </AppLink>
+              <AppLink
+                variant="danger"
+                onPress={() => Alert.alert("Eliminar", "Cancelar suscripción")}
+              >
+                Cancelar Suscripción
+              </AppLink>
+              <AppLink
+                variant="muted"
+                disabled
+              >
+                Enlace Deshabilitado
+              </AppLink>
+            </View>
+
+            <Divider spacingVertical="md" />
+
+            <AppText variant="subtitle">Contenedores Táctiles (AppPressable):</AppText>
+            <AppText variant="caption" style={styles.mbSm}>
+              Contador interactivo de pulsaciones: {pressableCounter}
+            </AppText>
+
+            <View style={styles.buttonRow}>
+              <AppPressable
+                feedback="scale"
+                onPress={() => setPressableCounter((c) => c + 1)}
+                style={styles.pressableBox}
+              >
+                <AppText variant="bodySm" style={styles.textCenter}>
+                  Efecto Scale (Presióname)
+                </AppText>
+              </AppPressable>
+
+              <AppPressable
+                feedback="highlight"
+                onPress={() => setPressableCounter((c) => c + 1)}
+                style={styles.pressableBox}
+              >
+                <AppText variant="bodySm" style={styles.textCenter}>
+                  Efecto Highlight
+                </AppText>
+              </AppPressable>
+            </View>
+          </AppCard>
+        </Section>
       </Container>
+
+      {/* Modal General (AppModal) */}
+      <AppModal
+        visible={showAppModal}
+        title="Detalle de la Solicitud"
+        subtitle="Expediente #SOL-2026-8910"
+        onClose={() => setShowAppModal(false)}
+        footer={
+          <View style={styles.buttonRow}>
+            <AppButton
+              title="Cerrar"
+              variant="outline"
+              style={styles.flex1}
+              onPress={() => setShowAppModal(false)}
+            />
+            <AppButton
+              title="Aprobar Solicitud"
+              variant="primary"
+              style={styles.flex1}
+              onPress={() => {
+                setShowAppModal(false);
+                setToastMessage({
+                  title: "¡Aprobada!",
+                  message: "La solicitud ha sido aprobada correctamente.",
+                  variant: "success",
+                });
+              }}
+            />
+          </View>
+        }
+      >
+        <AppText variant="bodySm">
+          Esta solicitud incluye el requerimiento de presupuesto adicional para la ampliación del clúster de servidores de base de datos en AWS.
+        </AppText>
+        <AppSpacer size="sm" />
+        <StatusRow label="Prioridad" status="Alta" variant="danger" withDivider />
+        <KeyValueRow label="Monto Solicitado" value="$3,500.00 USD" valueColor="primary" withDivider />
+        <KeyValueRow label="Solicitante" value="Carlos Mendoza (Lead DevOps)" />
+      </AppModal>
+
+      {/* Hoja Inferior (AppBottomSheet) */}
+      <AppBottomSheet
+        visible={showBottomSheet}
+        title="Opciones de Acción"
+        subtitle="Selecciona una acción rápida para este registro"
+        onClose={() => setShowBottomSheet(false)}
+        showCloseButton
+      >
+        <DrawerItem
+          icon="share-social-outline"
+          label="Compartir Expediente"
+          subtitle="Enviar enlace seguro por correo"
+          onPress={() => {
+            setShowBottomSheet(false);
+            Alert.alert("Compartir", "Enlace copiado al portapapeles");
+          }}
+        />
+        <DrawerItem
+          icon="download-outline"
+          label="Descargar Informe PDF"
+          subtitle="Documento firmado digitalmente"
+          onPress={() => {
+            setShowBottomSheet(false);
+            Alert.alert("Descarga", "Descargando archivo...");
+          }}
+        />
+        <DrawerItem
+          icon="trash-outline"
+          label="Mover a Papelera"
+          badge="Irreversible"
+          badgeVariant="danger"
+          onPress={() => {
+            setShowBottomSheet(false);
+            setShowDangerModal(true);
+          }}
+        />
+      </AppBottomSheet>
 
       {/* Modales de Confirmación */}
       <ConfirmModal
@@ -722,6 +913,25 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     gap: spacing.md,
+  },
+  linkRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  pressableBox: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textCenter: {
+    textAlign: "center",
   },
   toastGrid: {
     gap: spacing.sm,

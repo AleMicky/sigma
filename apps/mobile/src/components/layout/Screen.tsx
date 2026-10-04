@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
+  type RefreshControlProps,
   ScrollView,
   StyleSheet,
   View,
@@ -23,6 +24,8 @@ export type ScreenProps = {
   contentContainerStyle?: StyleProp<ViewStyle>;
   /** Si es true, envuelve el contenido en un ScrollView */
   scrollable?: boolean;
+  /** Componente de refresco (Pull-to-refresh) */
+  refreshControl?: ReactElement<RefreshControlProps>;
   /** Si debe incluir el padding general por defecto (16px) */
   withPadding?: boolean;
   /** Evita que el teclado tape los inputs */
@@ -33,11 +36,13 @@ export type ScreenProps = {
   statusBarStyle?: StatusBarStyle;
 };
 
+
 export function Screen({
   children,
   style,
   contentContainerStyle,
   scrollable = false,
+  refreshControl,
   withPadding = true,
   keyboardAvoiding = true,
   edges = ["top", "bottom", "left", "right"],
@@ -52,6 +57,7 @@ export function Screen({
       ]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      refreshControl={refreshControl}
     >
       {children}
     </ScrollView>
