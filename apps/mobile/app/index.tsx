@@ -9,8 +9,11 @@ import {
 } from "@/components/data";
 import {
   ConfirmModal,
+  ErrorState,
   LoadingOverlay,
+  SuccessMessage,
   Toast,
+  WarningMessage,
   type ToastVariant,
 } from "@/components/feedback";
 import {
@@ -56,38 +59,6 @@ type FormDemoData = {
   startDate: string;
 };
 
-type DemoItem = {
-  id: string;
-  title: string;
-  subtitle: string;
-  status: string;
-  variant: "success" | "warning" | "danger" | "primary";
-};
-
-const mockItems: DemoItem[] = [
-  {
-    id: "1",
-    title: "Solicitud de Vacaciones",
-    subtitle: "Aprobada por RRHH",
-    status: "Aprobado",
-    variant: "success",
-  },
-  {
-    id: "2",
-    title: "Reembolso de Gastos",
-    subtitle: "En revisión por contabilidad",
-    status: "Pendiente",
-    variant: "warning",
-  },
-  {
-    id: "3",
-    title: "Permiso Especial",
-    subtitle: "Rechazado por exceder límite",
-    status: "Rechazado",
-    variant: "danger",
-  },
-];
-
 export default function HomeScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -110,6 +81,10 @@ export default function HomeScreen() {
   const [showDangerModal, setShowDangerModal] = useState(false);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
+
+  // Estados de Banners
+  const [showSuccessBanner, setShowSuccessBanner] = useState(true);
+  const [showWarningBanner, setShowWarningBanner] = useState(true);
 
   // Estado de Toast interactivo
   const [toastMessage, setToastMessage] = useState<{
@@ -261,7 +236,49 @@ export default function HomeScreen() {
         ) : null}
 
         {/* ==================================================== */}
-        {/* SECCIÓN A: COMPONENTES DE DATOS (DATA)               */}
+        {/* SECCIÓN A: MENSAJES DE ESTADO (FEEDBACK BANNERS)     */}
+        {/* ==================================================== */}
+        <Section
+          title="📣 Mensajes de Estado"
+          description="SuccessMessage, WarningMessage y ErrorState"
+          withDivider
+        >
+          {showSuccessBanner ? (
+            <SuccessMessage
+              title="¡Operación completada!"
+              message="Tu solicitud ha sido enviada con éxito al departamento de finanzas."
+              actionLabel="Ver detalle"
+              onAction={() => Alert.alert("Detalle", "Abriendo solicitud...")}
+              onDismiss={() => setShowSuccessBanner(false)}
+            />
+          ) : null}
+
+          {showWarningBanner ? (
+            <WarningMessage
+              title="Mantenimiento programado"
+              message="La plataforma estará en mantenimiento hoy a las 23:00 hrs."
+              actionLabel="Más info"
+              onAction={() => Alert.alert("Mantenimiento", "Duración estimada: 30 minutos.")}
+              onDismiss={() => setShowWarningBanner(false)}
+            />
+          ) : null}
+
+          {/* ErrorState en bloque */}
+          <AppCard variant="outlined">
+            <ErrorState
+              fullScreen={false}
+              title="No se pudo cargar la vista"
+              message="Hubo un problema de conexión con el servicio de autenticación."
+              retryLabel="Reintentar ahora"
+              onRetry={() => Alert.alert("Reintento", "Reintentando conexión...")}
+              secondaryActionLabel="Volver"
+              onSecondaryAction={() => Alert.alert("Volver", "Regresando a inicio")}
+            />
+          </AppCard>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN B: COMPONENTES DE DATOS (DATA)               */}
         {/* ==================================================== */}
         <Section
           title="📊 Visualización de Datos"
@@ -319,7 +336,7 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* SECCIÓN B: AVATARES, CHIPS & BUSCADOR                */}
+        {/* SECCIÓN C: AVATARES, CHIPS & BUSCADOR                */}
         {/* ==================================================== */}
         <Section
           title="🌟 Avatares y Búsqueda"
@@ -372,7 +389,7 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* SECCIÓN C: CONTROLES DE SELECCIÓN                    */}
+        {/* SECCIÓN D: CONTROLES DE SELECCIÓN                    */}
         {/* ==================================================== */}
         <Section
           title="🔘 Controles de Selección"
@@ -415,7 +432,7 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* SECCIÓN D: PAGINACIÓN Y SKELETON                     */}
+        {/* SECCIÓN E: PAGINACIÓN Y SKELETON                     */}
         {/* ==================================================== */}
         <Section
           title="💀 Skeleton & Paginación"
@@ -459,7 +476,7 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* SECCIÓN E: FORMULARIOS (REACT HOOK FORM)             */}
+        {/* SECCIÓN F: FORMULARIOS (REACT HOOK FORM)             */}
         {/* ==================================================== */}
         <Section
           title="📝 Formularios (React Hook Form)"
@@ -533,7 +550,7 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* SECCIÓN F: FEEDBACK & MODALES                       */}
+        {/* SECCIÓN G: FEEDBACK & MODALES                       */}
         {/* ==================================================== */}
         <Section
           title="💬 Feedback & Modales"
