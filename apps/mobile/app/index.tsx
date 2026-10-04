@@ -29,6 +29,8 @@ import {
   Screen,
   Section,
 } from "@/components/layout";
+import { DrawerItem } from "@/components/navigation";
+
 import {
   AppAvatar,
   AppBadge,
@@ -67,7 +69,8 @@ export default function HomeScreen() {
   const [cardPressCount, setCardPressCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(3);
 
-  // Estados de Nuevos Componentes UI
+  // Estados de Nuevos Componentes UI & Navegación
+  const [activeDrawer, setActiveDrawer] = useState("inicio");
   const [searchValue, setSearchValue] = useState("");
   const [checkboxValue, setCheckboxValue] = useState(true);
   const [switchValue, setSwitchValue] = useState(true);
@@ -75,6 +78,7 @@ export default function HomeScreen() {
   const [selectedChips, setSelectedChips] = useState<string[]>(["urgente", "qa"]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showSkeleton, setShowSkeleton] = useState(false);
+
 
   // Estados de Feedback Modals & Overlays
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -578,6 +582,76 @@ export default function HomeScreen() {
             onPress={handleTriggerLoadingOverlay}
           />
         </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN H: ELEMENTOS DE NAVEGACIÓN (DRAWER & TABS)   */}
+        {/* ==================================================== */}
+        <Section
+          title="🧭 Elementos de Navegación"
+          description="DrawerItem con estados interactivos, badges y subtítulos"
+        >
+          <AppCard variant="outlined">
+            <AppText variant="caption" style={styles.mbSm}>
+              Menú Lateral Interactivo (Toca un ítem para activarlo):
+            </AppText>
+
+            <DrawerItem
+              icon="home-outline"
+              label="Panel Principal"
+              active={activeDrawer === "inicio"}
+              onPress={() => setActiveDrawer("inicio")}
+            />
+
+            <DrawerItem
+              icon="document-text-outline"
+              label="Mis Solicitudes"
+              subtitle="8 pendientes de revisión"
+              badge={8}
+              badgeVariant="warning"
+              showChevron
+              active={activeDrawer === "solicitudes"}
+              onPress={() => setActiveDrawer("solicitudes")}
+            />
+
+            <DrawerItem
+              icon="chatbubbles-outline"
+              label="Mensajería Directa"
+              subtitle="Canales de soporte"
+              badge="Nuevo"
+              badgeVariant="primary"
+              badgeAppearance="solid"
+              showChevron
+              active={activeDrawer === "mensajes"}
+              onPress={() => setActiveDrawer("mensajes")}
+            />
+
+            <DrawerItem
+              icon="notifications-outline"
+              label="Alertas Críticas"
+              badge="3"
+              badgeVariant="danger"
+              badgeAppearance="solid"
+              active={activeDrawer === "alertas"}
+              onPress={() => setActiveDrawer("alertas")}
+            />
+
+            <DrawerItem
+              icon="shield-checkmark-outline"
+              label="Seguridad y Accesos"
+              subtitle="Autenticación 2FA activa"
+              active={activeDrawer === "seguridad"}
+              onPress={() => setActiveDrawer("seguridad")}
+            />
+
+            <DrawerItem
+              icon="lock-closed-outline"
+              label="Panel de Administración"
+              subtitle="Requiere rol de SuperAdmin"
+              disabled
+              onPress={() => {}}
+            />
+          </AppCard>
+        </Section>
       </Container>
 
       {/* Modales de Confirmación */}
@@ -669,5 +743,8 @@ const styles = StyleSheet.create({
   },
   mtSm: {
     marginTop: spacing.xs,
+  },
+  mbSm: {
+    marginBottom: spacing.xs,
   },
 });
