@@ -3,7 +3,6 @@ import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Alert,
-  Linking,
   StyleProp,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
 } from "react-native";
 
 import { AppButton } from "@/components/ui/AppButton";
+import { permissionService } from "@/services/permission.service";
 import { colors } from "@/theme/colors";
 import { radius } from "@/theme/radius";
 import { spacing } from "@/theme/spacing";
@@ -45,9 +45,8 @@ export function LocationPermission({
 
   const checkPermission = async () => {
     try {
-      const { status: currentStatus } =
-        await Location.getForegroundPermissionsAsync();
-      setStatus(currentStatus);
+      const response = await permissionService.getLocationStatus();
+      setStatus(response.status);
     } catch {
       // ignore
     }
@@ -57,31 +56,24 @@ export function LocationPermission({
     try {
       setLoading(true);
 
-      const { status: reqStatus } =
-        await Location.requestForegroundPermissionsAsync();
+      const response = await permissionService.requestLocation();
+      setStatus(response.status);
 
-      setStatus(reqStatus);
-
-      if (reqStatus === Location.PermissionStatus.GRANTED) {
-        let coords: Location.LocationObjectCoords | undefined;
-        try {
-          const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          coords = location.coords;
-        } catch {
-          // GPS coords optional
-        }
-        onGranted?.(coords);
+      if (response.granted) {
+        const coords = await permissionService.getCurrentPosition();
+        onGranted?.(coords ?? undefined);
       } else {
         onDenied?.();
-        if (reqStatus === Location.PermissionStatus.DENIED) {
+        if (response.status === Location.PermissionStatus.DENIED) {
           Alert.alert(
             "Permiso denegado",
             "Puedes habilitar la ubicación en cualquier momento desde los ajustes de la aplicación.",
             [
               { text: "Cancelar", style: "cancel" },
-              { text: "Abrir Ajustes", onPress: () => Linking.openSettings() },
+              {
+                text: "Abrir Ajustes",
+                onPress: () => permissionService.openSettings(),
+              },
             ]
           );
         }

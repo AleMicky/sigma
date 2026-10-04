@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
@@ -18,6 +17,7 @@ import { Screen } from "@/components/layout/Screen";
 import { ROUTES } from "@/constants/routes";
 import { authService } from "@/features/auth/services/auth.service";
 import { useAuthStore } from "@/features/auth/store/auth.store";
+import { permissionService } from "@/services/permission.service";
 import { radius, shadows, spacing, useAppTheme } from "@/theme";
 
 export function HomeScreen() {
@@ -33,8 +33,8 @@ export function HomeScreen() {
 
   const checkGps = async () => {
     try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      setHasGps(status === Location.PermissionStatus.GRANTED);
+      const response = await permissionService.getLocationStatus();
+      setHasGps(response.granted);
     } catch {
       setHasGps(false);
     }

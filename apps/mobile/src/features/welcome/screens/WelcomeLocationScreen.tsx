@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
-  Linking,
   StyleSheet,
   View,
 } from "react-native";
@@ -18,6 +17,7 @@ import { Screen } from "@/components/layout/Screen";
 import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { useAuthStore } from "@/features/auth/store/auth.store";
+import { permissionService } from "@/services/permission.service";
 import { storageService } from "@/services/storage.service";
 import { radius, shadows, spacing, useAppTheme } from "@/theme";
 
@@ -43,9 +43,9 @@ export function WelcomeLocationScreen() {
 
   const checkCurrentPermission = async () => {
     try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      setPermissionStatus(status);
-      if (status === Location.PermissionStatus.GRANTED) {
+      const response = await permissionService.getLocationStatus();
+      setPermissionStatus(response.status);
+      if (response.granted) {
         fetchLocationCoords();
       }
     } catch {
@@ -55,14 +55,14 @@ export function WelcomeLocationScreen() {
 
   const fetchLocationCoords = async () => {
     try {
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      setCoords({
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-        accuracy: loc.coords.accuracy,
-      });
+      const position = await permissionService.getCurrentPosition();
+      if (position) {
+        setCoords({
+          latitude: position.latitude,
+          longitude: position.longitude,
+          accuracy: position.accuracy,
+        });
+      }
     } catch {
       // Coords opcionales
     }
@@ -71,16 +71,16 @@ export function WelcomeLocationScreen() {
   const handleRequestPermission = async () => {
     try {
       setLoading(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setPermissionStatus(status);
+      const response = await permissionService.requestLocation();
+      setPermissionStatus(response.status);
 
-      if (status === Location.PermissionStatus.GRANTED) {
+      if (response.granted) {
         await storageService.set(
           STORAGE_KEYS.LOCATION_SETUP_COMPLETED,
           "true"
         );
         await fetchLocationCoords();
-      } else if (status === Location.PermissionStatus.DENIED) {
+      } else if (response.status === Location.PermissionStatus.DENIED) {
         Alert.alert(
           "Permiso de Ubicación Denegado",
           "Para registrar inspecciones y firmas en terreno, la aplicación necesita acceso a tu ubicación. Puedes habilitarlo en los ajustes del dispositivo.",
@@ -88,7 +88,7 @@ export function WelcomeLocationScreen() {
             { text: "Continuar sin GPS", style: "cancel" },
             {
               text: "Abrir Ajustes",
-              onPress: () => Linking.openSettings(),
+              onPress: () => permissionService.openSettings(),
             },
           ]
         );
