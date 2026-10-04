@@ -43,6 +43,20 @@ import {
 } from "@/components/filters";
 
 import {
+  AttachmentItem,
+  AvatarPicker,
+  ImagePreview,
+} from "@/components/media";
+
+import { LocationPermission } from "@/components/location";
+
+import {
+  NotFoundState,
+  PermissionState,
+  UnauthorizedState,
+} from "@/components/states";
+
+import {
   ConfirmModal,
   ErrorState,
   InfoMessage,
@@ -202,6 +216,19 @@ export default function HomeScreen() {
 
   const activeSheetFiltersCount =
     (sheetDepartment !== "all" ? 1 : 0) + (sheetPriority !== "all" ? 1 : 0);
+
+  // Estados de Multimedia (Media)
+  const [avatarUri, setAvatarUri] = useState<string | undefined>(undefined);
+  const [previewImageUri, setPreviewImageUri] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
+  const [attachments, setAttachments] = useState<Array<{ id: string; name: string; size: number; mimeType: string; date: string }>>([
+    { id: "1", name: "especificaciones_tecnicas.pdf", size: 3450000, mimeType: "application/pdf", date: "04 Oct 2026" },
+    { id: "2", name: "cotizaciones_proveedores.xlsx", size: 1240000, mimeType: "application/vnd.ms-excel", date: "03 Oct 2026" },
+    { id: "3", name: "foto_inspeccion_01.jpg", size: 4890000, mimeType: "image/jpeg", date: "02 Oct 2026" },
+  ]);
+
+  // Estados de Pantallas de Estado (States)
+  const [activeStateTab, setActiveStateTab] = useState<"permission" | "unauthorized" | "notfound">("permission");
 
   const handleSimulateUpload = () => {
     setUploadProgress(0);
@@ -1358,6 +1385,241 @@ export default function HomeScreen() {
             </View>
           </FilterSection>
         </FilterSheet>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN G5: MULTIMEDIA Y ADJUNTOS (MEDIA)            */}
+        {/* ==================================================== */}
+        <Section
+          title="📸 Multimedia y Archivos Adjuntos (Media)"
+          description="AvatarPicker (con cámara/galería), AttachmentItem (gestión de archivos) e ImagePreview"
+          withDivider
+        >
+          <AppCard variant="outlined" style={styles.gapMd}>
+            {/* 1. Avatar Picker */}
+            <AppText variant="subtitle">1. Selector de Avatar (AvatarPicker):</AppText>
+            <AvatarPicker
+              name="Carlos Mendoza"
+              uri={avatarUri}
+              size={96}
+              hint="Toca la foto o el ícono de cámara para cambiar tu avatar"
+              onChange={(newUri) => {
+                setAvatarUri(newUri);
+                setToastMessage({
+                  title: "Avatar actualizado",
+                  message: "Se ha asignado una nueva foto de perfil",
+                  variant: "success",
+                });
+              }}
+              onRemove={() => {
+                setAvatarUri(undefined);
+                setToastMessage({
+                  title: "Avatar eliminado",
+                  message: "Se restauró el avatar por iniciales",
+                  variant: "info",
+                });
+              }}
+            />
+
+            {/* 2. Lista de Adjuntos */}
+            <AppText variant="subtitle" style={styles.mtSm}>
+              2. Lista de Archivos Adjuntos (AttachmentItem):
+            </AppText>
+            <View style={styles.gapSm}>
+              {attachments.map((item) => (
+                <AttachmentItem
+                  key={item.id}
+                  name={item.name}
+                  size={item.size}
+                  mimeType={item.mimeType}
+                  date={item.date}
+                  onPress={() => {
+                    if (item.mimeType.startsWith("image/")) {
+                      setPreviewImageUri("https://picsum.photos/800/1000");
+                      setIsPreviewOpen(true);
+                    } else {
+                      setToastMessage({
+                        title: "Visualizar archivo",
+                        message: `Abriendo vista previa de ${item.name}`,
+                        variant: "info",
+                      });
+                    }
+                  }}
+                  onDownload={() => {
+                    setToastMessage({
+                      title: "Descarga iniciada",
+                      message: `Descargando ${item.name} al almacenamiento local...`,
+                      variant: "success",
+                    });
+                  }}
+                  onRemove={() => {
+                    setAttachments((prev) => prev.filter((a) => a.id !== item.id));
+                    setToastMessage({
+                      title: "Adjunto eliminado",
+                      message: `Se quitó ${item.name}`,
+                      variant: "warning",
+                    });
+                  }}
+                />
+              ))}
+            </View>
+
+            <AppText variant="caption">
+              💡 Toca el archivo JPG para abrir el visor a pantalla completa (ImagePreview).
+            </AppText>
+          </AppCard>
+        </Section>
+
+        {/* Modal Visor de Imagen a Pantalla Completa */}
+        <ImagePreview
+          visible={isPreviewOpen}
+          uri={previewImageUri ?? undefined}
+          title="Inspección de Obra - Módulo B"
+          subtitle="Capturado el 02 de Octubre, 2026 • 4.89 MB"
+          onClose={() => setIsPreviewOpen(false)}
+          onShare={() => {
+            setToastMessage({
+              title: "Compartir",
+              message: "Enlace de descarga copiado al portapapeles",
+              variant: "info",
+            });
+          }}
+          onDownload={() => {
+            setToastMessage({
+              title: "Guardado en Galería",
+              message: "La imagen se guardó correctamente",
+              variant: "success",
+            });
+          }}
+          onDelete={() => {
+            setIsPreviewOpen(false);
+            setAttachments((prev) => prev.filter((a) => a.id !== "3"));
+            setToastMessage({
+              title: "Imagen eliminada",
+              message: "Se ha eliminado la fotografía de inspección",
+              variant: "warning",
+            });
+          }}
+        />
+
+        {/* ==================================================== */}
+        {/* SECCIÓN G6: GEOLOCALIZACIÓN Y GPS (LOCATION)         */}
+        {/* ==================================================== */}
+        <Section
+          title="📍 Geolocalización y Permisos (Location)"
+          description="LocationPermission con detección de estado, beneficios y obtención de coordenadas GPS"
+          withDivider
+        >
+          <AppCard variant="outlined" style={styles.gapMd}>
+            <LocationPermission
+              title="Autorizar GPS para Auditorías"
+              description="Es necesario registrar tus coordenadas de campo al firmar actas de recepción de bienes."
+              onGranted={(coords) => {
+                setToastMessage({
+                  title: "Ubicación obtenida",
+                  message: coords
+                    ? `Lat: ${coords.latitude.toFixed(4)}, Lon: ${coords.longitude.toFixed(4)}`
+                    : "GPS habilitado correctamente",
+                  variant: "success",
+                });
+              }}
+              onDenied={() => {
+                setToastMessage({
+                  title: "Permiso denegado",
+                  message: "La ubicación no fue autorizada",
+                  variant: "warning",
+                });
+              }}
+            />
+          </AppCard>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN G7: PANTALLAS DE ESTADO (STATES)             */}
+        {/* ==================================================== */}
+        <Section
+          title="🛡️ Pantallas y Vistas de Estado (States)"
+          description="PermissionState, UnauthorizedState (403) y NotFoundState (404)"
+          withDivider
+        >
+          <AppCard variant="outlined" style={styles.gapMd}>
+            <AppText variant="subtitle">Selector de Vista de Estado:</AppText>
+            <View style={styles.chipRow}>
+              <FilterChip
+                label="🔒 Permiso Requerido"
+                selected={activeStateTab === "permission"}
+                onPress={() => setActiveStateTab("permission")}
+              />
+              <FilterChip
+                label="🚫 403 No Autorizado"
+                selected={activeStateTab === "unauthorized"}
+                onPress={() => setActiveStateTab("unauthorized")}
+              />
+              <FilterChip
+                label="🔍 404 No Encontrado"
+                selected={activeStateTab === "notfound"}
+                onPress={() => setActiveStateTab("notfound")}
+              />
+            </View>
+
+            {activeStateTab === "permission" && (
+              <PermissionState
+                title="Acceso a Notificaciones"
+                message="Activa las alertas automáticas para recibir avisos cuando se apruebe una solicitud."
+                buttonText="Activar Notificaciones Push"
+                onPress={() => {
+                  setToastMessage({
+                    title: "Permiso solicitado",
+                    message: "Solicitud de notificaciones enviada",
+                    variant: "info",
+                  });
+                }}
+              />
+            )}
+
+            {activeStateTab === "unauthorized" && (
+              <UnauthorizedState
+                title="Módulo Restringido"
+                message="Tu rol actual de usuario no tiene acceso a la tesorería central."
+                onBack={() => {
+                  setToastMessage({
+                    title: "Regresando",
+                    message: "Redirigido a la vista pública",
+                    variant: "info",
+                  });
+                }}
+                onRequestAccess={() => {
+                  setToastMessage({
+                    title: "Ticket de acceso enviado",
+                    message: "Se envió la petición al administrador de seguridad",
+                    variant: "success",
+                  });
+                }}
+              />
+            )}
+
+            {activeStateTab === "notfound" && (
+              <NotFoundState
+                title="Solicitud #SOL-9989 No Encontrada"
+                message="El identificador ingresado no coincide con ningún trámite activo o archivado."
+                backLabel="Ver Todas las Solicitudes"
+                onBack={() => {
+                  setToastMessage({
+                    title: "Navegación",
+                    message: "Redirigiendo a la bandeja de entrada",
+                    variant: "info",
+                  });
+                }}
+                onRetry={() => {
+                  setToastMessage({
+                    title: "Búsqueda reiniciada",
+                    message: "Consultando índices de base de datos...",
+                    variant: "info",
+                  });
+                }}
+              />
+            )}
+          </AppCard>
+        </Section>
 
         {/* ==================================================== */}
         {/* SECCIÓN H: ELEMENTOS DE NAVEGACIÓN (DRAWER & TABS)   */}
