@@ -35,6 +35,14 @@ import {
 } from "@/components/upload";
 
 import {
+  FilterBar,
+  FilterChip,
+  FilterSection,
+  FilterSheet,
+  type FilterOption,
+} from "@/components/filters";
+
+import {
   ConfirmModal,
   ErrorState,
   InfoMessage,
@@ -168,6 +176,32 @@ export default function HomeScreen() {
   const [demoAvatar, setDemoAvatar] = useState<SelectedImage | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(68);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>("uploading");
+
+  // Estados de Filtros (Filters)
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>("all");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(["presupuesto", "compras"]);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState<boolean>(false);
+  const [sheetDepartment, setSheetDepartment] = useState<string>("all");
+  const [sheetPriority, setSheetPriority] = useState<string>("all");
+
+  const statusFilterOptions: FilterOption[] = [
+    { label: "Todos", value: "all", count: 24 },
+    { label: "Pendientes", value: "pending", icon: "time-outline", count: 8 },
+    { label: "Aprobados", value: "approved", icon: "checkmark-circle-outline", count: 12 },
+    { label: "Rechazados", value: "rejected", icon: "close-circle-outline", count: 3 },
+    { label: "Archivados", value: "archived", icon: "archive-outline", count: 1 },
+  ];
+
+  const categoryFilterOptions: FilterOption[] = [
+    { label: "Presupuesto", value: "presupuesto", icon: "wallet-outline" },
+    { label: "Compras", value: "compras", icon: "cart-outline" },
+    { label: "RRHH", value: "rrhh", icon: "people-outline" },
+    { label: "Tecnología", value: "tecnologia", icon: "laptop-outline" },
+    { label: "Legal", value: "legal", icon: "briefcase-outline" },
+  ];
+
+  const activeSheetFiltersCount =
+    (sheetDepartment !== "all" ? 1 : 0) + (sheetPriority !== "all" ? 1 : 0);
 
   const handleSimulateUpload = () => {
     setUploadProgress(0);
@@ -1155,6 +1189,175 @@ export default function HomeScreen() {
             />
           </AppCard>
         </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN G4: SISTEMA DE FILTROS (CHIPS, BAR & SHEET)  */}
+        {/* ==================================================== */}
+        <Section
+          title="🏷️ Sistema de Filtros (Filters)"
+          description="FilterBar, FilterChip (variantes, tamaños e íconos) y FilterSheet modal con secciones"
+          withDivider
+        >
+          <AppCard variant="outlined" style={styles.gapMd}>
+            {/* 1. Barra de Filtro de Estado con botón de Hoja de Filtros */}
+            <AppText variant="subtitle">1. Barra de Filtros con Botón de Modal (Single-Select):</AppText>
+            <FilterBar
+              options={statusFilterOptions}
+              value={selectedStatusFilter}
+              activeFilterCount={activeSheetFiltersCount}
+              onOpenFilterSheet={() => setIsFilterSheetOpen(true)}
+              onChange={(val) => {
+                setSelectedStatusFilter(val);
+                setToastMessage({
+                  title: "Filtro aplicado",
+                  message: `Estado seleccionado: ${statusFilterOptions.find((o) => o.value === val)?.label}`,
+                  variant: "info",
+                });
+              }}
+            />
+
+            {/* 2. Barra de Filtros de Selección Múltiple */}
+            <AppText variant="subtitle" style={styles.mtSm}>
+              2. Selección Múltiple de Categorías (Multi-Select con botón Limpiar):
+            </AppText>
+            <FilterBar
+              options={categoryFilterOptions}
+              multiSelect
+              values={selectedCategories}
+              showClear
+              onClear={() => {
+                setSelectedCategories([]);
+                setToastMessage({
+                  title: "Filtros limpiados",
+                  message: "Se desmarcaron todas las categorías",
+                  variant: "warning",
+                });
+              }}
+              onMultiChange={(vals) => {
+                setSelectedCategories(vals);
+              }}
+            />
+
+            {/* 3. Chips Removibles y Variantes */}
+            <AppText variant="subtitle" style={styles.mtSm}>
+              3. Chips Individuales (Tamaños y Variantes):
+            </AppText>
+            <View style={styles.chipRow}>
+              <FilterChip
+                label="Pequeño (sm)"
+                size="sm"
+                selected
+                variant="subtle"
+                onPress={() => {}}
+              />
+              <FilterChip
+                label="Mediano (md)"
+                size="md"
+                selected
+                variant="solid"
+                icon="star"
+                onPress={() => {}}
+              />
+              <FilterChip
+                label="Grande (lg)"
+                size="lg"
+                icon="pricetag-outline"
+                count={14}
+                onPress={() => {}}
+              />
+              <FilterChip
+                label="Filtro Removible"
+                selected
+                removable
+                onRemove={() => {
+                  setToastMessage({
+                    title: "Filtro eliminado",
+                    message: "Chip removido con éxito",
+                    variant: "info",
+                  });
+                }}
+                onPress={() => {}}
+              />
+            </View>
+
+            {/* Botón para abrir FilterSheet */}
+            <AppButton
+              title={`⚙️ Abrir Filtros Avanzados (${activeSheetFiltersCount} activos)`}
+              variant="secondary"
+              size="sm"
+              style={styles.mtXs}
+              onPress={() => setIsFilterSheetOpen(true)}
+            />
+          </AppCard>
+        </Section>
+
+        {/* Modal FilterSheet */}
+        <FilterSheet
+          visible={isFilterSheetOpen}
+          title="Filtros de Solicitudes"
+          subtitle="Selecciona departamento y nivel de prioridad"
+          activeCount={activeSheetFiltersCount}
+          onClose={() => setIsFilterSheetOpen(false)}
+          onClear={() => {
+            setSheetDepartment("all");
+            setSheetPriority("all");
+            setToastMessage({
+              title: "Filtros restablecidos",
+              message: "Se limpiaron los criterios avanzados",
+              variant: "info",
+            });
+          }}
+          onApply={() => {
+            setIsFilterSheetOpen(false);
+            setToastMessage({
+              title: "Filtros guardados",
+              message: `Dpto: ${sheetDepartment.toUpperCase()} | Prioridad: ${sheetPriority.toUpperCase()}`,
+              variant: "success",
+            });
+          }}
+        >
+          {/* Sección 1: Departamento */}
+          <FilterSection
+            title="Departamento Solicitante"
+            subtitle="Filtra por área administrativa"
+            onResetSection={() => setSheetDepartment("all")}
+          >
+            <View style={styles.chipRow}>
+              {["all", "finanzas", "operaciones", "tecnología", "legal"].map((dept) => (
+                <FilterChip
+                  key={dept}
+                  label={dept === "all" ? "Todos" : dept.charAt(0).toUpperCase() + dept.slice(1)}
+                  selected={sheetDepartment === dept}
+                  onPress={() => setSheetDepartment(dept)}
+                />
+              ))}
+            </View>
+          </FilterSection>
+
+          {/* Sección 2: Prioridad */}
+          <FilterSection
+            title="Nivel de Prioridad"
+            subtitle="Urgencia de atención requerida"
+            onResetSection={() => setSheetPriority("all")}
+          >
+            <View style={styles.chipRow}>
+              {[
+                { id: "all", label: "Todas" },
+                { id: "baja", label: "🟢 Baja" },
+                { id: "media", label: "🟡 Media" },
+                { id: "alta", label: "🔴 Alta / Urgente" },
+              ].map((p) => (
+                <FilterChip
+                  key={p.id}
+                  label={p.label}
+                  selected={sheetPriority === p.id}
+                  variant="solid"
+                  onPress={() => setSheetPriority(p.id)}
+                />
+              ))}
+            </View>
+          </FilterSection>
+        </FilterSheet>
 
         {/* ==================================================== */}
         {/* SECCIÓN H: ELEMENTOS DE NAVEGACIÓN (DRAWER & TABS)   */}
