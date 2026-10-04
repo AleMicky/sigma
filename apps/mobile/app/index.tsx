@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import {
+  ConfirmModal,
+  LoadingOverlay,
+  Toast,
+  type ToastVariant,
+} from "@/components/feedback";
+import {
   AppHeader,
   Container,
   Screen,
@@ -28,12 +34,55 @@ export default function HomeScreen() {
   const [cardPressCount, setCardPressCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(3);
 
+  // Estados de Feedback Modals & Overlays
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showDangerModal, setShowDangerModal] = useState(false);
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
+
+  // Estado de Toast interactivo
+  const [toastMessage, setToastMessage] = useState<{
+    title: string;
+    message: string;
+    variant: ToastVariant;
+  } | null>(null);
+
   const handleSimulateSubmit = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      Alert.alert("Éxito", `Formulario enviado con el correo: ${email || "vacío"}`);
+      setToastMessage({
+        title: "¡Formulario guardado!",
+        message: `Los datos fueron actualizados correctamente para ${email || "usuario"}.`,
+        variant: "success",
+      });
+    }, 1200);
+  };
+
+  const handleConfirmAction = () => {
+    setModalLoading(true);
+    setTimeout(() => {
+      setModalLoading(false);
+      setShowConfirmModal(false);
+      setShowDangerModal(false);
+      setToastMessage({
+        title: "Acción confirmada",
+        message: "La operación se completó exitosamente.",
+        variant: "success",
+      });
     }, 1500);
+  };
+
+  const handleTriggerLoadingOverlay = () => {
+    setShowLoadingOverlay(true);
+    setTimeout(() => {
+      setShowLoadingOverlay(false);
+      setToastMessage({
+        title: "Sincronización completada",
+        message: "Los datos se sincronizaron con el servidor.",
+        variant: "info",
+      });
+    }, 2000);
   };
 
   return (
@@ -50,7 +99,14 @@ export default function HomeScreen() {
               accessibilityLabel="Notificaciones"
               variant="tonal"
               badgeCount={notificationCount}
-              onPress={() => setNotificationCount((prev) => (prev > 0 ? prev - 1 : 5))}
+              onPress={() => {
+                setNotificationCount((prev) => (prev > 0 ? prev - 1 : 5));
+                setToastMessage({
+                  title: "Notificación",
+                  message: "Tienes nuevas alertas disponibles en tu bandeja.",
+                  variant: "info",
+                });
+              }}
             />
             <AppIconButton
               icon="settings-outline"
@@ -63,18 +119,84 @@ export default function HomeScreen() {
       />
 
       <Container style={styles.container}>
+        {/* Toast flotante activo si existe */}
+        {toastMessage ? (
+          <Toast
+            title={toastMessage.title}
+            message={toastMessage.message}
+            variant={toastMessage.variant}
+            onDismiss={() => setToastMessage(null)}
+          />
+        ) : null}
+
         {/* ==================================================== */}
-        {/* SECCIÓN A: COMPONENTES DE LAYOUT                    */}
+        {/* SECCIÓN A: COMPONENTES DE FEEDBACK                  */}
         {/* ==================================================== */}
         <Section
-          title="📐 Componentes de Layout"
-          description="Estructura, contenedores y cabeceras"
+          title="💬 Feedback & Modales"
+          description="ConfirmModal, LoadingOverlay y Toast"
           withDivider
         >
-          {/* Demo 1: Variantes de AppHeader */}
-          <AppText variant="subtitle">A. Variaciones de AppHeader</AppText>
+          <AppText variant="subtitle">Modales y Overlays:</AppText>
+          <View style={styles.buttonRow}>
+            <AppButton
+              title="Modal Confirmar"
+              variant="primary"
+              style={styles.flex1}
+              onPress={() => setShowConfirmModal(true)}
+            />
+            <AppButton
+              title="Modal Eliminar"
+              variant="danger"
+              style={styles.flex1}
+              onPress={() => setShowDangerModal(true)}
+            />
+          </View>
+
+          <AppButton
+            title="Mostrar Loading Overlay (2s)"
+            variant="outline"
+            onPress={handleTriggerLoadingOverlay}
+          />
+
+          <AppText variant="subtitle" style={styles.mtMd}>
+            Variantes de Toast (Notificaciones):
+          </AppText>
+          <View style={styles.toastGrid}>
+            <Toast
+              variant="success"
+              title="Operación exitosa"
+              message="El registro fue guardado correctamente en la base de datos."
+            />
+            <Toast
+              variant="error"
+              title="Error al procesar"
+              message="No se pudo procesar el pago. Intente nuevamente."
+            />
+            <Toast
+              variant="warning"
+              title="Sesión por expirar"
+              message="Tu sesión se cerrará automáticamente en 5 minutos."
+            />
+            <Toast
+              variant="info"
+              title="Actualización disponible"
+              message="Hay una nueva versión de la app lista para descargar."
+            />
+          </View>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN B: COMPONENTES DE LAYOUT                    */}
+        {/* ==================================================== */}
+        <Section
+          title="📐 Layout & Estructura"
+          description="AppHeader, Container y Section"
+          withDivider
+        >
+          {/* Demo: Variantes de AppHeader */}
+          <AppText variant="subtitle">Variaciones de AppHeader:</AppText>
           <AppCard variant="outlined" padding="none">
-            {/* Header con botón Atrás */}
             <AppHeader
               title="Detalle de Solicitud"
               subtitle="ID: #SOL-9842"
@@ -91,7 +213,6 @@ export default function HomeScreen() {
               }
             />
 
-            {/* Header Centrado estilo iOS */}
             <AppHeader
               title="Mi Perfil"
               centerTitle
@@ -101,34 +222,9 @@ export default function HomeScreen() {
             />
           </AppCard>
 
-          {/* Demo 2: Variantes de Section */}
+          {/* Demo: Container con maxWidth */}
           <AppText variant="subtitle" style={styles.mtMd}>
-            B. Variaciones de Section
-          </AppText>
-          <AppCard variant="outlined">
-            <Section
-              title="Sección con Acción Derecha"
-              description="Ideal para listas con enlace a 'Ver todo'"
-              rightAction={
-                <AppText
-                  variant="bodySm"
-                  color="primary"
-                  weight="semibold"
-                  onPress={() => Alert.alert("Sección", "Acción derecha pulsada")}
-                >
-                  Ver todos (12)
-                </AppText>
-              }
-            >
-              <AppText variant="bodySm" color="textSecondary">
-                Contenido interno organizado automáticamente con espaciado uniforme.
-              </AppText>
-            </Section>
-          </AppCard>
-
-          {/* Demo 3: Container con maxWidth */}
-          <AppText variant="subtitle" style={styles.mtMd}>
-            C. Container con Ancho Máximo (maxWidth)
+            Container con Ancho Máximo:
           </AppText>
           <Container
             maxWidth={320}
@@ -137,13 +233,13 @@ export default function HomeScreen() {
             style={styles.centeredContainerBox}
           >
             <AppText variant="bodySm" color="primary" weight="medium" align="center">
-              Container centrado (maxWidth: 320px) para tablets o diálogos.
+              Container centrado (maxWidth: 320px)
             </AppText>
           </Container>
         </Section>
 
         {/* ==================================================== */}
-        {/* SECCIÓN B: COMPONENTES UI                            */}
+        {/* SECCIÓN C: COMPONENTES DE UI                        */}
         {/* ==================================================== */}
 
         {/* 1. AppBadge */}
@@ -375,8 +471,8 @@ export default function HomeScreen() {
 
         {/* 8. Loading */}
         <Section
-          title="8. Carga (Loading)"
-          description="Indicadores de progreso en bloque y pantalla completa"
+          title="8. Carga Inline (Loading)"
+          description="Indicadores de progreso dentro de componentes"
         >
           <AppCard variant="outlined">
             <Loading
@@ -387,6 +483,35 @@ export default function HomeScreen() {
           </AppCard>
         </Section>
       </Container>
+
+      {/* Modales de Confirmación */}
+      <ConfirmModal
+        visible={showConfirmModal}
+        title="¿Publicar Solicitud?"
+        message="Esta solicitud será visible para todo el equipo y no podrá ser revertida."
+        confirmText="Sí, Publicar"
+        loading={modalLoading}
+        onConfirm={handleConfirmAction}
+        onCancel={() => setShowConfirmModal(false)}
+      />
+
+      <ConfirmModal
+        visible={showDangerModal}
+        variant="danger"
+        title="¿Eliminar Registro?"
+        message="Esta acción es irreversible y se perderán todos los datos asociados."
+        confirmText="Sí, Eliminar"
+        loading={modalLoading}
+        onConfirm={handleConfirmAction}
+        onCancel={() => setShowDangerModal(false)}
+      />
+
+      {/* Overlay de Carga de Pantalla Completa */}
+      <LoadingOverlay
+        visible={showLoadingOverlay}
+        message="Sincronizando datos..."
+        submessage="Por favor espera un momento"
+      />
     </Screen>
   );
 }
@@ -416,6 +541,9 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     gap: spacing.md,
+  },
+  toastGrid: {
+    gap: spacing.sm,
   },
   cardHeaderRow: {
     flexDirection: "row",
