@@ -4,38 +4,76 @@ import {
   type TextProps,
   type TextStyle,
 } from "react-native";
-import { colors, typography, type ColorKey } from "../../theme";
+import {
+  colors,
+  typography,
+  type ColorKey,
+} from "../../theme";
 
-export type TextVariant = "h1" | "title" | "subtitle" | "body" | "bodySm" | "caption";
+export type TextVariant =
+  | "h1"
+  | "title"
+  | "subtitle"
+  | "body"
+  | "bodySm"
+  | "caption";
+
 export type FontWeightKey = keyof typeof typography.fontWeight;
+export type FontSizeKey = keyof typeof typography.fontSize;
 
 export type AppTextProps = TextProps & {
   variant?: TextVariant;
-  color?: ColorKey | string;
+  /** Sugiere claves del theme y permite strings HEX/RGB */
+  color?: ColorKey | (string & {});
+  size?: FontSizeKey;
   weight?: FontWeightKey;
   align?: TextStyle["textAlign"];
+  transform?: TextStyle["textTransform"];
+  underline?: boolean;
+  strikethrough?: boolean;
+  truncate?: boolean;
 };
 
 export function AppText({
   variant = "body",
   color,
+  size,
   weight,
   align,
+  transform,
+  underline,
+  strikethrough,
+  truncate,
+  numberOfLines,
   style,
   ...props
 }: AppTextProps) {
-  const textColor = color
+  const resolvedColor = color
     ? (colors[color as ColorKey] ?? color)
     : undefined;
 
+  let textDecorationLine: TextStyle["textDecorationLine"] = "none";
+  if (underline && strikethrough) {
+    textDecorationLine = "underline line-through";
+  } else if (underline) {
+    textDecorationLine = "underline";
+  } else if (strikethrough) {
+    textDecorationLine = "line-through";
+  }
+
   const customStyle: TextStyle = {
-    ...(textColor ? { color: textColor } : {}),
+    ...(resolvedColor ? { color: resolvedColor } : {}),
+    ...(size ? { fontSize: typography.fontSize[size], lineHeight: typography.lineHeight[size] } : {}),
     ...(weight ? { fontWeight: typography.fontWeight[weight] } : {}),
     ...(align ? { textAlign: align } : {}),
+    ...(transform ? { textTransform: transform } : {}),
+    ...(textDecorationLine !== "none" ? { textDecorationLine } : {}),
   };
 
   return (
     <Text
+      numberOfLines={truncate ? (numberOfLines ?? 1) : numberOfLines}
+      ellipsizeMode={truncate ? "tail" : props.ellipsizeMode}
       style={[styles[variant], customStyle, style]}
       {...props}
     />
