@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Alert, StyleSheet, View } from "react-native";
 import {
   ConfirmModal,
@@ -6,6 +7,13 @@ import {
   Toast,
   type ToastVariant,
 } from "@/components/feedback";
+import {
+  DateInput,
+  FormError,
+  FormInput,
+  PasswordInput,
+  SelectInput,
+} from "@/components/form";
 import {
   AppHeader,
   Container,
@@ -25,6 +33,14 @@ import {
   Loading,
 } from "@/components/ui";
 import { colors, spacing } from "@/theme";
+
+type FormDemoData = {
+  fullName: string;
+  email: string;
+  password: string;
+  department: string;
+  startDate: string;
+};
 
 export default function HomeScreen() {
   const [email, setEmail] = useState("");
@@ -46,6 +62,34 @@ export default function HomeScreen() {
     message: string;
     variant: ToastVariant;
   } | null>(null);
+
+  // Formulario con React Hook Form
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { isSubmitting },
+  } = useForm<FormDemoData>({
+    defaultValues: {
+      fullName: "",
+      email: "",
+      password: "",
+      department: "",
+      startDate: "2026-10-15",
+    },
+  });
+
+  const selectedDepartment = watch("department");
+  const selectedDate = watch("startDate");
+
+  const onSubmitForm = (data: FormDemoData) => {
+    setToastMessage({
+      title: "¡Formulario Válido!",
+      message: `Usuario ${data.fullName} (${data.department || "Sin Dpto."}) registrado.`,
+      variant: "success",
+    });
+  };
 
   const handleSimulateSubmit = () => {
     setLoading(true);
@@ -83,6 +127,32 @@ export default function HomeScreen() {
         variant: "info",
       });
     }, 2000);
+  };
+
+  const handleSelectDepartment = () => {
+    Alert.alert(
+      "Seleccionar Departamento",
+      "Elige un área de la empresa:",
+      [
+        { text: "Ingeniería", onPress: () => setValue("department", "Ingeniería") },
+        { text: "Operaciones", onPress: () => setValue("department", "Operaciones") },
+        { text: "Ventas", onPress: () => setValue("department", "Ventas") },
+        { text: "Cancelar", style: "cancel" },
+      ]
+    );
+  };
+
+  const handleSelectDate = () => {
+    Alert.alert(
+      "Fecha de Inicio",
+      "Selecciona una fecha de inicio:",
+      [
+        { text: "Hoy (2026-10-04)", onPress: () => setValue("startDate", "2026-10-04") },
+        { text: "Próximo Lunes (2026-10-06)", onPress: () => setValue("startDate", "2026-10-06") },
+        { text: "Fin de Mes (2026-10-31)", onPress: () => setValue("startDate", "2026-10-31") },
+        { text: "Cancelar", style: "cancel" },
+      ]
+    );
   };
 
   return (
@@ -130,7 +200,81 @@ export default function HomeScreen() {
         ) : null}
 
         {/* ==================================================== */}
-        {/* SECCIÓN A: COMPONENTES DE FEEDBACK                  */}
+        {/* SECCIÓN A: FORMULARIOS (REACT HOOK FORM)             */}
+        {/* ==================================================== */}
+        <Section
+          title="📝 Formularios (React Hook Form)"
+          description="Integración de FormInput, PasswordInput, SelectInput y DateInput"
+          withDivider
+        >
+          <AppCard variant="outlined">
+            <FormInput
+              control={control}
+              name="fullName"
+              label="Nombre Completo"
+              placeholder="Juan Pérez"
+              clearable
+              rules={{ required: "El nombre es obligatorio" }}
+            />
+
+            <FormInput
+              control={control}
+              name="email"
+              label="Correo Corporativo"
+              placeholder="juan@empresa.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              clearable
+              rules={{
+                required: "El correo es obligatorio",
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: "Formato de correo no válido",
+                },
+              }}
+            />
+
+            <PasswordInput
+              control={control}
+              name="password"
+              label="Contraseña de Acceso"
+              rules={{
+                required: "La contraseña es requerida",
+                minLength: {
+                  value: 6,
+                  message: "Debe contener al menos 6 caracteres",
+                },
+              }}
+            />
+
+            <SelectInput
+              label="Departamento"
+              value={selectedDepartment}
+              placeholder="Seleccionar área..."
+              onPress={handleSelectDepartment}
+              hint="Área a la que pertenece el usuario"
+            />
+
+            <DateInput
+              label="Fecha de Ingreso"
+              value={selectedDate}
+              onPress={handleSelectDate}
+            />
+
+            <FormError message="Asegúrate de completar todos los campos obligatorios." />
+
+            <AppButton
+              title="Registrar Usuario (Submit)"
+              variant="primary"
+              loading={isSubmitting}
+              onPress={handleSubmit(onSubmitForm)}
+              style={styles.mtSm}
+            />
+          </AppCard>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN B: FEEDBACK & MODALES                       */}
         {/* ==================================================== */}
         <Section
           title="💬 Feedback & Modales"
@@ -187,14 +331,13 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* SECCIÓN B: COMPONENTES DE LAYOUT                    */}
+        {/* SECCIÓN C: LAYOUT & ESTRUCTURA                      */}
         {/* ==================================================== */}
         <Section
           title="📐 Layout & Estructura"
           description="AppHeader, Container y Section"
           withDivider
         >
-          {/* Demo: Variantes de AppHeader */}
           <AppText variant="subtitle">Variaciones de AppHeader:</AppText>
           <AppCard variant="outlined" padding="none">
             <AppHeader
@@ -222,7 +365,6 @@ export default function HomeScreen() {
             />
           </AppCard>
 
-          {/* Demo: Container con maxWidth */}
           <AppText variant="subtitle" style={styles.mtMd}>
             Container con Ancho Máximo:
           </AppText>
@@ -239,7 +381,7 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* SECCIÓN C: COMPONENTES DE UI                        */}
+        {/* SECCIÓN D: COMPONENTES DE UI                        */}
         {/* ==================================================== */}
 
         {/* 1. AppBadge */}
