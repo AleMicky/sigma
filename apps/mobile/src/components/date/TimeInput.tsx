@@ -179,7 +179,13 @@ export function TimeInput({
           is24Hour={is24Hour}
           minuteInterval={minuteInterval}
           display="default"
-          onChange={handleChange}
+          onValueChange={(_event, date) => {
+            setOpen(false);
+            if (date) {
+              onChange(date);
+            }
+          }}
+          onDismiss={() => setOpen(false)}
         />
       )}
 
@@ -214,7 +220,11 @@ export function TimeInput({
                 is24Hour={is24Hour}
                 minuteInterval={minuteInterval}
                 display="spinner"
-                onChange={handleChange}
+                onValueChange={(_event, date) => {
+                  if (date) {
+                    setTempDate(date);
+                  }
+                }}
                 textColor={colors.text}
                 style={styles.iosPicker}
               />

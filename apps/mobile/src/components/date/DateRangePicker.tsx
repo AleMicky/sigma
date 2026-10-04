@@ -327,7 +327,13 @@ export function DateRangePicker({
           display="default"
           minimumDate={pickerMinDate}
           maximumDate={maxDate}
-          onChange={handleChange}
+          onValueChange={(_event, selectedDate) => {
+            setPicker(null);
+            if (selectedDate) {
+              handleDateChange(selectedDate);
+            }
+          }}
+          onDismiss={() => setPicker(null)}
         />
       )}
 
@@ -362,7 +368,11 @@ export function DateRangePicker({
                 display="spinner"
                 minimumDate={pickerMinDate}
                 maximumDate={maxDate}
-                onChange={handleChange}
+                onValueChange={(_event, selectedDate) => {
+                  if (selectedDate) {
+                    setTempDate(selectedDate);
+                  }
+                }}
                 textColor={colors.text}
                 style={styles.iosPicker}
               />
