@@ -56,7 +56,7 @@ export function SolicitudCard({ solicitud }: SolicitudCardProps) {
         <TouchableOpacity
             activeOpacity={0.75}
             onPress={handlePress}
-            className="mb-3 rounded-2xl bg-white p-4 border border-slate-200/80 shadow-sm active:bg-slate-50"
+            className="mb-3 rounded-2xl bg-white p-4 border border-slate-200/80 shadow-2xs active:bg-slate-50"
         >
             {/* Header: Código + Prioridad + Estado */}
             <View className="flex-row items-center justify-between gap-2">

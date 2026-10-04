@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import {
+    CloseIcon,
     PlusIcon,
     SearchIcon,
     WrenchIcon,
@@ -67,11 +68,17 @@ export function SolicitudesListScreen() {
 
     return (
         <View className="flex-1 bg-slate-50">
-            {/* Standardized Header */}
+            {/* Standardized Mobile Header with Quick Action */}
             <ScreenHeader
                 title="Solicitudes"
                 subtitle="Mantenimiento correctivo y preventivo"
                 badgeCount={totalCount}
+                rightAction={{
+                    icon: <PlusIcon size={14} color="#ffffff" />,
+                    label: "Nueva",
+                    variant: "primary",
+                    onPress: handleCreateNew,
+                }}
             />
 
             {/* Sticky Filters & Search Subheader */}
@@ -102,19 +109,29 @@ export function SolicitudesListScreen() {
 
             {/* Active Filters Info Bar */}
             {hasActiveFilters && (
-                <View className="bg-slate-100/80 px-4 py-2 flex-row items-center justify-between border-b border-slate-200/60">
-                    <Text className="text-[11px] font-semibold text-slate-600">
-                        {solicitudes.length === 1
-                            ? "1 resultado encontrado"
-                            : `${solicitudes.length} resultados encontrados`}
-                    </Text>
+                <View className="bg-blue-50/70 px-4 py-2 flex-row items-center justify-between border-b border-blue-100">
+                    <View className="flex-row items-center gap-1.5 flex-1 pr-2">
+                        <Text className="text-[11px] font-semibold text-blue-900">
+                            {solicitudes.length === 1
+                                ? "1 resultado encontrado"
+                                : `${solicitudes.length} resultados`}
+                        </Text>
+                        {selectedEstado && (
+                            <View className="rounded-md bg-blue-100 px-1.5 py-0.5">
+                                <Text className="text-[10px] font-bold text-blue-800">
+                                    {selectedEstado}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                     <TouchableOpacity
                         onPress={handleClearFilters}
                         activeOpacity={0.7}
-                        className="flex-row items-center gap-1"
+                        className="flex-row items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1"
                     >
-                        <Text className="text-[11px] font-bold text-blue-600">
-                            Limpiar filtros
+                        <CloseIcon size={12} color="#1d4ed8" />
+                        <Text className="text-[11px] font-bold text-blue-700">
+                            Limpiar
                         </Text>
                     </TouchableOpacity>
                 </View>
