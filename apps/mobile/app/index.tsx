@@ -2,6 +2,12 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Alert, StyleSheet, View } from "react-native";
 import {
+  DataList,
+  KeyValueRow,
+  ListItem,
+  StatusRow,
+} from "@/components/data";
+import {
   ConfirmModal,
   LoadingOverlay,
   Toast,
@@ -49,6 +55,38 @@ type FormDemoData = {
   department: string;
   startDate: string;
 };
+
+type DemoItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  variant: "success" | "warning" | "danger" | "primary";
+};
+
+const mockItems: DemoItem[] = [
+  {
+    id: "1",
+    title: "Solicitud de Vacaciones",
+    subtitle: "Aprobada por RRHH",
+    status: "Aprobado",
+    variant: "success",
+  },
+  {
+    id: "2",
+    title: "Reembolso de Gastos",
+    subtitle: "En revisión por contabilidad",
+    status: "Pendiente",
+    variant: "warning",
+  },
+  {
+    id: "3",
+    title: "Permiso Especial",
+    subtitle: "Rechazado por exceder límite",
+    status: "Rechazado",
+    variant: "danger",
+  },
+];
 
 export default function HomeScreen() {
   const [email, setEmail] = useState("");
@@ -223,21 +261,77 @@ export default function HomeScreen() {
         ) : null}
 
         {/* ==================================================== */}
-        {/* NUEVOS COMPONENTES: AVATARS, CHIPS, SWITCH & CONTROLS */}
+        {/* SECCIÓN A: COMPONENTES DE DATOS (DATA)               */}
+        {/* ==================================================== */}
+        <Section
+          title="📊 Visualización de Datos"
+          description="ListItem, StatusRow, KeyValueRow y DataList"
+          withDivider
+        >
+          {/* List Items */}
+          <AppText variant="subtitle">Elementos de Lista (ListItem):</AppText>
+          <View style={styles.gapSm}>
+            <ListItem
+              title="Carlos Mendoza"
+              subtitle="Ingeniero de Software Senior"
+              caption="Última actividad: hace 10 min"
+              left={<AppAvatar name="Carlos Mendoza" size="md" online />}
+              onPress={() => Alert.alert("Detalle", "Abriendo perfil de Carlos")}
+            />
+            <ListItem
+              title="Solicitud #SOL-8910"
+              subtitle="Aprobación de presupuesto para servidores"
+              variant="card"
+              right={<AppBadge label="Pendiente" variant="warning" size="sm" />}
+              onPress={() => Alert.alert("Detalle", "Abriendo solicitud")}
+            />
+          </View>
+
+          {/* KeyValueRow & StatusRow */}
+          <AppText variant="subtitle" style={styles.mtMd}>
+            Filas de Metadatos (KeyValueRow & StatusRow):
+          </AppText>
+          <AppCard variant="outlined">
+            <StatusRow
+              label="Estado de cuenta"
+              status="Verificado"
+              variant="success"
+              subtitle="Cuenta corporativa activa"
+              withDivider
+            />
+            <KeyValueRow
+              label="ID de Usuario"
+              value="USR-94820"
+              withDivider
+            />
+            <KeyValueRow
+              label="Plan Actual"
+              value="Enterprise Pro"
+              valueColor="primary"
+              withDivider
+            />
+            <KeyValueRow
+              label="Saldo Disponible"
+              value="$1,450.00 USD"
+              valueColor="success"
+            />
+          </AppCard>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN B: AVATARES, CHIPS & BUSCADOR                */}
         {/* ==================================================== */}
         <Section
           title="🌟 Avatares y Búsqueda"
           description="AppAvatar, SearchInput y AppChip"
           withDivider
         >
-          {/* Búsqueda */}
           <SearchInput
             value={searchValue}
             onChangeText={setSearchValue}
             placeholder="Buscar colaboradores, solicitudes..."
           />
 
-          {/* Avatares */}
           <AppText variant="subtitle" style={styles.mtSm}>
             Avatares (AppAvatar):
           </AppText>
@@ -248,7 +342,6 @@ export default function HomeScreen() {
             <AppAvatar name="Admin" size="xs" />
           </View>
 
-          {/* Chips */}
           <AppText variant="subtitle" style={styles.mtSm}>
             Filtros & Tags (AppChip):
           </AppText>
@@ -279,7 +372,7 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* CONTROLES DE SELECCIÓN: CHECKBOX, RADIO, SWITCH      */}
+        {/* SECCIÓN C: CONTROLES DE SELECCIÓN                    */}
         {/* ==================================================== */}
         <Section
           title="🔘 Controles de Selección"
@@ -322,7 +415,7 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* PAGINACIÓN Y SKELETON                                */}
+        {/* SECCIÓN D: PAGINACIÓN Y SKELETON                     */}
         {/* ==================================================== */}
         <Section
           title="💀 Skeleton & Paginación"
@@ -366,7 +459,7 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* FORMULARIOS (REACT HOOK FORM)                        */}
+        {/* SECCIÓN E: FORMULARIOS (REACT HOOK FORM)             */}
         {/* ==================================================== */}
         <Section
           title="📝 Formularios (React Hook Form)"
@@ -440,7 +533,7 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* FEEDBACK & MODALES                                  */}
+        {/* SECCIÓN F: FEEDBACK & MODALES                       */}
         {/* ==================================================== */}
         <Section
           title="💬 Feedback & Modales"
@@ -467,62 +560,6 @@ export default function HomeScreen() {
             variant="outline"
             onPress={handleTriggerLoadingOverlay}
           />
-        </Section>
-
-        {/* ==================================================== */}
-        {/* COMPONENTES BASE: BOTONES & BADGES                   */}
-        {/* ==================================================== */}
-        <Section
-          title="1. Insignias (AppBadge)"
-          description="Etiquetas de estado en modo sutil y sólido"
-          withDivider
-        >
-          <View style={styles.badgeRow}>
-            <AppBadge label="Default" variant="default" />
-            <AppBadge label="Primary" variant="primary" dot />
-            <AppBadge label="Success" variant="success" dot />
-            <AppBadge label="Warning" variant="warning" dot />
-            <AppBadge label="Danger" variant="danger" dot />
-          </View>
-        </Section>
-
-        <Section
-          title="2. Botones de Icono (AppIconButton)"
-          description="Variantes ghost, tonal, outline, filled y danger"
-          withDivider
-        >
-          <View style={styles.iconButtonRow}>
-            <AppIconButton
-              icon="heart-outline"
-              accessibilityLabel="Favorito"
-              variant="ghost"
-              onPress={() => Alert.alert("Favorito", "Agregado")}
-            />
-            <AppIconButton
-              icon="bookmark-outline"
-              accessibilityLabel="Guardar"
-              variant="tonal"
-              onPress={() => Alert.alert("Guardar", "Guardado")}
-            />
-            <AppIconButton
-              icon="share-social-outline"
-              accessibilityLabel="Compartir"
-              variant="outline"
-              onPress={() => Alert.alert("Compartir", "Enlace copiado")}
-            />
-            <AppIconButton
-              icon="add"
-              accessibilityLabel="Crear"
-              variant="filled"
-              onPress={() => Alert.alert("Crear", "Nuevo elemento")}
-            />
-            <AppIconButton
-              icon="trash-outline"
-              accessibilityLabel="Eliminar"
-              variant="danger"
-              onPress={() => Alert.alert("Eliminar", "¿Estás seguro?")}
-            />
-          </View>
         </Section>
       </Container>
 
@@ -569,6 +606,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.xs,
   },
+  gapSm: {
+    gap: spacing.sm,
+  },
+  gapMd: {
+    gap: spacing.md,
+  },
   badgeRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -585,20 +628,12 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: spacing.sm,
   },
-  iconButtonRow: {
-    flexDirection: "row",
-    gap: spacing.md,
-    alignItems: "center",
-  },
   buttonRow: {
     flexDirection: "row",
     gap: spacing.md,
   },
   toastGrid: {
     gap: spacing.sm,
-  },
-  gapMd: {
-    gap: spacing.md,
   },
   skeletonHeader: {
     flexDirection: "row",
