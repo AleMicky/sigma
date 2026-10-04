@@ -1,7 +1,7 @@
 export const APP_CONFIG = {
     name: "SIGMA",
     api: {
-        defaultUrl: "http://192.168.1.100:8080",
+        defaultUrl: "http://157.173.99.216:8085",
         prefix: "/api",
         timeout: 15_000,
     },
