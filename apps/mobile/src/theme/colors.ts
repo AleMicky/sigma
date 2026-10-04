@@ -1,4 +1,4 @@
-export const colors = {
+export const lightColors = {
   primary: "#2563EB",
   primaryDark: "#1D4ED8",
   primaryLight: "#DBEAFE",
@@ -24,4 +24,34 @@ export const colors = {
   transparent: "transparent",
 } as const;
 
-export type ColorKey = keyof typeof colors;
+export const darkColors = {
+  primary: "#3B82F6",
+  primaryDark: "#2563EB",
+  primaryLight: "#1E293B",
+
+  background: "#0F172A",
+  surface: "#1E293B",
+  surfaceSecondary: "#334155",
+
+  text: "#F8FAFC",
+  textSecondary: "#94A3B8",
+  textMuted: "#64748B",
+
+  border: "#334155",
+  borderDark: "#475569",
+
+  success: "#22C55E",
+  warning: "#F59E0B",
+  danger: "#EF4444",
+  dangerLight: "#450A0A",
+
+  white: "#FFFFFF",
+  black: "#000000",
+  transparent: "transparent",
+} as const;
+
+export type ColorPalette = typeof lightColors;
+export type ColorKey = keyof ColorPalette;
+
+// Default color palette for static stylesheets
+export const colors: ColorPalette = lightColors;

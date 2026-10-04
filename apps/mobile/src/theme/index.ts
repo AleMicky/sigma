@@ -1,4 +1,4 @@
-import { colors } from "./colors";
+import { colors, darkColors, lightColors } from "./colors";
 import { radius } from "./radius";
 import { shadows } from "./shadows";
 import { spacing } from "./spacing";
@@ -9,9 +9,13 @@ export * from "./radius";
 export * from "./shadows";
 export * from "./spacing";
 export * from "./typography";
+export { useAppTheme } from "@/hooks/useAppTheme";
+export { useThemeStore, type ThemeMode } from "@/store/useThemeStore";
 
 export const theme = {
   colors,
+  lightColors,
+  darkColors,
   spacing,
   radius,
   typography,

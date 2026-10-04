@@ -4,11 +4,11 @@ import {
   Image,
   Modal,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { colors } from "@/theme/colors";
@@ -40,6 +40,7 @@ export function ImagePreview({
   testID,
 }: ImagePreviewProps) {
   const [imageLoading, setImageLoading] = useState(true);
+  const insets = useSafeAreaInsets();
 
   if (!uri) {
     return null;
@@ -54,10 +55,17 @@ export function ImagePreview({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          {/* Header Bar */}
-          <View style={styles.header}>
+      <View
+        style={[
+          styles.container,
+          {
+            paddingTop: Math.max(insets.top, spacing.md),
+            paddingBottom: Math.max(insets.bottom, spacing.md),
+          },
+        ]}
+      >
+        {/* Header Bar */}
+        <View style={styles.header}>
             <View style={styles.headerTitleContainer}>
               <Text style={styles.headerTitle} numberOfLines={1}>
                 {title}
@@ -137,7 +145,6 @@ export function ImagePreview({
               </Pressable>
             ) : null}
           </View>
-        </SafeAreaView>
       </View>
     </Modal>
   );
@@ -147,9 +154,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.94)",
-  },
-  safeArea: {
-    flex: 1,
     justifyContent: "space-between",
   },
   header: {

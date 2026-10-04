@@ -9,10 +9,10 @@ import {
   type ViewStyle,
 } from "react-native";
 import {
-  colors,
   radius as themeRadius,
   shadows,
   spacing,
+  useAppTheme,
   type RadiusKey,
   type ShadowKey,
   type SpacingKey,
@@ -40,9 +40,34 @@ export function AppCard({
   style,
   ...props
 }: AppCardProps) {
+  const { colors } = useAppTheme();
+
+  const getDynamicVariantStyle = () => {
+    switch (variant) {
+      case "filled":
+        return {
+          backgroundColor: colors.surface,
+          borderColor: "transparent",
+        };
+      case "elevated":
+        return {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+        };
+      case "outlined":
+      default:
+        return {
+          backgroundColor: colors.background,
+          borderWidth: 1,
+          borderColor: colors.border,
+        };
+    }
+  };
+
   const cardStyles = [
     styles.base,
-    styles[variant],
+    getDynamicVariantStyle(),
     shadows[shadow],
     {
       padding: spacing[padding],
@@ -98,24 +123,23 @@ AppCard.Footer = function CardFooter({
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
-  return <View style={[styles.footer, style]}>{children}</View>;
+  const { colors } = useAppTheme();
+  return (
+    <View
+      style={[
+        styles.footer,
+        { borderTopColor: colors.border },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: colors.background,
     overflow: "hidden",
-  },
-  outlined: {
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  elevated: {
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filled: {
-    backgroundColor: colors.surface,
   },
   pressed: {
     opacity: 0.88,
@@ -131,6 +155,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
 });

@@ -14,7 +14,7 @@ import {
   type Edge,
 } from "react-native-safe-area-context";
 import { StatusBar, type StatusBarStyle } from "expo-status-bar";
-import { colors, spacing } from "../../theme";
+import { spacing, useAppTheme } from "../../theme";
 
 export type ScreenProps = {
   children: ReactNode;
@@ -36,7 +36,6 @@ export type ScreenProps = {
   statusBarStyle?: StatusBarStyle;
 };
 
-
 export function Screen({
   children,
   style,
@@ -46,8 +45,11 @@ export function Screen({
   withPadding = true,
   keyboardAvoiding = true,
   edges = ["top", "bottom", "left", "right"],
-  statusBarStyle = "dark",
+  statusBarStyle,
 }: ScreenProps) {
+  const { colors, isDark } = useAppTheme();
+  const effectiveStatusBarStyle = statusBarStyle ?? (isDark ? "light" : "dark");
+
   const content = scrollable ? (
     <ScrollView
       contentContainerStyle={[
@@ -74,8 +76,15 @@ export function Screen({
   );
 
   return (
-    <SafeAreaView edges={edges} style={[styles.safeArea, style]}>
-      <StatusBar style={statusBarStyle} />
+    <SafeAreaView
+      edges={edges}
+      style={[
+        styles.safeArea,
+        { backgroundColor: colors.background },
+        style,
+      ]}
+    >
+      <StatusBar style={effectiveStatusBarStyle} />
       {keyboardAvoiding ? (
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -93,7 +102,6 @@ export function Screen({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,

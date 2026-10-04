@@ -5,8 +5,8 @@ import {
   type TextStyle,
 } from "react-native";
 import {
-  colors,
   typography,
+  useAppTheme,
   type ColorKey,
 } from "../../theme";
 
@@ -48,9 +48,16 @@ export function AppText({
   style,
   ...props
 }: AppTextProps) {
+  const { colors } = useAppTheme();
+
+  const defaultVariantColor =
+    variant === "caption" || variant === "bodySm"
+      ? colors.textSecondary
+      : colors.text;
+
   const resolvedColor = color
     ? (colors[color as ColorKey] ?? color)
-    : undefined;
+    : defaultVariantColor;
 
   let textDecorationLine: TextStyle["textDecorationLine"] = "none";
   if (underline && strikethrough) {
@@ -62,7 +69,7 @@ export function AppText({
   }
 
   const customStyle: TextStyle = {
-    ...(resolvedColor ? { color: resolvedColor } : {}),
+    color: resolvedColor,
     ...(size ? { fontSize: typography.fontSize[size], lineHeight: typography.lineHeight[size] } : {}),
     ...(weight ? { fontWeight: typography.fontWeight[weight] } : {}),
     ...(align ? { textAlign: align } : {}),
@@ -85,36 +92,30 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xxxl,
     lineHeight: typography.lineHeight.xxl,
     fontWeight: typography.fontWeight.bold,
-    color: colors.text,
   },
   title: {
     fontSize: typography.fontSize.xxl,
     lineHeight: typography.lineHeight.xl,
     fontWeight: typography.fontWeight.bold,
-    color: colors.text,
   },
   subtitle: {
     fontSize: typography.fontSize.xl,
     lineHeight: typography.lineHeight.lg,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.text,
   },
   body: {
     fontSize: typography.fontSize.md,
     lineHeight: typography.lineHeight.md,
     fontWeight: typography.fontWeight.regular,
-    color: colors.text,
   },
   bodySm: {
     fontSize: typography.fontSize.sm,
     lineHeight: typography.lineHeight.sm,
     fontWeight: typography.fontWeight.regular,
-    color: colors.textSecondary,
   },
   caption: {
     fontSize: typography.fontSize.xs,
     lineHeight: typography.lineHeight.xs,
     fontWeight: typography.fontWeight.regular,
-    color: colors.textSecondary,
   },
 });

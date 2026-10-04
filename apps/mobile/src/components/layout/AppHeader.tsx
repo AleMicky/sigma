@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { AppIconButton } from "@/components/ui/AppIconButton";
-import { colors, spacing, typography } from "@/theme";
+import { spacing, typography, useAppTheme } from "@/theme";
 
 export type AppHeaderProps = {
   title: string;
@@ -37,6 +37,7 @@ export function AppHeader({
   titleStyle,
 }: AppHeaderProps) {
   const router = useRouter();
+  const { colors } = useAppTheme();
 
   const handleBack = () => {
     if (onBackPress) {
@@ -47,7 +48,17 @@ export function AppHeader({
   };
 
   return (
-    <View style={[styles.container, bordered && styles.bordered, style]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          borderBottomColor: colors.border,
+        },
+        bordered && styles.bordered,
+        style,
+      ]}
+    >
       <View style={[styles.left, centerTitle && styles.sideSlot]}>
         {showBack ? (
           <AppIconButton
@@ -61,11 +72,17 @@ export function AppHeader({
       </View>
 
       <View style={[styles.titleContainer, centerTitle && styles.titleCenter]}>
-        <Text numberOfLines={1} style={[styles.title, titleStyle]}>
+        <Text
+          numberOfLines={1}
+          style={[styles.title, { color: colors.text }, titleStyle]}
+        >
           {title}
         </Text>
         {subtitle ? (
-          <Text numberOfLines={1} style={styles.subtitle}>
+          <Text
+            numberOfLines={1}
+            style={[styles.subtitle, { color: colors.textSecondary }]}
+          >
             {subtitle}
           </Text>
         ) : null}
@@ -85,12 +102,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.background,
     gap: spacing.sm,
   },
   bordered: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
   },
   left: {
     flexDirection: "row",
@@ -115,12 +130,10 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     lineHeight: typography.lineHeight.lg,
     fontWeight: typography.fontWeight.bold,
-    color: colors.text,
   },
   subtitle: {
     fontSize: typography.fontSize.xs,
     lineHeight: typography.lineHeight.xs,
-    color: colors.textSecondary,
     marginTop: 2,
   },
 });

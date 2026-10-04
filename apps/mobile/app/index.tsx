@@ -114,7 +114,7 @@ import {
   SearchInput,
   Skeleton,
 } from "@/components/ui";
-import { colors, radius, spacing } from "@/theme";
+import { colors, radius, spacing, useAppTheme } from "@/theme";
 
 type FormDemoData = {
   fullName: string;
@@ -127,6 +127,7 @@ type FormDemoData = {
 };
 
 export default function HomeScreen() {
+  const { isDark, themeMode, setThemeMode, toggleTheme } = useAppTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorInput, setErrorInput] = useState("valor-invalido");
@@ -374,14 +375,27 @@ export default function HomeScreen() {
       {/* 1. Header principal */}
       <AppHeader
         title="Design System"
-        subtitle="Galería interactiva móvil"
+        subtitle={`Galería interactiva móvil • Modo ${isDark ? "Oscuro" : "Claro"}`}
         bordered
         rightAction={
           <View style={styles.headerActions}>
             <AppIconButton
+              icon={isDark ? "sunny-outline" : "moon-outline"}
+              accessibilityLabel="Cambiar tema"
+              variant="tonal"
+              onPress={() => {
+                toggleTheme();
+                setToastMessage({
+                  title: isDark ? "☀️ Modo Claro" : "🌙 Modo Oscuro",
+                  message: `Se activó el tema ${isDark ? "claro" : "oscuro"}`,
+                  variant: "info",
+                });
+              }}
+            />
+            <AppIconButton
               icon="notifications-outline"
               accessibilityLabel="Notificaciones"
-              variant="tonal"
+              variant="ghost"
               badgeCount={notificationCount}
               onPress={() => {
                 setNotificationCount((prev) => (prev > 0 ? prev - 1 : 5));
@@ -391,12 +405,6 @@ export default function HomeScreen() {
                   variant: "info",
                 });
               }}
-            />
-            <AppIconButton
-              icon="settings-outline"
-              accessibilityLabel="Configuración"
-              variant="ghost"
-              onPress={() => Alert.alert("Configuración", "Acceso a ajustes")}
             />
           </View>
         }
@@ -426,6 +434,68 @@ export default function HomeScreen() {
             onDismiss={() => setToastMessage(null)}
           />
         ) : null}
+
+        {/* ==================================================== */}
+        {/* CONTROL DE MODO OSCURO (THEME SWITCHER)              */}
+        {/* ==================================================== */}
+        <AppCard variant="elevated" style={styles.gapSm}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View style={styles.flex1}>
+              <AppText variant="subtitle">🌓 Apariencia y Modo Oscuro</AppText>
+              <AppText variant="caption">
+                Tema activo: <AppText variant="caption" style={{ fontWeight: "700" }}>{isDark ? "🌙 Oscuro (Dark)" : "☀️ Claro (Light)"}</AppText> • Preferencia: {themeMode.toUpperCase()}
+              </AppText>
+            </View>
+
+            <AppBadge
+              label={isDark ? "Dark Active" : "Light Active"}
+              variant={isDark ? "primary" : "default"}
+              appearance="solid"
+            />
+          </View>
+
+          <View style={styles.chipRow}>
+            <FilterChip
+              label="☀️ Claro"
+              selected={themeMode === "light"}
+              variant="solid"
+              onPress={() => {
+                setThemeMode("light");
+                setToastMessage({
+                  title: "Modo Claro",
+                  message: "Se fijó el tema claro",
+                  variant: "info",
+                });
+              }}
+            />
+            <FilterChip
+              label="🌙 Oscuro"
+              selected={themeMode === "dark"}
+              variant="solid"
+              onPress={() => {
+                setThemeMode("dark");
+                setToastMessage({
+                  title: "Modo Oscuro",
+                  message: "Se fijó el tema oscuro",
+                  variant: "info",
+                });
+              }}
+            />
+            <FilterChip
+              label="⚙️ Automático (Sistema)"
+              selected={themeMode === "system"}
+              variant="subtle"
+              onPress={() => {
+                setThemeMode("system");
+                setToastMessage({
+                  title: "Tema Automático",
+                  message: "El tema se adaptará al esquema del sistema operativo",
+                  variant: "info",
+                });
+              }}
+            />
+          </View>
+        </AppCard>
 
         {/* ==================================================== */}
         {/* SECCIÓN A: MENSAJES DE ESTADO (FEEDBACK BANNERS)     */}
