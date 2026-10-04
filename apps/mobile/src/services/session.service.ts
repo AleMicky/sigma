@@ -1,4 +1,5 @@
 import { storageService } from "@/services/storage.service";
+import { STORAGE_KEYS } from "@/constants/storage-keys";
 
 export interface AuthTokens {
   accessToken: string;
@@ -11,37 +12,33 @@ export interface SessionData<T = unknown> {
   user: T | null;
 }
 
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
-const USER_KEY = "session_user";
-
 export const sessionService = {
   /**
    * Save access token
    */
   async saveAccessToken(token: string): Promise<boolean> {
-    return storageService.set(ACCESS_TOKEN_KEY, token);
+    return storageService.set(STORAGE_KEYS.ACCESS_TOKEN, token);
   },
 
   /**
    * Get access token
    */
   async getAccessToken(): Promise<string | null> {
-    return storageService.get(ACCESS_TOKEN_KEY);
+    return storageService.get(STORAGE_KEYS.ACCESS_TOKEN);
   },
 
   /**
    * Save refresh token
    */
   async saveRefreshToken(token: string): Promise<boolean> {
-    return storageService.set(REFRESH_TOKEN_KEY, token);
+    return storageService.set(STORAGE_KEYS.REFRESH_TOKEN, token);
   },
 
   /**
    * Get refresh token
    */
   async getRefreshToken(): Promise<string | null> {
-    return storageService.get(REFRESH_TOKEN_KEY);
+    return storageService.get(STORAGE_KEYS.REFRESH_TOKEN);
   },
 
   /**
@@ -78,14 +75,14 @@ export const sessionService = {
    * Save user session data
    */
   async saveUser<T>(user: T): Promise<boolean> {
-    return storageService.setJSON(USER_KEY, user);
+    return storageService.setJSON(STORAGE_KEYS.SESSION_USER, user);
   },
 
   /**
    * Get user session data
    */
   async getUser<T>(): Promise<T | null> {
-    return storageService.getJSON<T>(USER_KEY);
+    return storageService.getJSON<T>(STORAGE_KEYS.SESSION_USER);
   },
 
   /**
@@ -136,21 +133,24 @@ export const sessionService = {
    * Quick check if a session exists (access token is present)
    */
   async isAuthenticated(): Promise<boolean> {
-    return storageService.has(ACCESS_TOKEN_KEY);
+    return storageService.has(STORAGE_KEYS.ACCESS_TOKEN);
   },
 
   /**
    * Clear tokens only (keeps user profile cached if desired)
    */
   async clearTokens(): Promise<void> {
-    await storageService.multiRemove([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY]);
+    await storageService.multiRemove([
+      STORAGE_KEYS.ACCESS_TOKEN,
+      STORAGE_KEYS.REFRESH_TOKEN,
+    ]);
   },
 
   /**
    * Clear user profile data
    */
   async clearUser(): Promise<void> {
-    await storageService.remove(USER_KEY);
+    await storageService.remove(STORAGE_KEYS.SESSION_USER);
   },
 
   /**
@@ -158,9 +158,9 @@ export const sessionService = {
    */
   async clear(): Promise<void> {
     await storageService.multiRemove([
-      ACCESS_TOKEN_KEY,
-      REFRESH_TOKEN_KEY,
-      USER_KEY,
+      STORAGE_KEYS.ACCESS_TOKEN,
+      STORAGE_KEYS.REFRESH_TOKEN,
+      STORAGE_KEYS.SESSION_USER,
     ]);
   },
 };
