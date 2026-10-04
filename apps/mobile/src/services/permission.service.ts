@@ -100,6 +100,21 @@ export const permissionService = {
   },
 
   /**
+   * Get the current device coordinates if permission is granted
+   */
+  async getCurrentPosition(
+    accuracy: Location.Accuracy = Location.Accuracy.Balanced
+  ): Promise<Location.LocationObjectCoords | null> {
+    try {
+      const location = await Location.getCurrentPositionAsync({ accuracy });
+      return location.coords;
+    } catch (error) {
+      console.error("[permissionService] Error getting current position:", error);
+      return null;
+    }
+  },
+
+  /**
    * Open the application settings screen (useful when user denied permissions permanently)
    */
   async openSettings(): Promise<void> {

@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "mobile": "pnpm --filter mobile",
+    "mobile:prebuild": "pnpm --filter mobile prebuild:android",
+    "mobile:build:apk": "pnpm --filter mobile build:apk",
+    "mobile:build:apk:debug": "pnpm --filter mobile build:apk:debug",
+    "mobile:typecheck": "pnpm --filter mobile typecheck"
   },
   "keywords": [],
   "author": "",

@@ -4,6 +4,23 @@ import { api } from "@/api/axios-client";
 import { ApiError } from "@/api/api-error";
 import { sessionService } from "@/services/session.service";
 
+type ApiSuccessEnvelope<T = unknown> = {
+  success: boolean;
+  message?: string;
+  data: T;
+  timestamp?: string;
+};
+
+function isSuccessEnvelope(payload: unknown): payload is ApiSuccessEnvelope {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "success" in payload &&
+    (payload as { success: unknown }).success === true &&
+    "data" in payload
+  );
+}
+
 export function setupApiInterceptors() {
   api.interceptors.request.use(
     async (config) => {
@@ -23,7 +40,12 @@ export function setupApiInterceptors() {
   );
 
   api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      if (isSuccessEnvelope(response.data)) {
+        response.data = response.data.data;
+      }
+      return response;
+    },
 
     async (error) => {
       if (!axios.isAxiosError(error)) {

@@ -8,8 +8,9 @@ export const ROUTES = {
   },
 
   APP: {
-    HOME: "/(app)/(tabs)",
-    PROFILE: "/(app)/(tabs)/profile",
+    WELCOME: "/(app)/welcome",
+    HOME: "/(app)/home",
+    PROFILE: "/(app)/profile",
     SETTINGS: "/(app)/settings",
   },
 
