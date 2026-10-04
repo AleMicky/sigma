@@ -19,9 +19,17 @@ import {
   type PulseType,
   type SlideDirection,
 } from "@/components/animation";
+import { BiometricLockPrompt } from "@/components/auth";
+import {
+  MiniBarChart,
+  ProgressRing,
+  SparklineChart,
+} from "@/components/charts";
+import { QRScannerModal } from "@/components/scanner";
 import {
   DataList,
   DetailCard,
+  InfiniteDataList,
   InfoRow,
   KeyValueRow,
   ListItem,
@@ -254,6 +262,63 @@ export default function HomeScreen() {
   const [fadeVisible, setFadeVisible] = useState<boolean>(true);
   const [fadeDirection, setFadeDirection] = useState<FadeDirection>("up");
   const [scaleFactor, setScaleFactor] = useState<number>(0.95);
+
+  // Estados de Gráficos y Analítica (Charts)
+  const [chartMetric, setChartMetric] = useState<"weekly" | "monthly">("weekly");
+  const [selectedChartBar, setSelectedChartBar] = useState<string | null>(null);
+
+  // Estados de Escáner QR / Barras
+  const [showQRScanner, setShowQRScanner] = useState<boolean>(false);
+  const [scannedCodeData, setScannedCodeData] = useState<string | null>(null);
+
+  // Estados de Autenticación Biométrica
+  const [showBiometricLock, setShowBiometricLock] = useState<boolean>(false);
+  const [isBiometricUnlocked, setIsBiometricUnlocked] = useState<boolean>(false);
+
+  // Estados de Paginación Infinita (InfiniteDataList)
+  const [infiniteItems, setInfiniteItems] = useState<Array<{ id: string; title: string; subtitle: string; status: "success" | "warning" | "primary"; amount: string; date: string }>>([
+    { id: "1", title: "Licencias Microsoft 365 E5", subtitle: "Departamento de Tecnología", status: "success", amount: "$1,890.00", date: "04 Oct" },
+    { id: "2", title: "Servidores Cloud AWS EC2", subtitle: "Infraestructura & DevOps", status: "primary", amount: "$3,450.00", date: "03 Oct" },
+    { id: "3", title: "Capacitación Ciberseguridad", subtitle: "Recursos Humanos", status: "warning", amount: "$850.00", date: "02 Oct" },
+    { id: "4", title: "Auditoría Contable Q3", subtitle: "Finanzas & Contraloría", status: "success", amount: "$2,200.00", date: "01 Oct" },
+  ]);
+  const [infiniteHasNextPage, setInfiniteHasNextPage] = useState<boolean>(true);
+  const [isInfiniteFetching, setIsInfiniteFetching] = useState<boolean>(false);
+
+  const handleFetchNextPage = () => {
+    if (isInfiniteFetching || !infiniteHasNextPage) return;
+    setIsInfiniteFetching(true);
+    setTimeout(() => {
+      setInfiniteItems((prev) => {
+        const nextId = prev.length + 1;
+        if (nextId > 12) {
+          setInfiniteHasNextPage(false);
+          setIsInfiniteFetching(false);
+          return prev;
+        }
+        const newBatch = [
+          {
+            id: `${nextId}`,
+            title: `Solicitud de Compra #${nextId + 100}`,
+            subtitle: "Aprobación Automática de Sistema",
+            status: (nextId % 2 === 0 ? "success" : "primary") as "success" | "primary",
+            amount: `$${(nextId * 420).toLocaleString()}.00`,
+            date: "Sept 2026",
+          },
+          {
+            id: `${nextId + 1}`,
+            title: `Mantenimiento Preventivo #${nextId + 101}`,
+            subtitle: "Servicios Generales",
+            status: "warning" as const,
+            amount: `$${(nextId * 310).toLocaleString()}.00`,
+            date: "Sept 2026",
+          },
+        ];
+        setIsInfiniteFetching(false);
+        return [...prev, ...newBatch];
+      });
+    }, 1200);
+  };
 
   const handleSimulateUpload = () => {
     setUploadProgress(0);
@@ -2263,6 +2328,331 @@ export default function HomeScreen() {
             </View>
           </AppCard>
         </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN G9: GRÁFICOS Y ANALÍTICA VISUAL (CHARTS)     */}
+        {/* ==================================================== */}
+        <Section
+          title="📊 G9. Gráficos y Analítica Visual"
+          description="Visualizaciones SVG ligeras y animadas para KPIs, métricas de presupuesto y tendencias temporales."
+        >
+          {/* G9.1 MiniBarChart - Comparativa Semanal / Mensual */}
+          <AppCard variant="elevated" style={styles.gapMd}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={styles.flex1}>
+                <AppText variant="subtitle">1. MiniBarChart (Gastos por Departamento)</AppText>
+                <AppText variant="caption">
+                  {selectedChartBar
+                    ? `Barra seleccionada: ${selectedChartBar}`
+                    : "Toca cualquier barra para inspeccionar su valor"}
+                </AppText>
+              </View>
+              <AppBadge
+                label={chartMetric === "weekly" ? "Semanal" : "Mensual"}
+                variant="primary"
+                size="sm"
+              />
+            </View>
+
+            <View style={styles.chipRow}>
+              <FilterChip
+                label="Vista Semanal"
+                selected={chartMetric === "weekly"}
+                variant="solid"
+                onPress={() => setChartMetric("weekly")}
+              />
+              <FilterChip
+                label="Vista Mensual"
+                selected={chartMetric === "monthly"}
+                variant="solid"
+                onPress={() => setChartMetric("monthly")}
+              />
+            </View>
+
+            <MiniBarChart
+              data={
+                chartMetric === "weekly"
+                  ? [
+                      { label: "Lun", value: 1200, formattedValue: "$1.2k" },
+                      { label: "Mar", value: 2400, formattedValue: "$2.4k" },
+                      { label: "Mié", value: 3800, formattedValue: "$3.8k", color: colors.warning },
+                      { label: "Jue", value: 2900, formattedValue: "$2.9k" },
+                      { label: "Vie", value: 4500, formattedValue: "$4.5k", color: colors.primary },
+                      { label: "Sáb", value: 900, formattedValue: "$900" },
+                      { label: "Dom", value: 400, formattedValue: "$400" },
+                    ]
+                  : [
+                      { label: "May", value: 14000, formattedValue: "$14k" },
+                      { label: "Jun", value: 19500, formattedValue: "$19.5k" },
+                      { label: "Jul", value: 28000, formattedValue: "$28k", color: colors.warning },
+                      { label: "Ago", value: 24000, formattedValue: "$24k" },
+                      { label: "Sep", value: 32000, formattedValue: "$32k", color: colors.primary },
+                      { label: "Oct", value: 18000, formattedValue: "$18k" },
+                    ]
+              }
+              benchmarkValue={chartMetric === "weekly" ? 3000 : 25000}
+              benchmarkLabel="Meta Máxima"
+              height={170}
+              onSelectBar={(item) => {
+                setSelectedChartBar(`${item.label}: ${item.formattedValue ?? item.value}`);
+                setToastMessage({
+                  title: `Gasto ${item.label}`,
+                  message: `Presupuesto registrado: ${item.formattedValue ?? item.value}`,
+                  variant: "info",
+                });
+              }}
+            />
+          </AppCard>
+
+          {/* G9.2 ProgressRing y SparklineChart */}
+          <View style={{ flexDirection: "row", gap: spacing.md }}>
+            {/* Anillo de Progreso */}
+            <AppCard variant="elevated" style={[styles.flex1, { alignItems: "center", gap: spacing.sm }]}>
+              <AppText variant="subtitle" style={styles.textCenter}>
+                Ejecución Q3
+              </AppText>
+              <ProgressRing
+                progress={78}
+                size={110}
+                strokeWidth={11}
+                gradientColors={[colors.primary, isDark ? "#60A5FA" : "#1D4ED8"]}
+                label="Presupuesto"
+              />
+              <AppText variant="caption" style={styles.textCenter}>
+                $78,000 / $100,000
+              </AppText>
+            </AppCard>
+
+            {/* Gráfico de Tendencia Sparkline */}
+            <AppCard variant="elevated" style={[styles.flex1, { gap: spacing.xs }]}>
+              <SparklineChart
+                data={[24, 38, 30, 48, 42, 60, 55, 78]}
+                width={140}
+                height={60}
+                title="Tráfico Solicitudes"
+                formatValue={(v) => `${v} req/h`}
+              />
+              <AppText variant="caption" style={{ fontSize: 10, color: colors.textMuted }}>
+                Crecimiento sostenido vs periodo anterior
+              </AppText>
+            </AppCard>
+          </View>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN G10: ESCÁNER QR Y CÓDIGOS DE BARRA           */}
+        {/* ==================================================== */}
+        <Section
+          title="📷 G10. Escaneo de Códigos QR y Barras"
+          description="Lector con visor dinámico, línea de láser animada, linterna y simulación de prueba."
+        >
+          <AppCard variant="elevated" style={styles.gapMd}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: radius.md,
+                  backgroundColor: colors.primaryLight,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="qr-code" size={26} color={colors.primary} />
+              </View>
+              <View style={styles.flex1}>
+                <AppText variant="subtitle">Escáner de Expedientes / Inventario</AppText>
+                <AppText variant="caption">
+                  {scannedCodeData
+                    ? `Último código: ${scannedCodeData}`
+                    : "Ningún código escaneado recientemente"}
+                </AppText>
+              </View>
+            </View>
+
+            {scannedCodeData ? (
+              <View
+                style={{
+                  backgroundColor: colors.surfaceSecondary,
+                  padding: spacing.md,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <View style={styles.flex1}>
+                  <AppText variant="caption" style={{ fontWeight: "700", color: colors.primary }}>
+                    CÓDIGO DETECTADO:
+                  </AppText>
+                  <AppText variant="bodySm" style={{ fontWeight: "600" }}>
+                    {scannedCodeData}
+                  </AppText>
+                </View>
+                <AppBadge label="Válido" variant="success" size="sm" />
+              </View>
+            ) : null}
+
+            <View style={styles.buttonRow}>
+              <AppButton
+                title="Abrir Escáner QR"
+                variant="primary"
+                leftIcon={<Ionicons name="camera-outline" size={18} color={colors.white} />}
+                style={styles.flex1}
+                onPress={() => setShowQRScanner(true)}
+              />
+              {scannedCodeData ? (
+                <AppButton
+                  title="Limpiar"
+                  variant="outline"
+                  onPress={() => setScannedCodeData(null)}
+                />
+              ) : null}
+            </View>
+          </AppCard>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN G11: AUTENTICACIÓN BIOMÉTRICA                */}
+        {/* ==================================================== */}
+        <Section
+          title="🔐 G11. Autenticación Biométrica (Face ID / Huella)"
+          description="Verificación de seguridad con hardware local (Face ID, Touch ID, Fingerprint) y fallback con PIN."
+        >
+          <AppCard variant="elevated" style={styles.gapMd}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: radius.md,
+                  backgroundColor: isBiometricUnlocked ? "#DCFCE7" : colors.surfaceSecondary,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons
+                  name={isBiometricUnlocked ? "lock-open" : "lock-closed"}
+                  size={26}
+                  color={isBiometricUnlocked ? colors.success : colors.textSecondary}
+                />
+              </View>
+              <View style={styles.flex1}>
+                <AppText variant="subtitle">Módulo de Aprobaciones Críticas</AppText>
+                <AppText variant="caption">
+                  Estado: {isBiometricUnlocked ? "🟢 Desbloqueado y Verificado" : "🔒 Protegido con Biometría"}
+                </AppText>
+              </View>
+              <AppBadge
+                label={isBiometricUnlocked ? "Autenticado" : "Bloqueado"}
+                variant={isBiometricUnlocked ? "success" : "danger"}
+                appearance="solid"
+                size="sm"
+              />
+            </View>
+
+            <AppText variant="bodySm">
+              {isBiometricUnlocked
+                ? "Identidad confirmada exitosamente. Tienes permisos para autorizar pagos y modificar registros de alta seguridad."
+                : "Se requiere confirmación biométrica antes de autorizar transacciones de más de $1,000 USD."}
+            </AppText>
+
+            <View style={styles.buttonRow}>
+              <AppButton
+                title={isBiometricUnlocked ? "Re-verificar Identidad" : "Desbloquear con Biometría"}
+                variant="primary"
+                leftIcon={<Ionicons name="finger-print-outline" size={18} color={colors.white} />}
+                style={styles.flex1}
+                onPress={() => setShowBiometricLock(true)}
+              />
+              {isBiometricUnlocked ? (
+                <AppButton
+                  title="Bloquear"
+                  variant="outline"
+                  onPress={() => {
+                    setIsBiometricUnlocked(false);
+                    setToastMessage({
+                      title: "Módulo Bloqueado",
+                      message: "Se han restringido las acciones confidenciales",
+                      variant: "warning",
+                    });
+                  }}
+                />
+              ) : null}
+            </View>
+          </AppCard>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN G12: LISTAS CON PAGINACIÓN INFINITA          */}
+        {/* ==================================================== */}
+        <Section
+          title="♾️ G12. Listas con Paginación Infinita (Infinite Scroll)"
+          description="Virtualized Infinite List optimizada para grandes volúmenes de datos con skeletons y pull-to-refresh."
+        >
+          <AppCard variant="elevated" style={styles.gapMd}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={styles.flex1}>
+                <AppText variant="subtitle">Historial Infinito de Solicitudes</AppText>
+                <AppText variant="caption">
+                  Cargados: {infiniteItems.length} registros • {infiniteHasNextPage ? "Más datos disponibles" : "Lista completa"}
+                </AppText>
+              </View>
+              <AppButton
+                title="Cargar Más"
+                variant="outline"
+                size="sm"
+                loading={isInfiniteFetching}
+                disabled={!infiniteHasNextPage}
+                onPress={handleFetchNextPage}
+              />
+            </View>
+
+            <View style={{ borderRadius: radius.md, overflow: "hidden", borderWidth: 1, borderColor: colors.border }}>
+              <InfiniteDataList
+                data={infiniteItems}
+                hasNextPage={infiniteHasNextPage}
+                isFetchingNextPage={isInfiniteFetching}
+                scrollEnabled={false}
+                showScrollToTop={false}
+                onEndReached={handleFetchNextPage}
+                onRefresh={() => {
+                  setToastMessage({
+                    title: "Actualizando Lista",
+                    message: "Obteniendo primeros registros del servidor...",
+                    variant: "info",
+                  });
+                }}
+                renderItem={({ item }) => (
+                  <View
+                    style={{
+                      padding: spacing.md,
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      backgroundColor: isDark ? colors.surface : colors.background,
+                    }}
+                  >
+                    <View style={styles.flex1}>
+                      <AppText variant="subtitle" style={{ fontSize: 14 }}>{item.title}</AppText>
+                      <AppText variant="caption">{item.subtitle} • {item.date}</AppText>
+                    </View>
+                    <View style={{ alignItems: "flex-end", gap: 2 }}>
+                      <AppText variant="subtitle" style={{ fontSize: 14, color: colors.primary }}>
+                        {item.amount}
+                      </AppText>
+                      <AppBadge label={item.status.toUpperCase()} variant={item.status} size="sm" />
+                    </View>
+                  </View>
+                )}
+              />
+            </View>
+          </AppCard>
+        </Section>
       </Container>
 
       {/* Modal General (AppModal) */}
@@ -2430,6 +2820,52 @@ export default function HomeScreen() {
           },
         ]}
         onClose={() => setShowActionMenu(false)}
+      />
+
+      {/* Modal de Escáner QR / Barras */}
+      <QRScannerModal
+        visible={showQRScanner}
+        onClose={() => setShowQRScanner(false)}
+        onScan={(data, type) => {
+          setShowQRScanner(false);
+          setScannedCodeData(data);
+          setToastMessage({
+            title: "Código Escaneado",
+            message: `Detectado (${type}): ${data}`,
+            variant: "success",
+          });
+        }}
+      />
+
+      {/* Modal de Autenticación Biométrica (Face ID / Touch ID) */}
+      <BiometricLockPrompt
+        visible={showBiometricLock}
+        onClose={() => setShowBiometricLock(false)}
+        onSuccess={() => {
+          setShowBiometricLock(false);
+          setIsBiometricUnlocked(true);
+          setToastMessage({
+            title: "Identidad Confirmada",
+            message: "Acceso biométrico autorizado con éxito",
+            variant: "success",
+          });
+        }}
+        onFailure={(err) => {
+          setToastMessage({
+            title: "Fallo de Autenticación",
+            message: err || "No se pudo verificar la huella o rostro",
+            variant: "error",
+          });
+        }}
+        onFallback={() => {
+          setShowBiometricLock(false);
+          setIsBiometricUnlocked(true);
+          setToastMessage({
+            title: "Desbloqueo con PIN",
+            message: "Acceso concedido mediante código de seguridad",
+            variant: "info",
+          });
+        }}
       />
 
       {/* Floating Action Button */}

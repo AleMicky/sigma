@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import {
   Pressable,
   type PressableProps,
@@ -20,10 +21,12 @@ export type ScalePressableProps = PressableProps & {
   springConfig?: WithSpringConfig;
 };
 
-export function ScalePressable({
+const DEFAULT_SPRING: WithSpringConfig = { damping: 15, stiffness: 300, mass: 0.8 };
+
+function ScalePressableComponent({
   activeScale = 0.96,
   activeOpacity,
-  springConfig = { damping: 15, stiffness: 300 },
+  springConfig = DEFAULT_SPRING,
   style,
   disabled,
   onPressIn,
@@ -38,21 +41,26 @@ export function ScalePressable({
     opacity: activeOpacity !== undefined ? opacity.value : 1,
   }));
 
-  const resolveStyle = (state: PressableStateCallbackType) => {
-    const computedStyle =
-      typeof style === "function" ? style(state) : style;
-    return [
-      animatedStyle,
-      disabled ? { opacity: 0.6 } : undefined,
-      computedStyle,
-    ];
-  };
+  const hasFunctionStyle = typeof style === "function";
+
+  const resolvedStaticStyle = useMemo(() => {
+    if (hasFunctionStyle) return undefined;
+    return [animatedStyle, disabled ? { opacity: 0.6 } : undefined, style as StyleProp<ViewStyle>];
+  }, [hasFunctionStyle, animatedStyle, disabled, style]);
 
   return (
     <AnimatedPressable
       {...props}
       disabled={disabled}
-      style={resolveStyle as any}
+      style={
+        hasFunctionStyle
+          ? ((state: PressableStateCallbackType) => [
+              animatedStyle,
+              disabled ? { opacity: 0.6 } : undefined,
+              (style as (s: PressableStateCallbackType) => StyleProp<ViewStyle>)(state),
+            ]) as any
+          : (resolvedStaticStyle as any)
+      }
       onPressIn={(event) => {
         if (!disabled) {
           scale.value = withSpring(activeScale, springConfig);
@@ -74,3 +82,5 @@ export function ScalePressable({
     />
   );
 }
+
+export const ScalePressable = memo(ScalePressableComponent);

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import Animated, {
   SlideInDown,
@@ -25,7 +25,7 @@ export type SlideInViewProps = {
   testID?: string;
 };
 
-export function SlideInView({
+function SlideInViewComponent({
   children,
   direction = "right",
   exitDirection = "left",
@@ -35,7 +35,7 @@ export function SlideInView({
   style,
   testID,
 }: SlideInViewProps) {
-  const getEnteringAnimation = () => {
+  const enteringAnimation = useMemo(() => {
     let anim;
     switch (direction) {
       case "left":
@@ -60,9 +60,9 @@ export function SlideInView({
       builder = builder.springify().damping(18);
     }
     return builder;
-  };
+  }, [direction, delay, duration, spring]);
 
-  const getExitingAnimation = () => {
+  const exitingAnimation = useMemo(() => {
     switch (exitDirection) {
       case "left":
         return SlideOutLeft.duration(duration * 0.8);
@@ -76,16 +76,18 @@ export function SlideInView({
       default:
         return undefined;
     }
-  };
+  }, [exitDirection, duration]);
 
   return (
     <Animated.View
       testID={testID}
-      entering={getEnteringAnimation()}
-      exiting={getExitingAnimation()}
+      entering={enteringAnimation}
+      exiting={exitingAnimation}
       style={style}
     >
       {children}
     </Animated.View>
   );
 }
+
+export const SlideInView = memo(SlideInViewComponent);

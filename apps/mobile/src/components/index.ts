@@ -1,5 +1,7 @@
 export * from "./actions";
 export * from "./animation";
+export * from "./auth";
+export * from "./charts";
 export * from "./data";
 export * from "./date";
 export * from "./feedback";
@@ -9,6 +11,7 @@ export * from "./layout";
 export * from "./location";
 export * from "./media";
 export * from "./navigation";
+export * from "./scanner";
 export * from "./states";
 export * from "./ui";
 export * from "./upload";

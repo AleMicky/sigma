@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import Animated, {
   FadeIn,
@@ -27,7 +27,7 @@ export type FadeInViewProps = {
   testID?: string;
 };
 
-export function FadeInView({
+function FadeInViewComponent({
   children,
   delay = 0,
   duration = 300,
@@ -37,7 +37,7 @@ export function FadeInView({
   style,
   testID,
 }: FadeInViewProps) {
-  const getEnteringAnimation = () => {
+  const enteringAnimation = useMemo(() => {
     let anim;
     switch (direction) {
       case "up":
@@ -63,9 +63,9 @@ export function FadeInView({
       builder = builder.springify().damping(16);
     }
     return builder;
-  };
+  }, [direction, delay, duration, spring]);
 
-  const getExitingAnimation = () => {
+  const exitingAnimation = useMemo(() => {
     switch (exitDirection) {
       case "up":
         return FadeOutUp.duration(duration * 0.8);
@@ -81,16 +81,18 @@ export function FadeInView({
       default:
         return undefined;
     }
-  };
+  }, [exitDirection, duration]);
 
   return (
     <Animated.View
       testID={testID}
-      entering={getEnteringAnimation()}
-      exiting={getExitingAnimation()}
+      entering={enteringAnimation}
+      exiting={exitingAnimation}
       style={style}
     >
       {children}
     </Animated.View>
   );
 }
+
+export const FadeInView = memo(FadeInViewComponent);

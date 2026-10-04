@@ -1,7 +1,8 @@
-import { useEffect, type ReactNode } from "react";
+import { memo, useEffect, type ReactNode } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import Animated, {
   cancelAnimation,
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -23,7 +24,7 @@ export type PulseViewProps = {
   testID?: string;
 };
 
-export function PulseView({
+function PulseViewComponent({
   children,
   active = true,
   type = "opacity",
@@ -31,7 +32,7 @@ export function PulseView({
   maxOpacity = 1,
   minScale = 0.95,
   maxScale = 1.05,
-  duration = 900,
+  duration = 1000,
   style,
   testID,
 }: PulseViewProps) {
@@ -40,32 +41,40 @@ export function PulseView({
 
   useEffect(() => {
     if (active) {
+      const halfDuration = Math.max(100, Math.floor(duration / 2));
+      const timingConfig = {
+        duration: halfDuration,
+        easing: Easing.inOut(Easing.ease),
+      };
+
       if (type === "opacity" || type === "both") {
         opacity.value = maxOpacity;
         opacity.value = withRepeat(
-          withTiming(minOpacity, { duration: duration / 2 }),
+          withTiming(minOpacity, timingConfig),
           -1,
           true
         );
       } else {
+        cancelAnimation(opacity);
         opacity.value = 1;
       }
 
       if (type === "scale" || type === "both") {
         scale.value = maxScale;
         scale.value = withRepeat(
-          withTiming(minScale, { duration: duration / 2 }),
+          withTiming(minScale, timingConfig),
           -1,
           true
         );
       } else {
+        cancelAnimation(scale);
         scale.value = 1;
       }
     } else {
       cancelAnimation(opacity);
       cancelAnimation(scale);
-      opacity.value = withTiming(1, { duration: 200 });
-      scale.value = withTiming(1, { duration: 200 });
+      opacity.value = withTiming(1, { duration: 250, easing: Easing.out(Easing.ease) });
+      scale.value = withTiming(1, { duration: 250, easing: Easing.out(Easing.ease) });
     }
 
     return () => {
@@ -74,14 +83,19 @@ export function PulseView({
     };
   }, [active, type, minOpacity, maxOpacity, minScale, maxScale, duration]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: type === "opacity" || type === "both" ? opacity.value : 1,
-    transform: [
-      {
-        scale: type === "scale" || type === "both" ? scale.value : 1,
-      },
-    ],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    const isOpacityActive = type === "opacity" || type === "both";
+    const isScaleActive = type === "scale" || type === "both";
+
+    return {
+      opacity: isOpacityActive ? opacity.value : 1,
+      transform: [
+        {
+          scale: isScaleActive ? scale.value : 1,
+        },
+      ],
+    };
+  }, [type]);
 
   return (
     <Animated.View testID={testID} style={[animatedStyle, style]}>
@@ -89,3 +103,5 @@ export function PulseView({
     </Animated.View>
   );
 }
+
+export const PulseView = memo(PulseViewComponent);

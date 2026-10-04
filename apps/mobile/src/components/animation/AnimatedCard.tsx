@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import {
   GestureResponderEvent,
   Pressable,
@@ -34,7 +34,9 @@ export type AnimatedCardProps = {
   testID?: string;
 };
 
-export function AnimatedCard({
+const SPRING_CONFIG = { damping: 15, stiffness: 300, mass: 0.8 };
+
+function AnimatedCardComponent({
   children,
   delay = 0,
   duration = 300,
@@ -54,7 +56,7 @@ export function AnimatedCard({
     transform: [{ scale: scale.value }],
   }));
 
-  const getEnteringAnimation = () => {
+  const enteringAnimation = useMemo(() => {
     switch (entrance) {
       case "fadeUp":
         return FadeInUp.delay(delay).duration(duration).springify().damping(18);
@@ -66,9 +68,9 @@ export function AnimatedCard({
       default:
         return undefined;
     }
-  };
+  }, [entrance, delay, duration]);
 
-  const getVariantStyle = (): ViewStyle => {
+  const variantStyle = useMemo((): ViewStyle => {
     switch (variant) {
       case "elevated":
         return {
@@ -100,7 +102,7 @@ export function AnimatedCard({
           borderColor: colors.border,
         };
     }
-  };
+  }, [variant, isDark, colors]);
 
   const isInteractive = Boolean(onPress || onLongPress);
 
@@ -108,7 +110,7 @@ export function AnimatedCard({
     <Animated.View
       style={[
         styles.card,
-        getVariantStyle(),
+        variantStyle,
         animatedScaleStyle,
         disabled && styles.disabled,
         style,
@@ -126,12 +128,12 @@ export function AnimatedCard({
       onLongPress={onLongPress}
       onPressIn={() => {
         if (!disabled) {
-          scale.value = withSpring(activeScale, { damping: 15, stiffness: 300 });
+          scale.value = withSpring(activeScale, SPRING_CONFIG);
         }
       }}
       onPressOut={() => {
         if (!disabled) {
-          scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+          scale.value = withSpring(1, SPRING_CONFIG);
         }
       }}
     >
@@ -141,10 +143,8 @@ export function AnimatedCard({
     cardNode
   );
 
-  const enteringAnim = getEnteringAnimation();
-
-  if (enteringAnim) {
-    return <Animated.View entering={enteringAnim}>{content}</Animated.View>;
+  if (enteringAnimation) {
+    return <Animated.View entering={enteringAnimation}>{content}</Animated.View>;
   }
 
   return content;
@@ -160,3 +160,5 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
+
+export const AnimatedCard = memo(AnimatedCardComponent);
