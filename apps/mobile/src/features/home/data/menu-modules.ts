@@ -2,7 +2,11 @@ import React from "react";
 import {
     BoxesIcon,
     CarIcon,
+    CheckSquareIcon,
+    ClipboardListIcon,
+    FileTextIcon,
     PackageIcon,
+    PlusCircleIcon,
     ShieldIcon,
     UsersIcon,
     WrenchIcon,
@@ -14,6 +18,8 @@ export interface SubmenuItem {
     description?: string;
     badge?: string;
     route?: string;
+    icon?: React.ComponentType<{ size?: number; color?: string }>;
+    isAvailable?: boolean;
 }
 
 export interface ModuleItem {
@@ -42,24 +48,35 @@ export const SYSTEM_MODULES: ModuleItem[] = [
             {
                 id: "mant-solicitudes",
                 title: "Solicitudes de Mantenimiento",
-                description: "Crear y revisar requerimientos",
-                badge: "Prioritario",
+                description: "Crear, consultar y gestionar requerimientos técnicos",
+                badge: "Disponible",
                 route: "/(app)/mantenimientos/solicitudes",
+                icon: ClipboardListIcon,
+                isAvailable: true,
             },
             {
                 id: "mant-ordenes",
                 title: "Órdenes de Trabajo (OT)",
-                description: "Ejecución y seguimiento de trabajos",
+                description: "Ejecución, recursos y seguimiento de trabajos",
+                badge: "Próximamente",
+                icon: WrenchIcon,
+                isAvailable: false,
             },
             {
                 id: "mant-aprobaciones",
                 title: "Aprobaciones y Supervisión",
-                description: "Validación de solicitudes pendientes",
+                description: "Validación y despacho de solicitudes pendientes",
+                badge: "Próximamente",
+                icon: CheckSquareIcon,
+                isAvailable: false,
             },
             {
                 id: "mant-inspecciones",
                 title: "Inspecciones de Rutina",
-                description: "Hojas de verificación y rondas",
+                description: "Hojas de verificación, rondas y preventivos",
+                badge: "Próximamente",
+                icon: FileTextIcon,
+                isAvailable: false,
             },
         ],
     },
@@ -188,36 +205,38 @@ export const SYSTEM_MODULES: ModuleItem[] = [
 
 export const QUICK_SHORTCUTS = [
     {
-        id: "quick-solicitud",
+        id: "quick-nueva-solicitud",
+        title: "Nueva Solicitud",
+        subtitle: "Crear reporte",
+        icon: PlusCircleIcon,
+        color: "#2563eb",
+        bg: "bg-blue-500",
+        route: "/(app)/mantenimientos/solicitudes/nueva",
+        badge: "Acción Rápida",
+    },
+    {
+        id: "quick-solicitudes",
         title: "Solicitudes",
-        subtitle: "Mantenimiento",
-        icon: WrenchIcon,
+        subtitle: "Bandeja y estados",
+        icon: ClipboardListIcon,
         color: "#ea580c",
         bg: "bg-orange-500",
         route: "/(app)/mantenimientos/solicitudes",
     },
     {
-        id: "quick-activos",
-        title: "Catálogo Activos",
-        subtitle: "Buscar equipo",
-        icon: BoxesIcon,
-        color: "#d97706",
-        bg: "bg-amber-500",
-    },
-    {
-        id: "quick-viaje",
-        title: "Solicitar Viaje",
-        subtitle: "Vehículos",
-        icon: CarIcon,
-        color: "#4f46e5",
-        bg: "bg-indigo-500",
-    },
-    {
-        id: "quick-repuestos",
-        title: "Repuestos",
-        subtitle: "Stock almacén",
-        icon: PackageIcon,
+        id: "quick-ordenes",
+        title: "Órdenes de Trabajo",
+        subtitle: "En ejecución",
+        icon: WrenchIcon,
         color: "#059669",
         bg: "bg-emerald-500",
+    },
+    {
+        id: "quick-inspecciones",
+        title: "Inspecciones",
+        subtitle: "Rondas técnicas",
+        icon: CheckSquareIcon,
+        color: "#6366f1",
+        bg: "bg-indigo-500",
     },
 ];

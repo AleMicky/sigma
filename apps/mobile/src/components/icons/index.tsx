@@ -525,3 +525,83 @@ export function SigmaLogoIcon({ size = 32 }: { size?: number }) {
         </Svg>
     );
 }
+
+export function ClipboardListIcon({ size = 20, color = "#ea580c" }: IconProps) {
+    return (
+        <Svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={color}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <Rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            <Path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            <Path d="M12 11h4" />
+            <Path d="M12 16h4" />
+            <Path d="M8 11h.01" />
+            <Path d="M8 16h.01" />
+        </Svg>
+    );
+}
+
+export function FileTextIcon({ size = 20, color = "#2563eb" }: IconProps) {
+    return (
+        <Svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={color}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <Polyline points="14 2 14 8 20 8" />
+            <Line x1="16" y1="13" x2="8" y2="13" />
+            <Line x1="16" y1="17" x2="8" y2="17" />
+            <Polyline points="10 9 9 9 8 9" />
+        </Svg>
+    );
+}
+
+export function CheckSquareIcon({ size = 20, color = "#16a34a" }: IconProps) {
+    return (
+        <Svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={color}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <Polyline points="9 11 12 14 22 4" />
+            <Path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        </Svg>
+    );
+}
+
+export function ClockIcon({ size = 20, color = "#d97706" }: IconProps) {
+    return (
+        <Svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={color}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <Circle cx="12" cy="12" r="10" />
+            <Polyline points="12 6 12 12 16 14" />
+        </Svg>
+    );
+}
+

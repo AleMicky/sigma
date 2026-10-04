@@ -7,52 +7,104 @@ export function QuickActions() {
         if (route) {
             router.push(route as any);
         } else {
-            Alert.alert(title, `Acceso directo para ${title}`);
+            Alert.alert(
+                title,
+                `${title} estará disponible próximamente en la aplicación móvil.`
+            );
         }
     };
 
     return (
         <View className="px-5 pt-5">
             <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                    Accesos Rápidos
-                </Text>
-                <Text className="text-xs font-semibold text-blue-600">
-                    Operación
+                <View className="flex-row items-center gap-2">
+                    <Text className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                        Accesos Rápidos
+                    </Text>
+                    <View className="rounded-full bg-blue-100 px-2 py-0.5">
+                        <Text className="text-[10px] font-bold text-blue-700">
+                            Mantenimiento
+                        </Text>
+                    </View>
+                </View>
+                <Text className="text-[11px] font-medium text-slate-500">
+                    Acciones directas
                 </Text>
             </View>
 
             <View className="flex-row flex-wrap gap-2.5">
-                {QUICK_SHORTCUTS.map((item) => {
+                {QUICK_SHORTCUTS.map((item, index) => {
                     const Icon = item.icon;
+                    const isPrimary = index === 0;
+
                     return (
                         <TouchableOpacity
                             key={item.id}
-                            activeOpacity={0.7}
+                            activeOpacity={0.75}
                             onPress={() => handleActionPress(item.title, item.route)}
-                            className="flex-1 min-w-[45%] rounded-2xl bg-white p-3.5 border border-slate-200/80 shadow-xs active:bg-slate-50"
+                            className={`flex-1 min-w-[46%] rounded-2xl p-3.5 border shadow-2xs ${
+                                isPrimary
+                                    ? "bg-blue-600 border-blue-600 active:bg-blue-700"
+                                    : "bg-white border-slate-200/90 active:bg-slate-50"
+                            }`}
                         >
-                            <View className="flex-row items-center gap-3">
+                            <View className="flex-row items-start justify-between">
                                 <View
-                                    style={{ backgroundColor: `${item.color}15` }}
+                                    style={{
+                                        backgroundColor: isPrimary
+                                            ? "rgba(255, 255, 255, 0.2)"
+                                            : `${item.color}15`,
+                                    }}
                                     className="h-10 w-10 items-center justify-center rounded-xl"
                                 >
-                                    <Icon size={20} color={item.color} />
+                                    <Icon
+                                        size={20}
+                                        color={isPrimary ? "#ffffff" : item.color}
+                                    />
                                 </View>
-                                <View className="flex-1">
-                                    <Text
-                                        numberOfLines={1}
-                                        className="text-xs font-bold text-slate-800"
+
+                                {item.badge && (
+                                    <View
+                                        className={`rounded-full px-2 py-0.5 ${
+                                            isPrimary
+                                                ? "bg-white/25"
+                                                : "bg-blue-50 border border-blue-200/60"
+                                        }`}
                                     >
-                                        {item.title}
-                                    </Text>
-                                    <Text
-                                        numberOfLines={1}
-                                        className="text-[11px] text-slate-500 mt-0.5"
-                                    >
-                                        {item.subtitle}
-                                    </Text>
-                                </View>
+                                        <Text
+                                            className={`text-[9px] font-bold ${
+                                                isPrimary
+                                                    ? "text-white"
+                                                    : "text-blue-600"
+                                            }`}
+                                        >
+                                            {item.badge}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+
+                            <View className="mt-2.5">
+                                <Text
+                                    numberOfLines={1}
+                                    className={`text-xs font-bold ${
+                                        isPrimary
+                                            ? "text-white"
+                                            : "text-slate-800"
+                                    }`}
+                                >
+                                    {item.title}
+                                </Text>
+                                <Text
+                                    numberOfLines={1}
+                                    className={`text-[11px] mt-0.5 ${
+                                        isPrimary
+                                            ? "text-blue-100"
+                                            : "text-slate-500"
+                                    }`}
+                                >
+                                    {item.subtitle}
+                                </Text>
                             </View>
                         </TouchableOpacity>
                     );
@@ -61,3 +113,4 @@ export function QuickActions() {
         </View>
     );
 }
+

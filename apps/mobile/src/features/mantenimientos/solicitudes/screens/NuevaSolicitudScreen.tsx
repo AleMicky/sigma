@@ -353,13 +353,13 @@ export function NuevaSolicitudScreen() {
                                                     shouldValidate: true,
                                                 })
                                             }
-                                            className={`flex-1 items-center justify-center rounded-xl py-2 border ${
+                                            className={`flex-1 items-center justify-center rounded-xl py-2 border shadow-2xs ${
                                                 isSelected
                                                     ? isUrgente
-                                                         ? "bg-rose-600 border-rose-600 shadow-2xs"
+                                                         ? "bg-rose-600 border-rose-600"
                                                          : isAlta
-                                                         ? "bg-amber-500 border-amber-500 shadow-2xs"
-                                                         : "bg-blue-600 border-blue-600 shadow-2xs"
+                                                         ? "bg-amber-500 border-amber-500"
+                                                         : "bg-blue-600 border-blue-600"
                                                     : "bg-slate-50 border-slate-200"
                                             }`}
                                         >

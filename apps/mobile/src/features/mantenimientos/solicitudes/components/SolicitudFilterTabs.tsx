@@ -54,9 +54,9 @@ export function SolicitudFilterTabs({
                                 }
                             }}
                             activeOpacity={0.75}
-                            className={`flex-row items-center gap-1.5 rounded-full px-3.5 py-2 border ${
+                            className={`flex-row items-center gap-1.5 rounded-full px-3.5 py-2 border shadow-2xs ${
                                 isSelected
-                                    ? "bg-slate-900 border-slate-900 shadow-sm"
+                                    ? "bg-slate-900 border-slate-900"
                                     : "bg-white border-slate-200/90 active:bg-slate-50"
                             }`}
                         >
