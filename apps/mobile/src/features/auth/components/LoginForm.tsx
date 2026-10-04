@@ -15,7 +15,7 @@ import {
     loginSchema,
 } from "../schemas/login.schema";
 import { AuthInput } from "./AuthInput";
-import { EyeIcon, EyeOffIcon, LockIcon, UserIcon } from "./icons";
+import { EyeIcon, EyeOffIcon, LockIcon, UserIcon } from "@/src/components/icons";
 
 interface LoginFormProps {
     onSubmit?: (data: LoginFormValues) => Promise<void> | void;

@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { AlertCircleIcon } from "./icons";
+import { AlertCircleIcon } from "@/src/components/icons";
 
 interface AuthInputProps extends TextInputProps {
     label: string;

@@ -1,5 +1,5 @@
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
-import { AlertCircleIcon, CheckCircleIcon, WifiIcon } from "./icons";
+import { AlertCircleIcon, CheckCircleIcon, WifiIcon } from "@/src/components/icons";
 
 export type TestStatus = "idle" | "testing" | "success" | "error";
 

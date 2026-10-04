@@ -1,7 +1,8 @@
+import React from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { useAuthStore } from "@/src/stores/auth.store";
-import { LogoutIcon, SettingsIcon } from "./icons";
+import { LogoutIcon, SettingsIcon } from "@/src/components/icons";
 
 function getGreeting() {
     const hour = new Date().getHours();

@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { ServerIcon } from "./icons";
+import { ServerIcon } from "@/src/components/icons";
 
 interface ServerHeaderCardProps {
     isModifiedFromDefault: boolean;

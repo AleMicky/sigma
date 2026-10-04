@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { ModuleItem, SubmenuItem } from "../data/menu-modules";
-import { ChevronDownIcon, ChevronRightIcon } from "./icons";
+import { ChevronDownIcon, ChevronRightIcon } from "@/src/components/icons";
 
 interface ModuleCardProps {
     module: ModuleItem;

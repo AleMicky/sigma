@@ -6,17 +6,18 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-    ArrowLeftIcon,
     CalendarIcon,
     CpuIcon,
-    SolicitudPrioridadBadge,
-    SolicitudStatusBadge,
     UserIcon,
     WrenchIcon,
-} from "../components";
+} from "@/src/components/icons";
+import {
+    ScreenHeader,
+    StatusBadge,
+} from "@/src/components/common";
 import {
     useSolicitudDetailQuery,
     useSolicitudTrazabilidadQuery,
@@ -82,32 +83,13 @@ export function SolicitudDetailScreen() {
 
     return (
         <View className="flex-1 bg-slate-100">
-            {/* Navigation Bar */}
-            <View
-                style={{ paddingTop: Math.max(insets.top, 16) }}
-                className="bg-slate-900 px-5 pb-4 shadow-md flex-row items-center justify-between"
-            >
-                <View className="flex-row items-center gap-3">
-                    <TouchableOpacity
-                        activeOpacity={0.7}
-                        onPress={() => router.back()}
-                        className="h-10 w-10 items-center justify-center rounded-full bg-slate-800 active:bg-slate-700"
-                    >
-                        <ArrowLeftIcon size={20} color="#ffffff" />
-                    </TouchableOpacity>
-
-                    <View>
-                        <Text className="text-lg font-bold text-white">
-                            {solicitud.numero || "Detalle de Solicitud"}
-                        </Text>
-                        <Text className="text-xs text-slate-400">
-                            Solicitud de Mantenimiento
-                        </Text>
-                    </View>
-                </View>
-
-                <SolicitudStatusBadge estado={solicitud.estado} />
-            </View>
+            {/* Dark Theme Header */}
+            <ScreenHeader
+                theme="dark"
+                title={solicitud.numero || "Detalle de Solicitud"}
+                subtitle="Solicitud de Mantenimiento"
+                rightNode={<StatusBadge status={solicitud.estado} />}
+            />
 
             <ScrollView
                 className="flex-1"
@@ -119,13 +101,14 @@ export function SolicitudDetailScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Title and General Overview */}
-                <View className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-xs">
+                <View className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-2xs">
                     <View className="flex-row items-center justify-between mb-2">
                         <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                             Requerimiento
                         </Text>
-                        <SolicitudPrioridadBadge
-                            prioridad={solicitud.prioridad?.nombre}
+                        <StatusBadge
+                            status={solicitud.prioridad?.nombre}
+                            label={`Prioridad: ${solicitud.prioridad?.nombre || "Normal"}`}
                         />
                     </View>
 
@@ -140,7 +123,7 @@ export function SolicitudDetailScreen() {
 
                 {/* Activo / Equipment Details */}
                 {solicitud.activo && (
-                    <View className="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-xs">
+                    <View className="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-2xs">
                         <View className="flex-row items-center gap-2 mb-2.5">
                             <CpuIcon size={16} color="#2563eb" />
                             <Text className="text-xs font-bold text-slate-800 uppercase tracking-wider">
@@ -160,7 +143,7 @@ export function SolicitudDetailScreen() {
                 )}
 
                 {/* Maintenance Type & Priority */}
-                <View className="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-xs">
+                <View className="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-2xs">
                     <View className="flex-row items-center gap-2 mb-2.5">
                         <WrenchIcon size={16} color="#ea580c" />
                         <Text className="text-xs font-bold text-slate-800 uppercase tracking-wider">
@@ -192,7 +175,7 @@ export function SolicitudDetailScreen() {
                 </View>
 
                 {/* Involved Personnel */}
-                <View className="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-xs gap-3">
+                <View className="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-2xs gap-3">
                     <View className="flex-row items-center gap-2">
                         <UserIcon size={16} color="#4f46e5" />
                         <Text className="text-xs font-bold text-slate-800 uppercase tracking-wider">
@@ -245,7 +228,7 @@ export function SolicitudDetailScreen() {
                 </View>
 
                 {/* Dates & Timeline */}
-                <View className="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-xs gap-2.5">
+                <View className="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-2xs gap-2.5">
                     <View className="flex-row items-center gap-2 mb-1">
                         <CalendarIcon size={16} color="#059669" />
                         <Text className="text-xs font-bold text-slate-800 uppercase tracking-wider">
@@ -281,7 +264,7 @@ export function SolicitudDetailScreen() {
 
                 {/* Traceability History */}
                 {trazabilidad.length > 0 && (
-                    <View className="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-xs">
+                    <View className="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-2xs">
                         <Text className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">
                             Historial de Trazabilidad ({trazabilidad.length})
                         </Text>

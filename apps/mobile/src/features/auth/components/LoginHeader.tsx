@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { SigmaLogoIcon } from "./icons";
+import { SigmaLogoIcon } from "@/src/components/icons";
 
 interface LoginHeaderProps {
     title?: string;

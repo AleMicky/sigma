@@ -6,7 +6,7 @@ import {
     ShieldIcon,
     UsersIcon,
     WrenchIcon,
-} from "../components/icons";
+} from "@/src/components/icons";
 
 export interface SubmenuItem {
     id: string;

@@ -14,8 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button, ButtonText } from "@/src/components/ui/button";
 import { serverConfigService } from "../services/server-config.service";
+import { ArrowLeftIcon } from "@/src/components/icons";
 import {
-    ArrowLeftIcon,
     ServerConnectionTest,
     ServerHeaderCard,
     ServerTipsCard,

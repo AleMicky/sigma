@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { Input, InputField, InputSlot } from "@/src/components/ui/input";
-import { AlertCircleIcon, CloseIcon, GlobeIcon } from "./icons";
+import { AlertCircleIcon, CloseIcon, GlobeIcon } from "@/src/components/icons";
 
 interface ServerUrlInputProps {
     value: string;

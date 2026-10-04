@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { serverConfigService } from "@/src/features/settings/services/server-config.service";
-import { ChevronRightIcon, ServerIcon } from "./icons";
+import { ChevronRightIcon, ServerIcon } from "@/src/components/icons";
 
 export function ServerConfigCard() {
     const [serverUrl, setServerUrl] = useState<string>("");

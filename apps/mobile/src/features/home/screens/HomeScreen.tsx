@@ -9,8 +9,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { ChevronRightIcon } from "@/src/components/icons";
 import {
-    ChevronRightIcon,
     HomeHeader,
     ModuleCard,
     QuickActions,
