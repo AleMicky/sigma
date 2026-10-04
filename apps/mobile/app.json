@@ -2,11 +2,11 @@
   "expo": {
     "name": "mobile",
     "slug": "mobile",
-    "scheme": "sigma",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "mobile",
     "ios": {
       "supportsTablet": true
     },
@@ -24,8 +24,10 @@
     },
     "plugins": [
       "expo-router",
-      "expo-status-bar",
       "expo-secure-store"
-    ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

@@ -1,10 +1,27 @@
-import { QueryClientProvider } from "@tanstack/react-query";
-import { PropsWithChildren } from "react";
+import {
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+import { ReactNode } from "react";
 
-import { queryClient } from "@/src/lib/query-client";
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 1000 * 60,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-export function QueryProvider({ children }: PropsWithChildren) {
+type Props = {
+  children: ReactNode;
+};
+
+export function QueryProvider({ children }: Props) {
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
   );
 }

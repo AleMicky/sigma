@@ -1,22 +1,21 @@
-import { ActivityIndicator, View } from "react-native";
-import { Redirect } from "expo-router";
-import { useAuthStore } from "@/src/stores/auth.store";
+import { Screen } from "@/components/layout/Screen";
+import { AppInput } from "@/components/ui/AppInput";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
+ 
+export default function HomeScreen() {
+  return (
+      <Screen>
+      <AppText variant="title">Login</AppText>
 
-export default function Index() {
-    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-    const isRestoring = useAuthStore((s) => s.isRestoring);
+      <AppInput
+        label="Correo"
+        placeholder="correo@ejemplo.com"
+      />
 
-    if (isRestoring) {
-        return (
-            <View className="flex-1 items-center justify-center bg-slate-900">
-                <ActivityIndicator size="large" color="#2563eb" />
-            </View>
-        );
-    }
-
-    if (isAuthenticated) {
-        return <Redirect href="/(app)" />;
-    }
-
-    return <Redirect href="/(auth)/login" />;
+      <AppButton title="Ingresar" />
+    </Screen>
+  );
 }
+  
+ 
