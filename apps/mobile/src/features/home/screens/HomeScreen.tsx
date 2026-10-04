@@ -65,7 +65,11 @@ export function HomeScreen() {
     <Screen scrollable withPadding={false}>
       {/* Header Superior */}
       <View style={styles.header}>
-        <View style={styles.userInfo}>
+        <TouchableOpacity
+          style={styles.userInfo}
+          activeOpacity={0.7}
+          onPress={() => router.push(ROUTES.APP.PROFILE as any)}
+        >
           <AppAvatar
             name={displayName}
             size="md"
@@ -85,9 +89,19 @@ export function HomeScreen() {
               style={styles.roleBadge}
             />
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.headerActions}>
+          <View style={shadows.sm}>
+            <AppIconButton
+              icon="person-outline"
+              variant="tonal"
+              size="sm"
+              color={colors.primary}
+              onPress={() => router.push(ROUTES.APP.PROFILE as any)}
+              accessibilityLabel="Ver perfil"
+            />
+          </View>
           <View style={shadows.sm}>
             <AppIconButton
               icon={isDark ? "sunny-outline" : "moon-outline"}
