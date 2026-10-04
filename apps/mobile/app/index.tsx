@@ -26,6 +26,15 @@ import {
 } from "@/components/date";
 
 import {
+  AppFilePicker,
+  AppImagePicker,
+  UploadProgress,
+  type SelectedFile,
+  type SelectedImage,
+  type UploadStatus,
+} from "@/components/upload";
+
+import {
   ConfirmModal,
   ErrorState,
   InfoMessage,
@@ -147,6 +156,38 @@ export default function HomeScreen() {
     startDate: new Date(),
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   });
+
+  // Estados de Carga de Archivos y Multimedia (Upload)
+  const [demoFile, setDemoFile] = useState<SelectedFile | null>({
+    uri: "file:///mock/documento_soporte.pdf",
+    name: "balance_general_q3.pdf",
+    size: 2457600,
+    mimeType: "application/pdf",
+  });
+  const [demoImage, setDemoImage] = useState<SelectedImage | null>(null);
+  const [demoAvatar, setDemoAvatar] = useState<SelectedImage | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(68);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("uploading");
+
+  const handleSimulateUpload = () => {
+    setUploadProgress(0);
+    setUploadStatus("uploading");
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setUploadStatus("success");
+          setToastMessage({
+            title: "Carga completada",
+            message: "El archivo se ha subido con éxito al servidor.",
+            variant: "success",
+          });
+          return 100;
+        }
+        return prev + 15;
+      });
+    }, 400);
+  };
 
   // Formulario con React Hook Form
   const {
@@ -974,6 +1015,148 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
+        {/* SECCIÓN G3: CARGA DE ARCHIVOS Y MULTIMEDIA (UPLOAD) */}
+        {/* ==================================================== */}
+        <Section
+          title="📁 Carga de Archivos y Multimedia (Upload)"
+          description="AppFilePicker, AppImagePicker (tarjeta y avatar) y UploadProgress con simulación"
+          withDivider
+        >
+          <AppCard variant="outlined" style={styles.gapMd}>
+            {/* 1. Selector de Documentos */}
+            <AppText variant="subtitle">1. Selector de Documentos (AppFilePicker):</AppText>
+            <AppFilePicker
+              label="Documento de Respaldo / Comprobante"
+              required
+              value={demoFile}
+              maxSizeBytes={10 * 1024 * 1024}
+              hint="Formatos admitidos: PDF, DOCX, XLSX, ZIP hasta 10 MB"
+              onChange={(file) => {
+                setDemoFile(file);
+                if (file) {
+                  setToastMessage({
+                    title: "Archivo seleccionado",
+                    message: `${file.name} (${(file.size ? (file.size / (1024 * 1024)).toFixed(2) : 0)} MB)`,
+                    variant: "info",
+                  });
+                }
+              }}
+            />
+
+            {/* 2. Selector de Imagen de Perfil (Avatar) */}
+            <AppText variant="subtitle" style={styles.mtSm}>
+              2. Foto de Perfil / Avatar (AppImagePicker en modo Avatar):
+            </AppText>
+            <AppImagePicker
+              label="Avatar del Usuario"
+              variant="avatar"
+              value={demoAvatar}
+              allowsEditing
+              aspect={[1, 1]}
+              hint="Toca Cámara o Galería para recortar en proporción 1:1"
+              onChange={(img) => {
+                setDemoAvatar(img);
+                if (img) {
+                  setToastMessage({
+                    title: "Avatar actualizado",
+                    message: "Foto de perfil cargada correctamente.",
+                    variant: "success",
+                  });
+                }
+              }}
+            />
+
+            {/* 3. Selector de Imagen (Tarjeta / Evidencia) */}
+            <AppText variant="subtitle" style={styles.mtSm}>
+              3. Imagen de Evidencia o Producto (AppImagePicker en modo Tarjeta):
+            </AppText>
+            <AppImagePicker
+              label="Fotografía del Inmueble / Activo"
+              required
+              variant="card"
+              value={demoImage}
+              allowsEditing
+              hint="Formatos JPG, PNG, WEBP de alta resolución"
+              onChange={(img) => {
+                setDemoImage(img);
+                if (img) {
+                  setToastMessage({
+                    title: "Imagen adjunta",
+                    message: `${img.fileName ?? "imagen.jpg"} lista para enviar`,
+                    variant: "info",
+                  });
+                }
+              }}
+            />
+
+            {/* 4. Barra de Progreso de Subida (UploadProgress) */}
+            <AppText variant="subtitle" style={styles.mtSm}>
+              4. Indicador de Progreso (UploadProgress):
+            </AppText>
+            <UploadProgress
+              progress={uploadProgress}
+              status={uploadStatus}
+              fileName="expediente_auditoria_2026.zip"
+              fileSize={14680064}
+              speedText="1.8 MB/s"
+              errorMessage="Conexión interrumpida por el servidor"
+              onTogglePause={() => {
+                setUploadStatus((prev) => (prev === "paused" ? "uploading" : "paused"));
+              }}
+              onRetry={handleSimulateUpload}
+              onCancel={() => {
+                setUploadProgress(0);
+                setUploadStatus("paused");
+                setToastMessage({
+                  title: "Subida cancelada",
+                  message: "La transferencia de archivo ha sido detenida.",
+                  variant: "warning",
+                });
+              }}
+            />
+
+            {/* Controles de Simulación de Progreso */}
+            <View style={[styles.buttonRow, styles.mtXs]}>
+              <AppButton
+                title="▶️ Simular Subida"
+                variant="primary"
+                size="sm"
+                style={styles.flex1}
+                onPress={handleSimulateUpload}
+              />
+              <AppButton
+                title={uploadStatus === "paused" ? "Continuar" : "Pausar"}
+                variant="secondary"
+                size="sm"
+                style={styles.flex1}
+                onPress={() => {
+                  setUploadStatus((prev) => (prev === "paused" ? "uploading" : "paused"));
+                }}
+              />
+              <AppButton
+                title="Simular Error"
+                variant="danger"
+                size="sm"
+                style={styles.flex1}
+                onPress={() => {
+                  setUploadStatus("error");
+                }}
+              />
+            </View>
+
+            <AppText variant="caption" style={styles.mtXs}>
+              Variante Compacta / En línea (Inline):
+            </AppText>
+            <UploadProgress
+              variant="inline"
+              progress={uploadProgress}
+              status={uploadStatus}
+              fileName="anexo_tecnico_v2.pdf"
+            />
+          </AppCard>
+        </Section>
+
+        {/* ==================================================== */}
         {/* SECCIÓN H: ELEMENTOS DE NAVEGACIÓN (DRAWER & TABS)   */}
         {/* ==================================================== */}
         <Section
@@ -1364,6 +1547,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   mtSm: {
+    marginTop: spacing.sm,
+  },
+  mtXs: {
     marginTop: spacing.xs,
   },
   mbSm: {
