@@ -4,6 +4,7 @@ export const ROUTES = {
 
   AUTH: {
     LOGIN: "/(auth)/login",
+    SERVER_CONFIG: "/(auth)/server-config",
   },
 
   APP: {

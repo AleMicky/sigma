@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { AppButton } from "@/components/ui/AppButton";
@@ -13,8 +14,8 @@ import { AppText } from "@/components/ui/AppText";
 import { FormInput } from "@/components/form/FormInput";
 import { PasswordInput } from "@/components/form/PasswordInput";
 import { KeyboardScreen } from "@/components/layout/KeyboardScreen";
-import { FadeInView, PulseView } from "@/components/animation";
 import { useAppTheme, spacing, shadows } from "@/theme";
+import { ROUTES } from "@/constants/routes";
 
 import {
   loginSchema,
@@ -25,6 +26,7 @@ const LOGO_LIGHT = require("../../../../assets/logo-ende-corani.png");
 const LOGO_DARK = require("../../../../assets/logo-ende-corani-dark.png");
 
 export function LoginScreen() {
+  const router = useRouter();
   const { colors, isDark, toggleTheme } = useAppTheme();
 
   const {
@@ -45,34 +47,39 @@ export function LoginScreen() {
 
   return (
     <KeyboardScreen statusBarStyle={isDark ? "light" : "dark"}>
-      {/* Botón flotante independiente en la esquina superior derecha */}
-      <View style={[styles.floatingThemeToggle, shadows.sm]}>
-        <AppIconButton
-          icon={isDark ? "sunny-outline" : "moon-outline"}
-          variant="tonal"
-          size="sm"
-          color={colors.textSecondary}
-          onPress={toggleTheme}
-          accessibilityLabel="Cambiar tema visual"
-        />
+      {/* Botones flotantes superiores */}
+      <View style={styles.floatingTopBar}>
+        <View style={shadows.sm}>
+          <AppIconButton
+            icon="server-outline"
+            variant="tonal"
+            size="sm"
+            color={colors.textSecondary}
+            onPress={() => router.push(ROUTES.AUTH.SERVER_CONFIG)}
+            accessibilityLabel="Configurar servidor API"
+          />
+        </View>
+
+        <View style={shadows.sm}>
+          <AppIconButton
+            icon={isDark ? "sunny-outline" : "moon-outline"}
+            variant="tonal"
+            size="sm"
+            color={colors.textSecondary}
+            onPress={toggleTheme}
+            accessibilityLabel="Cambiar tema visual"
+          />
+        </View>
       </View>
 
       <View style={styles.container}>
-        {/* Header con Animación FadeIn y Logo Adaptativo */}
-        <FadeInView direction="down" duration={500} spring style={styles.header}>
-          <PulseView
-            type="scale"
-            minScale={0.97}
-            maxScale={1.03}
-            duration={3200}
-            active={true}
-          >
-            <Image
-              source={isDark ? LOGO_DARK : LOGO_LIGHT}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </PulseView>
+        {/* Header */}
+        <View style={styles.header}>
+          <Image
+            source={isDark ? LOGO_DARK : LOGO_LIGHT}
+            style={styles.logo}
+            resizeMode="contain"
+          />
 
           <View style={styles.titleWrapper}>
             <AppText variant="title" weight="bold" align="center">
@@ -87,10 +94,10 @@ export function LoginScreen() {
               Ingresa tus credenciales para continuar
             </AppText>
           </View>
-        </FadeInView>
+        </View>
 
-        {/* Formulario con Animación Suave */}
-        <FadeInView direction="up" delay={150} duration={500} spring style={styles.form}>
+        {/* Formulario */}
+        <View style={styles.form}>
           <FormInput
             control={control}
             name="username"
@@ -139,24 +146,28 @@ export function LoginScreen() {
               }
             />
           </View>
-        </FadeInView>
+        </View>
 
-        {/* Footer con Animación Sutil */}
-        <FadeInView direction="up" delay={300} duration={500} style={styles.footer}>
+        {/* Footer institucional discreto */}
+        <View style={styles.footer}>
           <AppText variant="caption" color="textMuted" align="center">
             ENDE CORANI S.A.
           </AppText>
-        </FadeInView>
+        </View>
       </View>
     </KeyboardScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  floatingThemeToggle: {
+  floatingTopBar: {
     position: "absolute",
     top: spacing.lg,
+    left: spacing.lg,
     right: spacing.lg,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     zIndex: 99,
   },
   container: {
