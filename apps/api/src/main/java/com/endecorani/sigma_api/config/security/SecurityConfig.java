@@ -42,7 +42,11 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
                                 .requestMatchers(
-                                        "/actuator/health"
+                                        "/health",
+                                        "/api/health",
+                                        "/api/v1/health",
+                                        "/actuator/health",
+                                        "/actuator/health/**"
                                 )
                                 .permitAll()
                                 .requestMatchers(
