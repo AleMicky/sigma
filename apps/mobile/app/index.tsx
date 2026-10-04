@@ -19,7 +19,11 @@ import {
   type TimelineItem,
 } from "@/components/data";
 
-
+import {
+  DateRangePicker,
+  TimeInput,
+  type DateRange,
+} from "@/components/date";
 
 import {
   ConfirmModal,
@@ -135,6 +139,14 @@ export default function HomeScreen() {
     message: string;
     variant: ToastVariant;
   } | null>(null);
+
+  // Estados de Selectores de Fecha y Hora
+  const [selectedTime, setSelectedTime] = useState<Date | null>(new Date());
+  const [selectedTime12h, setSelectedTime12h] = useState<Date | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
 
   // Formulario con React Hook Form
   const {
@@ -884,6 +896,81 @@ export default function HomeScreen() {
             variant="outline"
             onPress={handleTriggerLoadingOverlay}
           />
+        </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN G2: SELECTORES DE FECHA Y HORA (DATE & TIME) */}
+        {/* ==================================================== */}
+        <Section
+          title="⏱️ Fecha y Hora (Pickers)"
+          description="TimeInput (24h/12h con clear) y DateRangePicker con accesos directos"
+          withDivider
+        >
+          <AppCard variant="outlined" style={styles.gapMd}>
+            <AppText variant="subtitle">Entrada de Horas:</AppText>
+            <View style={styles.buttonRow}>
+              <View style={styles.flex1}>
+                <TimeInput
+                  label="Hora Inicio (24h)"
+                  value={selectedTime}
+                  is24Hour
+                  clearable
+                  hint="Formato militar 24h"
+                  onChange={(date) => {
+                    setSelectedTime(date);
+                    if (date) {
+                      setToastMessage({
+                        variant: "info",
+                        title: "Hora actualizada",
+                        message: `Inicio: ${date.toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" })}`,
+                      });
+                    }
+                  }}
+                />
+              </View>
+              <View style={styles.flex1}>
+                <TimeInput
+                  label="Hora Fin (12h)"
+                  value={selectedTime12h}
+                  is24Hour={false}
+                  placeholder="Sin asignar"
+                  clearable
+                  hint="Formato AM/PM"
+                  onChange={(date) => {
+                    setSelectedTime12h(date);
+                    if (date) {
+                      setToastMessage({
+                        variant: "info",
+                        title: "Hora de Cierre",
+                        message: `Fin: ${date.toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit", hour12: true })}`,
+                      });
+                    }
+                  }}
+                />
+              </View>
+            </View>
+
+            <AppText variant="subtitle" style={styles.mtSm}>
+              Selector de Rango de Fechas:
+            </AppText>
+            <DateRangePicker
+              label="Período de Facturación / Reporte"
+              value={dateRange}
+              showPresets
+              clearable
+              hint="Usa los botones rápidos o toca cada fecha para personalizar"
+              onChange={(newRange) => {
+                setDateRange(newRange);
+                if (newRange.startDate && newRange.endDate) {
+                  setToastMessage({
+                    variant: "success",
+                    title: "Rango seleccionado",
+                    message: `${newRange.startDate.toLocaleDateString("es-BO")} → ${newRange.endDate.toLocaleDateString("es-BO")}`,
+                  });
+                }
+              }}
+            />
+          </AppCard>
         </Section>
 
         {/* ==================================================== */}
