@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -14,9 +15,9 @@ import { AppText } from "@/components/ui/AppText";
 import { FormInput } from "@/components/form/FormInput";
 import { PasswordInput } from "@/components/form/PasswordInput";
 import { KeyboardScreen } from "@/components/layout/KeyboardScreen";
-import { useAppTheme, spacing, shadows } from "@/theme";
+import { useAppTheme, spacing, radius, shadows } from "@/theme";
 import { ROUTES } from "@/constants/routes";
-
+import { useLogin } from "@/features/auth/hooks/useLogin";
 import {
   loginSchema,
   type LoginFormValues,
@@ -28,11 +29,11 @@ const LOGO_DARK = require("../../../../assets/logo-ende-corani-dark.png");
 export function LoginScreen() {
   const router = useRouter();
   const { colors, isDark, toggleTheme } = useAppTheme();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     control,
     handleSubmit,
-    formState: { isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -41,8 +42,22 @@ export function LoginScreen() {
     },
   });
 
+  const { mutate: login, isPending } = useLogin({
+    onSuccess: () => {
+      setErrorMessage(null);
+      router.replace(ROUTES.APP.WELCOME as any);
+    },
+    onError: (error) => {
+      const msg =
+        error.message ||
+        "Credenciales incorrectas o error al conectar con el servidor.";
+      setErrorMessage(msg);
+    },
+  });
+
   const onSubmit = (values: LoginFormValues) => {
-    console.log("Login form submitted:", values);
+    setErrorMessage(null);
+    login(values);
   };
 
   return (
@@ -55,7 +70,7 @@ export function LoginScreen() {
             variant="tonal"
             size="sm"
             color={colors.textSecondary}
-            onPress={() => router.push(ROUTES.AUTH.SERVER_CONFIG)}
+            onPress={() => router.push(ROUTES.AUTH.SERVER_CONFIG as any)}
             accessibilityLabel="Configurar servidor API"
           />
         </View>
@@ -73,7 +88,7 @@ export function LoginScreen() {
       </View>
 
       <View style={styles.container}>
-        {/* Header */}
+        {/* Header con Logo */}
         <View style={styles.header}>
           <Image
             source={isDark ? LOGO_DARK : LOGO_LIGHT}
@@ -96,8 +111,30 @@ export function LoginScreen() {
           </View>
         </View>
 
-        {/* Formulario */}
+        {/* Formulario de Inicio de Sesión */}
         <View style={styles.form}>
+          {/* Mensaje de Error si la autenticación falla */}
+          {errorMessage ? (
+            <View
+              style={[
+                styles.errorBanner,
+                {
+                  backgroundColor: isDark ? "#450A0A" : "#FEE2E2",
+                  borderColor: colors.danger,
+                },
+              ]}
+            >
+              <Ionicons name="alert-circle" size={18} color={colors.danger} />
+              <AppText
+                variant="bodySm"
+                weight="medium"
+                style={{ flex: 1, color: colors.danger }}
+              >
+                {errorMessage}
+              </AppText>
+            </View>
+          ) : null}
+
           <FormInput
             control={control}
             name="username"
@@ -131,12 +168,13 @@ export function LoginScreen() {
 
           <View style={styles.actionWrapper}>
             <AppButton
-              title={isSubmitting ? "Ingresando..." : "Ingresar"}
-              disabled={isSubmitting}
+              title={isPending ? "Ingresando..." : "Ingresar"}
+              loading={isPending}
+              disabled={isPending}
               onPress={handleSubmit(onSubmit)}
               size="lg"
               rightIcon={
-                !isSubmitting ? (
+                !isPending ? (
                   <Ionicons
                     name="arrow-forward"
                     size={18}
@@ -198,6 +236,15 @@ const styles = StyleSheet.create({
   form: {
     gap: spacing.md,
     marginVertical: "auto",
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
   },
   actionWrapper: {
     marginTop: spacing.sm,

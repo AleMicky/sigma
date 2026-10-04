@@ -7,4 +7,5 @@ export const STORAGE_KEYS = {
 
   THEME: "theme",
   LANGUAGE: "language",
+  LOCATION_SETUP_COMPLETED: "location_setup_completed",
 } as const;

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -6,10 +7,12 @@ import { QueryProvider } from "@/providers/query-provider";
 import { useAppTheme } from "@/theme";
 import { setupApiInterceptors } from "@/api/interceptors";
 import { apiConfigService } from "@/services/api-config.service";
-import { useEffect } from "react";
+import { useRestoreSession } from "@/features/auth/hooks/useRestoreSession";
 
-export default function RootLayout() {
+function RootApp() {
   const { colors, isDark } = useAppTheme();
+
+  useRestoreSession();
 
   useEffect(() => {
     apiConfigService.init();
@@ -18,15 +21,21 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-      <QueryProvider>
-        <StatusBar style={isDark ? "light" : "dark"} />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        />
-      </QueryProvider>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      />
     </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <QueryProvider>
+      <RootApp />
+    </QueryProvider>
   );
 }

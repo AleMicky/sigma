@@ -89,19 +89,21 @@ export const sessionService = {
    * Save complete session in one step
    */
   async saveSession<T>(params: {
-    accessToken: string;
+    accessToken?: string;
     refreshToken?: string;
     user?: T;
   }): Promise<void> {
-    const promises: Promise<unknown>[] = [
-      this.saveAccessToken(params.accessToken),
-    ];
+    const promises: Promise<unknown>[] = [];
 
-    if (params.refreshToken !== undefined) {
+    if (typeof params.accessToken === "string" && params.accessToken.trim().length > 0) {
+      promises.push(this.saveAccessToken(params.accessToken));
+    }
+
+    if (typeof params.refreshToken === "string" && params.refreshToken.trim().length > 0) {
       promises.push(this.saveRefreshToken(params.refreshToken));
     }
 
-    if (params.user !== undefined) {
+    if (params.user !== undefined && params.user !== null) {
       promises.push(this.saveUser(params.user));
     }
 

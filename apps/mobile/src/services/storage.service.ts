@@ -20,6 +20,14 @@ export const storageService = {
     value: string,
     options?: SecureStore.SecureStoreOptions
   ): Promise<boolean> {
+    if (typeof value !== "string") {
+      console.warn(
+        `[storageService] Attempted to store non-string value for key "${key}":`,
+        value
+      );
+      return false;
+    }
+
     try {
       await SecureStore.setItemAsync(key, value, options);
       return true;
