@@ -21,16 +21,24 @@ import {
   Section,
 } from "@/components/layout";
 import {
+  AppAvatar,
   AppBadge,
   AppButton,
   AppCard,
+  AppCheckbox,
+  AppChip,
   AppIconButton,
   AppInput,
+  AppRadio,
+  AppSwitch,
   AppText,
   Divider,
   EmptyState,
   ErrorMessage,
   Loading,
+  Pagination,
+  SearchInput,
+  Skeleton,
 } from "@/components/ui";
 import { colors, spacing } from "@/theme";
 
@@ -49,6 +57,15 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [cardPressCount, setCardPressCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(3);
+
+  // Estados de Nuevos Componentes UI
+  const [searchValue, setSearchValue] = useState("");
+  const [checkboxValue, setCheckboxValue] = useState(true);
+  const [switchValue, setSwitchValue] = useState(true);
+  const [selectedRadio, setSelectedRadio] = useState<string>("opt1");
+  const [selectedChips, setSelectedChips] = useState<string[]>(["urgente", "qa"]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showSkeleton, setShowSkeleton] = useState(false);
 
   // Estados de Feedback Modals & Overlays
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -129,6 +146,12 @@ export default function HomeScreen() {
     }, 2000);
   };
 
+  const toggleChip = (id: string) => {
+    setSelectedChips((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
   const handleSelectDepartment = () => {
     Alert.alert(
       "Seleccionar Departamento",
@@ -200,7 +223,150 @@ export default function HomeScreen() {
         ) : null}
 
         {/* ==================================================== */}
-        {/* SECCIÓN A: FORMULARIOS (REACT HOOK FORM)             */}
+        {/* NUEVOS COMPONENTES: AVATARS, CHIPS, SWITCH & CONTROLS */}
+        {/* ==================================================== */}
+        <Section
+          title="🌟 Avatares y Búsqueda"
+          description="AppAvatar, SearchInput y AppChip"
+          withDivider
+        >
+          {/* Búsqueda */}
+          <SearchInput
+            value={searchValue}
+            onChangeText={setSearchValue}
+            placeholder="Buscar colaboradores, solicitudes..."
+          />
+
+          {/* Avatares */}
+          <AppText variant="subtitle" style={styles.mtSm}>
+            Avatares (AppAvatar):
+          </AppText>
+          <View style={styles.avatarRow}>
+            <AppAvatar name="Carlos Mendoza" size="lg" online />
+            <AppAvatar name="Ana Silva" size="md" online={false} />
+            <AppAvatar name="Juan Pérez" size="sm" />
+            <AppAvatar name="Admin" size="xs" />
+          </View>
+
+          {/* Chips */}
+          <AppText variant="subtitle" style={styles.mtSm}>
+            Filtros & Tags (AppChip):
+          </AppText>
+          <View style={styles.chipRow}>
+            <AppChip
+              label="Todos"
+              selected={selectedChips.includes("todos")}
+              onPress={() => toggleChip("todos")}
+            />
+            <AppChip
+              label="Urgente"
+              selected={selectedChips.includes("urgente")}
+              onPress={() => toggleChip("urgente")}
+              onRemove={() => toggleChip("urgente")}
+            />
+            <AppChip
+              label="QA Testing"
+              selected={selectedChips.includes("qa")}
+              onPress={() => toggleChip("qa")}
+              onRemove={() => toggleChip("qa")}
+            />
+            <AppChip
+              label="Producción"
+              selected={selectedChips.includes("prod")}
+              onPress={() => toggleChip("prod")}
+            />
+          </View>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* CONTROLES DE SELECCIÓN: CHECKBOX, RADIO, SWITCH      */}
+        {/* ==================================================== */}
+        <Section
+          title="🔘 Controles de Selección"
+          description="AppCheckbox, AppRadio y AppSwitch"
+          withDivider
+        >
+          <AppCard variant="outlined">
+            <AppSwitch
+              label="Notificaciones Push"
+              description="Recibe alertas en tiempo real sobre tus solicitudes"
+              value={switchValue}
+              onValueChange={setSwitchValue}
+            />
+
+            <Divider spacingVertical="sm" />
+
+            <AppCheckbox
+              label="Acepto los Términos y Condiciones"
+              description="He leído las políticas de uso y privacidad"
+              checked={checkboxValue}
+              onChange={setCheckboxValue}
+            />
+
+            <Divider spacingVertical="sm" />
+
+            <AppText variant="caption">Selecciona tu prioridad:</AppText>
+            <AppRadio
+              label="Prioridad Alta"
+              description="Atención inmediata requerida"
+              selected={selectedRadio === "opt1"}
+              onPress={() => setSelectedRadio("opt1")}
+            />
+            <AppRadio
+              label="Prioridad Normal"
+              description="Procesamiento estándar"
+              selected={selectedRadio === "opt2"}
+              onPress={() => setSelectedRadio("opt2")}
+            />
+          </AppCard>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* PAGINACIÓN Y SKELETON                                */}
+        {/* ==================================================== */}
+        <Section
+          title="💀 Skeleton & Paginación"
+          description="Efectos de carga con pulso y navegación de páginas"
+          rightAction={
+            <AppButton
+              title={showSkeleton ? "Ver Contenido" : "Ver Skeleton"}
+              size="sm"
+              variant="outline"
+              onPress={() => setShowSkeleton((prev) => !prev)}
+            />
+          }
+          withDivider
+        >
+          {showSkeleton ? (
+            <AppCard variant="outlined" style={styles.gapMd}>
+              <View style={styles.skeletonHeader}>
+                <Skeleton variant="circular" height={44} width={44} />
+                <View style={styles.flex1GapXs}>
+                  <Skeleton variant="text" width="60%" height={16} />
+                  <Skeleton variant="text" width="40%" height={12} />
+                </View>
+              </View>
+              <Skeleton variant="rectangular" height={100} />
+            </AppCard>
+          ) : (
+            <AppCard variant="outlined">
+              <AppText variant="subtitle">Resultados de Solicitudes</AppText>
+              <AppText variant="bodySm" color="textSecondary" style={styles.mtSm}>
+                Mostrando elementos de la página {currentPage}.
+              </AppText>
+              <Divider spacingVertical="md" />
+              <Pagination
+                page={currentPage}
+                totalPages={8}
+                onPrevious={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                onNext={() => setCurrentPage((p) => Math.min(8, p + 1))}
+              />
+            </AppCard>
+          )}
+        </Section>
+
+        {/* ==================================================== */}
+        {/* FORMULARIOS (REACT HOOK FORM)                        */}
         {/* ==================================================== */}
         <Section
           title="📝 Formularios (React Hook Form)"
@@ -274,14 +440,13 @@ export default function HomeScreen() {
         </Section>
 
         {/* ==================================================== */}
-        {/* SECCIÓN B: FEEDBACK & MODALES                       */}
+        {/* FEEDBACK & MODALES                                  */}
         {/* ==================================================== */}
         <Section
           title="💬 Feedback & Modales"
           description="ConfirmModal, LoadingOverlay y Toast"
           withDivider
         >
-          <AppText variant="subtitle">Modales y Overlays:</AppText>
           <View style={styles.buttonRow}>
             <AppButton
               title="Modal Confirmar"
@@ -302,95 +467,16 @@ export default function HomeScreen() {
             variant="outline"
             onPress={handleTriggerLoadingOverlay}
           />
-
-          <AppText variant="subtitle" style={styles.mtMd}>
-            Variantes de Toast (Notificaciones):
-          </AppText>
-          <View style={styles.toastGrid}>
-            <Toast
-              variant="success"
-              title="Operación exitosa"
-              message="El registro fue guardado correctamente en la base de datos."
-            />
-            <Toast
-              variant="error"
-              title="Error al procesar"
-              message="No se pudo procesar el pago. Intente nuevamente."
-            />
-            <Toast
-              variant="warning"
-              title="Sesión por expirar"
-              message="Tu sesión se cerrará automáticamente en 5 minutos."
-            />
-            <Toast
-              variant="info"
-              title="Actualización disponible"
-              message="Hay una nueva versión de la app lista para descargar."
-            />
-          </View>
         </Section>
 
         {/* ==================================================== */}
-        {/* SECCIÓN C: LAYOUT & ESTRUCTURA                      */}
+        {/* COMPONENTES BASE: BOTONES & BADGES                   */}
         {/* ==================================================== */}
-        <Section
-          title="📐 Layout & Estructura"
-          description="AppHeader, Container y Section"
-          withDivider
-        >
-          <AppText variant="subtitle">Variaciones de AppHeader:</AppText>
-          <AppCard variant="outlined" padding="none">
-            <AppHeader
-              title="Detalle de Solicitud"
-              subtitle="ID: #SOL-9842"
-              showBack
-              onBackPress={() => Alert.alert("Navegación", "Volver presionado")}
-              bordered
-              rightAction={
-                <AppIconButton
-                  icon="ellipsis-vertical"
-                  accessibilityLabel="Opciones"
-                  variant="ghost"
-                  onPress={() => Alert.alert("Opciones", "Menú contextual")}
-                />
-              }
-            />
-
-            <AppHeader
-              title="Mi Perfil"
-              centerTitle
-              rightAction={
-                <AppBadge label="Pro" variant="primary" size="sm" />
-              }
-            />
-          </AppCard>
-
-          <AppText variant="subtitle" style={styles.mtMd}>
-            Container con Ancho Máximo:
-          </AppText>
-          <Container
-            maxWidth={320}
-            centered
-            padding="md"
-            style={styles.centeredContainerBox}
-          >
-            <AppText variant="bodySm" color="primary" weight="medium" align="center">
-              Container centrado (maxWidth: 320px)
-            </AppText>
-          </Container>
-        </Section>
-
-        {/* ==================================================== */}
-        {/* SECCIÓN D: COMPONENTES DE UI                        */}
-        {/* ==================================================== */}
-
-        {/* 1. AppBadge */}
         <Section
           title="1. Insignias (AppBadge)"
           description="Etiquetas de estado en modo sutil y sólido"
           withDivider
         >
-          <AppText variant="caption">Estilo Sutil (Subtle):</AppText>
           <View style={styles.badgeRow}>
             <AppBadge label="Default" variant="default" />
             <AppBadge label="Primary" variant="primary" dot />
@@ -398,17 +484,8 @@ export default function HomeScreen() {
             <AppBadge label="Warning" variant="warning" dot />
             <AppBadge label="Danger" variant="danger" dot />
           </View>
-
-          <AppText variant="caption">Estilo Sólido (Solid):</AppText>
-          <View style={styles.badgeRow}>
-            <AppBadge label="Primary" variant="primary" appearance="solid" />
-            <AppBadge label="Success" variant="success" appearance="solid" />
-            <AppBadge label="Danger" variant="danger" appearance="solid" />
-            <AppBadge label="Small" variant="primary" size="sm" />
-          </View>
         </Section>
 
-        {/* 2. AppIconButton */}
         <Section
           title="2. Botones de Icono (AppIconButton)"
           description="Variantes ghost, tonal, outline, filled y danger"
@@ -446,183 +523,6 @@ export default function HomeScreen() {
               onPress={() => Alert.alert("Eliminar", "¿Estás seguro?")}
             />
           </View>
-        </Section>
-
-        {/* 3. AppInput */}
-        <Section
-          title="3. Inputs (Campos de texto)"
-          description="Foco animado, toggle de contraseña y validación"
-          withDivider
-        >
-          <AppInput
-            label="Correo Electrónico"
-            placeholder="ejemplo@empresa.com"
-            value={email}
-            onChangeText={setEmail}
-            clearable
-            onClear={() => setEmail("")}
-            hint="Usamos tu correo para la autenticación"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <AppInput
-            label="Contraseña"
-            placeholder="••••••••"
-            value={password}
-            onChangeText={setPassword}
-            isPassword
-          />
-
-          <AppInput
-            label="Campo con Validación"
-            value={errorInput}
-            onChangeText={setErrorInput}
-            error={errorInput.length < 5 ? "Debe tener al menos 5 caracteres" : undefined}
-          />
-
-          <AppInput
-            label="Campo Deshabilitado"
-            value="Contenido no editable"
-            editable={false}
-          />
-        </Section>
-
-        {/* 4. AppButton */}
-        <Section
-          title="4. Botones y Variantes"
-          description="Estados de carga y variantes semánticas"
-          withDivider
-        >
-          <AppButton
-            title={loading ? "Procesando..." : "Botón Principal (Primary)"}
-            variant="primary"
-            loading={loading}
-            onPress={handleSimulateSubmit}
-          />
-
-          <View style={styles.buttonRow}>
-            <AppButton
-              title="Secondary"
-              variant="secondary"
-              style={styles.flex1}
-              onPress={() => Alert.alert("Botón", "Secundario presionado")}
-            />
-            <AppButton
-              title="Outline"
-              variant="outline"
-              style={styles.flex1}
-              onPress={() => Alert.alert("Botón", "Outline presionado")}
-            />
-          </View>
-
-          <View style={styles.buttonRow}>
-            <AppButton
-              title="Danger"
-              variant="danger"
-              style={styles.flex1}
-              onPress={() => Alert.alert("Atención", "Acción destructiva")}
-            />
-            <AppButton
-              title="Ghost"
-              variant="ghost"
-              style={styles.flex1}
-              onPress={() => Alert.alert("Botón", "Ghost presionado")}
-            />
-          </View>
-        </Section>
-
-        {/* 5. AppCard */}
-        <Section
-          title="5. Tarjetas (AppCard)"
-          description="Tarjetas elevadas interactivas y modulares"
-          withDivider
-        >
-          <AppCard
-            variant="elevated"
-            onPress={() => setCardPressCount((prev) => prev + 1)}
-          >
-            <AppCard.Header>
-              <View style={styles.cardHeaderRow}>
-                <AppText variant="subtitle" color="primary">
-                  Tarjeta Elevada
-                </AppText>
-                <AppBadge label="Interactiva" variant="primary" size="sm" />
-              </View>
-            </AppCard.Header>
-            <AppCard.Body>
-              <AppText variant="body">
-                Esta tarjeta tiene sombra, bordes y responde a toques con micro-animación.
-              </AppText>
-              <AppText variant="bodySm" color="textSecondary" style={styles.mtSm}>
-                Toques registrados: {cardPressCount}
-              </AppText>
-            </AppCard.Body>
-            <AppCard.Footer>
-              <AppText variant="caption" color="primary" weight="semibold">
-                Toca para interactuar 👆
-              </AppText>
-            </AppCard.Footer>
-          </AppCard>
-
-          <AppCard variant="filled">
-            <AppText variant="subtitle">Tarjeta con Fondo (Filled)</AppText>
-            <AppText variant="bodySm" color="textSecondary" style={styles.mtSm}>
-              Ideal para contenedores secundarios o paneles informativos.
-            </AppText>
-          </AppCard>
-        </Section>
-
-        {/* 6. ErrorMessage */}
-        <Section
-          title="6. Mensajes de Error (ErrorMessage)"
-          description="Banners de alerta y tarjetas de error de conexión"
-          withDivider
-        >
-          <ErrorMessage
-            variant="banner"
-            title="Error de Validación"
-            message="Revisa los datos ingresados en el formulario."
-            onRetry={() => Alert.alert("Reintento", "Reintentando operación...")}
-          />
-
-          <ErrorMessage
-            variant="card"
-            title="No se pudo conectar al servidor"
-            message="Verifica tu conexión a internet o intenta nuevamente en unos minutos."
-            onRetry={() => Alert.alert("Reintento", "Reconectando...")}
-          />
-        </Section>
-
-        {/* 7. EmptyState */}
-        <Section
-          title="7. Estado Vacío (EmptyState)"
-          description="Pantallas o secciones sin información"
-          withDivider
-        >
-          <AppCard variant="outlined">
-            <EmptyState
-              icon="document-text-outline"
-              title="Sin solicitudes pendientes"
-              description="Actualmente no tienes solicitudes registradas en la plataforma."
-              actionLabel="Nueva Solicitud"
-              onAction={() => Alert.alert("Acción", "Abriendo creador de solicitudes...")}
-            />
-          </AppCard>
-        </Section>
-
-        {/* 8. Loading */}
-        <Section
-          title="8. Carga Inline (Loading)"
-          description="Indicadores de progreso dentro de componentes"
-        >
-          <AppCard variant="outlined">
-            <Loading
-              fullScreen={false}
-              size="small"
-              message="Cargando información del módulo..."
-            />
-          </AppCard>
         </Section>
       </Container>
 
@@ -675,6 +575,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     alignItems: "center",
   },
+  avatarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
   iconButtonRow: {
     flexDirection: "row",
     gap: spacing.md,
@@ -687,17 +597,17 @@ const styles = StyleSheet.create({
   toastGrid: {
     gap: spacing.sm,
   },
-  cardHeaderRow: {
+  gapMd: {
+    gap: spacing.md,
+  },
+  skeletonHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: spacing.md,
   },
-  centeredContainerBox: {
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.md,
+  flex1GapXs: {
+    flex: 1,
+    gap: spacing.xs,
   },
   flex1: {
     flex: 1,
