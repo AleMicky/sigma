@@ -1,4 +1,5 @@
 export * from "./actions";
+export * from "./animation";
 export * from "./data";
 export * from "./date";
 export * from "./feedback";

@@ -8,6 +8,18 @@ import {
   SwipeAction,
 } from "@/components/actions";
 import {
+  AnimatedCard,
+  FadeInView,
+  PulseView,
+  ScalePressable,
+  SlideInView,
+  type AnimatedCardEntrance,
+  type AnimatedCardVariant,
+  type FadeDirection,
+  type PulseType,
+  type SlideDirection,
+} from "@/components/animation";
+import {
   DataList,
   DetailCard,
   InfoRow,
@@ -230,6 +242,18 @@ export default function HomeScreen() {
 
   // Estados de Pantallas de Estado (States)
   const [activeStateTab, setActiveStateTab] = useState<"permission" | "unauthorized" | "notfound">("permission");
+
+  // Estados de Micro-Animaciones (Animation Suite)
+  const [animCardVariant, setAnimCardVariant] = useState<AnimatedCardVariant>("elevated");
+  const [animCardEntrance, setAnimCardEntrance] = useState<AnimatedCardEntrance>("fadeUp");
+  const [animCardClicks, setAnimCardClicks] = useState<number>(0);
+  const [pulseActive, setPulseActive] = useState<boolean>(true);
+  const [pulseType, setPulseType] = useState<PulseType>("both");
+  const [slideVisible, setSlideVisible] = useState<boolean>(true);
+  const [slideDirection, setSlideDirection] = useState<SlideDirection>("right");
+  const [fadeVisible, setFadeVisible] = useState<boolean>(true);
+  const [fadeDirection, setFadeDirection] = useState<FadeDirection>("up");
+  const [scaleFactor, setScaleFactor] = useState<number>(0.95);
 
   const handleSimulateUpload = () => {
     setUploadProgress(0);
@@ -1823,6 +1847,419 @@ export default function HomeScreen() {
                   Efecto Highlight
                 </AppText>
               </AppPressable>
+            </View>
+          </AppCard>
+        </Section>
+
+        {/* ==================================================== */}
+        {/* SECCIÓN G8: MICRO-ANIMACIONES Y TRANSICIONES         */}
+        {/* ==================================================== */}
+        <Section
+          title="🎬 G8. Micro-animaciones y Transiciones"
+          description="Componentes animados fluidos con React Native Reanimated (AnimatedCard, PulseView, ScalePressable, SlideInView, FadeInView)."
+        >
+          {/* G8.1 AnimatedCard con Efectos de Toque y Entrada */}
+          <AppCard variant="elevated" style={styles.gapMd}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={styles.flex1}>
+                <AppText variant="subtitle">1. AnimatedCard (Tarjetas con Spring)</AppText>
+                <AppText variant="caption">
+                  Toca las tarjetas para sentir el rebote físico con spring. Taps: {animCardClicks}
+                </AppText>
+              </View>
+              <AppBadge
+                label={`${animCardClicks} taps`}
+                variant="primary"
+                appearance="solid"
+                dot
+              />
+            </View>
+
+            {/* Controles de Variante de Tarjeta */}
+            <AppText variant="caption" style={{ fontWeight: "600" }}>Variante de Tarjeta:</AppText>
+            <View style={styles.chipRow}>
+              {(["elevated", "outlined", "filled", "default"] as AnimatedCardVariant[]).map((v) => (
+                <FilterChip
+                  key={v}
+                  label={v.toUpperCase()}
+                  selected={animCardVariant === v}
+                  variant="solid"
+                  onPress={() => setAnimCardVariant(v)}
+                />
+              ))}
+            </View>
+
+            {/* Controles de Entrada */}
+            <AppText variant="caption" style={{ fontWeight: "600" }}>Animación de Entrada:</AppText>
+            <View style={styles.chipRow}>
+              {(["fadeUp", "fadeIn", "zoom", "none"] as AnimatedCardEntrance[]).map((e) => (
+                <FilterChip
+                  key={e}
+                  label={e}
+                  selected={animCardEntrance === e}
+                  variant="outline"
+                  onPress={() => setAnimCardEntrance(e)}
+                />
+              ))}
+            </View>
+
+            {/* Grid de AnimatedCards con Delay Escalonado */}
+            <View style={{ gap: spacing.md, marginTop: spacing.xs }}>
+              <AnimatedCard
+                key={`card-1-${animCardVariant}-${animCardEntrance}`}
+                variant={animCardVariant}
+                entrance={animCardEntrance}
+                delay={0}
+                onPress={() => {
+                  setAnimCardClicks((c) => c + 1);
+                  setToastMessage({
+                    title: "Tarjeta #1 Presionada",
+                    message: "Efecto spring con Reanimated activado",
+                    variant: "info",
+                  });
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: radius.md,
+                      backgroundColor: colors.primaryLight,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name="sparkles" size={22} color={colors.primary} />
+                  </View>
+                  <View style={styles.flex1}>
+                    <AppText variant="subtitle">Servicio de Nube Activo</AppText>
+                    <AppText variant="caption">Latencia 12ms • Región us-east-1</AppText>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </View>
+              </AnimatedCard>
+
+              <AnimatedCard
+                key={`card-2-${animCardVariant}-${animCardEntrance}`}
+                variant={animCardVariant}
+                entrance={animCardEntrance}
+                delay={100}
+                onPress={() => {
+                  setAnimCardClicks((c) => c + 1);
+                  setToastMessage({
+                    title: "Tarjeta #2 Presionada",
+                    message: "Aprobación de presupuesto registrada",
+                    variant: "success",
+                  });
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: radius.md,
+                      backgroundColor: "#DCFCE7",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name="shield-checkmark" size={22} color={colors.success} />
+                  </View>
+                  <View style={styles.flex1}>
+                    <AppText variant="subtitle">Auditoría de Seguridad</AppText>
+                    <AppText variant="caption">100% de cumplimiento en normativas</AppText>
+                  </View>
+                  <AppBadge label="OK" variant="success" size="sm" />
+                </View>
+              </AnimatedCard>
+            </View>
+          </AppCard>
+
+          {/* G8.2 ScalePressable - Botones y Elementos Táctiles con Escala */}
+          <AppCard variant="elevated" style={styles.gapMd}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={styles.flex1}>
+                <AppText variant="subtitle">2. ScalePressable (Toques Reactivos)</AppText>
+                <AppText variant="caption">
+                  Respuesta inmediata al presionar (press-in/out) con física de resorte.
+                </AppText>
+              </View>
+              <AppBadge label={`Scale: ${scaleFactor}`} variant="default" size="sm" />
+            </View>
+
+            <AppText variant="caption" style={{ fontWeight: "600" }}>Intensidad de Escala:</AppText>
+            <View style={styles.chipRow}>
+              {[0.97, 0.94, 0.90, 0.85].map((s) => (
+                <FilterChip
+                  key={s}
+                  label={`${Math.round(s * 100)}%`}
+                  selected={scaleFactor === s}
+                  variant="solid"
+                  onPress={() => setScaleFactor(s)}
+                />
+              ))}
+            </View>
+
+            <View style={{ flexDirection: "row", gap: spacing.md, marginTop: spacing.xs }}>
+              <ScalePressable
+                activeScale={scaleFactor}
+                onPress={() => {
+                  setToastMessage({
+                    title: "ScalePressable Acción Principal",
+                    message: `Pulsado con escala ${scaleFactor}`,
+                    variant: "info",
+                  });
+                }}
+                style={{
+                  flex: 1,
+                  padding: spacing.md,
+                  backgroundColor: colors.primary,
+                  borderRadius: radius.md,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  gap: spacing.xs,
+                }}
+              >
+                <Ionicons name="rocket-outline" size={18} color={colors.white} />
+                <AppText variant="bodySm" style={{ color: colors.white, fontWeight: "600" }}>
+                  Botón Primario
+                </AppText>
+              </ScalePressable>
+
+              <ScalePressable
+                activeScale={scaleFactor}
+                onPress={() => {
+                  setToastMessage({
+                    title: "ScalePressable Acción Secundaria",
+                    message: "Feedback de resorte ejecutado",
+                    variant: "info",
+                  });
+                }}
+                style={{
+                  flex: 1,
+                  padding: spacing.md,
+                  backgroundColor: colors.surfaceSecondary,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  gap: spacing.xs,
+                }}
+              >
+                <Ionicons name="flash-outline" size={18} color={colors.text} />
+                <AppText variant="bodySm" style={{ fontWeight: "600" }}>
+                  Secundario
+                </AppText>
+              </ScalePressable>
+            </View>
+          </AppCard>
+
+          {/* G8.3 PulseView - Balizas y Estados Vivos */}
+          <AppCard variant="elevated" style={styles.gapMd}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={styles.flex1}>
+                <AppText variant="subtitle">3. PulseView (Balizas y Alertas Pulsantes)</AppText>
+                <AppText variant="caption">
+                  Animación cíclica suave para elementos en vivo o notificaciones urgentes.
+                </AppText>
+              </View>
+              <AppSwitch
+                value={pulseActive}
+                onValueChange={(val) => setPulseActive(val)}
+                label=""
+              />
+            </View>
+
+            <AppText variant="caption" style={{ fontWeight: "600" }}>Tipo de Pulso:</AppText>
+            <View style={styles.chipRow}>
+              {(["both", "opacity", "scale"] as PulseType[]).map((t) => (
+                <FilterChip
+                  key={t}
+                  label={t.toUpperCase()}
+                  selected={pulseType === t}
+                  variant="solid"
+                  onPress={() => setPulseType(t)}
+                />
+              ))}
+            </View>
+
+            <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+              <PulseView active={pulseActive} type={pulseType} duration={1200}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: spacing.sm,
+                    backgroundColor: isDark ? "#7F1D1D" : "#FEE2E2",
+                    padding: spacing.md,
+                    borderRadius: radius.md,
+                    borderWidth: 1,
+                    borderColor: colors.danger,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 5,
+                      backgroundColor: colors.danger,
+                    }}
+                  />
+                  <AppText variant="bodySm" style={{ color: colors.danger, fontWeight: "700", flex: 1 }}>
+                    🔴 ALERTA EN VIVO: Servidor en Alta Demanda
+                  </AppText>
+                  <AppBadge label="Live" variant="danger" size="sm" appearance="solid" />
+                </View>
+              </PulseView>
+
+              <View style={{ flexDirection: "row", gap: spacing.md }}>
+                <PulseView active={pulseActive} type={pulseType} duration={1000} style={{ flex: 1 }}>
+                  <View
+                    style={{
+                      padding: spacing.sm,
+                      borderRadius: radius.md,
+                      backgroundColor: colors.surfaceSecondary,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: spacing.xs,
+                      justifyContent: "center",
+                    }}
+                  >
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
+                    <AppText variant="caption" style={{ fontWeight: "600" }}>
+                      🟢 GPS Activo
+                    </AppText>
+                  </View>
+                </PulseView>
+
+                <PulseView active={pulseActive} type={pulseType} duration={1500} style={{ flex: 1 }}>
+                  <View
+                    style={{
+                      padding: spacing.sm,
+                      borderRadius: radius.md,
+                      backgroundColor: colors.surfaceSecondary,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: spacing.xs,
+                      justifyContent: "center",
+                    }}
+                  >
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary }} />
+                    <AppText variant="caption" style={{ fontWeight: "600" }}>
+                      ⚡ Sync Automático
+                    </AppText>
+                  </View>
+                </PulseView>
+              </View>
+            </View>
+          </AppCard>
+
+          {/* G8.4 SlideInView & FadeInView - Transiciones Direccionales */}
+          <AppCard variant="elevated" style={styles.gapMd}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={styles.flex1}>
+                <AppText variant="subtitle">4. SlideInView & FadeInView</AppText>
+                <AppText variant="caption">
+                  Entradas y salidas animadas direccionales (Left, Right, Top, Bottom).
+                </AppText>
+              </View>
+              <AppButton
+                title={slideVisible ? "Ocultar" : "Mostrar"}
+                variant="outline"
+                size="sm"
+                onPress={() => {
+                  setSlideVisible((v) => !v);
+                  setFadeVisible((v) => !v);
+                }}
+              />
+            </View>
+
+            <AppText variant="caption" style={{ fontWeight: "600" }}>Dirección de Desplazamiento (Slide):</AppText>
+            <View style={styles.chipRow}>
+              {(["left", "right", "top", "bottom"] as SlideDirection[]).map((d) => (
+                <FilterChip
+                  key={d}
+                  label={d.toUpperCase()}
+                  selected={slideDirection === d}
+                  variant="solid"
+                  onPress={() => setSlideDirection(d)}
+                />
+              ))}
+            </View>
+
+            <AppText variant="caption" style={{ fontWeight: "600" }}>Dirección de Fade:</AppText>
+            <View style={styles.chipRow}>
+              {(["up", "down", "left", "right", "none"] as FadeDirection[]).map((f) => (
+                <FilterChip
+                  key={f}
+                  label={f.toUpperCase()}
+                  selected={fadeDirection === f}
+                  variant="outline"
+                  onPress={() => setFadeDirection(f)}
+                />
+              ))}
+            </View>
+
+            <View style={{ gap: spacing.md, marginTop: spacing.xs }}>
+              {slideVisible ? (
+                <SlideInView direction={slideDirection} exitDirection="left" spring duration={350}>
+                  <View
+                    style={{
+                      padding: spacing.md,
+                      backgroundColor: colors.surfaceSecondary,
+                      borderRadius: radius.md,
+                      borderLeftWidth: 4,
+                      borderLeftColor: colors.primary,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: spacing.md,
+                    }}
+                  >
+                    <Ionicons name="paper-plane" size={24} color={colors.primary} />
+                    <View style={styles.flex1}>
+                      <AppText variant="subtitle">Mensaje Deslizante (SlideInView)</AppText>
+                      <AppText variant="caption">
+                        Entrando desde la dirección: {slideDirection.toUpperCase()} con física de resorte
+                      </AppText>
+                    </View>
+                  </View>
+                </SlideInView>
+              ) : null}
+
+              {fadeVisible ? (
+                <FadeInView direction={fadeDirection} exitDirection="fade" duration={300} spring>
+                  <View
+                    style={{
+                      padding: spacing.md,
+                      backgroundColor: isDark ? colors.surface : colors.background,
+                      borderRadius: radius.md,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: spacing.md,
+                    }}
+                  >
+                    <Ionicons name="color-wand-outline" size={24} color={colors.warning} />
+                    <View style={styles.flex1}>
+                      <AppText variant="subtitle">Elemento Difuminado (FadeInView)</AppText>
+                      <AppText variant="caption">
+                        Transición Fade Dirección: {fadeDirection.toUpperCase()}
+                      </AppText>
+                    </View>
+                    <AppBadge label="Smooth" variant="warning" size="sm" />
+                  </View>
+                </FadeInView>
+              ) : null}
             </View>
           </AppCard>
         </Section>
