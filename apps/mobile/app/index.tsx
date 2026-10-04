@@ -1,12 +1,20 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Alert, StyleSheet, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
   DataList,
+  DetailCard,
+  InfoRow,
   KeyValueRow,
   ListItem,
+  StatCard,
   StatusRow,
+  Timeline,
+  type TimelineItem,
 } from "@/components/data";
+
+
 import {
   ConfirmModal,
   ErrorState,
@@ -323,11 +331,139 @@ export default function HomeScreen() {
         {/* ==================================================== */}
         <Section
           title="📊 Visualización de Datos"
-          description="ListItem, StatusRow, KeyValueRow y DataList"
+          description="StatCard, DetailCard, InfoRow, Timeline, ListItem y StatusRow"
           withDivider
         >
-          {/* List Items */}
-          <AppText variant="subtitle">Elementos de Lista (ListItem):</AppText>
+          {/* 1. StatCards Grid */}
+          <AppText variant="subtitle">Tarjetas de Métricas (StatCard):</AppText>
+          <View style={styles.statGrid}>
+            <View style={styles.statRow}>
+              <StatCard
+                title="Total Solicitudes"
+                value="142"
+                variant="default"
+                trend={{ value: "+12.4%", isPositive: true }}
+                icon={<Ionicons name="document-text-outline" size={18} color={colors.primary} />}
+                onPress={() => Alert.alert("Métricas", "Filtrando todas las solicitudes")}
+                style={styles.flex1}
+              />
+              <StatCard
+                title="Aprobadas"
+                value="98"
+                variant="success"
+                trend={{ value: "+8.2%", isPositive: true }}
+                icon={<Ionicons name="checkmark-circle-outline" size={18} color="#166534" />}
+                onPress={() => Alert.alert("Métricas", "Filtrando solicitudes aprobadas")}
+                style={styles.flex1}
+              />
+            </View>
+
+            <View style={styles.statRow}>
+              <StatCard
+                title="En Revisión"
+                value="36"
+                variant="warning"
+                description="8 requieren atención"
+                style={styles.flex1}
+              />
+              <StatCard
+                title="Rechazadas"
+                value="8"
+                variant="danger"
+                trend={{ value: "-2.1%", isPositive: false }}
+                icon={<Ionicons name="close-circle-outline" size={18} color={colors.danger} />}
+                style={styles.flex1}
+              />
+            </View>
+          </View>
+
+          {/* 2. DetailCard & InfoRow */}
+          <AppText variant="subtitle" style={styles.mtMd}>
+            Tarjeta de Detalle (DetailCard) & Filas de Info (InfoRow):
+          </AppText>
+          <DetailCard
+            title="Expediente de Proyecto"
+            subtitle="Migración Cloud AWS 2026"
+            icon={<Ionicons name="briefcase-outline" size={20} color={colors.primary} />}
+            headerRight={<AppBadge label="En Curso" variant="primary" size="sm" />}
+            withHeaderDivider
+            footer={
+              <AppLink
+                variant="primary"
+                onPress={() => Alert.alert("Descarga", "Descargando resumen ejecutivo")}
+              >
+                Descargar Resumen Ejecutivo (PDF) →
+              </AppLink>
+            }
+          >
+            <InfoRow
+              label="Líder Técnico"
+              value="Carlos Mendoza"
+              subtitle="Senior Cloud Architect"
+              icon={<Ionicons name="person-outline" size={18} color={colors.primary} />}
+              withDivider
+            />
+            <InfoRow
+              label="Presupuesto Asignado"
+              value="$12,850.00 USD"
+              valueColor="primary"
+              icon={<Ionicons name="cash-outline" size={18} color={colors.primary} />}
+              withDivider
+            />
+            <InfoRow
+              label="Estado de Auditoría"
+              value="Certificado SOC2 Tipo II"
+              valueColor="success"
+              icon={<Ionicons name="shield-checkmark-outline" size={18} color={colors.success} />}
+            />
+          </DetailCard>
+
+          {/* 3. Timeline */}
+          <AppText variant="subtitle" style={styles.mtMd}>
+            Línea de Tiempo (Timeline):
+          </AppText>
+          <DetailCard
+            title="Historial de Auditoría"
+            subtitle="Progreso cronológico del expediente"
+          >
+            <Timeline
+              items={[
+                {
+                  id: "1",
+                  title: "Solicitud Registrada",
+                  description: "Carlos Mendoza creó la solicitud de presupuesto #SOL-8910",
+                  date: "04 Oct, 09:30 AM",
+                  variant: "success",
+                },
+                {
+                  id: "2",
+                  title: "Aprobación Técnica",
+                  description: "Revisado y validado por el equipo de infraestructura",
+                  date: "04 Oct, 11:15 AM",
+                  variant: "success",
+                },
+                {
+                  id: "3",
+                  title: "En Revisión Financiera",
+                  description: "Pendiente de validación por finanzas",
+                  date: "04 Oct, 01:00 PM",
+                  variant: "primary",
+                  active: true,
+                },
+                {
+                  id: "4",
+                  title: "Desembolso Final",
+                  description: "Transferencia a la cuenta de compras",
+                  variant: "neutral",
+                },
+              ]}
+            />
+          </DetailCard>
+
+          {/* 4. List Items */}
+          <AppText variant="subtitle" style={styles.mtMd}>
+            Elementos de Lista (ListItem):
+          </AppText>
           <View style={styles.gapSm}>
             <ListItem
               title="Carlos Mendoza"
@@ -345,7 +481,7 @@ export default function HomeScreen() {
             />
           </View>
 
-          {/* KeyValueRow & StatusRow */}
+          {/* 5. KeyValueRow & StatusRow */}
           <AppText variant="subtitle" style={styles.mtMd}>
             Filas de Metadatos (KeyValueRow & StatusRow):
           </AppText>
@@ -999,5 +1135,12 @@ const styles = StyleSheet.create({
   },
   mbSm: {
     marginBottom: spacing.xs,
+  },
+  statGrid: {
+    gap: spacing.sm,
+  },
+  statRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
   },
 });
