@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
     ActivityIndicator,
     ScrollView,
@@ -6,19 +6,23 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
     CalendarIcon,
     CpuIcon,
+    PencilIcon,
+    TrashIcon,
     UserIcon,
     WrenchIcon,
 } from "@/src/components/icons";
 import {
+    ConfirmDeleteDialog,
     ScreenHeader,
     StatusBadge,
 } from "@/src/components/common";
 import {
+    useDeleteSolicitudMutation,
     useSolicitudDetailQuery,
     useSolicitudTrazabilidadQuery,
 } from "../hooks/use-solicitudes";
@@ -42,6 +46,7 @@ function formatDate(dateStr?: string | null) {
 export function SolicitudDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const insets = useSafeAreaInsets();
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const {
         data: solicitud,
@@ -53,6 +58,28 @@ export function SolicitudDetailScreen() {
     const { data: trazabilidad = [] } = useSolicitudTrazabilidadQuery(
         id as string
     );
+
+    const deleteMutation = useDeleteSolicitudMutation();
+
+    const handleEdit = useCallback(() => {
+        if (!id) return;
+        router.push({
+            pathname: "/(app)/mantenimientos/solicitudes/editar",
+            params: { id },
+        });
+    }, [id]);
+
+    const handleConfirmDelete = useCallback(async () => {
+        if (!id) return;
+        try {
+            await deleteMutation.mutateAsync(id);
+            setShowDeleteDialog(false);
+            router.back();
+        } catch {
+            // Manejado en UI
+        }
+    }, [id, deleteMutation]);
+
 
     if (isLoading) {
         return (
@@ -100,6 +127,31 @@ export function SolicitudDetailScreen() {
                 }}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Quick Actions (Editar & Eliminar) */}
+                <View className="flex-row items-center gap-3">
+                    <TouchableOpacity
+                        onPress={handleEdit}
+                        activeOpacity={0.8}
+                        className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-white py-3 border border-slate-200/90 shadow-2xs active:bg-slate-50"
+                    >
+                        <PencilIcon size={16} color="#2563eb" />
+                        <Text className="text-xs font-bold text-blue-600">
+                            Editar Solicitud
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => setShowDeleteDialog(true)}
+                        activeOpacity={0.8}
+                        className="flex-row items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 border border-rose-200/90 shadow-2xs active:bg-rose-50"
+                    >
+                        <TrashIcon size={16} color="#ef4444" />
+                        <Text className="text-xs font-bold text-rose-600">
+                            Eliminar
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
                 {/* Title and General Overview */}
                 <View className="rounded-2xl bg-white p-5 border border-slate-200/90 shadow-2xs">
                     <View className="flex-row items-center justify-between mb-2">
@@ -299,6 +351,21 @@ export function SolicitudDetailScreen() {
                     </View>
                 )}
             </ScrollView>
+
+            {/* Modal de Confirmación para Eliminar */}
+            <ConfirmDeleteDialog
+                isOpen={showDeleteDialog}
+                onClose={() => setShowDeleteDialog(false)}
+                onConfirm={handleConfirmDelete}
+                title="Eliminar Solicitud"
+                itemName={
+                    solicitud.numero ||
+                    (solicitud.id
+                        ? `#${solicitud.id.slice(0, 6).toUpperCase()}`
+                        : "")
+                }
+                isLoading={deleteMutation.isPending}
+            />
         </View>
     );
 }

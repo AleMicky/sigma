@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -13,9 +13,11 @@ import {
     CloseIcon,
     PlusIcon,
     SearchIcon,
+    TrashIcon,
     WrenchIcon,
 } from "@/src/components/icons";
 import {
+    ConfirmDeleteDialog,
     EmptyState,
     SearchBar,
     ScreenHeader,
@@ -24,61 +26,125 @@ import {
     SolicitudCard,
     SolicitudFilterTabs,
 } from "../components";
+
 import {
+    useDeleteSolicitudMutation,
     useSolicitudResumenQuery,
     useSolicitudesQuery,
 } from "../hooks/use-solicitudes";
+import { SolicitudMantenimiento } from "../types/solicitud.types";
+
+const ESTADO_LABELS: Record<string, string> = {
+    EN_REVISION: "En Revisión",
+    EN_PROCESO: "En Proceso",
+    BORRADOR: "Borradores",
+    FINALIZADA: "Finalizadas",
+};
 
 export function SolicitudesListScreen() {
     const insets = useSafeAreaInsets();
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedQuery, setDebouncedQuery] = useState("");
     const [selectedEstado, setSelectedEstado] = useState<string | undefined>(
         undefined
     );
+    const [solicitudToDelete, setSolicitudToDelete] = useState<SolicitudMantenimiento | null>(null);
 
-    // Queries
+    const deleteMutation = useDeleteSolicitudMutation();
+
+    // Debounce de 350ms para evitar peticiones en cada pulsación
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedQuery(searchQuery.trim());
+        }, 350);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Consultas React Query
     const {
         data: solicitudesPage,
         isLoading,
-        isRefetching,
-        refetch,
+        isRefetching: isRefetchingList,
+        refetch: refetchList,
         isError,
         error,
     } = useSolicitudesQuery({
-        q: searchQuery || undefined,
+        q: debouncedQuery || undefined,
         estado: selectedEstado || undefined,
         size: 50,
     });
 
-    const { data: resumen } = useSolicitudResumenQuery();
+    const {
+        data: resumen,
+        isRefetching: isRefetchingResumen,
+        refetch: refetchResumen,
+    } = useSolicitudResumenQuery();
 
-    const solicitudes = solicitudesPage?.content ?? [];
+    const isRefetching = isRefetchingList || isRefetchingResumen;
+
+    // Pull-to-refresh integral
+    const handleRefresh = useCallback(async () => {
+        await Promise.all([refetchList(), refetchResumen()]);
+    }, [refetchList, refetchResumen]);
+
+    const solicitudes = useMemo(() => solicitudesPage?.content ?? [], [solicitudesPage]);
     const totalCount = solicitudesPage?.totalElements ?? solicitudes.length;
 
-    const hasActiveFilters = Boolean(selectedEstado || searchQuery.trim().length > 0);
+    const hasActiveFilters = Boolean(selectedEstado || debouncedQuery.length > 0);
 
-    const handleClearFilters = () => {
+    const handleClearFilters = useCallback(() => {
         setSearchQuery("");
+        setDebouncedQuery("");
         setSelectedEstado(undefined);
-    };
+    }, []);
 
-    const handleCreateNew = () => {
+    const handleCreateNew = useCallback(() => {
         router.push("/(app)/mantenimientos/solicitudes/nueva");
-    };
+    }, []);
+
+    const handleEdit = useCallback((solicitud: SolicitudMantenimiento) => {
+        router.push({
+            pathname: "/(app)/mantenimientos/solicitudes/editar",
+            params: { id: solicitud.id },
+        });
+    }, []);
+
+    const handleDelete = useCallback((solicitud: SolicitudMantenimiento) => {
+        setSolicitudToDelete(solicitud);
+    }, []);
+
+    const handleConfirmDelete = useCallback(async () => {
+        if (!solicitudToDelete) return;
+        try {
+            await deleteMutation.mutateAsync(solicitudToDelete.id);
+            setSolicitudToDelete(null);
+        } catch {
+            // Error manejado en UI/Toast
+        }
+    }, [solicitudToDelete, deleteMutation]);
+
+    const renderItem = useCallback(
+        ({ item }: { item: SolicitudMantenimiento }) => (
+            <SolicitudCard
+                solicitud={item}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+            />
+        ),
+        [handleEdit, handleDelete]
+    );
+
+    const keyExtractor = useCallback((item: SolicitudMantenimiento) => item.id, []);
+
+
 
     return (
         <View className="flex-1 bg-slate-50">
-            {/* Standardized Mobile Header with Quick Action */}
+            {/* Standardized Mobile Header */}
             <ScreenHeader
                 title="Solicitudes"
                 subtitle="Mantenimiento correctivo y preventivo"
                 badgeCount={totalCount}
-                rightAction={{
-                    icon: <PlusIcon size={14} color="#ffffff" />,
-                    label: "Nueva",
-                    variant: "primary",
-                    onPress: handleCreateNew,
-                }}
             />
 
             {/* Sticky Filters & Search Subheader */}
@@ -119,7 +185,7 @@ export function SolicitudesListScreen() {
                         {selectedEstado && (
                             <View className="rounded-md bg-blue-100 px-1.5 py-0.5">
                                 <Text className="text-[10px] font-bold text-blue-800">
-                                    {selectedEstado}
+                                    {ESTADO_LABELS[selectedEstado] ?? selectedEstado}
                                 </Text>
                             </View>
                         )}
@@ -140,8 +206,10 @@ export function SolicitudesListScreen() {
             {/* Solicitudes List */}
             <FlatList
                 data={solicitudes}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <SolicitudCard solicitud={item} />}
+                keyExtractor={keyExtractor}
+                renderItem={renderItem}
+                keyboardDismissMode="on-drag"
+                keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{
                     paddingHorizontal: 16,
                     paddingTop: 12,
@@ -152,7 +220,7 @@ export function SolicitudesListScreen() {
                 refreshControl={
                     <RefreshControl
                         refreshing={isRefetching}
-                        onRefresh={refetch}
+                        onRefresh={handleRefresh}
                         tintColor="#2563eb"
                         colors={["#2563eb"]}
                     />
@@ -173,7 +241,7 @@ export function SolicitudesListScreen() {
                                 "No se pudo conectar con el servidor para obtener los datos."
                             }
                             actionLabel="Reintentar"
-                            onAction={() => refetch()}
+                            onAction={handleRefresh}
                         />
                     ) : (
                         <EmptyState
@@ -191,9 +259,9 @@ export function SolicitudesListScreen() {
                             }
                             description={
                                 selectedEstado
-                                    ? `No hay solicitudes en estado "${selectedEstado}".`
-                                    : searchQuery
-                                    ? `No se encontraron coincidencias para "${searchQuery}".`
+                                    ? `No hay solicitudes en estado "${ESTADO_LABELS[selectedEstado] ?? selectedEstado}".`
+                                    : debouncedQuery
+                                    ? `No se encontraron coincidencias para "${debouncedQuery}".`
                                     : "Comienza creando tu primera solicitud de mantenimiento para tus activos."
                             }
                             actionLabel={
@@ -232,6 +300,21 @@ export function SolicitudesListScreen() {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Modal de Confirmación para Eliminar */}
+            <ConfirmDeleteDialog
+                isOpen={Boolean(solicitudToDelete)}
+                onClose={() => setSolicitudToDelete(null)}
+                onConfirm={handleConfirmDelete}
+                title="Eliminar Solicitud"
+                itemName={
+                    solicitudToDelete?.numero ||
+                    (solicitudToDelete?.id
+                        ? `#${solicitudToDelete.id.slice(0, 6).toUpperCase()}`
+                        : "")
+                }
+                isLoading={deleteMutation.isPending}
+            />
         </View>
     );
 }

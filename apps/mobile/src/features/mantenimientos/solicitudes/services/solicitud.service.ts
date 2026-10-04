@@ -10,6 +10,7 @@ import {
     SolicitudMantenimientoTrazabilidad,
     SolicitudPrioridadInfo,
     SolicitudTipoMantenimientoInfo,
+    UpdateSolicitudPayload,
 } from "../types/solicitud.types";
 
 export const SOLICITUD_ENDPOINTS = {
@@ -83,6 +84,22 @@ export const solicitudService = {
         );
         return response.data;
     },
+
+    async updateSolicitud(
+        id: string,
+        payload: UpdateSolicitudPayload
+    ): Promise<SolicitudMantenimiento> {
+        const response = await api.put<SolicitudMantenimiento>(
+            SOLICITUD_ENDPOINTS.detail(id),
+            payload
+        );
+        return response.data;
+    },
+
+    async deleteSolicitud(id: string): Promise<void> {
+        await api.delete(SOLICITUD_ENDPOINTS.detail(id));
+    },
+
 
     // --- Catálogos para el Formulario Completo ---
     async getActivos(params?: { q?: string; size?: number }): Promise<PageResponse<SolicitudActivoInfo>> {

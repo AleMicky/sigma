@@ -3,6 +3,7 @@ import { solicitudService } from "../services/solicitud.service";
 import {
     CreateSolicitudPayload,
     SolicitudMantenimientoFilters,
+    UpdateSolicitudPayload,
 } from "../types/solicitud.types";
 
 export const solicitudKeys = {
@@ -96,3 +97,41 @@ export function useCreateSolicitudMutation() {
         },
     });
 }
+
+export function useUpdateSolicitudMutation() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({
+            id,
+            payload,
+        }: {
+            id: string;
+            payload: UpdateSolicitudPayload;
+        }) => solicitudService.updateSolicitud(id, payload),
+        onSuccess: (_data, variables) => {
+            queryClient.invalidateQueries({ queryKey: solicitudKeys.lists() });
+            queryClient.invalidateQueries({
+                queryKey: solicitudKeys.detail(variables.id),
+            });
+            queryClient.invalidateQueries({
+                queryKey: [...solicitudKeys.all, "resumen"],
+            });
+        },
+    });
+}
+
+export function useDeleteSolicitudMutation() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: string) => solicitudService.deleteSolicitud(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: solicitudKeys.lists() });
+            queryClient.invalidateQueries({
+                queryKey: [...solicitudKeys.all, "resumen"],
+            });
+        },
+    });
+}
+

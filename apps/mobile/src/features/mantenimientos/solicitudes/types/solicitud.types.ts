@@ -102,3 +102,11 @@ export interface CreateSolicitudPayload {
     descripcion: string;
     fechaSolicitud?: string | null;
 }
+
+export interface UpdateSolicitudPayload extends Partial<CreateSolicitudPayload> {
+    estado?: string;
+    aprobadorId?: string | null;
+    responsableId?: string | null;
+    supervisorId?: string | null;
+}
+
