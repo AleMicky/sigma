@@ -3,6 +3,11 @@ import { useForm } from "react-hook-form";
 import { Alert, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
+  ActionMenu,
+  FloatingActionButton,
+  SwipeAction,
+} from "@/components/actions";
+import {
   DataList,
   DetailCard,
   InfoRow,
@@ -15,15 +20,19 @@ import {
 } from "@/components/data";
 
 
+
 import {
   ConfirmModal,
   ErrorState,
+  InfoMessage,
   LoadingOverlay,
+  OfflineBanner,
   SuccessMessage,
   Toast,
   WarningMessage,
   type ToastVariant,
 } from "@/components/feedback";
+
 import {
   DateInput,
   FormCheckbox,
@@ -102,7 +111,9 @@ export default function HomeScreen() {
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [pressableCounter, setPressableCounter] = useState(0);
 
-  // Estados de Modales y BottomSheet
+  // Estados de Modales, BottomSheet y ActionMenu
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const [fabExtended, setFabExtended] = useState(false);
   const [showAppModal, setShowAppModal] = useState(false);
   const [showBottomSheet, setShowBottomSheet] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -110,9 +121,13 @@ export default function HomeScreen() {
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
 
+
   // Estados de Banners
   const [showSuccessBanner, setShowSuccessBanner] = useState(true);
   const [showWarningBanner, setShowWarningBanner] = useState(true);
+  const [showInfoBanner, setShowInfoBanner] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
+
 
   // Estado de Toast interactivo
   const [toastMessage, setToastMessage] = useState<{
@@ -273,6 +288,20 @@ export default function HomeScreen() {
         }
       />
 
+      {/* Banner de Estado Offline */}
+      <OfflineBanner
+        visible={isOffline}
+        onRetry={() => {
+          setIsOffline(false);
+          setToastMessage({
+            title: "Reconectado",
+            message: "Conexión a internet restaurada con éxito.",
+            variant: "success",
+          });
+        }}
+        onDismiss={() => setIsOffline(false)}
+      />
+
       <Container style={styles.container}>
         {/* Toast flotante activo si existe */}
         {toastMessage ? (
@@ -289,9 +318,27 @@ export default function HomeScreen() {
         {/* ==================================================== */}
         <Section
           title="📣 Mensajes de Estado"
-          description="SuccessMessage, WarningMessage y ErrorState"
+          description="SuccessMessage, WarningMessage, InfoMessage, ErrorState y OfflineBanner"
+          rightAction={
+            <AppButton
+              title={isOffline ? "Quitar Offline" : "Simular Offline"}
+              size="sm"
+              variant={isOffline ? "primary" : "outline"}
+              onPress={() => setIsOffline((prev) => !prev)}
+            />
+          }
           withDivider
         >
+          {showInfoBanner ? (
+            <InfoMessage
+              title="Nueva Versión Disponible"
+              message="Se ha publicado la versión v2.4 con mejoras de rendimiento y nuevos componentes."
+              actionLabel="Ver notas"
+              onAction={() => Alert.alert("Actualización", "Mostrando notas de la versión v2.4...")}
+              onDismiss={() => setShowInfoBanner(false)}
+            />
+          ) : null}
+
           {showSuccessBanner ? (
             <SuccessMessage
               title="¡Operación completada!"
@@ -460,26 +507,40 @@ export default function HomeScreen() {
             />
           </DetailCard>
 
-          {/* 4. List Items */}
+          {/* 4. List Items with SwipeAction */}
           <AppText variant="subtitle" style={styles.mtMd}>
-            Elementos de Lista (ListItem):
+            Elementos de Lista con Deslizamiento (SwipeAction):
           </AppText>
           <View style={styles.gapSm}>
-            <ListItem
-              title="Carlos Mendoza"
-              subtitle="Ingeniero de Software Senior"
-              caption="Última actividad: hace 10 min"
-              left={<AppAvatar name="Carlos Mendoza" size="md" online />}
-              onPress={() => Alert.alert("Detalle", "Abriendo perfil de Carlos")}
-            />
-            <ListItem
-              title="Solicitud #SOL-8910"
-              subtitle="Aprobación de presupuesto para servidores"
-              variant="card"
-              right={<AppBadge label="Pendiente" variant="warning" size="sm" />}
-              onPress={() => Alert.alert("Detalle", "Abriendo solicitud")}
-            />
+            <SwipeAction
+              onEdit={() => Alert.alert("Editar", "Editando datos de Carlos Mendoza...")}
+              onDelete={() => {
+                setShowDangerModal(true);
+              }}
+            >
+              <ListItem
+                title="Carlos Mendoza"
+                subtitle="Ingeniero de Software Senior (Desliza para acciones)"
+                caption="Última actividad: hace 10 min"
+                left={<AppAvatar name="Carlos Mendoza" size="md" online />}
+                onPress={() => Alert.alert("Detalle", "Abriendo perfil de Carlos")}
+              />
+            </SwipeAction>
+
+            <SwipeAction
+              onEdit={() => Alert.alert("Editar", "Editando solicitud #SOL-8910...")}
+              onDelete={() => setShowDangerModal(true)}
+            >
+              <ListItem
+                title="Solicitud #SOL-8910"
+                subtitle="Aprobación de presupuesto (Desliza ←)"
+                variant="card"
+                right={<AppBadge label="Pendiente" variant="warning" size="sm" />}
+                onPress={() => Alert.alert("Detalle", "Abriendo solicitud")}
+              />
+            </SwipeAction>
           </View>
+
 
           {/* 5. KeyValueRow & StatusRow */}
           <AppText variant="subtitle" style={styles.mtMd}>
@@ -803,6 +864,21 @@ export default function HomeScreen() {
             />
           </View>
 
+          <View style={styles.buttonRow}>
+            <AppButton
+              title="Abrir ActionMenu"
+              variant="outline"
+              style={styles.flex1}
+              onPress={() => setShowActionMenu(true)}
+            />
+            <AppButton
+              title={fabExtended ? "FAB Compacto" : "FAB Extendido"}
+              variant="ghost"
+              style={styles.flex1}
+              onPress={() => setFabExtended((prev) => !prev)}
+            />
+          </View>
+
           <AppButton
             title="Mostrar Loading Overlay (2s)"
             variant="outline"
@@ -1051,6 +1127,76 @@ export default function HomeScreen() {
         visible={showLoadingOverlay}
         message="Sincronizando datos..."
         submessage="Por favor espera un momento"
+      />
+
+      {/* ActionMenu Bottom Sheet Modal */}
+      <ActionMenu
+        visible={showActionMenu}
+        title="Acciones Rápidas"
+        subtitle="Selecciona una opción para continuar"
+        actions={[
+          {
+            id: "new_solicitud",
+            label: "Crear Nueva Solicitud",
+            subtitle: "Iniciar trámite de compra o servicio",
+            icon: "add-circle-outline",
+            badge: "Nuevo",
+            badgeVariant: "primary",
+            onPress: () => {
+              setToastMessage({
+                variant: "success",
+                title: "Nueva solicitud",
+                message: "Formulario de solicitud iniciado",
+              });
+            },
+          },
+          {
+            id: "export_data",
+            label: "Exportar Reporte PDF",
+            subtitle: "Descargar métricas del mes",
+            icon: "download-outline",
+            onPress: () => {
+              setToastMessage({
+                variant: "info",
+                title: "Descarga iniciada",
+                message: "Generando reporte de solicitudes...",
+              });
+            },
+          },
+          {
+            id: "sync",
+            label: "Sincronizar Datos",
+            subtitle: "Actualizar con el servidor",
+            icon: "sync-outline",
+            onPress: () => {
+              handleTriggerLoadingOverlay();
+            },
+          },
+          {
+            id: "delete_batch",
+            label: "Limpiar Notificaciones",
+            icon: "trash-outline",
+            danger: true,
+            onPress: () => {
+              setNotificationCount(0);
+              setToastMessage({
+                variant: "warning",
+                title: "Notificaciones",
+                message: "Se han limpiado todas las notificaciones",
+              });
+            },
+          },
+        ]}
+        onClose={() => setShowActionMenu(false)}
+      />
+
+      {/* Floating Action Button */}
+      <FloatingActionButton
+        icon="add"
+        label={fabExtended ? "Nueva Solicitud" : undefined}
+        badgeCount={notificationCount}
+        accessibilityLabel="Crear solicitud o abrir menú de acciones"
+        onPress={() => setShowActionMenu(true)}
       />
     </Screen>
   );
