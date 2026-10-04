@@ -13,6 +13,7 @@ import {
   type Edge,
 } from "react-native-safe-area-context";
 import { StatusBar, type StatusBarStyle } from "expo-status-bar";
+import { colors, spacing } from "../../theme";
 
 export type ScreenProps = {
   children: ReactNode;
@@ -86,7 +87,7 @@ export function Screen({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -98,6 +99,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   padding: {
-    padding: 16,
+    padding: spacing.lg,
   },
 });
