@@ -12,8 +12,8 @@ import {
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button, ButtonText } from "@/components/ui/button";
-import { serverConfigService } from "@/src/services/server-config.service";
+import { Button, ButtonText } from "@/src/components/ui/button";
+import { serverConfigService } from "../services/server-config.service";
 import {
     ArrowLeftIcon,
     ServerConnectionTest,

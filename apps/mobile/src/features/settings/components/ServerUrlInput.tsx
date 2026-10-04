@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { Input, InputField, InputSlot } from "@/components/ui/input";
+import { Input, InputField, InputSlot } from "@/src/components/ui/input";
 import { AlertCircleIcon, CloseIcon, GlobeIcon } from "./icons";
 
 interface ServerUrlInputProps {

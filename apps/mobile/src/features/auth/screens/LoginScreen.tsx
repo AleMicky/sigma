@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import {
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -7,6 +8,8 @@ import {
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { useAuthStore } from "@/src/stores/auth.store";
 import {
     LoginForm,
     LoginHeader,
@@ -16,16 +19,20 @@ import { LoginFormValues } from "../schemas/login.schema";
 
 export function LoginScreen() {
     const insets = useSafeAreaInsets();
-    const [isLoading, setIsLoading] = useState(false);
+    const login = useAuthStore((s) => s.login);
+    const isLoading = useAuthStore((s) => s.isLoading);
 
     const handleLogin = async (data: LoginFormValues) => {
-        setIsLoading(true);
         try {
-            // Placeholder simulation for authentication logic
-            await new Promise((resolve) => setTimeout(resolve, 1200));
-            console.log("Credenciales enviadas:", data.username);
-        } finally {
-            setIsLoading(false);
+            const result = await login(data);
+            router.replace("/(app)");
+        } catch (error: any) {
+            const errorMessage =
+                error?.response?.data?.message ||
+                error?.message ||
+                "No se pudo conectar al servidor. Verifica tus credenciales o la configuración del servidor.";
+
+            Alert.alert("Error al iniciar sesión", errorMessage);
         }
     };
 
