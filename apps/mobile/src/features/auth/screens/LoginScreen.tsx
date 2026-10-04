@@ -2,6 +2,7 @@ import { Text, View } from "react-native";
 
 import { Button, ButtonText } from "@/components/ui/button";
 import { Input, InputField } from "@/components/ui/input";
+import {router} from "expo-router";
 
 export function LoginScreen() {
     return (
@@ -40,6 +41,15 @@ export function LoginScreen() {
                         Iniciar sesión
                     </ButtonText>
                 </Button>
+                <Button
+                    variant="link"
+                    onPress={() => router.push("/server-config")}
+                >
+                    <ButtonText>
+                        Configurar servidor
+                    </ButtonText>
+                </Button>
+
             </View>
         </View>
     );
