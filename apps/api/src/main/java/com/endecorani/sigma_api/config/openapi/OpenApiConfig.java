@@ -11,6 +11,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
+
 @Configuration
 @EnableConfigurationProperties(OpenApiConfig.OpenApiProperties.class)
 public class OpenApiConfig {
@@ -28,6 +31,9 @@ public class OpenApiConfig {
 						.contact(new Contact()
 								.name("Endecorani")
 								.email("dev@endecorani.com")))
+				.servers(List.of(
+						new Server().url("/").description("Default Server URL")
+				))
 				.components(new Components()
 						.addSecuritySchemes(SECURITY_SCHEME_NAME, bearerJwtScheme()))
 				.addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME));
