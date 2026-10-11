@@ -94,6 +94,7 @@ export function SolicitudesVehicularesPage() {
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC" as const,
+      interfaz: "SolicitudesVehicularesPage",
       ...(search.query ? { search: search.query } : {}),
       ...(selectedEstado ? { estado: selectedEstado } : {}),
       ...(selectedTipoId ? { tipoSolicitudVehicularId: selectedTipoId } : {}),
@@ -105,7 +106,7 @@ export function SolicitudesVehicularesPage() {
 
   // Consulta para métricas globales de tarjetas resumen
   const allQuery = useQuery({
-    ...solicitudVehicularQueries.list({ size: 1000 }),
+    ...solicitudVehicularQueries.list({ size: 1000, interfaz: "SolicitudesVehicularesPage" }),
     staleTime: 1000 * 60 * 2,
   })
 

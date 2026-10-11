@@ -39,6 +39,7 @@ public class SolicitudVehicularRepositoryAdapter implements SolicitudVehicularRe
             UUID tipoSolicitudVehicularId,
             UUID solicitanteId,
             UUID conductorAsignadoId,
+            UUID responsableAsignacionId,
             Pageable pageable
     ) {
         boolean hasSearch = search != null && !search.isBlank();
@@ -53,6 +54,7 @@ public class SolicitudVehicularRepositoryAdapter implements SolicitudVehicularRe
         java.util.Collection<String> effectiveEstados = hasEstados ? estadosList : DUMMY_ESTADOS;
         boolean hasTipo = tipoSolicitudVehicularId != null;
         boolean hasSolicitante = solicitanteId != null;
+        boolean hasResponsable = responsableAsignacionId != null;
         boolean hasConductor = conductorAsignadoId != null;
 
         return springRepository.searchWithFilters(
@@ -64,6 +66,8 @@ public class SolicitudVehicularRepositoryAdapter implements SolicitudVehicularRe
                 tipoSolicitudVehicularId,
                 hasSolicitante,
                 solicitanteId,
+                hasResponsable,
+                responsableAsignacionId,
                 hasConductor,
                 conductorAsignadoId,
                 pageable

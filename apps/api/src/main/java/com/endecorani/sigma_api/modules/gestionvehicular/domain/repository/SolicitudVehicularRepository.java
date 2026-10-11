@@ -13,12 +13,24 @@ public interface SolicitudVehicularRepository {
 
     Page<SolicitudVehicular> search(String search, Pageable pageable);
 
+    default Page<SolicitudVehicular> searchWithFilters(
+            String search,
+            String estado,
+            UUID tipoSolicitudVehicularId,
+            UUID solicitanteId,
+            UUID conductorAsignadoId,
+            Pageable pageable
+    ) {
+        return searchWithFilters(search, estado, tipoSolicitudVehicularId, solicitanteId, conductorAsignadoId, null, pageable);
+    }
+
     Page<SolicitudVehicular> searchWithFilters(
             String search,
             String estado,
             UUID tipoSolicitudVehicularId,
             UUID solicitanteId,
             UUID conductorAsignadoId,
+            UUID responsableAsignacionId,
             Pageable pageable
     );
 

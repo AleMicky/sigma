@@ -119,6 +119,11 @@ public class ConductorRepositoryAdapter implements ConductorRepository {
     }
 
     @Override
+    public Optional<Conductor> findByEmpleadoId(UUID empleadoId) {
+        return springRepository.findByEmpleadoId(empleadoId).map(mapper::toDomain);
+    }
+
+    @Override
     public boolean existsByEmpleadoIdAndIdNot(UUID empleadoId, UUID id) {
         return springRepository.existsByEmpleadoIdAndIdNot(empleadoId, id);
     }

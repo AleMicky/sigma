@@ -59,7 +59,7 @@ export function ConductorViajesPage() {
 
   // Consulta global para tarjetas de métricas del conductor
   const allQuery = useQuery({
-    ...solicitudVehicularQueries.list({ size: 1000 }),
+    ...solicitudVehicularQueries.list({ size: 1000, interfaz: "ConductorViajesPage" }),
     staleTime: 1000 * 60 * 2,
   })
 
@@ -81,6 +81,7 @@ export function ConductorViajesPage() {
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC" as const,
+      interfaz: "ConductorViajesPage",
       ...(estadoFilter ? { estado: estadoFilter } : {}),
       ...(search.query ? { search: search.query } : {}),
     }

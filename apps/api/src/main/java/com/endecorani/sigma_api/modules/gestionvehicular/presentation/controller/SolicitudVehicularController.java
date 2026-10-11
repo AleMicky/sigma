@@ -61,17 +61,19 @@ public class SolicitudVehicularController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar solicitudes vehiculares con paginación y filtros opcionales")
+    @Operation(summary = "Listar solicitudes vehiculares con paginación y filtros opcionales (búsqueda, estado, tipo, solicitante, conductor, responsable, interfaz)")
     public ResponseEntity<ApiResponse<PageResponse<SolicitudVehicularResponse>>> listar(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String estado,
             @RequestParam(required = false) UUID tipoSolicitudVehicularId,
             @RequestParam(required = false) UUID solicitanteId,
             @RequestParam(required = false) UUID conductorAsignadoId,
+            @RequestParam(required = false) UUID responsableAsignacionId,
+            @RequestParam(required = false) String interfaz,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(search, estado, tipoSolicitudVehicularId, solicitanteId, conductorAsignadoId, pageRequest))
+                ApiResponse.success(service.listar(search, estado, tipoSolicitudVehicularId, solicitanteId, conductorAsignadoId, responsableAsignacionId, interfaz, pageRequest))
         );
     }
 

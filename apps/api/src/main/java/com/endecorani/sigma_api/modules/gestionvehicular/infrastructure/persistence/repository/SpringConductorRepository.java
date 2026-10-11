@@ -10,11 +10,14 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface SpringConductorRepository extends JpaRepository<ConductorEntity, UUID> {
 
     boolean existsByEmpleadoId(UUID empleadoId);
+
+    Optional<ConductorEntity> findByEmpleadoId(UUID empleadoId);
 
     boolean existsByEmpleadoIdAndIdNot(UUID empleadoId, UUID id);
 

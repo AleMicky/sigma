@@ -31,6 +31,9 @@ import com.endecorani.sigma_api.modules.workflow.application.dto.request.Complet
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.FlowableClient;
+import com.endecorani.sigma_api.config.security.SecurityUtils;
+import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
+import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -46,7 +49,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -63,15 +66,29 @@ public class SolicitudVehicularService {
 
     private static final String ESTADO_BORRADOR = "BORRADOR";
     private static final String ESTADO_SOLICITADO = "SOLICITADO";
+    private static final String ESTADO_PENDIENTE = "PENDIENTE";
+    private static final String ESTADO_OBSERVADO = "OBSERVADO";
+    private static final String ESTADO_RECHAZADA = "RECHAZADA";
+    private static final String ESTADO_FINALIZADA = "FINALIZADA";
+    private static final String ESTADO_FINALIZADO = "FINALIZADO";
+    private static final String ESTADO_EN_CURSO = "EN_CURSO";
+    private static final String ESTADO_EN_VIAJE = "EN_VIAJE";
+    private static final String ESTADO_RETORNO = "RETORNO";
+    private static final String ACCION_RECHAZAR = "RECHAZAR";
     private static final String WORKFLOW_CODIGO = "SOLICITUD_VEHICULAR";
+    private static final String SOLICITANTE_ID = "solicitanteId";
+    private static final String RESPONSABLE_ASIGNACION_ID = "responsableAsignacionId";
+    private static final String CONDUCTOR_ASIGNADO_ID = "conductorAsignadoId";
+    private static final String APROBADOR_ID = "aprobadorId";
+    private static final String COMENTARIO = "comentario";
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
             "numero",
             "tipoSolicitudVehicularId",
-            "solicitanteId",
-            "responsableAsignacionId",
-            "conductorAsignadoId",
+            SOLICITANTE_ID,
+            RESPONSABLE_ASIGNACION_ID,
+            CONDUCTOR_ASIGNADO_ID,
             "motivo",
             "destino",
             "fechaSalida",
@@ -93,10 +110,12 @@ public class SolicitudVehicularService {
     private final CorrelativoService correlativoService;
     private final WorkflowApplicationService workflowApplicationService;
     private final FlowableClient flowableClient;
+    private final UsuarioRepository usuarioRepository;
+    private final SecurityUtils securityUtils;
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudVehicularResponse> listar(String search, PageRequestDto pageRequest) {
-        return listar(search, null, null, null, null, pageRequest);
+        return listar(search, null, null, null, null, null, pageRequest);
     }
 
     @Transactional(readOnly = true)
@@ -107,6 +126,103 @@ public class SolicitudVehicularService {
             UUID solicitanteId,
             UUID conductorAsignadoId,
             PageRequestDto pageRequest) {
+        return listar(search, estado, tipoSolicitudVehicularId, solicitanteId, conductorAsignadoId, null, null,
+                pageRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SolicitudVehicularResponse> listar(
+            String search,
+            String estado,
+            UUID tipoSolicitudVehicularId,
+            UUID solicitanteId,
+            UUID conductorAsignadoId,
+            String interfaz,
+            PageRequestDto pageRequest) {
+        return listar(search, estado, tipoSolicitudVehicularId, solicitanteId, conductorAsignadoId, null, interfaz,
+                pageRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SolicitudVehicularResponse> listar(
+            String search,
+            String estado,
+            UUID tipoSolicitudVehicularId,
+            UUID solicitanteId,
+            UUID conductorAsignadoId,
+            UUID responsableAsignacionId,
+            String interfaz,
+            PageRequestDto pageRequest) {
+        InterfazFiltros filtros = resolverFiltrosPorInterfaz(solicitanteId, responsableAsignacionId, conductorAsignadoId, interfaz);
+        return listarInternal(search, estado, tipoSolicitudVehicularId, filtros.solicitanteId(), filtros.conductorAsignadoId(),
+                filtros.responsableAsignacionId(), pageRequest);
+    }
+
+    private UUID obtenerEmpleadoIdActual() {
+        return securityUtils.getCurrentUserId()
+                .flatMap(usuarioRepository::findById)
+                .map(Usuario::getPersonaId)
+                .flatMap(empleadoRepository::findFirstByPersonaId)
+                .map(Empleado::getId)
+                .orElse(null);
+    }
+
+    private UUID obtenerConductorIdActual() {
+        UUID empleadoId = obtenerEmpleadoIdActual();
+        if (empleadoId == null) {
+            return null;
+        }
+        return conductorRepository.findByEmpleadoId(empleadoId)
+                .map(Conductor::getId)
+                .or(() -> conductorRepository.findById(empleadoId).map(Conductor::getId))
+                .orElse(null);
+    }
+
+    private record InterfazFiltros(UUID solicitanteId, UUID responsableAsignacionId, UUID conductorAsignadoId) {}
+
+    private InterfazFiltros resolverFiltrosPorInterfaz(
+            UUID solicitanteId,
+            UUID responsableAsignacionId,
+            UUID conductorAsignadoId,
+            String interfaz) {
+        if (securityUtils.isAdmin()) {
+            return new InterfazFiltros(solicitanteId, responsableAsignacionId, conductorAsignadoId);
+        }
+        if (interfaz != null) {
+            String clean = interfaz.trim();
+            if ("SolicitudesVehicularesPage".equalsIgnoreCase(clean) || "SolicitudesPage".equalsIgnoreCase(clean)) {
+                UUID emp = obtenerEmpleadoIdActual();
+                return new InterfazFiltros(
+                        emp != null ? emp : UUID.fromString("00000000-0000-0000-0000-000000000000"),
+                        responsableAsignacionId,
+                        conductorAsignadoId);
+            }
+            if ("AsignacionVehicularPage".equalsIgnoreCase(clean)) {
+                UUID emp = obtenerEmpleadoIdActual();
+                return new InterfazFiltros(
+                        solicitanteId,
+                        emp != null ? emp : UUID.fromString("00000000-0000-0000-0000-000000000000"),
+                        conductorAsignadoId);
+            }
+            if ("ConductorViajesPage".equalsIgnoreCase(clean)) {
+                UUID cond = obtenerConductorIdActual();
+                return new InterfazFiltros(
+                        solicitanteId,
+                        responsableAsignacionId,
+                        cond != null ? cond : UUID.fromString("00000000-0000-0000-0000-000000000000"));
+            }
+        }
+        return new InterfazFiltros(solicitanteId, responsableAsignacionId, conductorAsignadoId);
+    }
+
+    private PageResponse<SolicitudVehicularResponse> listarInternal(
+            String search,
+            String estado,
+            UUID tipoSolicitudVehicularId,
+            UUID solicitanteId,
+            UUID conductorAsignadoId,
+            UUID responsableAsignacionId,
+            PageRequestDto pageRequest) {
         String normalizedSearch = StringUtils.normalize(search);
         String normalizedEstado = StringUtils.normalize(estado);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
@@ -116,7 +232,8 @@ public class SolicitudVehicularService {
                 (normalizedEstado == null || normalizedEstado.isBlank()) &&
                 tipoSolicitudVehicularId == null &&
                 solicitanteId == null &&
-                conductorAsignadoId == null) {
+                conductorAsignadoId == null &&
+                responsableAsignacionId == null) {
             resultado = repository.findAll(pageable);
         } else {
             resultado = repository.searchWithFilters(
@@ -125,6 +242,7 @@ public class SolicitudVehicularService {
                     tipoSolicitudVehicularId,
                     solicitanteId,
                     conductorAsignadoId,
+                    responsableAsignacionId,
                     pageable);
         }
 
@@ -133,6 +251,10 @@ public class SolicitudVehicularService {
 
     @Transactional(readOnly = true)
     public SolicitudVehicularResponse findById(UUID id) {
+        return findByIdInternal(id);
+    }
+
+    private SolicitudVehicularResponse findByIdInternal(UUID id) {
         SolicitudVehicular solicitud = obtenerPorId(id);
         List<SolicitudVehicularAdjuntoResponse> adjuntos = adjuntoService.findBySolicitudVehicularId(id);
         return toResponse(solicitud, adjuntos);
@@ -140,6 +262,22 @@ public class SolicitudVehicularService {
 
     @Transactional
     public SolicitudVehicularResponse create(SolicitudVehicularRequest dto) {
+        return createInternal(dto);
+    }
+
+    @Transactional
+    public SolicitudVehicularResponse createWithFiles(SolicitudVehicularRequest dto, List<MultipartFile> files) {
+        SolicitudVehicularResponse response = createInternal(dto);
+
+        if (files != null && !files.isEmpty()) {
+            adjuntoService.uploadMultipleFiles(response.id(), files);
+            return findByIdInternal(response.id());
+        }
+
+        return response;
+    }
+
+    private SolicitudVehicularResponse createInternal(SolicitudVehicularRequest dto) {
         String numero = StringUtils.normalize(dto.numero());
         if (numero == null || numero.isBlank()) {
             numero = correlativoService.generar(CorrelativoCodigo.SOLICITUD_VEHICULAR, LocalDateTime.now().getYear());
@@ -170,7 +308,7 @@ public class SolicitudVehicularService {
         if (guardado.getId() != null) {
             Map<String, Object> variables = new HashMap<>();
             variables.put("solicitudId", guardado.getId().toString());
-            variables.put("solicitanteId", guardado.getSolicitanteId().toString());
+            variables.put(SOLICITANTE_ID, guardado.getSolicitanteId().toString());
             variables.put("destino", guardado.getDestino());
             variables.put("cantidadPasajeros", guardado.getCantidadPasajeros());
 
@@ -195,23 +333,11 @@ public class SolicitudVehicularService {
     }
 
     @Transactional
-    public SolicitudVehicularResponse createWithFiles(SolicitudVehicularRequest dto, List<MultipartFile> files) {
-        SolicitudVehicularResponse response = create(dto);
-
-        if (files != null && !files.isEmpty()) {
-            adjuntoService.uploadMultipleFiles(response.id(), files);
-            return findById(response.id());
-        }
-
-        return response;
-    }
-
-    @Transactional
     public SolicitudVehicularResponse enviar(UUID id, EnviarSolicitudVehicularRequest request) {
         SolicitudVehicular solicitud = obtenerPorId(id);
 
         String estadoActual = solicitud.getEstado() != null ? solicitud.getEstado().toUpperCase() : "";
-        if (!"BORRADOR".equals(estadoActual) && !"PENDIENTE".equals(estadoActual)) {
+        if (!ESTADO_BORRADOR.equals(estadoActual) && !ESTADO_PENDIENTE.equals(estadoActual)) {
             throw new ConflictException(
                     "SOLICITUD_ESTADO_INVALIDO",
                     "Solo se puede enviar una solicitud en estado BORRADOR o PENDIENTE");
@@ -226,11 +352,11 @@ public class SolicitudVehicularService {
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("solicitudId", solicitud.getId().toString());
-        variables.put("solicitanteId", solicitud.getSolicitanteId().toString());
-        variables.put("aprobadorId", aprobadorId.toString());
-        variables.put("responsableAsignacionId", aprobadorId.toString());
+        variables.put(SOLICITANTE_ID, solicitud.getSolicitanteId().toString());
+        variables.put(APROBADOR_ID, aprobadorId.toString());
+        variables.put(RESPONSABLE_ASIGNACION_ID, aprobadorId.toString());
         if (request.comentario() != null && !request.comentario().isBlank()) {
-            variables.put("comentario", request.comentario().trim());
+            variables.put(COMENTARIO, request.comentario().trim());
         }
 
         if (solicitud.getProcessInstanceId() == null) {
@@ -249,7 +375,7 @@ public class SolicitudVehicularService {
         solicitud.setResponsableAsignacionId(aprobadorId);
         solicitud.setEstado(ESTADO_SOLICITADO);
         SolicitudVehicular actualizado = repository.save(solicitud);
-        return findById(actualizado.getId());
+        return toResponse(actualizado, adjuntoService.findBySolicitudVehicularId(actualizado.getId()));
     }
 
     @Transactional
@@ -267,20 +393,20 @@ public class SolicitudVehicularService {
             effectiveVariables.putAll(request.variables());
         }
 
-        if (!effectiveVariables.containsKey("conductorAsignadoId") && solicitud.getConductorAsignadoId() != null) {
-            effectiveVariables.put("conductorAsignadoId", solicitud.getConductorAsignadoId().toString());
+        if (!effectiveVariables.containsKey(CONDUCTOR_ASIGNADO_ID) && solicitud.getConductorAsignadoId() != null) {
+            effectiveVariables.put(CONDUCTOR_ASIGNADO_ID, solicitud.getConductorAsignadoId().toString());
         }
-        if (!effectiveVariables.containsKey("responsableAsignacionId")
+        if (!effectiveVariables.containsKey(RESPONSABLE_ASIGNACION_ID)
                 && solicitud.getResponsableAsignacionId() != null) {
-            effectiveVariables.put("responsableAsignacionId", solicitud.getResponsableAsignacionId().toString());
+            effectiveVariables.put(RESPONSABLE_ASIGNACION_ID, solicitud.getResponsableAsignacionId().toString());
         }
 
-        if (effectiveVariables.containsKey("responsableAsignacionId")
-                && !effectiveVariables.containsKey("aprobadorId")) {
-            effectiveVariables.put("aprobadorId", effectiveVariables.get("responsableAsignacionId"));
-        } else if (effectiveVariables.containsKey("aprobadorId")
-                && !effectiveVariables.containsKey("responsableAsignacionId")) {
-            effectiveVariables.put("responsableAsignacionId", effectiveVariables.get("aprobadorId"));
+        if (effectiveVariables.containsKey(RESPONSABLE_ASIGNACION_ID)
+                && !effectiveVariables.containsKey(APROBADOR_ID)) {
+            effectiveVariables.put(APROBADOR_ID, effectiveVariables.get(RESPONSABLE_ASIGNACION_ID));
+        } else if (effectiveVariables.containsKey(APROBADOR_ID)
+                && !effectiveVariables.containsKey(RESPONSABLE_ASIGNACION_ID)) {
+            effectiveVariables.put(RESPONSABLE_ASIGNACION_ID, effectiveVariables.get(APROBADOR_ID));
         }
 
         CompleteWorkflowTaskRequest effectiveRequest = new CompleteWorkflowTaskRequest(effectiveVariables);
@@ -294,46 +420,29 @@ public class SolicitudVehicularService {
                 : "";
 
         String nuevoEstado = resultado.status() != null ? resultado.status().trim().toUpperCase() : null;
-        if ("RECHAZAR".equals(accionEnviada)) {
-            solicitud.setEstado("RECHAZADA");
+        if (ACCION_RECHAZAR.equals(accionEnviada)) {
+            solicitud.setEstado(ESTADO_RECHAZADA);
         } else if (nuevoEstado != null) {
             solicitud.setEstado(nuevoEstado);
         } else {
-            solicitud.setEstado("FINALIZADA");
+            solicitud.setEstado(ESTADO_FINALIZADA);
         }
 
-        if (effectiveVariables.containsKey("comentario") && effectiveVariables.get("comentario") != null) {
-            String com = effectiveVariables.get("comentario").toString().trim();
+        if (effectiveVariables.containsKey(COMENTARIO) && effectiveVariables.get(COMENTARIO) != null) {
+            String com = effectiveVariables.get(COMENTARIO).toString().trim();
             if (!com.isBlank()) {
                 solicitud.setObservacion(StringUtils.normalize(com));
             }
         }
 
-        if (effectiveVariables.containsKey("responsableAsignacionId")) {
-            Object val = effectiveVariables.get("responsableAsignacionId");
-            if (val != null && !val.toString().isBlank()) {
-                try {
-                    solicitud.setResponsableAsignacionId(UUID.fromString(val.toString().trim()));
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
+        UUID respIdVar = parseUuidVariable(effectiveVariables, RESPONSABLE_ASIGNACION_ID, APROBADOR_ID);
+        if (respIdVar != null) {
+            solicitud.setResponsableAsignacionId(respIdVar);
         }
-        if (effectiveVariables.containsKey("conductorAsignadoId")) {
-            Object val = effectiveVariables.get("conductorAsignadoId");
-            if (val != null && !val.toString().isBlank()) {
-                try {
-                    solicitud.setConductorAsignadoId(UUID.fromString(val.toString().trim()));
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
-        } else if (effectiveVariables.containsKey("conductorId")) {
-            Object val = effectiveVariables.get("conductorId");
-            if (val != null && !val.toString().isBlank()) {
-                try {
-                    solicitud.setConductorAsignadoId(UUID.fromString(val.toString().trim()));
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
+
+        UUID condIdVar = parseUuidVariable(effectiveVariables, CONDUCTOR_ASIGNADO_ID, "conductorId");
+        if (condIdVar != null) {
+            solicitud.setConductorAsignadoId(condIdVar);
         }
 
         SolicitudVehicular guardado = repository.save(solicitud);
@@ -341,7 +450,7 @@ public class SolicitudVehicularService {
         // Sincronizar registro de viaje vehicular (asignacionVehicularId, salida, retorno)
         sincronizarViajeVehicular(guardado, effectiveVariables, nuevoEstado);
 
-        return findById(guardado.getId());
+        return toResponse(guardado, adjuntoService.findBySolicitudVehicularId(guardado.getId()));
     }
 
     private void sincronizarViajeVehicular(
@@ -358,121 +467,195 @@ public class SolicitudVehicularService {
             return;
         }
 
-        AsignacionVehicular asignacion = asignaciones.get(0);
-        UUID asignacionId = asignacion.getId();
-
+        UUID asignacionId = asignaciones.get(0).getId();
         ViajeVehicular viaje = viajeVehicularRepository.findByAsignacionVehicularId(asignacionId)
                 .orElseGet(() -> ViajeVehicular.builder()
                         .asignacionVehicularId(asignacionId)
                         .estado(EstadoViajeVehicular.PROGRAMADO)
                         .build());
 
-        boolean modificado = false;
-
-        // 1. Datos de salida (Registrar Salida / Estado EN_CURSO o RETORNO)
-        boolean hasSalidaData = variables.containsKey("kilometrajeSalida")
-                || variables.containsKey("fechaSalidaReal")
-                || variables.containsKey("nivelCombustibleSalida")
-                || "EN_CURSO".equalsIgnoreCase(nuevoEstado)
-                || "EN_VIAJE".equalsIgnoreCase(nuevoEstado)
-                || "RETORNO".equalsIgnoreCase(nuevoEstado);
-
-        if (hasSalidaData) {
-            if (variables.containsKey("kilometrajeSalida") && variables.get("kilometrajeSalida") != null) {
-                try {
-                    viaje.setKilometrajeSalida(
-                            Long.parseLong(variables.get("kilometrajeSalida").toString().trim()));
-                    modificado = true;
-                } catch (Exception ignored) {
-                }
-            }
-            if (variables.containsKey("nivelCombustibleSalida") && variables.get("nivelCombustibleSalida") != null) {
-                try {
-                    viaje.setNivelCombustibleSalida(
-                            Integer.parseInt(variables.get("nivelCombustibleSalida").toString().trim()));
-                    modificado = true;
-                } catch (Exception ignored) {
-                }
-            }
-            if (variables.containsKey("fechaSalidaReal") && variables.get("fechaSalidaReal") != null) {
-                try {
-                    viaje.setFechaSalidaReal(
-                            parseLocalDateTime(variables.get("fechaSalidaReal").toString().trim()));
-                    modificado = true;
-                } catch (Exception ignored) {
-                }
-            }
-            if (viaje.getFechaSalidaReal() == null && (modificado || "EN_CURSO".equalsIgnoreCase(nuevoEstado))) {
-                viaje.setFechaSalidaReal(LocalDateTime.now());
-                modificado = true;
-            }
-            if (viaje.getEstado() == null || viaje.getEstado() == EstadoViajeVehicular.PROGRAMADO) {
-                viaje.setEstado(EstadoViajeVehicular.EN_CURSO);
-                modificado = true;
-            }
-        }
-
-        // 2. Datos de retorno (Registrar Retorno / Estado FINALIZADA)
-        boolean hasRetornoData = variables.containsKey("kilometrajeRetorno")
-                || variables.containsKey("fechaRetornoReal")
-                || variables.containsKey("nivelCombustibleRetorno")
-                || "FINALIZADA".equalsIgnoreCase(nuevoEstado)
-                || "FINALIZADO".equalsIgnoreCase(nuevoEstado);
-
-        if (hasRetornoData) {
-            if (variables.containsKey("kilometrajeRetorno") && variables.get("kilometrajeRetorno") != null) {
-                try {
-                    viaje.setKilometrajeRetorno(
-                            Long.parseLong(variables.get("kilometrajeRetorno").toString().trim()));
-                    modificado = true;
-                } catch (Exception ignored) {
-                }
-            }
-            if (variables.containsKey("nivelCombustibleRetorno") && variables.get("nivelCombustibleRetorno") != null) {
-                try {
-                    viaje.setNivelCombustibleRetorno(
-                            Integer.parseInt(variables.get("nivelCombustibleRetorno").toString().trim()));
-                    modificado = true;
-                } catch (Exception ignored) {
-                }
-            }
-            if (variables.containsKey("fechaRetornoReal") && variables.get("fechaRetornoReal") != null) {
-                try {
-                    viaje.setFechaRetornoReal(
-                            parseLocalDateTime(variables.get("fechaRetornoReal").toString().trim()));
-                    modificado = true;
-                } catch (Exception ignored) {
-                }
-            }
-            if (viaje.getKilometrajeSalida() != null && viaje.getKilometrajeRetorno() != null
-                    && viaje.getKilometrajeRetorno() < viaje.getKilometrajeSalida()) {
-                throw new ConflictException("KILOMETRAJE_RETORNO_INVALIDO",
-                        "El kilometraje de retorno (" + viaje.getKilometrajeRetorno()
-                                + " km) no puede ser menor al kilometraje de salida ("
-                                + viaje.getKilometrajeSalida() + " km)");
-            }
-            if (viaje.getFechaRetornoReal() == null && (modificado || "FINALIZADA".equalsIgnoreCase(nuevoEstado))) {
-                viaje.setFechaRetornoReal(LocalDateTime.now());
-                modificado = true;
-            }
-            if ("FINALIZADA".equalsIgnoreCase(nuevoEstado) || "FINALIZADO".equalsIgnoreCase(nuevoEstado)) {
-                viaje.setEstado(EstadoViajeVehicular.FINALIZADO);
-                modificado = true;
-            }
-        }
-
-        // 3. Comentarios / Observaciones
-        if (variables.containsKey("comentario") && variables.get("comentario") != null) {
-            String com = variables.get("comentario").toString().trim();
-            if (!com.isBlank()) {
-                viaje.setObservacion(StringUtils.normalize(com));
-                modificado = true;
-            }
-        }
+        boolean modificado = procesarDatosSalida(viaje, variables, nuevoEstado);
+        modificado = procesarDatosRetorno(viaje, variables, nuevoEstado) || modificado;
+        modificado = procesarObservacion(viaje, variables) || modificado;
 
         if (modificado) {
             viajeVehicularRepository.save(viaje);
         }
+    }
+
+    private boolean procesarDatosSalida(ViajeVehicular viaje, Map<String, Object> variables, String nuevoEstado) {
+        if (!hasSalidaData(variables, nuevoEstado)) {
+            return false;
+        }
+
+        boolean modificado = false;
+        Long kmSalida = parseLongVariable(variables, "kilometrajeSalida");
+        if (kmSalida != null) {
+            viaje.setKilometrajeSalida(kmSalida);
+            modificado = true;
+        }
+
+        Integer nivelSalida = parseIntVariable(variables, "nivelCombustibleSalida");
+        if (nivelSalida != null) {
+            viaje.setNivelCombustibleSalida(nivelSalida);
+            modificado = true;
+        }
+
+        LocalDateTime fechaSalida = parseDateVariable(variables, "fechaSalidaReal");
+        if (fechaSalida != null) {
+            viaje.setFechaSalidaReal(fechaSalida);
+            modificado = true;
+        }
+
+        if (viaje.getFechaSalidaReal() == null && (modificado || ESTADO_EN_CURSO.equalsIgnoreCase(nuevoEstado))) {
+            viaje.setFechaSalidaReal(LocalDateTime.now());
+            modificado = true;
+        }
+
+        if (viaje.getEstado() == null || viaje.getEstado() == EstadoViajeVehicular.PROGRAMADO) {
+            viaje.setEstado(EstadoViajeVehicular.EN_CURSO);
+            modificado = true;
+        }
+
+        return modificado;
+    }
+
+    private boolean procesarDatosRetorno(ViajeVehicular viaje, Map<String, Object> variables, String nuevoEstado) {
+        if (!hasRetornoData(variables, nuevoEstado)) {
+            return false;
+        }
+
+        boolean modificado = false;
+        Long kmRetorno = parseLongVariable(variables, "kilometrajeRetorno");
+        if (kmRetorno != null) {
+            viaje.setKilometrajeRetorno(kmRetorno);
+            modificado = true;
+        }
+
+        Integer nivelRetorno = parseIntVariable(variables, "nivelCombustibleRetorno");
+        if (nivelRetorno != null) {
+            viaje.setNivelCombustibleRetorno(nivelRetorno);
+            modificado = true;
+        }
+
+        LocalDateTime fechaRetorno = parseDateVariable(variables, "fechaRetornoReal");
+        if (fechaRetorno != null) {
+            viaje.setFechaRetornoReal(fechaRetorno);
+            modificado = true;
+        }
+
+        validarKilometraje(viaje);
+
+        if (viaje.getFechaRetornoReal() == null
+                && (modificado || ESTADO_FINALIZADA.equalsIgnoreCase(nuevoEstado))) {
+            viaje.setFechaRetornoReal(LocalDateTime.now());
+            modificado = true;
+        }
+
+        if (isRetornoEstado(nuevoEstado)) {
+            viaje.setEstado(EstadoViajeVehicular.FINALIZADO);
+            modificado = true;
+        }
+
+        return modificado;
+    }
+
+    private void validarKilometraje(ViajeVehicular viaje) {
+        if (viaje.getKilometrajeSalida() != null && viaje.getKilometrajeRetorno() != null
+                && viaje.getKilometrajeRetorno() < viaje.getKilometrajeSalida()) {
+            throw new ConflictException("KILOMETRAJE_RETORNO_INVALIDO",
+                    "El kilometraje de retorno (" + viaje.getKilometrajeRetorno()
+                            + " km) no puede ser menor al kilometraje de salida ("
+                            + viaje.getKilometrajeSalida() + " km)");
+        }
+    }
+
+    private boolean procesarObservacion(ViajeVehicular viaje, Map<String, Object> variables) {
+        Object comObj = variables.get(COMENTARIO);
+        if (comObj == null) {
+            return false;
+        }
+        String com = comObj.toString().trim();
+        if (!com.isBlank()) {
+            viaje.setObservacion(StringUtils.normalize(com));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isSalidaEstado(String estado) {
+        return ESTADO_EN_CURSO.equalsIgnoreCase(estado)
+                || ESTADO_EN_VIAJE.equalsIgnoreCase(estado)
+                || ESTADO_RETORNO.equalsIgnoreCase(estado);
+    }
+
+    private boolean isRetornoEstado(String estado) {
+        return ESTADO_FINALIZADA.equalsIgnoreCase(estado)
+                || ESTADO_FINALIZADO.equalsIgnoreCase(estado);
+    }
+
+    private boolean hasSalidaData(Map<String, Object> variables, String nuevoEstado) {
+        return variables.containsKey("kilometrajeSalida")
+                || variables.containsKey("fechaSalidaReal")
+                || variables.containsKey("nivelCombustibleSalida")
+                || isSalidaEstado(nuevoEstado);
+    }
+
+    private boolean hasRetornoData(Map<String, Object> variables, String nuevoEstado) {
+        return variables.containsKey("kilometrajeRetorno")
+                || variables.containsKey("fechaRetornoReal")
+                || variables.containsKey("nivelCombustibleRetorno")
+                || isRetornoEstado(nuevoEstado);
+    }
+
+    private Long parseLongVariable(Map<String, Object> variables, String key) {
+        Object val = variables.get(key);
+        if (val == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(val.toString().trim());
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Integer parseIntVariable(Map<String, Object> variables, String key) {
+        Object val = variables.get(key);
+        if (val == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(val.toString().trim());
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private LocalDateTime parseDateVariable(Map<String, Object> variables, String key) {
+        Object val = variables.get(key);
+        if (val == null) {
+            return null;
+        }
+        try {
+            return parseLocalDateTime(val.toString().trim());
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private UUID parseUuidVariable(Map<String, Object> variables, String... keys) {
+        for (String key : keys) {
+            Object val = variables.get(key);
+            if (val != null && !val.toString().isBlank()) {
+                try {
+                    return UUID.fromString(val.toString().trim());
+                } catch (IllegalArgumentException ignored) {
+                    // try next key
+                }
+            }
+        }
+        return null;
     }
 
     private LocalDateTime parseLocalDateTime(String str) {
@@ -481,30 +664,35 @@ public class SolicitudVehicularService {
         }
         try {
             return LocalDateTime.parse(str);
-        } catch (Exception e1) {
-            try {
-                return LocalDateTime.parse(str, DateTimeFormatter.ISO_DATE_TIME);
-            } catch (Exception e2) {
-                try {
-                    return LocalDate.parse(str).atStartOfDay();
-                } catch (Exception e3) {
-                    return LocalDateTime.now();
-                }
-            }
+        } catch (Exception ignored) {
+            // fallback
+        }
+        try {
+            return OffsetDateTime.parse(str).toLocalDateTime();
+        } catch (Exception ignored) {
+            // fallback
+        }
+        try {
+            return LocalDate.parse(str).atStartOfDay();
+        } catch (Exception ignored) {
+            return LocalDateTime.now();
+        }
+    }
+
+    private void validarEstadoEditable(SolicitudVehicular actual) {
+        String estadoActual = actual.getEstado() != null ? actual.getEstado().toUpperCase() : "";
+        if (!ESTADO_BORRADOR.equals(estadoActual) && !ESTADO_OBSERVADO.equals(estadoActual)
+                && !ESTADO_PENDIENTE.equals(estadoActual)) {
+            throw new ConflictException(
+                    "SOLICITUD_NO_EDITABLE",
+                    "Solo se pueden editar solicitudes en estado BORRADOR u OBSERVADO");
         }
     }
 
     @Transactional
     public SolicitudVehicularResponse update(UUID id, SolicitudVehicularUpdate dto) {
         SolicitudVehicular actual = obtenerPorId(id);
-
-        String estadoActual = actual.getEstado() != null ? actual.getEstado().toUpperCase() : "";
-        if (!"BORRADOR".equals(estadoActual) && !"OBSERVADO".equals(estadoActual)
-                && !"PENDIENTE".equals(estadoActual)) {
-            throw new ConflictException(
-                    "SOLICITUD_NO_EDITABLE",
-                    "Solo se pueden editar solicitudes en estado BORRADOR u OBSERVADO");
-        }
+        validarEstadoEditable(actual);
 
         String numero = StringUtils.normalize(dto.numero());
         if (numero != null && !numero.isBlank()) {
@@ -550,14 +738,7 @@ public class SolicitudVehicularService {
     @Transactional
     public SolicitudVehicularResponse update(UUID id, SolicitudVehicularRequest dto) {
         SolicitudVehicular actual = obtenerPorId(id);
-
-        String estadoActual = actual.getEstado() != null ? actual.getEstado().toUpperCase() : "";
-        if (!"BORRADOR".equals(estadoActual) && !"OBSERVADO".equals(estadoActual)
-                && !"PENDIENTE".equals(estadoActual)) {
-            throw new ConflictException(
-                    "SOLICITUD_NO_EDITABLE",
-                    "Solo se pueden editar solicitudes en estado BORRADOR u OBSERVADO");
-        }
+        validarEstadoEditable(actual);
 
         String numero = StringUtils.normalize(dto.numero());
         if (numero != null && !numero.isBlank()) {
@@ -604,7 +785,7 @@ public class SolicitudVehicularService {
     public void delete(UUID id) {
         SolicitudVehicular actual = obtenerPorId(id);
         String estadoActual = actual.getEstado() != null ? actual.getEstado().toUpperCase() : "";
-        if (!"BORRADOR".equals(estadoActual) && !"PENDIENTE".equals(estadoActual)) {
+        if (!ESTADO_BORRADOR.equals(estadoActual) && !ESTADO_PENDIENTE.equals(estadoActual)) {
             throw new ConflictException(
                     "SOLICITUD_NO_ELIMINABLE",
                     "Solo se pueden eliminar solicitudes en estado BORRADOR");
@@ -633,8 +814,7 @@ public class SolicitudVehicularService {
         }
 
         for (SolicitudVehicular item : content) {
-            resolverResponsableId(item);
-            resolverConductorId(item);
+            resolverVariablesProceso(item);
         }
 
         Set<UUID> tipoIds = content.stream()
@@ -798,64 +978,70 @@ public class SolicitudVehicularService {
         return mapper.toResponse(domain, tipoInfo, solicitanteInfo, responsableInfo, conductorInfo, adjuntos);
     }
 
-    private UUID resolverResponsableId(SolicitudVehicular domain) {
-        if (domain.getResponsableAsignacionId() != null) {
-            return domain.getResponsableAsignacionId();
+    private void resolverVariablesProceso(SolicitudVehicular domain) {
+        if (domain.getResponsableAsignacionId() != null && domain.getConductorAsignadoId() != null) {
+            return;
         }
-        if (domain.getProcessInstanceId() != null && !domain.getProcessInstanceId().isBlank()) {
-            try {
-                var vars = flowableClient.obtenerVariablesProceso(domain.getProcessInstanceId());
-                if (vars != null) {
-                    for (var varMap : vars) {
-                        Object name = varMap.get("name");
-                        Object val = varMap.get("value");
-                        if (("responsableAsignacionId".equals(name) || "aprobadorId".equals(name)) && val != null) {
-                            try {
-                                UUID resolved = UUID.fromString(val.toString().trim());
-                                domain.setResponsableAsignacionId(resolved);
-                                repository.save(domain);
-                                return resolved;
-                            } catch (Exception e) {
-                                log.debug("No se pudo parsear responsableAsignacionId/aprobadorId '{}': {}", val, e.getMessage());
-                            }
-                        }
+        if (domain.getProcessInstanceId() == null || domain.getProcessInstanceId().isBlank()) {
+            return;
+        }
+
+        try {
+            var vars = flowableClient.obtenerVariablesProceso(domain.getProcessInstanceId());
+            if (vars == null || vars.isEmpty()) {
+                return;
+            }
+
+            boolean modificado = false;
+            for (var varMap : vars) {
+                Object name = varMap.get("name");
+                Object val = varMap.get("value");
+                if (val == null || val.toString().isBlank()) {
+                    continue;
+                }
+
+                if (domain.getResponsableAsignacionId() == null
+                        && (RESPONSABLE_ASIGNACION_ID.equals(name) || APROBADOR_ID.equals(name))) {
+                    try {
+                        domain.setResponsableAsignacionId(UUID.fromString(val.toString().trim()));
+                        modificado = true;
+                    } catch (Exception e) {
+                        log.debug("No se pudo parsear responsableAsignacionId/aprobadorId '{}': {}", val, e.getMessage());
                     }
                 }
-            } catch (Exception e) {
-                log.warn("Error al consultar variables de proceso en Flowable para instancia {}: {}", domain.getProcessInstanceId(), e.getMessage());
+
+                if (domain.getConductorAsignadoId() == null
+                        && (CONDUCTOR_ASIGNADO_ID.equals(name) || "conductorId".equals(name))) {
+                    try {
+                        domain.setConductorAsignadoId(UUID.fromString(val.toString().trim()));
+                        modificado = true;
+                    } catch (Exception e) {
+                        log.debug("No se pudo parsear conductorAsignadoId '{}': {}", val, e.getMessage());
+                    }
+                }
             }
+
+            if (modificado) {
+                repository.save(domain);
+            }
+        } catch (Exception e) {
+            log.warn("Error al consultar variables de proceso en Flowable para instancia {}: {}",
+                    domain.getProcessInstanceId(), e.getMessage());
         }
-        return null;
+    }
+
+    private UUID resolverResponsableId(SolicitudVehicular domain) {
+        if (domain.getResponsableAsignacionId() == null) {
+            resolverVariablesProceso(domain);
+        }
+        return domain.getResponsableAsignacionId();
     }
 
     private UUID resolverConductorId(SolicitudVehicular domain) {
-        if (domain.getConductorAsignadoId() != null) {
-            return domain.getConductorAsignadoId();
+        if (domain.getConductorAsignadoId() == null) {
+            resolverVariablesProceso(domain);
         }
-        if (domain.getProcessInstanceId() != null && !domain.getProcessInstanceId().isBlank()) {
-            try {
-                var vars = flowableClient.obtenerVariablesProceso(domain.getProcessInstanceId());
-                if (vars != null) {
-                    for (var varMap : vars) {
-                        Object name = varMap.get("name");
-                        Object val = varMap.get("value");
-                        if (("conductorAsignadoId".equals(name) || "conductorId".equals(name)) && val != null) {
-                            try {
-                                UUID resolved = UUID.fromString(val.toString().trim());
-                                domain.setConductorAsignadoId(resolved);
-                                repository.save(domain);
-                                return resolved;
-                            } catch (Exception e) {
-                                log.debug("No se pudo parsear conductorAsignadoId '{}': {}", val, e.getMessage());
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Error al consultar variables de conductor en Flowable para instancia {}: {}", domain.getProcessInstanceId(), e.getMessage());
-            }
-        }
-        return null;
+        return domain.getConductorAsignadoId();
     }
 
     private SolicitudVehicularTipoSolicitudInfo obtenerTipoInfo(UUID tipoId) {
@@ -864,19 +1050,26 @@ public class SolicitudVehicularService {
                 .orElse(null);
     }
 
-    private SolicitudVehicularSolicitanteInfo obtenerSolicitanteInfo(UUID solicitanteId) {
-        if (solicitanteId == null) {
+    private record EmpleadoDetalle(
+            UUID id,
+            String codigo,
+            String nombreCompleto,
+            String cargo,
+            String area) {}
+
+    private EmpleadoDetalle obtenerEmpleadoDetalle(UUID empleadoId) {
+        if (empleadoId == null) {
             return null;
         }
-        return springVEmpleadoRepository.findById(solicitanteId)
-                .map(ve -> new SolicitudVehicularSolicitanteInfo(
+        return springVEmpleadoRepository.findById(empleadoId)
+                .map(ve -> new EmpleadoDetalle(
                         ve.getEmpleadoId(),
                         ve.getCodigo(),
                         ve.getNombreCompleto(),
                         ve.getCargo(),
                         ve.getArea()))
-                .orElseGet(() -> empleadoRepository.findById(solicitanteId)
-                        .map(emp -> new SolicitudVehicularSolicitanteInfo(
+                .orElseGet(() -> empleadoRepository.findById(empleadoId)
+                        .map(emp -> new EmpleadoDetalle(
                                 emp.getId(),
                                 emp.getCodigo(),
                                 emp.getNombreCompleto(),
@@ -885,25 +1078,28 @@ public class SolicitudVehicularService {
                         .orElse(null));
     }
 
+    private SolicitudVehicularSolicitanteInfo obtenerSolicitanteInfo(UUID solicitanteId) {
+        EmpleadoDetalle detalle = obtenerEmpleadoDetalle(solicitanteId);
+        return detalle != null
+                ? new SolicitudVehicularSolicitanteInfo(
+                        detalle.id(),
+                        detalle.codigo(),
+                        detalle.nombreCompleto(),
+                        detalle.cargo(),
+                        detalle.area())
+                : null;
+    }
+
     private SolicitudVehicularResponsableInfo obtenerResponsableInfo(UUID responsableId) {
-        if (responsableId == null) {
-            return null;
-        }
-        return springVEmpleadoRepository.findById(responsableId)
-                .map(ve -> new SolicitudVehicularResponsableInfo(
-                        ve.getEmpleadoId(),
-                        ve.getCodigo(),
-                        ve.getNombreCompleto(),
-                        ve.getCargo(),
-                        ve.getArea()))
-                .orElseGet(() -> empleadoRepository.findById(responsableId)
-                        .map(emp -> new SolicitudVehicularResponsableInfo(
-                                emp.getId(),
-                                emp.getCodigo(),
-                                emp.getNombreCompleto(),
-                                emp.getCargo(),
-                                emp.getArea()))
-                        .orElse(null));
+        EmpleadoDetalle detalle = obtenerEmpleadoDetalle(responsableId);
+        return detalle != null
+                ? new SolicitudVehicularResponsableInfo(
+                        detalle.id(),
+                        detalle.codigo(),
+                        detalle.nombreCompleto(),
+                        detalle.cargo(),
+                        detalle.area())
+                : null;
     }
 
     private SolicitudVehicularConductorInfo obtenerConductorInfo(UUID conductorId) {
@@ -914,11 +1110,10 @@ public class SolicitudVehicularService {
                 .map(c -> {
                     String nombre = null;
                     if (c.getEmpleadoId() != null) {
-                        nombre = springVEmpleadoRepository.findById(c.getEmpleadoId())
-                                .map(VEmpleadoEntity::getNombreCompleto)
-                                .orElseGet(() -> empleadoRepository.findById(c.getEmpleadoId())
-                                        .map(Empleado::getNombreCompleto)
-                                        .orElse(null));
+                        EmpleadoDetalle emp = obtenerEmpleadoDetalle(c.getEmpleadoId());
+                        if (emp != null) {
+                            nombre = emp.nombreCompleto();
+                        }
                     }
                     return new SolicitudVehicularConductorInfo(
                             c.getId(),
@@ -927,21 +1122,17 @@ public class SolicitudVehicularService {
                             c.getNumeroLicencia(),
                             c.getCategoriaLicencia());
                 })
-                .orElseGet(() -> springVEmpleadoRepository.findById(conductorId)
-                        .map(ve -> new SolicitudVehicularConductorInfo(
-                                conductorId,
-                                ve.getEmpleadoId(),
-                                ve.getNombreCompleto(),
-                                null,
-                                null))
-                        .orElseGet(() -> empleadoRepository.findById(conductorId)
-                                .map(emp -> new SolicitudVehicularConductorInfo(
-                                        conductorId,
-                                        emp.getId(),
-                                        emp.getNombreCompleto(),
-                                        null,
-                                        null))
-                                .orElse(null)));
+                .orElseGet(() -> {
+                    EmpleadoDetalle emp = obtenerEmpleadoDetalle(conductorId);
+                    return emp != null
+                            ? new SolicitudVehicularConductorInfo(
+                                    conductorId,
+                                    emp.id(),
+                                    emp.nombreCompleto(),
+                                    null,
+                                    null)
+                            : null;
+                });
     }
 
     private SolicitudVehicular obtenerPorId(UUID id) {

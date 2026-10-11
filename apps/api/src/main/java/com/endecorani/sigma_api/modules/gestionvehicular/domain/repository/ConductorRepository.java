@@ -28,5 +28,7 @@ public interface ConductorRepository {
 
     boolean existsByEmpleadoId(UUID empleadoId);
 
+    Optional<Conductor> findByEmpleadoId(UUID empleadoId);
+
     boolean existsByEmpleadoIdAndIdNot(UUID empleadoId, UUID id);
 }
