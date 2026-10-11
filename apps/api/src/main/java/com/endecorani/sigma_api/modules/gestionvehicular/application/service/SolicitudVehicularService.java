@@ -37,6 +37,7 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SolicitudVehicularService {
@@ -807,12 +809,14 @@ public class SolicitudVehicularService {
                                 domain.setResponsableAsignacionId(resolved);
                                 repository.save(domain);
                                 return resolved;
-                            } catch (Exception ignored) {
+                            } catch (Exception e) {
+                                log.debug("No se pudo parsear responsableAsignacionId/aprobadorId '{}': {}", val, e.getMessage());
                             }
                         }
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                log.warn("Error al consultar variables de proceso en Flowable para instancia {}: {}", domain.getProcessInstanceId(), e.getMessage());
             }
         }
         return null;
@@ -835,12 +839,14 @@ public class SolicitudVehicularService {
                                 domain.setConductorAsignadoId(resolved);
                                 repository.save(domain);
                                 return resolved;
-                            } catch (Exception ignored) {
+                            } catch (Exception e) {
+                                log.debug("No se pudo parsear conductorAsignadoId '{}': {}", val, e.getMessage());
                             }
                         }
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                log.warn("Error al consultar variables de conductor en Flowable para instancia {}: {}", domain.getProcessInstanceId(), e.getMessage());
             }
         }
         return null;

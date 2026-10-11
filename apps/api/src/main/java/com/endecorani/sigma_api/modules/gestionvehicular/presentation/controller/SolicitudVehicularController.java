@@ -1,10 +1,12 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request.EnviarSolicitudVehicularRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request.SolicitudVehicularRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request.SolicitudVehicularUpdate;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.service.SolicitudVehicularService;
+import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
@@ -100,7 +102,7 @@ public class SolicitudVehicularController {
     @Operation(summary = "Enviar solicitud vehicular para aprobación e iniciar flujo BPMN")
     public ResponseEntity<ApiResponse<SolicitudVehicularResponse>> enviar(
             @PathVariable UUID id,
-            @Valid @RequestBody com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request.EnviarSolicitudVehicularRequest request
+            @Valid @RequestBody EnviarSolicitudVehicularRequest request
     ) {
         SolicitudVehicularResponse response = service.enviar(id, request);
         return ResponseEntity.ok(
@@ -112,7 +114,7 @@ public class SolicitudVehicularController {
     @Operation(summary = "Completar tarea de workflow para una solicitud vehicular")
     public ResponseEntity<ApiResponse<SolicitudVehicularResponse>> completarWorkflow(
             @PathVariable UUID id,
-            @RequestBody com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest request
+            @Valid @RequestBody CompleteWorkflowTaskRequest request
     ) {
         SolicitudVehicularResponse response = service.completarWorkflow(id, request);
         return ResponseEntity.ok(

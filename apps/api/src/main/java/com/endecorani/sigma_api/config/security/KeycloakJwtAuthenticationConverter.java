@@ -42,7 +42,8 @@ public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, Abstra
         if (realmAccess != null && realmAccess.get(ROLES) instanceof Collection<?> realmRoles) {
             for (Object role : realmRoles) {
                 if (role instanceof String roleName && !roleName.isBlank()) {
-                    authorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + roleName));
+                    String authority = roleName.startsWith(ROLE_PREFIX) ? roleName : ROLE_PREFIX + roleName;
+                    authorities.add(new SimpleGrantedAuthority(authority));
                 }
             }
         }
@@ -55,7 +56,8 @@ public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, Abstra
                         && clientData.get(ROLES) instanceof Collection<?> clientRoles) {
                     for (Object role : clientRoles) {
                         if (role instanceof String roleName && !roleName.isBlank()) {
-                            authorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + roleName));
+                            String authority = roleName.startsWith(ROLE_PREFIX) ? roleName : ROLE_PREFIX + roleName;
+                            authorities.add(new SimpleGrantedAuthority(authority));
                         }
                     }
                 }

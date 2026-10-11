@@ -6,6 +6,7 @@ import com.endecorani.sigma_api.modules.workflow.application.dto.response.Workfl
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,7 +46,7 @@ public class WorkflowRuntimeController {
     @PostMapping("/instances/{processInstanceId}/complete")
     public WorkflowTaskActionsResponse completarTarea(
             @PathVariable String processInstanceId,
-            @RequestBody CompleteWorkflowTaskRequest request
+            @Valid @RequestBody CompleteWorkflowTaskRequest request
     ) {
         return workflowApplicationService
                 .completarTarea(

@@ -79,7 +79,7 @@ public class SolicitudMantenimientoController {
         @Operation(summary = "Completar tarea de workflow para una solicitud")
         public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> completarWorkflow(
                         @PathVariable UUID id,
-                        @RequestBody CompleteWorkflowTaskRequest request) {
+                        @Valid @RequestBody CompleteWorkflowTaskRequest request) {
                 return ResponseEntity.ok(
                                 ApiResponse.success(
                                                 "Tarea de workflow completada correctamente",
