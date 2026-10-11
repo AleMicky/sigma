@@ -114,4 +114,9 @@ public class SolicitudVehicularEntity extends BaseEntity {
     )
     private UUID conductorAsignadoId;
 
+    @Column(
+            name = "activo_id"
+    )
+    private UUID activoId;
+
 }

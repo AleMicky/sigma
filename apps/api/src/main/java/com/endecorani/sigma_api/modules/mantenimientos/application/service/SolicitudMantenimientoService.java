@@ -542,7 +542,8 @@ public class SolicitudMantenimientoService {
                 try {
                     empleadoRepository.findById(UUID.fromString(aprobadorIdObj.toString().trim()))
                             .ifPresent(solicitud::setAprobador);
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    log.warn("No se pudo asignar aprobadorId={} en solicitud {}: {}", aprobadorIdObj, solicitudId, e.getMessage());
                 }
             }
 
@@ -551,7 +552,8 @@ public class SolicitudMantenimientoService {
                 try {
                     empleadoRepository.findById(UUID.fromString(responsableIdObj.toString().trim()))
                             .ifPresent(solicitud::setResponsable);
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    log.warn("No se pudo asignar responsableId={} en solicitud {}: {}", responsableIdObj, solicitudId, e.getMessage());
                 }
             }
 
@@ -560,7 +562,8 @@ public class SolicitudMantenimientoService {
                 try {
                     empleadoRepository.findById(UUID.fromString(supervisorIdObj.toString().trim()))
                             .ifPresent(solicitud::setSupervisor);
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    log.warn("No se pudo asignar supervisorId={} en solicitud {}: {}", supervisorIdObj, solicitudId, e.getMessage());
                 }
             }
         }
@@ -722,28 +725,32 @@ public class SolicitudMantenimientoService {
             if (empIdObj != null && !empIdObj.toString().isBlank()) {
                 try {
                     return UUID.fromString(empIdObj.toString().trim());
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    log.debug("No se pudo parsear empleadoId '{}': {}", empIdObj, e.getMessage());
                 }
             }
             Object responsableIdObj = request.variables().get("responsableId");
             if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
                 try {
                     return UUID.fromString(responsableIdObj.toString().trim());
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    log.debug("No se pudo parsear responsableId '{}': {}", responsableIdObj, e.getMessage());
                 }
             }
             Object supervisorIdObj = request.variables().get("supervisorId");
             if (supervisorIdObj != null && !supervisorIdObj.toString().isBlank()) {
                 try {
                     return UUID.fromString(supervisorIdObj.toString().trim());
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    log.debug("No se pudo parsear supervisorId '{}': {}", supervisorIdObj, e.getMessage());
                 }
             }
             Object aprobadorIdObj = request.variables().get("aprobadorId");
             if (aprobadorIdObj != null && !aprobadorIdObj.toString().isBlank()) {
                 try {
                     return UUID.fromString(aprobadorIdObj.toString().trim());
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    log.debug("No se pudo parsear aprobadorId '{}': {}", aprobadorIdObj, e.getMessage());
                 }
             }
         }

@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.activos.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.ToggleActivoRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse;
 import com.endecorani.sigma_api.modules.activos.application.service.ActivoService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -29,7 +30,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -122,8 +122,8 @@ public class ActivoController {
         @Operation(summary = "Activar o desactivar un activo")
         public ResponseEntity<ApiResponse<ActivoResponse>> toggleActivo(
                         @PathVariable UUID id,
-                        @RequestBody(required = false) Map<String, Boolean> body) {
-                Boolean activo = body != null ? body.getOrDefault("activo", Boolean.TRUE) : Boolean.TRUE;
+                        @Valid @RequestBody(required = false) ToggleActivoRequest body) {
+                Boolean activo = body != null ? body.activoOrDefault() : Boolean.TRUE;
                 return ResponseEntity.ok(
                                 ApiResponse.success(
                                                 activoService.toggleActivo(id, activo)));

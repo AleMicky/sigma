@@ -28,6 +28,7 @@ public class SolicitudVehicularPersistenceMapper {
         entity.setProcessInstanceId(domain.getProcessInstanceId());
         entity.setResponsableAsignacionId(domain.getResponsableAsignacionId());
         entity.setConductorAsignadoId(domain.getConductorAsignadoId());
+        entity.setActivoId(domain.getActivoId());
         return entity;
     }
 
@@ -52,6 +53,7 @@ public class SolicitudVehicularPersistenceMapper {
                 .processInstanceId(entity.getProcessInstanceId())
                 .responsableAsignacionId(entity.getResponsableAsignacionId())
                 .conductorAsignadoId(entity.getConductorAsignadoId())
+                .activoId(entity.getActivoId())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())
