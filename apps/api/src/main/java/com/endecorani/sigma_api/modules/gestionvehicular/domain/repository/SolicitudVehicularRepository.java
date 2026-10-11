@@ -36,6 +36,8 @@ public interface SolicitudVehicularRepository {
 
     Optional<SolicitudVehicular> findById(UUID id);
 
+    java.util.List<SolicitudVehicular> findAllById(Iterable<UUID> ids);
+
     Optional<SolicitudVehicular> findByNumero(String numero);
 
     SolicitudVehicular save(SolicitudVehicular solicitudVehicular);

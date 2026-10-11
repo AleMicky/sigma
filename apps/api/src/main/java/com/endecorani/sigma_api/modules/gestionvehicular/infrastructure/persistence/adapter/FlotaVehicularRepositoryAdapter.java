@@ -44,6 +44,11 @@ public class FlotaVehicularRepositoryAdapter implements FlotaVehicularRepository
     }
 
     @Override
+    public List<FlotaVehicular> findAllById(Iterable<UUID> ids) {
+        return springRepository.findAllById(ids).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<FlotaVehicular> findByCodigo(String codigo) {
         return springRepository.findByCodigoIgnoreCase(codigo).map(mapper::toDomain);
     }

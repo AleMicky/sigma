@@ -15,6 +15,8 @@ public interface TipoSolicitudVehicularRepository {
 
     Optional<TipoSolicitudVehicular> findById(UUID id);
 
+    java.util.List<TipoSolicitudVehicular> findAllById(Iterable<UUID> ids);
+
     Optional<TipoSolicitudVehicular> findByCodigo(String codigo);
 
     TipoSolicitudVehicular save(TipoSolicitudVehicular tipoSolicitudVehicular);

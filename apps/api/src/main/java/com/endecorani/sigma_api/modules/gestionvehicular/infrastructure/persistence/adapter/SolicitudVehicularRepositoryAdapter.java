@@ -80,6 +80,11 @@ public class SolicitudVehicularRepositoryAdapter implements SolicitudVehicularRe
     }
 
     @Override
+    public java.util.List<SolicitudVehicular> findAllById(Iterable<UUID> ids) {
+        return springRepository.findAllById(ids).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<SolicitudVehicular> findByNumero(String numero) {
         return springRepository.findByNumeroIgnoreCase(numero).map(mapper::toDomain);
     }

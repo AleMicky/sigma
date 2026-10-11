@@ -813,10 +813,6 @@ public class SolicitudVehicularService {
             return List.of();
         }
 
-        for (SolicitudVehicular item : content) {
-            resolverVariablesProceso(item);
-        }
-
         Set<UUID> tipoIds = content.stream()
                 .map(SolicitudVehicular::getTipoSolicitudVehicularId)
                 .filter(Objects::nonNull)
@@ -837,31 +833,32 @@ public class SolicitudVehicularService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<UUID, SolicitudVehicularTipoSolicitudInfo> tipoMap = new HashMap<>();
-        for (UUID tipoId : tipoIds) {
-            tipoSolicitudVehicularRepository.findById(tipoId)
-                    .ifPresent(t -> tipoMap.put(tipoId, new SolicitudVehicularTipoSolicitudInfo(
-                            t.getId(),
-                            t.getCodigo(),
-                            t.getNombre(),
-                            t.getDiasAnticipacion(),
-                            t.getRequiereRespaldo(),
-                            t.getRequiereJustificacion())));
-        }
+        Map<UUID, SolicitudVehicularTipoSolicitudInfo> tipoMap = tipoIds.isEmpty()
+                ? Map.of()
+                : tipoSolicitudVehicularRepository.findAllById(tipoIds).stream()
+                        .collect(Collectors.toMap(
+                                TipoSolicitudVehicular::getId,
+                                t -> new SolicitudVehicularTipoSolicitudInfo(
+                                        t.getId(),
+                                        t.getCodigo(),
+                                        t.getNombre(),
+                                        t.getDiasAnticipacion(),
+                                        t.getRequiereRespaldo(),
+                                        t.getRequiereJustificacion()),
+                                (a, b) -> a));
 
         Set<UUID> todosEmpleadoIds = new HashSet<>(solicitanteIds);
         todosEmpleadoIds.addAll(responsableIds);
 
-        Map<UUID, Conductor> conductorMap = new HashMap<>();
-        Set<UUID> conductorEmpleadoIds = new HashSet<>();
-        for (UUID cId : conductorIds) {
-            conductorRepository.findById(cId).ifPresent(c -> {
-                conductorMap.put(cId, c);
-                if (c.getEmpleadoId() != null) {
-                    conductorEmpleadoIds.add(c.getEmpleadoId());
-                }
-            });
-        }
+        Map<UUID, Conductor> conductorMap = conductorIds.isEmpty()
+                ? Map.of()
+                : conductorRepository.findAllById(conductorIds).stream()
+                        .collect(Collectors.toMap(Conductor::getId, c -> c, (a, b) -> a));
+
+        Set<UUID> conductorEmpleadoIds = conductorMap.values().stream()
+                .map(Conductor::getEmpleadoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
         todosEmpleadoIds.addAll(conductorEmpleadoIds);
 
         Map<UUID, VEmpleadoEntity> vempleadoMap = todosEmpleadoIds.isEmpty()

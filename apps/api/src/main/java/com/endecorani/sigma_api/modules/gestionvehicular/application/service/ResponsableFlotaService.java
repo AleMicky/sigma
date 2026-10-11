@@ -191,10 +191,7 @@ public class ResponsableFlotaService {
 
         Map<UUID, ResponsableFlotaFlotaInfo> flotaMap = flotaIds.isEmpty()
                 ? Map.of()
-                : flotaIds.stream()
-                .map(flotaVehicularRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+                : flotaVehicularRepository.findAllById(flotaIds).stream()
                 .collect(Collectors.toMap(
                         FlotaVehicular::getId,
                         f -> new ResponsableFlotaFlotaInfo(f.getId(), f.getCodigo(), f.getNombre()),

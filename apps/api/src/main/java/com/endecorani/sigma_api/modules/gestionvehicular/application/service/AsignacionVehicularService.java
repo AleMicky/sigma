@@ -86,9 +86,7 @@ public class AsignacionVehicularService {
 
         @Transactional(readOnly = true)
         public List<AsignacionVehicularResponse> findBySolicitudVehicularId(UUID solicitudVehicularId) {
-                return repository.findBySolicitudVehicularId(solicitudVehicularId).stream()
-                                .map(this::toResponse)
-                                .toList();
+                return toListResponse(repository.findBySolicitudVehicularId(solicitudVehicularId));
         }
 
         @Transactional
@@ -215,12 +213,27 @@ public class AsignacionVehicularService {
                 repository.deleteById(id);
         }
 
+        @Transactional(readOnly = true)
+        public Map<UUID, AsignacionVehicularResponse> findResponsesByIds(Collection<UUID> ids) {
+                if (ids == null || ids.isEmpty()) {
+                        return Map.of();
+                }
+                List<AsignacionVehicular> asignaciones = repository.findAllById(ids);
+                return toListResponse(asignaciones).stream()
+                                .collect(Collectors.toMap(AsignacionVehicularResponse::id, r -> r, (a, b) -> a));
+        }
+
         private PageResponse<AsignacionVehicularResponse> toPageResponse(Page<AsignacionVehicular> page) {
                 if (page.isEmpty()) {
                         return PageResponse.of(List.of(), page);
                 }
+                return PageResponse.of(toListResponse(page.getContent()), page);
+        }
 
-                List<AsignacionVehicular> content = page.getContent();
+        private List<AsignacionVehicularResponse> toListResponse(List<AsignacionVehicular> content) {
+                if (content == null || content.isEmpty()) {
+                        return List.of();
+                }
 
                 Set<UUID> solicitudIds = content.stream()
                                 .map(AsignacionVehicular::getSolicitudVehicularId)
@@ -242,18 +255,20 @@ public class AsignacionVehicularService {
                                 .filter(Objects::nonNull)
                                 .collect(Collectors.toSet());
 
-                Map<UUID, AsignacionVehicularSolicitudInfo> solicitudMap = new HashMap<>();
-                for (UUID sId : solicitudIds) {
-                        solicitudVehicularRepository.findById(sId)
-                                        .ifPresent(s -> solicitudMap.put(sId, new AsignacionVehicularSolicitudInfo(
-                                                        s.getId(),
-                                                        s.getNumero(),
-                                                        s.getMotivo(),
-                                                        s.getDestino(),
-                                                        s.getFechaSalida(),
-                                                        s.getFechaRetornoEstimada(),
-                                                        s.getEstado())));
-                }
+                Map<UUID, AsignacionVehicularSolicitudInfo> solicitudMap = solicitudIds.isEmpty()
+                                ? Map.of()
+                                : solicitudVehicularRepository.findAllById(solicitudIds).stream()
+                                                .collect(Collectors.toMap(
+                                                                SolicitudVehicular::getId,
+                                                                s -> new AsignacionVehicularSolicitudInfo(
+                                                                                s.getId(),
+                                                                                s.getNumero(),
+                                                                                s.getMotivo(),
+                                                                                s.getDestino(),
+                                                                                s.getFechaSalida(),
+                                                                                s.getFechaRetornoEstimada(),
+                                                                                s.getEstado()),
+                                                                (a, b) -> a));
 
                 Map<UUID, AsignacionVehicularActivoInfo> activoMap = activoIds.isEmpty()
                                 ? Map.of()
@@ -267,16 +282,15 @@ public class AsignacionVehicularService {
                                                                                 null),
                                                                 (a, b) -> a));
 
-                Map<UUID, Conductor> conductorMap = new HashMap<>();
-                Set<UUID> conductorEmpleadoIds = new HashSet<>();
-                for (UUID cId : conductorIds) {
-                        conductorRepository.findById(cId).ifPresent(c -> {
-                                conductorMap.put(cId, c);
-                                if (c.getEmpleadoId() != null) {
-                                        conductorEmpleadoIds.add(c.getEmpleadoId());
-                                }
-                        });
-                }
+                Map<UUID, Conductor> conductorMap = conductorIds.isEmpty()
+                                ? Map.of()
+                                : conductorRepository.findAllById(conductorIds).stream()
+                                                .collect(Collectors.toMap(Conductor::getId, c -> c, (a, b) -> a));
+
+                Set<UUID> conductorEmpleadoIds = conductorMap.values().stream()
+                                .map(Conductor::getEmpleadoId)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet());
 
                 Set<UUID> allEmpleadoIds = new HashSet<>(asignadoPorIds);
                 allEmpleadoIds.addAll(conductorEmpleadoIds);
@@ -287,7 +301,7 @@ public class AsignacionVehicularService {
                                                 .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, ve -> ve,
                                                                 (a, b) -> a));
 
-                List<AsignacionVehicularResponse> responses = content.stream()
+                return content.stream()
                                 .map(domain -> {
                                         AsignacionVehicularSolicitudInfo solInfo = domain
                                                         .getSolicitudVehicularId() != null
@@ -330,8 +344,6 @@ public class AsignacionVehicularService {
                                         return mapper.toResponse(domain, solInfo, actInfo, condInfo, asigInfo);
                                 })
                                 .toList();
-
-                return PageResponse.of(responses, page);
         }
 
         private AsignacionVehicularResponse toResponse(AsignacionVehicular domain) {

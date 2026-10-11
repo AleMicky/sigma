@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoCond
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,12 +16,25 @@ import java.util.UUID;
 
 public interface SpringConductorRepository extends JpaRepository<ConductorEntity, UUID> {
 
+    @Override
+    @EntityGraph(attributePaths = {"licencias"})
+    Page<ConductorEntity> findAll(Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = {"licencias"})
+    List<ConductorEntity> findAllById(Iterable<UUID> ids);
+
+    @Override
+    @EntityGraph(attributePaths = {"licencias"})
+    Optional<ConductorEntity> findById(UUID id);
+
     boolean existsByEmpleadoId(UUID empleadoId);
 
     Optional<ConductorEntity> findByEmpleadoId(UUID empleadoId);
 
     boolean existsByEmpleadoIdAndIdNot(UUID empleadoId, UUID id);
 
+    @EntityGraph(attributePaths = {"licencias"})
     @Query("""
         SELECT DISTINCT c
         FROM ConductorEntity c
@@ -53,6 +67,7 @@ public interface SpringConductorRepository extends JpaRepository<ConductorEntity
             Pageable pageable
     );
 
+    @EntityGraph(attributePaths = {"licencias"})
     @Query("""
         SELECT DISTINCT c
         FROM ConductorEntity c
@@ -71,6 +86,7 @@ public interface SpringConductorRepository extends JpaRepository<ConductorEntity
     """)
     Page<ConductorEntity> search(@Param("search") String search, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"licencias"})
     @Query("""
         SELECT DISTINCT c
         FROM ConductorEntity c

@@ -18,6 +18,8 @@ public interface FlotaVehicularRepository {
 
     Optional<FlotaVehicular> findById(UUID id);
 
+    List<FlotaVehicular> findAllById(Iterable<UUID> ids);
+
     Optional<FlotaVehicular> findByCodigo(String codigo);
 
     FlotaVehicular save(FlotaVehicular flotaVehicular);

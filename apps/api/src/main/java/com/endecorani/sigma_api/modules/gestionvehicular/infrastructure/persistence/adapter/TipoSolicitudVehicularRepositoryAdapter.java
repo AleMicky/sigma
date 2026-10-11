@@ -36,6 +36,11 @@ public class TipoSolicitudVehicularRepositoryAdapter implements TipoSolicitudVeh
     }
 
     @Override
+    public java.util.List<TipoSolicitudVehicular> findAllById(Iterable<UUID> ids) {
+        return springRepository.findAllById(ids).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<TipoSolicitudVehicular> findByCodigo(String codigo) {
         return springRepository.findByCodigoIgnoreCase(codigo).map(mapper::toDomain);
     }
