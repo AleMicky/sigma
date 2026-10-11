@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useSearch } from "@tanstack/react-router"
 import { AlertCircle, Inbox, KeyRound, RefreshCw } from "lucide-react"
 
 import { appConfig } from "@/app/config"
@@ -39,15 +40,24 @@ type EstadoFiltro = "SOLICITADO" | "ASIGNADO" | "OBSERVADO" | "EN_VIAJE" | ""
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function AsignacionVehicularPage() {
-  const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("SOLICITADO")
+  const searchParams = (useSearch({ strict: false }) ?? {}) as {
+    solicitudId?: string
+    estado?: EstadoFiltro
+  }
+
+  const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>(
+    searchParams.estado ?? "SOLICITADO"
+  )
   const [selectedTipoId, setSelectedTipoId] = useState<string>("")
-  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null)
+  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(
+    searchParams.solicitudId ?? null
+  )
   const [assignItem, setAssignItem] = useState<SolicitudVehicular | null>(null)
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudVehicular | null>(null)
 
+  // Búsqueda paginada sin resetKey agresivo para preservar el término al filtrar
   const search = usePaginatedSearch({
     debounceMs: 300,
-    resetKey: `${selectedEstado}-${selectedTipoId}`,
   })
 
   const { target, isOpen, openAction, closeAction } =
@@ -66,10 +76,50 @@ export function AsignacionVehicularPage() {
     }))
   }, [tiposQuery.data])
 
-  // Consulta global para métricas de tarjetas
+  // Consulta global optimizada para métricas de tarjetas con select
   const allQuery = useQuery({
-    ...solicitudVehicularQueries.list({ size: 1000, interfaz: "AsignacionVehicularPage" }),
-    staleTime: 1000 * 60 * 2,
+    ...solicitudVehicularQueries.list({
+      size: 1000,
+      interfaz: "AsignacionVehicularPage",
+    }),
+    staleTime: 1000 * 60 * 3,
+    select: (data) => {
+      let porAsignar = 0
+      let asignadas = 0
+      let observadas = 0
+      let enViaje = 0
+
+      for (const item of data.content) {
+        const estado = (item.estado || "").toUpperCase()
+        if (estado === "SOLICITADO" || estado === "PENDIENTE") {
+          porAsignar++
+        } else if (
+          estado === "ASIGNADO" ||
+          estado === "APROBADA" ||
+          estado === "APROBADO"
+        ) {
+          asignadas++
+        } else if (
+          estado === "OBSERVADO" ||
+          estado === "OBSERVADA" ||
+          estado === "RECHAZADO"
+        ) {
+          observadas++
+        } else if (
+          estado === "EN_VIAJE" ||
+          estado === "EN_PROCESO" ||
+          estado === "FINALIZADA" ||
+          estado === "COMPLETADA"
+        ) {
+          enViaje++
+        }
+      }
+
+      return {
+        total: data.totalElements,
+        resumen: { porAsignar, asignadas, observadas, enViaje },
+      }
+    },
   })
 
   // Consulta filtrada según parámetros activos
@@ -95,15 +145,18 @@ export function AsignacionVehicularPage() {
     enabled: Boolean(selectedDetailId),
   })
 
-  const solicitudes = query.data?.content ?? []
-  const totalElements = allQuery.data?.totalElements ?? query.data?.totalElements ?? 0
+  const solicitudes = useMemo(() => query.data?.content ?? [], [query.data?.content])
+  const totalElements = allQuery.data?.total ?? query.data?.totalElements ?? 0
   const activeDetailItem =
     detailQuery.data ?? solicitudes.find((s) => s.id === selectedDetailId) ?? null
 
   useClampPage(search.page, search.setPage, query.data?.totalPages)
 
   const resumen: AsignacionVehicularResumen = useMemo(() => {
-    const list = allQuery.data?.content ?? []
+    if (allQuery.data?.resumen) {
+      return allQuery.data.resumen
+    }
+    const list = solicitudes
     let porAsignar = 0
     let asignadas = 0
     let observadas = 0
@@ -113,9 +166,17 @@ export function AsignacionVehicularPage() {
       const estado = (item.estado || "").toUpperCase()
       if (estado === "SOLICITADO" || estado === "PENDIENTE") {
         porAsignar++
-      } else if (estado === "ASIGNADO" || estado === "APROBADA" || estado === "APROBADO") {
+      } else if (
+        estado === "ASIGNADO" ||
+        estado === "APROBADA" ||
+        estado === "APROBADO"
+      ) {
         asignadas++
-      } else if (estado === "OBSERVADO" || estado === "OBSERVADA" || estado === "RECHAZADO") {
+      } else if (
+        estado === "OBSERVADO" ||
+        estado === "OBSERVADA" ||
+        estado === "RECHAZADO"
+      ) {
         observadas++
       } else if (
         estado === "EN_VIAJE" ||
@@ -128,22 +189,40 @@ export function AsignacionVehicularPage() {
     }
 
     return { porAsignar, asignadas, observadas, enViaje }
-  }, [allQuery.data])
+  }, [allQuery.data?.resumen, solicitudes])
 
   const handleRefresh = useCallback(() => {
     query.refetch()
     allQuery.refetch()
+    tiposQuery.refetch()
     if (selectedDetailId) {
       detailQuery.refetch()
     }
-  }, [query, allQuery, detailQuery, selectedDetailId])
+  }, [query, allQuery, tiposQuery, detailQuery, selectedDetailId])
 
-  const handleSelectEstado = useCallback((estado: string) => {
-    setSelectedEstado((prev) => (prev === estado ? "" : (estado as EstadoFiltro)))
+  const handleViewDetail = useCallback((sol: SolicitudVehicular) => {
+    setSelectedDetailId(sol.id)
   }, [])
+
+  const handleSelectEstado = useCallback(
+    (estado: string) => {
+      setSelectedEstado((prev) => (prev === estado ? "" : (estado as EstadoFiltro)))
+      search.setPage(0)
+    },
+    [search]
+  )
+
+  const handleSelectTipoId = useCallback(
+    (tipoId: string) => {
+      setSelectedTipoId(tipoId)
+      search.setPage(0)
+    },
+    [search]
+  )
 
   const handleClearAll = useCallback(() => {
     search.setSearch("")
+    search.setPage(0)
     setSelectedEstado("")
     setSelectedTipoId("")
   }, [search])
@@ -170,6 +249,115 @@ export function AsignacionVehicularPage() {
     }
     return map[selectedEstado] ?? selectedEstado.replace(/_/g, " ")
   }, [selectedEstado])
+
+  const renderListContent = () => {
+    if (query.isLoading) {
+      return (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <SolicitudVehicularListItemSkeleton key={index} />
+          ))}
+        </div>
+      )
+    }
+
+    if (query.isError) {
+      return (
+        <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
+          <EmptyState
+            icon={<AlertCircle className="size-7 sm:size-8 text-destructive" />}
+            title="Error al consultar las solicitudes para asignación"
+            description={getErrorMessage(query.error)}
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+              >
+                <RefreshCw className="size-3.5" />
+                <span>Reintentar</span>
+              </Button>
+            }
+          />
+        </div>
+      )
+    }
+
+    if (solicitudes.length === 0) {
+      const hasActiveFilters = Boolean(
+        search.debouncedSearch || selectedEstado || selectedTipoId
+      )
+
+      return (
+        <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
+          <EmptyState
+            icon={<Inbox className="size-7 sm:size-8 text-muted-foreground/60" />}
+            title="No hay solicitudes para mostrar"
+            description={
+              hasActiveFilters
+                ? "No se encontraron resultados con los filtros aplicados. Prueba limpiando o cambiando los criterios."
+                : "No hay solicitudes pendientes de asignación en este momento."
+            }
+            action={
+              hasActiveFilters ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearAll}
+                  className="mt-2 text-xs font-medium cursor-pointer shadow-2xs"
+                >
+                  Limpiar todos los filtros
+                </Button>
+              ) : undefined
+            }
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-3">
+        <div
+          className={cn(
+            "flex flex-col gap-3 sm:gap-3.5 transition-opacity duration-200",
+            query.isFetching && !query.isLoading && "opacity-75"
+          )}
+        >
+          {solicitudes.map((solicitud) => {
+            const estadoNorm = (solicitud.estado ?? "").trim().toUpperCase()
+            const canShowWorkflow =
+              estadoNorm === "SOLICITADO" ||
+              estadoNorm === "PENDIENTE" ||
+              estadoNorm === "OBSERVADO" ||
+              estadoNorm === "APROBADO" ||
+              estadoNorm === "APROBADA"
+
+            return (
+              <SolicitudVehicularListItem
+                key={solicitud.id}
+                solicitud={solicitud}
+                showWorkflowActions={canShowWorkflow}
+                onViewDetail={handleViewDetail}
+                onSelect={handleViewDetail}
+                onAssign={setAssignItem}
+                onActionSelect={handleActionSelect}
+                onTraceability={setTraceabilityItem}
+              />
+            )
+          })}
+        </div>
+
+        {query.data && query.data.totalPages > 1 && (
+          <Pagination
+            page={query.data}
+            onPageChange={search.setPage}
+            className="border-t pt-1.5 shrink-0 text-xs"
+          />
+        )}
+      </div>
+    )
+  }
 
   return (
     <PageShell
@@ -209,7 +397,7 @@ export function AsignacionVehicularPage() {
         selectedEstadoLabel={selectedEstadoLabel}
         onClearEstado={() => setSelectedEstado("")}
         selectedTipoId={selectedTipoId}
-        onSelectTipoId={setSelectedTipoId}
+        onSelectTipoId={handleSelectTipoId}
         tiposSolicitud={tiposOptions}
         totalResults={totalElements}
         filteredCount={query.data?.totalElements}
@@ -225,96 +413,7 @@ export function AsignacionVehicularPage() {
           </div>
         )}
 
-        {query.isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <SolicitudVehicularListItemSkeleton key={index} />
-            ))}
-          </div>
-        ) : query.isError ? (
-          <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
-            <EmptyState
-              icon={<AlertCircle className="size-7 sm:size-8 text-destructive" />}
-              title="Error al consultar las solicitudes para asignación"
-              description={getErrorMessage(query.error)}
-              action={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
-                >
-                  <RefreshCw className="size-3.5" />
-                  <span>Reintentar</span>
-                </Button>
-              }
-            />
-          </div>
-        ) : solicitudes.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
-            <EmptyState
-              icon={<Inbox className="size-7 sm:size-8 text-muted-foreground/60" />}
-              title="No hay solicitudes para mostrar"
-              description={
-                search.debouncedSearch || selectedEstado || selectedTipoId
-                  ? "No se encontraron resultados con los filtros aplicados. Prueba limpiando o cambiando los criterios."
-                  : "No hay solicitudes pendientes de asignación en este momento."
-              }
-              action={
-                search.debouncedSearch || selectedEstado || selectedTipoId ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClearAll}
-                    className="mt-2 text-xs font-medium cursor-pointer shadow-2xs"
-                  >
-                    Limpiar todos los filtros
-                  </Button>
-                ) : undefined
-              }
-            />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div
-              className={cn(
-                "flex flex-col gap-3 sm:gap-3.5 transition-opacity duration-200",
-                query.isFetching && !query.isLoading && "opacity-75"
-              )}
-            >
-              {solicitudes.map((solicitud) => {
-                const estadoNorm = (solicitud.estado ?? "").trim().toUpperCase()
-                const canShowWorkflow =
-                  estadoNorm === "SOLICITADO" ||
-                  estadoNorm === "PENDIENTE" ||
-                  estadoNorm === "OBSERVADO" ||
-                  estadoNorm === "APROBADO" ||
-                  estadoNorm === "APROBADA"
-
-                return (
-                  <SolicitudVehicularListItem
-                    key={solicitud.id}
-                    solicitud={solicitud}
-                    showWorkflowActions={canShowWorkflow}
-                    onViewDetail={(sol) => setSelectedDetailId(sol.id)}
-                    onSelect={(sol) => setSelectedDetailId(sol.id)}
-                    onAssign={setAssignItem}
-                    onActionSelect={handleActionSelect}
-                    onTraceability={setTraceabilityItem}
-                  />
-                )
-              })}
-            </div>
-
-            {query.data && query.data.totalPages > 1 && (
-              <Pagination
-                page={query.data}
-                onPageChange={search.setPage}
-                className="border-t pt-1.5 shrink-0 text-xs"
-              />
-            )}
-          </div>
-        )}
+        {renderListContent()}
       </div>
 
       {/* Modal de Asignación */}
@@ -336,6 +435,7 @@ export function AsignacionVehicularPage() {
         solicitud={activeDetailItem}
         onAssign={setAssignItem}
         onViewHistory={setTraceabilityItem}
+        onActionSelect={handleActionSelect}
       />
 
       {/* Diálogo de Workflow */}
