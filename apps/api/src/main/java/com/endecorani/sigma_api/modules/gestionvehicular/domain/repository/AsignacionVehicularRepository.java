@@ -23,6 +23,8 @@ public interface AsignacionVehicularRepository {
 
     Optional<AsignacionVehicular> findById(UUID id);
 
+    List<AsignacionVehicular> findAllById(Iterable<UUID> ids);
+
     List<AsignacionVehicular> findBySolicitudVehicularId(UUID solicitudVehicularId);
 
     List<AsignacionVehicular> findByActivoId(UUID activoId);

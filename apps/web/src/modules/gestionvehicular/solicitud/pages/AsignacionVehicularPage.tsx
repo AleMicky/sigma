@@ -68,7 +68,7 @@ export function AsignacionVehicularPage() {
 
   // Consulta global para métricas de tarjetas
   const allQuery = useQuery({
-    ...solicitudVehicularQueries.list({ size: 1000 }),
+    ...solicitudVehicularQueries.list({ size: 1000, interfaz: "AsignacionVehicularPage" }),
     staleTime: 1000 * 60 * 2,
   })
 
@@ -79,6 +79,7 @@ export function AsignacionVehicularPage() {
       size: PAGE_SIZE,
       sortBy: "createdAt",
       direction: "DESC" as const,
+      interfaz: "AsignacionVehicularPage",
       ...(selectedEstado ? { estado: selectedEstado } : {}),
       ...(selectedTipoId ? { tipoSolicitudVehicularId: selectedTipoId } : {}),
       ...(search.query ? { search: search.query } : {}),

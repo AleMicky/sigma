@@ -22,11 +22,15 @@ public interface ConductorRepository {
 
     Optional<Conductor> findById(UUID id);
 
+    List<Conductor> findAllById(Iterable<UUID> ids);
+
     Conductor save(Conductor conductor);
 
     void deleteById(UUID id);
 
     boolean existsByEmpleadoId(UUID empleadoId);
+
+    Optional<Conductor> findByEmpleadoId(UUID empleadoId);
 
     boolean existsByEmpleadoIdAndIdNot(UUID empleadoId, UUID id);
 }

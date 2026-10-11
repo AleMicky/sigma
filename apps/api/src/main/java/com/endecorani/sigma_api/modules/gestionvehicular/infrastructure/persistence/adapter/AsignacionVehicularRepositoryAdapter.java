@@ -51,6 +51,11 @@ public class AsignacionVehicularRepositoryAdapter implements AsignacionVehicular
     }
 
     @Override
+    public List<AsignacionVehicular> findAllById(Iterable<UUID> ids) {
+        return springRepository.findAllById(ids).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public List<AsignacionVehicular> findBySolicitudVehicularId(UUID solicitudVehicularId) {
         return springRepository.findBySolicitudVehicularId(solicitudVehicularId).stream()
                 .map(mapper::toDomain)

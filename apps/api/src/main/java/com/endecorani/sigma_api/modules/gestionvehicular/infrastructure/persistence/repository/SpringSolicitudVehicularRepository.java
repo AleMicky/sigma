@@ -35,6 +35,7 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
           AND (:hasEstados = false OR UPPER(s.estado) IN (:estados))
           AND (:hasTipo = false OR s.tipoSolicitudVehicularId = :tipoSolicitudVehicularId)
           AND (:hasSolicitante = false OR s.solicitanteId = :solicitanteId)
+          AND (:hasResponsable = false OR s.responsableAsignacionId = :responsableAsignacionId)
           AND (:hasConductor = false OR s.conductorAsignadoId = :conductorAsignadoId)
     """,
     countQuery = """
@@ -54,6 +55,7 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
           AND (:hasEstados = false OR UPPER(s.estado) IN (:estados))
           AND (:hasTipo = false OR s.tipoSolicitudVehicularId = :tipoSolicitudVehicularId)
           AND (:hasSolicitante = false OR s.solicitanteId = :solicitanteId)
+          AND (:hasResponsable = false OR s.responsableAsignacionId = :responsableAsignacionId)
           AND (:hasConductor = false OR s.conductorAsignadoId = :conductorAsignadoId)
     """)
     Page<SolicitudVehicularEntity> searchWithFilters(
@@ -65,6 +67,8 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
             @Param("tipoSolicitudVehicularId") UUID tipoSolicitudVehicularId,
             @Param("hasSolicitante") boolean hasSolicitante,
             @Param("solicitanteId") UUID solicitanteId,
+            @Param("hasResponsable") boolean hasResponsable,
+            @Param("responsableAsignacionId") UUID responsableAsignacionId,
             @Param("hasConductor") boolean hasConductor,
             @Param("conductorAsignadoId") UUID conductorAsignadoId,
             Pageable pageable

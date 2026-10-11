@@ -51,6 +51,11 @@ public class ConductorRepositoryAdapter implements ConductorRepository {
     }
 
     @Override
+    public List<Conductor> findAllById(Iterable<UUID> ids) {
+        return springRepository.findAllById(ids).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public Conductor save(Conductor domain) {
         ConductorEntity entityToSave;
 
@@ -116,6 +121,11 @@ public class ConductorRepositoryAdapter implements ConductorRepository {
     @Override
     public boolean existsByEmpleadoId(UUID empleadoId) {
         return springRepository.existsByEmpleadoId(empleadoId);
+    }
+
+    @Override
+    public Optional<Conductor> findByEmpleadoId(UUID empleadoId) {
+        return springRepository.findByEmpleadoId(empleadoId).map(mapper::toDomain);
     }
 
     @Override

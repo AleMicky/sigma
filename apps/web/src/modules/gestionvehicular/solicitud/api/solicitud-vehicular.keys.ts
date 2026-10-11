@@ -7,6 +7,8 @@ export type SolicitudVehicularListFilters = PageParams & {
   tipoSolicitudVehicularId?: string
   solicitanteId?: string
   conductorAsignadoId?: string
+  responsableAsignacionId?: string
+  interfaz?: string
 }
 
 export const solicitudVehicularKeys = {

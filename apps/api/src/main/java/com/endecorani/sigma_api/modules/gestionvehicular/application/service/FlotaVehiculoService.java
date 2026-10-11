@@ -116,10 +116,15 @@ public class FlotaVehiculoService {
                 ? dto.activoIds().stream().filter(Objects::nonNull).distinct().toList()
                 : List.of();
 
-        // Validar que todos los activos existan
+        // Validar que todos los activos existan en lote
         if (!targetActivoIds.isEmpty()) {
+            Set<UUID> foundActivoIds = springActivoRepository.findAllById(targetActivoIds).stream()
+                    .map(ActivoEntity::getId)
+                    .collect(Collectors.toSet());
             for (UUID activoId : targetActivoIds) {
-                validarActivoExiste(activoId);
+                if (!foundActivoIds.contains(activoId)) {
+                    throw new ResourceNotFoundException("Vehículo (Activo)", activoId);
+                }
             }
         }
 
@@ -246,10 +251,7 @@ public class FlotaVehiculoService {
 
         Map<UUID, FlotaVehiculoFlotaInfo> flotaMap = flotaIds.isEmpty()
                 ? Map.of()
-                : flotaIds.stream()
-                .map(flotaVehicularRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+                : flotaVehicularRepository.findAllById(flotaIds).stream()
                 .collect(Collectors.toMap(
                         FlotaVehicular::getId,
                         f -> new FlotaVehiculoFlotaInfo(f.getId(), f.getCodigo(), f.getNombre()),

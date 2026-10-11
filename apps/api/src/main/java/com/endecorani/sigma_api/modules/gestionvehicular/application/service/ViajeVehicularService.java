@@ -266,13 +266,7 @@ public class ViajeVehicularService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<UUID, AsignacionVehicularResponse> asignacionesMap = new HashMap<>();
-        for (UUID asigId : asignacionIds) {
-            try {
-                asignacionesMap.put(asigId, asignacionVehicularService.findById(asigId));
-            } catch (Exception ignored) {
-            }
-        }
+        Map<UUID, AsignacionVehicularResponse> asignacionesMap = asignacionVehicularService.findResponsesByIds(asignacionIds);
 
         List<ViajeVehicularResponse> responses = content.stream()
                 .map(v -> mapper.toResponse(v, asignacionesMap.get(v.getAsignacionVehicularId())))
