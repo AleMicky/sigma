@@ -80,10 +80,10 @@ export const solicitudVehicularSchema = z
       if (!data.fechaSalida || !data.fechaRetornoEstimada) return true
       const salida = new Date(data.fechaSalida).getTime()
       const retorno = new Date(data.fechaRetornoEstimada).getTime()
-      return !isNaN(salida) && !isNaN(retorno) ? retorno >= salida : true
+      return !isNaN(salida) && !isNaN(retorno) ? retorno > salida : true
     },
     {
-      message: "La fecha de retorno estimada debe ser posterior o igual a la fecha de salida",
+      message: "La fecha y hora de retorno debe ser posterior a la de salida (no pueden coincidir)",
       path: ["fechaRetornoEstimada"],
     }
   )

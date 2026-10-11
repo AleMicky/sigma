@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { AlertCircle, FileText, Plus, RefreshCw } from "lucide-react"
 
@@ -41,15 +41,24 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function SolicitudesVehicularesPage() {
   const navigate = useNavigate()
-  const [selectedEstado, setSelectedEstado] = useState<string>("")
+  const searchParams = (useSearch({ strict: false }) ?? {}) as {
+    solicitudId?: string
+    estado?: string
+  }
+
+  const [selectedEstado, setSelectedEstado] = useState<string>(
+    searchParams.estado ?? ""
+  )
   const [selectedTipoId, setSelectedTipoId] = useState<string>("")
-  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null)
+  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(
+    searchParams.solicitudId ?? null
+  )
   const [historyItem, setHistoryItem] = useState<SolicitudVehicular | null>(null)
   const [deletingItem, setDeletingItem] = useState<SolicitudVehicular | null>(null)
 
+  // Búsqueda paginada sin resetKey agresivo para no borrar el término al alternar filtros
   const search = usePaginatedSearch({
     debounceMs: 300,
-    resetKey: `${selectedEstado}-${selectedTipoId}`,
   })
 
   const { target, isOpen, openAction, closeAction } =
@@ -78,11 +87,20 @@ export function SolicitudesVehicularesPage() {
     [navigate]
   )
 
+  const handleViewDetail = useCallback((sol: SolicitudVehicular) => {
+    setSelectedDetailId(sol.id)
+  }, [])
+
   const handleDeleteConfirm = async () => {
     if (!deletingItem) return
+    const idToDelete = deletingItem.id
     try {
-      await deleteMutation.mutateAsync(deletingItem.id)
+      await deleteMutation.mutateAsync(idToDelete)
       setDeletingItem(null)
+      // Si la solicitud eliminada estaba abierta en el detalle lateral, cerrarla
+      if (selectedDetailId === idToDelete) {
+        setSelectedDetailId(null)
+      }
     } catch {
       // Notificado por el mutation
     }
@@ -104,26 +122,73 @@ export function SolicitudesVehicularesPage() {
 
   const query = useQuery(solicitudVehicularQueries.list(queryParams))
 
-  // Consulta para métricas globales de tarjetas resumen
+  // Consulta optimizada para métricas globales de tarjetas resumen con select
   const allQuery = useQuery({
-    ...solicitudVehicularQueries.list({ size: 1000, interfaz: "SolicitudesVehicularesPage" }),
-    staleTime: 1000 * 60 * 2,
+    ...solicitudVehicularQueries.list({
+      size: 1000,
+      interfaz: "SolicitudesVehicularesPage",
+    }),
+    staleTime: 1000 * 60 * 3,
+    select: (data) => {
+      let borradores = 0
+      let solicitados = 0
+      let aprobados = 0
+      let enRuta = 0
+      let finalizadas = 0
+
+      for (const item of data.content) {
+        const estado = (item.estado || "").toUpperCase().trim()
+        if (estado === "BORRADOR" || estado === "PENDIENTE") {
+          borradores++
+        } else if (estado === "SOLICITADO" || estado === "OBSERVADO") {
+          solicitados++
+        } else if (estado === "APROBADO" || estado === "APROBADA") {
+          aprobados++
+        } else if (
+          estado === "EN_CURSO" ||
+          estado === "EN_VIAJE" ||
+          estado === "RETORNO" ||
+          estado === "EN_RUTA"
+        ) {
+          enRuta++
+        } else if (
+          estado === "FINALIZADA" ||
+          estado === "COMPLETADA" ||
+          estado === "FINALIZADO"
+        ) {
+          finalizadas++
+        } else {
+          solicitados++
+        }
+      }
+
+      return {
+        total: data.totalElements,
+        borradores,
+        solicitados,
+        aprobados,
+        enRuta,
+        finalizadas,
+      }
+    },
   })
 
-  // Consulta reactiva para el modal de detalle
+  // Consulta reactiva para el modal/sheet de detalle
   const detailQuery = useQuery({
     ...solicitudVehicularQueries.detail(selectedDetailId ?? ""),
     enabled: Boolean(selectedDetailId),
   })
 
   const solicitudes = query.data?.content ?? []
-  const totalCount = allQuery.data?.totalElements ?? query.data?.totalElements ?? 0
+  const totalCount = allQuery.data?.total ?? query.data?.totalElements ?? 0
 
   const activeDetailItem =
     detailQuery.data ?? solicitudes.find((s) => s.id === selectedDetailId) ?? null
 
   const resumen = useMemo(() => {
-    const list = allQuery.data?.content ?? solicitudes
+    if (allQuery.data) {
+      return allQuery.data
+    }
 
     let borradores = 0
     let solicitados = 0
@@ -131,7 +196,7 @@ export function SolicitudesVehicularesPage() {
     let enRuta = 0
     let finalizadas = 0
 
-    for (const item of list) {
+    for (const item of solicitudes) {
       const estado = (item.estado || "").toUpperCase().trim()
       if (estado === "BORRADOR" || estado === "PENDIENTE") {
         borradores++
@@ -158,23 +223,36 @@ export function SolicitudesVehicularesPage() {
     }
 
     return {
-      total: allQuery.data?.totalElements ?? list.length,
+      total: query.data?.totalElements ?? solicitudes.length,
       borradores,
       solicitados,
       aprobados,
       enRuta,
       finalizadas,
     }
-  }, [allQuery.data, solicitudes])
+  }, [allQuery.data, query.data?.totalElements, solicitudes])
 
   useClampPage(search.page, search.setPage, query.data?.totalPages)
 
-  const handleSelectEstado = useCallback((estado: string) => {
-    setSelectedEstado((prev) => (!estado || prev === estado ? "" : estado))
-  }, [])
+  const handleSelectEstado = useCallback(
+    (estado: string) => {
+      setSelectedEstado((prev) => (!estado || prev === estado ? "" : estado))
+      search.setPage(0)
+    },
+    [search]
+  )
+
+  const handleSelectTipoId = useCallback(
+    (tipoId: string) => {
+      setSelectedTipoId(tipoId)
+      search.setPage(0)
+    },
+    [search]
+  )
 
   const handleClearAllFilters = useCallback(() => {
     search.setSearch("")
+    search.setPage(0)
     setSelectedEstado("")
     setSelectedTipoId("")
   }, [search])
@@ -199,10 +277,11 @@ export function SolicitudesVehicularesPage() {
   const handleRefresh = useCallback(() => {
     query.refetch()
     allQuery.refetch()
+    tiposQuery.refetch()
     if (selectedDetailId) {
       detailQuery.refetch()
     }
-  }, [query, allQuery, detailQuery, selectedDetailId])
+  }, [query, allQuery, tiposQuery, detailQuery, selectedDetailId])
 
   const handleActionSelect = useCallback(
     (
@@ -245,7 +324,7 @@ export function SolicitudesVehicularesPage() {
         selectedEstadoLabel={selectedEstadoLabel}
         onClearEstado={() => setSelectedEstado("")}
         selectedTipoId={selectedTipoId}
-        onSelectTipoId={setSelectedTipoId}
+        onSelectTipoId={handleSelectTipoId}
         tiposSolicitud={tiposOptions}
         totalResults={totalCount}
         filteredCount={query.data?.totalElements}
@@ -342,7 +421,7 @@ export function SolicitudesVehicularesPage() {
                   key={solicitud.id}
                   solicitud={solicitud}
                   onlyWorkflowActionsOnBorrador={true}
-                  onViewDetail={(sol) => setSelectedDetailId(sol.id)}
+                  onViewDetail={handleViewDetail}
                   onEdit={handleEdit}
                   onDelete={setDeletingItem}
                   onActionSelect={handleActionSelect}
