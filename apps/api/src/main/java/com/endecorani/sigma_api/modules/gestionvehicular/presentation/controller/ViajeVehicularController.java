@@ -69,7 +69,7 @@ public class ViajeVehicularController {
             @PathVariable UUID asignacionVehicularId
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.findByAsignacionVehicularId(asignacionVehicularId))
+                ApiResponse.success(service.findByAsignacionVehicularIdOpt(asignacionVehicularId).orElse(null))
         );
     }
 
@@ -79,7 +79,7 @@ public class ViajeVehicularController {
             @PathVariable UUID solicitudVehicularId
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.findBySolicitudVehicularId(solicitudVehicularId))
+                ApiResponse.success(service.findBySolicitudVehicularIdOpt(solicitudVehicularId).orElse(null))
         );
     }
 

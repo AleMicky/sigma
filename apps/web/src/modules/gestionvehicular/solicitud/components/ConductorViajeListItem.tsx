@@ -5,8 +5,11 @@ import {
   Car,
   ClipboardCheck,
   Clock,
+  Compass,
   Eye,
+  Flag,
   Flame,
+  Gauge,
   GitBranch,
   History,
   KeyRound,
@@ -30,6 +33,11 @@ import { cn } from "@/shared/lib/utils"
 
 import { asignacionVehicularQueries } from "../../asignacion-vehicular/api/asignacion-vehicular.queries"
 import { controlActivoVehicularQueries } from "../../control-activo/api/control-activo.queries"
+import { viajeVehicularKeys } from "../../viaje-vehicular/api/viaje-vehicular.queries"
+import {
+  getViajeByAsignacion,
+  getViajeBySolicitud,
+} from "../../viaje-vehicular/api/viaje-vehicular.service"
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
 
 export type ConductorViajeListItemProps = {
@@ -57,7 +65,7 @@ export function ConductorViajeListItem({
   onTraceability,
   onActionSelect,
   className,
-}: ConductorViajeListItemProps) {
+}: Readonly<ConductorViajeListItemProps>) {
   const tipo = solicitud.tipoSolicitudVehicular
   const isEmergencia =
     tipo?.codigo?.toUpperCase() === "EMERGENCIA" ||
@@ -80,6 +88,28 @@ export function ConductorViajeListItem({
   const asignacion = asignacionQuery.data?.[0]
   const vehiculo = asignacion?.activo
   const conductor = asignacion?.conductor || solicitud.conductorAsignado
+
+  // Consulta el viaje vehicular asociado a esta solicitud o asignación
+  const viajeQuery = useQuery({
+    queryKey: [...viajeVehicularKeys.all, "by-sol-or-asig", solicitud.id, asignacion?.id ?? ""],
+    queryFn: async () => {
+      if (asignacion?.id) {
+        return getViajeByAsignacion(asignacion.id)
+      }
+      if (solicitud.id) {
+        return getViajeBySolicitud(solicitud.id)
+      }
+      return null
+    },
+    enabled: Boolean(solicitud.id || asignacion?.id),
+    staleTime: 1000 * 60 * 2,
+  })
+  const viaje = viajeQuery.data
+  const estadoNorm = (solicitud.estado ?? "").toUpperCase()
+  const isEnRuta =
+    estadoNorm === "RETORNO" ||
+    estadoNorm === "EN_CURSO" ||
+    estadoNorm === "EN_VIAJE"
 
   // Consulta los controles de activos de esta solicitud
   const controlesQuery = useQuery({
@@ -259,6 +289,59 @@ export function ConductorViajeListItem({
               </div>
             </div>
           </div>
+
+          {/* Registro Real de Salida y Retorno (Viaje en Ruta / Retorno) */}
+          {(viaje?.fechaSalidaReal || typeof viaje?.kilometrajeSalida === "number" || isEnRuta) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-amber-500/[0.08] dark:bg-amber-950/25 p-2 rounded-lg border border-amber-500/35 text-[11px] shadow-2xs">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Gauge className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <div className="min-w-0 truncate">
+                  <span className="text-[9.5px] uppercase font-bold text-amber-800 dark:text-amber-300 block leading-tight">
+                    Salida Real (Registrada)
+                  </span>
+                  <span className="font-semibold text-foreground truncate flex items-center gap-1">
+                    <span>{viaje?.fechaSalidaReal ? formatDate(viaje.fechaSalidaReal) : "Registrada"}</span>
+                    {typeof viaje?.kilometrajeSalida === "number" && (
+                      <span className="font-mono text-[10.5px] font-bold text-amber-900 dark:text-amber-200 bg-amber-500/25 px-1.5 py-0.5 rounded border border-amber-500/30">
+                        {viaje.kilometrajeSalida.toLocaleString()} km
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {viaje?.fechaRetornoReal || typeof viaje?.kilometrajeRetorno === "number" ? (
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Flag className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <div className="min-w-0 truncate">
+                    <span className="text-[9.5px] uppercase font-bold text-emerald-800 dark:text-emerald-300 block leading-tight">
+                      Retorno Real (Finalizado)
+                    </span>
+                    <span className="font-semibold text-foreground truncate flex items-center gap-1">
+                      <span>{viaje?.fechaRetornoReal ? formatDate(viaje.fechaRetornoReal) : "Registrado"}</span>
+                      {typeof viaje?.kilometrajeRetorno === "number" && (
+                        <span className="font-mono text-[10.5px] font-bold text-emerald-900 dark:text-emerald-200 bg-emerald-500/25 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                          {viaje.kilometrajeRetorno.toLocaleString()} km
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Compass className="size-3.5 text-amber-600 dark:text-amber-400 animate-spin shrink-0" style={{ animationDuration: "6s" }} />
+                  <div className="min-w-0 truncate">
+                    <span className="text-[9.5px] uppercase font-bold text-amber-800 dark:text-amber-300 block leading-tight">
+                      Estado de Viaje
+                    </span>
+                    <span className="font-medium text-amber-700 dark:text-amber-300 truncate block">
+                      En Ruta • Pendiente de Retorno
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Columna Derecha: Tarjeta de Unidad y Conductor Asignado */}

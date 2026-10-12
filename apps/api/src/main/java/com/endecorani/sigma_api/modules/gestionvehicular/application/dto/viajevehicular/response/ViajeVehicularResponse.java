@@ -13,10 +13,8 @@ public record ViajeVehicularResponse(
         AsignacionVehicularResponse asignacionVehicular,
         LocalDateTime fechaSalidaReal,
         Long kilometrajeSalida,
-        Integer nivelCombustibleSalida,
         LocalDateTime fechaRetornoReal,
         Long kilometrajeRetorno,
-        Integer nivelCombustibleRetorno,
         EstadoViajeVehicular estado,
         String observacion,
         AuditoriaResponse auditoria

@@ -68,6 +68,15 @@ export function WorkflowStatusBadge({
     badgeStyle =
       "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
   } else if (
+    normalized.includes("RETORNO") ||
+    normalized.includes("EN_CURSO") ||
+    normalized.includes("VIAJE") ||
+    normalized.includes("RUTA")
+  ) {
+    icon = <Play className="size-3 text-amber-500" />
+    badgeStyle =
+      "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+  } else if (
     normalized.includes("PROCESO") ||
     normalized.includes("EJECUCION")
   ) {

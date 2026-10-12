@@ -119,8 +119,6 @@
           required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="datetime"></flowable:formProperty>
         <flowable:formProperty id="kilometrajeSalida" name="Kilometraje de Salida (km)" type="long"
           required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="number" sigma:min="0"></flowable:formProperty>
-        <flowable:formProperty id="nivelCombustibleSalida" name="Nivel de Combustible Salida (%)" type="long"
-          required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="slider" sigma:min="0" sigma:max="100"></flowable:formProperty>
         <flowable:formProperty id="comentario" name="Observaciones de Salida" type="string"
           required="false" writable="true"></flowable:formProperty>
       </extensionElements>
@@ -138,8 +136,6 @@
           required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="datetime"></flowable:formProperty>
         <flowable:formProperty id="kilometrajeRetorno" name="Kilometraje de Retorno (km)" type="long"
           required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="number" sigma:min="0"></flowable:formProperty>
-        <flowable:formProperty id="nivelCombustibleRetorno" name="Nivel de Combustible Retorno (%)" type="long"
-          required="true" writable="true" xmlns:sigma="http://endecorani.com/sigma/workflow" sigma:component="slider" sigma:min="0" sigma:max="100"></flowable:formProperty>
         <flowable:formProperty id="comentario" name="Observaciones de Retorno" type="string"
           required="false" writable="true"></flowable:formProperty>
       </extensionElements>

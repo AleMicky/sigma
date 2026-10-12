@@ -495,12 +495,6 @@ public class SolicitudVehicularService {
             modificado = true;
         }
 
-        Integer nivelSalida = parseIntVariable(variables, "nivelCombustibleSalida");
-        if (nivelSalida != null) {
-            viaje.setNivelCombustibleSalida(nivelSalida);
-            modificado = true;
-        }
-
         LocalDateTime fechaSalida = parseDateVariable(variables, "fechaSalidaReal");
         if (fechaSalida != null) {
             viaje.setFechaSalidaReal(fechaSalida);
@@ -529,12 +523,6 @@ public class SolicitudVehicularService {
         Long kmRetorno = parseLongVariable(variables, "kilometrajeRetorno");
         if (kmRetorno != null) {
             viaje.setKilometrajeRetorno(kmRetorno);
-            modificado = true;
-        }
-
-        Integer nivelRetorno = parseIntVariable(variables, "nivelCombustibleRetorno");
-        if (nivelRetorno != null) {
-            viaje.setNivelCombustibleRetorno(nivelRetorno);
             modificado = true;
         }
 
@@ -597,14 +585,12 @@ public class SolicitudVehicularService {
     private boolean hasSalidaData(Map<String, Object> variables, String nuevoEstado) {
         return variables.containsKey("kilometrajeSalida")
                 || variables.containsKey("fechaSalidaReal")
-                || variables.containsKey("nivelCombustibleSalida")
                 || isSalidaEstado(nuevoEstado);
     }
 
     private boolean hasRetornoData(Map<String, Object> variables, String nuevoEstado) {
         return variables.containsKey("kilometrajeRetorno")
                 || variables.containsKey("fechaRetornoReal")
-                || variables.containsKey("nivelCombustibleRetorno")
                 || isRetornoEstado(nuevoEstado);
     }
 
