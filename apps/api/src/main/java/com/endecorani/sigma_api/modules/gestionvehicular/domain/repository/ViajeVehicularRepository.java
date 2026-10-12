@@ -39,5 +39,9 @@ public interface ViajeVehicularRepository {
 
     void deleteById(UUID id);
 
+    boolean existsById(UUID id);
+
+    List<ViajeVehicular> findAllById(Iterable<UUID> ids);
+
     boolean existsByAsignacionVehicularId(UUID asignacionVehicularId);
 }

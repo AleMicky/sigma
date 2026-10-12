@@ -95,6 +95,18 @@ public class ViajeVehicularRepositoryAdapter implements ViajeVehicularRepository
     }
 
     @Override
+    public boolean existsById(UUID id) {
+        return springRepository.existsById(id);
+    }
+
+    @Override
+    public List<ViajeVehicular> findAllById(Iterable<UUID> ids) {
+        return springRepository.findAllById(ids).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public boolean existsByAsignacionVehicularId(UUID asignacionVehicularId) {
         return springRepository.existsByAsignacionVehicularId(asignacionVehicularId);
     }
