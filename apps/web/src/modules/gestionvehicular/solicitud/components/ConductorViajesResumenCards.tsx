@@ -69,7 +69,7 @@ const RESUMEN_CARDS: ResumenCardConfig[] = [
   },
   {
     estado: "EN_VIAJE",
-    label: "En Viaje / En Curso",
+    label: "En Viaje / Retorno",
     icon: Compass,
     getValue: (resumen) => resumen?.enViaje ?? 0,
     activeClass:
@@ -84,7 +84,7 @@ const RESUMEN_CARDS: ResumenCardConfig[] = [
   },
   {
     estado: "FINALIZADA",
-    label: "Finalizados / Retorno",
+    label: "Finalizados",
     icon: CheckCircle2,
     getValue: (resumen) => resumen?.finalizados ?? 0,
     activeClass:

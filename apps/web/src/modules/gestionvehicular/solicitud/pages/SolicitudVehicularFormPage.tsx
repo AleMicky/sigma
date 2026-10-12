@@ -1,13 +1,13 @@
-import { Loader2 } from "lucide-react"
-
 import { PageShell } from "@/shared/components/page-shell"
 import { Card } from "@/shared/components/ui/card"
 import { SolicitudVehicularFormErrorBanner } from "../components/form/SolicitudVehicularFormErrorBanner"
 import { SolicitudVehicularFormFooter } from "../components/form/SolicitudVehicularFormFooter"
 import { SolicitudVehicularFormHeader } from "../components/form/SolicitudVehicularFormHeader"
+import { SolicitudVehicularFormSkeleton } from "../components/form/SolicitudVehicularFormSkeleton"
 import { SolicitudVehicularGeneralSection } from "../components/form/SolicitudVehicularGeneralSection"
 import { SolicitudVehicularItinerarioSection } from "../components/form/SolicitudVehicularItinerarioSection"
 import { SolicitudVehicularNonEditableAlert } from "../components/form/SolicitudVehicularNonEditableAlert"
+import { SolicitudVehicularNotFoundAlert } from "../components/form/SolicitudVehicularNotFoundAlert"
 import { SolicitudVehicularResumenCard } from "../components/form/SolicitudVehicularResumenCard"
 import {
   SolicitudVehicularFormProvider,
@@ -32,25 +32,24 @@ function SolicitudVehicularFormContent() {
   const {
     isEditing,
     isLoading,
+    isError,
     isEditable,
     isSubmitting,
     solicitud,
     handleSubmit,
   } = useSolicitudVehicularFormContext()
 
+  // 1. Estado de carga con Skeleton para evitar parpadeos visuales (CLS)
   if (isEditing && isLoading) {
-    return (
-      <PageShell className="h-full min-h-0 w-full flex items-center justify-center p-8">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-sm font-medium">
-            Cargando datos de la solicitud vehicular...
-          </p>
-        </div>
-      </PageShell>
-    )
+    return <SolicitudVehicularFormSkeleton />
   }
 
+  // 2. Manejo de error cuando la solicitud no existe o la API falla
+  if (isEditing && (!solicitud || isError)) {
+    return <SolicitudVehicularNotFoundAlert />
+  }
+
+  // 3. Manejo de estado no editable (aprobada, cancelada, rechazada, etc.)
   if (isEditing && solicitud && !isEditable) {
     return <SolicitudVehicularNonEditableAlert estado={solicitud.estado} />
   }
@@ -70,7 +69,7 @@ function SolicitudVehicularFormContent() {
             <fieldset
               disabled={isSubmitting}
               aria-busy={isSubmitting}
-              className="contents disabled:pointer-events-none disabled:opacity-75 transition-opacity"
+              className="min-w-0 border-0 p-0 m-0 disabled:pointer-events-none disabled:opacity-75 transition-opacity"
             >
               {/* SECCIÓN 1: Clasificación y Solicitante */}
               <SolicitudVehicularGeneralSection />
@@ -90,3 +89,4 @@ function SolicitudVehicularFormContent() {
     </PageShell>
   )
 }
+

@@ -23,11 +23,9 @@ public class ViajeVehicular extends AuditableModel {
 
     private LocalDateTime fechaSalidaReal;
     private Long kilometrajeSalida;
-    private Integer nivelCombustibleSalida;
 
     private LocalDateTime fechaRetornoReal;
     private Long kilometrajeRetorno;
-    private Integer nivelCombustibleRetorno;
 
     private EstadoViajeVehicular estado;
 

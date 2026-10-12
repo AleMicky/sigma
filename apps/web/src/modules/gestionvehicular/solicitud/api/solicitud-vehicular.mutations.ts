@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { isApiError } from "@/shared/api"
 import { workflowKeys } from "@/modules/workflow/api/workflow.keys"
 
+import { viajeVehicularKeys } from "../../viaje-vehicular/api/viaje-vehicular.queries"
 import { solicitudVehicularKeys } from "./solicitud-vehicular.keys"
 import {
   createSolicitudVehicular,
@@ -154,6 +155,7 @@ export function useCompletarWorkflowSolicitudVehicular() {
       toast.success("Tarea de flujo completada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
       queryClient.invalidateQueries({ queryKey: workflowKeys.all })
+      queryClient.invalidateQueries({ queryKey: viajeVehicularKeys.all })
     },
     onError: (error) => {
       toast.error(

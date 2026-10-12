@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
@@ -61,7 +61,7 @@ export function useSolicitudVehicularForm({
     new Map()
   )
 
-  const registerEmpleado = (empleado?: Empleado | null) => {
+  const registerEmpleado = useCallback((empleado?: Empleado | null) => {
     if (empleado?.id) {
       setExtraEmpleados((prev) => {
         if (prev.has(empleado.id)) return prev
@@ -70,7 +70,7 @@ export function useSolicitudVehicularForm({
         return next
       })
     }
-  }
+  }, [])
 
   // 4. Catálogo: Tipos de solicitud vehicular
   const tiposQuery = useQuery(
@@ -197,6 +197,16 @@ export function useSolicitudVehicularForm({
         return
       }
 
+      const salidaTime = new Date(value.fechaSalida).getTime()
+      const retornoTime = new Date(value.fechaRetornoEstimada).getTime()
+
+      if (isNaN(salidaTime) || isNaN(retornoTime) || retornoTime <= salidaTime) {
+        setFormError(
+          "La fecha y hora de retorno estimada debe ser posterior a la fecha y hora de salida (no pueden coincidir)."
+        )
+        return
+      }
+
       try {
         const salidaIso = new Date(value.fechaSalida).toISOString()
         const retornoIso = new Date(value.fechaRetornoEstimada).toISOString()
@@ -282,26 +292,29 @@ export function useSolicitudVehicularForm({
   }, [isEditing, empleados, form])
 
   // Manejo de archivos
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files.length > 0) {
-      const filesArr = Array.from(e.target.files)
-      setSelectedFiles((prev) => [...prev, ...filesArr])
-      e.target.value = ""
-    }
-  }
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files.length > 0) {
+        const filesArr = Array.from(e.target.files)
+        setSelectedFiles((prev) => [...prev, ...filesArr])
+        e.target.value = ""
+      }
+    },
+    []
+  )
 
-  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(false)
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const filesArr = Array.from(e.dataTransfer.files)
       setSelectedFiles((prev) => [...prev, ...filesArr])
     }
-  }
+  }, [])
 
-  function removeFile(index: number) {
+  const removeFile = useCallback((index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
-  }
+  }, [])
 
   const isSubmitting =
     form.state.isSubmitting ||
@@ -315,18 +328,23 @@ export function useSolicitudVehicularForm({
     estadoNorm === "borrador" ||
     estadoNorm === "observado"
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    if (e) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-    form.handleSubmit()
-  }
+  const handleSubmit = useCallback(
+    (e?: React.FormEvent) => {
+      if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+      form.handleSubmit()
+    },
+    [form]
+  )
 
   return {
     isEditing,
     solicitud,
     isLoading: solicitudQuery.isLoading,
+    isError: solicitudQuery.isError,
+    error: solicitudQuery.error,
     isEditable,
     isSubmitting,
     form,

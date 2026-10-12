@@ -37,10 +37,8 @@ public class ViajeVehicularService {
             "asignacionVehicularId",
             "fechaSalidaReal",
             "kilometrajeSalida",
-            "nivelCombustibleSalida",
             "fechaRetornoReal",
             "kilometrajeRetorno",
-            "nivelCombustibleRetorno",
             "estado",
             "createdAt",
             "updatedAt"
@@ -90,10 +88,22 @@ public class ViajeVehicularService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<ViajeVehicularResponse> findByAsignacionVehicularIdOpt(UUID asignacionVehicularId) {
+        return repository.findByAsignacionVehicularId(asignacionVehicularId)
+                .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
     public ViajeVehicularResponse findBySolicitudVehicularId(UUID solicitudVehicularId) {
         return repository.findBySolicitudVehicularId(solicitudVehicularId)
                 .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Viaje de la solicitud vehicular", solicitudVehicularId));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ViajeVehicularResponse> findBySolicitudVehicularIdOpt(UUID solicitudVehicularId) {
+        return repository.findBySolicitudVehicularId(solicitudVehicularId)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -163,9 +173,6 @@ public class ViajeVehicularService {
 
         viaje.setFechaSalidaReal(dto.fechaSalidaReal() != null ? dto.fechaSalidaReal() : LocalDateTime.now());
         viaje.setKilometrajeSalida(dto.kilometrajeSalida());
-        if (dto.nivelCombustibleSalida() != null) {
-            viaje.setNivelCombustibleSalida(dto.nivelCombustibleSalida());
-        }
         viaje.setEstado(EstadoViajeVehicular.EN_CURSO);
 
         if (dto.observacion() != null && !dto.observacion().isBlank()) {
@@ -191,9 +198,6 @@ public class ViajeVehicularService {
 
         viaje.setFechaRetornoReal(dto.fechaRetornoReal() != null ? dto.fechaRetornoReal() : LocalDateTime.now());
         viaje.setKilometrajeRetorno(dto.kilometrajeRetorno());
-        if (dto.nivelCombustibleRetorno() != null) {
-            viaje.setNivelCombustibleRetorno(dto.nivelCombustibleRetorno());
-        }
         viaje.setEstado(EstadoViajeVehicular.FINALIZADO);
 
         if (dto.observacion() != null && !dto.observacion().isBlank()) {

@@ -49,7 +49,7 @@ export function SolicitudVehicularFilterToolbar({
   onClearAll,
   placeholder = "Buscar por número, motivo, solicitante o destino…",
   className,
-}: SolicitudVehicularFilterToolbarProps) {
+}: Readonly<SolicitudVehicularFilterToolbarProps>) {
   const selectedTipo = tiposSolicitud.find((t) => t.id === selectedTipoId)
   const hasActiveFilters = Boolean(
     searchQuery.trim() || selectedEstado || selectedTipoId

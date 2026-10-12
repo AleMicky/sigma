@@ -57,11 +57,6 @@ public class ViajeVehicularEntity extends BaseEntity {
     )
     private Long kilometrajeSalida;
 
-    @Column(
-            name = "nivel_combustible_salida"
-    )
-    private Integer nivelCombustibleSalida;
-
     // =========================
     // RETORNO
     // =========================
@@ -75,11 +70,6 @@ public class ViajeVehicularEntity extends BaseEntity {
             name = "kilometraje_retorno"
     )
     private Long kilometrajeRetorno;
-
-    @Column(
-            name = "nivel_combustible_retorno"
-    )
-    private Integer nivelCombustibleRetorno;
 
     // =========================
     // ESTADO

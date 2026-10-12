@@ -50,17 +50,48 @@ export function ConductorViajesPage() {
 
   const search = usePaginatedSearch({
     debounceMs: 300,
-    resetKey: selectedEstado,
   })
 
   const { target, isOpen, openAction, closeAction } =
     useWorkflowActionTarget<SolicitudVehicular>()
   const completarWorkflowMutation = useCompletarWorkflowSolicitudVehicular()
 
-  // Consulta global para tarjetas de métricas del conductor
+  // Consulta global optimizada para métricas del conductor mediante proyección select
   const allQuery = useQuery({
     ...solicitudVehicularQueries.list({ size: 1000, interfaz: "ConductorViajesPage" }),
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 60 * 3,
+    select: (data): ConductorViajesResumen => {
+      let porSalir = 0
+      let enViaje = 0
+      let finalizados = 0
+
+      for (const item of data.content) {
+        const estado = (item.estado || "").toUpperCase()
+        if (estado === "ASIGNADO" || estado === "APROBADO" || estado === "APROBADA") {
+          porSalir++
+        } else if (
+          estado === "EN_VIAJE" ||
+          estado === "EN_CURSO" ||
+          estado === "EN_PROCESO" ||
+          estado === "RETORNO"
+        ) {
+          enViaje++
+        } else if (
+          estado === "FINALIZADA" ||
+          estado === "FINALIZADO" ||
+          estado === "COMPLETADA"
+        ) {
+          finalizados++
+        }
+      }
+
+      return {
+        total: data.totalElements,
+        porSalir,
+        enViaje,
+        finalizados,
+      }
+    },
   })
 
   // Consulta filtrada según el estado seleccionado y paginación
@@ -69,9 +100,9 @@ export function ConductorViajesPage() {
     if (selectedEstado === "ASIGNADO") {
       estadoFilter = "ASIGNADO,APROBADO,APROBADA"
     } else if (selectedEstado === "EN_VIAJE") {
-      estadoFilter = "EN_VIAJE,EN_CURSO,EN_PROCESO"
+      estadoFilter = "EN_VIAJE,EN_CURSO,EN_PROCESO,RETORNO"
     } else if (selectedEstado === "FINALIZADA") {
-      estadoFilter = "FINALIZADA,FINALIZADO,COMPLETADA,RETORNO"
+      estadoFilter = "FINALIZADA,FINALIZADO,COMPLETADA"
     } else if (selectedEstado) {
       estadoFilter = selectedEstado
     }
@@ -96,58 +127,40 @@ export function ConductorViajesPage() {
   })
 
   const solicitudes = query.data?.content ?? []
-  const totalElements = allQuery.data?.totalElements ?? query.data?.totalElements ?? 0
+  const totalElements = allQuery.data?.total ?? query.data?.totalElements ?? 0
   const activeDetailItem =
     detailQuery.data ?? solicitudes.find((s) => s.id === selectedDetailId) ?? null
 
   useClampPage(search.page, search.setPage, query.data?.totalPages)
 
-  const resumen: ConductorViajesResumen = useMemo(() => {
-    const list = allQuery.data?.content ?? []
-    let porSalir = 0
-    let enViaje = 0
-    let finalizados = 0
+  const resumen = allQuery.data ?? null
 
-    for (const item of list) {
-      const estado = (item.estado || "").toUpperCase()
-      if (estado === "ASIGNADO" || estado === "APROBADO" || estado === "APROBADA") {
-        porSalir++
-      } else if (estado === "EN_VIAJE" || estado === "EN_CURSO" || estado === "EN_PROCESO") {
-        enViaje++
-      } else if (
-        estado === "FINALIZADA" ||
-        estado === "FINALIZADO" ||
-        estado === "COMPLETADA" ||
-        estado === "RETORNO"
-      ) {
-        finalizados++
-      }
-    }
-
-    return {
-      total: list.length,
-      porSalir,
-      enViaje,
-      finalizados,
-    }
-  }, [allQuery.data])
+  const { refetch: refetchQuery } = query
+  const { refetch: refetchAllQuery } = allQuery
+  const { refetch: refetchDetailQuery } = detailQuery
 
   const handleRefresh = useCallback(() => {
-    query.refetch()
-    allQuery.refetch()
+    refetchQuery()
+    refetchAllQuery()
     if (selectedDetailId) {
-      detailQuery.refetch()
+      refetchDetailQuery()
     }
-  }, [query, allQuery, detailQuery, selectedDetailId])
+  }, [refetchQuery, refetchAllQuery, refetchDetailQuery, selectedDetailId])
 
   const handleSelectEstado = useCallback((estado: string) => {
     setSelectedEstado((prev) => (prev === estado ? "" : (estado as EstadoFiltro)))
-  }, [])
+    search.setPage(0)
+  }, [search])
 
   const handleClearAll = useCallback(() => {
     search.setSearch("")
     setSelectedEstado("")
+    search.setPage(0)
   }, [search])
+
+  const handleViewDetail = useCallback((sol: SolicitudVehicular) => {
+    setSelectedDetailId(sol.id)
+  }, [])
 
   const handleActionSelect = useCallback(
     (
@@ -164,7 +177,7 @@ export function ConductorViajesPage() {
   const handleControlActivo = useCallback(
     (solicitud: SolicitudVehicular, hasControles?: boolean) => {
       const estado = (solicitud.estado || "").toUpperCase()
-      const isEnCurso = ["EN_CURSO", "EN_VIAJE", "EN_PROCESO"].includes(estado)
+      const isEnCurso = ["EN_CURSO", "EN_VIAJE", "EN_PROCESO", "RETORNO"].includes(estado)
 
       if (hasControles || isEnCurso) {
         setControlActivoHistorialItem(solicitud)
@@ -194,8 +207,8 @@ export function ConductorViajesPage() {
     if (!selectedEstado) return undefined
     const map: Record<string, string> = {
       ASIGNADO: "Por Salir (Asignados)",
-      EN_VIAJE: "En Viaje / En Curso",
-      FINALIZADA: "Finalizados / Retorno",
+      EN_VIAJE: "En Viaje / En Retorno",
+      FINALIZADA: "Finalizados",
     }
     return map[selectedEstado] ?? selectedEstado.replace(/_/g, " ")
   }, [selectedEstado])
@@ -319,8 +332,8 @@ export function ConductorViajesPage() {
                 <ConductorViajeListItem
                   key={solicitud.id}
                   solicitud={solicitud}
-                  onViewDetail={(sol) => setSelectedDetailId(sol.id)}
-                  onSelect={(sol) => setSelectedDetailId(sol.id)}
+                  onViewDetail={handleViewDetail}
+                  onSelect={handleViewDetail}
                   onControlActivo={handleControlActivo}
                   onActionSelect={handleActionSelect}
                   onTraceability={setTraceabilityItem}
@@ -329,7 +342,7 @@ export function ConductorViajesPage() {
             </div>
 
             {/* Paginación */}
-            {query.data && (query.data.totalElements > 10 || query.data.totalPages > 1) && (
+            {query.data && query.data.totalPages > 1 && (
               <Pagination
                 page={query.data}
                 onPageChange={search.setPage}
@@ -368,7 +381,6 @@ export function ConductorViajesPage() {
             id: target.item.id,
             payload: { variables },
           })
-          handleRefresh()
         }}
         onSuccess={closeAction}
       />

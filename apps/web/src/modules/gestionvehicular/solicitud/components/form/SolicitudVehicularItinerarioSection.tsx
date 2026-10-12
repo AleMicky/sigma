@@ -36,6 +36,9 @@ function calculateDuration(salida?: string, retorno?: string): { text: string; i
   if (diffMs < 0) {
     return { text: "La fecha de retorno no puede ser anterior a la salida", isNegative: true }
   }
+  if (diffMs === 0) {
+    return { text: "La fecha y hora de retorno no puede ser igual a la de salida", isNegative: true }
+  }
 
   const diffMinutes = Math.floor(diffMs / (1000 * 60))
   const days = Math.floor(diffMinutes / (24 * 60))
@@ -238,11 +241,32 @@ export function SolicitudVehicularItinerarioSection() {
                   }}
                 </form.Field>
 
-                <form.Field name="fechaRetornoEstimada">
+                <form.Field
+                  name="fechaRetornoEstimada"
+                  validators={{
+                    onChangeListenTo: ["fechaSalida"],
+                    onChange: ({ value, fieldApi }) => {
+                      const salidaVal = fieldApi.form.getFieldValue("fechaSalida")
+                      if (!salidaVal || !value) return undefined
+                      const salida = new Date(salidaVal).getTime()
+                      const retorno = new Date(value).getTime()
+                      if (!isNaN(salida) && !isNaN(retorno)) {
+                        if (retorno === salida) {
+                          return "La fecha y hora de retorno no puede ser igual a la de salida"
+                        }
+                        if (retorno < salida) {
+                          return "La fecha de retorno no puede ser anterior a la de salida"
+                        }
+                      }
+                      return undefined
+                    },
+                  }}
+                >
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {(field: any) => {
                     const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
+                      (field.state.meta.isTouched || Boolean(field.state.value)) &&
+                      !field.state.meta.isValid
                     return (
                       <Field
                         data-invalid={isInvalid || undefined}

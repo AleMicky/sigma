@@ -67,7 +67,7 @@ export function SolicitudVehicularListItem({
   onlyWorkflowActionsOnBorrador = false,
   showWorkflowActions = true,
   className,
-}: SolicitudVehicularListItemProps) {
+}: Readonly<SolicitudVehicularListItemProps>) {
   const estadoNorm = (solicitud.estado ?? "").trim().toLowerCase()
   const isBorrador = estadoNorm === "borrador" || estadoNorm === "pendiente"
   const isObservado = estadoNorm === "observado"
@@ -170,22 +170,6 @@ export function SolicitudVehicularListItem({
 
         {/* Acciones Rápidas Superior */}
         <div className="flex items-center gap-1 flex-wrap justify-end">
-          {onAssign && (
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation()
-                onAssign(solicitud)
-              }}
-              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 shadow-2xs cursor-pointer transition-all"
-              title="Gestionar asignación vehicular"
-            >
-              <KeyRound className="size-3 text-amber-600 dark:text-amber-400" />
-              <span>{vehiculo ? "Editar Asignación" : "Asignar"}</span>
-            </Button>
-          )}
 
           {onTraceability && (
             <Button
@@ -346,11 +330,29 @@ export function SolicitudVehicularListItem({
                     <Car className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
                     Unidad Asignada
                   </span>
-                  {asignacion?.fechaAsignacion && (
-                    <span className="text-muted-foreground text-[9.5px]">
-                      {formatDate(asignacion.fechaAsignacion)}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {asignacion?.fechaAsignacion && (
+                      <span className="text-muted-foreground text-[9.5px]">
+                        {formatDate(asignacion.fechaAsignacion)}
+                      </span>
+                    )}
+                    {onAssign && (
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onAssign(solicitud)
+                        }}
+                        className="h-5 px-1.5 text-[10px] font-medium text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200 hover:bg-amber-500/15 cursor-pointer"
+                        title="Editar asignación vehicular"
+                      >
+                        <Pencil className="size-2.5 mr-0.5" />
+                        <span>Editar</span>
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between gap-2">
