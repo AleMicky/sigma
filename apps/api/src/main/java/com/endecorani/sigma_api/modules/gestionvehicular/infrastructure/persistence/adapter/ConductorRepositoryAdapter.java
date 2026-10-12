@@ -30,12 +30,18 @@ public class ConductorRepositoryAdapter implements ConductorRepository {
 
     @Override
     public Page<Conductor> search(String search, Pageable pageable) {
-        return springRepository.search(search, pageable).map(mapper::toDomain);
+        String searchPattern = (search != null && !search.isBlank())
+                ? "%" + search.toLowerCase().trim() + "%"
+                : null;
+        return springRepository.search(searchPattern, pageable).map(mapper::toDomain);
     }
 
     @Override
     public Page<Conductor> searchWithFilters(String search, String categoria, EstadoConductor estado, Boolean activo, Pageable pageable) {
-        return springRepository.searchWithFilters(search, categoria, estado, activo, pageable).map(mapper::toDomain);
+        String searchPattern = (search != null && !search.isBlank())
+                ? "%" + search.toLowerCase().trim() + "%"
+                : null;
+        return springRepository.searchWithFilters(searchPattern, categoria, estado, activo, pageable).map(mapper::toDomain);
     }
 
     @Override
