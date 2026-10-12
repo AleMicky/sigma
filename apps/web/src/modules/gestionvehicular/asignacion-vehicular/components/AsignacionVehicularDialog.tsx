@@ -57,7 +57,7 @@ export function AsignacionVehicularDialog({
   onOpenChange,
   solicitud,
   onSuccess,
-}: AsignacionVehicularDialogProps) {
+}: Readonly<AsignacionVehicularDialogProps>) {
   const [isEditing, setIsEditing] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
 
@@ -424,7 +424,7 @@ function AsignacionVehicularForm({
   isSubmitting,
   onCancel,
   onSubmit,
-}: AsignacionVehicularFormProps) {
+}: Readonly<AsignacionVehicularFormProps>) {
   const [activoId, setActivoId] = React.useState(asignacionActual?.activoId || "")
   const [conductorId, setConductorId] = React.useState(asignacionActual?.conductorId || "")
   const [asignadoPorId, setAsignadoPorId] = React.useState(

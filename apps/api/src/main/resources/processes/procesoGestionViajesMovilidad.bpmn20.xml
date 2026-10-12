@@ -107,6 +107,8 @@
       </extensionElements>
     </userTask>
 
+    <exclusiveGateway id="decisionAsignacion" name="¿Aceptar asignación?" default="flujo_asignar_salida"></exclusiveGateway>
+
     <!-- ESTADO EN CURSO: REGISTRAR SALIDA -->
     <userTask
       id="registrarSalida"
@@ -145,7 +147,7 @@
 
     <!-- TRANSICIONES -->
     <sequenceFlow id="flujo_inicio_borrador" sourceRef="inicio" targetRef="borradorSolicitud"></sequenceFlow>
-    <sequenceFlow id="flujo_enviar" name="Enviar a revisión" sourceRef="borradorSolicitud"
+    <sequenceFlow id="flujo_enviar" name="Enviar Solicitud" sourceRef="borradorSolicitud"
       targetRef="revisarSolicitud"></sequenceFlow>
     <sequenceFlow id="flujo_revisar_decision" sourceRef="revisarSolicitud" targetRef="decision"></sequenceFlow>
     <sequenceFlow id="flujo_aprobar" name="Aprobar" sourceRef="decision"
@@ -160,8 +162,16 @@
       targetRef="corregirSolicitud"></sequenceFlow>
     <sequenceFlow id="flujo_corregir_revisar" name="Reenviar a revisión"
       sourceRef="corregirSolicitud" targetRef="revisarSolicitud"></sequenceFlow>
-    <sequenceFlow id="flujo_asignar_salida" name="Asignar vehículo y autorizar"
-      sourceRef="asignarVehiculoConductor" targetRef="registrarSalida"></sequenceFlow>
+    <sequenceFlow id="flujo_asignar_decision" sourceRef="asignarVehiculoConductor"
+      targetRef="decisionAsignacion"></sequenceFlow>
+    <sequenceFlow id="flujo_asignar_salida" name="Aceptar" sourceRef="decisionAsignacion"
+      targetRef="registrarSalida">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${accion == 'ACEPTAR'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flujo_asignar_rechazar" name="Rechazar" sourceRef="decisionAsignacion"
+      targetRef="rechazado">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${accion == 'RECHAZAR'}]]></conditionExpression>
+    </sequenceFlow>
     <sequenceFlow id="flujo_salida_retorno" name="Registrar salida" sourceRef="registrarSalida"
       targetRef="registrarRetorno"></sequenceFlow>
     <sequenceFlow id="flujo_retorno_finalizado" name="Registrar retorno y finalizar"
@@ -192,6 +202,9 @@
       <bpmndi:BPMNShape bpmnElement="asignarVehiculoConductor"
         id="BPMNShape_asignarVehiculoConductor">
         <omgdc:Bounds height="80.0" width="160.0" x="640.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="decisionAsignacion" id="BPMNShape_decisionAsignacion">
+        <omgdc:Bounds height="40.0" width="40.0" x="810.0" y="220.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="registrarSalida" id="BPMNShape_registrarSalida">
         <omgdc:Bounds height="80.0" width="130.0" x="860.0" y="200.0"></omgdc:Bounds>
@@ -231,9 +244,18 @@
         <omgdi:waypoint x="415.0" y="380.0"></omgdi:waypoint>
         <omgdi:waypoint x="415.0" y="280.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flujo_asignar_salida" id="BPMNEdge_flujo_asignar_salida">
+      <bpmndi:BPMNEdge bpmnElement="flujo_asignar_decision" id="BPMNEdge_flujo_asignar_decision">
         <omgdi:waypoint x="800.0" y="240.0"></omgdi:waypoint>
+        <omgdi:waypoint x="810.0" y="240.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_asignar_salida" id="BPMNEdge_flujo_asignar_salida">
+        <omgdi:waypoint x="850.0" y="240.0"></omgdi:waypoint>
         <omgdi:waypoint x="860.0" y="240.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_asignar_rechazar" id="BPMNEdge_flujo_asignar_rechazar">
+        <omgdi:waypoint x="830.0" y="220.0"></omgdi:waypoint>
+        <omgdi:waypoint x="830.0" y="124.0"></omgdi:waypoint>
+        <omgdi:waypoint x="564.0" y="124.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flujo_salida_retorno" id="BPMNEdge_flujo_salida_retorno">
         <omgdi:waypoint x="990.0" y="240.0"></omgdi:waypoint>
