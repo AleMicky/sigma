@@ -144,19 +144,21 @@ function getFlotaEmptyMessage(isLoading: boolean, totalCount: number): string {
   return "No se encontraron vehículos coincidentes."
 }
 
+interface SelectedVehiculoCardProps {
+  selectedInfo: SelectedVehicleData
+  disabled?: boolean
+  ariaInvalid?: boolean
+  className?: string
+  onClear: () => void
+}
+
 function SelectedVehiculoCard({
   selectedInfo,
   disabled,
   ariaInvalid,
   className,
   onClear,
-}: {
-  selectedInfo: SelectedVehicleData
-  disabled?: boolean
-  ariaInvalid?: boolean
-  className?: string
-  onClear: () => void
-}) {
+}: Readonly<SelectedVehiculoCardProps>) {
   return (
     <div
       className={cn(
@@ -222,7 +224,11 @@ function SelectedVehiculoCard({
   )
 }
 
-function FlotaVehiculoItemRow({ item }: { item: FlotaVehiculo }) {
+interface FlotaVehiculoItemRowProps {
+  item: FlotaVehiculo
+}
+
+function FlotaVehiculoItemRow({ item }: Readonly<FlotaVehiculoItemRowProps>) {
   const veh = item.vehiculo
   if (!veh) return null
   const placa = extractPlaca(veh.descripcion)
@@ -275,7 +281,11 @@ function FlotaVehiculoItemRow({ item }: { item: FlotaVehiculo }) {
   )
 }
 
-function GeneralActivoItemRow({ item }: { item: Activo }) {
+interface GeneralActivoItemRowProps {
+  item: Activo
+}
+
+function GeneralActivoItemRow({ item }: Readonly<GeneralActivoItemRowProps>) {
   const placa = extractPlaca(item.descripcion)
 
   return (
@@ -350,7 +360,7 @@ function FlotaVehiculosCombobox({
   isLoading,
   isFetching,
   onRefresh,
-}: FlotaVehiculosComboboxProps) {
+}: Readonly<FlotaVehiculosComboboxProps>) {
   const handleRefresh = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -454,7 +464,7 @@ function GeneralActivosCombobox({
   isLoading,
   isFetching,
   onRefresh,
-}: GeneralActivosComboboxProps) {
+}: Readonly<GeneralActivosComboboxProps>) {
   const handleRefresh = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -535,7 +545,7 @@ export function VehiculoResponsableCombobox({
   id,
   name,
   "aria-invalid": ariaInvalid,
-}: VehiculoResponsableComboboxProps) {
+}: Readonly<VehiculoResponsableComboboxProps>) {
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 250)
 
