@@ -110,6 +110,7 @@ export const routes = {
     flotas: "/gestion-vehicular/flotas",
     misViajes: "/gestion-vehicular/mis-viajes",
     calendarioReservas: "/gestion-vehicular/calendario-reservas",
+    bitacora: "/gestion-vehicular/bitacora",
     controlesActivos: {
       nuevo: "/gestion-vehicular/controles-activos/nuevo",
     },

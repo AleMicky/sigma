@@ -1,6 +1,7 @@
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
+  BookOpen,
   Boxes,
   Briefcase,
   Building2,
@@ -109,6 +110,7 @@ function inferFallbackIcon(route?: string | null, title?: string, code?: string)
   if (target.includes("menu")) return FolderTree
   if (target.includes("parametro") || target.includes("config") || target.includes("gestion")) return Settings2
   if (target.includes("catalogo")) return LayoutGrid
+  if (target.includes("bitacora") || target.includes("libro")) return BookOpen
   if (target.includes("reporte") || target.includes("consulta") || target.includes("documento")) return FileSpreadsheet
   if (target.includes("vehicul") || target.includes("conductor") || target.includes("flota") || target.includes("auto")) return Truck
 

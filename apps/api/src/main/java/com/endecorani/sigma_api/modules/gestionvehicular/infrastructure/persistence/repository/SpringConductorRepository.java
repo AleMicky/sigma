@@ -40,15 +40,15 @@ public interface SpringConductorRepository extends JpaRepository<ConductorEntity
         FROM ConductorEntity c
         LEFT JOIN com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity ve ON c.empleadoId = ve.empleadoId
         WHERE (:search IS NULL 
-            OR LOWER(ve.codigo) LIKE LOWER(CONCAT('%', :search, '%')) 
-            OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(ve.codigo) LIKE :search 
+            OR LOWER(ve.nombreCompleto) LIKE :search
             OR EXISTS (
                 SELECT 1 
                 FROM com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity cl
                 WHERE cl.conductorId = c.id
                   AND (
-                      LOWER(cl.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
-                      OR LOWER(cl.categoriaLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+                      LOWER(cl.numeroLicencia) LIKE :search
+                      OR LOWER(cl.categoriaLicencia) LIKE :search
                   )
             ))
           AND (:categoria IS NULL OR EXISTS (
@@ -72,17 +72,18 @@ public interface SpringConductorRepository extends JpaRepository<ConductorEntity
         SELECT DISTINCT c
         FROM ConductorEntity c
         LEFT JOIN com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity ve ON c.empleadoId = ve.empleadoId
-        WHERE LOWER(ve.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
-           OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%'))
+        WHERE (:search IS NULL
+           OR LOWER(ve.codigo) LIKE :search
+           OR LOWER(ve.nombreCompleto) LIKE :search
            OR EXISTS (
                SELECT 1 
                FROM com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity cl
                WHERE cl.conductorId = c.id
                  AND (
-                     LOWER(cl.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
-                     OR LOWER(cl.categoriaLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+                     LOWER(cl.numeroLicencia) LIKE :search
+                     OR LOWER(cl.categoriaLicencia) LIKE :search
                  )
-           )
+           ))
     """)
     Page<ConductorEntity> search(@Param("search") String search, Pageable pageable);
 

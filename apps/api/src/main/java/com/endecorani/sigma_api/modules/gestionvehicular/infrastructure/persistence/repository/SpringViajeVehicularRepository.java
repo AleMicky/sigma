@@ -87,4 +87,23 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
             @Param("estado") EstadoViajeVehicular estado,
             Pageable pageable
     );
+
+    @Query("""
+        SELECT v
+        FROM ViajeVehicularEntity v
+        JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.AsignacionVehicularEntity a ON v.asignacionVehicularId = a.id
+        WHERE a.activoId = :activoId
+          AND (:conductorId IS NULL OR a.conductorId = :conductorId)
+          AND (
+            (v.fechaSalidaReal IS NOT NULL AND v.fechaSalidaReal >= :fechaDesde AND v.fechaSalidaReal <= :fechaHasta)
+            OR (v.fechaSalidaReal IS NULL AND a.fechaAsignacion >= :fechaDesde AND a.fechaAsignacion <= :fechaHasta)
+          )
+        ORDER BY COALESCE(v.fechaSalidaReal, a.fechaAsignacion) ASC
+    """)
+    List<ViajeVehicularEntity> findBitacoraViajes(
+            @Param("activoId") UUID activoId,
+            @Param("fechaDesde") java.time.LocalDateTime fechaDesde,
+            @Param("fechaHasta") java.time.LocalDateTime fechaHasta,
+            @Param("conductorId") UUID conductorId
+    );
 }

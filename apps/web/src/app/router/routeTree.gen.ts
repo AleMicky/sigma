@@ -55,6 +55,7 @@ import { Route as DashboardActivosActivoIdEditarRouteImport } from './../../rout
 import { Route as DashboardActivosCatalogoIndexRouteImport } from './../../routes/_dashboard/activos/catalogo/index'
 import { Route as DashboardActivosCatalogoActivoIdRouteImport } from './../../routes/_dashboard/activos/catalogo/$activoId'
 import { Route as DashboardGestionVehicularAsignacionesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/asignaciones/index'
+import { Route as DashboardGestionVehicularBitacoraIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/bitacora/index'
 import { Route as DashboardGestionVehicularCalendarioReservasIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/calendario-reservas/index'
 import { Route as DashboardGestionVehicularConductoresIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/conductores/index'
 import { Route as DashboardGestionVehicularControlesActivosNuevoRouteImport } from './../../routes/_dashboard/gestion-vehicular/controles-activos/nuevo'
@@ -363,6 +364,12 @@ const DashboardGestionVehicularAsignacionesIndexRoute =
     path: '/asignaciones/',
     getParentRoute: () => DashboardGestionVehicularRouteRoute,
   } as any)
+const DashboardGestionVehicularBitacoraIndexRoute =
+  DashboardGestionVehicularBitacoraIndexRouteImport.update({
+    id: '/bitacora/',
+    path: '/bitacora/',
+    getParentRoute: () => DashboardGestionVehicularRouteRoute,
+  } as any)
 const DashboardGestionVehicularCalendarioReservasIndexRoute =
   DashboardGestionVehicularCalendarioReservasIndexRouteImport.update({
     id: '/calendario-reservas/',
@@ -665,6 +672,7 @@ export interface FileRoutesByFullPath {
   '/activos/$activoId/': typeof DashboardActivosActivoIdIndexRoute
   '/activos/catalogo/': typeof DashboardActivosCatalogoIndexRoute
   '/gestion-vehicular/asignaciones/': typeof DashboardGestionVehicularAsignacionesIndexRoute
+  '/gestion-vehicular/bitacora/': typeof DashboardGestionVehicularBitacoraIndexRoute
   '/gestion-vehicular/calendario-reservas/': typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   '/gestion-vehicular/conductores/': typeof DashboardGestionVehicularConductoresIndexRoute
   '/gestion-vehicular/flotas/': typeof DashboardGestionVehicularFlotasIndexRoute
@@ -735,6 +743,7 @@ export interface FileRoutesByTo {
   '/activos/$activoId': typeof DashboardActivosActivoIdIndexRoute
   '/activos/catalogo': typeof DashboardActivosCatalogoIndexRoute
   '/gestion-vehicular/asignaciones': typeof DashboardGestionVehicularAsignacionesIndexRoute
+  '/gestion-vehicular/bitacora': typeof DashboardGestionVehicularBitacoraIndexRoute
   '/gestion-vehicular/calendario-reservas': typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   '/gestion-vehicular/conductores': typeof DashboardGestionVehicularConductoresIndexRoute
   '/gestion-vehicular/flotas': typeof DashboardGestionVehicularFlotasIndexRoute
@@ -825,6 +834,7 @@ export interface FileRoutesById {
   '/_dashboard/activos/$activoId/': typeof DashboardActivosActivoIdIndexRoute
   '/_dashboard/activos/catalogo/': typeof DashboardActivosCatalogoIndexRoute
   '/_dashboard/gestion-vehicular/asignaciones/': typeof DashboardGestionVehicularAsignacionesIndexRoute
+  '/_dashboard/gestion-vehicular/bitacora/': typeof DashboardGestionVehicularBitacoraIndexRoute
   '/_dashboard/gestion-vehicular/calendario-reservas/': typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   '/_dashboard/gestion-vehicular/conductores/': typeof DashboardGestionVehicularConductoresIndexRoute
   '/_dashboard/gestion-vehicular/flotas/': typeof DashboardGestionVehicularFlotasIndexRoute
@@ -915,6 +925,7 @@ export interface FileRouteTypes {
     | '/activos/$activoId/'
     | '/activos/catalogo/'
     | '/gestion-vehicular/asignaciones/'
+    | '/gestion-vehicular/bitacora/'
     | '/gestion-vehicular/calendario-reservas/'
     | '/gestion-vehicular/conductores/'
     | '/gestion-vehicular/flotas/'
@@ -985,6 +996,7 @@ export interface FileRouteTypes {
     | '/activos/$activoId'
     | '/activos/catalogo'
     | '/gestion-vehicular/asignaciones'
+    | '/gestion-vehicular/bitacora'
     | '/gestion-vehicular/calendario-reservas'
     | '/gestion-vehicular/conductores'
     | '/gestion-vehicular/flotas'
@@ -1074,6 +1086,7 @@ export interface FileRouteTypes {
     | '/_dashboard/activos/$activoId/'
     | '/_dashboard/activos/catalogo/'
     | '/_dashboard/gestion-vehicular/asignaciones/'
+    | '/_dashboard/gestion-vehicular/bitacora/'
     | '/_dashboard/gestion-vehicular/calendario-reservas/'
     | '/_dashboard/gestion-vehicular/conductores/'
     | '/_dashboard/gestion-vehicular/flotas/'
@@ -1437,6 +1450,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardGestionVehicularAsignacionesIndexRouteImport
       parentRoute: typeof DashboardGestionVehicularRouteRoute
     }
+    '/_dashboard/gestion-vehicular/bitacora/': {
+      id: '/_dashboard/gestion-vehicular/bitacora/'
+      path: '/bitacora'
+      fullPath: '/gestion-vehicular/bitacora/'
+      preLoaderRoute: typeof DashboardGestionVehicularBitacoraIndexRouteImport
+      parentRoute: typeof DashboardGestionVehicularRouteRoute
+    }
     '/_dashboard/gestion-vehicular/calendario-reservas/': {
       id: '/_dashboard/gestion-vehicular/calendario-reservas/'
       path: '/calendario-reservas'
@@ -1786,6 +1806,7 @@ interface DashboardGestionVehicularRouteRouteChildren {
   DashboardGestionVehicularControlesActivosNuevoRoute: typeof DashboardGestionVehicularControlesActivosNuevoRoute
   DashboardGestionVehicularSolicitudesNuevaRoute: typeof DashboardGestionVehicularSolicitudesNuevaRoute
   DashboardGestionVehicularAsignacionesIndexRoute: typeof DashboardGestionVehicularAsignacionesIndexRoute
+  DashboardGestionVehicularBitacoraIndexRoute: typeof DashboardGestionVehicularBitacoraIndexRoute
   DashboardGestionVehicularCalendarioReservasIndexRoute: typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   DashboardGestionVehicularConductoresIndexRoute: typeof DashboardGestionVehicularConductoresIndexRoute
   DashboardGestionVehicularFlotasIndexRoute: typeof DashboardGestionVehicularFlotasIndexRoute
@@ -1804,6 +1825,8 @@ const DashboardGestionVehicularRouteRouteChildren: DashboardGestionVehicularRout
       DashboardGestionVehicularSolicitudesNuevaRoute,
     DashboardGestionVehicularAsignacionesIndexRoute:
       DashboardGestionVehicularAsignacionesIndexRoute,
+    DashboardGestionVehicularBitacoraIndexRoute:
+      DashboardGestionVehicularBitacoraIndexRoute,
     DashboardGestionVehicularCalendarioReservasIndexRoute:
       DashboardGestionVehicularCalendarioReservasIndexRoute,
     DashboardGestionVehicularConductoresIndexRoute:

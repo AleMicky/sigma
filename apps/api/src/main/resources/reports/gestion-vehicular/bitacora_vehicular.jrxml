@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport name="bitacora_vehicular" language="java" orientation="Landscape" pageWidth="792" pageHeight="612" columnWidth="752" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="c0000001-0000-4000-a000-000000000001">
+	<parameter name="LOGO_EMPRESA" class="java.lang.Object"/>
+	<parameter name="TITULO_REPORTE" class="java.lang.String"/>
+	<parameter name="VEHICULO_TIPO" class="java.lang.String"/>
+	<parameter name="VEHICULO_NOMBRE" class="java.lang.String"/>
+	<parameter name="VEHICULO_PLACA" class="java.lang.String"/>
+	<parameter name="ANIO" class="java.lang.String"/>
+	<parameter name="MES" class="java.lang.String"/>
+	<parameter name="PERIODO_TEXTO" class="java.lang.String"/>
+	<parameter name="CONDUCTOR_FILTRO" class="java.lang.String"/>
+	<parameter name="TOTAL_KM" class="java.lang.String"/>
+	<parameter name="TOTAL_LITROS" class="java.lang.String"/>
+	<parameter name="TOTAL_IMPORTE" class="java.lang.String"/>
+	<parameter name="RENDIMIENTO" class="java.lang.String"/>
+	<parameter name="PROXIMO_MANTENIMIENTO_KM" class="java.lang.String"/>
+
+	<field name="id" class="java.util.UUID"/>
+	<field name="dia" class="java.lang.Integer"/>
+	<field name="diaSemana" class="java.lang.String"/>
+	<field name="tipoRegistro" class="java.lang.String"/>
+	<field name="kmSalida" class="java.lang.Long"/>
+	<field name="kmLlegada" class="java.lang.Long"/>
+	<field name="kmRecorrido" class="java.lang.Long"/>
+	<field name="descripcionTrabajo" class="java.lang.String"/>
+	<field name="solicitudNumero" class="java.lang.String"/>
+	<field name="combustibleFactura" class="java.lang.String"/>
+	<field name="combustibleLitros" class="java.math.BigDecimal"/>
+	<field name="combustibleImporte" class="java.math.BigDecimal"/>
+	<field name="supervisorNombre" class="java.lang.String"/>
+	<field name="supervisorVoBo" class="java.lang.Boolean"/>
+	<field name="observaciones" class="java.lang.String"/>
+	<field name="conductorNombre" class="java.lang.String"/>
+	<field name="conductorLicencia" class="java.lang.String"/>
+
+	<title height="90">
+		<!-- Contenedor Principal Cabecera -->
+		<element kind="rectangle" x="0" y="0" width="752" height="50" backcolor="#FFFFFF" mode="Opaque" uuid="c0000001-0000-4000-a000-000000000002">
+			<pen lineWidth="0.75" lineColor="#334155"/>
+		</element>
+
+		<!-- Logo Empresa -->
+		<element kind="image" x="5" y="4" width="130" height="42" scaleImage="RetainShape" hImageAlign="Left" vImageAlign="Middle" uuid="c0000001-0000-4000-a000-000000000003">
+			<expression><![CDATA[$P{LOGO_EMPRESA}]]></expression>
+		</element>
+
+		<!-- Título Central de la Bitácora -->
+		<element kind="textField" x="140" y="8" width="370" height="22" forecolor="#0F172A" fontName="SansSerif" fontSize="13" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000004">
+			<expression><![CDATA[$P{TITULO_REPORTE} != null ? $P{TITULO_REPORTE} : "BITACORA MENSUAL DE VEHICULOS"]]></expression>
+		</element>
+		<element kind="staticText" x="140" y="30" width="370" height="14" forecolor="#0284C7" fontName="SansSerif" fontSize="8" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000005">
+			<text><![CDATA[ENDE CORANI S.A. - SISTEMA INTEGRADO DE GESTIÓN VEHICULAR]]></text>
+		</element>
+
+		<!-- Cuadro Superior Derecho: AÑO y MES -->
+		<element kind="rectangle" x="515" y="0" width="237" height="50" backcolor="#F8FAFC" mode="Opaque" uuid="c0000001-0000-4000-a000-000000000006">
+			<pen lineWidth="0.75" lineColor="#334155"/>
+		</element>
+		<element kind="staticText" x="520" y="6" width="40" height="16" forecolor="#1E293B" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000007">
+			<text><![CDATA[AÑO:]]></text>
+		</element>
+		<element kind="textField" x="560" y="6" width="60" height="16" forecolor="#0F172A" fontName="SansSerif" fontSize="9" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000008">
+			<expression><![CDATA[$P{ANIO}]]></expression>
+		</element>
+		<element kind="staticText" x="625" y="6" width="35" height="16" forecolor="#1E293B" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000009">
+			<text><![CDATA[MES:]]></text>
+		</element>
+		<element kind="textField" x="660" y="6" width="85" height="16" forecolor="#0284C7" fontName="SansSerif" fontSize="9" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000010">
+			<expression><![CDATA[$P{MES}]]></expression>
+		</element>
+		<element kind="staticText" x="520" y="28" width="60" height="14" forecolor="#475569" fontName="SansSerif" fontSize="7" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000011">
+			<text><![CDATA[PERIODO:]]></text>
+		</element>
+		<element kind="textField" x="580" y="28" width="165" height="14" forecolor="#334155" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000012">
+			<expression><![CDATA[$P{PERIODO_TEXTO}]]></expression>
+		</element>
+
+		<!-- Sub-barra con Datos de Vehículo y Placa -->
+		<element kind="rectangle" x="0" y="54" width="752" height="28" backcolor="#F1F5F9" mode="Opaque" uuid="c0000001-0000-4000-a000-000000000013">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="staticText" x="8" y="60" width="62" height="16" forecolor="#1E293B" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000014">
+			<text><![CDATA[VEHÍCULO:]]></text>
+		</element>
+		<element kind="textField" x="70" y="60" width="220" height="16" forecolor="#0F172A" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000015">
+			<expression><![CDATA[$P{VEHICULO_TIPO} + " (" + $P{VEHICULO_NOMBRE} + ")"]]></expression>
+		</element>
+		<element kind="staticText" x="300" y="60" width="45" height="16" forecolor="#1E293B" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000016">
+			<text><![CDATA[PLACA:]]></text>
+		</element>
+		<element kind="textField" x="348" y="60" width="100" height="16" forecolor="#0284C7" fontName="SansSerif" fontSize="9" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000017">
+			<expression><![CDATA[$P{VEHICULO_PLACA}]]></expression>
+		</element>
+		<element kind="staticText" x="460" y="60" width="80" height="16" forecolor="#1E293B" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000018">
+			<text><![CDATA[CONDUCTOR:]]></text>
+		</element>
+		<element kind="textField" x="542" y="60" width="200" height="16" forecolor="#0F172A" fontName="SansSerif" fontSize="8" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000019">
+			<expression><![CDATA[$P{CONDUCTOR_FILTRO}]]></expression>
+		</element>
+	</title>
+
+	<!-- Encabezados de Columnas de la Tabla (idéntico al impreso) -->
+	<columnHeader height="32">
+		<!-- Bloque General Cabecera -->
+		<element kind="rectangle" x="0" y="0" width="752" height="32" backcolor="#E2E8F0" mode="Opaque" uuid="c0000001-0000-4000-a000-000000000020">
+			<pen lineWidth="0.5" lineColor="#475569"/>
+		</element>
+
+		<!-- DIA -->
+		<element kind="staticText" x="0" y="0" width="28" height="32" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000021">
+			<text><![CDATA[DÍA]]></text>
+		</element>
+		<element kind="line" x="28" y="0" width="0" height="32" uuid="c0000001-0000-4000-a000-000000000022">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- KM SALIDA -->
+		<element kind="staticText" x="28" y="0" width="54" height="32" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000023">
+			<text><![CDATA[KM.
+SALIDA]]></text>
+		</element>
+		<element kind="line" x="82" y="0" width="0" height="32" uuid="c0000001-0000-4000-a000-000000000024">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- KM LLEGADA -->
+		<element kind="staticText" x="82" y="0" width="54" height="32" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000025">
+			<text><![CDATA[KM.
+LLEGADA]]></text>
+		</element>
+		<element kind="line" x="136" y="0" width="0" height="32" uuid="c0000001-0000-4000-a000-000000000026">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- KM RECORRIDO -->
+		<element kind="staticText" x="136" y="0" width="42" height="32" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000027">
+			<text><![CDATA[KM.
+REC.]]></text>
+		</element>
+		<element kind="line" x="178" y="0" width="0" height="32" uuid="c0000001-0000-4000-a000-000000000028">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- DESCRIPCION TRABAJO -->
+		<element kind="staticText" x="178" y="0" width="150" height="32" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000029">
+			<text><![CDATA[DESCRIPCIÓN TRABAJO / RUTA]]></text>
+		</element>
+		<element kind="line" x="328" y="0" width="0" height="32" uuid="c0000001-0000-4000-a000-000000000030">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- COMBUSTIBLE (Agrupador) -->
+		<element kind="staticText" x="328" y="0" width="134" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000031">
+			<text><![CDATA[COMBUSTIBLE]]></text>
+		</element>
+		<element kind="line" x="328" y="15" width="134" height="0" uuid="c0000001-0000-4000-a000-000000000032">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="staticText" x="328" y="16" width="50" height="16" forecolor="#334155" fontName="SansSerif" fontSize="6" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000033">
+			<text><![CDATA[No. FACTURA]]></text>
+		</element>
+		<element kind="line" x="378" y="15" width="0" height="17" uuid="c0000001-0000-4000-a000-000000000034">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="staticText" x="378" y="16" width="42" height="16" forecolor="#334155" fontName="SansSerif" fontSize="6" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000035">
+			<text><![CDATA[LITROS]]></text>
+		</element>
+		<element kind="line" x="420" y="15" width="0" height="17" uuid="c0000001-0000-4000-a000-000000000036">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="staticText" x="420" y="16" width="42" height="16" forecolor="#334155" fontName="SansSerif" fontSize="6" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000037">
+			<text><![CDATA[IMP. Bs.]]></text>
+		</element>
+		<element kind="line" x="462" y="0" width="0" height="32" uuid="c0000001-0000-4000-a000-000000000038">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- SUPERVISOR (Agrupador) -->
+		<element kind="staticText" x="462" y="0" width="105" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000039">
+			<text><![CDATA[SUPERVISOR]]></text>
+		</element>
+		<element kind="line" x="462" y="15" width="105" height="0" uuid="c0000001-0000-4000-a000-000000000040">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="staticText" x="462" y="16" width="30" height="16" forecolor="#334155" fontName="SansSerif" fontSize="6" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000041">
+			<text><![CDATA[V°B°]]></text>
+		</element>
+		<element kind="line" x="492" y="15" width="0" height="17" uuid="c0000001-0000-4000-a000-000000000042">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="staticText" x="492" y="16" width="75" height="16" forecolor="#334155" fontName="SansSerif" fontSize="6" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000043">
+			<text><![CDATA[NOMBRE]]></text>
+		</element>
+		<element kind="line" x="567" y="0" width="0" height="32" uuid="c0000001-0000-4000-a000-000000000044">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- OBSERVACIONES -->
+		<element kind="staticText" x="567" y="0" width="80" height="32" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000045">
+			<text><![CDATA[OBSERVACIONES
+(PEAJES, ETC.)]]></text>
+		</element>
+		<element kind="line" x="647" y="0" width="0" height="32" uuid="c0000001-0000-4000-a000-000000000046">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- CONDUCTOR (Agrupador) -->
+		<element kind="staticText" x="647" y="0" width="105" height="15" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000047">
+			<text><![CDATA[CONDUCTOR]]></text>
+		</element>
+		<element kind="line" x="647" y="15" width="105" height="0" uuid="c0000001-0000-4000-a000-000000000048">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="staticText" x="647" y="16" width="65" height="16" forecolor="#334155" fontName="SansSerif" fontSize="6" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000049">
+			<text><![CDATA[NOMBRE]]></text>
+		</element>
+		<element kind="line" x="712" y="15" width="0" height="17" uuid="c0000001-0000-4000-a000-000000000050">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="staticText" x="712" y="16" width="40" height="16" forecolor="#334155" fontName="SansSerif" fontSize="6" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000051">
+			<text><![CDATA[FIRMA]]></text>
+		</element>
+	</columnHeader>
+
+	<!-- Filas de Datos (Detail) -->
+	<detail>
+		<band height="18">
+			<element kind="rectangle" x="0" y="0" width="752" height="18" backcolor="#FFFFFF" mode="Opaque" uuid="c0000001-0000-4000-a000-000000000052">
+				<pen lineWidth="0.5" lineColor="#CBD5E1"/>
+			</element>
+
+			<!-- DIA -->
+			<element kind="textField" x="0" y="0" width="28" height="18" fontName="SansSerif" fontSize="7" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000053">
+				<expression><![CDATA[$F{dia} != null ? String.valueOf($F{dia}) : "-"]]></expression>
+			</element>
+			<element kind="line" x="28" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000054">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- KM SALIDA -->
+			<element kind="textField" x="29" y="0" width="52" height="18" fontName="SansSerif" fontSize="7" hTextAlign="Right" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000055">
+				<expression><![CDATA[$F{kmSalida} != null ? String.valueOf($F{kmSalida}) : "-"]]></expression>
+			</element>
+			<element kind="line" x="82" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000056">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- KM LLEGADA -->
+			<element kind="textField" x="83" y="0" width="52" height="18" fontName="SansSerif" fontSize="7" hTextAlign="Right" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000057">
+				<expression><![CDATA[$F{kmLlegada} != null ? String.valueOf($F{kmLlegada}) : "-"]]></expression>
+			</element>
+			<element kind="line" x="136" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000058">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- KM REC -->
+			<element kind="textField" x="137" y="0" width="40" height="18" fontName="SansSerif" fontSize="7" bold="true" forecolor="#0284C7" hTextAlign="Right" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000059">
+				<expression><![CDATA[$F{kmRecorrido} != null ? String.valueOf($F{kmRecorrido}) : "-"]]></expression>
+			</element>
+			<element kind="line" x="178" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000060">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- DESCRIPCION TRABAJO -->
+			<element kind="textField" x="181" y="0" width="145" height="18" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000061">
+				<expression><![CDATA[$F{descripcionTrabajo} != null ? $F{descripcionTrabajo} : "-"]]></expression>
+			</element>
+			<element kind="line" x="328" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000062">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- FACTURA -->
+			<element kind="textField" x="329" y="0" width="48" height="18" fontName="SansSerif" fontSize="7" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000063">
+				<expression><![CDATA[$F{combustibleFactura} != null ? $F{combustibleFactura} : "-"]]></expression>
+			</element>
+			<element kind="line" x="378" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000064">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- LITROS -->
+			<element kind="textField" x="379" y="0" width="40" height="18" fontName="SansSerif" fontSize="7" hTextAlign="Right" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000065">
+				<expression><![CDATA[$F{combustibleLitros} != null ? $F{combustibleLitros}.toPlainString() : "-"]]></expression>
+			</element>
+			<element kind="line" x="420" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000066">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- IMPORTE BS -->
+			<element kind="textField" x="421" y="0" width="40" height="18" fontName="SansSerif" fontSize="7" hTextAlign="Right" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000067">
+				<expression><![CDATA[$F{combustibleImporte} != null ? $F{combustibleImporte}.toPlainString() : "-"]]></expression>
+			</element>
+			<element kind="line" x="462" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000068">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- V°B° SUPERVISOR -->
+			<element kind="textField" x="462" y="0" width="30" height="18" fontName="SansSerif" fontSize="7" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000069">
+				<expression><![CDATA[$F{supervisorVoBo} != null && $F{supervisorVoBo} ? "OK" : "-"]]></expression>
+			</element>
+			<element kind="line" x="492" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000070">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- NOMBRE SUPERVISOR -->
+			<element kind="textField" x="494" y="0" width="71" height="18" fontName="SansSerif" fontSize="6" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000071">
+				<expression><![CDATA[$F{supervisorNombre} != null ? $F{supervisorNombre} : "-"]]></expression>
+			</element>
+			<element kind="line" x="567" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000072">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- OBSERVACIONES -->
+			<element kind="textField" x="569" y="0" width="76" height="18" fontName="SansSerif" fontSize="6" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000073">
+				<expression><![CDATA[$F{observaciones} != null ? $F{observaciones} : "-"]]></expression>
+			</element>
+			<element kind="line" x="647" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000074">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- CONDUCTOR -->
+			<element kind="textField" x="649" y="0" width="62" height="18" fontName="SansSerif" fontSize="6" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000075">
+				<expression><![CDATA[$F{conductorNombre} != null ? $F{conductorNombre} : "-"]]></expression>
+			</element>
+			<element kind="line" x="712" y="0" width="0" height="18" uuid="c0000001-0000-4000-a000-000000000076">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- FIRMA (Espacio vacío para firmar) -->
+			<element kind="staticText" x="712" y="0" width="40" height="18" fontName="SansSerif" fontSize="6" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000077">
+				<text><![CDATA[]]></text>
+			</element>
+		</band>
+	</detail>
+
+	<!-- Pie de Página y Resumen Final -->
+	<summary height="110">
+		<!-- Fila de TOTALES -->
+		<element kind="rectangle" x="0" y="0" width="752" height="20" backcolor="#F1F5F9" mode="Opaque" uuid="c0000001-0000-4000-a000-000000000078">
+			<pen lineWidth="0.5" lineColor="#475569"/>
+		</element>
+		<element kind="staticText" x="8" y="0" width="126" height="20" forecolor="#0F172A" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000079">
+			<text><![CDATA[TOTALES CONSOLIDADOS:]]></text>
+		</element>
+		<element kind="textField" x="136" y="0" width="41" height="20" forecolor="#0284C7" fontName="SansSerif" fontSize="8" bold="true" hTextAlign="Right" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000080">
+			<expression><![CDATA[$P{TOTAL_KM}]]></expression>
+		</element>
+		<element kind="staticText" x="180" y="0" width="148" height="20" forecolor="#475569" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000081">
+			<text><![CDATA[Km Recorridos]]></text>
+		</element>
+		<element kind="textField" x="378" y="0" width="41" height="20" forecolor="#0F172A" fontName="SansSerif" fontSize="8" bold="true" hTextAlign="Right" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000082">
+			<expression><![CDATA[$P{TOTAL_LITROS}]]></expression>
+		</element>
+		<element kind="textField" x="420" y="0" width="41" height="20" forecolor="#059669" fontName="SansSerif" fontSize="8" bold="true" hTextAlign="Right" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000083">
+			<expression><![CDATA[$P{TOTAL_IMPORTE}]]></expression>
+		</element>
+
+		<!-- Cuadros inferiores idénticos al formato físico -->
+		<element kind="rectangle" x="0" y="28" width="260" height="75" backcolor="#FFFFFF" mode="Opaque" uuid="c0000001-0000-4000-a000-000000000084">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="staticText" x="8" y="33" width="120" height="12" forecolor="#475569" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000085">
+			<text><![CDATA[V°B° Semana 1: ______________]]></text>
+		</element>
+		<element kind="staticText" x="130" y="33" width="120" height="12" forecolor="#475569" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000086">
+			<text><![CDATA[V°B° Semana 2: ______________]]></text>
+		</element>
+		<element kind="staticText" x="8" y="50" width="240" height="12" forecolor="#475569" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000087">
+			<text><![CDATA[FECHA: _________________________________________]]></text>
+		</element>
+		<element kind="staticText" x="8" y="75" width="240" height="22" forecolor="#1E293B" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000088">
+			<text><![CDATA[RESP. SERVICIOS / ADM. Y LOGÍSTICA]]></text>
+		</element>
+
+		<!-- Cuadro Medio: Rendimiento y Próximo Mantenimiento -->
+		<element kind="rectangle" x="270" y="28" width="240" height="75" backcolor="#FFFFFF" mode="Opaque" uuid="c0000001-0000-4000-a000-000000000089">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="staticText" x="278" y="33" width="110" height="12" forecolor="#475569" fontName="SansSerif" fontSize="7" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000090">
+			<text><![CDATA[RENDIMIENTO PROM.:]]></text>
+		</element>
+		<element kind="textField" x="390" y="33" width="115" height="12" forecolor="#0284C7" fontName="SansSerif" fontSize="7" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000091">
+			<expression><![CDATA[$P{RENDIMIENTO}]]></expression>
+		</element>
+		<element kind="staticText" x="278" y="52" width="220" height="12" forecolor="#1E293B" fontName="SansSerif" fontSize="7" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000092">
+			<text><![CDATA[PRÓXIMO MANTENIMIENTO:]]></text>
+		</element>
+		<element kind="staticText" x="278" y="70" width="85" height="14" forecolor="#475569" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000093">
+			<text><![CDATA[KILOMETRAJE:]]></text>
+		</element>
+		<element kind="textField" x="365" y="70" width="140" height="14" forecolor="#DC2626" fontName="SansSerif" fontSize="9" bold="true" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000094">
+			<expression><![CDATA[$P{PROXIMO_MANTENIMIENTO_KM} + " KM"]]></expression>
+		</element>
+
+		<!-- Cuadro Derecho: Firma Conductor -->
+		<element kind="rectangle" x="520" y="28" width="232" height="75" backcolor="#FFFFFF" mode="Opaque" uuid="c0000001-0000-4000-a000-000000000095">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+		<element kind="line" x="540" y="70" width="190" height="0" uuid="c0000001-0000-4000-a000-000000000096">
+			<pen lineWidth="0.5" lineColor="#64748B"/>
+		</element>
+		<element kind="staticText" x="540" y="75" width="190" height="20" forecolor="#1E293B" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="c0000001-0000-4000-a000-000000000097">
+			<text><![CDATA[FIRMA DEL CONDUCTOR]]></text>
+		</element>
+	</summary>
+</jasperReport>

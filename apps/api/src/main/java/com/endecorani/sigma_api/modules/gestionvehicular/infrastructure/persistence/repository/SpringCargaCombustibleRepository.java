@@ -46,4 +46,18 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
             @Param("fechaHasta") LocalDateTime fechaHasta,
             Pageable pageable
     );
+
+    @Query("""
+        SELECT c
+        FROM CargaCombustibleEntity c
+        WHERE c.activoId = :activoId
+          AND c.fechaCarga >= :fechaDesde
+          AND c.fechaCarga <= :fechaHasta
+        ORDER BY c.fechaCarga ASC
+    """)
+    List<CargaCombustibleEntity> findByActivoIdAndFechaCargaBetween(
+            @Param("activoId") UUID activoId,
+            @Param("fechaDesde") LocalDateTime fechaDesde,
+            @Param("fechaHasta") LocalDateTime fechaHasta
+    );
 }
