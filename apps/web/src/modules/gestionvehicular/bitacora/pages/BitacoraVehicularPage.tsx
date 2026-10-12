@@ -1,6 +1,11 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { AlertCircle, BookOpen, Car, FileSpreadsheet, RefreshCw } from "lucide-react"
+import {
+  AlertCircle,
+  BookOpen,
+  Car,
+  RefreshCw,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { PageShell } from "@/shared/components/page-shell"
@@ -15,8 +20,6 @@ import {
 } from "../api/bitacora.service"
 import { BitacoraDataTable } from "../components/BitacoraDataTable"
 import { BitacoraFiltrosBar } from "../components/BitacoraFiltrosBar"
-import { BitacoraHeaderCard } from "../components/BitacoraHeaderCard"
-import { BitacoraResumenMetrics } from "../components/BitacoraResumenMetrics"
 
 function getPrimerDiaMes(): string {
   const now = new Date()
@@ -56,6 +59,14 @@ export function BitacoraVehicularPage() {
   const handleActivoChange = (id: string, placa?: string | null) => {
     setActivoId(id)
     setPlacaSeleccionada(placa ?? null)
+    if (id && fechaInicio && fechaFin && fechaInicio <= fechaFin) {
+      setFiltrosActivos({
+        activoId: id,
+        fechaInicio,
+        fechaFin,
+        conductorId: conductorId || undefined,
+      })
+    }
   }
 
   const handleConsultar = () => {
@@ -80,6 +91,7 @@ export function BitacoraVehicularPage() {
     }
 
     setFiltrosActivos(nuevosFiltros)
+    refetch()
   }
 
   const handleDescargarPdf = async () => {
@@ -107,35 +119,26 @@ export function BitacoraVehicularPage() {
       setIsPdfLoading(false)
     }
   }
-
-  const handleImprimir = () => {
-    if (!reporte) {
-      toast.info("Consulte la bitácora antes de imprimir.")
-      return
-    }
-    window.print()
-  }
-
   return (
     <PageShell size="full" padding="compact" layout="scroll" className="space-y-4 pb-8">
-      {/* Título de la Sección en Pantalla (oculto al imprimir) */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/60 pb-3 print:hidden">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
-              <BookOpen className="h-5 w-5" />
-            </div>
+      {/* Encabezado Principal */}
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-3 print:hidden">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+            <BookOpen className="h-5 w-5" />
+          </div>
+          <div>
             <h1 className="text-xl font-bold tracking-tight text-foreground">
               Bitácora Mensual de Vehículos
             </h1>
+            <p className="text-xs text-muted-foreground">
+              Reporte operativo de recorridos, odómetros, combustible y control de flota vehicular.
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground pl-9">
-            Reporte operativo unificado de recorridos, odómetros, combustible y vistos buenos según el formulario oficial ENDE CORANI.
-          </p>
         </div>
       </div>
 
-      {/* Barra de Filtros (oculta al imprimir) */}
+      {/* Barra de Filtros del Reporte (siempre visible arriba en pantalla) */}
       <BitacoraFiltrosBar
         activoId={activoId}
         onActivoChange={handleActivoChange}
@@ -147,7 +150,6 @@ export function BitacoraVehicularPage() {
         onConductorChange={setConductorId}
         onConsultar={handleConsultar}
         onDescargarPdf={handleDescargarPdf}
-        onImprimir={handleImprimir}
         isLoading={isLoading || isFetching}
         isPdfLoading={isPdfLoading}
         hasData={Boolean(reporte && reporte.items.length > 0)}
@@ -179,16 +181,6 @@ export function BitacoraVehicularPage() {
       {/* Estado: Cargando datos */}
       {(isLoading || isFetching) && (
         <div className="space-y-4 print:hidden">
-          <div className="h-28 rounded-xl border border-border/60 bg-card p-4 space-y-3">
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-xl" />
-            ))}
-          </div>
           <Skeleton className="h-64 rounded-xl" />
         </div>
       )}
@@ -196,40 +188,26 @@ export function BitacoraVehicularPage() {
       {/* Estado Inicial: Sin vehículo o sin consultar */}
       {!filtrosActivos && !isLoading && (
         <Card className="border-dashed border-2 border-border/80 bg-muted/10 print:hidden">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
-            <div className="p-3.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400">
-              <Car className="h-8 w-8" />
+          <CardContent className="flex flex-col items-center justify-center py-10 text-center space-y-3">
+            <div className="p-3 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400">
+              <Car className="h-7 w-7" />
             </div>
             <div className="max-w-md space-y-1">
-              <h3 className="font-semibold text-base text-foreground">
+              <h3 className="font-semibold text-sm text-foreground">
                 Seleccione un Vehículo para Consultar
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Seleccione el vehículo activo (obligatorio) y defina el rango de fechas para generar la bitácora mensual de operaciones, registros de odómetro y cargas de combustible.
+                Seleccione el vehículo activo y defina el rango de fechas en la barra superior. Luego presione <strong>Generar Reporte</strong> para visualizar la bitácora operativa.
               </p>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/60 px-3 py-1.5 rounded-md">
-              <FileSpreadsheet className="h-4 w-4 text-primary" />
-              <span>Permite visualizar en pantalla, exportar en PDF oficial o imprimir.</span>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Estado: Reporte Cargado */}
+      {/* Estado: Reporte Cargado (Abajo de los Filtros) */}
       {reporte && !isLoading && (
         <div className="space-y-4">
-          {/* Tarjeta de Encabezado Oficial ENDE CORANI */}
-          <BitacoraHeaderCard
-            vehiculo={reporte.vehiculo}
-            periodo={reporte.periodo}
-            conductorFiltroNombre={reporte.conductorFiltroNombre}
-          />
-
-          {/* Tarjetas de Métricas Resumen (ocultas en impresión) */}
-          <BitacoraResumenMetrics resumen={reporte.resumen} />
-
-          {/* Planilla Tabular de Registros de Bitácora */}
+          {/* Planilla Tabular de Registros de Bitácora (con totales abajo, sin cards ni firmas) */}
           <BitacoraDataTable
             items={reporte.items}
             resumen={reporte.resumen}

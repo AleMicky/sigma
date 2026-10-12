@@ -1,4 +1,3 @@
-import logoEnde from "@/assets/logo-ende-corani.png"
 import type {
   BitacoraVehicularPeriodoInfo,
   BitacoraVehicularVehiculoInfo,
@@ -17,15 +16,18 @@ export function BitacoraHeaderCard({
 }: BitacoraHeaderCardProps) {
   return (
     <div className="bg-card text-card-foreground border border-border/80 rounded-xl p-4 sm:p-5 shadow-sm space-y-4">
-      {/* Cabecera Superior: Logo + Título Central + AÑO y MES */}
+      {/* Cabecera Superior: Identificador Institucional + Título Central + AÑO y MES */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center border-b border-border/60 pb-4">
-        {/* Logo Empresa */}
+        {/* Identificador Institucional (sin logo gráfico, idéntico al formulario oficial) */}
         <div className="md:col-span-3 flex items-center justify-center md:justify-start">
-          <img
-            src={logoEnde}
-            alt="Logo ENDE CORANI"
-            className="h-12 object-contain"
-          />
+          <div className="border border-border/80 rounded-md px-3.5 py-1.5 text-center bg-muted/20 inline-block shadow-2xs">
+            <span className="block font-black text-sm tracking-widest text-foreground leading-tight">
+              ENDE
+            </span>
+            <span className="block font-semibold text-[10px] tracking-wider text-muted-foreground leading-tight">
+              CORANI
+            </span>
+          </div>
         </div>
 
         {/* Título Principal */}

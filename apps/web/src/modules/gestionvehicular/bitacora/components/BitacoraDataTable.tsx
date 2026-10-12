@@ -57,8 +57,8 @@ export function BitacoraDataTable({
                 Observaciones
               </th>
 
-              {/* Agrupador Conductor */}
-              <th scope="col" colSpan={2} className="px-3 py-1.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-center">
+              {/* Conductor */}
+              <th scope="col" rowSpan={2} className="px-3 py-2.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-left min-w-[160px]">
                 Conductor
               </th>
             </tr>
@@ -83,14 +83,6 @@ export function BitacoraDataTable({
               <th scope="col" className="px-2.5 py-1.5 border-r border-border/60 min-w-[120px] text-left bg-sky-500/5">
                 Nombre Supervisor
               </th>
-
-              {/* Sub-columnas Conductor */}
-              <th scope="col" className="px-2.5 py-1.5 border-r border-border/60 min-w-[130px] text-left bg-emerald-500/5">
-                Nombre Conductor
-              </th>
-              <th scope="col" className="px-2.5 py-1.5 min-w-[80px] text-center bg-emerald-500/5">
-                Firma
-              </th>
             </tr>
           </thead>
 
@@ -98,7 +90,7 @@ export function BitacoraDataTable({
           <tbody className="divide-y divide-border/50 text-foreground">
             {items.length === 0 ? (
               <tr>
-                <td colSpan={13} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={12} className="px-4 py-12 text-center text-muted-foreground">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <MapPin className="h-8 w-8 text-muted-foreground/40" />
                     <p className="text-sm font-medium">
@@ -236,9 +228,9 @@ export function BitacoraDataTable({
                       </span>
                     </td>
 
-                    {/* CONDUCTOR: NOMBRE */}
-                    <td className="px-2.5 py-2.5 border-r border-border/50 text-xs font-medium">
-                      <span className="truncate max-w-[140px] block" title={item.conductorNombre ?? ""}>
+                    {/* CONDUCTOR */}
+                    <td className="px-2.5 py-2.5 text-xs font-medium">
+                      <span className="truncate max-w-[150px] block" title={item.conductorNombre ?? ""}>
                         {item.conductorNombre || "-"}
                       </span>
                       {item.conductorLicencia && (
@@ -247,18 +239,13 @@ export function BitacoraDataTable({
                         </span>
                       )}
                     </td>
-
-                    {/* CONDUCTOR: FIRMA (espacio en blanco para la firma) */}
-                    <td className="px-2.5 py-2.5 text-center">
-                      <div className="h-6 w-16 border-b border-dashed border-border/70 mx-auto" />
-                    </td>
                   </tr>
                 )
               })
             )}
           </tbody>
 
-          {/* Fila de Totales Consolidados */}
+          {/* Fila de Totales Consolidados en el Pie de la Tabla */}
           {items.length > 0 && (
             <tfoot>
               <tr className="bg-muted/80 text-foreground font-bold border-t-2 border-border/80 text-xs">
@@ -269,12 +256,12 @@ export function BitacoraDataTable({
                   {resumen.totalKmRecorridos?.toLocaleString() ?? 0}
                 </td>
                 <td className="px-3 py-3 border-r border-border/60 text-left text-xs text-muted-foreground font-normal">
-                  Km totales recorridos
+                  Km totales recorridos ({resumen.totalViajes} {resumen.totalViajes === 1 ? "viaje" : "viajes"})
                 </td>
                 <td className="px-2.5 py-3 border-r border-border/60 text-center font-mono text-xs text-muted-foreground">
-                  {resumen.totalCargasCombustible} recargas
+                  {resumen.totalCargasCombustible} {resumen.totalCargasCombustible === 1 ? "recarga" : "recargas"}
                 </td>
-                <td className="px-2.5 py-3 border-r border-border/60 text-right font-mono text-xs text-foreground">
+                <td className="px-2.5 py-3 border-r border-border/60 text-right font-mono text-xs text-foreground font-semibold">
                   {resumen.totalLitrosCombustible != null
                     ? `${resumen.totalLitrosCombustible.toFixed(2)} L`
                     : "0.00 L"}
@@ -284,17 +271,19 @@ export function BitacoraDataTable({
                     ? `Bs. ${resumen.totalImporteCombustible.toFixed(2)}`
                     : "Bs. 0.00"}
                 </td>
-                <td colSpan={5} className="px-3 py-3 text-xs text-muted-foreground">
-                  {resumen.rendimientoKmPorLitro && (
-                    <span className="inline-flex items-center gap-1 font-semibold text-foreground mr-3">
-                      Rendimiento: {resumen.rendimientoKmPorLitro.toFixed(2)} Km/L
-                    </span>
-                  )}
-                  {resumen.costoPromedioPorKm && (
-                    <span className="inline-flex items-center gap-1 text-muted-foreground">
-                      Costo: Bs. {resumen.costoPromedioPorKm.toFixed(2)} / Km
-                    </span>
-                  )}
+                <td colSpan={4} className="px-3 py-3 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    {resumen.rendimientoKmPorLitro && (
+                      <span className="inline-flex items-center gap-1 font-semibold text-foreground">
+                        Rendimiento: <span className="text-primary font-mono">{resumen.rendimientoKmPorLitro.toFixed(2)} Km/L</span>
+                      </span>
+                    )}
+                    {resumen.costoPromedioPorKm && (
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        Costo: <span className="font-mono font-medium">Bs. {resumen.costoPromedioPorKm.toFixed(2)} / Km</span>
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             </tfoot>
@@ -302,54 +291,47 @@ export function BitacoraDataTable({
         </table>
       </div>
 
-      {/* Sección Inferior de Vistos Buenos y Firmas (réplica exacta del formulario físico) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/20 border-t border-border/60 text-xs">
-        {/* Recuadro Izquierdo: V°B° Semanas y Responsable Logística */}
-        <div className="border border-border/60 rounded-lg p-3 bg-card space-y-2.5">
-          <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
-            <div>V°B° Semana 1: <span className="border-b border-border/80 inline-block w-16" /></div>
-            <div>V°B° Semana 2: <span className="border-b border-border/80 inline-block w-16" /></div>
+      {/* Resumen Técnico Consolidado al Pie del Reporte (sin recuadros de firmas manuscritas) */}
+      <div className="p-4 bg-muted/20 border-t border-border/60">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div className="bg-card border border-border/60 rounded-lg p-3 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+              Odómetro Salida Inicial
+            </span>
+            <div className="font-mono text-sm font-semibold text-foreground">
+              {resumen.kmSalidaInicial != null ? `${resumen.kmSalidaInicial.toLocaleString()} km` : "-"}
+            </div>
+            <span className="text-[10px] text-muted-foreground">Primer registro del período</span>
           </div>
-          <div className="text-[11px] text-muted-foreground">
-            FECHA: <span className="border-b border-border/80 inline-block w-40" />
-          </div>
-          <div className="pt-3 text-center border-t border-border/40 font-bold text-foreground text-[10px] uppercase">
-            RESP. SERVICIOS / ADM. Y LOGÍSTICA
-          </div>
-        </div>
 
-        {/* Recuadro Central: Resumen Técnico y Próximo Mantenimiento */}
-        <div className="border border-border/60 rounded-lg p-3 bg-card space-y-2 text-[11px]">
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground font-medium">Rendimiento Promedio:</span>
-            <span className="font-bold text-primary font-mono">
+          <div className="bg-card border border-border/60 rounded-lg p-3 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+              Odómetro Retorno Final
+            </span>
+            <div className="font-mono text-sm font-semibold text-foreground">
+              {resumen.kmRetornoFinal != null ? `${resumen.kmRetornoFinal.toLocaleString()} km` : "-"}
+            </div>
+            <span className="text-[10px] text-muted-foreground">Último retorno registrado</span>
+          </div>
+
+          <div className="bg-card border border-border/60 rounded-lg p-3 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+              Rendimiento Promedio
+            </span>
+            <div className="font-mono text-sm font-bold text-primary">
               {resumen.rendimientoKmPorLitro ? `${resumen.rendimientoKmPorLitro.toFixed(2)} Km/L` : "-"}
-            </span>
+            </div>
+            <span className="text-[10px] text-muted-foreground">Eficiencia combustible/distancia</span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground font-medium">Odómetro Salida Inicial:</span>
-            <span className="font-mono">{resumen.kmSalidaInicial?.toLocaleString() ?? "-"} km</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground font-medium">Odómetro Retorno Final:</span>
-            <span className="font-mono">{resumen.kmRetornoFinal?.toLocaleString() ?? "-"} km</span>
-          </div>
-          <div className="pt-1.5 border-t border-border/40 flex justify-between items-center">
-            <span className="font-bold text-foreground text-[10px] uppercase">PRÓXIMO MANTENIMIENTO:</span>
-            <span className="font-bold font-mono text-destructive text-xs">
-              {vehiculo.proximoMantenimientoKm ? `${vehiculo.proximoMantenimientoKm.toLocaleString()} KM` : "-"}
-            </span>
-          </div>
-        </div>
 
-        {/* Recuadro Derecho: Firma del Conductor */}
-        <div className="border border-border/60 rounded-lg p-3 bg-card flex flex-col justify-between items-center text-center">
-          <span className="text-[10px] uppercase font-bold text-muted-foreground w-full text-left">
-            CONFORMIDAD Y CONTROL
-          </span>
-          <div className="w-48 border-b border-border/80 my-4" />
-          <div className="font-bold text-foreground text-[10px] uppercase">
-            FIRMA DEL CONDUCTOR RESPONSABLE
+          <div className="bg-card border border-border/60 rounded-lg p-3 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+              Próximo Mantenimiento
+            </span>
+            <div className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400">
+              {vehiculo.proximoMantenimientoKm ? `${vehiculo.proximoMantenimientoKm.toLocaleString()} KM` : "-"}
+            </div>
+            <span className="text-[10px] text-muted-foreground">Control de odómetro preventivo</span>
           </div>
         </div>
       </div>
