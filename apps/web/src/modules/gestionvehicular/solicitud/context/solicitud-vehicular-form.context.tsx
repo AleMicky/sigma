@@ -26,6 +26,7 @@ export function SolicitudVehicularFormProvider({
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSolicitudVehicularFormContext(): UseSolicitudVehicularFormReturn {
   const context = React.useContext(SolicitudVehicularFormContext)
   if (!context) {

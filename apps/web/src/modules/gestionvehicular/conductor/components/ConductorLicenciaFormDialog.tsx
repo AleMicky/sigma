@@ -306,7 +306,9 @@ export function ConductorLicenciaFormDialog({
               </div>
               <Select
                 value={estField.state.value}
-                onValueChange={(val) => estField.handleChange(val as any)}
+                onValueChange={(val) =>
+                  estField.handleChange(val as ConductorLicenciaFormValues["estado"])
+                }
               >
                 <SelectTrigger id={estField.name} className="w-full">
                   <SelectValue placeholder="Selecciona estado" />

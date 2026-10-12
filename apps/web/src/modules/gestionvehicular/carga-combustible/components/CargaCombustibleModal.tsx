@@ -47,7 +47,11 @@ import {
   useDeleteCargaCombustible,
 } from "../api/carga-combustible.mutations"
 import { cargaCombustibleQueries } from "../api/carga-combustible.queries"
-import type { CargaCombustible } from "../api/carga-combustible.service"
+import {
+  getCargasByActivo,
+  getCargasByViaje,
+  type CargaCombustible,
+} from "../api/carga-combustible.service"
 
 export type CargaCombustibleModalProps = {
   open: boolean
@@ -352,8 +356,8 @@ export function CargaCombustibleModal({
       ? cargaCombustibleQueries.byViaje(viajeId).queryKey
       : cargaCombustibleQueries.byActivo(activoId ?? "").queryKey,
     queryFn: () => {
-      if (viajeId) return cargaCombustibleQueries.byViaje(viajeId).queryFn()
-      if (activoId) return cargaCombustibleQueries.byActivo(activoId).queryFn()
+      if (viajeId) return getCargasByViaje(viajeId)
+      if (activoId) return getCargasByActivo(activoId)
       return []
     },
     enabled: Boolean(open && (viajeId || activoId)),
