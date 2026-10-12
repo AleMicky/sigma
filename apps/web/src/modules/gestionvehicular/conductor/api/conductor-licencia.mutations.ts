@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
+import { isApiError } from "@/shared/api"
+
 import { conductorKeys } from "./conductor.keys"
 import { conductorLicenciaKeys } from "./conductor-licencia.queries"
 import {
@@ -30,8 +32,12 @@ export const useCreateLicencia = () => {
       queryClient.invalidateQueries({ queryKey: conductorKeys.all })
       toast.success("Licencia de conducir registrada correctamente")
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Error al registrar la licencia de conducir")
+    onError: (error) => {
+      toast.error(
+        isApiError(error)
+          ? error.message
+          : "Error al registrar la licencia de conducir"
+      )
     },
   })
 }
@@ -57,8 +63,12 @@ export const useUpdateLicencia = () => {
       queryClient.invalidateQueries({ queryKey: conductorKeys.all })
       toast.success("Licencia de conducir actualizada correctamente")
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Error al actualizar la licencia de conducir")
+    onError: (error) => {
+      toast.error(
+        isApiError(error)
+          ? error.message
+          : "Error al actualizar la licencia de conducir"
+      )
     },
   })
 }
@@ -76,8 +86,12 @@ export const useDeleteLicencia = () => {
       queryClient.invalidateQueries({ queryKey: conductorKeys.all })
       toast.success("Licencia de conducir eliminada correctamente")
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Error al eliminar la licencia de conducir")
+    onError: (error) => {
+      toast.error(
+        isApiError(error)
+          ? error.message
+          : "Error al eliminar la licencia de conducir"
+      )
     },
   })
 }

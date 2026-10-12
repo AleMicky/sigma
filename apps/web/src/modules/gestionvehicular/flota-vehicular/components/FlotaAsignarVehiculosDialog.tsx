@@ -59,30 +59,31 @@ function extractPlaca(activo?: Activo | null): string | null {
   }
 }
 
-export function FlotaAsignarVehiculosDialog({
-  open,
+export function FlotaAsignarVehiculosDialog(
+  props: Readonly<FlotaAsignarVehiculosDialogProps>
+) {
+  return (
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+      {props.open && <FlotaAsignarVehiculosContent {...props} />}
+    </Dialog>
+  )
+}
+
+function FlotaAsignarVehiculosContent({
   onOpenChange,
   flota,
   assignedVehiculos,
   onSuccess,
-}: FlotaAsignarVehiculosDialogProps) {
+}: Readonly<FlotaAsignarVehiculosDialogProps>) {
   const [search, setSearch] = React.useState("")
   const [page, setPage] = React.useState(0)
   const pageSize = 10
 
   // Guardamos un Set de los IDs seleccionados
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
-
-  React.useEffect(() => {
-    if (open) {
-      const currentIds = new Set(
-        assignedVehiculos.filter((v) => v.activo).map((v) => v.activoId)
-      )
-      setSelectedIds(currentIds)
-      setSearch("")
-      setPage(0)
-    }
-  }, [open, assignedVehiculos])
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(
+    () =>
+      new Set(assignedVehiculos.filter((v) => v.activo).map((v) => v.activoId))
+  )
 
   const query = useQuery({
     ...activoQueries.list({
@@ -91,10 +92,12 @@ export function FlotaAsignarVehiculosDialog({
       sortBy: "codigo",
       direction: "ASC",
     }),
-    enabled: open,
   })
 
-  const activos = query.data?.content ?? []
+  const activos = React.useMemo<Activo[]>(
+    () => query.data?.content ?? [],
+    [query.data?.content]
+  )
   const totalPages = query.data?.totalPages ?? 1
   const totalElements = query.data?.totalElements ?? activos.length
 
@@ -163,8 +166,7 @@ export function FlotaAsignarVehiculosDialog({
     filteredActivos.every((a: Activo) => selectedIds.has(a.id))
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+    <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 border-b border-border/70">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
@@ -374,6 +376,5 @@ export function FlotaAsignarVehiculosDialog({
           </DialogFooter>
         </div>
       </DialogContent>
-    </Dialog>
   )
 }

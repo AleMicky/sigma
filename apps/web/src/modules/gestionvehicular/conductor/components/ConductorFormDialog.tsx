@@ -177,7 +177,9 @@ export function ConductorFormDialog({
                   </FieldLabel>
                   <Select
                     value={field.state.value}
-                    onValueChange={(val) => field.handleChange(val as any)}
+                    onValueChange={(val) =>
+                      field.handleChange(val as ConductorBasicFormValues["estado"])
+                    }
                   >
                     <SelectTrigger id={field.name} className="w-full">
                       <SelectValue placeholder="Selecciona estado" />

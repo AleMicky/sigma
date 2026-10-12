@@ -86,8 +86,14 @@ export function VehiculoResponsableCombobox({
     enabled: Boolean(value),
   })
 
-  const rawFlotaVehiculos: FlotaVehiculo[] = flotaVehiculosQuery.data ?? []
-  const rawGeneralActivos: Activo[] = generalActivosQuery.data?.content ?? []
+  const rawFlotaVehiculos = React.useMemo<FlotaVehiculo[]>(
+    () => flotaVehiculosQuery.data ?? [],
+    [flotaVehiculosQuery.data]
+  )
+  const rawGeneralActivos = React.useMemo<Activo[]>(
+    () => generalActivosQuery.data?.content ?? [],
+    [generalActivosQuery.data?.content]
+  )
 
   // Filtrado reactivo en memoria
   const filteredFlotaVehiculos = React.useMemo(() => {

@@ -91,9 +91,10 @@ export function ConductorCombobox({
 
   const hasDateRange = Boolean(fechaSalida && fechaRetorno)
 
-  React.useEffect(() => {
+  const handleSearchChange = (val: string) => {
+    setSearch(val)
     setPage(0)
-  }, [debouncedSearch])
+  }
 
   // Consulta paginada estándar cuando no hay rango de fechas
   const queryParams = {
@@ -226,7 +227,7 @@ export function ConductorCombobox({
             size="icon-xs"
             onClick={() => {
               onValueChange?.("", null)
-              setSearch("")
+              handleSearchChange("")
             }}
             className="size-6 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md shrink-0 cursor-pointer"
             title="Cambiar conductor seleccionado"
@@ -255,7 +256,7 @@ export function ConductorCombobox({
       value={null}
       onValueChange={(val: Conductor | null) => {
         onValueChange?.(val?.id ?? "", val)
-        setSearch("")
+        handleSearchChange("")
       }}
       disabled={disabled || query.isLoading}
     >
@@ -263,7 +264,7 @@ export function ConductorCombobox({
         <ComboboxInput
           id={id}
           name={name}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           placeholder={
             query.isLoading && !query.data
               ? hasDateRange

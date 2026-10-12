@@ -78,7 +78,6 @@ export function ConductorDetailPanel({
   const codigo = conductor?.empleado?.codigo || "-"
   const cargo = conductor?.empleado?.cargo || "Conductor Institucional"
   const area = conductor?.empleado?.area || "Operaciones y Logística"
-  const licencias: ConductorLicencia[] = conductor?.licencias || []
   const initials = getInitials(nombre)
 
   const hoy = useMemo(() => {
@@ -89,10 +88,11 @@ export function ConductorDetailPanel({
 
   // Separar Licencia Vigente vs Historial
   const { licenciaVigente, historialLicencias } = useMemo(() => {
-    const vigente = licencias.find((l) => l.estado === "VIGENTE")
-    const historial = licencias.filter((l) => l !== vigente)
+    const list = conductor?.licencias || []
+    const vigente = list.find((l) => l.estado === "VIGENTE")
+    const historial = list.filter((l) => l !== vigente)
     return { licenciaVigente: vigente, historialLicencias: historial }
-  }, [licencias])
+  }, [conductor?.licencias])
 
   // Estado del vencimiento de la licencia vigente
   const vencimientoVigente = useMemo(() => {

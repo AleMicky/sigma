@@ -179,7 +179,10 @@ export function SolicitudesVehicularesPage() {
     enabled: Boolean(selectedDetailId),
   })
 
-  const solicitudes = query.data?.content ?? []
+  const solicitudes = useMemo(
+    () => query.data?.content ?? [],
+    [query.data?.content]
+  )
   const totalCount = allQuery.data?.total ?? query.data?.totalElements ?? 0
 
   const activeDetailItem =
