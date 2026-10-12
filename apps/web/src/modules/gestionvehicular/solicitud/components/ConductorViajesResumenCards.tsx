@@ -4,6 +4,7 @@ import {
   Clock,
   Compass,
   FileText,
+  RotateCcw,
 } from "lucide-react"
 
 import { cn } from "@/shared/lib/utils"
@@ -12,6 +13,7 @@ export type ConductorViajesResumen = {
   total: number
   porSalir: number
   enViaje: number
+  retorno?: number
   finalizados: number
 }
 
@@ -69,7 +71,7 @@ const RESUMEN_CARDS: ResumenCardConfig[] = [
   },
   {
     estado: "EN_VIAJE",
-    label: "En Viaje / Retorno",
+    label: "En Viaje",
     icon: Compass,
     getValue: (resumen) => resumen?.enViaje ?? 0,
     activeClass:
@@ -81,6 +83,22 @@ const RESUMEN_CARDS: ResumenCardConfig[] = [
     iconInactiveClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
     labelClass: "text-amber-700 dark:text-amber-400",
     numberClass: "text-amber-600 dark:text-amber-400",
+  },
+  {
+    estado: "RETORNO",
+    label: "En Retorno",
+    icon: RotateCcw,
+    getValue: (resumen) => resumen?.retorno ?? 0,
+    activeClass:
+      "border-indigo-500/60 bg-gradient-to-br from-indigo-500/15 via-indigo-500/5 to-transparent ring-1 ring-indigo-500/30 shadow-xs",
+    indicatorClass: "bg-indigo-500 shadow-xs shadow-indigo-500/50",
+    hoverBorderClass: "hover:border-indigo-500/40",
+    hoverBgClass: "hover:bg-indigo-500/[0.04]",
+    iconActiveClass: "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30",
+    iconInactiveClass:
+      "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20",
+    labelClass: "text-indigo-700 dark:text-indigo-400",
+    numberClass: "text-indigo-600 dark:text-indigo-400",
   },
   {
     estado: "FINALIZADA",
@@ -108,7 +126,7 @@ export function ConductorViajesResumenCards({
   className,
 }: ConductorViajesResumenCardsProps) {
   return (
-    <div className={cn("grid grid-cols-2 gap-1.5 sm:gap-2 sm:grid-cols-4", className)}>
+    <div className={cn("grid grid-cols-2 gap-1.5 sm:gap-2 sm:grid-cols-3 lg:grid-cols-5", className)}>
       {RESUMEN_CARDS.map((card) => {
         const isSelected = card.estado
           ? selectedEstado.toUpperCase() === card.estado.toUpperCase()

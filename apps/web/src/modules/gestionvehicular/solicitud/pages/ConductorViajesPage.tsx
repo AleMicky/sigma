@@ -36,8 +36,11 @@ import {
   SolicitudVehicularListItemSkeleton,
 } from "../components/SolicitudVehicularListItem"
 import { ControlActivoVehicularHistorialModal } from "../../control-activo/components/ControlActivoVehicularHistorialModal"
+import { CargaCombustibleModal } from "../../carga-combustible/components/CargaCombustibleModal"
+import type { ViajeVehicular } from "../../viaje-vehicular/api/viaje-vehicular.service"
+import type { AsignacionVehicular } from "../../asignacion-vehicular/api/asignacion-vehicular.service"
 
-type EstadoFiltro = "" | "ASIGNADO" | "EN_VIAJE" | "FINALIZADA"
+type EstadoFiltro = "" | "ASIGNADO" | "EN_VIAJE" | "RETORNO" | "FINALIZADA"
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function ConductorViajesPage() {
@@ -47,6 +50,11 @@ export function ConductorViajesPage() {
   const [traceabilityItem, setTraceabilityItem] = useState<SolicitudVehicular | null>(null)
   const [controlActivoHistorialItem, setControlActivoHistorialItem] =
     useState<SolicitudVehicular | null>(null)
+  const [cargaCombustibleTarget, setCargaCombustibleTarget] = useState<{
+    solicitud: SolicitudVehicular
+    viaje?: ViajeVehicular
+    asignacion?: AsignacionVehicular
+  } | null>(null)
 
   const search = usePaginatedSearch({
     debounceMs: 300,
@@ -63,6 +71,7 @@ export function ConductorViajesPage() {
     select: (data): ConductorViajesResumen => {
       let porSalir = 0
       let enViaje = 0
+      let retorno = 0
       let finalizados = 0
 
       for (const item of data.content) {
@@ -72,10 +81,14 @@ export function ConductorViajesPage() {
         } else if (
           estado === "EN_VIAJE" ||
           estado === "EN_CURSO" ||
-          estado === "EN_PROCESO" ||
-          estado === "RETORNO"
+          estado === "EN_PROCESO"
         ) {
           enViaje++
+        } else if (
+          estado === "RETORNO" ||
+          estado === "EN_RETORNO"
+        ) {
+          retorno++
         } else if (
           estado === "FINALIZADA" ||
           estado === "FINALIZADO" ||
@@ -89,6 +102,7 @@ export function ConductorViajesPage() {
         total: data.totalElements,
         porSalir,
         enViaje,
+        retorno,
         finalizados,
       }
     },
@@ -100,7 +114,9 @@ export function ConductorViajesPage() {
     if (selectedEstado === "ASIGNADO") {
       estadoFilter = "ASIGNADO,APROBADO,APROBADA"
     } else if (selectedEstado === "EN_VIAJE") {
-      estadoFilter = "EN_VIAJE,EN_CURSO,EN_PROCESO,RETORNO"
+      estadoFilter = "EN_VIAJE,EN_CURSO,EN_PROCESO"
+    } else if (selectedEstado === "RETORNO") {
+      estadoFilter = "RETORNO,EN_RETORNO"
     } else if (selectedEstado === "FINALIZADA") {
       estadoFilter = "FINALIZADA,FINALIZADO,COMPLETADA"
     } else if (selectedEstado) {
@@ -203,11 +219,23 @@ export function ConductorViajesPage() {
     [navigate]
   )
 
+  const handleCargaCombustible = useCallback(
+    (
+      solicitud: SolicitudVehicular,
+      viaje?: ViajeVehicular,
+      asignacion?: AsignacionVehicular
+    ) => {
+      setCargaCombustibleTarget({ solicitud, viaje, asignacion })
+    },
+    []
+  )
+
   const selectedEstadoLabel = useMemo(() => {
     if (!selectedEstado) return undefined
     const map: Record<string, string> = {
       ASIGNADO: "Por Salir (Asignados)",
-      EN_VIAJE: "En Viaje / En Retorno",
+      EN_VIAJE: "En Viaje",
+      RETORNO: "En Retorno",
       FINALIZADA: "Finalizados",
     }
     return map[selectedEstado] ?? selectedEstado.replace(/_/g, " ")
@@ -335,6 +363,7 @@ export function ConductorViajesPage() {
                   onViewDetail={handleViewDetail}
                   onSelect={handleViewDetail}
                   onControlActivo={handleControlActivo}
+                  onCargaCombustible={handleCargaCombustible}
                   onActionSelect={handleActionSelect}
                   onTraceability={setTraceabilityItem}
                 />
@@ -361,6 +390,7 @@ export function ConductorViajesPage() {
         }}
         solicitud={activeDetailItem}
         onControlActivo={handleControlActivo}
+        onCargaCombustible={(sol) => handleCargaCombustible(sol)}
         onViewHistory={setTraceabilityItem}
         onActionSelect={handleActionSelect}
       />
@@ -403,6 +433,25 @@ export function ConductorViajesPage() {
           if (!open) setControlActivoHistorialItem(null)
         }}
         solicitud={controlActivoHistorialItem}
+        allowedTipo={
+          controlActivoHistorialItem &&
+          ["RETORNO", "EN_RETORNO"].includes(
+            (controlActivoHistorialItem.estado || "").toUpperCase()
+          )
+            ? "DEVOLUCION"
+            : controlActivoHistorialItem &&
+                [
+                  "APROBADO",
+                  "APROBADA",
+                  "ASIGNADO",
+                  "BORRADOR",
+                  "PENDIENTE",
+                ].includes(
+                  (controlActivoHistorialItem.estado || "").toUpperCase()
+                )
+              ? "ENTREGA"
+              : "ALL"
+        }
         readOnly={
           Boolean(
             controlActivoHistorialItem &&
@@ -411,6 +460,17 @@ export function ConductorViajesPage() {
               )
           )
         }
+      />
+
+      {/* Modal de Cargas de Combustible */}
+      <CargaCombustibleModal
+        open={Boolean(cargaCombustibleTarget)}
+        onOpenChange={(open) => {
+          if (!open) setCargaCombustibleTarget(null)
+        }}
+        solicitud={cargaCombustibleTarget?.solicitud ?? null}
+        viaje={cargaCombustibleTarget?.viaje}
+        asignacion={cargaCombustibleTarget?.asignacion}
       />
     </PageShell>
   )

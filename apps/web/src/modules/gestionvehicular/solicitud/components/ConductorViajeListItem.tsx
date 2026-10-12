@@ -9,6 +9,7 @@ import {
   Eye,
   Flag,
   Flame,
+  Fuel,
   Gauge,
   GitBranch,
   History,
@@ -32,11 +33,18 @@ import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
 
 import { asignacionVehicularQueries } from "../../asignacion-vehicular/api/asignacion-vehicular.queries"
+import type { AsignacionVehicular } from "../../asignacion-vehicular/api/asignacion-vehicular.service"
+import { cargaCombustibleQueries } from "../../carga-combustible/api/carga-combustible.queries"
+import {
+  getCargasByActivo,
+  getCargasByViaje,
+} from "../../carga-combustible/api/carga-combustible.service"
 import { controlActivoVehicularQueries } from "../../control-activo/api/control-activo.queries"
 import { viajeVehicularKeys } from "../../viaje-vehicular/api/viaje-vehicular.queries"
 import {
   getViajeByAsignacion,
   getViajeBySolicitud,
+  type ViajeVehicular,
 } from "../../viaje-vehicular/api/viaje-vehicular.service"
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
 
@@ -46,6 +54,11 @@ export type ConductorViajeListItemProps = {
   onSelect?: (solicitud: SolicitudVehicular) => void
   onAssign?: (solicitud: SolicitudVehicular) => void
   onControlActivo?: (solicitud: SolicitudVehicular, hasControles?: boolean) => void
+  onCargaCombustible?: (
+    solicitud: SolicitudVehicular,
+    viaje?: ViajeVehicular,
+    asignacion?: AsignacionVehicular
+  ) => void
   onTraceability?: (solicitud: SolicitudVehicular) => void
   onActionSelect?: (
     solicitud: SolicitudVehicular,
@@ -62,6 +75,7 @@ export function ConductorViajeListItem({
   onSelect,
   onAssign,
   onControlActivo,
+  onCargaCombustible,
   onTraceability,
   onActionSelect,
   className,
@@ -118,6 +132,23 @@ export function ConductorViajeListItem({
     enabled: Boolean(solicitud.id),
   })
   const controlesCount = (controlesQuery.data ?? []).length
+
+  // Consulta las cargas de combustible asociadas al viaje o al vehículo
+  const viajeId = viaje?.id
+  const vehiculoId = vehiculo?.id
+  const cargasQuery = useQuery({
+    queryKey: viajeId
+      ? cargaCombustibleQueries.byViaje(viajeId).queryKey
+      : cargaCombustibleQueries.byActivo(vehiculoId ?? "").queryKey,
+    queryFn: () => {
+      if (viajeId) return getCargasByViaje(viajeId)
+      if (vehiculoId) return getCargasByActivo(vehiculoId)
+      return []
+    },
+    enabled: Boolean(viajeId || vehiculoId),
+    staleTime: 1000 * 60 * 2,
+  })
+  const cargasCount = (cargasQuery.data ?? []).length
 
   const solicitanteNombre = solicitud.solicitante?.nombreCompleto || ""
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
@@ -335,7 +366,9 @@ export function ConductorViajeListItem({
                       Estado de Viaje
                     </span>
                     <span className="font-medium text-amber-700 dark:text-amber-300 truncate block">
-                      En Ruta • Pendiente de Retorno
+                      {estadoNorm === "RETORNO" || estadoNorm === "EN_RETORNO"
+                        ? "En Retorno • Registrar Llegada"
+                        : "En Ruta • Pendiente de Retorno"}
                     </span>
                   </div>
                 </div>
@@ -432,6 +465,54 @@ export function ConductorViajeListItem({
                         <ClipboardCheck className="size-3 text-emerald-600 dark:text-emerald-400" />
                       )}
                       <span>{controlesCount > 0 ? "Ver Control Activo" : "Control Activo"}</span>
+                    </Button>
+                  </div>
+                )}
+
+                {onCargaCombustible && (
+                  <div className="pt-1.5 border-t border-amber-500/20 flex items-center justify-between gap-2">
+                    <span className="text-[10.5px] text-muted-foreground flex items-center gap-1 min-w-0 truncate">
+                      <Fuel
+                        className={cn(
+                          "size-3 shrink-0",
+                          cargasCount > 0
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-muted-foreground"
+                        )}
+                      />
+                      <span className="truncate">
+                        {cargasCount > 0
+                          ? `${cargasCount} carga(s) combustible`
+                          : "Carga de combustible"}
+                      </span>
+                    </span>
+
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onCargaCombustible(
+                          solicitud,
+                          viaje ?? undefined,
+                          asignacion ?? undefined
+                        )
+                      }}
+                      className={cn(
+                        "h-6 gap-1 px-2 text-[10.5px] font-medium shadow-2xs cursor-pointer transition-all shrink-0",
+                        cargasCount > 0
+                          ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                          : "bg-muted hover:bg-amber-500/15 text-foreground/80 hover:text-amber-700 dark:hover:text-amber-300 border-border/70"
+                      )}
+                      title={
+                        cargasCount > 0
+                          ? "Ver y gestionar cargas de combustible"
+                          : "Registrar carga de combustible"
+                      }
+                    >
+                      <Fuel className="size-3 text-amber-600 dark:text-amber-400" />
+                      <span>{cargasCount > 0 ? "Ver Combustible" : "Cargar Combustible"}</span>
                     </Button>
                   </div>
                 )}

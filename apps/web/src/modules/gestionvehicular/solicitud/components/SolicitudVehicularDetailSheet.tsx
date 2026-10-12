@@ -11,6 +11,7 @@ import {
   FileIcon,
   FileText,
   Flame,
+  Fuel,
   Gauge,
   History,
   KeyRound,
@@ -64,6 +65,7 @@ export interface SolicitudVehicularDetailSheetProps {
   onDelete?: (solicitud: SolicitudVehicular) => void
   onAssign?: (solicitud: SolicitudVehicular) => void
   onControlActivo?: (solicitud: SolicitudVehicular, hasControles?: boolean) => void
+  onCargaCombustible?: (solicitud: SolicitudVehicular) => void
   onViewHistory?: (solicitud: SolicitudVehicular) => void
   onActionSelect?: (
     solicitud: SolicitudVehicular,
@@ -669,6 +671,7 @@ interface SolicitudActionsFooterProps {
   onOpenChange: (open: boolean) => void
   onAssign?: (solicitud: SolicitudVehicular) => void
   onControlActivo?: (solicitud: SolicitudVehicular, hasControles?: boolean) => void
+  onCargaCombustible?: (solicitud: SolicitudVehicular) => void
   controlesCount: number
   onDelete?: (solicitud: SolicitudVehicular) => void
   isDeletable: boolean
@@ -690,6 +693,7 @@ function SolicitudActionsFooter({
   onOpenChange,
   onAssign,
   onControlActivo,
+  onCargaCombustible,
   controlesCount,
   onDelete,
   isDeletable,
@@ -750,6 +754,21 @@ function SolicitudActionsFooter({
               <ClipboardCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
             )}
             <span>{controlesCount > 0 ? "Ver Control Activo" : "Control Activo"}</span>
+          </Button>
+        )}
+
+        {onCargaCombustible && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              onOpenChange(false)
+              onCargaCombustible(solicitud)
+            }}
+            className="h-8 text-xs font-semibold rounded-lg gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 cursor-pointer px-3 shadow-2xs"
+          >
+            <Fuel className="size-3.5 text-amber-600 dark:text-amber-400" />
+            <span>Cargar Combustible</span>
           </Button>
         )}
       </div>
@@ -823,6 +842,7 @@ export function SolicitudVehicularDetailSheet({
   onDelete,
   onAssign,
   onControlActivo,
+  onCargaCombustible,
   onViewHistory,
   onActionSelect,
 }: Readonly<SolicitudVehicularDetailSheetProps>) {
@@ -926,6 +946,7 @@ export function SolicitudVehicularDetailSheet({
           onOpenChange={onOpenChange}
           onAssign={onAssign}
           onControlActivo={onControlActivo}
+          onCargaCombustible={onCargaCombustible}
           controlesCount={controlesCount}
           onDelete={onDelete}
           isDeletable={estadoFlags.isDeletable}
