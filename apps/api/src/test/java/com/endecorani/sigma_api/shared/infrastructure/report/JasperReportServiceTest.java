@@ -169,4 +169,73 @@ class JasperReportServiceTest {
         String header = new String(pdfBytes, 0, 5);
         assertEquals("%PDF-", header, "El archivo debe ser un PDF válido");
     }
+
+    @Test
+    void debeGenerarBitacoraVehicularPdfCorrectamente() {
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("TITULO_REPORTE", "BITACORA MENSUAL DE VEHICULOS");
+        parameters.put("VEHICULO_TIPO", "Vagoneta");
+        parameters.put("VEHICULO_NOMBRE", "Toyota Land Cruiser");
+        parameters.put("VEHICULO_PLACA", "4564-SNT");
+        parameters.put("ANIO", "2026");
+        parameters.put("MES", "SEPTIEMBRE");
+        parameters.put("PERIODO_TEXTO", "01/09/2026 al 30/09/2026");
+        parameters.put("CONDUCTOR_FILTRO", "TODOS");
+        parameters.put("TOTAL_KM", "2419");
+        parameters.put("TOTAL_LITROS", "172.91");
+        parameters.put("TOTAL_IMPORTE", "1207.09");
+        parameters.put("RENDIMIENTO", "13.99 Km/L");
+        parameters.put("PROXIMO_MANTENIMIENTO_KM", "100000");
+
+        try {
+            org.springframework.core.io.ClassPathResource logoResource = new org.springframework.core.io.ClassPathResource("reports/images/logo-ende-corani.png");
+            if (logoResource.exists()) {
+                parameters.put("LOGO_EMPRESA", logoResource.getInputStream());
+            }
+        } catch (Exception ignored) {}
+
+        java.util.List<com.endecorani.sigma_api.modules.gestionvehicular.application.dto.bitacora.reporte.BitacoraVehicularItemReporteDto> items = java.util.List.of(
+                com.endecorani.sigma_api.modules.gestionvehicular.application.dto.bitacora.reporte.BitacoraVehicularItemReporteDto.builder()
+                        .dia(1)
+                        .diaSemana("Lun")
+                        .tipoRegistro("VIAJE")
+                        .kmSalida(97307L)
+                        .kmLlegada(97687L)
+                        .kmRecorrido(380L)
+                        .descripcionTrabajo("LA PAZ")
+                        .combustibleFactura("20846")
+                        .combustibleLitros(new java.math.BigDecimal("54.80"))
+                        .combustibleImporte(new java.math.BigDecimal("380.02"))
+                        .supervisorNombre("Julio Rocha")
+                        .supervisorVoBo(true)
+                        .observaciones("Peaje 2-7-8")
+                        .conductorNombre("LUIS CHOQUE")
+                        .conductorLicencia("Cat. C - 456789")
+                        .build(),
+                com.endecorani.sigma_api.modules.gestionvehicular.application.dto.bitacora.reporte.BitacoraVehicularItemReporteDto.builder()
+                        .dia(4)
+                        .diaSemana("Jue")
+                        .tipoRegistro("VIAJE")
+                        .kmSalida(98474L)
+                        .kmLlegada(98856L)
+                        .kmRecorrido(382L)
+                        .descripcionTrabajo("LA PAZ - CBBA")
+                        .combustibleFactura("67143")
+                        .combustibleLitros(new java.math.BigDecimal("43.10"))
+                        .combustibleImporte(new java.math.BigDecimal("300.00"))
+                        .supervisorNombre("Julio R.")
+                        .supervisorVoBo(true)
+                        .observaciones("Retorno a base")
+                        .conductorNombre("LUIS CHOQUE")
+                        .conductorLicencia("Cat. C - 456789")
+                        .build()
+        );
+
+        byte[] pdfBytes = service.generatePdfReport("reports/gestion-vehicular/bitacora_vehicular.jrxml", parameters, items);
+
+        assertNotNull(pdfBytes, "El PDF de bitácora vehicular no debe ser nulo");
+        assertTrue(pdfBytes.length > 0, "El PDF de bitácora vehicular debe contener bytes");
+        String header = new String(pdfBytes, 0, 5);
+        assertEquals("%PDF-", header, "El archivo debe ser un PDF válido");
+    }
 }

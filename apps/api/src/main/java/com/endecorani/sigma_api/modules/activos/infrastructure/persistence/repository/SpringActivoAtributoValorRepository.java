@@ -17,6 +17,8 @@ public interface SpringActivoAtributoValorRepository
             Pageable pageable
     );
 
+    java.util.List<ActivoAtributoValorEntity> findByActivoId(UUID activoId);
+
     boolean existsByActivoIdAndActivoAtributoId(
             UUID activoId,
             UUID activoAtributoId
