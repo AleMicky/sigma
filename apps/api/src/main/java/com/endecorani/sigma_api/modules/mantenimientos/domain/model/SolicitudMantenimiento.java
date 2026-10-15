@@ -29,7 +29,7 @@ public class SolicitudMantenimiento extends AuditableModel {
 
     // Clasificación
     private TipoMantenimiento tipoMantenimiento;
-    private String tipoFallas;
+    private List<String> tipoFallas;
     private Prioridad prioridad;
 
     // Solicitud

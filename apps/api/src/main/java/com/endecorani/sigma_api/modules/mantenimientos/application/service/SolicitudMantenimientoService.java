@@ -265,7 +265,9 @@ public class SolicitudMantenimientoService {
         parameters.put("ESTADO", response.estado() != null ? response.estado().toUpperCase() : "BORRADOR");
         parameters.put("PRIORIDAD", response.prioridad() != null ? response.prioridad().nombre() : "-");
         parameters.put("TIPO_MANTENIMIENTO", response.tipoMantenimiento() != null ? response.tipoMantenimiento().nombre() : "-");
-        parameters.put("TIPO_FALLAS", response.tipoFallas() != null ? response.tipoFallas() : "-");
+        parameters.put("TIPO_FALLAS", response.tipoFallas() != null && !response.tipoFallas().isEmpty()
+                ? String.join(", ", response.tipoFallas())
+                : "-");
 
         parameters.put("SOLICITANTE_NOMBRE", response.solicitante() != null ? response.solicitante().nombreCompleto() : "-");
         parameters.put("SOLICITANTE_CARGO", response.solicitante() != null && response.solicitante().cargo() != null ? response.solicitante().cargo() : "-");

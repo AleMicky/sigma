@@ -11,7 +11,7 @@ public record SolicitudMantenimientoResponse(
                 String numero,
                 ActivoInfo activo,
                 TipoMantenimientoInfo tipoMantenimiento,
-                String tipoFallas,
+                List<String> tipoFallas,
                 PrioridadInfo prioridad,
                 EmpleadoInfo solicitante,
                 String titulo,

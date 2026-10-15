@@ -65,7 +65,7 @@ export async function getSolicitudTrazabilidad(
 export type SolicitudMantenimientoPayload = {
   activoId: string
   tipoMantenimientoId: string
-  tipoFallas?: string | null
+  tipoFallas?: string[] | null
   prioridadId: string
   solicitanteId: string
   titulo: string

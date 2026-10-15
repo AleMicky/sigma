@@ -33,6 +33,7 @@ export function SolicitudResumenCard() {
         activoId: state.values.activoId,
         fechaSolicitud: state.values.fechaSolicitud,
         descripcion: state.values.descripcion,
+        tipoFallas: state.values.tipoFallas,
       })}
     >
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -156,6 +157,24 @@ export function SolicitudResumenCard() {
                       : "0"}
                   </span>
                 </div>
+
+                {Array.isArray(values.tipoFallas) && values.tipoFallas.length > 0 && (
+                  <div className="flex items-center gap-1.5 min-w-0 sm:col-span-2 lg:col-span-3 pt-0.5">
+                    <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
+                      Fallas:
+                    </span>
+                    <div className="flex flex-wrap gap-1 min-w-0">
+                      {values.tipoFallas.map((f: string) => (
+                        <span
+                          key={f}
+                          className="inline-flex items-center px-1.5 py-0.2 rounded-md text-[10px] font-medium bg-background/80 border border-inherit/20 text-foreground"
+                        >
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Impacto */}
