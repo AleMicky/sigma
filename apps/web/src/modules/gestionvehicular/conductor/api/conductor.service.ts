@@ -1,4 +1,4 @@
-import { createCrudService, http } from "@/shared/api"
+import { createCrudService, http, uploadImage } from "@/shared/api"
 import type { PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
@@ -39,6 +39,8 @@ export type Conductor = AuditableEntity & {
   empleado?: ConductorEmpleadoInfo | null
   estado: EstadoConductor
   observacion?: string | null
+  urlImagen?: string | null
+  tipoSangre?: string | null
   activo: boolean
   licencias: ConductorLicencia[]
 }
@@ -63,6 +65,8 @@ export type ConductorPayload = {
   empleadoId: string
   estado?: EstadoConductor
   observacion?: string | null
+  urlImagen?: string | null
+  tipoSangre?: string | null
   activo?: boolean
   licencias: ConductorLicenciaPayload[]
 }
@@ -71,6 +75,8 @@ export type ConductorUpdatePayload = {
   empleadoId: string
   estado?: EstadoConductor
   observacion?: string | null
+  urlImagen?: string | null
+  tipoSangre?: string | null
   activo?: boolean
   licencias: ConductorLicenciaPayload[]
 }
@@ -94,3 +100,11 @@ export const updateConductor = (id: string, payload: ConductorUpdatePayload): Pr
   return http.put<Conductor>(conductorEndpoints.byId(id), payload)
 }
 export const deleteConductor = crud.remove
+
+export function uploadConductorImagen(id: string, file: File): Promise<Conductor> {
+  return uploadImage<Conductor>(conductorEndpoints.imagen(id), file)
+}
+
+export function deleteConductorImagen(id: string): Promise<Conductor> {
+  return http.delete<Conductor>(conductorEndpoints.imagen(id))
+}

@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -14,7 +15,8 @@ public record SolicitudMantenimientoRequest(
         @NotNull(message = "El tipo de mantenimiento es obligatorio")
         UUID tipoMantenimientoId,
 
-        String tipoFallas,
+        @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+        List<String> tipoFallas,
 
         @NotNull(message = "La prioridad es obligatoria")
         UUID prioridadId,

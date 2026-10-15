@@ -19,6 +19,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,8 +53,9 @@ public class SolicitudMantenimientoEntity extends BaseEntity {
         @JoinColumn(name = "tipo_mantenimiento_id", nullable = false)
         private TipoMantenimientoEntity tipoMantenimiento;
 
-        @Column(name = "tipo_fallas", length = 200)
-        private String tipoFallas;
+        @JdbcTypeCode(SqlTypes.JSON)
+        @Column(name = "tipo_fallas", columnDefinition = "jsonb")
+        private List<String> tipoFallas;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "prioridad_id", nullable = false)

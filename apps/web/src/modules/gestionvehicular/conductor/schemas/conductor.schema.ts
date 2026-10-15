@@ -23,6 +23,17 @@ export const CATEGORIAS_LICENCIA = [
   { value: "T", label: "Categoría T (Tractorista / Maquinaria)" },
 ] as const
 
+export const TIPOS_SANGRE = [
+  { value: "O+", label: "O Rh+ (O+)" },
+  { value: "O-", label: "O Rh- (O-)" },
+  { value: "A+", label: "A Rh+ (A+)" },
+  { value: "A-", label: "A Rh- (A-)" },
+  { value: "B+", label: "B Rh+ (B+)" },
+  { value: "B-", label: "B Rh- (B-)" },
+  { value: "AB+", label: "AB Rh+ (AB+)" },
+  { value: "AB-", label: "AB Rh- (AB-)" },
+] as const
+
 export const conductorLicenciaSchema = z.object({
   id: z.string().optional(),
   categoriaLicencia: z
@@ -52,6 +63,7 @@ export type ConductorLicenciaFormValues = z.infer<typeof conductorLicenciaSchema
 export const conductorBasicSchema = z.object({
   empleadoId: z.string().min(1, "Debes seleccionar un empleado titular"),
   estado: z.enum(["ACTIVO", "INACTIVO", "SUSPENDIDO", "BAJA"]),
+  tipoSangre: z.string().max(20, "El tipo de sangre no puede superar los 20 caracteres").optional().nullable(),
   observacion: z.string().max(1000, "La observación no puede superar los 1000 caracteres").optional().nullable(),
   activo: z.boolean(),
 })
@@ -71,6 +83,7 @@ export const defaultLicenciaValue: ConductorLicenciaFormValues = {
 export const defaultConductorBasicValues: ConductorBasicFormValues = {
   empleadoId: "",
   estado: "ACTIVO",
+  tipoSangre: "",
   observacion: "",
   activo: true,
 }

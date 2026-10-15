@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "@tanstack/react-form"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { isApiError } from "@/shared/api"
 import {
@@ -7,6 +8,7 @@ import {
   FormDialogSubmit,
   RequiredFieldLabel,
 } from "@/shared/components/form-dialog"
+import { ImageUploadField } from "@/shared/components/image-upload-field"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import {
   Select,
@@ -19,10 +21,17 @@ import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
 
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
+import { conductorKeys } from "../api/conductor.keys"
 import { useCreateConductor, useUpdateConductor } from "../api/conductor.mutations"
-import type { Conductor, ConductorPayload } from "../api/conductor.service"
+import {
+  deleteConductorImagen,
+  uploadConductorImagen,
+  type Conductor,
+  type ConductorPayload,
+} from "../api/conductor.service"
 import {
   ESTADOS_CONDUCTOR,
+  TIPOS_SANGRE,
   conductorBasicSchema,
   defaultConductorBasicValues,
   type ConductorBasicFormValues,
@@ -41,15 +50,27 @@ export function ConductorFormDialog({
   conductor,
   onSuccess,
 }: ConductorFormDialogProps) {
+  const queryClient = useQueryClient()
   const isEditing = Boolean(conductor)
   const createMutation = useCreateConductor()
   const updateMutation = useUpdateConductor()
   const [formError, setFormError] = useState<string | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [removeExistingImage, setRemoveExistingImage] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setPendingFile(null)
+      setRemoveExistingImage(false)
+      setFormError(null)
+    }
+  }, [open, conductor])
 
   const initialValues: ConductorBasicFormValues = conductor
     ? {
         empleadoId: conductor.empleadoId,
         estado: conductor.estado ?? "ACTIVO",
+        tipoSangre: conductor.tipoSangre ?? "",
         observacion: conductor.observacion ?? "",
         activo: conductor.activo ?? true,
       }
@@ -68,6 +89,7 @@ export function ConductorFormDialog({
         const payload: ConductorPayload = {
           empleadoId: isEditing && conductor ? conductor.empleadoId : value.empleadoId,
           estado: value.estado,
+          tipoSangre: value.tipoSangre?.trim() || null,
           observacion: value.observacion?.trim() || null,
           activo: value.activo,
           licencias: conductor?.licencias ? conductor.licencias.map((l) => ({
@@ -87,9 +109,17 @@ export function ConductorFormDialog({
           })) : [],
         }
 
-        const saved = isEditing && conductor
+        let saved = isEditing && conductor
           ? await updateMutation.mutateAsync({ id: conductor.id, payload })
           : await createMutation.mutateAsync(payload)
+
+        if (pendingFile) {
+          saved = await uploadConductorImagen(saved.id, pendingFile)
+        } else if (removeExistingImage && conductor?.urlImagen) {
+          saved = await deleteConductorImagen(saved.id)
+        }
+
+        void queryClient.invalidateQueries({ queryKey: conductorKeys.all })
 
         onSuccess?.(saved)
         onOpenChange(false)
@@ -118,6 +148,8 @@ export function ConductorFormDialog({
       className="max-w-md sm:max-w-lg"
       onCancel={() => {
         setFormError(null)
+        setPendingFile(null)
+        setRemoveExistingImage(false)
         form.reset()
       }}
       onSubmit={() => form.handleSubmit()}
@@ -135,6 +167,16 @@ export function ConductorFormDialog({
       }
     >
       <div className="space-y-4 py-1">
+        {/* Fotografía del Conductor */}
+        <ImageUploadField
+          label="Fotografía del Conductor"
+          currentUrl={conductor?.urlImagen}
+          file={pendingFile}
+          onFileChange={setPendingFile}
+          removeExisting={removeExistingImage}
+          onRemoveExistingChange={setRemoveExistingImage}
+        />
+
         {/* 1. Empleado asignado */}
         <form.Field name="empleadoId">
           {(field) => {
@@ -198,41 +240,72 @@ export function ConductorFormDialog({
             }}
           </form.Field>
 
-          {/* 3. Switch Activo */}
-          <form.Field name="activo">
-            {(field) => (
-              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 p-3 h-full">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-semibold text-foreground">
-                    Habilitado
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    Permitir asignaciones
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={field.state.value}
-                  onClick={() => field.handleChange(!field.state.value)}
-                  className={cn(
-                    "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary",
-                    field.state.value ? "bg-primary" : "bg-muted-foreground/30"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "pointer-events-none inline-block size-5 transform rounded-full bg-background shadow-md ring-0 transition duration-200 ease-in-out",
-                      field.state.value ? "translate-x-5" : "translate-x-0"
-                    )}
-                  />
-                </button>
-              </div>
-            )}
+          {/* 3. Tipo de Sangre */}
+          <form.Field name="tipoSangre">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Tipo de Sangre</FieldLabel>
+                  <Select
+                    value={field.state.value || "none"}
+                    onValueChange={(val) =>
+                      field.handleChange(val === "none" ? "" : val)
+                    }
+                  >
+                    <SelectTrigger id={field.name} className="w-full">
+                      <SelectValue placeholder="Selecciona tipo de sangre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin registrar</SelectItem>
+                      {TIPOS_SANGRE.map((ts) => (
+                        <SelectItem key={ts.value} value={ts.value}>
+                          {ts.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           </form.Field>
         </div>
 
-        {/* 4. Observación */}
+        {/* 4. Switch Activo */}
+        <form.Field name="activo">
+          {(field) => (
+            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 p-3 h-full">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-semibold text-foreground">
+                  Habilitado
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  Permitir asignaciones vehiculares
+                </span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={field.state.value}
+                onClick={() => field.handleChange(!field.state.value)}
+                className={cn(
+                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary",
+                  field.state.value ? "bg-primary" : "bg-muted-foreground/30"
+                )}
+              >
+                <span
+                  className={cn(
+                    "pointer-events-none inline-block size-5 transform rounded-full bg-background shadow-md ring-0 transition duration-200 ease-in-out",
+                    field.state.value ? "translate-x-5" : "translate-x-0"
+                  )}
+                />
+              </button>
+            </div>
+          )}
+        </form.Field>
+
+        {/* 5. Observación */}
         <form.Field name="observacion">
           {(field) => (
             <Field>

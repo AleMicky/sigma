@@ -19,6 +19,8 @@ public interface SpringActivoAtributoValorRepository
 
     java.util.List<ActivoAtributoValorEntity> findByActivoId(UUID activoId);
 
+    java.util.List<ActivoAtributoValorEntity> findByActivoIdIn(java.util.Collection<UUID> activoIds);
+
     boolean existsByActivoIdAndActivoAtributoId(
             UUID activoId,
             UUID activoAtributoId

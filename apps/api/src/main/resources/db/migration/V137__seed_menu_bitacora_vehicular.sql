@@ -55,19 +55,3 @@ ON CONFLICT (codigo) DO UPDATE SET
     activo          = EXCLUDED.activo,
     updated_at      = NOW(),
     updated_by      = 'seed';
-
--- Garantizar asignación del menú al rol ADMIN
-INSERT INTO seguridad.roles_menus (id, rol_id, menu_id, created_at, updated_at, created_by, updated_by)
-SELECT
-    gen_random_uuid(),
-    r.id,
-    m.id,
-    NOW(),
-    NOW(),
-    'seed',
-    'seed'
-FROM seguridad.roles r
-CROSS JOIN seguridad.menus m
-WHERE (r.codigo = 'ADMIN' OR r.codigo = 'ROLE_ADMIN' OR r.nombre ILIKE '%admin%')
-  AND m.codigo = 'MENU_VEH_BITACORA'
-ON CONFLICT (rol_id, menu_id) DO NOTHING;

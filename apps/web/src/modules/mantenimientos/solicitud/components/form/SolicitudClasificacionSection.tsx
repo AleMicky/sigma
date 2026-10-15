@@ -1,7 +1,7 @@
 import { Check, Layers, Loader2 } from "lucide-react"
 
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
-import { CatalogoCombobox } from "@/shared/components/catalogo-combobox"
+import { CatalogoMultiSelect } from "@/shared/components/catalogo-multi-select"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
@@ -174,20 +174,19 @@ export function SolicitudClasificacionSection() {
             return (
               <Field data-invalid={isInvalid || undefined}>
                 <FieldLabel htmlFor={field.name}>
-                  Tipo de Falla
+                  Tipos de Falla
                 </FieldLabel>
-                <CatalogoCombobox
+                <CatalogoMultiSelect
                   codigo="TIPO_FALLAS"
                   id={field.name}
                   name={field.name}
-                  value={field.state.value}
+                  value={field.state.value ?? []}
                   onBlur={field.handleBlur}
                   onValueChange={(val) => field.handleChange(val)}
                   aria-invalid={isInvalid}
-                  placeholder="Seleccionar o describir falla..."
-                  maxLength={200}
+                  placeholder="Seleccionar fallas..."
                   allowCustomValue={true}
-                  className="h-9.5 text-xs sm:text-sm"
+                  className="min-h-9.5 text-xs sm:text-sm"
                 />
                 {isInvalid && (
                   <FieldError errors={field.state.meta.errors} />

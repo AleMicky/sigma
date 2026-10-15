@@ -62,6 +62,18 @@ public class ConductorEntity extends BaseEntity {
     )
     private String observacion;
 
+    @Column(
+            name = "url_imagen",
+            length = 1000
+    )
+    private String urlImagen;
+
+    @Column(
+            name = "tipo_sangre",
+            length = 20
+    )
+    private String tipoSangre;
+
     @Builder.Default
     @Column(
             name = "activo",

@@ -52,6 +52,9 @@ class ConductorServiceTest {
     @Mock
     private ConductorMapper mapper;
 
+    @Mock
+    private com.endecorani.sigma_api.shared.application.storage.ImageStorageService imageStorageService;
+
     @InjectMocks
     private ConductorService service;
 
@@ -136,6 +139,8 @@ class ConductorServiceTest {
                 empleadoInfo,
                 EstadoConductor.ACTIVO,
                 "Conductor asignado",
+                null,
+                "O+",
                 true,
                 List.of(licResponse),
                 null
@@ -198,6 +203,8 @@ class ConductorServiceTest {
                 empleadoId,
                 EstadoConductor.ACTIVO,
                 "Conductor asignado",
+                null,
+                "O+",
                 true,
                 List.of(licReq)
         );
@@ -222,6 +229,8 @@ class ConductorServiceTest {
         ConductorRequest request = new ConductorRequest(
                 empleadoId,
                 EstadoConductor.ACTIVO,
+                null,
+                null,
                 null,
                 true,
                 List.of()

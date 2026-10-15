@@ -651,12 +651,25 @@ export function OrdenTrabajoDetailPanel({
                 </p>
               </div>
 
-              {solicitud.tipoFallas && (
-                <div className="border rounded-xl p-3 bg-card space-y-0.5 text-xs shadow-2xs">
+              {solicitud.tipoFallas && (Array.isArray(solicitud.tipoFallas) ? solicitud.tipoFallas.length > 0 : Boolean(solicitud.tipoFallas)) && (
+                <div className="border rounded-xl p-3 bg-card space-y-1 text-xs shadow-2xs">
                   <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                     Tipos de Falla Reportados
                   </span>
-                  <p className="font-semibold text-foreground">{solicitud.tipoFallas}</p>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {Array.isArray(solicitud.tipoFallas) ? (
+                      solicitud.tipoFallas.map((falla) => (
+                        <span
+                          key={falla}
+                          className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-muted text-foreground"
+                        >
+                          {falla}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="font-semibold text-foreground">{solicitud.tipoFallas}</p>
+                    )}
+                  </div>
                 </div>
               )}
             </TabsContent>

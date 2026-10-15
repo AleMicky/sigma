@@ -17,6 +17,12 @@ public record ConductorRequest(
         @Size(max = 1000, message = "La observación no puede superar los 1000 caracteres")
         String observacion,
 
+        @Size(max = 1000, message = "La URL de la imagen no puede superar los 1000 caracteres")
+        String urlImagen,
+
+        @Size(max = 20, message = "El tipo de sangre no puede superar los 20 caracteres")
+        String tipoSangre,
+
         Boolean activo,
 
         @Valid

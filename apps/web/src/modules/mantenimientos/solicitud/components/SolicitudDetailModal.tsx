@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -422,21 +423,38 @@ export function SolicitudDetailModal({
                   </div>
 
                   {/* Tipo de Falla / Diagnóstico */}
-                  {currentSolicitud.tipoFallas ? (
-                    <div className="space-y-1 min-w-0">
+                  {currentSolicitud.tipoFallas && (Array.isArray(currentSolicitud.tipoFallas) ? currentSolicitud.tipoFallas.length > 0 : Boolean(currentSolicitud.tipoFallas)) ? (
+                    <div className="space-y-1.5 min-w-0">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                         <AlertTriangle className="size-3 text-amber-500" />
-                        <span>Tipo de Falla / Diagnóstico</span>
+                        <span>Tipos de Falla / Diagnóstico</span>
                       </span>
-                      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 break-words pl-4.5">
-                        {currentSolicitud.tipoFallas}
-                      </p>
+                      <div className="flex flex-wrap gap-1.5 pl-4.5">
+                        {Array.isArray(currentSolicitud.tipoFallas) ? (
+                          currentSolicitud.tipoFallas.map((falla) => (
+                            <Badge
+                              key={falla}
+                              variant="outline"
+                              className="text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+                            >
+                              {falla}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+                          >
+                            {currentSolicitud.tipoFallas}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-1 min-w-0">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                         <Tag className="size-3 text-muted-foreground" />
-                        <span>Tipo de Falla</span>
+                        <span>Tipos de Falla</span>
                       </span>
                       <p className="text-xs text-muted-foreground font-normal pl-4.5">
                         No especificada

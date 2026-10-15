@@ -43,7 +43,7 @@ export type SolicitudMantenimiento = {
   numero: string
   activo: SolicitudActivoInfo
   tipoMantenimiento: SolicitudTipoMantenimientoInfo
-  tipoFallas?: string | null
+  tipoFallas?: string[] | string | null
   prioridad: SolicitudPrioridadInfo
   solicitante: SolicitudEmpleadoInfo
   titulo: string

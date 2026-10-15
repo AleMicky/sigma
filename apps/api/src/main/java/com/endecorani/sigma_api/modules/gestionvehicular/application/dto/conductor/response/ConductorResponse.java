@@ -12,6 +12,8 @@ public record ConductorResponse(
         ConductorEmpleadoInfo empleado,
         EstadoConductor estado,
         String observacion,
+        String urlImagen,
+        String tipoSangre,
         boolean activo,
         List<ConductorLicenciaResponse> licencias,
         AuditoriaResponse auditoria

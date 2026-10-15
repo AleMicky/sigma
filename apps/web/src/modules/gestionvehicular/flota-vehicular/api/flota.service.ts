@@ -33,6 +33,16 @@ export interface FlotaVehiculoActivoInfo {
   nombre: string
   descripcion?: string | null
   urlImagen?: string | null
+  placa?: string | null
+  tipoActivo?: string | null
+  marca?: string | null
+  modelo?: string | null
+  anio?: string | null
+  color?: string | null
+  atributos?: Record<string, string> | null
+  responsableNombre?: string | null
+  responsableArea?: string | null
+  responsableCargo?: string | null
 }
 
 export interface FlotaVehiculoFlotaInfo {

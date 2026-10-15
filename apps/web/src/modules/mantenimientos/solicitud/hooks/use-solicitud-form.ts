@@ -174,13 +174,25 @@ export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
     return map
   }, [empleados, extraEmpleados, solicitud?.solicitante])
 
+  const parseTipoFallas = (val?: string[] | string | null): string[] => {
+    if (!val) return []
+    if (Array.isArray(val)) return val
+    try {
+      const parsed = JSON.parse(val)
+      if (Array.isArray(parsed)) return parsed.filter((x): x is string => typeof x === "string")
+    } catch {
+      // ignore
+    }
+    return typeof val === "string" ? val.split(",").map((s) => s.trim()).filter(Boolean) : []
+  }
+
   // 8. Instancia de TanStack Form
   const form = useForm({
     defaultValues: (solicitud
       ? {
         titulo: solicitud.titulo,
         descripcion: solicitud.descripcion ?? "",
-        tipoFallas: solicitud.tipoFallas ?? "",
+        tipoFallas: parseTipoFallas(solicitud.tipoFallas),
         activoId: solicitud.activo?.id ?? "",
         tipoMantenimientoId: solicitud.tipoMantenimiento?.id ?? "",
         prioridadId: solicitud.prioridad?.id ?? "",
@@ -206,7 +218,7 @@ export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
         const payload: SolicitudPayload = {
           titulo: value.titulo.trim(),
           descripcion: value.descripcion.trim(),
-          tipoFallas: (value.tipoFallas ?? "").trim() || null,
+          tipoFallas: value.tipoFallas && value.tipoFallas.length > 0 ? value.tipoFallas : null,
           activoId: value.activoId.trim(),
           tipoMantenimientoId: value.tipoMantenimientoId.trim(),
           prioridadId: value.prioridadId.trim(),
@@ -252,7 +264,7 @@ export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
     if (solicitud) {
       form.setFieldValue("titulo", solicitud.titulo)
       form.setFieldValue("descripcion", solicitud.descripcion ?? "")
-      form.setFieldValue("tipoFallas", solicitud.tipoFallas ?? "")
+      form.setFieldValue("tipoFallas", parseTipoFallas(solicitud.tipoFallas))
       form.setFieldValue("activoId", solicitud.activo?.id ?? "")
       form.setFieldValue("tipoMantenimientoId", solicitud.tipoMantenimiento?.id ?? "")
       form.setFieldValue("prioridadId", solicitud.prioridad?.id ?? "")

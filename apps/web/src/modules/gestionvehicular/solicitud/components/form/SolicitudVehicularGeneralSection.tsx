@@ -42,7 +42,7 @@ export function SolicitudVehicularGeneralSection() {
             return (
               <Field data-invalid={isInvalid || undefined} className="space-y-1">
                 <RequiredFieldLabel htmlFor={field.name} className="text-xs">
-                  Empleado Solicitante
+                  Personal Solicitante
                 </RequiredFieldLabel>
                 <EmpleadoCombobox
                   id={field.name}
