@@ -7,6 +7,7 @@ import {
   UserCheck,
 } from "lucide-react"
 
+import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Button } from "@/shared/components/ui/button"
@@ -186,22 +187,38 @@ export function ConductorMasterPanel({
                     : "hover:bg-muted/30 border border-transparent"
                 )}
               >
-                {/* Icon Container */}
+                {/* Icon / Image Container */}
                 <div
                   className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold shadow-2xs transition-transform group-hover:scale-105",
+                    "relative flex size-9 shrink-0 items-center justify-center rounded-xl overflow-hidden border text-sm font-semibold shadow-2xs transition-transform group-hover:scale-105",
                     theme.bg
                   )}
                 >
-                  <Icon className="size-4.5" />
+                  {conductor.urlImagen ? (
+                    <AuthenticatedImage
+                      src={conductor.urlImagen}
+                      alt={nombre}
+                      className="size-full object-cover"
+                      fallback={<Icon className="size-4.5" />}
+                    />
+                  ) : (
+                    <Icon className="size-4.5" />
+                  )}
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="font-semibold text-xs text-foreground truncate">
-                      {nombre}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0 truncate">
+                      <span className="font-semibold text-xs text-foreground truncate">
+                        {nombre}
+                      </span>
+                      {conductor.tipoSangre && (
+                        <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-1 py-0.2 rounded border border-rose-500/20 shrink-0">
+                          {conductor.tipoSangre}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] text-muted-foreground shrink-0 font-mono">
                       {categoriasStr ? `Cat. ${categoriasStr}` : "Sin lic."}
                     </span>

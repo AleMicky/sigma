@@ -17,8 +17,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -91,6 +93,33 @@ public class ConductorController {
         ConductorResponse response = service.update(id, request);
         return ResponseEntity.ok(
                 ApiResponse.success("Conductor actualizado correctamente", response)
+        );
+    }
+
+    @PostMapping(value = "/{id}/imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Subir o reemplazar la imagen del conductor")
+    public ResponseEntity<ApiResponse<ConductorResponse>> uploadImagen(
+            @PathVariable UUID id,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Imagen actualizada correctamente",
+                        service.uploadImagen(id, file)
+                )
+        );
+    }
+
+    @DeleteMapping("/{id}/imagen")
+    @Operation(summary = "Eliminar la imagen del conductor")
+    public ResponseEntity<ApiResponse<ConductorResponse>> deleteImagen(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Imagen eliminada correctamente",
+                        service.deleteImagen(id)
+                )
         );
     }
 

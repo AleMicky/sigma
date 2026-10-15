@@ -6,10 +6,10 @@ import {
   ChevronRight,
   Clock,
   Copy,
+  Droplet,
   ExternalLink,
   FileText,
   History,
-  IdCard,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { formatDate } from "@/shared/lib/format-date"
@@ -199,44 +200,75 @@ export function ConductorDetailPanel({
 
       {/* 2. Main Content Area */}
       <div className="flex-1 p-6 sm:p-8 space-y-7 w-full max-w-5xl">
-        {/* Header Block with Big Icon + Title + Edit Button */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-3">
-            {/* Top Icon Badge */}
-            <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-2xs">
-              <IdCard className="size-5" />
+        {/* Header Block with Big Avatar/Photo + Title + Edit Button */}
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-5">
+          <div className="flex items-start gap-4 min-w-0">
+            {/* Foto del conductor o Avatar */}
+            <div className="relative size-18 sm:size-22 rounded-2xl overflow-hidden border-2 border-border/80 shadow-md bg-muted shrink-0 group">
+              {conductor.urlImagen ? (
+                <AuthenticatedImage
+                  src={conductor.urlImagen}
+                  alt={nombre}
+                  className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  fallbackClassName="size-full flex items-center justify-center bg-gradient-to-br from-primary/80 to-primary/40 text-primary-foreground font-bold text-lg"
+                  fallback={<span>{initials}</span>}
+                />
+              ) : (
+                <div className="size-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/80 via-primary/60 to-primary/40 text-primary-foreground">
+                  <span className="text-xl font-bold tracking-wider">{initials}</span>
+                </div>
+              )}
+              <span
+                className={cn(
+                  "absolute bottom-1 right-1 size-3 rounded-full border-2 border-background shadow-xs",
+                  conductor.activo ? "bg-emerald-500" : "bg-zinc-400"
+                )}
+                title={conductor.activo ? "Habilitado" : "Deshabilitado"}
+              />
             </div>
 
-            {/* Supertitle */}
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500 dark:text-amber-400">
-                CONDUCTOR INSTITUCIONAL
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            {/* Datos Principales */}
+            <div className="space-y-1.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500 dark:text-amber-400">
+                  CONDUCTOR INSTITUCIONAL
+                </span>
+                {conductor.tipoSangre && (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold text-[10px] px-2 py-0 rounded-full"
+                  >
+                    <Droplet className="size-3 fill-rose-500 text-rose-500 shrink-0" />
+                    Grupo {conductor.tipoSangre}
+                  </Badge>
+                )}
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground truncate">
                 {nombre}
               </h1>
-            </div>
 
-            {/* Description */}
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
-              {conductor.observacion ||
-                `Conductor autorizado para la asignación y operación de vehículos del parque automotor institucional, adscrito al área de ${area}.`}
-            </p>
+              {/* Description */}
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl line-clamp-2">
+                {conductor.observacion ||
+                  `Conductor autorizado para la asignación y operación de vehículos del parque automotor institucional, adscrito al área de ${area}.`}
+              </p>
+            </div>
           </div>
 
           <Button
             variant="outline"
             size="sm"
             onClick={() => onEditConductor(conductor)}
-            className="shrink-0 gap-1.5 rounded-lg border-border/80 text-xs font-semibold px-3 py-1.5 h-8 hover:bg-muted shadow-2xs cursor-pointer"
+            className="shrink-0 gap-1.5 rounded-lg border-border/80 text-xs font-semibold px-3 py-1.5 h-8 hover:bg-muted shadow-2xs cursor-pointer self-start"
           >
             <Pencil className="size-3.5" />
             Editar Conductor
           </Button>
         </div>
 
-        {/* 3. Metadata Grid Card (Responsable · Estado · Vencimiento) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 rounded-2xl border border-border/60 bg-muted/15 p-1 divide-y sm:divide-y-0 sm:divide-x divide-border/50 shadow-2xs">
+        {/* 3. Metadata Grid Card (Responsable · Tipo de Sangre · Estado · Vencimiento) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 rounded-2xl border border-border/60 bg-muted/15 p-1 divide-y sm:divide-y-0 sm:divide-x divide-border/50 shadow-2xs">
           {/* Titular */}
           <div className="flex flex-col gap-1.5 p-3.5">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -250,10 +282,32 @@ export function ConductorDetailPanel({
                 <span className="text-xs font-semibold text-foreground truncate">
                   {nombre}
                 </span>
-                <span className="text-[10px] text-muted-foreground font-mono">
+                <span className="text-[10px] text-muted-foreground font-mono truncate">
                   {codigo} · {cargo}
                 </span>
               </div>
+            </div>
+          </div>
+
+          {/* Grupo Sanguíneo */}
+          <div className="flex flex-col gap-1.5 p-3.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              GRUPO SANGUÍNEO
+            </span>
+            <div className="flex items-center gap-2 h-7">
+              {conductor.tipoSangre ? (
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold text-xs px-2.5 py-0.5 rounded-full"
+                >
+                  <Droplet className="size-3.5 fill-rose-500 text-rose-500 shrink-0" />
+                  {conductor.tipoSangre}
+                </Badge>
+              ) : (
+                <span className="text-xs text-muted-foreground italic">
+                  No registrado
+                </span>
+              )}
             </div>
           </div>
 
@@ -291,7 +345,7 @@ export function ConductorDetailPanel({
                       vencimientoVigente?.dot || "bg-emerald-500"
                     )}
                   />
-                  <span className="text-xs font-semibold text-foreground">
+                  <span className="text-xs font-semibold text-foreground truncate">
                     Cat. {licenciaVigente.categoriaLicencia} · {vencimientoVigente?.text || "Vigente"}
                   </span>
                 </>

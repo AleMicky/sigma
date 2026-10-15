@@ -5,6 +5,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  Droplet,
   IdCard,
   Pencil,
   ShieldAlert,
@@ -12,6 +13,7 @@ import {
   XCircle,
 } from "lucide-react"
 
+import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { DataTable, DataTableColumnHeader } from "@/shared/components/data-table"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -138,11 +140,23 @@ export function ConductorTableView({
 
           return (
             <div className="flex items-center gap-3 py-0.5 min-w-0">
-              <div className="relative flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/80 via-primary/60 to-primary/30 font-bold text-xs text-primary-foreground shadow-2xs ring-2 ring-background">
-                <span>{initials}</span>
+              <div className="relative size-9 shrink-0 rounded-xl overflow-hidden border border-border/70 shadow-2xs ring-2 ring-background bg-muted flex items-center justify-center">
+                {c.urlImagen ? (
+                  <AuthenticatedImage
+                    src={c.urlImagen}
+                    alt={nombre}
+                    className="size-full object-cover"
+                    fallbackClassName="size-full flex items-center justify-center bg-gradient-to-br from-primary/80 via-primary/60 to-primary/30 font-bold text-xs text-primary-foreground"
+                    fallback={<span>{initials}</span>}
+                  />
+                ) : (
+                  <div className="size-full flex items-center justify-center bg-gradient-to-br from-primary/80 via-primary/60 to-primary/30 font-bold text-xs text-primary-foreground">
+                    <span>{initials}</span>
+                  </div>
+                )}
                 <span
                   className={cn(
-                    "absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-background shadow-2xs",
+                    "absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-background shadow-2xs z-10",
                     c.activo ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
                   )}
                   title={c.activo ? "Habilitado" : "Deshabilitado"}
@@ -160,6 +174,16 @@ export function ConductorTableView({
                   <span className="font-mono text-[10px] font-semibold text-foreground/85 bg-muted/80 px-1.5 py-0.2 rounded border border-border/40">
                     {codigo}
                   </span>
+                  {c.tipoSangre && (
+                    <Badge
+                      variant="outline"
+                      className="gap-0.5 border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[9.5px] font-bold px-1.5 py-0 rounded-full"
+                      title={`Grupo Sanguíneo: ${c.tipoSangre}`}
+                    >
+                      <Droplet className="size-2.5 fill-rose-500 text-rose-500 shrink-0" />
+                      {c.tipoSangre}
+                    </Badge>
+                  )}
                   {cargo && (
                     <>
                       <span className="opacity-40">•</span>

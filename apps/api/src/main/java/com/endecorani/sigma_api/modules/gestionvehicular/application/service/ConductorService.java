@@ -26,6 +26,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.endecorani.sigma_api.shared.application.storage.ImageStorageService;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,6 +36,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ConductorService {
+
+    private static final String IMAGE_FOLDER = "conductores";
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -47,6 +52,7 @@ public class ConductorService {
     private final EmpleadoRepository empleadoRepository;
     private final SpringVEmpleadoRepository springVEmpleadoRepository;
     private final ConductorMapper mapper;
+    private final ImageStorageService imageStorageService;
 
     @Transactional(readOnly = true)
     public PageResponse<ConductorResponse> findAll(PageRequestDto pageRequest) {
@@ -118,6 +124,10 @@ public class ConductorService {
             domain.setActivo(true);
         }
         domain.setObservacion(StringUtils.normalize(dto.observacion()));
+        domain.setTipoSangre(StringUtils.normalize(dto.tipoSangre()));
+        if (dto.urlImagen() != null) {
+            domain.setUrlImagen(StringUtils.normalize(dto.urlImagen()));
+        }
 
         if (domain.getLicencias() != null) {
             for (ConductorLicencia lic : domain.getLicencias()) {
@@ -150,6 +160,10 @@ public class ConductorService {
 
         mapper.updateDomainFromRequest(dto, actual);
         actual.setObservacion(StringUtils.normalize(dto.observacion()));
+        actual.setTipoSangre(StringUtils.normalize(dto.tipoSangre()));
+        if (dto.urlImagen() != null) {
+            actual.setUrlImagen(StringUtils.normalize(dto.urlImagen()));
+        }
         if (dto.estado() != null) {
             actual.setEstado(dto.estado());
         }
@@ -185,6 +199,10 @@ public class ConductorService {
 
         mapper.updateDomain(dto, actual);
         actual.setObservacion(StringUtils.normalize(dto.observacion()));
+        actual.setTipoSangre(StringUtils.normalize(dto.tipoSangre()));
+        if (dto.urlImagen() != null) {
+            actual.setUrlImagen(StringUtils.normalize(dto.urlImagen()));
+        }
         if (dto.estado() != null) {
             actual.setEstado(dto.estado());
         }
@@ -210,8 +228,31 @@ public class ConductorService {
     }
 
     @Transactional
+    public ConductorResponse uploadImagen(UUID id, MultipartFile file) {
+        Conductor actual = obtenerPorId(id);
+        String url = imageStorageService.store(IMAGE_FOLDER, id, file);
+        actual.setUrlImagen(url);
+        Conductor guardado = repository.save(actual);
+        return toResponse(guardado);
+    }
+
+    @Transactional
+    public ConductorResponse deleteImagen(UUID id) {
+        Conductor actual = obtenerPorId(id);
+        if (actual.getUrlImagen() != null) {
+            imageStorageService.delete(actual.getUrlImagen());
+            actual.setUrlImagen(null);
+            actual = repository.save(actual);
+        }
+        return toResponse(actual);
+    }
+
+    @Transactional
     public void delete(UUID id) {
-        obtenerPorId(id);
+        Conductor conductor = obtenerPorId(id);
+        if (conductor.getUrlImagen() != null) {
+            imageStorageService.delete(conductor.getUrlImagen());
+        }
         repository.deleteById(id);
     }
 

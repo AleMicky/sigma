@@ -32,6 +32,8 @@ public interface ConductorMapper {
     @Mapping(target = "empleadoId", source = "domain.empleadoId")
     @Mapping(target = "estado", source = "domain.estado")
     @Mapping(target = "observacion", source = "domain.observacion")
+    @Mapping(target = "urlImagen", source = "domain.urlImagen")
+    @Mapping(target = "tipoSangre", source = "domain.tipoSangre")
     @Mapping(target = "activo", source = "domain.activo")
     @Mapping(target = "empleado", source = "empleado")
     @Mapping(target = "licencias", source = "domain.licencias")

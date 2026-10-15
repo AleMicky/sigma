@@ -1,9 +1,9 @@
-import * as React from "react"
 import {
   AlertTriangle,
   Building,
   CheckCircle2,
   Clock,
+  Droplet,
   FileText,
   Pencil,
   ShieldAlert,
@@ -11,6 +11,7 @@ import {
   XCircle,
 } from "lucide-react"
 
+import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { EmptyState } from "@/shared/components/empty-state"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -183,11 +184,23 @@ export function ConductorCardView({
                 {/* Header: Avatar, Name, Employee Code & Conductor Estado */}
                 <div className="flex items-start justify-between gap-2.5">
                   <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                    <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/90 via-primary/70 to-primary/40 font-bold text-xs text-primary-foreground shadow-2xs ring-2 ring-background">
-                      <span>{initials}</span>
+                    <div className="relative size-10 shrink-0 rounded-xl overflow-hidden border border-border/70 shadow-2xs ring-2 ring-background bg-muted flex items-center justify-center">
+                      {conductor.urlImagen ? (
+                        <AuthenticatedImage
+                          src={conductor.urlImagen}
+                          alt={nombre}
+                          className="size-full object-cover"
+                          fallbackClassName="size-full flex items-center justify-center bg-gradient-to-br from-primary/90 via-primary/70 to-primary/40 font-bold text-xs text-primary-foreground"
+                          fallback={<span>{initials}</span>}
+                        />
+                      ) : (
+                        <div className="size-full flex items-center justify-center bg-gradient-to-br from-primary/90 via-primary/70 to-primary/40 font-bold text-xs text-primary-foreground">
+                          <span>{initials}</span>
+                        </div>
+                      )}
                       <span
                         className={cn(
-                          "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background shadow-2xs",
+                          "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background shadow-2xs z-10",
                           conductor.activo ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
                         )}
                         title={conductor.activo ? "Habilitado" : "Inactivo"}
@@ -207,6 +220,16 @@ export function ConductorCardView({
                         <span className="font-mono text-[10px] font-semibold text-foreground/85 bg-muted/90 px-1.5 py-0.2 rounded border border-border/40">
                           {codigo}
                         </span>
+                        {conductor.tipoSangre && (
+                          <Badge
+                            variant="outline"
+                            className="gap-0.5 border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[9.5px] font-bold px-1.5 py-0 rounded-full"
+                            title={`Grupo Sanguíneo: ${conductor.tipoSangre}`}
+                          >
+                            <Droplet className="size-2.5 fill-rose-500 text-rose-500 shrink-0" />
+                            {conductor.tipoSangre}
+                          </Badge>
+                        )}
                         {cargo && (
                           <span className="truncate text-[10px] font-medium text-foreground/75" title={cargo}>
                             • {cargo}

@@ -3,6 +3,7 @@ import { createResourceEndpoints } from "@/shared/api"
 export const conductorEndpoints = {
   ...createResourceEndpoints("/conductores"),
   disponibles: "/conductores/disponibles",
+  imagen: (id: string) => `/conductores/${id}/imagen`,
 }
 
 export const conductorLicenciaEndpoints = {

@@ -29,6 +29,8 @@ public class ConductorPersistenceMapper {
         entity.setEmpleadoId(domain.getEmpleadoId());
         entity.setEstado(domain.getEstado());
         entity.setObservacion(domain.getObservacion());
+        entity.setUrlImagen(domain.getUrlImagen());
+        entity.setTipoSangre(domain.getTipoSangre());
         entity.setActivo(domain.isActivo());
         entity.setLicencias(licenciaEntities);
         return entity;
@@ -51,6 +53,8 @@ public class ConductorPersistenceMapper {
                 .empleadoId(entity.getEmpleadoId())
                 .estado(entity.getEstado())
                 .observacion(entity.getObservacion())
+                .urlImagen(entity.getUrlImagen())
+                .tipoSangre(entity.getTipoSangre())
                 .licencias(licencias)
                 .activo(entity.isActivo())
                 .createdAt(entity.getCreatedAt())

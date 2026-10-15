@@ -25,6 +25,8 @@ public class Conductor extends AuditableModel {
     private UUID empleadoId;
     private EstadoConductor estado;
     private String observacion;
+    private String urlImagen;
+    private String tipoSangre;
     private boolean activo;
 
     @Builder.Default
