@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import {
   Box,
   Briefcase,
+  Building2,
   Car,
   ChevronLeft,
   ChevronRight,
@@ -15,6 +16,7 @@ import {
   ShieldCheck,
   Trash2,
   Truck,
+  User,
   UserCheck,
   Users,
 } from "lucide-react"
@@ -365,86 +367,175 @@ export function FlotaDetailPanel({
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {vehiculos.map((item) => {
-                  const placa = extractPlaca(item.vehiculo?.descripcion)
+                  const veh = item.vehiculo
+                  const placa = veh?.placa || extractPlaca(veh?.descripcion)
+                  const tipo = veh?.tipoActivo || "Vehículo"
+
+                  const detallesVehiculo = [
+                    veh?.marca,
+                    veh?.modelo,
+                    veh?.anio,
+                  ].filter(Boolean).join(" • ")
+
+                  // Atributos adicionales que no sean los estándar ya mostrados
+                  const atributosExtras = veh?.atributos
+                    ? Object.entries(veh.atributos).filter(
+                        ([key]) =>
+                          !["PLACA", "MARCA", "MODELO", "ANIO", "AÑO", "COLOR"].includes(
+                            key.toUpperCase().trim()
+                          )
+                      )
+                    : []
 
                   return (
                     <div
                       key={item.id}
                       className={cn(
-                        "flex items-center justify-between gap-3 p-3 rounded-xl border bg-background transition-all",
+                        "flex flex-col justify-between gap-3 p-3.5 rounded-xl border bg-card/60 transition-all shadow-xs hover:border-cyan-500/40",
                         item.activo
-                          ? "border-border/70 hover:border-cyan-500/40"
-                          : "border-border/40 opacity-60 bg-muted/10"
+                          ? "border-border/70"
+                          : "border-border/40 opacity-65 bg-muted/10"
                       )}
                     >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="relative size-11 shrink-0 overflow-hidden rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center">
-                          {item.vehiculo?.urlImagen ? (
-                            <AuthenticatedImage
-                              src={item.vehiculo.urlImagen}
-                              alt={item.vehiculo.nombre}
-                              className="size-full object-cover"
-                              fallback={<Box className="size-4.5 text-muted-foreground/60" />}
-                            />
-                          ) : (
-                            <Car className="size-5 text-cyan-600/70" />
-                          )}
-                        </div>
-
-                        <div className="min-w-0 flex-1 space-y-0.5">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <code className="text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-1.5 py-0.2 rounded">
-                              {item.vehiculo?.codigo || "V-ID"}
-                            </code>
-                            <span className="font-semibold text-xs text-foreground truncate">
-                              {item.vehiculo?.nombre || "Vehículo sin nombre"}
-                            </span>
-                            {placa && (
-                              <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded">
-                                {placa}
-                              </span>
+                      {/* Fila Superior: Foto + Info General + Acciones */}
+                      <div className="flex items-start justify-between gap-3 min-w-0">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                          <div className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-border/80 bg-muted/30 flex items-center justify-center">
+                            {veh?.urlImagen ? (
+                              <AuthenticatedImage
+                                src={veh.urlImagen}
+                                alt={veh.nombre}
+                                className="size-full object-cover"
+                                fallback={<Box className="size-5 text-muted-foreground/60" />}
+                              />
+                            ) : (
+                              <Car className="size-6 text-cyan-600/70" />
                             )}
                           </div>
 
-                          {item.vehiculo?.descripcion && (
-                            <p className="text-[11px] text-muted-foreground truncate">
-                              {item.vehiculo.descripcion}
-                            </p>
-                          )}
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <code className="text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-1.5 py-0.5 rounded">
+                                {veh?.codigo || "V-ID"}
+                              </code>
+
+                              {placa && (
+                                <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded tracking-wider shadow-2xs">
+                                  {placa}
+                                </span>
+                              )}
+
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] font-medium py-0 px-1.5 h-4.5 bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20"
+                              >
+                                {tipo}
+                              </Badge>
+                            </div>
+
+                            <div className="font-semibold text-xs text-foreground truncate">
+                              {veh?.nombre || "Vehículo sin nombre"}
+                            </div>
+
+                            {/* Marca / Modelo / Año / Color */}
+                            {(detallesVehiculo || veh?.color) && (
+                              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                                {detallesVehiculo && (
+                                  <span className="font-medium text-foreground/80">
+                                    {detallesVehiculo}
+                                  </span>
+                                )}
+                                {veh?.color && (
+                                  <span className="text-muted-foreground/80">
+                                    (Color: {veh.color})
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {veh?.descripcion && (
+                              <p className="text-[11px] text-muted-foreground line-clamp-1">
+                                {veh.descripcion}
+                              </p>
+                            )}
+
+                            {/* Atributos adicionales */}
+                            {atributosExtras.length > 0 && (
+                              <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                                {atributosExtras.slice(0, 3).map(([k, v]) => (
+                                  <span
+                                    key={k}
+                                    className="text-[10px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/50"
+                                  >
+                                    <span className="font-medium text-foreground/70">{k}:</span> {v}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              toggleVehiculoMutation.mutate({
+                                id: item.id,
+                                flotaId: flota.id,
+                              })
+                            }
+                            className={cn(
+                              "h-7 text-[10px] font-medium px-2 rounded-lg border",
+                              item.activo
+                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20"
+                                : "bg-muted text-muted-foreground border-border/60 hover:bg-muted/80"
+                            )}
+                          >
+                            {item.activo ? "Activo" : "Inactivo"}
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => setVehiculoToDelete(item)}
+                            className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                            title="Desvincular vehículo de la flota"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            toggleVehiculoMutation.mutate({
-                              id: item.id,
-                              flotaId: flota.id,
-                            })
-                          }
-                          className={cn(
-                            "h-7 text-[10px] font-medium px-2 rounded-lg border",
-                            item.activo
-                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20"
-                              : "bg-muted text-muted-foreground border-border/60 hover:bg-muted/80"
+                      {/* Responsable de Activo y su Área */}
+                      <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-2 text-[11px] bg-muted/20 -mx-3.5 -mb-3.5 p-2 px-3.5 rounded-b-xl">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <User className="size-3.5 text-muted-foreground/70 shrink-0" />
+                          <span className="text-muted-foreground shrink-0">Responsable:</span>
+                          <span className="font-medium text-foreground truncate">
+                            {veh?.responsableNombre || "Sin asignar"}
+                          </span>
+                          {veh?.responsableCargo && (
+                            <span className="text-[10px] text-muted-foreground truncate hidden sm:inline">
+                              ({veh.responsableCargo})
+                            </span>
                           )}
-                        >
-                          {item.activo ? "Activo" : "Inactivo"}
-                        </Button>
+                        </div>
 
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => setVehiculoToDelete(item)}
-                          className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
-                          title="Desvincular vehículo de la flota"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
+                        {veh?.responsableArea ? (
+                          <div className="flex items-center gap-1 shrink-0 text-cyan-700 dark:text-cyan-400 font-medium bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md text-[10px]">
+                            <Building2 className="size-3 shrink-0" />
+                            <span className="truncate max-w-[140px] sm:max-w-[190px]" title={veh.responsableArea}>
+                              {veh.responsableArea}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/60 italic shrink-0">
+                            Sin área asignada
+                          </span>
+                        )}
                       </div>
                     </div>
                   )
