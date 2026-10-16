@@ -43,6 +43,10 @@ export interface FlotaVehiculoActivoInfo {
   responsableNombre?: string | null
   responsableArea?: string | null
   responsableCargo?: string | null
+  estadoOperativoId?: string | null
+  estadoOperativoCodigo?: string | null
+  estadoOperativoNombre?: string | null
+  estadoOperativoColor?: string | null
 }
 
 export interface FlotaVehiculoFlotaInfo {

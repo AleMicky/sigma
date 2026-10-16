@@ -34,4 +34,6 @@ public class Activo extends AuditableModel {
     private String urlImagen;
 
     private Boolean activo;
+
+    private UUID estadoOperativoId;
 }

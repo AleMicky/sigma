@@ -407,6 +407,22 @@ function AsignacionVehicularDetalle({
                   Placa: {asignacion.activo.placa}
                 </span>
               )}
+              {asignacion.activo?.estadoOperativoNombre && (
+                <span
+                  className="text-[9.5px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded border inline-flex items-center gap-1"
+                  style={{
+                    backgroundColor: `${asignacion.activo.estadoOperativoColor || "#10b981"}18`,
+                    color: asignacion.activo.estadoOperativoColor || "#10b981",
+                    borderColor: `${asignacion.activo.estadoOperativoColor || "#10b981"}40`,
+                  }}
+                >
+                  <span
+                    className="size-1.5 rounded-full"
+                    style={{ backgroundColor: asignacion.activo.estadoOperativoColor || "#10b981" }}
+                  />
+                  {asignacion.activo.estadoOperativoNombre}
+                </span>
+              )}
             </div>
           </div>
         </div>

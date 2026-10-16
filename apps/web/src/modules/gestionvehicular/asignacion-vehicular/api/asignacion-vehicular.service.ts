@@ -20,6 +20,10 @@ export type AsignacionVehicularActivoInfo = {
   codigo: string
   nombre: string
   placa?: string | null
+  estadoOperativoId?: string | null
+  estadoOperativoCodigo?: string | null
+  estadoOperativoNombre?: string | null
+  estadoOperativoColor?: string | null
 }
 
 export type AsignacionVehicularConductorInfo = {

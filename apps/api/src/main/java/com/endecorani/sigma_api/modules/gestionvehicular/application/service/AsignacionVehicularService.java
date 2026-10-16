@@ -275,11 +275,18 @@ public class AsignacionVehicularService {
                                 : springActivoRepository.findAllById(activoIds).stream()
                                                 .collect(Collectors.toMap(
                                                                 ActivoEntity::getId,
-                                                                a -> new AsignacionVehicularActivoInfo(
-                                                                                a.getId(),
-                                                                                a.getCodigo(),
-                                                                                a.getNombre(),
-                                                                                null),
+                                                                a -> {
+                                                                        var eo = a.getEstadoOperativo();
+                                                                        return new AsignacionVehicularActivoInfo(
+                                                                                        a.getId(),
+                                                                                        a.getCodigo(),
+                                                                                        a.getNombre(),
+                                                                                        null,
+                                                                                        a.getEstadoOperativoId(),
+                                                                                        eo != null ? eo.getCodigo() : null,
+                                                                                        eo != null ? eo.getNombre() : null,
+                                                                                        eo != null ? eo.getColor() : null);
+                                                                },
                                                                 (a, b) -> a));
 
                 Map<UUID, Conductor> conductorMap = conductorIds.isEmpty()
@@ -382,11 +389,18 @@ public class AsignacionVehicularService {
 
         private AsignacionVehicularActivoInfo obtenerActivoInfo(UUID activoId) {
                 return springActivoRepository.findById(activoId)
-                                .map(a -> new AsignacionVehicularActivoInfo(
-                                                a.getId(),
-                                                a.getCodigo(),
-                                                a.getNombre(),
-                                                null))
+                                .map(a -> {
+                                        var eo = a.getEstadoOperativo();
+                                        return new AsignacionVehicularActivoInfo(
+                                                        a.getId(),
+                                                        a.getCodigo(),
+                                                        a.getNombre(),
+                                                        null,
+                                                        a.getEstadoOperativoId(),
+                                                        eo != null ? eo.getCodigo() : null,
+                                                        eo != null ? eo.getNombre() : null,
+                                                        eo != null ? eo.getColor() : null);
+                                })
                                 .orElse(null);
         }
 

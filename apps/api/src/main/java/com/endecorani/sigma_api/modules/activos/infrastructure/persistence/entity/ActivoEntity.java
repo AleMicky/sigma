@@ -3,6 +3,9 @@ package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.enti
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,9 +33,7 @@ public class ActivoEntity extends BaseEntity {
     @Column(name = "tipo_activo_id", nullable = false)
     private UUID tipoActivoId;
 
-    @Column(
-            name = "ubicacion_id"
-    )
+    @Column(name = "ubicacion_id")
     private UUID ubicacionId;
 
     @Column(name = "fecha_adquisicion")
@@ -43,4 +44,11 @@ public class ActivoEntity extends BaseEntity {
 
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
+
+    @Column(name = "estado_operativo_id")
+    private UUID estadoOperativoId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "estado_operativo_id", insertable = false, updatable = false)
+    private EstadoOperativoEntity estadoOperativo;
 }

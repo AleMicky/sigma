@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoR
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
+import com.endecorani.sigma_api.modules.activos.domain.repository.EstadoOperativoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.model.Ubicacion;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
@@ -44,6 +45,9 @@ class ActivoServiceTest {
 
     @Mock
     private UbicacionRepository ubicacionRepository;
+
+    @Mock
+    private EstadoOperativoRepository estadoOperativoRepository;
 
     @Mock
     private ImageStorageService imageStorageService;

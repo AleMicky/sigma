@@ -23,6 +23,14 @@ export type ActivoUbicacionInfo = {
   tipo?: string | null
 }
 
+export type ActivoEstadoOperativoInfo = {
+  id: string
+  codigo: string
+  nombre: string
+  descripcion?: string | null
+  color?: string | null
+}
+
 export type Activo = AuditableEntity & {
   codigo: string
   nombre: string
@@ -31,6 +39,8 @@ export type Activo = AuditableEntity & {
   tipoActivo?: (TipoActivo & ActivoTipoActivoInfo) | null
   ubicacionId?: string | null
   ubicacion?: (Ubicacion & ActivoUbicacionInfo) | null
+  estadoOperativoId?: string | null
+  estadoOperativo?: ActivoEstadoOperativoInfo | null
   fechaAdquisicion: string | null
   urlImagen: string | null
   activo: boolean
@@ -42,6 +52,7 @@ export type ActivoPayload = {
   descripcion?: string | null
   tipoActivoId: string
   ubicacionId?: string | null
+  estadoOperativoId?: string | null
   fechaAdquisicion?: string | null
   activo?: boolean
 }
@@ -76,4 +87,20 @@ export async function setActivoActivo(
   return http.patch<Activo>(`${activoEndpoints.byId(id)}/activo`, {
     activo,
   })
+}
+
+export type CambiarEstadoOperativoPayload = {
+  estadoOperativoId?: string
+  codigoEstado?: string
+  observacion?: string
+}
+
+export async function cambiarEstadoOperativoActivo(
+  id: string,
+  payload: CambiarEstadoOperativoPayload,
+): Promise<Activo> {
+  return http.patch<Activo>(
+    `${activoEndpoints.byId(id)}/estado-operativo`,
+    payload,
+  )
 }

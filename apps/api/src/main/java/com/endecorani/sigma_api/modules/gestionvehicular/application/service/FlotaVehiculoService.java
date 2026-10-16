@@ -5,10 +5,12 @@ import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entit
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoAsignacionEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.TipoActivoEntity;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.EstadoOperativoEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoValorRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAsignacionRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoRepository;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringEstadoOperativoRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringTipoActivoRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.request.FlotaVehiculoBatchRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.flotavehiculo.request.FlotaVehiculoRequest;
@@ -64,6 +66,7 @@ public class FlotaVehiculoService {
     private final FlotaVehicularRepository flotaVehicularRepository;
     private final SpringActivoRepository springActivoRepository;
     private final SpringTipoActivoRepository springTipoActivoRepository;
+    private final SpringEstadoOperativoRepository springEstadoOperativoRepository;
     private final SpringActivoAtributoValorRepository springActivoAtributoValorRepository;
     private final SpringActivoAtributoRepository springActivoAtributoRepository;
     private final SpringActivoAsignacionRepository springActivoAsignacionRepository;
@@ -386,10 +389,25 @@ public class FlotaVehiculoService {
                         (a, b) -> a
                 ));
 
-        // 5. Construcción de FlotaVehiculoActivoInfo para cada activo
+        // 5. Estados Operativos de los activos
+        Set<UUID> estadoIds = activos.stream()
+                .map(ActivoEntity::getEstadoOperativoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, EstadoOperativoEntity> estadoMap = estadoIds.isEmpty()
+                ? Map.of()
+                : springEstadoOperativoRepository.findAllById(estadoIds).stream()
+                .collect(Collectors.toMap(
+                        EstadoOperativoEntity::getId,
+                        e -> e,
+                        (a, b) -> a
+                ));
+
+        // 6. Construcción de FlotaVehiculoActivoInfo para cada activo
         Map<UUID, FlotaVehiculoActivoInfo> resultMap = new HashMap<>();
         for (ActivoEntity a : activos) {
             String tipoActivo = a.getTipoActivoId() != null ? tipoMap.get(a.getTipoActivoId()) : null;
+            EstadoOperativoEntity estadoOperativo = a.getEstadoOperativoId() != null ? estadoMap.get(a.getEstadoOperativoId()) : null;
 
             String placa = null;
             String marca = null;
@@ -471,6 +489,10 @@ public class FlotaVehiculoService {
                     .responsableNombre(responsableNombre)
                     .responsableArea(responsableArea)
                     .responsableCargo(responsableCargo)
+                    .estadoOperativoId(a.getEstadoOperativoId())
+                    .estadoOperativoCodigo(estadoOperativo != null ? estadoOperativo.getCodigo() : null)
+                    .estadoOperativoNombre(estadoOperativo != null ? estadoOperativo.getNombre() : null)
+                    .estadoOperativoColor(estadoOperativo != null ? estadoOperativo.getColor() : null)
                     .build();
 
             resultMap.put(a.getId(), info);

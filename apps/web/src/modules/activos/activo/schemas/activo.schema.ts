@@ -18,6 +18,7 @@ export const activoSchema = z.object({
     .max(255, "La ubicación no puede superar 255 caracteres")
     .optional()
     .nullable(),
+  estadoOperativoId: z.string().optional().nullable(),
   fechaAdquisicion: z.string(),
 })
 
@@ -29,5 +30,6 @@ export const defaultActivoValues: ActivoDto = {
   descripcion: "",
   tipoActivoId: "",
   ubicacionId: "",
+  estadoOperativoId: "",
   fechaAdquisicion: "",
 }
