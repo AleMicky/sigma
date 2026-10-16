@@ -36,6 +36,7 @@ export type SolicitudVehicularConductorInfo = {
   nombreCompleto?: string | null
   numeroLicencia?: string | null
   categoriaLicencia?: string | null
+  urlImagen?: string | null
 }
 
 export type SolicitudVehicularAdjunto = {

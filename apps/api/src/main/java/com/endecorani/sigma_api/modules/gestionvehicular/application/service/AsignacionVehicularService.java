@@ -326,7 +326,8 @@ public class AsignacionVehicularService {
                                                                 cond.getEmpleadoId(),
                                                                 ve != null ? ve.getNombreCompleto() : null,
                                                                 cond.getNumeroLicencia(),
-                                                                cond.getCategoriaLicencia());
+                                                                cond.getCategoriaLicencia(),
+                                                                cond.getUrlImagen());
                                         }
 
                                         VEmpleadoEntity asigVe = domain.getAsignadoPorId() != null
@@ -406,7 +407,8 @@ public class AsignacionVehicularService {
                                                         c.getEmpleadoId(),
                                                         nombre,
                                                         c.getNumeroLicencia(),
-                                                        c.getCategoriaLicencia());
+                                                        c.getCategoriaLicencia(),
+                                                        c.getUrlImagen());
                                 })
                                 .orElse(null);
         }

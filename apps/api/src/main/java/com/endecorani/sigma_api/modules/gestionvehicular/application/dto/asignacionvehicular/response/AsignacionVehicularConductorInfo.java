@@ -7,6 +7,7 @@ public record AsignacionVehicularConductorInfo(
         UUID empleadoId,
         String nombreCompleto,
         String numeroLicencia,
-        String categoriaLicencia
+        String categoriaLicencia,
+        String urlImagen
 ) {
 }

@@ -96,6 +96,7 @@ export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
     () => activosQuery.data?.content ?? [],
     [activosQuery.data?.content],
   )
+  const solicitudActivo = solicitud?.activo
   const activosMap = useMemo(() => {
     const map = new Map<string, Activo>()
     for (const a of activos) {
@@ -104,15 +105,15 @@ export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
     for (const [id, a] of extraActivos.entries()) {
       map.set(id, a)
     }
-    if (solicitud?.activo?.id && !map.has(solicitud.activo.id)) {
-      map.set(solicitud.activo.id, {
-        id: solicitud.activo.id,
-        codigo: solicitud.activo.codigo,
-        nombre: solicitud.activo.nombre,
+    if (solicitudActivo?.id && !map.has(solicitudActivo.id)) {
+      map.set(solicitudActivo.id, {
+        id: solicitudActivo.id,
+        codigo: solicitudActivo.codigo,
+        nombre: solicitudActivo.nombre,
       } as Activo)
     }
     return map
-  }, [activos, extraActivos, solicitud?.activo])
+  }, [activos, extraActivos, solicitudActivo])
 
   // 5. Catálogo: Tipos de Mantenimiento
   const tiposMantenimientoQuery = useQuery(
@@ -141,12 +142,13 @@ export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
     [prioridades],
   )
 
+  const solicitudPrioridadId = solicitud?.prioridad?.id
   const defaultPrioridadId = useMemo(() => {
-    if (solicitud?.prioridad?.id) return solicitud.prioridad.id
+    if (solicitudPrioridadId) return solicitudPrioridadId
     const defaultItem =
       prioridades.find((p: Prioridad) => Boolean(p.porDefecto)) ?? prioridades[0]
     return defaultItem?.id ?? ""
-  }, [solicitud?.prioridad?.id, prioridades])
+  }, [solicitudPrioridadId, prioridades])
 
   // 7. Catálogo: Empleados (mis empleados)
   const empleadosQuery = useQuery(
@@ -156,6 +158,7 @@ export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
     () => empleadosQuery.data?.content ?? [],
     [empleadosQuery.data?.content],
   )
+  const solicitudSolicitante = solicitud?.solicitante
   const empleadosMap = useMemo(() => {
     const map = new Map<string, Empleado>()
     for (const e of empleados) {
@@ -164,15 +167,15 @@ export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
     for (const [id, e] of extraEmpleados.entries()) {
       map.set(id, e)
     }
-    if (solicitud?.solicitante?.id && !map.has(solicitud.solicitante.id)) {
-      map.set(solicitud.solicitante.id, {
-        id: solicitud.solicitante.id,
+    if (solicitudSolicitante?.id && !map.has(solicitudSolicitante.id)) {
+      map.set(solicitudSolicitante.id, {
+        id: solicitudSolicitante.id,
         codigo: "",
-        personaNombreCompleto: solicitud.solicitante.nombreCompleto || solicitud.solicitante.nombre || "",
+        personaNombreCompleto: solicitudSolicitante.nombreCompleto || solicitudSolicitante.nombre || "",
       } as Empleado)
     }
     return map
-  }, [empleados, extraEmpleados, solicitud?.solicitante])
+  }, [empleados, extraEmpleados, solicitudSolicitante])
 
   const parseTipoFallas = (val?: string[] | string | null): string[] => {
     if (!val) return []

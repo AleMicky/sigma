@@ -92,6 +92,7 @@ export function ConductorFormDialog({
           tipoSangre: value.tipoSangre?.trim() || null,
           observacion: value.observacion?.trim() || null,
           activo: value.activo,
+          urlImagen: removeExistingImage ? null : (conductor?.urlImagen ?? null),
           licencias: conductor?.licencias ? conductor.licencias.map((l) => ({
             id: l.id,
             categoriaLicencia: l.categoriaLicencia,
@@ -119,7 +120,7 @@ export function ConductorFormDialog({
           saved = await deleteConductorImagen(saved.id)
         }
 
-        void queryClient.invalidateQueries({ queryKey: conductorKeys.all })
+        await queryClient.invalidateQueries({ queryKey: conductorKeys.all })
 
         onSuccess?.(saved)
         onOpenChange(false)

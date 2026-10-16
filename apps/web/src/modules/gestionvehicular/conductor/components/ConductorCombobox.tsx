@@ -6,11 +6,11 @@ import {
   ChevronRight,
   Loader2,
   RefreshCw,
-  User,
   X,
 } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
+import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import {
   Combobox,
   ComboboxContent,
@@ -84,7 +84,7 @@ export function ConductorCombobox({
   soloActivos = true,
   fechaSalida,
   fechaRetorno,
-}: ConductorComboboxProps) {
+}: Readonly<ConductorComboboxProps>) {
   const [page, setPage] = React.useState(0)
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -127,22 +127,34 @@ export function ConductorCombobox({
   const query = hasDateRange ? disponiblesQuery : standardQuery
 
   const allConductores = React.useMemo(() => {
+    let list: Conductor[]
     if (hasDateRange) {
-      const list = disponiblesQuery.data ?? []
-      if (!debouncedSearch.trim()) return list
-      const q = debouncedSearch.trim().toLowerCase()
-      return list.filter((c) => {
-        const nombre = (c.empleado?.nombreCompleto || "").toLowerCase()
-        const matchName = nombre.includes(q)
-        const matchLic = (c.licencias || []).some(
-          (l) =>
-            l.numeroLicencia.toLowerCase().includes(q) ||
-            l.categoriaLicencia.toLowerCase().includes(q)
-        )
-        return matchName || matchLic
-      })
+      const data = disponiblesQuery.data ?? []
+      if (!debouncedSearch.trim()) {
+        list = data
+      } else {
+        const q = debouncedSearch.trim().toLowerCase()
+        list = data.filter((c) => {
+          const nombre = (c.empleado?.nombreCompleto || "").toLowerCase()
+          const matchName = nombre.includes(q)
+          const matchLic = (c.licencias || []).some(
+            (l) =>
+              l.numeroLicencia.toLowerCase().includes(q) ||
+              l.categoriaLicencia.toLowerCase().includes(q)
+          )
+          return matchName || matchLic
+        })
+      }
+    } else {
+      list = standardQuery.data?.content ?? []
     }
-    return standardQuery.data?.content ?? []
+
+    // Ordenar alfabéticamente por nombre del conductor (A-Z)
+    return [...list].sort((a, b) => {
+      const nameA = getConductorNombre(a)
+      const nameB = getConductorNombre(b)
+      return nameA.localeCompare(nameB, "es", { sensitivity: "base" })
+    })
   }, [hasDateRange, disponiblesQuery.data, standardQuery.data?.content, debouncedSearch])
 
   const totalElements = hasDateRange
@@ -181,6 +193,8 @@ export function ConductorCombobox({
     const cargo = selectedConductor.empleado?.cargo || selectedConductor.empleado?.area
     const primaryLic = getPrimaryLicencia(selectedConductor)
 
+    const initials = getInitials(nombre)
+
     return (
       <div
         className={cn(
@@ -190,8 +204,20 @@ export function ConductorCombobox({
         )}
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <div className="flex size-7.5 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs border border-primary/20">
-            <User className="size-4" />
+          <div className="relative size-8 shrink-0 rounded-lg overflow-hidden border border-border/70 shadow-2xs bg-muted flex items-center justify-center">
+            {selectedConductor.urlImagen ? (
+              <AuthenticatedImage
+                src={selectedConductor.urlImagen}
+                alt={nombre}
+                className="size-full object-cover"
+                fallbackClassName="size-full flex items-center justify-center bg-primary/10 text-primary font-bold text-xs"
+                fallback={<span>{initials}</span>}
+              />
+            ) : (
+              <div className="size-full flex items-center justify-center bg-primary/10 text-primary font-bold text-xs">
+                <span>{initials}</span>
+              </div>
+            )}
           </div>
 
           <div className="min-w-0 flex-1 space-y-0.5">
@@ -241,6 +267,32 @@ export function ConductorCombobox({
   }
 
   // Si no hay seleccionado, mostramos el Combobox
+  const getInputPlaceholder = () => {
+    if (query.isLoading && !query.data) {
+      if (hasDateRange) {
+        return "Verificando disponibilidad de conductores..."
+      }
+      return "Cargando conductores..."
+    }
+    return placeholder
+  }
+
+  const getHeaderStatusText = () => {
+    if (query.isFetching) {
+      if (hasDateRange) {
+        return "Consultando conductores disponibles..."
+      }
+      return "Buscando en servidor..."
+    }
+    if (debouncedSearch.trim()) {
+      return `Resultados (${totalElements} encontrados)`
+    }
+    if (hasDateRange) {
+      return `Conductores disponibles (${totalElements})`
+    }
+    return `Conductores (${totalElements} registros)`
+  }
+
   return (
     <Combobox
       items={pagedConductores}
@@ -265,13 +317,7 @@ export function ConductorCombobox({
           id={id}
           name={name}
           onChange={(e) => handleSearchChange(e.target.value)}
-          placeholder={
-            query.isLoading && !query.data
-              ? hasDateRange
-                ? "Verificando disponibilidad de conductores..."
-                : "Cargando conductores..."
-              : placeholder
-          }
+          placeholder={getInputPlaceholder()}
           aria-invalid={ariaInvalid}
           onBlur={onBlur}
           className={cn("w-full shadow-2xs", className)}
@@ -286,17 +332,14 @@ export function ConductorCombobox({
       <ComboboxContent className="z-50 w-(--anchor-width) min-w-[min(100vw-2rem,var(--anchor-width))] max-w-[var(--anchor-width)] p-1 rounded-xl shadow-lg border border-border/80 bg-popover overflow-hidden flex flex-col">
         {/* Header con indicador y botón de recarga */}
         <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/50 text-[11px] text-muted-foreground bg-muted/30 select-none">
-          <span className="font-medium truncate">
-            {query.isFetching
-              ? hasDateRange
-                ? "Consultando conductores disponibles..."
-                : "Buscando en servidor..."
-              : debouncedSearch.trim()
-                ? `Resultados (${totalElements} encontrados)`
-                : hasDateRange
-                  ? `Conductores disponibles (${totalElements})`
-                  : `Conductores (${totalElements} registros)`}
-          </span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="font-medium truncate">
+              {getHeaderStatusText()}
+            </span>
+            <span className="text-[9.5px] font-semibold text-muted-foreground/80 bg-muted/80 border border-border/50 px-1.5 py-0.2 rounded shrink-0">
+              A-Z
+            </span>
+          </div>
           <Button
             type="button"
             variant="ghost"
@@ -332,8 +375,20 @@ export function ConductorCombobox({
                 className="cursor-pointer py-2 px-2.5 rounded-lg hover:bg-accent/60 transition-colors"
               >
                 <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                  <div className="flex size-7.5 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary text-[10.5px] font-bold mt-0.5">
-                    {initials}
+                  <div className="relative size-7.5 shrink-0 rounded-lg overflow-hidden border border-border/70 shadow-2xs bg-muted flex items-center justify-center mt-0.5">
+                    {item.urlImagen ? (
+                      <AuthenticatedImage
+                        src={item.urlImagen}
+                        alt={nombre}
+                        className="size-full object-cover"
+                        fallbackClassName="size-full flex items-center justify-center bg-primary/10 text-primary text-[10.5px] font-bold"
+                        fallback={<span>{initials}</span>}
+                      />
+                    ) : (
+                      <div className="size-full flex items-center justify-center bg-primary/10 text-primary text-[10.5px] font-bold">
+                        <span>{initials}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col min-w-0 flex-1 space-y-0.5">
                     <div className="flex items-center gap-1.5 flex-wrap">

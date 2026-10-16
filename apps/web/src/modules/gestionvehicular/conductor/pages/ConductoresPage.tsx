@@ -188,7 +188,12 @@ export function ConductoresPage() {
         <ConductorFormDialog
           key={editingConductor?.id ?? "new-conductor"}
           open={conductorDialogOpen}
-          onOpenChange={setConductorDialogOpen}
+          onOpenChange={(open) => {
+            setConductorDialogOpen(open)
+            if (!open) {
+              setEditingConductor(null)
+            }
+          }}
           conductor={editingConductor}
           onSuccess={(saved) => {
             masterDetail.revealDetail(saved.id)

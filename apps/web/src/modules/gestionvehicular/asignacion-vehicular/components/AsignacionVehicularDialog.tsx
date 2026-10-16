@@ -17,8 +17,10 @@ import {
   Users,
 } from "lucide-react"
 
+import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { ConductorCombobox } from "@/modules/gestionvehicular/conductor/components/ConductorCombobox"
+import { conductorQueries } from "@/modules/gestionvehicular/conductor/api/conductor.queries"
 import { VehiculoResponsableCombobox } from "./VehiculoResponsableCombobox"
 import { isApiError } from "@/shared/api"
 import { Badge } from "@/shared/components/ui/badge"
@@ -162,6 +164,38 @@ export function AsignacionVehicularDialog({
   // Si no hay asignación existente, siempre mostramos el formulario (modo creación)
   const isFormMode = !asignacionActual || isEditing
 
+  const renderContent = () => {
+    if (asignacionQuery.isLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin text-primary" />
+          <p className="text-xs">Cargando datos de asignación...</p>
+        </div>
+      )
+    }
+
+    if (!isFormMode && asignacionActual) {
+      return <AsignacionVehicularDetalle asignacion={asignacionActual} />
+    }
+
+    return (
+      <AsignacionVehicularForm
+        key={asignacionActual?.id ?? `new-${solicitud.id}`}
+        solicitud={solicitud}
+        asignacionActual={asignacionActual}
+        isSubmitting={isSubmitting}
+        onCancel={() => {
+          if (asignacionActual) {
+            setIsEditing(false)
+          } else {
+            handleOpenChange(false)
+          }
+        }}
+        onSubmit={handleSave}
+      />
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="w-[calc(100vw-1rem)] sm:w-full max-w-xl p-0 gap-0 rounded-2xl overflow-hidden shadow-2xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col">
@@ -238,125 +272,7 @@ export function AsignacionVehicularDialog({
             </div>
           )}
 
-          {asignacionQuery.isLoading ? (
-            <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
-              <Loader2 className="size-6 animate-spin text-primary" />
-              <p className="text-xs">Cargando datos de asignación...</p>
-            </div>
-          ) : !isFormMode && asignacionActual ? (
-            /* VISTA DETALLE EN MÓVIL */
-            <div className="space-y-3">
-              <div className="rounded-xl border border-border/70 bg-card p-3 sm:p-3.5 space-y-2.5 shadow-2xs">
-                <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span className="text-xs font-semibold text-foreground">
-                      Unidad y Conductor Asignados
-                    </span>
-                  </div>
-                  {asignacionActual.fechaAsignacion && (
-                    <span className="text-[10.5px] sm:text-[11px] text-muted-foreground shrink-0">
-                      {formatDate(asignacionActual.fechaAsignacion)}
-                    </span>
-                  )}
-                </div>
-
-                {/* 1. Tarjeta de Responsable de Asignación */}
-                {asignacionActual.asignadoPor && (
-                  <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/50">
-                    <div className="flex size-7.5 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-700 dark:text-blue-400">
-                      <Users className="size-3.5 sm:size-4" />
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-0.5">
-                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                        Responsable de Asignación
-                      </span>
-                      <p className="text-xs font-semibold text-foreground truncate">
-                        {asignacionActual.asignadoPor.nombreCompleto}
-                      </p>
-                      {asignacionActual.asignadoPor.cargo && (
-                        <span className="text-[10.5px] text-muted-foreground truncate block">
-                          {asignacionActual.asignadoPor.cargo}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. Tarjeta de Vehículo */}
-                <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/50">
-                  <div className="flex size-7.5 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Car className="size-3.5 sm:size-4" />
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                      Vehículo Asignado
-                    </span>
-                    <p className="text-xs font-semibold text-foreground truncate">
-                      {asignacionActual.activo?.nombre || "Vehículo Asignado"}
-                    </p>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <code className="text-[9.5px] sm:text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                        {asignacionActual.activo?.codigo}
-                      </code>
-                      {asignacionActual.activo?.placa && (
-                        <span className="text-[9.5px] sm:text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
-                          Placa: {asignacionActual.activo.placa}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Tarjeta de Conductor */}
-                <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/50">
-                  <div className="flex size-7.5 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400">
-                    <User className="size-3.5 sm:size-4" />
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                      Conductor Asignado
-                    </span>
-                    <p className="text-xs font-semibold text-foreground truncate">
-                      {asignacionActual.conductor?.nombreCompleto || "Conductor Asignado"}
-                    </p>
-                    {asignacionActual.conductor?.numeroLicencia && (
-                      <span className="inline-block text-[9.5px] sm:text-[10.5px] font-mono font-semibold bg-background px-1.5 py-0.5 rounded border border-border/60">
-                        Lic. {asignacionActual.conductor.numeroLicencia} ({asignacionActual.conductor.categoriaLicencia})
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Observación */}
-                {asignacionActual.observacion && (
-                  <div className="p-2.5 rounded-lg bg-muted/30 border border-border/40 text-xs space-y-1">
-                    <span className="font-semibold text-muted-foreground text-[10px] uppercase tracking-wider block">
-                      Observación:
-                    </span>
-                    <p className="text-foreground/90 text-xs whitespace-pre-wrap">
-                      {asignacionActual.observacion}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <AsignacionVehicularForm
-              key={asignacionActual?.id ?? `new-${solicitud.id}`}
-              solicitud={solicitud}
-              asignacionActual={asignacionActual}
-              isSubmitting={isSubmitting}
-              onCancel={() => {
-                if (asignacionActual) {
-                  setIsEditing(false)
-                } else {
-                  handleOpenChange(false)
-                }
-              }}
-              onSubmit={handleSave}
-            />
-          )}
+          {renderContent()}
         </div>
 
         {/* PIE RESPONSIVO (STACK EN MÓVIL CUANDO ESTÁ EN MODO DETALLE) */}
@@ -402,6 +318,148 @@ export function AsignacionVehicularDialog({
         )}
       </DialogContent>
     </Dialog>
+  )
+}
+
+interface AsignacionVehicularDetalleProps {
+  asignacion: AsignacionVehicular
+}
+
+function getInitials(name?: string | null): string {
+  const clean = (name || "").trim()
+  if (!clean) return "CD"
+  const parts = clean.split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[1][0]).toUpperCase()
+}
+
+function AsignacionVehicularDetalle({
+  asignacion,
+}: Readonly<AsignacionVehicularDetalleProps>) {
+  const conductorId = asignacion.conductor?.id
+  const conductorDetailQuery = useQuery({
+    ...conductorQueries.detail(conductorId ?? ""),
+    enabled: Boolean(conductorId && !asignacion.conductor?.urlImagen),
+  })
+
+  const conductorFoto =
+    asignacion.conductor?.urlImagen || conductorDetailQuery.data?.urlImagen
+  const conductorNombre = asignacion.conductor?.nombreCompleto || ""
+  const initials = getInitials(conductorNombre)
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-border/70 bg-card p-3 sm:p-3.5 space-y-2.5 shadow-2xs">
+        <div className="flex items-center justify-between pb-2 border-b border-border/40">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="text-xs font-semibold text-foreground">
+              Unidad y Conductor Asignados
+            </span>
+          </div>
+          {asignacion.fechaAsignacion && (
+            <span className="text-[10.5px] sm:text-[11px] text-muted-foreground shrink-0">
+              {formatDate(asignacion.fechaAsignacion)}
+            </span>
+          )}
+        </div>
+
+        {/* 1. Tarjeta de Responsable de Asignación */}
+        {asignacion.asignadoPor && (
+          <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/50">
+            <div className="flex size-7.5 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-700 dark:text-blue-400">
+              <Users className="size-3.5 sm:size-4" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                Responsable de Asignación
+              </span>
+              <p className="text-xs font-semibold text-foreground truncate">
+                {asignacion.asignadoPor.nombreCompleto}
+              </p>
+              {asignacion.asignadoPor.cargo && (
+                <span className="text-[10.5px] text-muted-foreground truncate block">
+                  {asignacion.asignadoPor.cargo}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 2. Tarjeta de Vehículo */}
+        <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/50">
+          <div className="flex size-7.5 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Car className="size-3.5 sm:size-4" />
+          </div>
+          <div className="flex-1 min-w-0 space-y-1">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+              Vehículo Asignado
+            </span>
+            <p className="text-xs font-semibold text-foreground truncate">
+              {asignacion.activo?.nombre || "Vehículo Asignado"}
+            </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <code className="text-[9.5px] sm:text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                {asignacion.activo?.codigo}
+              </code>
+              {asignacion.activo?.placa && (
+                <span className="text-[9.5px] sm:text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                  Placa: {asignacion.activo.placa}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Tarjeta de Conductor */}
+        <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/50">
+          <div className="relative size-8 sm:size-9 shrink-0 rounded-lg overflow-hidden border border-border/70 shadow-2xs bg-amber-500/10 flex items-center justify-center">
+            {conductorFoto ? (
+              <AuthenticatedImage
+                src={conductorFoto}
+                alt={conductorNombre || "Conductor"}
+                className="size-full object-cover"
+                fallbackClassName="size-full flex items-center justify-center bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold text-xs"
+                fallback={<span>{initials}</span>}
+              />
+            ) : (
+              <div className="size-full flex items-center justify-center bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold text-xs">
+                {conductorNombre ? (
+                  <span>{initials}</span>
+                ) : (
+                  <User className="size-3.5 sm:size-4" />
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0 space-y-1">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+              Conductor Asignado
+            </span>
+            <p className="text-xs font-semibold text-foreground truncate">
+              {asignacion.conductor?.nombreCompleto || "Conductor Asignado"}
+            </p>
+            {asignacion.conductor?.numeroLicencia && (
+              <span className="inline-block text-[9.5px] sm:text-[10.5px] font-mono font-semibold bg-background px-1.5 py-0.5 rounded border border-border/60">
+                Lic. {asignacion.conductor.numeroLicencia} ({asignacion.conductor.categoriaLicencia})
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Observación */}
+        {asignacion.observacion && (
+          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/40 text-xs space-y-1">
+            <span className="font-semibold text-muted-foreground text-[10px] uppercase tracking-wider block">
+              Observación:
+            </span>
+            <p className="text-foreground/90 text-xs whitespace-pre-wrap">
+              {asignacion.observacion}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -455,7 +513,7 @@ function AsignacionVehicularForm({
       return
     }
 
-    onSubmit({
+    void onSubmit({
       activoId,
       conductorId,
       asignadoPorId,
