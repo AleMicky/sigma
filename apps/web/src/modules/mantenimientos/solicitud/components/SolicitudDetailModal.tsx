@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
   Calendar,
+  Car,
   Check,
   CheckCircle2,
   Clock,
@@ -39,6 +40,7 @@ import { cn } from "@/shared/lib/utils"
 import { WorkflowStatusBadge } from "@/modules/workflow/components/WorkflowStatusBadge"
 import { solicitudQueries } from "../api/solicitud.queries"
 import { downloadSolicitudReportePdf } from "../api/solicitud.service"
+import { extractPlaca } from "../lib/solicitud.utils"
 import type { SolicitudAdjunto, SolicitudMantenimiento } from "../types/solicitud.type"
 
 export type SolicitudDetailModalProps = {
@@ -387,15 +389,25 @@ export function SolicitudDetailModal({
                   {/* Activo / Equipo Vinculado */}
                   <div className="sm:col-span-2 flex items-start gap-3 pt-1">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground border border-border/80 mt-0.5">
-                      <Package className="size-4 text-primary" />
+                      {extractPlaca(currentSolicitud.activo) ? (
+                        <Car className="size-4 text-amber-600 dark:text-amber-400" />
+                      ) : (
+                        <Package className="size-4 text-primary" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1 space-y-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
                         Activo / Equipo Vinculado
                       </span>
                       <div className="flex items-center gap-2 flex-wrap">
+                        {extractPlaca(currentSolicitud.activo) && (
+                          <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-2 py-0.5 font-mono text-xs font-bold text-amber-900 dark:text-amber-200 border border-amber-500/30 shadow-2xs">
+                            <Car className="size-3 text-amber-600 dark:text-amber-400" />
+                            Placa: {extractPlaca(currentSolicitud.activo)}
+                          </span>
+                        )}
                         {currentSolicitud.activo?.codigo && (
-                          <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-bold text-foreground border border-border">
+                          <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-semibold text-muted-foreground border border-border">
                             {currentSolicitud.activo.codigo}
                           </span>
                         )}

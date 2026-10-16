@@ -36,7 +36,7 @@ export function SolicitudFilterToolbar({
   onSortByChange,
   direction = "DESC",
   onDirectionChange,
-  placeholder = "Buscar por número, título, activo o solicitante…",
+  placeholder = "Buscar por folio, título, placa, activo o solicitante…",
   className,
 }: SolicitudFilterToolbarProps) {
   const isDesc = direction === "DESC"

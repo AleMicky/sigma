@@ -275,6 +275,18 @@ public class WorkflowApplicationService {
         variables.add("observacionValidacion");
         variables.add("observacionCierre");
         variables.add("fechaEstimadaOt");
+        variables.add("kilometrajeSalida");
+        variables.add("kilometraje_salida");
+        variables.add("kmSalida");
+        variables.add("km_salida");
+        variables.add("fechaSalidaReal");
+        variables.add("fecha_salida_real");
+        variables.add("kilometrajeRetorno");
+        variables.add("kilometraje_retorno");
+        variables.add("kmRetorno");
+        variables.add("km_retorno");
+        variables.add("fechaRetornoReal");
+        variables.add("fecha_retorno_real");
 
         return variables;
     }

@@ -246,6 +246,21 @@ function SelectedVehiculoCard({
   )
 }
 
+export function isVehiculoDisponible(estadoNombre?: string | null): boolean {
+  if (!estadoNombre) return true
+  const norm = estadoNombre.trim().toUpperCase()
+  // Si está en viaje, en mantenimiento o fuera de servicio, no está disponible
+  if (
+    norm.includes("VIAJE") ||
+    norm.includes("MANTENIMIENTO") ||
+    norm.includes("FUERA") ||
+    norm.includes("BAJA")
+  ) {
+    return false
+  }
+  return true
+}
+
 interface FlotaVehiculoItemRowProps {
   item: FlotaVehiculo
 }
@@ -254,12 +269,19 @@ function FlotaVehiculoItemRow({ item }: Readonly<FlotaVehiculoItemRowProps>) {
   const veh = item.vehiculo
   if (!veh) return null
   const placa = extractPlaca(veh.descripcion)
+  const disponible = isVehiculoDisponible(veh.estadoOperativoNombre)
 
   return (
     <ComboboxItem
       key={item.id}
       value={item}
-      className="text-xs py-2 px-2.5 cursor-pointer hover:bg-accent/60 transition-colors rounded-lg"
+      disabled={!disponible}
+      className={cn(
+        "text-xs py-2 px-2.5 transition-colors rounded-lg",
+        disponible
+          ? "cursor-pointer hover:bg-accent/60"
+          : "cursor-not-allowed opacity-55 bg-muted/20"
+      )}
     >
       <div className="flex items-center gap-2.5 w-full min-w-0">
         <div className="relative size-9 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/50 flex items-center justify-center">
@@ -304,6 +326,11 @@ function FlotaVehiculoItemRow({ item }: Readonly<FlotaVehiculoItemRowProps>) {
                 {veh.estadoOperativoNombre}
               </span>
             )}
+            {!disponible && (
+              <span className="text-[9px] font-semibold text-destructive bg-destructive/10 border border-destructive/25 px-1 py-0.2 rounded shrink-0">
+                No disponible
+              </span>
+            )}
           </div>
 
           {item.flota && (
@@ -325,12 +352,19 @@ interface GeneralActivoItemRowProps {
 
 function GeneralActivoItemRow({ item }: Readonly<GeneralActivoItemRowProps>) {
   const placa = extractPlaca(item.descripcion)
+  const disponible = isVehiculoDisponible(item.estadoOperativo?.nombre)
 
   return (
     <ComboboxItem
       key={item.id}
       value={item}
-      className="text-xs py-2 px-2.5 cursor-pointer hover:bg-accent/60 transition-colors rounded-lg"
+      disabled={!disponible}
+      className={cn(
+        "text-xs py-2 px-2.5 transition-colors rounded-lg",
+        disponible
+          ? "cursor-pointer hover:bg-accent/60"
+          : "cursor-not-allowed opacity-55 bg-muted/20"
+      )}
     >
       <div className="flex items-center gap-2.5 w-full min-w-0">
         <div className="relative size-9 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/50 flex items-center justify-center">
@@ -373,6 +407,11 @@ function GeneralActivoItemRow({ item }: Readonly<GeneralActivoItemRowProps>) {
                   style={{ backgroundColor: item.estadoOperativo.color || "#10b981" }}
                 />
                 {item.estadoOperativo.nombre}
+              </span>
+            )}
+            {!disponible && (
+              <span className="text-[9px] font-semibold text-destructive bg-destructive/10 border border-destructive/25 px-1 py-0.2 rounded shrink-0">
+                No disponible
               </span>
             )}
           </div>

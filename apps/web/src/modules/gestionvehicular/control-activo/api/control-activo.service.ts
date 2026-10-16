@@ -183,3 +183,54 @@ export async function deleteControlActivoVehicularDetalle(
     CONTROL_ACTIVO_VEHICULAR_ENDPOINTS.detalles.detail(id)
   )
 }
+
+/**
+ * Descarga el reporte PDF de un control de activo vehicular (Acta de Entrega o Devolución).
+ * Endpoint: GET /api/v1/controles-activos-vehiculares/{id}/reporte-pdf
+ */
+export async function downloadControlActivoVehicularReportePdf(
+  id: string,
+  tipo?: string
+): Promise<void> {
+  const blob = await http.get<Blob>(
+    CONTROL_ACTIVO_VEHICULAR_ENDPOINTS.reportePdf(id),
+    {
+      responseType: "blob",
+      headers: {
+        Accept: "application/pdf",
+      },
+    }
+  )
+
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const tipoPrefix = tipo ? `acta-vehiculo-${tipo.toLowerCase()}` : "acta-control-activo-vehicular"
+  a.download = `${tipoPrefix}-${id}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+
+/**
+ * Abre el reporte PDF de un control de activo vehicular en una pestaña nueva.
+ * Endpoint: GET /api/v1/controles-activos-vehiculares/{id}/reporte-pdf
+ */
+export async function openControlActivoVehicularReportePdf(
+  id: string
+): Promise<void> {
+  const blob = await http.get<Blob>(
+    CONTROL_ACTIVO_VEHICULAR_ENDPOINTS.reportePdf(id),
+    {
+      responseType: "blob",
+      headers: {
+        Accept: "application/pdf",
+      },
+    }
+  )
+
+  const url = window.URL.createObjectURL(blob)
+  window.open(url, "_blank")
+}
+

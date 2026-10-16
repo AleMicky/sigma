@@ -116,7 +116,7 @@ export function AprobacionesPage() {
         onSearchChange={search.setSearch}
         selectedEstado={selectedEstado}
         selectedEstadoLabel={selectedEstado === "EN_MANTENIMIENTO" ? "En Proceso" : undefined}
-        placeholder="Buscar por folio, título, activo o solicitante..."
+        placeholder="Buscar por folio, título, placa, activo o solicitante..."
       />
 
       {/* Listado y Estados UX */}

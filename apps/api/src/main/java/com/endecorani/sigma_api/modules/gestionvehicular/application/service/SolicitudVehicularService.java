@@ -25,6 +25,8 @@ import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.CambiarEstadoOperativoRequest;
+import com.endecorani.sigma_api.modules.activos.application.service.ActivoService;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
@@ -50,6 +52,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -74,6 +77,8 @@ public class SolicitudVehicularService {
     private static final String ESTADO_EN_CURSO = "EN_CURSO";
     private static final String ESTADO_EN_VIAJE = "EN_VIAJE";
     private static final String ESTADO_RETORNO = "RETORNO";
+    private static final String ESTADO_OPERATIVO_EN_VIAJE = "EN_VIAJE";
+    private static final String ESTADO_OPERATIVO_OPERATIVO = "OPERATIVO";
     private static final String ACCION_RECHAZAR = "RECHAZAR";
     private static final String WORKFLOW_CODIGO = "SOLICITUD_VEHICULAR";
     private static final String SOLICITANTE_ID = "solicitanteId";
@@ -112,6 +117,7 @@ public class SolicitudVehicularService {
     private final FlowableClient flowableClient;
     private final UsuarioRepository usuarioRepository;
     private final SecurityUtils securityUtils;
+    private final ActivoService activoService;
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudVehicularResponse> listar(String search, PageRequestDto pageRequest) {
@@ -409,6 +415,8 @@ public class SolicitudVehicularService {
             effectiveVariables.put(RESPONSABLE_ASIGNACION_ID, effectiveVariables.get(APROBADOR_ID));
         }
 
+        normalizarVariablesKilometraje(effectiveVariables);
+
         CompleteWorkflowTaskRequest effectiveRequest = new CompleteWorkflowTaskRequest(effectiveVariables);
 
         WorkflowTaskActionsResponse resultado = workflowApplicationService.completarTarea(
@@ -448,7 +456,10 @@ public class SolicitudVehicularService {
         SolicitudVehicular guardado = repository.save(solicitud);
 
         // Sincronizar registro de viaje vehicular (asignacionVehicularId, salida, retorno)
-        sincronizarViajeVehicular(guardado, effectiveVariables, nuevoEstado);
+        sincronizarViajeVehicular(guardado, effectiveVariables, guardado.getEstado());
+
+        // Sincronizar estado operativo del activo vehicular (EN_CURSO/RETORNO -> EN_VIAJE, FINALIZADA -> OPERATIVO)
+        sincronizarEstadoOperativoActivo(guardado, guardado.getEstado());
 
         return toResponse(guardado, adjuntoService.findBySolicitudVehicularId(guardado.getId()));
     }
@@ -457,7 +468,43 @@ public class SolicitudVehicularService {
             SolicitudVehicular solicitud,
             Map<String, Object> variables,
             String nuevoEstado) {
-        if (solicitud == null || solicitud.getId() == null || variables == null) {
+        if (solicitud == null || solicitud.getId() == null) {
+            return;
+        }
+
+        Map<String, Object> vars = variables != null ? variables : Collections.emptyMap();
+
+        List<AsignacionVehicular> asignaciones = asignacionVehicularRepository
+                .findBySolicitudVehicularId(solicitud.getId());
+        if (asignaciones.isEmpty()) {
+            return;
+        }
+
+        UUID asignacionId = asignaciones.get(0).getId();
+        UUID activoId = asignaciones.get(0).getActivoId();
+
+        ViajeVehicular viaje = viajeVehicularRepository.findBySolicitudVehicularId(solicitud.getId())
+                .or(() -> viajeVehicularRepository.findByAsignacionVehicularId(asignacionId))
+                .orElseGet(() -> ViajeVehicular.builder()
+                        .asignacionVehicularId(asignacionId)
+                        .estado(EstadoViajeVehicular.PROGRAMADO)
+                        .build());
+
+        if (viaje.getAsignacionVehicularId() == null) {
+            viaje.setAsignacionVehicularId(asignacionId);
+        }
+
+        boolean modificado = procesarDatosSalida(viaje, vars, nuevoEstado, activoId);
+        modificado = procesarDatosRetorno(viaje, vars, nuevoEstado) || modificado;
+        modificado = procesarObservacion(viaje, vars) || modificado;
+
+        if (modificado) {
+            viajeVehicularRepository.save(viaje);
+        }
+    }
+
+    private void sincronizarEstadoOperativoActivo(SolicitudVehicular solicitud, String nuevoEstado) {
+        if (solicitud == null || solicitud.getId() == null || nuevoEstado == null) {
             return;
         }
 
@@ -467,35 +514,74 @@ public class SolicitudVehicularService {
             return;
         }
 
-        UUID asignacionId = asignaciones.get(0).getId();
-        ViajeVehicular viaje = viajeVehicularRepository.findByAsignacionVehicularId(asignacionId)
-                .orElseGet(() -> ViajeVehicular.builder()
-                        .asignacionVehicularId(asignacionId)
-                        .estado(EstadoViajeVehicular.PROGRAMADO)
-                        .build());
+        String estadoNormalizado = nuevoEstado.trim().toUpperCase();
 
-        boolean modificado = procesarDatosSalida(viaje, variables, nuevoEstado);
-        modificado = procesarDatosRetorno(viaje, variables, nuevoEstado) || modificado;
-        modificado = procesarObservacion(viaje, variables) || modificado;
+        for (AsignacionVehicular asignacion : asignaciones) {
+            UUID activoId = asignacion.getActivoId();
+            if (activoId == null) {
+                continue;
+            }
 
-        if (modificado) {
-            viajeVehicularRepository.save(viaje);
+            try {
+                if (isSalidaEstado(estadoNormalizado)) {
+                    var activoResp = activoService.findById(activoId);
+                    String codigoActual = activoResp != null && activoResp.estadoOperativo() != null
+                            ? activoResp.estadoOperativo().codigo()
+                            : null;
+                    if (!ESTADO_OPERATIVO_EN_VIAJE.equalsIgnoreCase(codigoActual)) {
+                        activoService.cambiarEstadoOperativo(
+                                activoId,
+                                new CambiarEstadoOperativoRequest(
+                                        null,
+                                        ESTADO_OPERATIVO_EN_VIAJE,
+                                        "Salida de viaje por solicitud vehicular " + (solicitud.getNumero() != null ? solicitud.getNumero() : solicitud.getId())));
+                        log.info("Activo {} actualizado a estado operativo {} por solicitud {}",
+                                activoId, ESTADO_OPERATIVO_EN_VIAJE, solicitud.getId());
+                    }
+                } else if (isRetornoEstado(estadoNormalizado) || ESTADO_RECHAZADA.equalsIgnoreCase(estadoNormalizado)) {
+                    var activoResp = activoService.findById(activoId);
+                    String codigoActual = activoResp != null && activoResp.estadoOperativo() != null
+                            ? activoResp.estadoOperativo().codigo()
+                            : null;
+                    if (ESTADO_OPERATIVO_EN_VIAJE.equalsIgnoreCase(codigoActual)) {
+                        activoService.cambiarEstadoOperativo(
+                                activoId,
+                                new CambiarEstadoOperativoRequest(
+                                        null,
+                                        ESTADO_OPERATIVO_OPERATIVO,
+                                        "Retorno de viaje por solicitud vehicular " + (solicitud.getNumero() != null ? solicitud.getNumero() : solicitud.getId())));
+                        log.info("Activo {} restaurado a estado operativo {} tras finalizar o rechazar solicitud {}",
+                                activoId, ESTADO_OPERATIVO_OPERATIVO, solicitud.getId());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("No se pudo sincronizar el estado operativo del activo {}: {}", activoId, e.getMessage());
+            }
         }
     }
 
-    private boolean procesarDatosSalida(ViajeVehicular viaje, Map<String, Object> variables, String nuevoEstado) {
+    private boolean procesarDatosSalida(ViajeVehicular viaje, Map<String, Object> variables, String nuevoEstado, UUID activoId) {
         if (!hasSalidaData(variables, nuevoEstado)) {
             return false;
         }
 
         boolean modificado = false;
-        Long kmSalida = parseLongVariable(variables, "kilometrajeSalida");
+        Long kmSalida = parseLongVariable(variables, "kilometrajeSalida", "kilometraje_salida", "kmSalida", "km_salida", "odometroSalida");
         if (kmSalida != null) {
             viaje.setKilometrajeSalida(kmSalida);
             modificado = true;
+        } else if (viaje.getKilometrajeSalida() == null && activoId != null) {
+            try {
+                viajeVehicularRepository.findUltimoByActivoId(activoId).ifPresent(ultimo -> {
+                    if (ultimo.getKilometrajeRetorno() != null && (viaje.getId() == null || !ultimo.getId().equals(viaje.getId()))) {
+                        viaje.setKilometrajeSalida(ultimo.getKilometrajeRetorno());
+                    }
+                });
+            } catch (Exception ignored) {
+            }
         }
 
-        LocalDateTime fechaSalida = parseDateVariable(variables, "fechaSalidaReal");
+        LocalDateTime fechaSalida = parseDateVariable(variables, "fechaSalidaReal", "fecha_salida_real", "fechaSalida", "fecha_salida");
         if (fechaSalida != null) {
             viaje.setFechaSalidaReal(fechaSalida);
             modificado = true;
@@ -520,13 +606,13 @@ public class SolicitudVehicularService {
         }
 
         boolean modificado = false;
-        Long kmRetorno = parseLongVariable(variables, "kilometrajeRetorno");
+        Long kmRetorno = parseLongVariable(variables, "kilometrajeRetorno", "kilometraje_retorno", "kmRetorno", "km_retorno", "odometroRetorno");
         if (kmRetorno != null) {
             viaje.setKilometrajeRetorno(kmRetorno);
             modificado = true;
         }
 
-        LocalDateTime fechaRetorno = parseDateVariable(variables, "fechaRetornoReal");
+        LocalDateTime fechaRetorno = parseDateVariable(variables, "fechaRetornoReal", "fecha_retorno_real", "fechaRetorno", "fecha_retorno");
         if (fechaRetorno != null) {
             viaje.setFechaRetornoReal(fechaRetorno);
             modificado = true;
@@ -535,7 +621,7 @@ public class SolicitudVehicularService {
         validarKilometraje(viaje);
 
         if (viaje.getFechaRetornoReal() == null
-                && (modificado || ESTADO_FINALIZADA.equalsIgnoreCase(nuevoEstado))) {
+                && (modificado || isRetornoEstado(nuevoEstado))) {
             viaje.setFechaRetornoReal(LocalDateTime.now());
             modificado = true;
         }
@@ -561,6 +647,9 @@ public class SolicitudVehicularService {
     private boolean procesarObservacion(ViajeVehicular viaje, Map<String, Object> variables) {
         Object comObj = variables.get(COMENTARIO);
         if (comObj == null) {
+            comObj = variables.get("observacion");
+        }
+        if (comObj == null) {
             return false;
         }
         String com = comObj.toString().trim();
@@ -583,51 +672,122 @@ public class SolicitudVehicularService {
     }
 
     private boolean hasSalidaData(Map<String, Object> variables, String nuevoEstado) {
-        return variables.containsKey("kilometrajeSalida")
-                || variables.containsKey("fechaSalidaReal")
+        return containsAnyKey(variables, "kilometrajeSalida", "kilometraje_salida", "kmSalida", "km_salida", "odometroSalida", "fechaSalidaReal", "fecha_salida_real", "fechaSalida")
                 || isSalidaEstado(nuevoEstado);
     }
 
     private boolean hasRetornoData(Map<String, Object> variables, String nuevoEstado) {
-        return variables.containsKey("kilometrajeRetorno")
-                || variables.containsKey("fechaRetornoReal")
+        return containsAnyKey(variables, "kilometrajeRetorno", "kilometraje_retorno", "kmRetorno", "km_retorno", "odometroRetorno", "fechaRetornoReal", "fecha_retorno_real", "fechaRetorno")
                 || isRetornoEstado(nuevoEstado);
     }
 
-    private Long parseLongVariable(Map<String, Object> variables, String key) {
-        Object val = variables.get(key);
-        if (val == null) {
-            return null;
+    private boolean containsAnyKey(Map<String, Object> variables, String... keys) {
+        if (variables == null || variables.isEmpty()) {
+            return false;
         }
-        try {
-            return Long.parseLong(val.toString().trim());
-        } catch (Exception ignored) {
-            return null;
+        for (String key : keys) {
+            if (variables.containsKey(key) && variables.get(key) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void normalizarVariablesKilometraje(Map<String, Object> variables) {
+        if (variables == null) {
+            return;
+        }
+        if (variables.containsKey("kilometraje_salida") && !variables.containsKey("kilometrajeSalida")) {
+            variables.put("kilometrajeSalida", variables.get("kilometraje_salida"));
+        } else if (variables.containsKey("kilometrajeSalida") && !variables.containsKey("kilometraje_salida")) {
+            variables.put("kilometraje_salida", variables.get("kilometrajeSalida"));
+        }
+
+        if (variables.containsKey("kilometraje_retorno") && !variables.containsKey("kilometrajeRetorno")) {
+            variables.put("kilometrajeRetorno", variables.get("kilometraje_retorno"));
+        } else if (variables.containsKey("kilometrajeRetorno") && !variables.containsKey("kilometraje_retorno")) {
+            variables.put("kilometraje_retorno", variables.get("kilometrajeRetorno"));
+        }
+
+        if (variables.containsKey("fecha_salida_real") && !variables.containsKey("fechaSalidaReal")) {
+            variables.put("fechaSalidaReal", variables.get("fecha_salida_real"));
+        }
+        if (variables.containsKey("fecha_retorno_real") && !variables.containsKey("fechaRetornoReal")) {
+            variables.put("fechaRetornoReal", variables.get("fecha_retorno_real"));
         }
     }
 
-    private Integer parseIntVariable(Map<String, Object> variables, String key) {
-        Object val = variables.get(key);
-        if (val == null) {
+    private Long parseLongVariable(Map<String, Object> variables, String... keys) {
+        if (variables == null || variables.isEmpty()) {
             return null;
         }
-        try {
-            return Integer.parseInt(val.toString().trim());
-        } catch (Exception ignored) {
-            return null;
+        for (String key : keys) {
+            Object val = variables.get(key);
+            if (val == null) {
+                continue;
+            }
+            if (val instanceof Number num) {
+                return num.longValue();
+            }
+            String str = val.toString().trim();
+            if (str.isBlank()) {
+                continue;
+            }
+            try {
+                if (str.contains(".")) {
+                    return Math.round(Double.parseDouble(str));
+                }
+                return Long.parseLong(str);
+            } catch (Exception ignored) {
+                // try next key
+            }
         }
+        return null;
     }
 
-    private LocalDateTime parseDateVariable(Map<String, Object> variables, String key) {
-        Object val = variables.get(key);
-        if (val == null) {
+    private Integer parseIntVariable(Map<String, Object> variables, String... keys) {
+        if (variables == null || variables.isEmpty()) {
             return null;
         }
-        try {
-            return parseLocalDateTime(val.toString().trim());
-        } catch (Exception ignored) {
+        for (String key : keys) {
+            Object val = variables.get(key);
+            if (val == null) {
+                continue;
+            }
+            if (val instanceof Number num) {
+                return num.intValue();
+            }
+            String str = val.toString().trim();
+            if (str.isBlank()) {
+                continue;
+            }
+            try {
+                if (str.contains(".")) {
+                    return (int) Math.round(Double.parseDouble(str));
+                }
+                return Integer.parseInt(str);
+            } catch (Exception ignored) {
+                // try next key
+            }
+        }
+        return null;
+    }
+
+    private LocalDateTime parseDateVariable(Map<String, Object> variables, String... keys) {
+        if (variables == null || variables.isEmpty()) {
             return null;
         }
+        for (String key : keys) {
+            Object val = variables.get(key);
+            if (val != null && !val.toString().isBlank()) {
+                try {
+                    return parseLocalDateTime(val.toString().trim());
+                } catch (Exception ignored) {
+                    // try next key
+                }
+            }
+        }
+        return null;
     }
 
     private UUID parseUuidVariable(Map<String, Object> variables, String... keys) {
@@ -717,6 +877,10 @@ public class SolicitudVehicularService {
         }
 
         SolicitudVehicular actualizado = repository.save(actual);
+        if (dto.estado() != null && !dto.estado().isBlank()) {
+            sincronizarViajeVehicular(actualizado, Collections.emptyMap(), actualizado.getEstado());
+            sincronizarEstadoOperativoActivo(actualizado, actualizado.getEstado());
+        }
         List<SolicitudVehicularAdjuntoResponse> adjuntos = adjuntoService.findBySolicitudVehicularId(id);
         return toResponse(actualizado, tipo, solicitante, adjuntos);
     }
@@ -763,6 +927,10 @@ public class SolicitudVehicularService {
         }
 
         SolicitudVehicular actualizado = repository.save(actual);
+        if (dto.estado() != null && !dto.estado().isBlank()) {
+            sincronizarViajeVehicular(actualizado, Collections.emptyMap(), actualizado.getEstado());
+            sincronizarEstadoOperativoActivo(actualizado, actualizado.getEstado());
+        }
         List<SolicitudVehicularAdjuntoResponse> adjuntos = adjuntoService.findBySolicitudVehicularId(id);
         return toResponse(actualizado, tipo, solicitante, adjuntos);
     }

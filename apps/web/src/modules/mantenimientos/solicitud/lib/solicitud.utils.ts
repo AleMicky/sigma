@@ -1,15 +1,26 @@
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
 
 /**
- * Extrae la placa de circulación desde la descripción o texto de un activo.
+ * Extrae la placa de circulación desde el campo directo, descripción o texto de un activo.
  */
-export function extractPlaca(activo?: Partial<Activo> | null): string | null {
+export function extractPlaca(
+  activo?:
+    | (Partial<Activo> & {
+        placa?: string | null
+      })
+    | null,
+): string | null {
   try {
     if (!activo || typeof activo !== "object") return null
-    if (!activo.descripcion || typeof activo.descripcion !== "string") return null
+    if (activo.placa && typeof activo.placa === "string" && activo.placa.trim().length > 0) {
+      return activo.placa.trim()
+    }
+
+    const textToScan = [activo.descripcion, activo.nombre].filter(Boolean).join(" ")
+    if (!textToScan) return null
 
     // Coincide con formatos como "PLACA 5202TGB", "PLACA: 6333-SYX", "PLACA 5197 LIB", "PLACA-123", etc.
-    const match = activo.descripcion.match(
+    const match = textToScan.match(
       /PLACA[:\s#-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)*)/i,
     )
     if (match && match[1]) {

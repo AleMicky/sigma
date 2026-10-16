@@ -36,4 +36,6 @@ public class Activo extends AuditableModel {
     private Boolean activo;
 
     private UUID estadoOperativoId;
+
+    private String placa;
 }

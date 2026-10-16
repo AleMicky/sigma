@@ -21,7 +21,10 @@ import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { ConductorCombobox } from "@/modules/gestionvehicular/conductor/components/ConductorCombobox"
 import { conductorQueries } from "@/modules/gestionvehicular/conductor/api/conductor.queries"
-import { VehiculoResponsableCombobox } from "./VehiculoResponsableCombobox"
+import {
+  VehiculoResponsableCombobox,
+  isVehiculoDisponible,
+} from "./VehiculoResponsableCombobox"
 import { isApiError } from "@/shared/api"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -509,6 +512,7 @@ function AsignacionVehicularForm({
   )
   const [observacion, setObservacion] = React.useState(asignacionActual?.observacion || "")
   const [formValidationWarning, setFormValidationWarning] = React.useState<string | null>(null)
+  const [activoSeleccionado, setActivoSeleccionado] = React.useState<any>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -516,6 +520,16 @@ function AsignacionVehicularForm({
 
     if (!activoId) {
       setFormValidationWarning("Debe seleccionar un vehículo / activo.")
+      return
+    }
+
+    const estadoNombre =
+      activoSeleccionado?.vehiculo?.estadoOperativoNombre ||
+      activoSeleccionado?.estadoOperativo?.nombre
+    if (estadoNombre && !isVehiculoDisponible(estadoNombre)) {
+      setFormValidationWarning(
+        `El vehículo seleccionado se encuentra en estado "${estadoNombre}" y no puede ser asignado.`
+      )
       return
     }
 
@@ -562,6 +576,7 @@ function AsignacionVehicularForm({
             setAsignadoPorId(val)
             if (val !== asignadoPorId) {
               setActivoId("")
+              setActivoSeleccionado(null)
             }
           }}
           disabled
@@ -585,7 +600,10 @@ function AsignacionVehicularForm({
         <VehiculoResponsableCombobox
           value={activoId}
           empleadoId={asignadoPorId}
-          onValueChange={(val) => setActivoId(val)}
+          onValueChange={(val, item) => {
+            setActivoId(val)
+            setActivoSeleccionado(item ?? null)
+          }}
           placeholder={
             asignadoPorId
               ? "Buscar vehículo en las flotas del responsable..."

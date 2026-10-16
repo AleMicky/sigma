@@ -17,10 +17,17 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
 public class SolicitudMantenimientoPersistenceMapper {
+
+    private static final Pattern PLACA_PATTERN = Pattern.compile(
+            "PLACA[:\\s#-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)*)",
+            Pattern.CASE_INSENSITIVE
+    );
 
     public SolicitudMantenimientoEntity toEntity(SolicitudMantenimiento domain) {
         if (domain == null) return null;
@@ -102,10 +109,19 @@ public class SolicitudMantenimientoPersistenceMapper {
 
     private Activo toActivoDomain(ActivoEntity entity) {
         if (entity == null) return null;
+        String placa = null;
+        if (entity.getDescripcion() != null && !entity.getDescripcion().isBlank()) {
+            Matcher matcher = PLACA_PATTERN.matcher(entity.getDescripcion());
+            if (matcher.find()) {
+                placa = matcher.group(1).trim();
+            }
+        }
         return Activo.builder()
                 .id(entity.getId())
                 .codigo(entity.getCodigo())
                 .nombre(entity.getNombre())
+                .descripcion(entity.getDescripcion())
+                .placa(placa)
                 .build();
     }
 

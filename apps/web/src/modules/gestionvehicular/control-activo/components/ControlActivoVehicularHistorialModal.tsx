@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Edit2,
+  ExternalLink,
   Eye,
   FileText,
   Hash,
@@ -22,6 +23,7 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import { accesorioQueries } from "@/modules/activos/accesorio/api/accesorio.queries"
 import type { Accesorio } from "@/modules/activos/accesorio/api/accesorio.service"
@@ -40,10 +42,12 @@ import { formatDate } from "@/shared/utils/date.utils"
 
 import { useDeleteControlActivoVehicular } from "../api/control-activo.mutations"
 import { controlActivoVehicularQueries } from "../api/control-activo.queries"
-import type {
-  ControlActivoVehicular,
-  ControlActivoVehicularDetalle,
-  TipoControlActivo,
+import {
+  downloadControlActivoVehicularReportePdf,
+  openControlActivoVehicularReportePdf,
+  type ControlActivoVehicular,
+  type ControlActivoVehicularDetalle,
+  type TipoControlActivo,
 } from "../api/control-activo.service"
 
 export type ControlActivoVehicularHistorialModalProps = {
@@ -72,6 +76,31 @@ function ControlItemCard({
   accesorioMap?: Map<string, Accesorio>
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
+  const [isOpenPdf, setIsOpenPdf] = useState(false)
+
+  const handleExportPdf = async () => {
+    try {
+      setIsExportingPdf(true)
+      await downloadControlActivoVehicularReportePdf(control.id, control.tipo)
+      toast.success("Reporte PDF generado exitosamente")
+    } catch {
+      toast.error("Error al generar el reporte PDF del control de activo vehicular")
+    } finally {
+      setIsExportingPdf(false)
+    }
+  }
+
+  const handleOpenPdf = async () => {
+    try {
+      setIsOpenPdf(true)
+      await openControlActivoVehicularReportePdf(control.id)
+    } catch {
+      toast.error("Error al abrir el reporte PDF del control de activo vehicular")
+    } finally {
+      setIsOpenPdf(false)
+    }
+  }
 
   const detallesQuery = useQuery({
     ...controlActivoVehicularQueries.detallesList({
@@ -155,6 +184,39 @@ function ControlItemCard({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={handleExportPdf}
+              disabled={isExportingPdf || isOpenPdf}
+              className="h-7 text-xs gap-1.5 px-2.5 font-medium bg-background hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer shadow-2xs text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/50 hover:border-rose-300"
+              title="Descargar Acta en PDF"
+            >
+              {isExportingPdf ? (
+                <Loader2 className="size-3 animate-spin text-rose-600" />
+              ) : (
+                <FileText className="size-3 text-rose-600 dark:text-rose-400" />
+              )}
+              <span>PDF</span>
+            </Button>
+
+            <Button
+              type="button"
+              size="xs"
+              variant="ghost"
+              onClick={handleOpenPdf}
+              disabled={isOpenPdf || isExportingPdf}
+              className="h-7 text-xs px-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
+              title="Abrir Acta PDF en pestaña nueva"
+            >
+              {isOpenPdf ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <ExternalLink className="size-3" />
+              )}
+            </Button>
+
             {!readOnly && (
               <>
                 <Button

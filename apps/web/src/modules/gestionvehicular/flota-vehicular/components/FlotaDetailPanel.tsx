@@ -553,6 +553,23 @@ export function FlotaDetailPanel({
                                 (Color: {veh.color})
                               </span>
                             )}
+
+                            {veh?.estadoOperativoNombre && (
+                              <span
+                                className="text-[9.5px] font-medium px-1.5 py-0.2 rounded border inline-flex items-center gap-1 shrink-0"
+                                style={{
+                                  backgroundColor: `${veh.estadoOperativoColor || "#10b981"}18`,
+                                  color: veh.estadoOperativoColor || "#10b981",
+                                  borderColor: `${veh.estadoOperativoColor || "#10b981"}40`,
+                                }}
+                              >
+                                <span
+                                  className="size-1.5 rounded-full"
+                                  style={{ backgroundColor: veh.estadoOperativoColor || "#10b981" }}
+                                />
+                                {veh.estadoOperativoNombre}
+                              </span>
+                            )}
                           </div>
 
                           {/* Fila 2: Responsable, Área, Chasis y Observaciones */}
