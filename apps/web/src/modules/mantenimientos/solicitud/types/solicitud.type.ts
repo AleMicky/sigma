@@ -5,6 +5,8 @@ export type SolicitudActivoInfo = {
   id: string
   codigo: string
   nombre: string
+  descripcion?: string | null
+  placa?: string | null
 }
 
 export type SolicitudTipoMantenimientoInfo = {

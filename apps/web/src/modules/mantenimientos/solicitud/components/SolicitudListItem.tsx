@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import {
   AlertTriangle,
   Calendar,
+  Car,
   ClipboardCheck,
   Eye,
   HardHat,
@@ -20,6 +21,7 @@ import {
   type WorkflowField,
 } from "@/modules/workflow"
 import { Button } from "@/shared/components/ui/button"
+import { extractPlaca } from "../lib/solicitud.utils"
 import type { SolicitudMantenimiento } from "../types/solicitud.type"
 
 export type SolicitudListItemProps = {
@@ -108,6 +110,7 @@ export function SolicitudListItem({
 
   const adjuntosCount = solicitud.adjuntos?.length ?? 0
   const handleViewDetail = onViewDetail || onSelect
+  const placa = useMemo(() => extractPlaca(solicitud.activo), [solicitud.activo])
 
   return (
     <WorkflowListItem
@@ -129,6 +132,16 @@ export function SolicitudListItem({
       }
       badges={
         <>
+          {placa && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-mono font-bold text-amber-900 dark:text-amber-200 border border-amber-500/40 shrink-0 shadow-2xs tracking-wider"
+              title={`Placa del vehículo: ${placa}`}
+            >
+              <Car className="size-2.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>{placa}</span>
+            </span>
+          )}
+
           {solicitud.tipoMantenimiento?.nombre && (
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-1.5 py-0.5 text-[10.5px] font-medium text-foreground/80 border border-border/70 shrink-0 shadow-2xs">
               <Tag className="size-2.5 opacity-60 shrink-0" />
@@ -180,13 +193,29 @@ export function SolicitudListItem({
         <>
           {solicitud.activo && (
             <span
-              className="inline-flex items-center gap-1.5 font-medium text-foreground/90 max-w-xs truncate"
-              title={`Activo: ${solicitud.activo.codigo} - ${solicitud.activo.nombre}`}
+              className="inline-flex items-center gap-1.5 font-medium text-foreground/90 max-w-sm truncate"
+              title={`Activo: ${solicitud.activo.codigo} - ${solicitud.activo.nombre}${placa ? ` | Placa: ${placa}` : ""}`}
             >
-              <Wrench className="size-3 text-muted-foreground shrink-0" />
-              <span className="font-semibold text-foreground/95">{solicitud.activo.codigo}</span>
-              <span className="text-muted-foreground">·</span>
-              <span className="truncate">{solicitud.activo.nombre}</span>
+              {placa ? (
+                <>
+                  <Car className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span className="font-mono font-bold text-amber-950 dark:text-amber-100 bg-amber-500/20 dark:bg-amber-500/25 border border-amber-500/40 px-1.5 py-0.5 rounded text-[11px] tracking-wide shrink-0 shadow-2xs">
+                    Placa {placa}
+                  </span>
+                  <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
+                    ({solicitud.activo.codigo})
+                  </span>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="truncate text-muted-foreground">{solicitud.activo.nombre}</span>
+                </>
+              ) : (
+                <>
+                  <Wrench className="size-3 text-muted-foreground shrink-0" />
+                  <span className="font-semibold text-foreground/95">{solicitud.activo.codigo}</span>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="truncate">{solicitud.activo.nombre}</span>
+                </>
+              )}
             </span>
           )}
 

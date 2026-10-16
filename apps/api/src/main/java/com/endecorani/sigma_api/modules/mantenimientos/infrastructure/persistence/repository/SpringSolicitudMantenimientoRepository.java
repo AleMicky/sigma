@@ -29,13 +29,20 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
         WHERE LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(s.estado) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(s.activo.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(s.activo.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(s.activo.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))
     """,
     countQuery = """
         SELECT count(s)
         FROM SolicitudMantenimientoEntity s
+        LEFT JOIN s.activo activo
         WHERE LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(s.estado) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(activo.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(activo.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR LOWER(activo.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))
     """)
     Page<SolicitudMantenimientoEntity> search(@Param("search") String search, Pageable pageable);
 
@@ -84,7 +91,14 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
         LEFT JOIN s.aprobador aprobador
         LEFT JOIN s.responsable responsable
         LEFT JOIN s.supervisor supervisor
-        WHERE (:hasQ = false OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%')))
+        WHERE (:hasQ = false 
+               OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) 
+               OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR (activo IS NOT NULL AND (
+                   LOWER(activo.codigo) LIKE LOWER(CONCAT('%', :q, '%'))
+                   OR LOWER(activo.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+                   OR LOWER(activo.descripcion) LIKE LOWER(CONCAT('%', :q, '%'))
+               )))
           AND (:hasEstados = false OR UPPER(s.estado) IN (:estados))
           AND (:hasSolicitante = false OR solicitante.id = :solicitanteId)
           AND (:hasResponsable = false OR responsable.id = :responsableId)
@@ -100,7 +114,14 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
         LEFT JOIN s.supervisor supervisor
         LEFT JOIN s.activo activo
         LEFT JOIN s.aprobador aprobador
-        WHERE (:hasQ = false OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%')))
+        WHERE (:hasQ = false 
+               OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :q, '%')) 
+               OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR (activo IS NOT NULL AND (
+                   LOWER(activo.codigo) LIKE LOWER(CONCAT('%', :q, '%'))
+                   OR LOWER(activo.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+                   OR LOWER(activo.descripcion) LIKE LOWER(CONCAT('%', :q, '%'))
+               )))
           AND (:hasEstados = false OR UPPER(s.estado) IN (:estados))
           AND (:hasSolicitante = false OR solicitante.id = :solicitanteId)
           AND (:hasResponsable = false OR responsable.id = :responsableId)

@@ -30,7 +30,12 @@ public record SolicitudMantenimientoResponse(
         public record ActivoInfo(
                         UUID id,
                         String codigo,
-                        String nombre) {
+                        String nombre,
+                        String descripcion,
+                        String placa) {
+                public ActivoInfo(UUID id, String codigo, String nombre) {
+                        this(id, codigo, nombre, null, null);
+                }
         }
 
         public record TipoMantenimientoInfo(

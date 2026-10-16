@@ -194,7 +194,7 @@ export function EncargadoMantenimientoPage() {
         searchQuery={search.search}
         onSearchChange={search.setSearch}
         selectedEstado={selectedEstado}
-        placeholder="Buscar por folio, título, activo o solicitante..."
+        placeholder="Buscar por folio, título, placa, activo o solicitante..."
       />
 
       {/* Listado y Estados UX */}
