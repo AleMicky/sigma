@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
+  Activity,
   Boxes,
   Sliders,
   Tag,
@@ -9,6 +10,7 @@ import {
 import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.queries"
 import { TipoActivoAtributosPage } from "@/modules/activos/activo-atributo/pages/TipoActivoAtributosPage"
 import { TipoActivoComponentesPage } from "@/modules/activos/componente/pages/TipoActivoComponentesPage"
+import { TipoActivoEstadosTab } from "@/modules/activos/tipo-activo-estado/components/TipoActivoEstadosTab"
 import {
   DetailPanelHeader,
   DetailPanelShell,
@@ -25,7 +27,7 @@ type TipoActivoDetailPanelProps = {
   tipoActivo: TipoActivo | null
 }
 
-type DetailTab = "atributos" | "componentes"
+type DetailTab = "atributos" | "componentes" | "estados"
 
 export function TipoActivoDetailPanel({
   tipoActivo,
@@ -46,7 +48,7 @@ export function TipoActivoDetailPanel({
     return (
       <DetailPanelShell
         hasSelection={false}
-        emptySelectionMessage="Selecciona un tipo de activo del panel izquierdo para configurar sus atributos dinámicos y componentes estructurales."
+        emptySelectionMessage="Selecciona un tipo de activo del panel izquierdo para configurar sus atributos dinámicos, componentes estructurales y estados operativos."
       >
         <div />
       </DetailPanelShell>
@@ -134,6 +136,20 @@ export function TipoActivoDetailPanel({
             <Boxes className="size-3.5" />
             <span>Componentes Estructurales</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("estados")}
+            className={cn(
+              "flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-all border-b-2 -mb-px cursor-pointer",
+              activeTab === "estados"
+                ? "border-primary text-foreground font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
+            )}
+          >
+            <Activity className="size-3.5" />
+            <span>Estados Operativos</span>
+          </button>
         </div>
 
         {/* Contenido de la pestaña activa */}
@@ -143,9 +159,14 @@ export function TipoActivoDetailPanel({
               key={`attr-${currentTipo.id}`}
               tipoActivoId={currentTipo.id}
             />
-          ) : (
+          ) : activeTab === "componentes" ? (
             <TipoActivoComponentesPage
               key={`comp-${currentTipo.id}`}
+              tipoActivoId={currentTipo.id}
+            />
+          ) : (
+            <TipoActivoEstadosTab
+              key={`est-${currentTipo.id}`}
               tipoActivoId={currentTipo.id}
             />
           )}

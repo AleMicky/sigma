@@ -34,6 +34,10 @@ export const routes = {
     root: "/tipos-documento",
   },
 
+  estadosOperativos: {
+    root: "/estados-operativos",
+  },
+
   parametros: {
     root: "/parametros",
     gestion: "/parametros/gestion",

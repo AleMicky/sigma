@@ -15,6 +15,7 @@ import { Route as DashboardIndexRouteImport } from './../../routes/_dashboard/in
 import { Route as DashboardAccesoriosRouteRouteImport } from './../../routes/_dashboard/accesorios/route'
 import { Route as DashboardActivosRouteRouteImport } from './../../routes/_dashboard/activos/route'
 import { Route as DashboardCategoriasRouteRouteImport } from './../../routes/_dashboard/categorias/route'
+import { Route as DashboardEstadosOperativosRouteRouteImport } from './../../routes/_dashboard/estados-operativos/route'
 import { Route as DashboardGestionVehicularRouteRouteImport } from './../../routes/_dashboard/gestion-vehicular/route'
 import { Route as DashboardInventariosRouteRouteImport } from './../../routes/_dashboard/inventarios/route'
 import { Route as DashboardMantenimientosRouteRouteImport } from './../../routes/_dashboard/mantenimientos/route'
@@ -29,6 +30,7 @@ import { Route as DashboardActivosIndexRouteImport } from './../../routes/_dashb
 import { Route as DashboardActivosConsultaDocumentosRouteImport } from './../../routes/_dashboard/activos/consulta-documentos'
 import { Route as DashboardActivosNuevoRouteImport } from './../../routes/_dashboard/activos/nuevo'
 import { Route as DashboardCategoriasIndexRouteImport } from './../../routes/_dashboard/categorias/index'
+import { Route as DashboardEstadosOperativosIndexRouteImport } from './../../routes/_dashboard/estados-operativos/index'
 import { Route as DashboardGestionVehicularIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/index'
 import { Route as DashboardInventariosIndexRouteImport } from './../../routes/_dashboard/inventarios/index'
 import { Route as DashboardInventariosCategoriasRouteRouteImport } from './../../routes/_dashboard/inventarios/categorias/route'
@@ -129,6 +131,12 @@ const DashboardCategoriasRouteRoute =
     path: '/categorias',
     getParentRoute: () => DashboardRoute,
   } as any)
+const DashboardEstadosOperativosRouteRoute =
+  DashboardEstadosOperativosRouteRouteImport.update({
+    id: '/estados-operativos',
+    path: '/estados-operativos',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardGestionVehicularRouteRoute =
   DashboardGestionVehicularRouteRouteImport.update({
     id: '/gestion-vehicular',
@@ -208,6 +216,12 @@ const DashboardCategoriasIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => DashboardCategoriasRouteRoute,
+  } as any)
+const DashboardEstadosOperativosIndexRoute =
+  DashboardEstadosOperativosIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardEstadosOperativosRouteRoute,
   } as any)
 const DashboardGestionVehicularIndexRoute =
   DashboardGestionVehicularIndexRouteImport.update({
@@ -623,6 +637,7 @@ export interface FileRoutesByFullPath {
   '/accesorios': typeof DashboardAccesoriosRouteRouteWithChildren
   '/activos': typeof DashboardActivosRouteRouteWithChildren
   '/categorias': typeof DashboardCategoriasRouteRouteWithChildren
+  '/estados-operativos': typeof DashboardEstadosOperativosRouteRouteWithChildren
   '/gestion-vehicular': typeof DashboardGestionVehicularRouteRouteWithChildren
   '/inventarios': typeof DashboardInventariosRouteRouteWithChildren
   '/mantenimientos': typeof DashboardMantenimientosRouteRouteWithChildren
@@ -651,6 +666,7 @@ export interface FileRoutesByFullPath {
   '/accesorios/': typeof DashboardAccesoriosIndexRoute
   '/activos/': typeof DashboardActivosIndexRoute
   '/categorias/': typeof DashboardCategoriasIndexRoute
+  '/estados-operativos/': typeof DashboardEstadosOperativosIndexRoute
   '/gestion-vehicular/': typeof DashboardGestionVehicularIndexRoute
   '/inventarios/': typeof DashboardInventariosIndexRoute
   '/mantenimientos/': typeof DashboardMantenimientosIndexRoute
@@ -723,6 +739,7 @@ export interface FileRoutesByTo {
   '/accesorios': typeof DashboardAccesoriosIndexRoute
   '/activos': typeof DashboardActivosIndexRoute
   '/categorias': typeof DashboardCategoriasIndexRoute
+  '/estados-operativos': typeof DashboardEstadosOperativosIndexRoute
   '/gestion-vehicular': typeof DashboardGestionVehicularIndexRoute
   '/inventarios': typeof DashboardInventariosIndexRoute
   '/mantenimientos': typeof DashboardMantenimientosIndexRoute
@@ -784,6 +801,7 @@ export interface FileRoutesById {
   '/_dashboard/accesorios': typeof DashboardAccesoriosRouteRouteWithChildren
   '/_dashboard/activos': typeof DashboardActivosRouteRouteWithChildren
   '/_dashboard/categorias': typeof DashboardCategoriasRouteRouteWithChildren
+  '/_dashboard/estados-operativos': typeof DashboardEstadosOperativosRouteRouteWithChildren
   '/_dashboard/gestion-vehicular': typeof DashboardGestionVehicularRouteRouteWithChildren
   '/_dashboard/inventarios': typeof DashboardInventariosRouteRouteWithChildren
   '/_dashboard/mantenimientos': typeof DashboardMantenimientosRouteRouteWithChildren
@@ -813,6 +831,7 @@ export interface FileRoutesById {
   '/_dashboard/accesorios/': typeof DashboardAccesoriosIndexRoute
   '/_dashboard/activos/': typeof DashboardActivosIndexRoute
   '/_dashboard/categorias/': typeof DashboardCategoriasIndexRoute
+  '/_dashboard/estados-operativos/': typeof DashboardEstadosOperativosIndexRoute
   '/_dashboard/gestion-vehicular/': typeof DashboardGestionVehicularIndexRoute
   '/_dashboard/inventarios/': typeof DashboardInventariosIndexRoute
   '/_dashboard/mantenimientos/': typeof DashboardMantenimientosIndexRoute
@@ -876,6 +895,7 @@ export interface FileRouteTypes {
     | '/accesorios'
     | '/activos'
     | '/categorias'
+    | '/estados-operativos'
     | '/gestion-vehicular'
     | '/inventarios'
     | '/mantenimientos'
@@ -904,6 +924,7 @@ export interface FileRouteTypes {
     | '/accesorios/'
     | '/activos/'
     | '/categorias/'
+    | '/estados-operativos/'
     | '/gestion-vehicular/'
     | '/inventarios/'
     | '/mantenimientos/'
@@ -976,6 +997,7 @@ export interface FileRouteTypes {
     | '/accesorios'
     | '/activos'
     | '/categorias'
+    | '/estados-operativos'
     | '/gestion-vehicular'
     | '/inventarios'
     | '/mantenimientos'
@@ -1036,6 +1058,7 @@ export interface FileRouteTypes {
     | '/_dashboard/accesorios'
     | '/_dashboard/activos'
     | '/_dashboard/categorias'
+    | '/_dashboard/estados-operativos'
     | '/_dashboard/gestion-vehicular'
     | '/_dashboard/inventarios'
     | '/_dashboard/mantenimientos'
@@ -1065,6 +1088,7 @@ export interface FileRouteTypes {
     | '/_dashboard/accesorios/'
     | '/_dashboard/activos/'
     | '/_dashboard/categorias/'
+    | '/_dashboard/estados-operativos/'
     | '/_dashboard/gestion-vehicular/'
     | '/_dashboard/inventarios/'
     | '/_dashboard/mantenimientos/'
@@ -1170,6 +1194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCategoriasRouteRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/estados-operativos': {
+      id: '/_dashboard/estados-operativos'
+      path: '/estados-operativos'
+      fullPath: '/estados-operativos'
+      preLoaderRoute: typeof DashboardEstadosOperativosRouteRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_dashboard/gestion-vehicular': {
       id: '/_dashboard/gestion-vehicular'
       path: '/gestion-vehicular'
@@ -1267,6 +1298,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/categorias/'
       preLoaderRoute: typeof DashboardCategoriasIndexRouteImport
       parentRoute: typeof DashboardCategoriasRouteRoute
+    }
+    '/_dashboard/estados-operativos/': {
+      id: '/_dashboard/estados-operativos/'
+      path: '/'
+      fullPath: '/estados-operativos/'
+      preLoaderRoute: typeof DashboardEstadosOperativosIndexRouteImport
+      parentRoute: typeof DashboardEstadosOperativosRouteRoute
     }
     '/_dashboard/gestion-vehicular/': {
       id: '/_dashboard/gestion-vehicular/'
@@ -1801,6 +1839,20 @@ const DashboardCategoriasRouteRouteWithChildren =
     DashboardCategoriasRouteRouteChildren,
   )
 
+interface DashboardEstadosOperativosRouteRouteChildren {
+  DashboardEstadosOperativosIndexRoute: typeof DashboardEstadosOperativosIndexRoute
+}
+
+const DashboardEstadosOperativosRouteRouteChildren: DashboardEstadosOperativosRouteRouteChildren =
+  {
+    DashboardEstadosOperativosIndexRoute: DashboardEstadosOperativosIndexRoute,
+  }
+
+const DashboardEstadosOperativosRouteRouteWithChildren =
+  DashboardEstadosOperativosRouteRoute._addFileChildren(
+    DashboardEstadosOperativosRouteRouteChildren,
+  )
+
 interface DashboardGestionVehicularRouteRouteChildren {
   DashboardGestionVehicularIndexRoute: typeof DashboardGestionVehicularIndexRoute
   DashboardGestionVehicularControlesActivosNuevoRoute: typeof DashboardGestionVehicularControlesActivosNuevoRoute
@@ -2172,6 +2224,7 @@ interface DashboardRouteChildren {
   DashboardAccesoriosRouteRoute: typeof DashboardAccesoriosRouteRouteWithChildren
   DashboardActivosRouteRoute: typeof DashboardActivosRouteRouteWithChildren
   DashboardCategoriasRouteRoute: typeof DashboardCategoriasRouteRouteWithChildren
+  DashboardEstadosOperativosRouteRoute: typeof DashboardEstadosOperativosRouteRouteWithChildren
   DashboardGestionVehicularRouteRoute: typeof DashboardGestionVehicularRouteRouteWithChildren
   DashboardInventariosRouteRoute: typeof DashboardInventariosRouteRouteWithChildren
   DashboardMantenimientosRouteRoute: typeof DashboardMantenimientosRouteRouteWithChildren
@@ -2188,6 +2241,8 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAccesoriosRouteRoute: DashboardAccesoriosRouteRouteWithChildren,
   DashboardActivosRouteRoute: DashboardActivosRouteRouteWithChildren,
   DashboardCategoriasRouteRoute: DashboardCategoriasRouteRouteWithChildren,
+  DashboardEstadosOperativosRouteRoute:
+    DashboardEstadosOperativosRouteRouteWithChildren,
   DashboardGestionVehicularRouteRoute:
     DashboardGestionVehicularRouteRouteWithChildren,
   DashboardInventariosRouteRoute: DashboardInventariosRouteRouteWithChildren,
