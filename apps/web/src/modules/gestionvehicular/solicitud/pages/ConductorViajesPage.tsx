@@ -241,10 +241,152 @@ export function ConductorViajesPage() {
     return map[selectedEstado] ?? selectedEstado.replace(/_/g, " ")
   }, [selectedEstado])
 
+  const getEmptyStateDescription = () => {
+    if (search.debouncedSearch) {
+      return `No se encontraron resultados para "${search.debouncedSearch}". Prueba con otro término.`
+    }
+    if (selectedEstado === "ASIGNADO") {
+      return "No tienes viajes asignados pendientes de salida actualmente."
+    }
+    if (selectedEstado === "EN_VIAJE") {
+      return "No tienes viajes en curso actualmente."
+    }
+    if (selectedEstado === "FINALIZADA") {
+      return "No hay historial de viajes finalizados."
+    }
+    return "No se encontraron viajes asignados."
+  }
+
+  const getAllowedTipo = () => {
+    if (!controlActivoHistorialItem) return "ALL"
+    const estado = (controlActivoHistorialItem.estado || "").toUpperCase()
+    if (["RETORNO", "EN_RETORNO"].includes(estado)) {
+      return "DEVOLUCION"
+    }
+    if (
+      [
+        "APROBADO",
+        "APROBADA",
+        "ASIGNADO",
+        "BORRADOR",
+        "PENDIENTE",
+      ].includes(estado)
+    ) {
+      return "ENTREGA"
+    }
+    return "ALL"
+  }
+
+  const renderContent = () => {
+    if (query.isLoading) {
+      return (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <SolicitudVehicularListItemSkeleton key={index} />
+          ))}
+        </div>
+      )
+    }
+
+    if (query.isError) {
+      return (
+        <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
+          <EmptyState
+            icon={<AlertCircle className="size-7 sm:size-8 text-destructive" />}
+            title="Error al consultar los viajes asignados"
+            description={getErrorMessage(query.error)}
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+              >
+                <RefreshCw className="size-3.5" />
+                <span>Reintentar</span>
+              </Button>
+            }
+          />
+        </div>
+      )
+    }
+
+    if (solicitudes.length === 0) {
+      return (
+        <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
+          <EmptyState
+            icon={<Car className="size-7 sm:size-8 text-muted-foreground/60" />}
+            title="No hay viajes en esta bandeja"
+            description={getEmptyStateDescription()}
+            action={
+              search.debouncedSearch || selectedEstado ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearAll}
+                  className="mt-2 text-xs font-medium cursor-pointer shadow-2xs"
+                >
+                  {search.debouncedSearch ? "Limpiar búsqueda" : "Ver todos los viajes"}
+                </Button>
+              ) : undefined
+            }
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-3">
+        <div
+          className={cn(
+            "flex flex-col gap-3 sm:gap-3.5 transition-opacity duration-200",
+            query.isFetching && !query.isLoading && "opacity-75"
+          )}
+        >
+          {solicitudes.map((solicitud) => {
+            const estado = (solicitud.estado || "").toUpperCase()
+            const isPrevioSalida = [
+              "APROBADO",
+              "APROBADA",
+              "ASIGNADO",
+              "BORRADOR",
+              "PENDIENTE",
+            ].includes(estado)
+
+            return (
+              <ConductorViajeListItem
+                key={solicitud.id}
+                solicitud={solicitud}
+                onViewDetail={handleViewDetail}
+                onSelect={handleViewDetail}
+                onControlActivo={handleControlActivo}
+                onCargaCombustible={
+                  isPrevioSalida ? undefined : handleCargaCombustible
+                }
+                onActionSelect={handleActionSelect}
+                onTraceability={setTraceabilityItem}
+              />
+            )
+          })}
+        </div>
+
+        {/* Paginación */}
+        {query.data && query.data.totalPages > 1 && (
+          <Pagination
+            page={query.data}
+            onPageChange={search.setPage}
+            className="border-t pt-1.5 shrink-0 text-xs"
+          />
+        )}
+      </div>
+    )
+  }
+
   return (
     <PageShell
+      size="lg"
       layout="scroll"
-      className="w-full max-w-none px-2 py-1.5 sm:px-4 sm:py-2.5 md:px-5 lg:px-6 space-y-2 sm:space-y-2.5"
+      className="px-2 py-1.5 sm:px-4 sm:py-2.5 space-y-2 sm:space-y-2.5"
     >
       {/* Encabezado Principal */}
       <SolicitudVehicularHeader
@@ -293,93 +435,7 @@ export function ConductorViajesPage() {
           </div>
         )}
 
-        {query.isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <SolicitudVehicularListItemSkeleton key={index} />
-            ))}
-          </div>
-        ) : query.isError ? (
-          <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
-            <EmptyState
-              icon={<AlertCircle className="size-7 sm:size-8 text-destructive" />}
-              title="Error al consultar los viajes asignados"
-              description={getErrorMessage(query.error)}
-              action={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
-                >
-                  <RefreshCw className="size-3.5" />
-                  <span>Reintentar</span>
-                </Button>
-              }
-            />
-          </div>
-        ) : solicitudes.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
-            <EmptyState
-              icon={<Car className="size-7 sm:size-8 text-muted-foreground/60" />}
-              title="No hay viajes en esta bandeja"
-              description={
-                search.debouncedSearch
-                  ? `No se encontraron resultados para "${search.debouncedSearch}". Prueba con otro término.`
-                  : selectedEstado === "ASIGNADO"
-                    ? "No tienes viajes asignados pendientes de salida actualmente."
-                    : selectedEstado === "EN_VIAJE"
-                      ? "No tienes viajes en curso actualmente."
-                      : selectedEstado === "FINALIZADA"
-                        ? "No hay historial de viajes finalizados."
-                        : "No se encontraron viajes asignados."
-              }
-              action={
-                search.debouncedSearch || selectedEstado ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClearAll}
-                    className="mt-2 text-xs font-medium cursor-pointer shadow-2xs"
-                  >
-                    {search.debouncedSearch ? "Limpiar búsqueda" : "Ver todos los viajes"}
-                  </Button>
-                ) : undefined
-              }
-            />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div
-              className={cn(
-                "flex flex-col gap-3 sm:gap-3.5 transition-opacity duration-200",
-                query.isFetching && !query.isLoading && "opacity-75"
-              )}
-            >
-              {solicitudes.map((solicitud) => (
-                <ConductorViajeListItem
-                  key={solicitud.id}
-                  solicitud={solicitud}
-                  onViewDetail={handleViewDetail}
-                  onSelect={handleViewDetail}
-                  onControlActivo={handleControlActivo}
-                  onCargaCombustible={handleCargaCombustible}
-                  onActionSelect={handleActionSelect}
-                  onTraceability={setTraceabilityItem}
-                />
-              ))}
-            </div>
-
-            {/* Paginación */}
-            {query.data && query.data.totalPages > 1 && (
-              <Pagination
-                page={query.data}
-                onPageChange={search.setPage}
-                className="border-t pt-1.5 shrink-0 text-xs"
-              />
-            )}
-          </div>
-        )}
+        {renderContent()}
       </div>
 
       {/* Panel Lateral de Detalle Completo de Solicitud */}
@@ -390,7 +446,18 @@ export function ConductorViajesPage() {
         }}
         solicitud={activeDetailItem}
         onControlActivo={handleControlActivo}
-        onCargaCombustible={(sol) => handleCargaCombustible(sol)}
+        onCargaCombustible={
+          activeDetailItem &&
+          [
+            "APROBADO",
+            "APROBADA",
+            "ASIGNADO",
+            "BORRADOR",
+            "PENDIENTE",
+          ].includes((activeDetailItem.estado || "").toUpperCase())
+            ? undefined
+            : (sol) => handleCargaCombustible(sol)
+        }
         onViewHistory={setTraceabilityItem}
         onActionSelect={handleActionSelect}
       />
@@ -433,25 +500,7 @@ export function ConductorViajesPage() {
           if (!open) setControlActivoHistorialItem(null)
         }}
         solicitud={controlActivoHistorialItem}
-        allowedTipo={
-          controlActivoHistorialItem &&
-          ["RETORNO", "EN_RETORNO"].includes(
-            (controlActivoHistorialItem.estado || "").toUpperCase()
-          )
-            ? "DEVOLUCION"
-            : controlActivoHistorialItem &&
-                [
-                  "APROBADO",
-                  "APROBADA",
-                  "ASIGNADO",
-                  "BORRADOR",
-                  "PENDIENTE",
-                ].includes(
-                  (controlActivoHistorialItem.estado || "").toUpperCase()
-                )
-              ? "ENTREGA"
-              : "ALL"
-        }
+        allowedTipo={getAllowedTipo()}
         readOnly={
           Boolean(
             controlActivoHistorialItem &&

@@ -819,6 +819,14 @@ function SolicitudActionsFooter({
     solicitud.conductorAsignado
   )
   const hasAsignacionCompleta = Boolean(hasVehiculo && hasConductor)
+  const estadoNorm = (solicitud.estado ?? "").toUpperCase()
+  const isPrevioSalida = [
+    "APROBADO",
+    "APROBADA",
+    "ASIGNADO",
+    "BORRADOR",
+    "PENDIENTE",
+  ].includes(estadoNorm)
 
   return (
     <div className="p-4 bg-muted/20 border-t border-border/60 flex items-center justify-between gap-2 flex-wrap">
@@ -871,7 +879,7 @@ function SolicitudActionsFooter({
           </Button>
         )}
 
-        {onCargaCombustible && (
+        {onCargaCombustible && !isPrevioSalida && (
           <Button
             variant="outline"
             size="sm"
