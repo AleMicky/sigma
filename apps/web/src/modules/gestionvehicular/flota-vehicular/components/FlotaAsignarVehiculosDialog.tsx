@@ -294,6 +294,22 @@ function FlotaAsignarVehiculosContent({
                         <span className="font-semibold text-xs text-foreground truncate">
                           {activo.nombre}
                         </span>
+                        {activo.estadoOperativo?.nombre && (
+                          <span
+                            className="text-[9.5px] font-medium px-1.5 py-0.2 rounded border inline-flex items-center gap-1 shrink-0"
+                            style={{
+                              backgroundColor: `${activo.estadoOperativo.color || "#10b981"}18`,
+                              color: activo.estadoOperativo.color || "#10b981",
+                              borderColor: `${activo.estadoOperativo.color || "#10b981"}40`,
+                            }}
+                          >
+                            <span
+                              className="size-1.5 rounded-full"
+                              style={{ backgroundColor: activo.estadoOperativo.color || "#10b981" }}
+                            />
+                            {activo.estadoOperativo.nombre}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
