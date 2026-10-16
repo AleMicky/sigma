@@ -17,6 +17,8 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.Solicit
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.CambiarEstadoOperativoRequest;
+import com.endecorani.sigma_api.modules.activos.application.service.ActivoService;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
@@ -57,6 +59,8 @@ public class SolicitudMantenimientoService {
 
     private static final String ESTADO_BORRADOR = "borrador";
     private static final String ESTADO_SOLICITADO = "solicitado";
+    private static final String ESTADO_OPERATIVO_MANTENIMIENTO = "MANTENIMIENTO";
+    private static final String ESTADO_OPERATIVO_OPERATIVO = "OPERATIVO";
     private static final String WORKFLOW_CODIGO = "SOLICITUD_MANTENIMIENTO";
     private static final String ADJUNTO_FOLDER = "solicitud_mantenimiento_adjuntos";
     private static final String REPORTE_SOLICITUD_PATH = "reports/solicitudes/solicitud_mantenimiento.jrxml";
@@ -82,6 +86,7 @@ public class SolicitudMantenimientoService {
     private final WorkflowApplicationService workflowApplicationService;
     private final DocumentStorageService documentStorageService;
     private final com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService jasperReportService;
+    private final ActivoService activoService;
 
     private record InterfazFiltros(UUID solicitanteId, UUID aprobadorId, UUID supervisorId, UUID responsableId) {}
 
@@ -534,6 +539,9 @@ public class SolicitudMantenimientoService {
         String nuevoEstado = resultado.status() != null ? resultado.status().toLowerCase().trim() : null;
         if (nuevoEstado != null) {
             solicitud.setEstado(nuevoEstado);
+        } else {
+            solicitud.setEstado(ESTADO_BPMN_FINALIZADO.toLowerCase());
+            nuevoEstado = ESTADO_BPMN_FINALIZADO.toLowerCase();
         }
 
         LocalDateTime ahora = LocalDateTime.now();
@@ -600,6 +608,9 @@ public class SolicitudMantenimientoService {
         }
 
         SolicitudMantenimiento guardado = repository.save(solicitud);
+
+        // Sincronizar estado operativo del activo (EN_MANTENIMIENTO -> MANTENIMIENTO, TRABAJO_REALIZADO -> OPERATIVO)
+        sincronizarEstadoOperativoActivo(guardado, guardado.getEstado());
 
         if (nuevoEstado != null && !nuevoEstado.equalsIgnoreCase(estadoAnterior)) {
             String comentario = "Cambio de estado en el flujo de trabajo";
@@ -771,6 +782,73 @@ public class SolicitudMantenimientoService {
         }
 
         return null;
+    }
+
+    private boolean isEstadoEnMantenimiento(String estado) {
+        if (estado == null) {
+            return false;
+        }
+        String upper = estado.trim().toUpperCase();
+        return "EN_MANTENIMIENTO".equals(upper)
+                || "EN_REVISION".equals(upper)
+                || "OBSERVADO_MANTENIMIENTO".equals(upper)
+                || "VALIDADO".equals(upper);
+    }
+
+    private boolean isEstadoTrabajoRealizado(String estado) {
+        if (estado == null) {
+            return false;
+        }
+        String upper = estado.trim().toUpperCase();
+        return "TRABAJO_REALIZADO".equals(upper)
+                || "FINALIZADO".equals(upper)
+                || "FINALIZADA".equals(upper)
+                || "CERRADO".equals(upper);
+    }
+
+    private void sincronizarEstadoOperativoActivo(SolicitudMantenimiento solicitud, String nuevoEstado) {
+        if (solicitud == null || solicitud.getActivo() == null || solicitud.getActivo().getId() == null || nuevoEstado == null) {
+            return;
+        }
+
+        UUID activoId = solicitud.getActivo().getId();
+        String estadoNormalizado = nuevoEstado.trim().toUpperCase();
+
+        try {
+            if (isEstadoEnMantenimiento(estadoNormalizado)) {
+                var activoResp = activoService.findById(activoId);
+                String codigoActual = activoResp != null && activoResp.estadoOperativo() != null
+                        ? activoResp.estadoOperativo().codigo()
+                        : null;
+                if (!ESTADO_OPERATIVO_MANTENIMIENTO.equalsIgnoreCase(codigoActual)) {
+                    activoService.cambiarEstadoOperativo(
+                            activoId,
+                            new CambiarEstadoOperativoRequest(
+                                    null,
+                                    ESTADO_OPERATIVO_MANTENIMIENTO,
+                                    "Ingreso a mantenimiento por solicitud " + (solicitud.getNumero() != null ? solicitud.getNumero() : solicitud.getId())));
+                    log.info("Activo {} actualizado a estado operativo {} por solicitud de mantenimiento {}",
+                            activoId, ESTADO_OPERATIVO_MANTENIMIENTO, solicitud.getId());
+                }
+            } else if (isEstadoTrabajoRealizado(estadoNormalizado)) {
+                var activoResp = activoService.findById(activoId);
+                String codigoActual = activoResp != null && activoResp.estadoOperativo() != null
+                        ? activoResp.estadoOperativo().codigo()
+                        : null;
+                if (ESTADO_OPERATIVO_MANTENIMIENTO.equalsIgnoreCase(codigoActual)) {
+                    activoService.cambiarEstadoOperativo(
+                            activoId,
+                            new CambiarEstadoOperativoRequest(
+                                    null,
+                                    ESTADO_OPERATIVO_OPERATIVO,
+                                    "Trabajo realizado / retorno a operativo por solicitud de mantenimiento " + (solicitud.getNumero() != null ? solicitud.getNumero() : solicitud.getId())));
+                    log.info("Activo {} restaurado a estado operativo {} por conclusión de solicitud {}",
+                            activoId, ESTADO_OPERATIVO_OPERATIVO, solicitud.getId());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo sincronizar el estado operativo del activo {}: {}", activoId, e.getMessage());
+        }
     }
 
     public SolicitudMantenimientoResponse toResponse(SolicitudMantenimiento domain) {

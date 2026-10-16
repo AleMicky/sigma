@@ -25,6 +25,8 @@ import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.CambiarEstadoOperativoRequest;
+import com.endecorani.sigma_api.modules.activos.application.service.ActivoService;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
@@ -74,6 +76,8 @@ public class SolicitudVehicularService {
     private static final String ESTADO_EN_CURSO = "EN_CURSO";
     private static final String ESTADO_EN_VIAJE = "EN_VIAJE";
     private static final String ESTADO_RETORNO = "RETORNO";
+    private static final String ESTADO_OPERATIVO_EN_VIAJE = "EN_VIAJE";
+    private static final String ESTADO_OPERATIVO_OPERATIVO = "OPERATIVO";
     private static final String ACCION_RECHAZAR = "RECHAZAR";
     private static final String WORKFLOW_CODIGO = "SOLICITUD_VEHICULAR";
     private static final String SOLICITANTE_ID = "solicitanteId";
@@ -112,6 +116,7 @@ public class SolicitudVehicularService {
     private final FlowableClient flowableClient;
     private final UsuarioRepository usuarioRepository;
     private final SecurityUtils securityUtils;
+    private final ActivoService activoService;
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudVehicularResponse> listar(String search, PageRequestDto pageRequest) {
@@ -450,6 +455,9 @@ public class SolicitudVehicularService {
         // Sincronizar registro de viaje vehicular (asignacionVehicularId, salida, retorno)
         sincronizarViajeVehicular(guardado, effectiveVariables, nuevoEstado);
 
+        // Sincronizar estado operativo del activo vehicular (EN_CURSO/RETORNO -> EN_VIAJE, FINALIZADA -> OPERATIVO)
+        sincronizarEstadoOperativoActivo(guardado, guardado.getEstado());
+
         return toResponse(guardado, adjuntoService.findBySolicitudVehicularId(guardado.getId()));
     }
 
@@ -480,6 +488,63 @@ public class SolicitudVehicularService {
 
         if (modificado) {
             viajeVehicularRepository.save(viaje);
+        }
+    }
+
+    private void sincronizarEstadoOperativoActivo(SolicitudVehicular solicitud, String nuevoEstado) {
+        if (solicitud == null || solicitud.getId() == null || nuevoEstado == null) {
+            return;
+        }
+
+        List<AsignacionVehicular> asignaciones = asignacionVehicularRepository
+                .findBySolicitudVehicularId(solicitud.getId());
+        if (asignaciones.isEmpty()) {
+            return;
+        }
+
+        String estadoNormalizado = nuevoEstado.trim().toUpperCase();
+
+        for (AsignacionVehicular asignacion : asignaciones) {
+            UUID activoId = asignacion.getActivoId();
+            if (activoId == null) {
+                continue;
+            }
+
+            try {
+                if (isSalidaEstado(estadoNormalizado)) {
+                    var activoResp = activoService.findById(activoId);
+                    String codigoActual = activoResp != null && activoResp.estadoOperativo() != null
+                            ? activoResp.estadoOperativo().codigo()
+                            : null;
+                    if (!ESTADO_OPERATIVO_EN_VIAJE.equalsIgnoreCase(codigoActual)) {
+                        activoService.cambiarEstadoOperativo(
+                                activoId,
+                                new CambiarEstadoOperativoRequest(
+                                        null,
+                                        ESTADO_OPERATIVO_EN_VIAJE,
+                                        "Salida de viaje por solicitud vehicular " + (solicitud.getNumero() != null ? solicitud.getNumero() : solicitud.getId())));
+                        log.info("Activo {} actualizado a estado operativo {} por solicitud {}",
+                                activoId, ESTADO_OPERATIVO_EN_VIAJE, solicitud.getId());
+                    }
+                } else if (isRetornoEstado(estadoNormalizado) || ESTADO_RECHAZADA.equalsIgnoreCase(estadoNormalizado)) {
+                    var activoResp = activoService.findById(activoId);
+                    String codigoActual = activoResp != null && activoResp.estadoOperativo() != null
+                            ? activoResp.estadoOperativo().codigo()
+                            : null;
+                    if (ESTADO_OPERATIVO_EN_VIAJE.equalsIgnoreCase(codigoActual)) {
+                        activoService.cambiarEstadoOperativo(
+                                activoId,
+                                new CambiarEstadoOperativoRequest(
+                                        null,
+                                        ESTADO_OPERATIVO_OPERATIVO,
+                                        "Retorno de viaje por solicitud vehicular " + (solicitud.getNumero() != null ? solicitud.getNumero() : solicitud.getId())));
+                        log.info("Activo {} restaurado a estado operativo {} tras finalizar o rechazar solicitud {}",
+                                activoId, ESTADO_OPERATIVO_OPERATIVO, solicitud.getId());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("No se pudo sincronizar el estado operativo del activo {}: {}", activoId, e.getMessage());
+            }
         }
     }
 
@@ -717,6 +782,9 @@ public class SolicitudVehicularService {
         }
 
         SolicitudVehicular actualizado = repository.save(actual);
+        if (dto.estado() != null && !dto.estado().isBlank()) {
+            sincronizarEstadoOperativoActivo(actualizado, actualizado.getEstado());
+        }
         List<SolicitudVehicularAdjuntoResponse> adjuntos = adjuntoService.findBySolicitudVehicularId(id);
         return toResponse(actualizado, tipo, solicitante, adjuntos);
     }
@@ -763,6 +831,9 @@ public class SolicitudVehicularService {
         }
 
         SolicitudVehicular actualizado = repository.save(actual);
+        if (dto.estado() != null && !dto.estado().isBlank()) {
+            sincronizarEstadoOperativoActivo(actualizado, actualizado.getEstado());
+        }
         List<SolicitudVehicularAdjuntoResponse> adjuntos = adjuntoService.findBySolicitudVehicularId(id);
         return toResponse(actualizado, tipo, solicitante, adjuntos);
     }
