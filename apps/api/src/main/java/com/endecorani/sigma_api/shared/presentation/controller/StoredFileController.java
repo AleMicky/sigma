@@ -50,8 +50,9 @@ public class StoredFileController {
                             HttpHeaders.CONTENT_DISPOSITION,
                             "inline; filename=\"" + filename + "\""
                     )
-                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, must-revalidate")
                     .header("X-Content-Type-Options", "nosniff")
+                    .lastModified(Files.getLastModifiedTime(file).toMillis())
                     .contentType(mediaType)
                     .body(resource);
         } catch (MalformedURLException exception) {

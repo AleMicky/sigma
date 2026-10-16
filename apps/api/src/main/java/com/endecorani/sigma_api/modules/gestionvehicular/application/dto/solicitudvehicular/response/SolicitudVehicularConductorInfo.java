@@ -7,6 +7,7 @@ public record SolicitudVehicularConductorInfo(
         UUID empleadoId,
         String nombreCompleto,
         String numeroLicencia,
-        String categoriaLicencia
+        String categoriaLicencia,
+        String urlImagen
 ) {
 }

@@ -894,7 +894,8 @@ public class SolicitudVehicularService {
                                     cond.getEmpleadoId(),
                                     condVe != null ? condVe.getNombreCompleto() : null,
                                     cond.getNumeroLicencia(),
-                                    cond.getCategoriaLicencia());
+                                    cond.getCategoriaLicencia(),
+                                    cond.getUrlImagen());
                         } else {
                             VEmpleadoEntity condVe = vempleadoMap.get(domain.getConductorAsignadoId());
                             if (condVe != null) {
@@ -902,6 +903,7 @@ public class SolicitudVehicularService {
                                         domain.getConductorAsignadoId(),
                                         condVe.getEmpleadoId(),
                                         condVe.getNombreCompleto(),
+                                        null,
                                         null,
                                         null);
                             }
@@ -1103,7 +1105,8 @@ public class SolicitudVehicularService {
                             c.getEmpleadoId(),
                             nombre,
                             c.getNumeroLicencia(),
-                            c.getCategoriaLicencia());
+                            c.getCategoriaLicencia(),
+                            c.getUrlImagen());
                 })
                 .orElseGet(() -> {
                     EmpleadoDetalle emp = obtenerEmpleadoDetalle(conductorId);
@@ -1112,6 +1115,7 @@ public class SolicitudVehicularService {
                                     conductorId,
                                     emp.id(),
                                     emp.nombreCompleto(),
+                                    null,
                                     null,
                                     null)
                             : null;

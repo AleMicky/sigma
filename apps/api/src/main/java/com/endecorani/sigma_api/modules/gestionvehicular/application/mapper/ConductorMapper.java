@@ -46,9 +46,11 @@ public interface ConductorMapper {
     ConductorEmpleadoInfo toEmpleadoInfo(Empleado empleado);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "urlImagen", ignore = true)
     void updateDomain(ConductorUpdate dto, @MappingTarget Conductor domain);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "urlImagen", ignore = true)
     void updateDomainFromRequest(ConductorRequest dto, @MappingTarget Conductor domain);
 
     ConductorLicencia toDomain(ConductorLicenciaRequest dto);

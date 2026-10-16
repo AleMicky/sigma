@@ -72,6 +72,8 @@ public class ConductorRepositoryAdapter implements ConductorRepository {
                 existingEntity.setEmpleadoId(domain.getEmpleadoId());
                 existingEntity.setEstado(domain.getEstado());
                 existingEntity.setObservacion(domain.getObservacion());
+                existingEntity.setUrlImagen(domain.getUrlImagen());
+                existingEntity.setTipoSangre(domain.getTipoSangre());
                 existingEntity.setActivo(domain.isActivo());
 
                 if (domain.getLicencias() != null) {
