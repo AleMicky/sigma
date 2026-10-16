@@ -4,11 +4,11 @@ import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoRe
 import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
+import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
+import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.CambiarEstadoOperativoRequest;
 import com.endecorani.sigma_api.modules.activos.domain.model.EstadoOperativo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.EstadoOperativoRepository;
-import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
-import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
 import com.endecorani.sigma_api.modules.parametros.domain.model.Ubicacion;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
@@ -52,12 +52,10 @@ public class ActivoService {
             "nombre",
             "tipoActivoId",
             "ubicacionId",
-            "estadoOperativoId",
             "fechaAdquisicion",
             "activo",
             "createdAt",
-            "updatedAt"
-    );
+            "updatedAt");
 
     private final ActivoRepository activoRepository;
     private final TipoActivoRepository tipoActivoRepository;
@@ -70,17 +68,17 @@ public class ActivoService {
         requireTipoActivoExists(request.tipoActivoId());
         requireUbicacionExists(request.ubicacionId());
 
+        String codigo = requireNormalizedCodigo(request.codigo());
+        validateUniqueCodigoForCreate(codigo);
+
         UUID estadoOperativoId = request.estadoOperativoId();
-        if (estadoOperativoId != null) {
-            requireEstadoOperativoExists(estadoOperativoId);
-        } else {
+        if (estadoOperativoId == null) {
             estadoOperativoId = estadoOperativoRepository.findByCodigoIgnoreCase("OPERATIVO")
                     .map(EstadoOperativo::getId)
                     .orElse(null);
+        } else {
+            requireEstadoOperativoExists(estadoOperativoId);
         }
-
-        String codigo = requireNormalizedCodigo(request.codigo());
-        validateUniqueCodigoForCreate(codigo);
 
         Activo domain = Activo.builder()
                 .codigo(codigo)
@@ -130,8 +128,7 @@ public class ActivoService {
     @Transactional(readOnly = true)
     public PageResponse<ActivoResponse> findAll(
             String query,
-            PageRequestDto pageRequest
-    ) {
+            PageRequestDto pageRequest) {
         String normalized = StringUtils.normalize(query);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
@@ -146,8 +143,7 @@ public class ActivoService {
     public PageResponse<ActivoResponse> findByTipoActivoId(
             UUID tipoActivoId,
             String query,
-            PageRequestDto pageRequest
-    ) {
+            PageRequestDto pageRequest) {
         requireTipoActivoExists(tipoActivoId);
 
         String normalized = StringUtils.normalize(query);
@@ -163,8 +159,7 @@ public class ActivoService {
     @Transactional(readOnly = true)
     public PageResponse<ActivoResponse> search(
             String query,
-            PageRequestDto pageRequest
-    ) {
+            PageRequestDto pageRequest) {
         return findAll(query, pageRequest);
     }
 
@@ -207,9 +202,7 @@ public class ActivoService {
     private Activo findDomainById(UUID id) {
         return activoRepository
                 .findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Activo", id)
-                );
+                .orElseThrow(() -> new ResourceNotFoundException("Activo", id));
     }
 
     @Transactional
@@ -258,23 +251,27 @@ public class ActivoService {
         Map<UUID, TipoActivo> tipoMap = tipoIds.isEmpty()
                 ? Map.of()
                 : tipoActivoRepository.findAllById(tipoIds).stream()
-                .collect(Collectors.toMap(TipoActivo::getId, Function.identity(), (a, b) -> a));
+                        .collect(Collectors.toMap(TipoActivo::getId, Function.identity(), (a, b) -> a));
 
         Map<UUID, Ubicacion> ubicacionMap = ubicacionIds.isEmpty()
                 ? Map.of()
                 : ubicacionRepository.findAllById(ubicacionIds).stream()
-                .collect(Collectors.toMap(Ubicacion::getId, Function.identity(), (a, b) -> a));
+                        .collect(Collectors.toMap(Ubicacion::getId, Function.identity(), (a, b) -> a));
 
         Map<UUID, EstadoOperativo> estadoMap = estadoIds.isEmpty()
                 ? Map.of()
                 : estadoOperativoRepository.findAllById(estadoIds).stream()
-                .collect(Collectors.toMap(EstadoOperativo::getId, Function.identity(), (a, b) -> a));
+                        .collect(Collectors.toMap(EstadoOperativo::getId, Function.identity(), (a, b) -> a));
 
         List<ActivoResponse> responses = content.stream()
                 .map(domain -> {
-                    TipoActivo tipoActivo = domain.getTipoActivoId() != null ? tipoMap.get(domain.getTipoActivoId()) : null;
-                    Ubicacion ubicacion = domain.getUbicacionId() != null ? ubicacionMap.get(domain.getUbicacionId()) : null;
-                    EstadoOperativo estadoOperativo = domain.getEstadoOperativoId() != null ? estadoMap.get(domain.getEstadoOperativoId()) : null;
+                    TipoActivo tipoActivo = domain.getTipoActivoId() != null ? tipoMap.get(domain.getTipoActivoId())
+                            : null;
+                    Ubicacion ubicacion = domain.getUbicacionId() != null ? ubicacionMap.get(domain.getUbicacionId())
+                            : null;
+                    EstadoOperativo estadoOperativo = domain.getEstadoOperativoId() != null
+                            ? estadoMap.get(domain.getEstadoOperativoId())
+                            : null;
                     return toResponse(domain, tipoActivo, ubicacion, estadoOperativo);
                 })
                 .toList();
@@ -298,29 +295,26 @@ public class ActivoService {
     private ActivoResponse toResponse(Activo domain, TipoActivo tipoActivo, Ubicacion ubicacion, EstadoOperativo estadoOperativo) {
         ActivoResponse.TipoActivoInfo tipoActivoInfo = tipoActivo != null
                 ? new ActivoResponse.TipoActivoInfo(
-                tipoActivo.getId(),
-                tipoActivo.getCategoriaId(),
-                tipoActivo.getNombre(),
-                tipoActivo.getDescripcion()
-        )
+                        tipoActivo.getId(),
+                        tipoActivo.getCategoriaId(),
+                        tipoActivo.getNombre(),
+                        tipoActivo.getDescripcion())
                 : null;
 
         ActivoResponse.UbicacionInfo ubicacionInfo = ubicacion != null
                 ? new ActivoResponse.UbicacionInfo(
-                ubicacion.getId(),
-                ubicacion.getCodigo(),
-                ubicacion.getNombre()
-        )
+                        ubicacion.getId(),
+                        ubicacion.getCodigo(),
+                        ubicacion.getNombre())
                 : null;
 
         ActivoResponse.EstadoOperativoInfo estadoOperativoInfo = estadoOperativo != null
                 ? new ActivoResponse.EstadoOperativoInfo(
-                estadoOperativo.getId(),
-                estadoOperativo.getCodigo(),
-                estadoOperativo.getNombre(),
-                estadoOperativo.getDescripcion(),
-                estadoOperativo.getColor()
-        )
+                        estadoOperativo.getId(),
+                        estadoOperativo.getCodigo(),
+                        estadoOperativo.getNombre(),
+                        estadoOperativo.getDescripcion(),
+                        estadoOperativo.getColor())
                 : null;
 
         return new ActivoResponse(
@@ -334,8 +328,7 @@ public class ActivoService {
                 domain.getFechaAdquisicion(),
                 domain.getUrlImagen(),
                 domain.getActivo(),
-                AuditoriaMapper.from(domain)
-        );
+                AuditoriaMapper.from(domain));
     }
 
     private Boolean resolveActivo(Boolean value) {
@@ -354,18 +347,11 @@ public class ActivoService {
         }
     }
 
-    private void requireEstadoOperativoExists(UUID estadoOperativoId) {
-        if (estadoOperativoId != null && !estadoOperativoRepository.existsById(estadoOperativoId)) {
-            throw new ResourceNotFoundException("Estado operativo", estadoOperativoId);
-        }
-    }
-
     private void validateUniqueCodigoForCreate(String codigo) {
         if (activoRepository.existsByCodigoIgnoreCase(codigo)) {
             throw new ConflictException(
                     "ACTIVO_ALREADY_EXISTS",
-                    "Ya existe un activo con el código '%s'".formatted(codigo)
-            );
+                    "Ya existe un activo con el código '%s'".formatted(codigo));
         }
     }
 
@@ -373,8 +359,7 @@ public class ActivoService {
         if (activoRepository.existsByCodigoIgnoreCaseAndIdNot(codigo, currentId)) {
             throw new ConflictException(
                     "ACTIVO_ALREADY_EXISTS",
-                    "Ya existe otro activo con el código '%s'".formatted(codigo)
-            );
+                    "Ya existe otro activo con el código '%s'".formatted(codigo));
         }
     }
 
@@ -387,8 +372,7 @@ public class ActivoService {
             throw new BusinessException(
                     "INVALID_ACTIVO_CODIGO",
                     "El código debe tener entre %d y %d caracteres"
-                            .formatted(CODIGO_MIN_LENGTH, CODIGO_MAX_LENGTH)
-            );
+                            .formatted(CODIGO_MIN_LENGTH, CODIGO_MAX_LENGTH));
         }
 
         return normalized;
@@ -403,8 +387,7 @@ public class ActivoService {
             throw new BusinessException(
                     "INVALID_ACTIVO_NOMBRE",
                     "El nombre debe tener entre %d y %d caracteres"
-                            .formatted(NOMBRE_MIN_LENGTH, NOMBRE_MAX_LENGTH)
-            );
+                            .formatted(NOMBRE_MIN_LENGTH, NOMBRE_MAX_LENGTH));
         }
 
         return normalized;
@@ -417,10 +400,15 @@ public class ActivoService {
             throw new BusinessException(
                     "INVALID_ACTIVO_DESCRIPCION",
                     "La descripción no puede superar los %d caracteres"
-                            .formatted(DESCRIPCION_MAX_LENGTH)
-            );
+                            .formatted(DESCRIPCION_MAX_LENGTH));
         }
 
         return normalized;
+    }
+
+    private void requireEstadoOperativoExists(UUID estadoOperativoId) {
+        if (estadoOperativoId != null && !estadoOperativoRepository.existsById(estadoOperativoId)) {
+            throw new ResourceNotFoundException("Estado operativo", estadoOperativoId);
+        }
     }
 }

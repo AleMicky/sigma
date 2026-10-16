@@ -14,8 +14,7 @@ public interface ActivoRepository extends CrudRepository<Activo, UUID> {
     Page<Activo> searchByTipoActivoId(
             UUID tipoActivoId,
             String query,
-            Pageable pageable
-    );
+            Pageable pageable);
 
     Page<Activo> search(String query, Pageable pageable);
 
