@@ -407,6 +407,22 @@ function AsignacionVehicularDetalle({
                   Placa: {asignacion.activo.placa}
                 </span>
               )}
+              {asignacion.activo?.estadoOperativoNombre && (
+                <span
+                  className="text-[9.5px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded border inline-flex items-center gap-1"
+                  style={{
+                    backgroundColor: `${asignacion.activo.estadoOperativoColor || "#10b981"}18`,
+                    color: asignacion.activo.estadoOperativoColor || "#10b981",
+                    borderColor: `${asignacion.activo.estadoOperativoColor || "#10b981"}40`,
+                  }}
+                >
+                  <span
+                    className="size-1.5 rounded-full"
+                    style={{ backgroundColor: asignacion.activo.estadoOperativoColor || "#10b981" }}
+                  />
+                  {asignacion.activo.estadoOperativoNombre}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -531,9 +547,14 @@ function AsignacionVehicularForm({
       )}
 
       <Field>
-        <FieldLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5 mb-1">
-          <Users className="size-3.5 text-muted-foreground" />
-          <span>Responsable de Asignación *</span>
+        <FieldLabel className="text-xs font-semibold text-foreground flex items-center justify-between gap-1.5 mb-1">
+          <div className="flex items-center gap-1.5">
+            <Users className="size-3.5 text-muted-foreground" />
+            <span>Responsable de Asignación *</span>
+          </div>
+          <span className="text-[10px] text-muted-foreground font-normal">
+            (Preasignado por solicitud)
+          </span>
         </FieldLabel>
         <EmpleadoCombobox
           value={asignadoPorId}
@@ -543,7 +564,8 @@ function AsignacionVehicularForm({
               setActivoId("")
             }
           }}
-          placeholder="Buscar empleado asignador..."
+          disabled
+          placeholder="Empleado asignador..."
           className="w-full text-xs"
         />
       </Field>

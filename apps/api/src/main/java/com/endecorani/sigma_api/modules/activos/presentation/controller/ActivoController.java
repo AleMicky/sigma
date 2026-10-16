@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.activos.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.CambiarEstadoOperativoRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.ToggleActivoRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse;
 import com.endecorani.sigma_api.modules.activos.application.service.ActivoService;
@@ -127,6 +128,17 @@ public class ActivoController {
                 return ResponseEntity.ok(
                                 ApiResponse.success(
                                                 activoService.toggleActivo(id, activo)));
+        }
+
+        @PatchMapping("/{id}/estado-operativo")
+        @Operation(summary = "Cambiar el estado operativo de un activo")
+        public ResponseEntity<ApiResponse<ActivoResponse>> cambiarEstadoOperativo(
+                        @PathVariable UUID id,
+                        @Valid @RequestBody CambiarEstadoOperativoRequest request) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                "Estado operativo actualizado correctamente",
+                                                activoService.cambiarEstadoOperativo(id, request)));
         }
 
         @DeleteMapping("/{id}")

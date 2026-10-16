@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
+  Activity,
   Calendar,
   Check,
   Clock,
@@ -23,6 +24,7 @@ import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Badge } from "@/shared/components/ui/badge"
+import { CambiarEstadoOperativoDialog } from "./CambiarEstadoOperativoDialog"
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 import { formatDateTime } from "@/shared/utils/date.utils"
@@ -44,6 +46,8 @@ export function ActivoListView({
   onEdit,
 }: ActivoListViewProps) {
   const [activoToDelete, setActivoToDelete] = useState<Activo | null>(null)
+  const [activoParaCambiarEstado, setActivoParaCambiarEstado] =
+    useState<Activo | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const deleteMutation = useDeleteActivo()
   const setActivoMutation = useSetActivoActivo()
@@ -205,6 +209,37 @@ export function ActivoListView({
                       />
                       {isActivo ? "Activo" : "De baja"}
                     </Badge>
+
+                    {/* Badge de Estado Operativo */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setActivoParaCambiarEstado(activo)
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border hover:opacity-80 transition-opacity cursor-pointer shadow-2xs"
+                      style={{
+                        backgroundColor: activo.estadoOperativo?.color
+                          ? `${activo.estadoOperativo.color}15`
+                          : "rgba(16, 185, 129, 0.1)",
+                        borderColor: activo.estadoOperativo?.color
+                          ? `${activo.estadoOperativo.color}35`
+                          : "rgba(16, 185, 129, 0.3)",
+                        color: activo.estadoOperativo?.color || "#10B981",
+                      }}
+                      title="Haga clic para cambiar el estado operativo"
+                    >
+                      <span
+                        className="size-1.5 rounded-full shrink-0"
+                        style={{
+                          backgroundColor:
+                            activo.estadoOperativo?.color || "#10B981",
+                        }}
+                      />
+                      <span className="truncate max-w-[140px]">
+                        {activo.estadoOperativo?.nombre || "Operativo"}
+                      </span>
+                    </button>
                   </div>
 
                   {/* Fila 2: Chips de Ubicación y Fecha de Adquisición */}
@@ -239,6 +274,18 @@ export function ActivoListView({
 
               {/* Botones de acción */}
               <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => setActivoParaCambiarEstado(activo)}
+                  className="h-7 px-2 text-xs font-medium gap-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Cambiar estado operativo"
+                >
+                  <Activity className="size-3 text-primary" />
+                  <span className="hidden sm:inline">Estado</span>
+                </Button>
+
                 <Button
                   type="button"
                   variant="outline"
@@ -342,6 +389,14 @@ export function ActivoListView({
           await deleteMutation.mutateAsync(activoToDelete.id)
           setActivoToDelete(null)
         }}
+      />
+
+      <CambiarEstadoOperativoDialog
+        open={Boolean(activoParaCambiarEstado)}
+        onOpenChange={(open) => {
+          if (!open) setActivoParaCambiarEstado(null)
+        }}
+        activo={activoParaCambiarEstado}
       />
     </div>
   )

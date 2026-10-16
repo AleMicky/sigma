@@ -68,9 +68,12 @@ export function EmpleadoCombobox({
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
 
-  React.useEffect(() => {
+  const [prevSearch, setPrevSearch] = React.useState(debouncedSearch)
+
+  if (prevSearch !== debouncedSearch) {
+    setPrevSearch(debouncedSearch)
     setPage(0)
-  }, [debouncedSearch])
+  }
 
   const queryParams = {
     page,
@@ -127,6 +130,7 @@ export function EmpleadoCombobox({
         className={cn(
           "flex items-center justify-between gap-2 rounded-xl border border-border/80 bg-background/95 px-2.5 py-1.5 min-h-9 shadow-2xs hover:border-primary/40 transition-all",
           ariaInvalid && "border-destructive ring-1 ring-destructive/20",
+          disabled && "bg-muted/50 opacity-80 cursor-not-allowed hover:border-border/80 select-none",
           className?.replace(/\bh-\S+/g, ""),
         )}
       >

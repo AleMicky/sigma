@@ -41,8 +41,7 @@ public class ActivoRepositoryImpl
     @Override
     public Page<Activo> findByTipoActivoId(
             UUID tipoActivoId,
-            Pageable pageable
-    ) {
+            Pageable pageable) {
         return springRepository
                 .findByTipoActivoId(tipoActivoId, pageable)
                 .map(mapper::toDomain);
@@ -52,8 +51,7 @@ public class ActivoRepositoryImpl
     public Page<Activo> searchByTipoActivoId(
             UUID tipoActivoId,
             String query,
-            Pageable pageable
-    ) {
+            Pageable pageable) {
         return springRepository
                 .searchByTipoActivoId(tipoActivoId, query, pageable)
                 .map(mapper::toDomain);

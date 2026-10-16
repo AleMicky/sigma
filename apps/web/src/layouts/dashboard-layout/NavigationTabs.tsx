@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
+  Activity,
   Boxes,
   Briefcase,
   Building2,
@@ -72,6 +73,7 @@ export const PATH_TITLES: Record<string, string> = {
   "/categorias": "Categorías",
   "/accesorios": "Accesorios",
   "/tipos-documento": "Tipos de Documento",
+  "/estados-operativos": "Estados Operativos",
   "/inventarios": "Inventarios",
   "/inventarios/tipos-insumo": "Tipos de Insumo",
   "/inventarios/categorias": "Categorías de Insumo",
@@ -253,6 +255,7 @@ function resolveTabIcon(pathname: string) {
   if (p.includes("tipos-activo") || p.includes("activos")) return Boxes
   if (p.includes("consulta-documentos")) return FileSpreadsheet
   if (p.includes("inventarios") || p.includes("insumo")) return Package
+  if (p.includes("estados-operativos")) return Activity
   if (p.includes("accesorios") || p.includes("categorias")) return Tags
   if (p.includes("empleados")) return UserCheck
   if (p.includes("personas")) return Users

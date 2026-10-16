@@ -156,6 +156,7 @@ export function ActivoFormPage({
         descripcion: value.descripcion.trim() || null,
         tipoActivoId: value.tipoActivoId,
         ubicacionId: value.ubicacionId?.trim() || null,
+        estadoOperativoId: value.estadoOperativoId?.trim() || null,
         fechaAdquisicion: value.fechaAdquisicion || null,
       }
 
@@ -255,6 +256,7 @@ export function ActivoFormPage({
     form.setFieldValue("descripcion", activo.descripcion ?? "")
     form.setFieldValue("tipoActivoId", activo.tipoActivo?.id ?? activo.tipoActivoId ?? "")
     form.setFieldValue("ubicacionId", activo.ubicacion?.id ?? activo.ubicacionId ?? "")
+    form.setFieldValue("estadoOperativoId", activo.estadoOperativo?.id ?? activo.estadoOperativoId ?? "")
     form.setFieldValue("fechaAdquisicion", activo.fechaAdquisicion ?? "")
   }, [activo, form, isEditing])
 

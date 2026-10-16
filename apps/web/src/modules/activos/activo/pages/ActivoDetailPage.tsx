@@ -21,6 +21,7 @@ import { PageShell } from "@/shared/components/page-shell"
 import { Button } from "@/shared/components/ui/button"
 
 import { activoQueries } from "../api/activo.queries"
+import { CambiarEstadoOperativoDialog } from "../components/CambiarEstadoOperativoDialog"
 import {
   ActivoAccesorioFormModal,
   ActivoAccesoriosTab,
@@ -48,6 +49,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
   const [isAddAccesorioOpen, setIsAddAccesorioOpen] = useState(false)
   const [editingAccesorio, setEditingAccesorio] = useState<ActivoAccesorio | null>(null)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const [isCambiarEstadoOpen, setIsCambiarEstadoOpen] = useState(false)
 
   // Queries
   const activoQuery = useQuery(activoQueries.detail(activoId))
@@ -206,6 +208,7 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
             setActiveTab("documentacion")
             handleOpenAddDocument()
           }}
+          onCambiarEstado={() => setIsCambiarEstadoOpen(true)}
         />
 
         {/* Tab Navigation Toolbar */}
@@ -293,6 +296,12 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
         onOpenChange={setIsImageModalOpen}
         imageUrl={activo.urlImagen}
         altText={activo.nombre}
+      />
+
+      <CambiarEstadoOperativoDialog
+        open={isCambiarEstadoOpen}
+        onOpenChange={setIsCambiarEstadoOpen}
+        activo={activo}
       />
     </PageShell>
   )

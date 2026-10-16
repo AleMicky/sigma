@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoR
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
+import com.endecorani.sigma_api.modules.activos.domain.repository.EstadoOperativoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.model.Ubicacion;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
@@ -44,6 +45,9 @@ class ActivoServiceTest {
 
     @Mock
     private UbicacionRepository ubicacionRepository;
+
+    @Mock
+    private EstadoOperativoRepository estadoOperativoRepository;
 
     @Mock
     private ImageStorageService imageStorageService;
@@ -106,7 +110,8 @@ class ActivoServiceTest {
         assertNotNull(response.content().get(0).ubicacion());
         assertEquals("Planta Central", response.content().get(0).ubicacion().nombre());
 
-        // Verificar que solo se invocó findAllById una vez por tipo/ubicación para toda la página
+        // Verificar que solo se invocó findAllById una vez por tipo/ubicación para toda
+        // la página
         verify(tipoActivoRepository, times(1)).findAllById(any());
         verify(ubicacionRepository, times(1)).findAllById(any());
         verify(tipoActivoRepository, never()).findById(any());
@@ -123,8 +128,7 @@ class ActivoServiceTest {
                 tipoActivoId,
                 ubicacionId,
                 LocalDate.now().minusMonths(6),
-                true
-        );
+                true);
 
         when(tipoActivoRepository.existsById(tipoActivoId)).thenReturn(true);
         when(ubicacionRepository.existsById(ubicacionId)).thenReturn(true);
@@ -150,8 +154,7 @@ class ActivoServiceTest {
                 tipoActivoId,
                 ubicacionId,
                 LocalDate.now().minusMonths(6),
-                true
-        );
+                true);
 
         when(tipoActivoRepository.existsById(tipoActivoId)).thenReturn(true);
         when(ubicacionRepository.existsById(ubicacionId)).thenReturn(true);
@@ -159,5 +162,29 @@ class ActivoServiceTest {
 
         assertThrows(ConflictException.class, () -> service.create(request));
         verify(activoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe cambiar estado operativo por id con código de estado")
+    void debeCambiarEstadoOperativoPorId() {
+        var estado = com.endecorani.sigma_api.modules.activos.domain.model.EstadoOperativo.builder()
+                .id(UUID.randomUUID())
+                .codigo("MANTENIMIENTO")
+                .nombre("En Mantenimiento")
+                .color("#F59E0B")
+                .build();
+
+        when(activoRepository.findById(activoId)).thenReturn(Optional.of(activoDomain));
+        when(estadoOperativoRepository.findByCodigoIgnoreCase("MANTENIMIENTO")).thenReturn(Optional.of(estado));
+        when(activoRepository.save(any(Activo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var req = new com.endecorani.sigma_api.modules.activos.application.dto.request.CambiarEstadoOperativoRequest(
+                null, "MANTENIMIENTO", "Entrada a taller"
+        );
+
+        ActivoResponse res = service.cambiarEstadoOperativo(activoId, req);
+
+        assertNotNull(res);
+        verify(activoRepository).save(any(Activo.class));
     }
 }

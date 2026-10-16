@@ -15,6 +15,7 @@ import {
   Gauge,
   History,
   KeyRound,
+  Lock,
   MapPin,
   Paperclip,
   Pencil,
@@ -25,6 +26,7 @@ import {
   UserCheck,
   Users,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import {
   WorkflowStatusBadge,
@@ -46,6 +48,9 @@ import {
 import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
 
+import { AuthenticatedImage } from "@/shared/components/authenticated-image"
+import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
+import { conductorQueries } from "../../conductor/api/conductor.queries"
 import { asignacionVehicularQueries } from "../../asignacion-vehicular/api/asignacion-vehicular.queries"
 import type { AsignacionVehicular } from "../../asignacion-vehicular/api/asignacion-vehicular.service"
 import { controlActivoVehicularQueries } from "../../control-activo/api/control-activo.queries"
@@ -56,6 +61,51 @@ import {
   type ViajeVehicular,
 } from "../../viaje-vehicular/api/viaje-vehicular.service"
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
+
+function extractPlaca(descripcion?: string | null): string | null {
+  if (!descripcion) return null
+  try {
+    const match = descripcion.match(/PLACA[:\s#-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)*)/i)
+    if (match && match[1]) {
+      const clean = match[1].replace(/[,.;-]+$/, "").trim()
+      if (clean.length >= 2 && clean.length <= 20) {
+        return clean
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function extractModelo(descripcion?: string | null): string | null {
+  if (!descripcion) return null
+  try {
+    const matchMarca = descripcion.match(/Marca\s+([A-Za-z0-9\s-]+?)(?:,|\s*PLACA|\s*Chasis)/i)
+    if (matchMarca && matchMarca[1]) {
+      const clean = matchMarca[1].trim()
+      if (clean.length >= 2 && clean.length <= 40) return clean
+    }
+
+    const matchBeforePlaca = descripcion.match(
+      /(?:CAMIONETA|VEHICULO|VAGONETA|AUTO|AUTOMOVIL)\s+([A-Za-z0-9\s-]+?)\s+(?:PLACA|NRO|CHASIS)/i
+    )
+    if (matchBeforePlaca && matchBeforePlaca[1]) {
+      const clean = matchBeforePlaca[1].trim()
+      if (clean.length >= 2 && clean.length <= 40) return clean
+    }
+
+    const matchModelo = descripcion.match(/MODELO(?:\s*(?:N[°o.]*|NRO\.?))?[:\s-]+([0-9A-Za-z]+)/i)
+    if (matchModelo && matchModelo[1]) {
+      const clean = matchModelo[1].trim()
+      if (clean.length >= 2 && clean.length <= 30) return clean
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
 
 export interface SolicitudVehicularDetailSheetProps {
   open: boolean
@@ -443,6 +493,36 @@ function SolicitudAsignacionSection({
   const responsable = asignacion?.asignadoPor || solicitud.responsableAsignacion
   const isAssigned = Boolean(vehiculo || conductor)
 
+  // Consulta detalle del conductor para foto
+  const conductorId = conductor?.id
+  const conductorDetailQuery = useQuery({
+    ...conductorQueries.detail(conductorId ?? ""),
+    enabled: Boolean(conductorId && !conductor?.urlImagen),
+    staleTime: 1000 * 60 * 5,
+  })
+  const conductorFoto = conductor?.urlImagen || conductorDetailQuery.data?.urlImagen
+  const conductorNombre = conductor?.nombreCompleto || ""
+
+  // Consulta detalle del vehículo para placa, tipo y modelo
+  const vehiculoId = vehiculo?.id || asignacion?.activoId
+  const activoDetailQuery = useQuery({
+    ...activoQueries.detail(vehiculoId ?? ""),
+    enabled: Boolean(vehiculoId),
+    staleTime: 1000 * 60 * 5,
+  })
+  const activoDetail = activoDetailQuery.data
+
+  const placaVehiculo =
+    vehiculo?.placa ||
+    extractPlaca(activoDetail?.descripcion) ||
+    extractPlaca(vehiculo?.nombre)
+  const modeloVehiculo = extractModelo(activoDetail?.descripcion)
+  const tipoVehiculo =
+    activoDetail?.tipoActivo?.nombre ||
+    vehiculo?.nombre ||
+    "Vehículo"
+  const vehiculoCodigo = vehiculo?.codigo || activoDetail?.codigo
+
   return (
     <div className="pt-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -474,20 +554,32 @@ function SolicitudAsignacionSection({
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Car className="size-4" />
               </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                  Vehículo / Unidad Móvil
-                </span>
-                <div className="font-semibold text-foreground text-sm truncate">
-                  {vehiculo.nombre}
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                  <div className="font-semibold text-foreground text-sm truncate" title={modeloVehiculo || vehiculo.nombre}>
+                    {modeloVehiculo || vehiculo.nombre}
+                  </div>
+                  {placaVehiculo && (
+                    <span className="text-[10.5px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded shadow-2xs">
+                      Placa: {placaVehiculo}
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <code className="text-[10.5px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
-                    {vehiculo.codigo}
-                  </code>
-                  {vehiculo.placa && (
-                    <span className="text-[10.5px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
-                      Placa: {vehiculo.placa}
+
+                <div className="flex items-center gap-2 flex-wrap text-xs">
+                  {vehiculoCodigo && (
+                    <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
+                      {vehiculoCodigo}
+                    </code>
+                  )}
+                  {tipoVehiculo && (
+                    <span className="text-[11px] text-muted-foreground">
+                      Tipo: <strong className="text-foreground/90 font-medium">{tipoVehiculo}</strong>
+                    </span>
+                  )}
+                  {modeloVehiculo && vehiculo.nombre && vehiculo.nombre !== modeloVehiculo && (
+                    <span className="text-[11px] text-muted-foreground truncate">
+                      • {vehiculo.nombre}
                     </span>
                   )}
                 </div>
@@ -501,17 +593,29 @@ function SolicitudAsignacionSection({
 
           {conductor ? (
             <div className="flex items-start gap-3 p-3 rounded-xl bg-card/60 border border-border/60 shadow-2xs">
-              <Avatar className="size-9 shrink-0">
-                <AvatarFallback className="bg-emerald-500/10 text-emerald-600 font-bold text-xs">
-                  {getInitials(conductor.nombreCompleto || "")}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative size-9 shrink-0 rounded-lg overflow-hidden border border-border/70 shadow-2xs bg-amber-500/10 flex items-center justify-center">
+                {conductorFoto ? (
+                  <AuthenticatedImage
+                    src={conductorFoto}
+                    alt={conductorNombre || "Conductor"}
+                    className="size-full object-cover"
+                    fallbackClassName="size-full flex items-center justify-center bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold text-xs"
+                    fallback={<span>{getInitials(conductorNombre)}</span>}
+                  />
+                ) : (
+                  <Avatar className="size-full rounded-none">
+                    <AvatarFallback className="bg-emerald-500/10 text-emerald-600 font-bold text-xs">
+                      {getInitials(conductorNombre)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
                   Conductor Designado
                 </span>
                 <div className="font-semibold text-foreground text-sm">
-                  {conductor.nombreCompleto}
+                  {conductorNombre}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
                   Licencia: <strong className="text-foreground/90">{conductor.numeroLicencia || "No registrada"}</strong>
@@ -668,6 +772,7 @@ function SolicitudAdjuntosSection({
 
 interface SolicitudActionsFooterProps {
   solicitud: SolicitudVehicular
+  asignacion?: AsignacionVehicular | null
   onOpenChange: (open: boolean) => void
   onAssign?: (solicitud: SolicitudVehicular) => void
   onControlActivo?: (solicitud: SolicitudVehicular, hasControles?: boolean) => void
@@ -690,6 +795,7 @@ interface SolicitudActionsFooterProps {
 
 function SolicitudActionsFooter({
   solicitud,
+  asignacion,
   onOpenChange,
   onAssign,
   onControlActivo,
@@ -705,6 +811,22 @@ function SolicitudActionsFooter({
   onActionSelect,
 }: Readonly<SolicitudActionsFooterProps>) {
   const hasWorkflowActions = isEditable && actions.length > 0 && Boolean(onActionSelect)
+  const hasVehiculo = Boolean(asignacion?.activo || asignacion?.activoId)
+  const hasConductor = Boolean(
+    asignacion?.conductor ||
+    asignacion?.conductorId ||
+    solicitud.conductorAsignadoId ||
+    solicitud.conductorAsignado
+  )
+  const hasAsignacionCompleta = Boolean(hasVehiculo && hasConductor)
+  const estadoNorm = (solicitud.estado ?? "").toUpperCase()
+  const isPrevioSalida = [
+    "APROBADO",
+    "APROBADA",
+    "ASIGNADO",
+    "BORRADOR",
+    "PENDIENTE",
+  ].includes(estadoNorm)
 
   return (
     <div className="p-4 bg-muted/20 border-t border-border/60 flex items-center justify-between gap-2 flex-wrap">
@@ -757,7 +879,7 @@ function SolicitudActionsFooter({
           </Button>
         )}
 
-        {onCargaCombustible && (
+        {onCargaCombustible && !isPrevioSalida && (
           <Button
             variant="outline"
             size="sm"
@@ -794,20 +916,45 @@ function SolicitudActionsFooter({
             {actions.map((action) => {
               const visual = getWorkflowActionVisuals(action)
               const ActionIcon = visual.icon
+              const isAprobar =
+                action.name.toLowerCase().includes("aprob") ||
+                String(action.value).toUpperCase().includes("APROB")
+              const isAprobarBlocked = isAprobar && !hasAsignacionCompleta
+
               return (
                 <Button
                   key={`${action.variable}-${action.value}`}
                   size="sm"
+                  title={
+                    isAprobarBlocked
+                      ? "Debe asignar un vehículo y conductor antes de poder aprobar la solicitud"
+                      : undefined
+                  }
                   onClick={() => {
+                    if (isAprobarBlocked) {
+                      toast.error("Debe asignar un vehículo y un conductor antes de aprobar la solicitud.")
+                      if (onAssign) {
+                        onOpenChange(false)
+                        onAssign(solicitud)
+                      }
+                      return
+                    }
                     onOpenChange(false)
                     onActionSelect(solicitud, action, taskName, fields)
                   }}
                   className={cn(
-                    "h-8 text-xs font-semibold gap-1.5 cursor-pointer transition-all hover:scale-102 active:scale-98 shadow-xs px-3",
-                    visual.btnClass
+                    "h-8 text-xs font-semibold gap-1.5 transition-all shadow-xs px-3",
+                    visual.btnClass,
+                    isAprobarBlocked
+                      ? "opacity-50 hover:opacity-70 cursor-not-allowed saturate-50 border border-dashed border-white/40"
+                      : "cursor-pointer hover:scale-102 active:scale-98"
                   )}
                 >
-                  <ActionIcon className="size-3.5" />
+                  {isAprobarBlocked ? (
+                    <Lock className="size-3.5" />
+                  ) : (
+                    <ActionIcon className="size-3.5" />
+                  )}
                   <span>{action.name}</span>
                 </Button>
               )
@@ -943,6 +1090,7 @@ export function SolicitudVehicularDetailSheet({
 
         <SolicitudActionsFooter
           solicitud={solicitud}
+          asignacion={asignacion}
           onOpenChange={onOpenChange}
           onAssign={onAssign}
           onControlActivo={onControlActivo}

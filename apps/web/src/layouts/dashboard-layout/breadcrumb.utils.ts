@@ -26,6 +26,7 @@ export const SEGMENT_LABELS: Record<string, string> = {
   categorias: "Categorías",
   accesorios: "Accesorios",
   "tipos-documento": "Tipos de Documento",
+  "estados-operativos": "Estados Operativos",
 
   // Inventarios
   inventarios: "Inventarios",

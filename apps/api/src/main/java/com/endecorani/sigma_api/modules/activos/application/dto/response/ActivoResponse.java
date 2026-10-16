@@ -17,11 +17,27 @@ public record ActivoResponse(
         String descripcion,
         TipoActivoInfo tipoActivo,
         UbicacionInfo ubicacion,
+        EstadoOperativoInfo estadoOperativo,
         LocalDate fechaAdquisicion,
         String urlImagen,
         Boolean activo,
         AuditoriaResponse auditoria
 ) {
+    public ActivoResponse(
+            UUID id,
+            String codigo,
+            String nombre,
+            String descripcion,
+            TipoActivoInfo tipoActivo,
+            UbicacionInfo ubicacion,
+            LocalDate fechaAdquisicion,
+            String urlImagen,
+            Boolean activo,
+            AuditoriaResponse auditoria
+    ) {
+        this(id, codigo, nombre, descripcion, tipoActivo, ubicacion, null, fechaAdquisicion, urlImagen, activo, auditoria);
+    }
+
     public record TipoActivoInfo(
             UUID id,
             UUID categoriaId,
@@ -35,6 +51,16 @@ public record ActivoResponse(
             UUID id,
             String codigo,
             String nombre
+    ) {
+
+    }
+
+    public record EstadoOperativoInfo(
+            UUID id,
+            String codigo,
+            String nombre,
+            String descripcion,
+            String color
     ) {
 
     }

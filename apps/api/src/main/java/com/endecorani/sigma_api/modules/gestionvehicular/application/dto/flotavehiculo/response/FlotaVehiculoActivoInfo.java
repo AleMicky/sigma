@@ -21,7 +21,11 @@ public record FlotaVehiculoActivoInfo(
         Map<String, String> atributos,
         String responsableNombre,
         String responsableArea,
-        String responsableCargo
+        String responsableCargo,
+        UUID estadoOperativoId,
+        String estadoOperativoCodigo,
+        String estadoOperativoNombre,
+        String estadoOperativoColor
 ) {
     public FlotaVehiculoActivoInfo(
             UUID id,
@@ -30,6 +34,6 @@ public record FlotaVehiculoActivoInfo(
             String descripcion,
             String urlImagen
     ) {
-        this(id, codigo, nombre, descripcion, urlImagen, null, null, null, null, null, null, null, null, null, null);
+        this(id, codigo, nombre, descripcion, urlImagen, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 }

@@ -73,7 +73,13 @@ public record ActivoRequest(
                 description = "Indica si el activo está activo",
                 example = "true"
         )
-        Boolean activo
+        Boolean activo,
+
+        @Schema(
+                description = "Identificador del estado operativo",
+                example = "e1a10000-0000-4000-a000-000000000001"
+        )
+        UUID estadoOperativoId
 ) {
     public ActivoRequest(
             String codigo,
@@ -83,6 +89,18 @@ public record ActivoRequest(
             UUID ubicacionId,
             LocalDate fechaAdquisicion
     ) {
-        this(codigo, nombre, descripcion, tipoActivoId, ubicacionId, fechaAdquisicion, null);
+        this(codigo, nombre, descripcion, tipoActivoId, ubicacionId, fechaAdquisicion, null, null);
+    }
+
+    public ActivoRequest(
+            String codigo,
+            String nombre,
+            String descripcion,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            LocalDate fechaAdquisicion,
+            Boolean activo
+    ) {
+        this(codigo, nombre, descripcion, tipoActivoId, ubicacionId, fechaAdquisicion, activo, null);
     }
 }

@@ -41,6 +41,8 @@ interface SelectedVehicleData {
   urlImagen?: string | null
   flotaNombre?: string
   placa: string | null
+  estadoOperativoNombre?: string | null
+  estadoOperativoColor?: string | null
 }
 
 export function extractPlaca(descripcion?: string | null): string | null {
@@ -79,6 +81,8 @@ function resolveSelectedVehicle(
       urlImagen: fv.vehiculo.urlImagen,
       flotaNombre: fv.flota?.nombre,
       placa: extractPlaca(fv.vehiculo.descripcion),
+      estadoOperativoNombre: fv.vehiculo.estadoOperativoNombre,
+      estadoOperativoColor: fv.vehiculo.estadoOperativoColor,
     }
   }
 
@@ -92,6 +96,8 @@ function resolveSelectedVehicle(
       urlImagen: a.urlImagen,
       flotaNombre: undefined,
       placa: extractPlaca(a.descripcion),
+      estadoOperativoNombre: a.estadoOperativo?.nombre,
+      estadoOperativoColor: a.estadoOperativo?.color,
     }
   }
 
@@ -194,6 +200,22 @@ function SelectedVehiculoCard({
                 Placa: {selectedInfo.placa}
               </span>
             )}
+            {selectedInfo.estadoOperativoNombre && (
+              <span
+                className="text-[9.5px] font-medium px-1.5 py-0.2 rounded border inline-flex items-center gap-1 shrink-0"
+                style={{
+                  backgroundColor: `${selectedInfo.estadoOperativoColor || "#10b981"}18`,
+                  color: selectedInfo.estadoOperativoColor || "#10b981",
+                  borderColor: `${selectedInfo.estadoOperativoColor || "#10b981"}40`,
+                }}
+              >
+                <span
+                  className="size-1.5 rounded-full"
+                  style={{ backgroundColor: selectedInfo.estadoOperativoColor || "#10b981" }}
+                />
+                {selectedInfo.estadoOperativoNombre}
+              </span>
+            )}
           </div>
 
           {selectedInfo.flotaNombre && (
@@ -266,6 +288,22 @@ function FlotaVehiculoItemRow({ item }: Readonly<FlotaVehiculoItemRowProps>) {
                 {placa}
               </span>
             )}
+            {veh.estadoOperativoNombre && (
+              <span
+                className="text-[9px] font-medium px-1.5 py-0.2 rounded border inline-flex items-center gap-1 shrink-0"
+                style={{
+                  backgroundColor: `${veh.estadoOperativoColor || "#10b981"}18`,
+                  color: veh.estadoOperativoColor || "#10b981",
+                  borderColor: `${veh.estadoOperativoColor || "#10b981"}40`,
+                }}
+              >
+                <span
+                  className="size-1.5 rounded-full"
+                  style={{ backgroundColor: veh.estadoOperativoColor || "#10b981" }}
+                />
+                {veh.estadoOperativoNombre}
+              </span>
+            )}
           </div>
 
           {item.flota && (
@@ -319,6 +357,22 @@ function GeneralActivoItemRow({ item }: Readonly<GeneralActivoItemRowProps>) {
             {placa && (
               <span className="text-[9.5px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
                 {placa}
+              </span>
+            )}
+            {item.estadoOperativo?.nombre && (
+              <span
+                className="text-[9px] font-medium px-1.5 py-0.2 rounded border inline-flex items-center gap-1 shrink-0"
+                style={{
+                  backgroundColor: `${item.estadoOperativo.color || "#10b981"}18`,
+                  color: item.estadoOperativo.color || "#10b981",
+                  borderColor: `${item.estadoOperativo.color || "#10b981"}40`,
+                }}
+              >
+                <span
+                  className="size-1.5 rounded-full"
+                  style={{ backgroundColor: item.estadoOperativo.color || "#10b981" }}
+                />
+                {item.estadoOperativo.nombre}
               </span>
             )}
           </div>

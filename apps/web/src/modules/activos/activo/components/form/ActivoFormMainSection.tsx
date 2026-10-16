@@ -1,6 +1,8 @@
 import type { ComponentType } from "react"
-import { Calendar, FileText, MapPin } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { Activity, Calendar, FileText, MapPin } from "lucide-react"
 
+import { estadoOperativoQueries } from "@/modules/activos/estado-operativo/api/estado-operativo.queries"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
@@ -57,6 +59,16 @@ export function ActivoFormMainSection({
   ubicacionesById = new Map(),
   ubicacionesLoading = false,
 }: ActivoFormMainSectionProps) {
+  const estadosQuery = useQuery(
+    estadoOperativoQueries.list({
+      page: 0,
+      size: 100,
+      sortBy: "nombre",
+      direction: "ASC",
+    }),
+  )
+  const estadosOperativos = estadosQuery.data?.content ?? []
+
   return (
     <div className="flex flex-col gap-5">
       {/* 1. Información General */}
@@ -300,30 +312,99 @@ export function ActivoFormMainSection({
           }}
         </form.Field>
 
-        <form.Field name="descripcion">
+        <form.Field name="estadoOperativoId">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {(field: any) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
+            const selectedEstado = estadosOperativos.find(
+              (e) => e.id === field.state.value,
+            )
 
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor={field.name}>Descripción y Observaciones</FieldLabel>
-                <Textarea
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  aria-invalid={isInvalid}
-                  placeholder="Detalles adicionales, número de serie de fábrica, notas de estado u observaciones."
-                  rows={3}
-                />
+                <FieldLabel htmlFor={field.name}>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Activity className="size-3.5 text-muted-foreground" />
+                    Estado Operativo
+                  </span>
+                </FieldLabel>
+                <Select
+                  value={field.state.value || null}
+                  onValueChange={(value) => field.handleChange(value ?? "")}
+                  disabled={estadosQuery.isLoading}
+                >
+                  <SelectTrigger id={field.name} aria-invalid={isInvalid} className="w-full">
+                    <SelectValue placeholder="Selecciona estado operativo">
+                      {selectedEstado ? (
+                        <div className="flex items-center gap-2 truncate">
+                          <span
+                            className="size-2 rounded-full shrink-0"
+                            style={{
+                              backgroundColor: selectedEstado.color || "#10B981",
+                            }}
+                          />
+                          <span className="font-medium text-xs">
+                            {selectedEstado.nombre}
+                          </span>
+                          <span className="text-[10.5px] text-muted-foreground font-mono">
+                            ({selectedEstado.codigo})
+                          </span>
+                        </div>
+                      ) : null}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {estadosOperativos.map((est) => (
+                      <SelectItem key={est.id} value={est.id}>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="size-2 rounded-full shrink-0"
+                            style={{
+                              backgroundColor: est.color || "#10B981",
+                            }}
+                          />
+                          <span className="text-xs font-medium">{est.nombre}</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {est.codigo}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
         </form.Field>
+
+        <div className="col-span-1 md:col-span-2">
+          <form.Field name="descripcion">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {(field: any) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor={field.name}>Descripción y Observaciones</FieldLabel>
+                  <Textarea
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={isInvalid}
+                    placeholder="Detalles adicionales, número de serie de fábrica, notas de estado u observaciones."
+                    rows={3}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
+        </div>
       </FormSection>
     </div>
   )

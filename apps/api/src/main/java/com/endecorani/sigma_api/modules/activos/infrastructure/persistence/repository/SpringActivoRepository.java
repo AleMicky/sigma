@@ -12,39 +12,37 @@ import java.util.UUID;
 
 @Repository
 public interface SpringActivoRepository
-        extends BaseJpaRepository<ActivoEntity, UUID> {
+                extends BaseJpaRepository<ActivoEntity, UUID> {
 
-    Page<ActivoEntity> findByTipoActivoId(UUID tipoActivoId, Pageable pageable);
+        Page<ActivoEntity> findByTipoActivoId(UUID tipoActivoId, Pageable pageable);
 
-    @Query("""
-            select activo
-            from ActivoEntity activo
-            where activo.tipoActivoId = :tipoActivoId
-              and (
-                   lower(activo.codigo) like lower(concat('%', :query, '%'))
-                   or lower(activo.nombre) like lower(concat('%', :query, '%'))
-                   or (activo.descripcion is not null and lower(activo.descripcion) like lower(concat('%', :query, '%')))
-              )
-            """)
-    Page<ActivoEntity> searchByTipoActivoId(
-            @Param("tipoActivoId") UUID tipoActivoId,
-            @Param("query") String query,
-            Pageable pageable
-    );
+        @Query("""
+                        select activo
+                        from ActivoEntity activo
+                        where activo.tipoActivoId = :tipoActivoId
+                          and (
+                               lower(activo.codigo) like lower(concat('%', :query, '%'))
+                               or lower(activo.nombre) like lower(concat('%', :query, '%'))
+                               or (activo.descripcion is not null and lower(activo.descripcion) like lower(concat('%', :query, '%')))
+                          )
+                        """)
+        Page<ActivoEntity> searchByTipoActivoId(
+                        @Param("tipoActivoId") UUID tipoActivoId,
+                        @Param("query") String query,
+                        Pageable pageable);
 
-    @Query("""
-            select activo
-            from ActivoEntity activo
-            where lower(activo.codigo) like lower(concat('%', :query, '%'))
-               or lower(activo.nombre) like lower(concat('%', :query, '%'))
-               or (activo.descripcion is not null and lower(activo.descripcion) like lower(concat('%', :query, '%')))
-            """)
-    Page<ActivoEntity> search(
-            @Param("query") String query,
-            Pageable pageable
-    );
+        @Query("""
+                        select activo
+                        from ActivoEntity activo
+                        where lower(activo.codigo) like lower(concat('%', :query, '%'))
+                           or lower(activo.nombre) like lower(concat('%', :query, '%'))
+                           or (activo.descripcion is not null and lower(activo.descripcion) like lower(concat('%', :query, '%')))
+                        """)
+        Page<ActivoEntity> search(
+                        @Param("query") String query,
+                        Pageable pageable);
 
-    boolean existsByCodigoIgnoreCase(String codigo);
+        boolean existsByCodigoIgnoreCase(String codigo);
 
-    boolean existsByCodigoIgnoreCaseAndIdNot(String codigo, UUID id);
+        boolean existsByCodigoIgnoreCaseAndIdNot(String codigo, UUID id);
 }

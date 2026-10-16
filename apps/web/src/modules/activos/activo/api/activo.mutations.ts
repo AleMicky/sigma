@@ -5,6 +5,7 @@ import { createCrudMutations, getErrorMessage } from "@/shared/api"
 
 import { activoKeys } from "./activo.keys"
 import {
+  cambiarEstadoOperativoActivo,
   createActivo,
   deleteActivo,
   deleteActivoImagen,
@@ -13,6 +14,7 @@ import {
   uploadActivoImagen,
   type Activo,
   type ActivoPayload,
+  type CambiarEstadoOperativoPayload,
 } from "./activo.service"
 
 const activoMutations = createCrudMutations<Activo, ActivoPayload>({
@@ -82,6 +84,32 @@ export function useSetActivoActivo() {
         activo
           ? "Activo dado de alta correctamente"
           : "Activo dado de baja correctamente",
+      )
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error))
+    },
+  })
+}
+
+export function useCambiarEstadoOperativoActivo() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string
+      payload: CambiarEstadoOperativoPayload
+    }) => cambiarEstadoOperativoActivo(id, payload),
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: activoKeys.all })
+      void queryClient.setQueryData(activoKeys.detail(data.id), data)
+      toast.success(
+        data.estadoOperativo?.nombre
+          ? `Estado operativo cambiado a "${data.estadoOperativo.nombre}"`
+          : "Estado operativo actualizado correctamente",
       )
     },
     onError: (error) => {

@@ -1,5 +1,6 @@
 import type { ComponentType } from "react"
 import {
+  Activity,
   Copy,
   Edit2,
   FilePlus,
@@ -23,6 +24,7 @@ type ActivoDetailHeroProps = {
   onCopyCode: () => void
   onOpenImageModal: () => void
   onOpenAddDocument: () => void
+  onCambiarEstado?: () => void
 }
 
 export function ActivoDetailHero({
@@ -35,6 +37,7 @@ export function ActivoDetailHero({
   onCopyCode,
   onOpenImageModal,
   onOpenAddDocument,
+  onCambiarEstado,
 }: ActivoDetailHeroProps) {
   return (
     <div
@@ -112,6 +115,27 @@ export function ActivoDetailHero({
                 </span>
               ) : null}
 
+              {/* Estado Operativo */}
+              {activo.estadoOperativo ? (
+                <button
+                  type="button"
+                  onClick={onCambiarEstado}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border shadow-2xs cursor-pointer hover:opacity-90 transition-opacity"
+                  style={{
+                    backgroundColor: `${activo.estadoOperativo.color || "#10b981"}18`,
+                    color: activo.estadoOperativo.color || "#10b981",
+                    borderColor: `${activo.estadoOperativo.color || "#10b981"}40`,
+                  }}
+                  title="Click para cambiar estado operativo"
+                >
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: activo.estadoOperativo.color || "#10b981" }}
+                  />
+                  {activo.estadoOperativo.nombre}
+                </button>
+              ) : null}
+
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border shadow-2xs ${
                   activo.activo
@@ -124,7 +148,7 @@ export function ActivoDetailHero({
                     activo.activo ? "bg-emerald-500 animate-pulse" : "bg-destructive"
                   }`}
                 />
-                {activo.activo ? "Operativo" : "Inactivo"}
+                {activo.activo ? "Habilitado" : "Inactivo"}
               </span>
             </div>
           </div>
@@ -164,6 +188,19 @@ export function ActivoDetailHero({
             >
               <Edit2 className="size-3.5" />
               Editar Información
+            </Button>
+          )}
+
+          {onCambiarEstado && (
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={onCambiarEstado}
+              className="h-8.5 px-3.5 text-xs font-semibold shadow-xs gap-1.5"
+            >
+              <Activity className="size-3.5 text-primary" />
+              Cambiar Estado Operativo
             </Button>
           )}
 
