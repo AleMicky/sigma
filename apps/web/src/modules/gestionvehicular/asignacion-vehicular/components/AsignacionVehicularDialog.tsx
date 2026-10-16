@@ -531,9 +531,14 @@ function AsignacionVehicularForm({
       )}
 
       <Field>
-        <FieldLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5 mb-1">
-          <Users className="size-3.5 text-muted-foreground" />
-          <span>Responsable de Asignación *</span>
+        <FieldLabel className="text-xs font-semibold text-foreground flex items-center justify-between gap-1.5 mb-1">
+          <div className="flex items-center gap-1.5">
+            <Users className="size-3.5 text-muted-foreground" />
+            <span>Responsable de Asignación *</span>
+          </div>
+          <span className="text-[10px] text-muted-foreground font-normal">
+            (Preasignado por solicitud)
+          </span>
         </FieldLabel>
         <EmpleadoCombobox
           value={asignadoPorId}
@@ -543,7 +548,8 @@ function AsignacionVehicularForm({
               setActivoId("")
             }
           }}
-          placeholder="Buscar empleado asignador..."
+          disabled
+          placeholder="Empleado asignador..."
           className="w-full text-xs"
         />
       </Field>

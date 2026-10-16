@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useSearch } from "@tanstack/react-router"
 import { AlertCircle, Inbox, KeyRound, RefreshCw } from "lucide-react"
+import { toast } from "sonner"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
@@ -23,6 +24,8 @@ import { tipoSolicitudVehicularQueries } from "@/modules/gestionvehicular/tipo-s
 import { useCompletarWorkflowSolicitudVehicular } from "../api/solicitud-vehicular.mutations"
 import { solicitudVehicularQueries } from "../api/solicitud-vehicular.queries"
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
+import { asignacionVehicularQueries } from "../../asignacion-vehicular/api/asignacion-vehicular.queries"
+import type { AsignacionVehicular } from "../../asignacion-vehicular/api/asignacion-vehicular.service"
 import { AsignacionVehicularDialog } from "../../asignacion-vehicular/components/AsignacionVehicularDialog"
 import {
   AsignacionVehicularResumenCards,
@@ -63,6 +66,7 @@ export function AsignacionVehicularPage() {
   const { target, isOpen, openAction, closeAction } =
     useWorkflowActionTarget<SolicitudVehicular>()
   const completarWorkflowMutation = useCompletarWorkflowSolicitudVehicular()
+  const queryClient = useQueryClient()
 
   // Consulta de Tipos de Solicitud para filtros
   const tiposQuery = useQuery({
@@ -228,15 +232,51 @@ export function AsignacionVehicularPage() {
   }, [search])
 
   const handleActionSelect = useCallback(
-    (
+    async (
       solicitud: SolicitudVehicular,
       action: WorkflowAction,
       taskName?: string,
       fields?: WorkflowField[]
     ) => {
+      const isAprobar =
+        action.name.toLowerCase().includes("aprob") ||
+        String(action.value).toUpperCase().includes("APROB")
+
+      if (isAprobar) {
+        let asignaciones = queryClient.getQueryData<AsignacionVehicular[]>(
+          asignacionVehicularQueries.bySolicitud(solicitud.id).queryKey
+        )
+        if (!asignaciones || asignaciones.length === 0) {
+          try {
+            asignaciones = await queryClient.fetchQuery(
+              asignacionVehicularQueries.bySolicitud(solicitud.id)
+            )
+          } catch {
+            // fallback
+          }
+        }
+
+        const asignacion = asignaciones?.[0]
+        const hasVehicle = Boolean(asignacion?.activo || asignacion?.activoId)
+        const hasConductor = Boolean(
+          asignacion?.conductor ||
+          asignacion?.conductorId ||
+          solicitud.conductorAsignadoId ||
+          solicitud.conductorAsignado
+        )
+
+        if (!hasVehicle || !hasConductor) {
+          toast.error(
+            "Debe asignar un vehículo y un conductor antes de aprobar la solicitud."
+          )
+          setAssignItem(solicitud)
+          return
+        }
+      }
+
       openAction(solicitud, action, taskName, fields)
     },
-    [openAction]
+    [openAction, queryClient]
   )
 
   const selectedEstadoLabel = useMemo(() => {
@@ -450,6 +490,43 @@ export function AsignacionVehicularPage() {
         entityId={target?.item.id}
         onExecute={async ({ variables }) => {
           if (!target) return
+          const isAprobar =
+            target.action.name.toLowerCase().includes("aprob") ||
+            String(target.action.value).toUpperCase().includes("APROB")
+
+          if (isAprobar) {
+            let asignaciones = queryClient.getQueryData<AsignacionVehicular[]>(
+              asignacionVehicularQueries.bySolicitud(target.item.id).queryKey
+            )
+            if (!asignaciones || asignaciones.length === 0) {
+              try {
+                asignaciones = await queryClient.fetchQuery(
+                  asignacionVehicularQueries.bySolicitud(target.item.id)
+                )
+              } catch {
+                // fallback
+              }
+            }
+
+            const asignacion = asignaciones?.[0]
+            const hasVehicle = Boolean(asignacion?.activo || asignacion?.activoId)
+            const hasConductor = Boolean(
+              asignacion?.conductor ||
+              asignacion?.conductorId ||
+              target.item.conductorAsignadoId ||
+              target.item.conductorAsignado
+            )
+
+            if (!hasVehicle || !hasConductor) {
+              toast.error(
+                "Debe asignar un vehículo y un conductor antes de aprobar la solicitud."
+              )
+              setAssignItem(target.item)
+              closeAction()
+              return
+            }
+          }
+
           await completarWorkflowMutation.mutateAsync({
             id: target.item.id,
             payload: { variables },

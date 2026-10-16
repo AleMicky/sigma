@@ -10,6 +10,7 @@ import {
   GitBranch,
   History,
   KeyRound,
+  Lock,
   MapPin,
   Paperclip,
   Pencil,
@@ -18,6 +19,7 @@ import {
   User,
   Users,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import {
   getWorkflowActionVisuals,
@@ -30,9 +32,66 @@ import { Button } from "@/shared/components/ui/button"
 import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
 
+import { AuthenticatedImage } from "@/shared/components/authenticated-image"
+import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
+import { conductorQueries } from "../../conductor/api/conductor.queries"
 import { asignacionVehicularQueries } from "../../asignacion-vehicular/api/asignacion-vehicular.queries"
 import { controlActivoVehicularQueries } from "../../control-activo/api/control-activo.queries"
 import type { SolicitudVehicular } from "../api/solicitud-vehicular.service"
+
+function extractPlaca(descripcion?: string | null): string | null {
+  if (!descripcion) return null
+  try {
+    const match = descripcion.match(/PLACA[:\s#-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)*)/i)
+    if (match && match[1]) {
+      const clean = match[1].replace(/[,.;-]+$/, "").trim()
+      if (clean.length >= 2 && clean.length <= 20) {
+        return clean
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function extractModelo(descripcion?: string | null): string | null {
+  if (!descripcion) return null
+  try {
+    const matchMarca = descripcion.match(/Marca\s+([A-Za-z0-9\s-]+?)(?:,|\s*PLACA|\s*Chasis)/i)
+    if (matchMarca && matchMarca[1]) {
+      const clean = matchMarca[1].trim()
+      if (clean.length >= 2 && clean.length <= 40) return clean
+    }
+
+    const matchBeforePlaca = descripcion.match(
+      /(?:CAMIONETA|VEHICULO|VAGONETA|AUTO|AUTOMOVIL)\s+([A-Za-z0-9\s-]+?)\s+(?:PLACA|NRO|CHASIS)/i
+    )
+    if (matchBeforePlaca && matchBeforePlaca[1]) {
+      const clean = matchBeforePlaca[1].trim()
+      if (clean.length >= 2 && clean.length <= 40) return clean
+    }
+
+    const matchModelo = descripcion.match(/MODELO(?:\s*(?:N[°o.]*|NRO\.?))?[:\s-]+([0-9A-Za-z]+)/i)
+    if (matchModelo && matchModelo[1]) {
+      const clean = matchModelo[1].trim()
+      if (clean.length >= 2 && clean.length <= 30) return clean
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+function getInitials(name?: string | null): string {
+  if (!name) return "CD"
+  const clean = name.trim()
+  if (!clean) return "CD"
+  const parts = clean.split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[1][0]).toUpperCase()
+}
 
 export type SolicitudVehicularListItemProps = {
   solicitud: SolicitudVehicular
@@ -104,6 +163,45 @@ export function SolicitudVehicularListItem({
   const asignacion = asignacionQuery.data?.[0]
   const vehiculo = asignacion?.activo
   const conductor = asignacion?.conductor || solicitud.conductorAsignado
+
+  // Detalle del conductor para foto
+  const conductorId = conductor?.id
+  const conductorDetailQuery = useQuery({
+    ...conductorQueries.detail(conductorId ?? ""),
+    enabled: Boolean(conductorId && !conductor?.urlImagen),
+    staleTime: 1000 * 60 * 5,
+  })
+  const conductorFoto = conductor?.urlImagen || conductorDetailQuery.data?.urlImagen
+  const conductorNombre = conductor?.nombreCompleto || ""
+
+  // Detalle del activo vehículo para placa, tipo y modelo
+  const vehiculoId = vehiculo?.id || asignacion?.activoId
+  const activoDetailQuery = useQuery({
+    ...activoQueries.detail(vehiculoId ?? ""),
+    enabled: Boolean(vehiculoId),
+    staleTime: 1000 * 60 * 5,
+  })
+  const activoDetail = activoDetailQuery.data
+
+  const placaVehiculo =
+    vehiculo?.placa ||
+    extractPlaca(activoDetail?.descripcion) ||
+    extractPlaca(vehiculo?.nombre)
+  const modeloVehiculo = extractModelo(activoDetail?.descripcion)
+  const tipoVehiculo =
+    activoDetail?.tipoActivo?.nombre ||
+    vehiculo?.nombre ||
+    "Vehículo"
+  const vehiculoCodigo = vehiculo?.codigo || activoDetail?.codigo
+
+  const hasVehiculo = Boolean(vehiculo || asignacion?.activoId)
+  const hasConductor = Boolean(
+    conductor ||
+    asignacion?.conductorId ||
+    solicitud.conductorAsignadoId ||
+    solicitud.conductorAsignado
+  )
+  const hasAsignacionCompleta = Boolean(hasVehiculo && hasConductor)
 
   // Consulta los controles de activos de esta solicitud
   const controlesQuery = useQuery({
@@ -355,23 +453,69 @@ export function SolicitudVehicularListItem({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-2">
-                  <div className="font-bold text-xs sm:text-sm text-foreground truncate">
-                    {vehiculo.nombre}
+                {/* Datos del vehículo: Placa, Tipo y Modelo */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className="font-bold text-xs sm:text-sm text-foreground truncate"
+                        title={modeloVehiculo || vehiculo.nombre}
+                      >
+                        {modeloVehiculo || vehiculo.nombre}
+                      </div>
+                    </div>
+
+                    {placaVehiculo && (
+                      <span className="font-mono text-[10.5px] sm:text-[11px] font-black bg-amber-500/25 dark:bg-amber-900/60 text-amber-950 dark:text-amber-100 border border-amber-500/40 px-2 py-0.5 rounded shadow-2xs tracking-wide shrink-0">
+                        PLACA: {placaVehiculo}
+                      </span>
+                    )}
                   </div>
-                  {vehiculo.placa && (
-                    <span className="font-mono text-[11px] font-black bg-amber-500/25 dark:bg-amber-900/60 text-amber-950 dark:text-amber-100 border border-amber-500/40 px-2 py-0.5 rounded shadow-2xs tracking-wide shrink-0">
-                      PLACA: {vehiculo.placa}
-                    </span>
-                  )}
+
+                  <div className="flex items-center gap-1.5 flex-wrap text-[10.5px]">
+                    {vehiculoCodigo && (
+                      <code className="font-mono font-bold text-[9.5px] text-primary bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20 shrink-0">
+                        {vehiculoCodigo}
+                      </code>
+                    )}
+                    {tipoVehiculo && (
+                      <span className="inline-flex items-center gap-1 font-medium text-muted-foreground px-1.5 py-0.2 bg-muted/60 border border-border/60 rounded text-[10px] shrink-0">
+                        Tipo: <strong className="text-foreground/90 font-semibold">{tipoVehiculo}</strong>
+                      </span>
+                    )}
+                    {modeloVehiculo && vehiculo.nombre && vehiculo.nombre !== modeloVehiculo && (
+                      <span className="text-[10px] text-muted-foreground truncate">
+                        • {vehiculo.nombre}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
+                {/* Conductor: Foto, Nombre y Licencia */}
                 {conductor && (
-                  <div className="pt-1.5 border-t border-amber-500/20 flex items-center gap-1.5 text-[11px]">
-                    <User className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <div className="pt-1.5 border-t border-amber-500/20 flex items-center gap-2 text-[11px]">
+                    <div className="relative size-8 shrink-0 rounded-lg overflow-hidden border border-border/70 shadow-2xs bg-amber-500/10 flex items-center justify-center">
+                      {conductorFoto ? (
+                        <AuthenticatedImage
+                          src={conductorFoto}
+                          alt={conductorNombre || "Conductor"}
+                          className="size-full object-cover"
+                          fallbackClassName="size-full flex items-center justify-center bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold text-xs"
+                          fallback={<span>{getInitials(conductorNombre)}</span>}
+                        />
+                      ) : (
+                        <div className="size-full flex items-center justify-center bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold text-xs">
+                          {conductorNombre ? (
+                            <span>{getInitials(conductorNombre)}</span>
+                          ) : (
+                            <User className="size-3.5" />
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1 truncate">
                       <span className="font-semibold text-foreground truncate block leading-tight">
-                        {conductor.nombreCompleto}
+                        {conductorNombre}
                       </span>
                       {conductor.numeroLicencia && (
                         <span className="text-[10px] text-muted-foreground font-mono truncate block leading-tight">
@@ -476,20 +620,42 @@ export function SolicitudVehicularListItem({
             {actions.map((action) => {
               const visual = getWorkflowActionVisuals(action)
               const ActionIcon = visual.icon
+              const isAprobar =
+                action.name.toLowerCase().includes("aprob") ||
+                String(action.value).toUpperCase().includes("APROB")
+              const isAprobarBlocked = isAprobar && !hasAsignacionCompleta
+
               return (
                 <Button
                   key={`${action.variable}-${action.value}`}
                   size="sm"
+                  title={
+                    isAprobarBlocked
+                      ? "Debe asignar un vehículo y conductor antes de poder aprobar la solicitud"
+                      : undefined
+                  }
                   onClick={(e) => {
                     e.stopPropagation()
+                    if (isAprobarBlocked) {
+                      toast.error("Debe asignar un vehículo y un conductor antes de aprobar la solicitud.")
+                      onAssign?.(solicitud)
+                      return
+                    }
                     onActionSelect(solicitud, action, taskName, fields)
                   }}
                   className={cn(
-                    "h-7.5 px-3.5 text-xs font-semibold gap-1.5 cursor-pointer transition-all hover:scale-102 active:scale-98 shadow-xs w-full sm:w-auto justify-center",
-                    visual.btnClass
+                    "h-7.5 px-3.5 text-xs font-semibold gap-1.5 transition-all shadow-xs w-full sm:w-auto justify-center",
+                    visual.btnClass,
+                    isAprobarBlocked
+                      ? "opacity-50 hover:opacity-70 cursor-not-allowed saturate-50 border border-dashed border-white/40"
+                      : "cursor-pointer hover:scale-102 active:scale-98"
                   )}
                 >
-                  <ActionIcon className="size-3.5" />
+                  {isAprobarBlocked ? (
+                    <Lock className="size-3.5" />
+                  ) : (
+                    <ActionIcon className="size-3.5" />
+                  )}
                   <span>{action.name}</span>
                 </Button>
               )
