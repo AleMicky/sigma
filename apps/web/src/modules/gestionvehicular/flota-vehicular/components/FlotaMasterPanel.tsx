@@ -174,71 +174,76 @@ export function FlotaMasterPanel({
                 key={flota.id}
                 onClick={() => onSelect(flota.id)}
                 className={cn(
-                  "group relative flex items-center justify-between gap-3 p-3 rounded-xl border transition-all cursor-pointer",
+                  "group relative flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer",
                   isSelected
                     ? "border-cyan-500/50 bg-cyan-500/10 dark:bg-cyan-950/20 shadow-xs"
                     : "border-transparent bg-background/50 hover:bg-muted/50 hover:border-border/60"
                 )}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div
-                    className={cn(
-                      "flex size-9 shrink-0 items-center justify-center rounded-lg border",
-                      theme.bg
-                    )}
-                  >
-                    <IconComponent className="size-4.5" />
-                  </div>
-
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <code className="text-[10px] font-mono font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-500/10 px-1.5 py-0.2 rounded">
-                        {flota.codigo}
-                      </code>
-                      <span className="font-semibold text-xs text-foreground truncate">
-                        {flota.nombre}
-                      </span>
-                    </div>
-
-                    {flota.descripcion ? (
-                      <p className="text-[11px] text-muted-foreground truncate leading-tight">
-                        {flota.descripcion}
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-muted-foreground/60 italic leading-tight">
-                        Sin descripción
-                      </p>
-                    )}
-                  </div>
+                <div
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-lg border mt-0.5",
+                    theme.bg
+                  )}
+                >
+                  <IconComponent className="size-4.5" />
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Badge
-                    variant={flota.activo ? "outline" : "secondary"}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleMutation.mutate(flota.id)
-                    }}
-                    className={cn(
-                      "text-[10px] font-medium px-1.5 py-0.2 border cursor-pointer hover:opacity-80 transition-opacity",
-                      flota.activo
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                        : "bg-muted text-muted-foreground border-border/60"
-                    )}
-                    title="Clic para alternar estado"
-                  >
-                    {flota.activo ? "Activa" : "Inactiva"}
-                  </Badge>
+                <div className="min-w-0 flex-1 space-y-1">
+                  {/* Fila superior: Código, Estado y Acciones */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <code className="text-[10px] font-mono font-bold whitespace-nowrap shrink-0 text-cyan-700 dark:text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                      {flota.codigo}
+                    </code>
 
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <RowActions
-                      onEdit={() => onEdit(flota)}
-                      onDelete={() => setFlotaToDelete(flota)}
-                    />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge
+                        variant={flota.activo ? "outline" : "secondary"}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleMutation.mutate(flota.id)
+                        }}
+                        className={cn(
+                          "text-[9.5px] font-medium px-1.5 py-0.2 border cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap",
+                          flota.activo
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                            : "bg-muted text-muted-foreground border-border/60"
+                        )}
+                        title="Clic para alternar estado"
+                      >
+                        {flota.activo ? "Activa" : "Inactiva"}
+                      </Badge>
+
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity -mr-1"
+                      >
+                        <RowActions
+                          onEdit={() => onEdit(flota)}
+                          onDelete={() => setFlotaToDelete(flota)}
+                        />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Fila central: Nombre completo de la flota sin recortes */}
+                  <div
+                    className="font-semibold text-xs text-foreground line-clamp-2 leading-snug break-words"
+                    title={flota.nombre}
+                  >
+                    {flota.nombre}
+                  </div>
+
+                  {/* Fila inferior: Descripción */}
+                  {flota.descripcion ? (
+                    <p className="text-[11px] text-muted-foreground line-clamp-1 leading-tight" title={flota.descripcion}>
+                      {flota.descripcion}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground/60 italic leading-tight">
+                      Sin descripción
+                    </p>
+                  )}
                 </div>
               </div>
             )

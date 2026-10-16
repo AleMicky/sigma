@@ -72,6 +72,49 @@ function extractPlaca(descripcion?: string | null): string | null {
   }
 }
 
+function getCleanDescription(
+  descripcion?: string | null,
+  excludeWords: (string | null | undefined)[] = []
+): string | null {
+  if (!descripcion) return null
+  const clean = descripcion.trim()
+  if (!clean) return null
+
+  const tokensToExclude = new Set<string>([
+    "PLACA",
+    "COLOR",
+    "VEHICULO",
+    "VEHÍCULO",
+    "MODELO",
+    "MARCA",
+    "AÑO",
+    "ANIO",
+  ])
+
+  for (const item of excludeWords) {
+    if (!item) continue
+    const parts = item.split(/[\s•,.-]+/)
+    for (const p of parts) {
+      const trimmed = p.trim().toUpperCase()
+      if (trimmed.length > 1) {
+        tokensToExclude.add(trimmed)
+      }
+    }
+  }
+
+  const descWords = clean.split(/[\s,.-]+/).filter((w) => w.length > 1)
+  const remainingWords = descWords.filter(
+    (w) => !tokensToExclude.has(w.toUpperCase())
+  )
+
+  // Si todas las palabras de la descripción ya están mostradas en título/marca/modelo/placa/color, es 100% duplicada
+  if (remainingWords.length === 0) {
+    return null
+  }
+
+  return clean
+}
+
 export function FlotaDetailPanel({
   flota,
   onEditFlota,
@@ -158,10 +201,10 @@ export function FlotaDetailPanel({
 
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <code className="text-xs font-mono font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-2 py-0.5 rounded-md">
+              <code className="text-xs font-mono font-bold whitespace-nowrap shrink-0 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-2 py-0.5 rounded-md border border-cyan-500/20">
                 {flota.codigo}
               </code>
-              <h1 className="text-base sm:text-lg font-bold text-foreground truncate">
+              <h1 className="text-base sm:text-lg font-bold text-foreground break-words" title={flota.nombre}>
                 {flota.nombre}
               </h1>
               <Badge
@@ -273,7 +316,10 @@ export function FlotaDetailPanel({
             <ShieldCheck className="size-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold text-foreground truncate">
+            <div
+              className="text-xs font-semibold text-foreground line-clamp-2 leading-tight break-words"
+              title={responsablePrincipal?.empleado?.nombreCompleto || "Sin definir"}
+            >
               {responsablePrincipal?.empleado?.nombreCompleto || "Sin definir"}
             </div>
             <div className="text-[10px] text-muted-foreground">
@@ -372,20 +418,46 @@ export function FlotaDetailPanel({
                   const veh = item.vehiculo
                   const placa = veh?.placa || extractPlaca(veh?.descripcion)
                   const tipo = veh?.tipoActivo || "Vehículo"
+                  const isGenericTipo = !tipo || ["vehiculo", "vehículo", "activo"].includes(tipo.toLowerCase().trim())
 
-                  const detallesVehiculo = [
+                  // Título principal: Marca + Modelo o Nombre
+                  const tieneMarcaModelo = Boolean(veh?.marca || veh?.modelo)
+                  const tituloPrincipal = tieneMarcaModelo
+                    ? `${veh?.marca || ""} ${veh?.modelo || ""}`.trim()
+                    : veh?.nombre || "Vehículo"
+
+                  // Subtítulo: Clase/Tipo (si no es idéntico al título)
+                  const subtituloClase =
+                    veh?.nombre && veh.nombre.toUpperCase() !== tituloPrincipal.toUpperCase()
+                      ? veh.nombre
+                      : null
+
+                  // Limpieza de descripción duplicada (elimina redundancia con marca, modelo, placa, nombre, etc.)
+                  const cleanDesc = getCleanDescription(veh?.descripcion, [
+                    veh?.nombre,
                     veh?.marca,
                     veh?.modelo,
-                    veh?.anio,
-                  ].filter(Boolean).join(" • ")
+                    veh?.anio ? String(veh.anio) : null,
+                    veh?.color,
+                    placa,
+                  ])
 
-                  // Atributos adicionales que no sean los estándar ya mostrados
+                  // Atributos adicionales filtrados sin duplicar campos estructurados
                   const atributosExtras = veh?.atributos
                     ? Object.entries(veh.atributos).filter(
                         ([key]) =>
-                          !["PLACA", "MARCA", "MODELO", "ANIO", "AÑO", "COLOR"].includes(
-                            key.toUpperCase().trim()
-                          )
+                          ![
+                            "PLACA",
+                            "MARCA",
+                            "MODELO",
+                            "ANIO",
+                            "AÑO",
+                            "COLOR",
+                            "NOMBRE",
+                            "TIPO",
+                            "DESCRIPCION",
+                            "DESCRIPCIÓN",
+                          ].includes(key.toUpperCase().trim())
                       )
                     : []
 
@@ -406,7 +478,7 @@ export function FlotaDetailPanel({
                             {veh?.urlImagen ? (
                               <AuthenticatedImage
                                 src={veh.urlImagen}
-                                alt={veh.nombre}
+                                alt={tituloPrincipal}
                                 className="size-full object-cover"
                                 fallback={<Box className="size-5 text-muted-foreground/60" />}
                               />
@@ -416,58 +488,68 @@ export function FlotaDetailPanel({
                           </div>
 
                           <div className="min-w-0 flex-1 space-y-1">
+                            {/* Badges de Código, Placa y Tipo específico */}
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <code className="text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-1.5 py-0.5 rounded">
+                              <code className="text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-500/20 shrink-0">
                                 {veh?.codigo || "V-ID"}
                               </code>
 
                               {placa && (
-                                <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded tracking-wider shadow-2xs">
+                                <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded tracking-wider shadow-2xs shrink-0">
                                   {placa}
                                 </span>
                               )}
 
-                              <Badge
-                                variant="outline"
-                                className="text-[9px] font-medium py-0 px-1.5 h-4.5 bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20"
-                              >
-                                {tipo}
-                              </Badge>
+                              {!isGenericTipo && tipo.toUpperCase() !== subtituloClase?.toUpperCase() && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] font-medium py-0 px-1.5 h-4.5 bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20"
+                                >
+                                  {tipo}
+                                </Badge>
+                              )}
                             </div>
 
-                            <div className="font-semibold text-xs text-foreground truncate">
-                              {veh?.nombre || "Vehículo sin nombre"}
+                            {/* Título Principal (Marca Modelo • Año) */}
+                            <div className="font-bold text-xs text-foreground leading-snug">
+                              {tituloPrincipal}
+                              {veh?.anio && (
+                                <span className="text-muted-foreground/80 font-normal">
+                                  {" "}• {veh.anio}
+                                </span>
+                              )}
                             </div>
 
-                            {/* Marca / Modelo / Año / Color */}
-                            {(detallesVehiculo || veh?.color) && (
+                            {/* Subtítulo: Clase y Color (sin repetir marca/modelo) */}
+                            {(subtituloClase || veh?.color) && (
                               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
-                                {detallesVehiculo && (
+                                {subtituloClase && (
                                   <span className="font-medium text-foreground/80">
-                                    {detallesVehiculo}
+                                    {subtituloClase}
                                   </span>
                                 )}
                                 {veh?.color && (
                                   <span className="text-muted-foreground/80">
-                                    (Color: {veh.color})
+                                    {subtituloClase ? "• " : ""}(Color: {veh.color})
                                   </span>
                                 )}
                               </div>
                             )}
 
-                            {veh?.descripcion && (
-                              <p className="text-[11px] text-muted-foreground line-clamp-1">
-                                {veh.descripcion}
+                            {/* Descripción solo si contiene notas únicas no redundantes */}
+                            {cleanDesc && (
+                              <p className="text-[11px] text-muted-foreground line-clamp-2 leading-tight">
+                                {cleanDesc}
                               </p>
                             )}
 
                             {/* Atributos adicionales */}
                             {atributosExtras.length > 0 && (
-                              <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                                 {atributosExtras.slice(0, 3).map(([k, v]) => (
                                   <span
                                     key={k}
-                                    className="text-[10px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/50"
+                                    className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50"
                                   >
                                     <span className="font-medium text-foreground/70">{k}:</span> {v}
                                   </span>
