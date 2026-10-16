@@ -3,19 +3,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
+  Pencil,
   Plus,
   Search,
+  Trash2,
   Truck,
 } from "lucide-react"
 
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
-import { RowActions } from "@/shared/components/row-actions"
-import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 import type { PageResponse } from "@/shared/types/api.types"
 
-import { useDeleteFlota, useToggleActivoFlota } from "../api/flota.mutations"
+import { useDeleteFlota } from "../api/flota.mutations"
 import type { FlotaVehicular } from "../api/flota.service"
 
 type FlotaMasterPanelProps = {
@@ -60,7 +60,6 @@ export function FlotaMasterPanel({
   onPageChange,
 }: FlotaMasterPanelProps) {
   const deleteMutation = useDeleteFlota()
-  const toggleMutation = useToggleActivoFlota()
   const [flotaToDelete, setFlotaToDelete] = useState<FlotaVehicular | null>(null)
 
   const currentPage = page?.page ?? 0
@@ -196,33 +195,31 @@ export function FlotaMasterPanel({
                       {flota.codigo}
                     </code>
 
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Badge
-                        variant={flota.activo ? "outline" : "secondary"}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleMutation.mutate(flota.id)
-                        }}
-                        className={cn(
-                          "text-[9.5px] font-medium px-1.5 py-0.2 border cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap",
-                          flota.activo
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                            : "bg-muted text-muted-foreground border-border/60"
-                        )}
-                        title="Clic para alternar estado"
+                    {/* Botones de acciones visibles */}
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-0.5 shrink-0"
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => onEdit(flota)}
+                        className="size-6 text-muted-foreground hover:text-cyan-600 hover:bg-cyan-500/10 rounded-md cursor-pointer transition-colors"
+                        title="Editar flota"
                       >
-                        {flota.activo ? "Activa" : "Inactiva"}
-                      </Badge>
-
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity -mr-1"
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => setFlotaToDelete(flota)}
+                        className="size-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md cursor-pointer transition-colors"
+                        title="Eliminar flota"
                       >
-                        <RowActions
-                          onEdit={() => onEdit(flota)}
-                          onDelete={() => setFlotaToDelete(flota)}
-                        />
-                      </div>
+                        <Trash2 className="size-3.5" />
+                      </Button>
                     </div>
                   </div>
 
@@ -236,7 +233,7 @@ export function FlotaMasterPanel({
 
                   {/* Fila inferior: Descripción */}
                   {flota.descripcion ? (
-                    <p className="text-[11px] text-muted-foreground line-clamp-1 leading-tight" title={flota.descripcion}>
+                    <p className="text-[11px] text-muted-foreground line-clamp-2 leading-tight break-words" title={flota.descripcion}>
                       {flota.descripcion}
                     </p>
                   ) : (
