@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
+import { ActivoImagePreviewModal } from "@/modules/activos/activo/components/detalle-activo/modals/ActivoImagePreviewModal"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -38,7 +39,6 @@ import {
   useDeleteVehiculo,
   useSetResponsablePrincipal,
   useToggleActivoResponsable,
-  useToggleActivoVehiculo,
 } from "../api/flota.mutations"
 import { flotaQueries } from "../api/flota.queries"
 import type {
@@ -72,6 +72,63 @@ function extractPlaca(descripcion?: string | null): string | null {
   }
 }
 
+function extractChasis(descripcion?: string | null): string | null {
+  try {
+    if (!descripcion) return null
+    const match = descripcion.match(/CHASIS(?:\s*(?:N[°o.]*|NRO\.?))?[:\s-]+([0-9A-Za-z]+)/i)
+    if (match && match[1]) {
+      const clean = match[1].replace(/[,.;-]+$/, "").trim()
+      if (clean.length >= 4) {
+        return clean
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function extractObservaciones(
+  descripcion?: string | null,
+  excludeWords: (string | null | undefined)[] = []
+): string | null {
+  try {
+    if (!descripcion) return null
+    let text = descripcion
+
+    // Eliminar patrones técnicos comunes que ya se muestran por separado
+    text = text.replace(/PLACA(?:\s*(?:N[°o.]*|NRO\.?))?[:\s-]+[0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)*/gi, "")
+    text = text.replace(/CHASIS(?:\s*(?:N[°o.]*|NRO\.?))?[:\s-]+[0-9A-Za-z]+/gi, "")
+    text = text.replace(/MOTOR(?:\s*(?:N[°o.]*|NRO\.?))?[:\s-]+[0-9A-Za-z-]+/gi, "")
+    text = text.replace(/MODELO(?:\s*(?:N[°o.]*|NRO\.?))?[:\s-]+[0-9A-Za-z]+/gi, "")
+    text = text.replace(/COLOR[:\s]+[0-9A-Za-z]+/gi, "")
+    text = text.replace(/AÑO[:\s]+[0-9]{4}/gi, "")
+
+    // Eliminar tokens conocidos (marca, modelo, tipo, etc.)
+    for (const item of excludeWords) {
+      if (!item) continue
+      const parts = item.split(/[\s•,.-]+/)
+      for (const p of parts) {
+        const trimmed = p.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+        if (trimmed.length > 2) {
+          text = text.replace(new RegExp(`\\b${trimmed}\\b`, "gi"), "")
+        }
+      }
+    }
+
+    // Limpiar signos de puntuación sueltos y espacios repetidos
+    text = text.replace(/[-•,;:_]+/g, " ").replace(/\s+/g, " ").trim()
+
+    // Solo devolver si queda texto informativo real
+    if (text.length > 3 && !/^(VEHICULO|CAMIONETA|AUTO|V-ID|ACTIVO)$/i.test(text)) {
+      return text
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 export function FlotaDetailPanel({
   flota,
   onEditFlota,
@@ -84,6 +141,7 @@ export function FlotaDetailPanel({
   const [asignarVehiculosOpen, setAsignarVehiculosOpen] = React.useState(false)
   const [responsableDialogOpen, setResponsableDialogOpen] = React.useState(false)
   const [editingResponsable, setEditingResponsable] = React.useState<ResponsableFlota | null>(null)
+  const [previewImage, setPreviewImage] = React.useState<{ url: string; alt: string } | null>(null)
 
   // Confirm delete dialogs
   const [vehiculoToDelete, setVehiculoToDelete] = React.useState<FlotaVehiculo | null>(null)
@@ -102,7 +160,6 @@ export function FlotaDetailPanel({
 
   // Mutations
   const deleteVehiculoMutation = useDeleteVehiculo()
-  const toggleVehiculoMutation = useToggleActivoVehiculo()
   const deleteResponsableMutation = useDeleteResponsable()
   const toggleResponsableMutation = useToggleActivoResponsable()
   const setPrincipalMutation = useSetResponsablePrincipal()
@@ -158,10 +215,10 @@ export function FlotaDetailPanel({
 
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <code className="text-xs font-mono font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-2 py-0.5 rounded-md">
+              <code className="text-xs font-mono font-bold whitespace-nowrap shrink-0 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-2 py-0.5 rounded-md border border-cyan-500/20">
                 {flota.codigo}
               </code>
-              <h1 className="text-base sm:text-lg font-bold text-foreground truncate">
+              <h1 className="text-base sm:text-lg font-bold text-foreground break-words" title={flota.nombre}>
                 {flota.nombre}
               </h1>
               <Badge
@@ -178,7 +235,7 @@ export function FlotaDetailPanel({
             </div>
 
             {flota.descripcion && (
-              <p className="text-xs text-muted-foreground line-clamp-1">
+              <p className="text-xs text-muted-foreground break-words leading-relaxed" title={flota.descripcion}>
                 {flota.descripcion}
               </p>
             )}
@@ -273,7 +330,10 @@ export function FlotaDetailPanel({
             <ShieldCheck className="size-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold text-foreground truncate">
+            <div
+              className="text-xs font-semibold text-foreground line-clamp-2 leading-tight break-words"
+              title={responsablePrincipal?.empleado?.nombreCompleto || "Sin definir"}
+            >
               {responsablePrincipal?.empleado?.nombreCompleto || "Sin definir"}
             </div>
             <div className="text-[10px] text-muted-foreground">
@@ -367,175 +427,216 @@ export function FlotaDetailPanel({
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
                 {vehiculos.map((item) => {
                   const veh = item.vehiculo
                   const placa = veh?.placa || extractPlaca(veh?.descripcion)
                   const tipo = veh?.tipoActivo || "Vehículo"
+                  const isGenericTipo =
+                    !tipo ||
+                    ["vehiculo", "vehículo", "activo"].includes(
+                      tipo.toLowerCase().trim()
+                    )
 
-                  const detallesVehiculo = [
+                  // Título principal: Marca + Modelo o Nombre
+                  const tieneMarcaModelo = Boolean(veh?.marca || veh?.modelo)
+                  const tituloPrincipal = tieneMarcaModelo
+                    ? `${veh?.marca || ""} ${veh?.modelo || ""}`.trim()
+                    : veh?.nombre || "Vehículo"
+
+                  // Subtítulo: Clase/Tipo (si no es idéntico al título)
+                  const subtituloClase =
+                    veh?.nombre &&
+                    veh.nombre.toUpperCase() !== tituloPrincipal.toUpperCase()
+                      ? veh.nombre
+                      : null
+
+                  // Chasis y observaciones sin duplicación
+                  const chasis =
+                    veh?.atributos?.chasis ||
+                    veh?.atributos?.numeroChasis ||
+                    veh?.atributos?.vin ||
+                    extractChasis(veh?.descripcion)
+
+                  const observaciones = extractObservaciones(veh?.descripcion, [
+                    veh?.nombre,
                     veh?.marca,
                     veh?.modelo,
-                    veh?.anio,
-                  ].filter(Boolean).join(" • ")
-
-                  // Atributos adicionales que no sean los estándar ya mostrados
-                  const atributosExtras = veh?.atributos
-                    ? Object.entries(veh.atributos).filter(
-                        ([key]) =>
-                          !["PLACA", "MARCA", "MODELO", "ANIO", "AÑO", "COLOR"].includes(
-                            key.toUpperCase().trim()
-                          )
-                      )
-                    : []
+                    veh?.anio ? String(veh.anio) : null,
+                    veh?.color,
+                    placa,
+                  ])
 
                   return (
                     <div
                       key={item.id}
                       className={cn(
-                        "flex flex-col justify-between gap-3 p-3.5 rounded-xl border bg-card/60 transition-all shadow-xs hover:border-cyan-500/40",
+                        "group flex items-center justify-between gap-3 p-3 rounded-xl border bg-card/60 transition-all hover:bg-muted/30 hover:border-border",
                         item.activo
                           ? "border-border/70"
                           : "border-border/40 opacity-65 bg-muted/10"
                       )}
                     >
-                      {/* Fila Superior: Foto + Info General + Acciones */}
-                      <div className="flex items-start justify-between gap-3 min-w-0">
-                        <div className="flex items-start gap-3 min-w-0 flex-1">
-                          <div className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-border/80 bg-muted/30 flex items-center justify-center">
-                            {veh?.urlImagen ? (
-                              <AuthenticatedImage
-                                src={veh.urlImagen}
-                                alt={veh.nombre}
-                                className="size-full object-cover"
-                                fallback={<Box className="size-5 text-muted-foreground/60" />}
-                              />
-                            ) : (
-                              <Car className="size-6 text-cyan-600/70" />
-                            )}
-                          </div>
-
-                          <div className="min-w-0 flex-1 space-y-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <code className="text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-1.5 py-0.5 rounded">
-                                {veh?.codigo || "V-ID"}
-                              </code>
-
-                              {placa && (
-                                <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded tracking-wider shadow-2xs">
-                                  {placa}
-                                </span>
-                              )}
-
-                              <Badge
-                                variant="outline"
-                                className="text-[9px] font-medium py-0 px-1.5 h-4.5 bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20"
-                              >
-                                {tipo}
-                              </Badge>
-                            </div>
-
-                            <div className="font-semibold text-xs text-foreground truncate">
-                              {veh?.nombre || "Vehículo sin nombre"}
-                            </div>
-
-                            {/* Marca / Modelo / Año / Color */}
-                            {(detallesVehiculo || veh?.color) && (
-                              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
-                                {detallesVehiculo && (
-                                  <span className="font-medium text-foreground/80">
-                                    {detallesVehiculo}
-                                  </span>
-                                )}
-                                {veh?.color && (
-                                  <span className="text-muted-foreground/80">
-                                    (Color: {veh.color})
-                                  </span>
-                                )}
-                              </div>
-                            )}
-
-                            {veh?.descripcion && (
-                              <p className="text-[11px] text-muted-foreground line-clamp-1">
-                                {veh.descripcion}
-                              </p>
-                            )}
-
-                            {/* Atributos adicionales */}
-                            {atributosExtras.length > 0 && (
-                              <div className="flex items-center gap-1 flex-wrap pt-0.5">
-                                {atributosExtras.slice(0, 3).map(([k, v]) => (
-                                  <span
-                                    key={k}
-                                    className="text-[10px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/50"
-                                  >
-                                    <span className="font-medium text-foreground/70">{k}:</span> {v}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              toggleVehiculoMutation.mutate({
-                                id: item.id,
-                                flotaId: flota.id,
+                      {/* Miniatura + Datos principales */}
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div
+                          onClick={(e) => {
+                            if (veh?.urlImagen) {
+                              e.stopPropagation()
+                              setPreviewImage({
+                                url: veh.urlImagen,
+                                alt: `${tituloPrincipal} ${placa ? `(${placa})` : ""}`,
                               })
                             }
-                            className={cn(
-                              "h-7 text-[10px] font-medium px-2 rounded-lg border",
-                              item.activo
-                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20"
-                                : "bg-muted text-muted-foreground border-border/60 hover:bg-muted/80"
-                            )}
-                          >
-                            {item.activo ? "Activo" : "Inactivo"}
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon-xs"
-                            onClick={() => setVehiculoToDelete(item)}
-                            className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
-                            title="Desvincular vehículo de la flota"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Responsable de Activo y su Área */}
-                      <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-2 text-[11px] bg-muted/20 -mx-3.5 -mb-3.5 p-2 px-3.5 rounded-b-xl">
-                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                          <User className="size-3.5 text-muted-foreground/70 shrink-0" />
-                          <span className="text-muted-foreground shrink-0">Responsable:</span>
-                          <span className="font-medium text-foreground truncate">
-                            {veh?.responsableNombre || "Sin asignar"}
-                          </span>
-                          {veh?.responsableCargo && (
-                            <span className="text-[10px] text-muted-foreground truncate hidden sm:inline">
-                              ({veh.responsableCargo})
-                            </span>
+                          }}
+                          className={cn(
+                            "relative w-14 h-10 shrink-0 overflow-hidden rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center transition-all",
+                            veh?.urlImagen
+                              ? "cursor-pointer hover:border-cyan-500 hover:shadow-xs group/thumb"
+                              : ""
+                          )}
+                          title={veh?.urlImagen ? "Clic para ampliar imagen" : undefined}
+                        >
+                          {veh?.urlImagen ? (
+                            <AuthenticatedImage
+                              src={veh.urlImagen}
+                              alt={tituloPrincipal}
+                              className="size-full object-cover transition-transform group-hover/thumb:scale-105"
+                              fallback={<Car className="size-5 text-cyan-600/70" />}
+                            />
+                          ) : (
+                            <Car className="size-5 text-cyan-600/70" />
                           )}
                         </div>
 
-                        {veh?.responsableArea ? (
-                          <div className="flex items-center gap-1 shrink-0 text-cyan-700 dark:text-cyan-400 font-medium bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md text-[10px]">
-                            <Building2 className="size-3 shrink-0" />
-                            <span className="truncate max-w-[140px] sm:max-w-[190px]" title={veh.responsableArea}>
-                              {veh.responsableArea}
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          {/* Fila 1: Placa, Código, Nombre/Modelo, Año, Clase, Color */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {placa && (
+                              <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded tracking-wider shadow-2xs shrink-0">
+                                {placa}
+                              </span>
+                            )}
+
+                            <code className="text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-1.5 py-0.2 rounded border border-cyan-500/20 shrink-0">
+                              {veh?.codigo || "V-ID"}
+                            </code>
+
+                            <span className="font-semibold text-xs text-foreground truncate">
+                              {tituloPrincipal}
+                              {veh?.anio && (
+                                <span className="text-muted-foreground/80 font-normal">
+                                  {" "}• {veh.anio}
+                                </span>
+                              )}
                             </span>
+
+                            {subtituloClase && (
+                              <Badge
+                                variant="outline"
+                                className="text-[9.5px] font-medium py-0 px-1.5 h-4.5 bg-muted/60 text-muted-foreground border-border/60 shrink-0"
+                              >
+                                {subtituloClase}
+                              </Badge>
+                            )}
+
+                            {!isGenericTipo && tipo.toUpperCase() !== subtituloClase?.toUpperCase() && (
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] font-medium py-0 px-1.5 h-4.5 bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20 shrink-0"
+                              >
+                                {tipo}
+                              </Badge>
+                            )}
+
+                            {veh?.color && (
+                              <span className="text-[11px] text-muted-foreground/75 shrink-0">
+                                (Color: {veh.color})
+                              </span>
+                            )}
                           </div>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground/60 italic shrink-0">
-                            Sin área asignada
-                          </span>
+
+                          {/* Fila 2: Responsable, Área, Chasis y Observaciones */}
+                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-1 shrink-0">
+                              <User className="size-3 opacity-70 shrink-0" />
+                              <span className="text-muted-foreground/70 shrink-0">Resp:</span>
+                              <span
+                                className={cn(
+                                  "font-medium shrink-0",
+                                  veh?.responsableNombre
+                                    ? "text-foreground/90"
+                                    : "text-muted-foreground/75 italic"
+                                )}
+                              >
+                                {veh?.responsableNombre || "Sin asignar"}
+                              </span>
+                              {veh?.responsableCargo && (
+                                <span className="text-muted-foreground/60 hidden sm:inline shrink-0">
+                                  ({veh.responsableCargo})
+                                </span>
+                              )}
+                            </div>
+
+                            {veh?.responsableArea && (
+                              <>
+                                <span className="opacity-40 shrink-0">•</span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Building2 className="size-3 opacity-70 shrink-0 text-cyan-600 dark:text-cyan-400" />
+                                  <span className="text-cyan-700 dark:text-cyan-400 font-medium shrink-0">
+                                    {veh.responsableArea}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+
+                            {chasis && (
+                              <>
+                                <span className="opacity-40 shrink-0">•</span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className="text-muted-foreground/70 shrink-0">Chasis:</span>
+                                  <span className="font-mono text-foreground/85 font-medium tracking-tight shrink-0">
+                                    {chasis}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+
+                            {observaciones && (
+                              <>
+                                <span className="opacity-40 shrink-0">•</span>
+                                <span
+                                  className="text-muted-foreground/70 truncate max-w-[280px] sm:max-w-[420px]"
+                                  title={observaciones}
+                                >
+                                  {observaciones}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Botón de acción */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {!item.activo && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 px-1.5 py-0.2"
+                          >
+                            Inactivo
+                          </Badge>
                         )}
+
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => setVehiculoToDelete(item)}
+                          className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                          title="Desvincular vehículo de la flota"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
                       </div>
                     </div>
                   )
@@ -826,6 +927,15 @@ export function FlotaDetailPanel({
           description={`¿Estás seguro de desvincular a ${responsableToDelete.empleado?.nombreCompleto ?? "este empleado"} como responsable de la flota?`}
           isPending={deleteResponsableMutation.isPending}
           onConfirm={handleDeleteResponsable}
+        />
+      )}
+      {/* MODAL PREVISUALIZACIÓN DE IMAGEN */}
+      {previewImage && (
+        <ActivoImagePreviewModal
+          open={Boolean(previewImage)}
+          onOpenChange={(open) => !open && setPreviewImage(null)}
+          imageUrl={previewImage.url}
+          altText={previewImage.alt}
         />
       )}
     </div>

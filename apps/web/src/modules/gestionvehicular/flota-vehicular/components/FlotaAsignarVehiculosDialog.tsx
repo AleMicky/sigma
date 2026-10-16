@@ -283,17 +283,17 @@ function FlotaAsignarVehiculosContent({
                     {/* Info */}
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <code className="text-[10px] font-mono font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">
+                        {placa && (
+                          <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded tracking-wider shadow-2xs shrink-0">
+                            {placa}
+                          </span>
+                        )}
+                        <code className="text-[10px] font-mono font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 shrink-0">
                           {activo.codigo}
                         </code>
                         <span className="font-semibold text-xs text-foreground truncate">
                           {activo.nombre}
                         </span>
-                        {placa && (
-                          <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
-                            Placa: {placa}
-                          </span>
-                        )}
                       </div>
 
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
