@@ -21,7 +21,26 @@ public class ViajeVehicularPersistenceMapper {
         entity.setKilometrajeRetorno(domain.getKilometrajeRetorno());
         entity.setEstado(domain.getEstado());
         entity.setObservacion(domain.getObservacion());
+        entity.setCreatedAt(domain.getCreatedAt());
+        entity.setUpdatedAt(domain.getUpdatedAt());
+        entity.setCreatedBy(domain.getCreatedBy());
+        entity.setUpdatedBy(domain.getUpdatedBy());
+        entity.setCreatedById(domain.getCreatedById());
+        entity.setUpdatedById(domain.getUpdatedById());
         return entity;
+    }
+
+    public void updateEntity(ViajeVehicular domain, ViajeVehicularEntity entity) {
+        if (domain == null || entity == null) {
+            return;
+        }
+        entity.setAsignacionVehicularId(domain.getAsignacionVehicularId());
+        entity.setFechaSalidaReal(domain.getFechaSalidaReal());
+        entity.setKilometrajeSalida(domain.getKilometrajeSalida());
+        entity.setFechaRetornoReal(domain.getFechaRetornoReal());
+        entity.setKilometrajeRetorno(domain.getKilometrajeRetorno());
+        entity.setEstado(domain.getEstado());
+        entity.setObservacion(domain.getObservacion());
     }
 
     public ViajeVehicular toDomain(ViajeVehicularEntity entity) {

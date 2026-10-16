@@ -84,7 +84,14 @@ public class ViajeVehicularRepositoryAdapter implements ViajeVehicularRepository
 
     @Override
     public ViajeVehicular save(ViajeVehicular viajeVehicular) {
-        ViajeVehicularEntity entity = mapper.toEntity(viajeVehicular);
+        ViajeVehicularEntity entity;
+        if (viajeVehicular.getId() != null) {
+            entity = springRepository.findById(viajeVehicular.getId())
+                    .orElseGet(() -> mapper.toEntity(viajeVehicular));
+            mapper.updateEntity(viajeVehicular, entity);
+        } else {
+            entity = mapper.toEntity(viajeVehicular);
+        }
         ViajeVehicularEntity saved = springRepository.save(entity);
         return mapper.toDomain(saved);
     }
