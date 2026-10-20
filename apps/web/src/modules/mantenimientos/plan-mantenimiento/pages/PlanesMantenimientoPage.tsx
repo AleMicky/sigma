@@ -39,6 +39,7 @@ export function PlanesMantenimientoPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<PlanMantenimiento | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [sheetInitialTab, setSheetInitialTab] = useState<"actividades" | "activos">("actividades")
   const [selectedPlanForActivities, setSelectedPlanForActivities] =
     useState<PlanMantenimiento | null>(null)
   const [selectedTipoActivoId, setSelectedTipoActivoId] = useState<string>("")
@@ -94,8 +95,9 @@ export function PlanesMantenimientoPage() {
     setDialogOpen(true)
   }
 
-  function handleSelectPlan(plan: PlanMantenimiento) {
+  function handleSelectPlan(plan: PlanMantenimiento, tab: "actividades" | "activos" = "actividades") {
     setSelectedPlanForActivities(plan)
+    setSheetInitialTab(tab)
     setSheetOpen(true)
   }
 
@@ -302,12 +304,13 @@ export function PlanesMantenimientoPage() {
         }}
       />
 
-      {/* Slide-over Drawer para Ver y Gestionar Actividades del Plan */}
+      {/* Slide-over Drawer para Ver y Gestionar Actividades y Activos Asignados */}
       <PlanMantenimientoDetailSheet
         key={activePlanInDrawer?.id ?? "plan-detail-sheet"}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         plan={activePlanInDrawer}
+        initialTab={sheetInitialTab}
         onEditPlan={openEdit}
       />
     </PageShell>

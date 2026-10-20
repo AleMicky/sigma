@@ -22,7 +22,7 @@ import type { PlanMantenimiento } from "../api/plan-mantenimiento.service"
 type PlanMantenimientoListViewProps = {
   planesMantenimiento: PlanMantenimiento[]
   onEdit: (plan: PlanMantenimiento) => void
-  onSelectPlan: (plan: PlanMantenimiento) => void
+  onSelectPlan: (plan: PlanMantenimiento, tab?: "actividades" | "activos") => void
 }
 
 export function PlanMantenimientoListView({
@@ -61,7 +61,7 @@ export function PlanMantenimientoListView({
         return (
           <div
             key={plan.id}
-            onClick={() => onSelectPlan(plan)}
+            onClick={() => onSelectPlan(plan, "actividades")}
             className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:px-4 sm:py-3.5 transition-colors hover:bg-muted/30 cursor-pointer"
           >
             {/* Lado izquierdo: Icono y contenido principal */}
@@ -128,15 +128,15 @@ export function PlanMantenimientoListView({
               </div>
             </div>
 
-            {/* Lado derecho: Botón de actividades y acciones */}
+            {/* Lado derecho: Badges interactivos y acciones */}
             <div
-              className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-1 sm:pt-0"
+              className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Badge interactivo con el conteo de actividades */}
               <button
                 type="button"
-                onClick={() => onSelectPlan(plan)}
+                onClick={() => onSelectPlan(plan, "actividades")}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/25 bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 transition-all cursor-pointer shadow-2xs hover:scale-102"
                 title="Ver y gestionar actividades del plan"
               >
@@ -144,6 +144,17 @@ export function PlanMantenimientoListView({
                 <span>
                   {totalActividades} {totalActividades === 1 ? "actividad" : "actividades"}
                 </span>
+              </button>
+
+              {/* Badge interactivo para ver activos asignados */}
+              <button
+                type="button"
+                onClick={() => onSelectPlan(plan, "activos")}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer shadow-2xs hover:scale-102"
+                title="Ver y asignar activos a este plan"
+              >
+                <Boxes className="size-3.5" />
+                <span>Activos</span>
               </button>
 
               {/* Botones de acción */}
@@ -186,7 +197,7 @@ export function PlanMantenimientoListView({
         title="Eliminar plan de mantenimiento"
         description={
           itemToDelete
-            ? `¿Seguro que deseas eliminar el plan de mantenimiento "${itemToDelete.nombre}"? Todas las actividades asociadas a este plan también serán desvinculadas.`
+            ? `¿Seguro que deseas eliminar el plan de mantenimiento "${itemToDelete.nombre}"? Todas las actividades y asignaciones asociadas a este plan también serán desvinculadas.`
             : "¿Seguro que deseas eliminar este plan de mantenimiento?"
         }
         isPending={deleteMutation.isPending}
