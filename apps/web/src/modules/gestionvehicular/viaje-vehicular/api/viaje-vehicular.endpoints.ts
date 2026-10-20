@@ -5,4 +5,6 @@ export const viajeVehicularEndpoints = {
     `/viajes-vehiculares/asignacion/${asignacionId}`,
   bySolicitud: (solicitudId: string) =>
     `/viajes-vehiculares/solicitud/${solicitudId}`,
+  exportarExcel: "/viajes-vehiculares/exportar-excel",
 }
+

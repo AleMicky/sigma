@@ -13,7 +13,7 @@ public interface ViajeVehicularRepository {
 
     Page<ViajeVehicular> findAll(Pageable pageable);
 
-    Page<ViajeVehicular> searchWithFilters(
+    default Page<ViajeVehicular> searchWithFilters(
             String search,
             UUID asignacionVehicularId,
             UUID solicitudVehicularId,
@@ -21,6 +21,31 @@ public interface ViajeVehicularRepository {
             UUID conductorId,
             EstadoViajeVehicular estado,
             Pageable pageable
+    ) {
+        return searchWithFilters(search, asignacionVehicularId, solicitudVehicularId, activoId, conductorId, estado, null, null, pageable);
+    }
+
+    Page<ViajeVehicular> searchWithFilters(
+            String search,
+            UUID asignacionVehicularId,
+            UUID solicitudVehicularId,
+            UUID activoId,
+            UUID conductorId,
+            EstadoViajeVehicular estado,
+            java.time.LocalDateTime fechaDesde,
+            java.time.LocalDateTime fechaHasta,
+            Pageable pageable
+    );
+
+    List<ViajeVehicular> findHistorialForExport(
+            String search,
+            UUID asignacionVehicularId,
+            UUID solicitudVehicularId,
+            UUID activoId,
+            UUID conductorId,
+            EstadoViajeVehicular estado,
+            java.time.LocalDateTime fechaDesde,
+            java.time.LocalDateTime fechaHasta
     );
 
     Optional<ViajeVehicular> findById(UUID id);

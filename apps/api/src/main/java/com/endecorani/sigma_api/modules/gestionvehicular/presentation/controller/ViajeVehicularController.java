@@ -18,10 +18,16 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,11 +52,41 @@ public class ViajeVehicularController {
             @RequestParam(required = false) UUID activoId,
             @RequestParam(required = false) UUID conductorId,
             @RequestParam(required = false) EstadoViajeVehicular estado,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(search, asignacionVehicularId, solicitudVehicularId, activoId, conductorId, estado, pageRequest))
+                ApiResponse.success(service.listar(search, asignacionVehicularId, solicitudVehicularId, activoId, conductorId, estado, fechaDesde, fechaHasta, pageRequest))
         );
+    }
+
+    @GetMapping(value = "/exportar-excel", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Operation(summary = "Exportar historial de viajes vehiculares a formato Excel (.xlsx)")
+    public ResponseEntity<byte[]> exportarExcel(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) UUID asignacionVehicularId,
+            @RequestParam(required = false) UUID solicitudVehicularId,
+            @RequestParam(required = false) UUID activoId,
+            @RequestParam(required = false) UUID conductorId,
+            @RequestParam(required = false) EstadoViajeVehicular estado,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta
+    ) {
+        byte[] excelBytes = service.exportarExcel(
+                search, asignacionVehicularId, solicitudVehicularId, activoId, conductorId, estado, fechaDesde, fechaHasta
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(
+                ContentDisposition.attachment()
+                        .filename("historial-viajes-vehiculares-" + LocalDate.now() + ".xlsx")
+                        .build()
+        );
+        headers.setContentLength(excelBytes.length);
+
+        return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
