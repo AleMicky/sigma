@@ -38,6 +38,7 @@ import { Route as DashboardInventariosNuevoRouteImport } from './../../routes/_d
 import { Route as DashboardInventariosTiposInsumoRouteRouteImport } from './../../routes/_dashboard/inventarios/tipos-insumo/route'
 import { Route as DashboardMantenimientosIndexRouteImport } from './../../routes/_dashboard/mantenimientos/index'
 import { Route as DashboardMantenimientosActividadesRouteRouteImport } from './../../routes/_dashboard/mantenimientos/actividades/route'
+import { Route as DashboardMantenimientosPlanesMantenimientoRouteRouteImport } from './../../routes/_dashboard/mantenimientos/planes-mantenimiento/route'
 import { Route as DashboardMantenimientosPrioridadesRouteRouteImport } from './../../routes/_dashboard/mantenimientos/prioridades/route'
 import { Route as DashboardMantenimientosSolicitudesRouteRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/route'
 import { Route as DashboardMantenimientosTiposMantenimientoRouteRouteImport } from './../../routes/_dashboard/mantenimientos/tipos-mantenimiento/route'
@@ -77,6 +78,7 @@ import { Route as DashboardMantenimientosControlesActivosNuevoRouteImport } from
 import { Route as DashboardMantenimientosEncargadoIndexRouteImport } from './../../routes/_dashboard/mantenimientos/encargado/index'
 import { Route as DashboardMantenimientosOrdenesTrabajoIndexRouteImport } from './../../routes/_dashboard/mantenimientos/ordenes-trabajo/index'
 import { Route as DashboardMantenimientosOrdenesTrabajoNuevoRouteImport } from './../../routes/_dashboard/mantenimientos/ordenes-trabajo/nuevo'
+import { Route as DashboardMantenimientosPlanesMantenimientoIndexRouteImport } from './../../routes/_dashboard/mantenimientos/planes-mantenimiento/index'
 import { Route as DashboardMantenimientosPrioridadesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/prioridades/index'
 import { Route as DashboardMantenimientosSolicitudesIndexRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/index'
 import { Route as DashboardMantenimientosSolicitudesNuevaRouteImport } from './../../routes/_dashboard/mantenimientos/solicitudes/nueva'
@@ -263,6 +265,12 @@ const DashboardMantenimientosActividadesRouteRoute =
   DashboardMantenimientosActividadesRouteRouteImport.update({
     id: '/actividades',
     path: '/actividades',
+    getParentRoute: () => DashboardMantenimientosRouteRoute,
+  } as any)
+const DashboardMantenimientosPlanesMantenimientoRouteRoute =
+  DashboardMantenimientosPlanesMantenimientoRouteRouteImport.update({
+    id: '/planes-mantenimiento',
+    path: '/planes-mantenimiento',
     getParentRoute: () => DashboardMantenimientosRouteRoute,
   } as any)
 const DashboardMantenimientosPrioridadesRouteRoute =
@@ -498,6 +506,12 @@ const DashboardMantenimientosOrdenesTrabajoNuevoRoute =
     path: '/ordenes-trabajo/nuevo',
     getParentRoute: () => DashboardMantenimientosRouteRoute,
   } as any)
+const DashboardMantenimientosPlanesMantenimientoIndexRoute =
+  DashboardMantenimientosPlanesMantenimientoIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardMantenimientosPlanesMantenimientoRouteRoute,
+  } as any)
 const DashboardMantenimientosPrioridadesIndexRoute =
   DashboardMantenimientosPrioridadesIndexRouteImport.update({
     id: '/',
@@ -650,6 +664,7 @@ export interface FileRoutesByFullPath {
   '/inventarios/categorias': typeof DashboardInventariosCategoriasRouteRouteWithChildren
   '/inventarios/tipos-insumo': typeof DashboardInventariosTiposInsumoRouteRouteWithChildren
   '/mantenimientos/actividades': typeof DashboardMantenimientosActividadesRouteRouteWithChildren
+  '/mantenimientos/planes-mantenimiento': typeof DashboardMantenimientosPlanesMantenimientoRouteRouteWithChildren
   '/mantenimientos/prioridades': typeof DashboardMantenimientosPrioridadesRouteRouteWithChildren
   '/mantenimientos/solicitudes': typeof DashboardMantenimientosSolicitudesRouteRouteWithChildren
   '/mantenimientos/tipos-mantenimiento': typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
@@ -702,6 +717,7 @@ export interface FileRoutesByFullPath {
   '/mantenimientos/controles-activos/': typeof DashboardMantenimientosControlesActivosIndexRoute
   '/mantenimientos/encargado/': typeof DashboardMantenimientosEncargadoIndexRoute
   '/mantenimientos/ordenes-trabajo/': typeof DashboardMantenimientosOrdenesTrabajoIndexRoute
+  '/mantenimientos/planes-mantenimiento/': typeof DashboardMantenimientosPlanesMantenimientoIndexRoute
   '/mantenimientos/prioridades/': typeof DashboardMantenimientosPrioridadesIndexRoute
   '/mantenimientos/solicitudes/': typeof DashboardMantenimientosSolicitudesIndexRoute
   '/mantenimientos/supervisor/': typeof DashboardMantenimientosSupervisorIndexRoute
@@ -774,6 +790,7 @@ export interface FileRoutesByTo {
   '/mantenimientos/controles-activos': typeof DashboardMantenimientosControlesActivosIndexRoute
   '/mantenimientos/encargado': typeof DashboardMantenimientosEncargadoIndexRoute
   '/mantenimientos/ordenes-trabajo': typeof DashboardMantenimientosOrdenesTrabajoIndexRoute
+  '/mantenimientos/planes-mantenimiento': typeof DashboardMantenimientosPlanesMantenimientoIndexRoute
   '/mantenimientos/prioridades': typeof DashboardMantenimientosPrioridadesIndexRoute
   '/mantenimientos/solicitudes': typeof DashboardMantenimientosSolicitudesIndexRoute
   '/mantenimientos/supervisor': typeof DashboardMantenimientosSupervisorIndexRoute
@@ -815,6 +832,7 @@ export interface FileRoutesById {
   '/_dashboard/inventarios/categorias': typeof DashboardInventariosCategoriasRouteRouteWithChildren
   '/_dashboard/inventarios/tipos-insumo': typeof DashboardInventariosTiposInsumoRouteRouteWithChildren
   '/_dashboard/mantenimientos/actividades': typeof DashboardMantenimientosActividadesRouteRouteWithChildren
+  '/_dashboard/mantenimientos/planes-mantenimiento': typeof DashboardMantenimientosPlanesMantenimientoRouteRouteWithChildren
   '/_dashboard/mantenimientos/prioridades': typeof DashboardMantenimientosPrioridadesRouteRouteWithChildren
   '/_dashboard/mantenimientos/solicitudes': typeof DashboardMantenimientosSolicitudesRouteRouteWithChildren
   '/_dashboard/mantenimientos/tipos-mantenimiento': typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
@@ -867,6 +885,7 @@ export interface FileRoutesById {
   '/_dashboard/mantenimientos/controles-activos/': typeof DashboardMantenimientosControlesActivosIndexRoute
   '/_dashboard/mantenimientos/encargado/': typeof DashboardMantenimientosEncargadoIndexRoute
   '/_dashboard/mantenimientos/ordenes-trabajo/': typeof DashboardMantenimientosOrdenesTrabajoIndexRoute
+  '/_dashboard/mantenimientos/planes-mantenimiento/': typeof DashboardMantenimientosPlanesMantenimientoIndexRoute
   '/_dashboard/mantenimientos/prioridades/': typeof DashboardMantenimientosPrioridadesIndexRoute
   '/_dashboard/mantenimientos/solicitudes/': typeof DashboardMantenimientosSolicitudesIndexRoute
   '/_dashboard/mantenimientos/supervisor/': typeof DashboardMantenimientosSupervisorIndexRoute
@@ -908,6 +927,7 @@ export interface FileRouteTypes {
     | '/inventarios/categorias'
     | '/inventarios/tipos-insumo'
     | '/mantenimientos/actividades'
+    | '/mantenimientos/planes-mantenimiento'
     | '/mantenimientos/prioridades'
     | '/mantenimientos/solicitudes'
     | '/mantenimientos/tipos-mantenimiento'
@@ -960,6 +980,7 @@ export interface FileRouteTypes {
     | '/mantenimientos/controles-activos/'
     | '/mantenimientos/encargado/'
     | '/mantenimientos/ordenes-trabajo/'
+    | '/mantenimientos/planes-mantenimiento/'
     | '/mantenimientos/prioridades/'
     | '/mantenimientos/solicitudes/'
     | '/mantenimientos/supervisor/'
@@ -1032,6 +1053,7 @@ export interface FileRouteTypes {
     | '/mantenimientos/controles-activos'
     | '/mantenimientos/encargado'
     | '/mantenimientos/ordenes-trabajo'
+    | '/mantenimientos/planes-mantenimiento'
     | '/mantenimientos/prioridades'
     | '/mantenimientos/solicitudes'
     | '/mantenimientos/supervisor'
@@ -1072,6 +1094,7 @@ export interface FileRouteTypes {
     | '/_dashboard/inventarios/categorias'
     | '/_dashboard/inventarios/tipos-insumo'
     | '/_dashboard/mantenimientos/actividades'
+    | '/_dashboard/mantenimientos/planes-mantenimiento'
     | '/_dashboard/mantenimientos/prioridades'
     | '/_dashboard/mantenimientos/solicitudes'
     | '/_dashboard/mantenimientos/tipos-mantenimiento'
@@ -1124,6 +1147,7 @@ export interface FileRouteTypes {
     | '/_dashboard/mantenimientos/controles-activos/'
     | '/_dashboard/mantenimientos/encargado/'
     | '/_dashboard/mantenimientos/ordenes-trabajo/'
+    | '/_dashboard/mantenimientos/planes-mantenimiento/'
     | '/_dashboard/mantenimientos/prioridades/'
     | '/_dashboard/mantenimientos/solicitudes/'
     | '/_dashboard/mantenimientos/supervisor/'
@@ -1353,6 +1377,13 @@ declare module '@tanstack/react-router' {
       path: '/actividades'
       fullPath: '/mantenimientos/actividades'
       preLoaderRoute: typeof DashboardMantenimientosActividadesRouteRouteImport
+      parentRoute: typeof DashboardMantenimientosRouteRoute
+    }
+    '/_dashboard/mantenimientos/planes-mantenimiento': {
+      id: '/_dashboard/mantenimientos/planes-mantenimiento'
+      path: '/planes-mantenimiento'
+      fullPath: '/mantenimientos/planes-mantenimiento'
+      preLoaderRoute: typeof DashboardMantenimientosPlanesMantenimientoRouteRouteImport
       parentRoute: typeof DashboardMantenimientosRouteRoute
     }
     '/_dashboard/mantenimientos/prioridades': {
@@ -1627,6 +1658,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/mantenimientos/ordenes-trabajo/nuevo'
       preLoaderRoute: typeof DashboardMantenimientosOrdenesTrabajoNuevoRouteImport
       parentRoute: typeof DashboardMantenimientosRouteRoute
+    }
+    '/_dashboard/mantenimientos/planes-mantenimiento/': {
+      id: '/_dashboard/mantenimientos/planes-mantenimiento/'
+      path: '/'
+      fullPath: '/mantenimientos/planes-mantenimiento/'
+      preLoaderRoute: typeof DashboardMantenimientosPlanesMantenimientoIndexRouteImport
+      parentRoute: typeof DashboardMantenimientosPlanesMantenimientoRouteRoute
     }
     '/_dashboard/mantenimientos/prioridades/': {
       id: '/_dashboard/mantenimientos/prioridades/'
@@ -1991,6 +2029,21 @@ const DashboardMantenimientosActividadesRouteRouteWithChildren =
     DashboardMantenimientosActividadesRouteRouteChildren,
   )
 
+interface DashboardMantenimientosPlanesMantenimientoRouteRouteChildren {
+  DashboardMantenimientosPlanesMantenimientoIndexRoute: typeof DashboardMantenimientosPlanesMantenimientoIndexRoute
+}
+
+const DashboardMantenimientosPlanesMantenimientoRouteRouteChildren: DashboardMantenimientosPlanesMantenimientoRouteRouteChildren =
+  {
+    DashboardMantenimientosPlanesMantenimientoIndexRoute:
+      DashboardMantenimientosPlanesMantenimientoIndexRoute,
+  }
+
+const DashboardMantenimientosPlanesMantenimientoRouteRouteWithChildren =
+  DashboardMantenimientosPlanesMantenimientoRouteRoute._addFileChildren(
+    DashboardMantenimientosPlanesMantenimientoRouteRouteChildren,
+  )
+
 interface DashboardMantenimientosPrioridadesRouteRouteChildren {
   DashboardMantenimientosPrioridadesIndexRoute: typeof DashboardMantenimientosPrioridadesIndexRoute
 }
@@ -2044,6 +2097,7 @@ const DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren =
 
 interface DashboardMantenimientosRouteRouteChildren {
   DashboardMantenimientosActividadesRouteRoute: typeof DashboardMantenimientosActividadesRouteRouteWithChildren
+  DashboardMantenimientosPlanesMantenimientoRouteRoute: typeof DashboardMantenimientosPlanesMantenimientoRouteRouteWithChildren
   DashboardMantenimientosPrioridadesRouteRoute: typeof DashboardMantenimientosPrioridadesRouteRouteWithChildren
   DashboardMantenimientosSolicitudesRouteRoute: typeof DashboardMantenimientosSolicitudesRouteRouteWithChildren
   DashboardMantenimientosTiposMantenimientoRouteRoute: typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
@@ -2061,6 +2115,8 @@ const DashboardMantenimientosRouteRouteChildren: DashboardMantenimientosRouteRou
   {
     DashboardMantenimientosActividadesRouteRoute:
       DashboardMantenimientosActividadesRouteRouteWithChildren,
+    DashboardMantenimientosPlanesMantenimientoRouteRoute:
+      DashboardMantenimientosPlanesMantenimientoRouteRouteWithChildren,
     DashboardMantenimientosPrioridadesRouteRoute:
       DashboardMantenimientosPrioridadesRouteRouteWithChildren,
     DashboardMantenimientosSolicitudesRouteRoute:

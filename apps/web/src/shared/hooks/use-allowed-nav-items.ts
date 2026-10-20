@@ -6,6 +6,7 @@ import {
   Briefcase,
   Building2,
   CheckSquare,
+  ClipboardList,
   FileCheck,
   FileSpreadsheet,
   FileText,
@@ -91,7 +92,8 @@ function inferFallbackIcon(route?: string | null, title?: string, code?: string)
   if (target.includes("encargado")) return UserCheck
   if (target.includes("solicitud")) return FileText
   if (target.includes("orden") || target.includes("ots") || target.includes("trabajo")) return CheckSquare
-  if (target.includes("actividad") || target.includes("plan") || target.includes("programa")) return ListTodo
+  if (target.includes("plan") || target.includes("planes")) return ClipboardList
+  if (target.includes("actividad") || target.includes("programa")) return ListTodo
   if (target.includes("mantenimiento") || target.includes("tipo-mantenimiento")) return Wrench
   if (target.includes("control") || target.includes("auditoria")) return FileCheck
   if (target.includes("prioridad") || target.includes("alerta")) return ShieldAlert

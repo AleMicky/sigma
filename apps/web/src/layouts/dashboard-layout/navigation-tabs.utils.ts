@@ -36,6 +36,7 @@ export const PATH_TITLES: Record<string, string> = {
   "/mantenimientos/supervisor": "Supervisor de Mantenimiento",
   "/mantenimientos/ordenes-trabajo": "Órdenes de Trabajo",
   "/mantenimientos/actividades": "Actividades",
+  "/mantenimientos/planes-mantenimiento": "Planes de Mantenimiento",
   "/mantenimientos/tipos-mantenimiento": "Tipos de Mantenimiento",
   "/mantenimientos/prioridades": "Prioridades",
   "/mantenimientos/controles-activos": "Controles de Activos",
