@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
 import {
   AlertCircle,
   Boxes,
   Calendar,
+  CalendarClock,
   Check,
   Copy,
   Edit3,
@@ -53,6 +55,7 @@ type PlanActivosTabContentProps = {
 }
 
 export function PlanActivosTabContent({ plan }: PlanActivosTabContentProps) {
+  const navigate = useNavigate()
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PlanMantenimientoActivo | null>(null)
   const [itemToDelete, setItemToDelete] = useState<PlanMantenimientoActivo | null>(null)
@@ -430,6 +433,22 @@ export function PlanActivosTabContent({ plan }: PlanActivosTabContentProps) {
                         <span className="hidden sm:inline">Reactivar</span>
                       </Button>
                     )}
+
+                    {/* Botón Ir a Programación de Mantenimiento */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() =>
+                        navigate({
+                          to: "/mantenimientos/programaciones-mantenimiento",
+                        })
+                      }
+                      title="Ver o configurar programación de mantenimiento para este activo"
+                      className="size-8 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
+                    >
+                      <CalendarClock className="size-3.5" />
+                    </Button>
 
                     {/* Botón Editar Fechas / Responsable */}
                     <Button
