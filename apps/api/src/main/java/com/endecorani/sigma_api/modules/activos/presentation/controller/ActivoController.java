@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
@@ -96,6 +99,51 @@ public class ActivoController {
                                                                 tipoActivoId,
                                                                 q,
                                                                 pageRequest)));
+        }
+
+        @GetMapping("/disponibilidad")
+        @Operation(summary = "Reporte de disponibilidad y estados operativos de activos con filtros y paginación")
+        public ResponseEntity<ApiResponse<PageResponse<ActivoResponse>>> searchDisponibilidad(
+                        @RequestParam(required = false) String q,
+                        @RequestParam(required = false) UUID estadoOperativoId,
+                        @RequestParam(required = false) UUID tipoActivoId,
+                        @RequestParam(required = false) UUID categoriaId,
+                        @RequestParam(required = false) UUID ubicacionId,
+                        @RequestParam(required = false) Boolean activo,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                activoService.searchDisponibilidad(
+                                                                q,
+                                                                estadoOperativoId,
+                                                                tipoActivoId,
+                                                                categoriaId,
+                                                                ubicacionId,
+                                                                activo,
+                                                                pageRequest)));
+        }
+
+        @GetMapping(value = "/disponibilidad/exportar-excel", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        @Operation(summary = "Exportar reporte de disponibilidad y estados operativos en formato Excel (.xlsx)")
+        public ResponseEntity<byte[]> exportarDisponibilidadExcel(
+                        @RequestParam(required = false) String q,
+                        @RequestParam(required = false) UUID estadoOperativoId,
+                        @RequestParam(required = false) UUID tipoActivoId,
+                        @RequestParam(required = false) UUID categoriaId,
+                        @RequestParam(required = false) UUID ubicacionId,
+                        @RequestParam(required = false) Boolean activo) {
+                byte[] excelBytes = activoService.exportarDisponibilidadExcel(
+                                q, estadoOperativoId, tipoActivoId, categoriaId, ubicacionId, activo);
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+                headers.setContentDisposition(
+                                ContentDisposition.attachment()
+                                                .filename("disponibilidad-activos-" + LocalDate.now() + ".xlsx")
+                                                .build());
+                headers.setContentLength(excelBytes.length);
+
+                return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
         }
 
         @PostMapping(value = "/{id}/imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

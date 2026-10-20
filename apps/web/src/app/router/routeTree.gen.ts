@@ -28,6 +28,7 @@ import { Route as DashboardTiposDocumentoRouteRouteImport } from './../../routes
 import { Route as DashboardAccesoriosIndexRouteImport } from './../../routes/_dashboard/accesorios/index'
 import { Route as DashboardActivosIndexRouteImport } from './../../routes/_dashboard/activos/index'
 import { Route as DashboardActivosConsultaDocumentosRouteImport } from './../../routes/_dashboard/activos/consulta-documentos'
+import { Route as DashboardActivosDisponibilidadRouteImport } from './../../routes/_dashboard/activos/disponibilidad'
 import { Route as DashboardActivosNuevoRouteImport } from './../../routes/_dashboard/activos/nuevo'
 import { Route as DashboardCategoriasIndexRouteImport } from './../../routes/_dashboard/categorias/index'
 import { Route as DashboardEstadosOperativosIndexRouteImport } from './../../routes/_dashboard/estados-operativos/index'
@@ -210,6 +211,12 @@ const DashboardActivosConsultaDocumentosRoute =
   DashboardActivosConsultaDocumentosRouteImport.update({
     id: '/consulta-documentos',
     path: '/consulta-documentos',
+    getParentRoute: () => DashboardActivosRouteRoute,
+  } as any)
+const DashboardActivosDisponibilidadRoute =
+  DashboardActivosDisponibilidadRouteImport.update({
+    id: '/disponibilidad',
+    path: '/disponibilidad',
     getParentRoute: () => DashboardActivosRouteRoute,
   } as any)
 const DashboardActivosNuevoRoute = DashboardActivosNuevoRouteImport.update({
@@ -700,6 +707,7 @@ export interface FileRoutesByFullPath {
   '/mantenimientos/tipos-mantenimiento': typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
   '/tipos-activo/$tipoActivoId': typeof DashboardTiposActivoTipoActivoIdRouteRouteWithChildren
   '/activos/consulta-documentos': typeof DashboardActivosConsultaDocumentosRoute
+  '/activos/disponibilidad': typeof DashboardActivosDisponibilidadRoute
   '/activos/nuevo': typeof DashboardActivosNuevoRoute
   '/inventarios/nuevo': typeof DashboardInventariosNuevoRoute
   '/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
@@ -777,6 +785,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof DashboardPerfilRoute
   '/': typeof DashboardIndexRoute
   '/activos/consulta-documentos': typeof DashboardActivosConsultaDocumentosRoute
+  '/activos/disponibilidad': typeof DashboardActivosDisponibilidadRoute
   '/activos/nuevo': typeof DashboardActivosNuevoRoute
   '/inventarios/nuevo': typeof DashboardInventariosNuevoRoute
   '/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
@@ -875,6 +884,7 @@ export interface FileRoutesById {
   '/_dashboard/mantenimientos/tipos-mantenimiento': typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
   '/_dashboard/tipos-activo/$tipoActivoId': typeof DashboardTiposActivoTipoActivoIdRouteRouteWithChildren
   '/_dashboard/activos/consulta-documentos': typeof DashboardActivosConsultaDocumentosRoute
+  '/_dashboard/activos/disponibilidad': typeof DashboardActivosDisponibilidadRoute
   '/_dashboard/activos/nuevo': typeof DashboardActivosNuevoRoute
   '/_dashboard/inventarios/nuevo': typeof DashboardInventariosNuevoRoute
   '/_dashboard/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
@@ -974,6 +984,7 @@ export interface FileRouteTypes {
     | '/mantenimientos/tipos-mantenimiento'
     | '/tipos-activo/$tipoActivoId'
     | '/activos/consulta-documentos'
+    | '/activos/disponibilidad'
     | '/activos/nuevo'
     | '/inventarios/nuevo'
     | '/parametros/catalogos'
@@ -1051,6 +1062,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/'
     | '/activos/consulta-documentos'
+    | '/activos/disponibilidad'
     | '/activos/nuevo'
     | '/inventarios/nuevo'
     | '/parametros/catalogos'
@@ -1148,6 +1160,7 @@ export interface FileRouteTypes {
     | '/_dashboard/mantenimientos/tipos-mantenimiento'
     | '/_dashboard/tipos-activo/$tipoActivoId'
     | '/_dashboard/activos/consulta-documentos'
+    | '/_dashboard/activos/disponibilidad'
     | '/_dashboard/activos/nuevo'
     | '/_dashboard/inventarios/nuevo'
     | '/_dashboard/parametros/catalogos'
@@ -1358,6 +1371,13 @@ declare module '@tanstack/react-router' {
       path: '/consulta-documentos'
       fullPath: '/activos/consulta-documentos'
       preLoaderRoute: typeof DashboardActivosConsultaDocumentosRouteImport
+      parentRoute: typeof DashboardActivosRouteRoute
+    }
+    '/_dashboard/activos/disponibilidad': {
+      id: '/_dashboard/activos/disponibilidad'
+      path: '/disponibilidad'
+      fullPath: '/activos/disponibilidad'
+      preLoaderRoute: typeof DashboardActivosDisponibilidadRouteImport
       parentRoute: typeof DashboardActivosRouteRoute
     }
     '/_dashboard/activos/nuevo': {
@@ -1918,6 +1938,7 @@ const DashboardAccesoriosRouteRouteWithChildren =
 
 interface DashboardActivosRouteRouteChildren {
   DashboardActivosConsultaDocumentosRoute: typeof DashboardActivosConsultaDocumentosRoute
+  DashboardActivosDisponibilidadRoute: typeof DashboardActivosDisponibilidadRoute
   DashboardActivosNuevoRoute: typeof DashboardActivosNuevoRoute
   DashboardActivosIndexRoute: typeof DashboardActivosIndexRoute
   DashboardActivosActivoIdEditarRoute: typeof DashboardActivosActivoIdEditarRoute
@@ -1929,6 +1950,7 @@ interface DashboardActivosRouteRouteChildren {
 const DashboardActivosRouteRouteChildren: DashboardActivosRouteRouteChildren = {
   DashboardActivosConsultaDocumentosRoute:
     DashboardActivosConsultaDocumentosRoute,
+  DashboardActivosDisponibilidadRoute: DashboardActivosDisponibilidadRoute,
   DashboardActivosNuevoRoute: DashboardActivosNuevoRoute,
   DashboardActivosIndexRoute: DashboardActivosIndexRoute,
   DashboardActivosActivoIdEditarRoute: DashboardActivosActivoIdEditarRoute,

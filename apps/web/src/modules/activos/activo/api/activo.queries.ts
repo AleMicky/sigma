@@ -3,7 +3,12 @@ import { queryOptions } from "@tanstack/react-query"
 import type { PageParams } from "@/shared/types/api.types"
 
 import { type ActivoListFilters, activoKeys } from "./activo.keys"
-import { getActivo, listActivos } from "./activo.service"
+import {
+  getActivo,
+  listActivos,
+  listActivosDisponibilidad,
+  type ActivoDisponibilidadParams,
+} from "./activo.service"
 
 export const activoQueries = {
   list: (filters?: ActivoListFilters) =>
@@ -37,5 +42,14 @@ export const activoQueries = {
       queryKey: activoKeys.detail(id),
       queryFn: () => getActivo(id),
       enabled: Boolean(id),
+    }),
+
+  disponibilidad: (params?: ActivoDisponibilidadParams) =>
+    queryOptions({
+      queryKey: ["activos", "disponibilidad", params] as const,
+      queryFn: () => {
+        const q = params?.q?.trim()
+        return listActivosDisponibilidad(q ? { ...params, q } : { ...params, q: undefined })
+      },
     }),
 }

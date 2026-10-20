@@ -11,6 +11,8 @@ import com.endecorani.sigma_api.modules.activos.domain.model.EstadoOperativo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.EstadoOperativoRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.model.Ubicacion;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
+import com.endecorani.sigma_api.modules.activos.domain.repository.CategoriaRepository;
+import com.endecorani.sigma_api.modules.activos.domain.model.Categoria;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 import com.endecorani.sigma_api.shared.application.mapper.AuditoriaMapper;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -61,7 +63,9 @@ public class ActivoService {
     private final TipoActivoRepository tipoActivoRepository;
     private final UbicacionRepository ubicacionRepository;
     private final EstadoOperativoRepository estadoOperativoRepository;
+    private final CategoriaRepository categoriaRepository;
     private final ImageStorageService imageStorageService;
+    private final DisponibilidadActivoExcelService disponibilidadActivoExcelService;
 
     @Transactional
     public ActivoResponse create(ActivoRequest request) {
@@ -227,12 +231,63 @@ public class ActivoService {
         return toResponse(updated);
     }
 
-    private PageResponse<ActivoResponse> toPageResponse(Page<Activo> page) {
-        if (page.isEmpty()) {
-            return PageResponse.of(List.of(), page);
+    @Transactional(readOnly = true)
+    public PageResponse<ActivoResponse> searchDisponibilidad(
+            String query,
+            UUID estadoOperativoId,
+            UUID tipoActivoId,
+            UUID categoriaId,
+            UUID ubicacionId,
+            Boolean activo,
+            PageRequestDto pageRequest) {
+        String normalized = StringUtils.normalize(query);
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+
+        Page<Activo> page = activoRepository.searchDisponibilidad(
+                normalized,
+                estadoOperativoId,
+                tipoActivoId,
+                categoriaId,
+                ubicacionId,
+                activo,
+                pageable);
+
+        return toPageResponse(page);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportarDisponibilidadExcel(
+            String query,
+            UUID estadoOperativoId,
+            UUID tipoActivoId,
+            UUID categoriaId,
+            UUID ubicacionId,
+            Boolean activo) {
+        String normalized = StringUtils.normalize(query);
+        List<Activo> activos = activoRepository.findForDisponibilidadExport(
+                normalized,
+                estadoOperativoId,
+                tipoActivoId,
+                categoriaId,
+                ubicacionId,
+                activo);
+
+        List<ActivoResponse> responseList = toListResponse(activos);
+
+        Map<UUID, String> categoriaMap = categoriaRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Categoria::getId,
+                        Categoria::getNombre,
+                        (a, b) -> a));
+
+        return disponibilidadActivoExcelService.generarExcel(responseList, categoriaMap);
+    }
+
+    public List<ActivoResponse> toListResponse(List<Activo> content) {
+        if (content == null || content.isEmpty()) {
+            return List.of();
         }
 
-        List<Activo> content = page.getContent();
         Set<UUID> tipoIds = content.stream()
                 .map(Activo::getTipoActivoId)
                 .filter(Objects::nonNull)
@@ -263,7 +318,7 @@ public class ActivoService {
                 : estadoOperativoRepository.findAllById(estadoIds).stream()
                         .collect(Collectors.toMap(EstadoOperativo::getId, Function.identity(), (a, b) -> a));
 
-        List<ActivoResponse> responses = content.stream()
+        return content.stream()
                 .map(domain -> {
                     TipoActivo tipoActivo = domain.getTipoActivoId() != null ? tipoMap.get(domain.getTipoActivoId())
                             : null;
@@ -275,8 +330,13 @@ public class ActivoService {
                     return toResponse(domain, tipoActivo, ubicacion, estadoOperativo);
                 })
                 .toList();
+    }
 
-        return PageResponse.of(responses, page);
+    private PageResponse<ActivoResponse> toPageResponse(Page<Activo> page) {
+        if (page.isEmpty()) {
+            return PageResponse.of(List.of(), page);
+        }
+        return PageResponse.of(toListResponse(page.getContent()), page);
     }
 
     private ActivoResponse toResponse(Activo domain) {
