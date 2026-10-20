@@ -35,6 +35,23 @@ export interface SystemNotification {
   to?: string
 }
 
+function getNotificationIcon(type: NotificationType, priority: NotificationPriority) {
+  if (type === "approval") return FileText
+  if (type === "maintenance") return Wrench
+  if (priority === "critical") return AlertCircle
+  return Info
+}
+
+function getPriorityBadgeClass(priority: NotificationPriority) {
+  if (priority === "critical") {
+    return "bg-destructive/15 text-destructive"
+  }
+  if (priority === "warning") {
+    return "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+  }
+  return "bg-primary/15 text-primary"
+}
+
 export function NotificationCenter({
   initialNotifications = [],
 }: {
@@ -174,14 +191,7 @@ export function NotificationCenter({
             </div>
           ) : (
             filtered.map((item) => {
-              const Icon =
-                item.type === "approval"
-                  ? FileText
-                  : item.type === "maintenance"
-                    ? Wrench
-                    : item.priority === "critical"
-                      ? AlertCircle
-                      : Info
+              const Icon = getNotificationIcon(item.type, item.priority)
 
               return (
                 <div
@@ -195,11 +205,7 @@ export function NotificationCenter({
                   <div
                     className={cn(
                       "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg shadow-2xs",
-                      item.priority === "critical"
-                        ? "bg-destructive/15 text-destructive"
-                        : item.priority === "warning"
-                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                          : "bg-primary/15 text-primary",
+                      getPriorityBadgeClass(item.priority),
                     )}
                   >
                     <Icon className="size-3.5" />

@@ -30,12 +30,224 @@ import { RequisitosDevolucionDialog } from "../components/RequisitosDevolucionDi
 import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
-import { SolicitudListItem, SolicitudListItemSkeleton } from "../components/SolicitudListItem"
+import {
+  SolicitudListItem,
+  SolicitudListItemSkeleton,
+  type SolicitudListItemProps,
+} from "../components/SolicitudListItem"
 import { SolicitudResumenCards } from "../components/SolicitudResumenCards"
 import { useSolicitudes, useSolicitudResumen } from "../hooks/use-solicitudes"
 import type { SolicitudMantenimiento } from "../types/solicitud.type"
+import type { PageResponse } from "@/shared/types/api.types"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
+
+function getSolicitudesEmptyStateInfo(debouncedSearch: string, selectedEstado: string) {
+  if (debouncedSearch) {
+    return {
+      title: "No se encontraron solicitudes coincidentes",
+      description: `No se hallaron resultados para "${debouncedSearch}". Prueba con otro término o limpia la búsqueda.`,
+    }
+  }
+
+  if (selectedEstado) {
+    return {
+      title: `No hay solicitudes con estado "${selectedEstado.replace(/_/g, " ")}"`,
+      description: "Puedes seleccionar otro estado en las tarjetas superiores o limpiar el filtro actual.",
+    }
+  }
+
+  return {
+    title: "No hay solicitudes de mantenimiento registradas",
+    description: "Crea una nueva solicitud para reportar averías o mantenimientos requeridos en tus activos.",
+  }
+}
+
+interface SolicitudesEmptyStateProps {
+  debouncedSearch: string
+  selectedEstado: string
+  onClearFilters: () => void
+}
+
+function SolicitudesEmptyState({
+  debouncedSearch,
+  selectedEstado,
+  onClearFilters,
+}: Readonly<SolicitudesEmptyStateProps>) {
+  const { title, description } = getSolicitudesEmptyStateInfo(debouncedSearch, selectedEstado)
+  const hasActiveFilters = Boolean(debouncedSearch || selectedEstado)
+
+  return (
+    <div className="flex flex-1 items-center justify-center p-6">
+      <EmptyState
+        icon={<FileText className="size-8 text-muted-foreground/60" />}
+        title={title}
+        description={description}
+        action={
+          hasActiveFilters ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClearFilters}
+              className="mt-2 text-xs font-medium cursor-pointer"
+            >
+              Limpiar filtros
+            </Button>
+          ) : (
+            <Link to={routes.mantenimientos.nuevaSolicitud}>
+              <Button
+                size="sm"
+                className="mt-2 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Plus className="size-3.5" />
+                <span>Crear Primera Solicitud</span>
+              </Button>
+            </Link>
+          )
+        }
+      />
+    </div>
+  )
+}
+
+interface SolicitudesErrorStateProps {
+  error: unknown
+  onRetry: () => void
+}
+
+function SolicitudesErrorState({ error, onRetry }: Readonly<SolicitudesErrorStateProps>) {
+  return (
+    <div className="flex flex-1 items-center justify-center p-6">
+      <EmptyState
+        icon={<AlertCircle className="size-8 text-destructive" />}
+        title="Error al cargar las solicitudes"
+        description={getErrorMessage(error)}
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRetry}
+            className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+          >
+            <RefreshCw className="size-3.5" />
+            <span>Reintentar</span>
+          </Button>
+        }
+      />
+    </div>
+  )
+}
+
+function SolicitudesLoadingSkeleton() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <SolicitudListItemSkeleton key={index} />
+      ))}
+    </div>
+  )
+}
+
+interface SolicitudesContentProps {
+  isLoading: boolean
+  isError: boolean
+  error: unknown
+  solicitudes: SolicitudMantenimiento[]
+  debouncedSearch: string
+  selectedEstado: string
+  isFetching: boolean
+  pageData?: PageResponse<SolicitudMantenimiento>
+  onClearFilters: () => void
+  onRefresh: () => void
+  onViewDetail: (item: SolicitudMantenimiento) => void
+  onEdit: (item: SolicitudMantenimiento) => void
+  onDelete: (item: SolicitudMantenimiento) => void
+  onActionSelect: SolicitudListItemProps["onActionSelect"]
+  onTraceability: (item: SolicitudMantenimiento) => void
+  onRegistrarControlActivo: (item: SolicitudMantenimiento) => void
+  onGestionarOrdenTrabajo: (item: SolicitudMantenimiento) => void
+  onPageChange: (page: number) => void
+}
+
+function SolicitudesContent({
+  isLoading,
+  isError,
+  error,
+  solicitudes,
+  debouncedSearch,
+  selectedEstado,
+  isFetching,
+  pageData,
+  onClearFilters,
+  onRefresh,
+  onViewDetail,
+  onEdit,
+  onDelete,
+  onActionSelect,
+  onTraceability,
+  onRegistrarControlActivo,
+  onGestionarOrdenTrabajo,
+  onPageChange,
+}: Readonly<SolicitudesContentProps>) {
+  if (isLoading) {
+    return <SolicitudesLoadingSkeleton />
+  }
+
+  if (isError) {
+    return <SolicitudesErrorState error={error} onRetry={onRefresh} />
+  }
+
+  if (solicitudes.length === 0) {
+    return (
+      <SolicitudesEmptyState
+        debouncedSearch={debouncedSearch}
+        selectedEstado={selectedEstado}
+        onClearFilters={onClearFilters}
+      />
+    )
+  }
+
+  const hasPagination = Boolean(
+    pageData && (pageData.totalElements > 10 || pageData.totalPages > 1),
+  )
+
+  return (
+    <div className="space-y-2.5">
+      {/* Contenedor de items */}
+      <div
+        className={cn(
+          isFetching && "opacity-75 transition-opacity duration-200",
+        )}
+      >
+        <WorkflowListView>
+          {solicitudes.map((solicitud) => (
+            <SolicitudListItem
+              key={solicitud.id}
+              solicitud={solicitud}
+              onlyWorkflowActionsOnBorrador
+              onViewDetail={onViewDetail}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onActionSelect={onActionSelect}
+              onTraceability={onTraceability}
+              onRegistrarControlActivo={onRegistrarControlActivo}
+              onGestionarOrdenTrabajo={onGestionarOrdenTrabajo}
+            />
+          ))}
+        </WorkflowListView>
+      </div>
+
+      {/* Paginación: solo cuando hay más de 10 registros o más de 1 página */}
+      {hasPagination && pageData && (
+        <Pagination
+          page={pageData}
+          onPageChange={onPageChange}
+          className="border-t pt-2 shrink-0 text-xs"
+        />
+      )}
+    </div>
+  )
+}
 
 export function SolicitudesPage() {
   const navigate = useNavigate()
@@ -156,6 +368,11 @@ export function SolicitudesPage() {
     [openAction, queryClient],
   )
 
+  const handleClearFilters = useCallback(() => {
+    search.setSearch("")
+    setSelectedEstado("")
+  }, [search])
+
   return (
     <PageShell
       layout="scroll"
@@ -198,112 +415,26 @@ export function SolicitudesPage() {
           </div>
         )}
 
-        {query.isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <SolicitudListItemSkeleton key={index} />
-            ))}
-          </div>
-        ) : query.isError ? (
-          <div className="flex flex-1 items-center justify-center p-6">
-            <EmptyState
-              icon={<AlertCircle className="size-8 text-destructive" />}
-              title="Error al cargar las solicitudes"
-              description={getErrorMessage(query.error)}
-              action={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
-                >
-                  <RefreshCw className="size-3.5" />
-                  <span>Reintentar</span>
-                </Button>
-              }
-            />
-          </div>
-        ) : solicitudes.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center p-6">
-            <EmptyState
-              icon={<FileText className="size-8 text-muted-foreground/60" />}
-              title={
-                search.debouncedSearch
-                  ? "No se encontraron solicitudes coincidentes"
-                  : selectedEstado
-                    ? `No hay solicitudes con estado "${selectedEstado.replace(/_/g, " ")}"`
-                    : "No hay solicitudes de mantenimiento registradas"
-              }
-              description={
-                search.debouncedSearch
-                  ? `No se hallaron resultados para "${search.debouncedSearch}". Prueba con otro término o limpia la búsqueda.`
-                  : selectedEstado
-                    ? "Puedes seleccionar otro estado en las tarjetas superiores o limpiar el filtro actual."
-                    : "Crea una nueva solicitud para reportar averías o mantenimientos requeridos en tus activos."
-              }
-              action={
-                search.debouncedSearch || selectedEstado ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      search.setSearch("")
-                      setSelectedEstado("")
-                    }}
-                    className="mt-2 text-xs font-medium cursor-pointer"
-                  >
-                    Limpiar filtros
-                  </Button>
-                ) : (
-                  <Link to={routes.mantenimientos.nuevaSolicitud}>
-                    <Button
-                      size="sm"
-                      className="mt-2 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
-                    >
-                      <Plus className="size-3.5" />
-                      <span>Crear Primera Solicitud</span>
-                    </Button>
-                  </Link>
-                )
-              }
-            />
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {/* Contenedor de items */}
-            <div
-              className={cn(
-                query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200",
-              )}
-            >
-              <WorkflowListView>
-                {solicitudes.map((solicitud) => (
-                  <SolicitudListItem
-                    key={solicitud.id}
-                    solicitud={solicitud}
-                    onlyWorkflowActionsOnBorrador
-                    onViewDetail={setDetailItem}
-                    onEdit={handleEdit}
-                    onDelete={setDeletingItem}
-                    onActionSelect={handleActionSelect}
-                    onTraceability={setTraceabilityItem}
-                    onRegistrarControlActivo={setControlActivoItem}
-                    onGestionarOrdenTrabajo={setOrdenTrabajoItem}
-                  />
-                ))}
-              </WorkflowListView>
-            </div>
-
-            {/* Paginación: solo cuando hay más de 10 registros o más de 1 página */}
-            {query.data && (query.data.totalElements > 10 || query.data.totalPages > 1) && (
-              <Pagination
-                page={query.data}
-                onPageChange={search.setPage}
-                className="border-t pt-2 shrink-0 text-xs"
-              />
-            )}
-          </div>
-        )}
+        <SolicitudesContent
+          isLoading={query.isLoading}
+          isError={query.isError}
+          error={query.error}
+          solicitudes={solicitudes}
+          debouncedSearch={search.debouncedSearch}
+          selectedEstado={selectedEstado}
+          isFetching={query.isFetching && !query.isLoading}
+          pageData={query.data}
+          onClearFilters={handleClearFilters}
+          onRefresh={handleRefresh}
+          onViewDetail={setDetailItem}
+          onEdit={handleEdit}
+          onDelete={setDeletingItem}
+          onActionSelect={handleActionSelect}
+          onTraceability={setTraceabilityItem}
+          onRegistrarControlActivo={setControlActivoItem}
+          onGestionarOrdenTrabajo={setOrdenTrabajoItem}
+          onPageChange={search.setPage}
+        />
       </div>
 
       {/* Modal de Detalle Completo de Solicitud */}

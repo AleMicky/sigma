@@ -24,6 +24,7 @@ import { conductorQueries } from "@/modules/gestionvehicular/conductor/api/condu
 import {
   VehiculoResponsableCombobox,
   isVehiculoDisponible,
+  type VehiculoResponsableItem,
 } from "./VehiculoResponsableCombobox"
 import { isApiError } from "@/shared/api"
 import { Badge } from "@/shared/components/ui/badge"
@@ -495,6 +496,16 @@ interface AsignacionVehicularFormProps {
   }) => Promise<void>
 }
 
+function getEstadoOperativoNombre(
+  activo: VehiculoResponsableItem | null
+): string | null | undefined {
+  if (!activo) return undefined
+  if ("flotaVehicularId" in activo) {
+    return activo.vehiculo?.estadoOperativoNombre
+  }
+  return activo.estadoOperativo?.nombre
+}
+
 function AsignacionVehicularForm({
   solicitud,
   asignacionActual,
@@ -512,9 +523,10 @@ function AsignacionVehicularForm({
   )
   const [observacion, setObservacion] = React.useState(asignacionActual?.observacion || "")
   const [formValidationWarning, setFormValidationWarning] = React.useState<string | null>(null)
-  const [activoSeleccionado, setActivoSeleccionado] = React.useState<any>(null)
+  const [activoSeleccionado, setActivoSeleccionado] =
+    React.useState<VehiculoResponsableItem | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     setFormValidationWarning(null)
 
@@ -523,9 +535,7 @@ function AsignacionVehicularForm({
       return
     }
 
-    const estadoNombre =
-      activoSeleccionado?.vehiculo?.estadoOperativoNombre ||
-      activoSeleccionado?.estadoOperativo?.nombre
+    const estadoNombre = getEstadoOperativoNombre(activoSeleccionado)
     if (estadoNombre && !isVehiculoDisponible(estadoNombre)) {
       setFormValidationWarning(
         `El vehículo seleccionado se encuentra en estado "${estadoNombre}" y no puede ser asignado.`

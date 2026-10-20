@@ -5,7 +5,6 @@ import {
   Loader2,
   Maximize2,
   Minimize2,
-  Search,
   WifiOff,
 } from "lucide-react"
 
@@ -77,23 +76,7 @@ export function AppHeader() {
           <div className="h-3.5 w-px bg-border/60 shrink-0" />
           <AppBreadcrumb />
         </div>
-
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Botón Command Palette rápido */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCommandOpen(true)}
-            className="group hidden sm:inline-flex h-7.5 items-center gap-2 rounded-md border-border/60 bg-muted/30 px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:border-border hover:text-foreground transition-colors shadow-none"
-            title="Abrir paleta de comandos (⌘K)"
-          >
-            <Search className="size-3 text-muted-foreground group-hover:text-foreground transition-colors" />
-            <span className="hidden md:inline">Buscar o comandos…</span>
-            <kbd className="pointer-events-none rounded border border-border/70 bg-background/80 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-              ⌘K
-            </kbd>
-          </Button>
-
           {/* Syncing indicator */}
           {isFetching && (
             <div className="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-primary/20">
