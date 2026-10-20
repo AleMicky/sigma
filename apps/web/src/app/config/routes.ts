@@ -105,6 +105,7 @@ export const routes = {
 
   gestionVehicular: {
     root: "/gestion-vehicular",
+    dashboard: "/gestion-vehicular",
     solicitudes: "/gestion-vehicular/solicitudes",
     asignaciones: "/gestion-vehicular/asignaciones",
     nuevaSolicitud: "/gestion-vehicular/solicitudes/nueva",
