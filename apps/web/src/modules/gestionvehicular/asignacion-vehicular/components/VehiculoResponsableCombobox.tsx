@@ -20,10 +20,12 @@ import {
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { cn } from "@/shared/lib/utils"
 
+export type VehiculoResponsableItem = FlotaVehiculo | Activo
+
 export type VehiculoResponsableComboboxProps = {
   value?: string | null
   empleadoId?: string | null
-  onValueChange?: (value: string, item?: FlotaVehiculo | Activo | null) => void
+  onValueChange?: (value: string, item?: VehiculoResponsableItem | null) => void
   onBlur?: () => void
   placeholder?: string
   disabled?: boolean

@@ -78,6 +78,16 @@ public class ActividadMantenimientoAplicacionController {
         );
     }
 
+    @GetMapping(params = "tipoActivoId")
+    @Operation(summary = "Listar aplicaciones por tipo de activo")
+    public ResponseEntity<ApiResponse<java.util.List<ActividadMantenimientoAplicacionResponse>>> findByTipoActivoId(
+            @RequestParam UUID tipoActivoId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findByTipoActivoId(tipoActivoId))
+        );
+    }
+
     @GetMapping
     @Operation(summary = "Listar todas las aplicaciones de forma paginada")
     public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoAplicacionResponse>>> findAll(

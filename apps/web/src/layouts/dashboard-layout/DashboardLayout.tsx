@@ -10,10 +10,11 @@ import { useAllowedNavItems } from "@/shared/hooks/use-allowed-nav-items"
 
 import { AppHeader } from "./AppHeader"
 import { AppSidebar } from "./AppSidebar"
-import { NavigationTabs, resolveTabInfo } from "./NavigationTabs"
+import { NavigationTabs } from "./NavigationTabs"
+import { resolveTabInfo } from "./navigation-tabs.utils"
 import { PageTransition } from "./PageTransition"
 
-export function DashboardLayout({ children }: PropsWithChildren) {
+export function DashboardLayout({ children }: Readonly<PropsWithChildren>) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })

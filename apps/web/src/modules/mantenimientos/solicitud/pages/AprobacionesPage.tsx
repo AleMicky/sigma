@@ -24,12 +24,195 @@ import {
 import { SolicitudDetailModal } from "../components/SolicitudDetailModal"
 import { SolicitudFilterToolbar } from "../components/SolicitudFilterToolbar"
 import { SolicitudHeader } from "../components/SolicitudHeader"
-import { SolicitudListItem, SolicitudListItemSkeleton } from "../components/SolicitudListItem"
+import {
+  SolicitudListItem,
+  SolicitudListItemSkeleton,
+  type SolicitudListItemProps,
+} from "../components/SolicitudListItem"
 import { useSolicitudes, useSolicitudResumen } from "../hooks/use-solicitudes"
 import type { SolicitudMantenimiento } from "../types/solicitud.type"
+import type { PageResponse } from "@/shared/types/api.types"
 
 type EstadoFiltro = "SOLICITADO" | "OBSERVADO" | "ASIGNADO" | "EN_MANTENIMIENTO"
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
+
+function getEmptyStateDescription(
+  debouncedSearch: string,
+  selectedEstado: EstadoFiltro,
+): string {
+  if (debouncedSearch) {
+    return `No se encontraron resultados para "${debouncedSearch}". Prueba con otro término de búsqueda.`
+  }
+  if (selectedEstado === "EN_MANTENIMIENTO") {
+    return "No tienes solicitudes de aprobación en proceso de mantenimiento."
+  }
+  return `No tienes solicitudes de aprobación en estado "${selectedEstado.replace(/_/g, " ")}".`
+}
+
+interface AprobacionesEmptyStateProps {
+  debouncedSearch: string
+  selectedEstado: EstadoFiltro
+  onClearSearch: () => void
+}
+
+function AprobacionesEmptyState({
+  debouncedSearch,
+  selectedEstado,
+  onClearSearch,
+}: Readonly<AprobacionesEmptyStateProps>) {
+  return (
+    <div className="flex flex-1 items-center justify-center p-6">
+      <EmptyState
+        icon={<Inbox className="size-8 text-muted-foreground/60" />}
+        title="No hay solicitudes en este estado"
+        description={getEmptyStateDescription(debouncedSearch, selectedEstado)}
+        action={
+          debouncedSearch ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClearSearch}
+              className="mt-2 text-xs font-medium cursor-pointer"
+            >
+              Limpiar búsqueda
+            </Button>
+          ) : undefined
+        }
+      />
+    </div>
+  )
+}
+
+interface AprobacionesErrorStateProps {
+  error: unknown
+  onRetry: () => void
+}
+
+function AprobacionesErrorState({ error, onRetry }: Readonly<AprobacionesErrorStateProps>) {
+  return (
+    <div className="flex flex-1 items-center justify-center p-6">
+      <EmptyState
+        icon={<AlertCircle className="size-8 text-destructive" />}
+        title="Error al consultar las solicitudes para aprobación"
+        description={getErrorMessage(error)}
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRetry}
+            className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+          >
+            <RefreshCw className="size-3.5" />
+            <span>Reintentar</span>
+          </Button>
+        }
+      />
+    </div>
+  )
+}
+
+function AprobacionesLoadingSkeleton() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <SolicitudListItemSkeleton key={index} />
+      ))}
+    </div>
+  )
+}
+
+interface AprobacionesContentProps {
+  isLoading: boolean
+  isError: boolean
+  error: unknown
+  solicitudes: SolicitudMantenimiento[]
+  debouncedSearch: string
+  selectedEstado: EstadoFiltro
+  isFetching: boolean
+  pageData?: PageResponse<SolicitudMantenimiento>
+  onClearSearch: () => void
+  onRefresh: () => void
+  onViewDetail: (item: SolicitudMantenimiento) => void
+  onActionSelect?: SolicitudListItemProps["onActionSelect"]
+  onTraceability: (item: SolicitudMantenimiento) => void
+  onPageChange: (page: number) => void
+}
+
+function AprobacionesContent({
+  isLoading,
+  isError,
+  error,
+  solicitudes,
+  debouncedSearch,
+  selectedEstado,
+  isFetching,
+  pageData,
+  onClearSearch,
+  onRefresh,
+  onViewDetail,
+  onActionSelect,
+  onTraceability,
+  onPageChange,
+}: Readonly<AprobacionesContentProps>) {
+  if (isLoading) {
+    return <AprobacionesLoadingSkeleton />
+  }
+
+  if (isError) {
+    return <AprobacionesErrorState error={error} onRetry={onRefresh} />
+  }
+
+  if (solicitudes.length === 0) {
+    return (
+      <AprobacionesEmptyState
+        debouncedSearch={debouncedSearch}
+        selectedEstado={selectedEstado}
+        onClearSearch={onClearSearch}
+      />
+    )
+  }
+
+  const hasPagination = Boolean(
+    pageData && (pageData.totalElements > 10 || pageData.totalPages > 1),
+  )
+
+  return (
+    <div className="space-y-2.5">
+      <div
+        className={cn(
+          isFetching && "opacity-75 transition-opacity duration-200",
+        )}
+      >
+        <WorkflowListView>
+          {solicitudes.map((solicitud) => {
+            const isSolicitado =
+              (solicitud.estado ?? "").trim().toUpperCase() === "SOLICITADO"
+
+            return (
+              <SolicitudListItem
+                key={solicitud.id}
+                solicitud={solicitud}
+                showWorkflowActions={isSolicitado}
+                onViewDetail={onViewDetail}
+                onSelect={onViewDetail}
+                onActionSelect={isSolicitado ? onActionSelect : undefined}
+                onTraceability={onTraceability}
+              />
+            )
+          })}
+        </WorkflowListView>
+      </div>
+
+      {hasPagination && pageData && (
+        <Pagination
+          page={pageData}
+          onPageChange={onPageChange}
+          className="border-t pt-1.5 shrink-0 text-xs"
+        />
+      )}
+    </div>
+  )
+}
 
 export function AprobacionesPage() {
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("SOLICITADO")
@@ -80,6 +263,36 @@ export function AprobacionesPage() {
     setSelectedEstado(estado as EstadoFiltro)
   }, [])
 
+  const handleDetailOpenChange = useCallback((open: boolean) => {
+    if (!open) setDetailItem(null)
+  }, [])
+
+  const handleActionOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) closeAction()
+    },
+    [closeAction],
+  )
+
+  const handleTraceabilityOpenChange = useCallback((open: boolean) => {
+    if (!open) setTraceabilityItem(null)
+  }, [])
+
+  const handleExecuteWorkflow = useCallback(
+    async ({ variables }: { variables: Record<string, unknown> }) => {
+      if (!target) return
+      await completarWorkflowMutation.mutateAsync({
+        id: target.item.id,
+        payload: { variables },
+      })
+    },
+    [completarWorkflowMutation, target],
+  )
+
+  const handleClearSearch = useCallback(() => {
+    search.setSearch("")
+  }, [search])
+
   return (
     <PageShell
       layout="scroll"
@@ -128,103 +341,28 @@ export function AprobacionesPage() {
           </div>
         )}
 
-        {query.isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <SolicitudListItemSkeleton key={index} />
-            ))}
-          </div>
-        ) : query.isError ? (
-          <div className="flex flex-1 items-center justify-center p-6">
-            <EmptyState
-              icon={<AlertCircle className="size-8 text-destructive" />}
-              title="Error al consultar las solicitudes para aprobación"
-              description={getErrorMessage(query.error)}
-              action={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
-                >
-                  <RefreshCw className="size-3.5" />
-                  <span>Reintentar</span>
-                </Button>
-              }
-            />
-          </div>
-        ) : solicitudes.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center p-6">
-            <EmptyState
-              icon={<Inbox className="size-8 text-muted-foreground/60" />}
-              title="No hay solicitudes en este estado"
-              description={
-                search.debouncedSearch
-                  ? `No se encontraron resultados para "${search.debouncedSearch}". Prueba con otro término de búsqueda.`
-                  : selectedEstado === "EN_MANTENIMIENTO"
-                    ? "No tienes solicitudes de aprobación en proceso de mantenimiento."
-                    : `No tienes solicitudes de aprobación en estado "${selectedEstado.replace(/_/g, " ")}".`
-              }
-              action={
-                search.debouncedSearch ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => search.setSearch("")}
-                    className="mt-2 text-xs font-medium cursor-pointer"
-                  >
-                    Limpiar búsqueda
-                  </Button>
-                ) : undefined
-              }
-            />
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {/* Contenedor de items */}
-            <div
-              className={cn(
-                query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200",
-              )}
-            >
-              <WorkflowListView>
-                {solicitudes.map((solicitud) => {
-                  const isSolicitado =
-                    (solicitud.estado ?? "").trim().toUpperCase() === "SOLICITADO"
-
-                  return (
-                    <SolicitudListItem
-                      key={solicitud.id}
-                      solicitud={solicitud}
-                      showWorkflowActions={isSolicitado}
-                      onViewDetail={setDetailItem}
-                      onSelect={setDetailItem}
-                      onActionSelect={isSolicitado ? openAction : undefined}
-                      onTraceability={setTraceabilityItem}
-                    />
-                  )
-                })}
-              </WorkflowListView>
-            </div>
-
-            {/* Paginación: solo cuando hay más de 10 registros o más de 1 página */}
-            {query.data && (query.data.totalElements > 10 || query.data.totalPages > 1) && (
-              <Pagination
-                page={query.data}
-                onPageChange={search.setPage}
-                className="border-t pt-1.5 shrink-0 text-xs"
-              />
-            )}
-          </div>
-        )}
+        <AprobacionesContent
+          isLoading={query.isLoading}
+          isError={query.isError}
+          error={query.error}
+          solicitudes={solicitudes}
+          debouncedSearch={search.debouncedSearch}
+          selectedEstado={selectedEstado}
+          isFetching={query.isFetching && !query.isLoading}
+          pageData={query.data}
+          onClearSearch={handleClearSearch}
+          onRefresh={handleRefresh}
+          onViewDetail={setDetailItem}
+          onActionSelect={openAction}
+          onTraceability={setTraceabilityItem}
+          onPageChange={search.setPage}
+        />
       </div>
 
       {/* Modal de Detalle Completo de Solicitud */}
       <SolicitudDetailModal
         open={Boolean(detailItem)}
-        onOpenChange={(open) => {
-          if (!open) setDetailItem(null)
-        }}
+        onOpenChange={handleDetailOpenChange}
         solicitud={detailItem}
         onTraceability={setTraceabilityItem}
       />
@@ -232,29 +370,19 @@ export function AprobacionesPage() {
       {/* Diálogo interactivo para completar tareas de workflow (Aprobar / Observar / Rechazar) */}
       <WorkflowActionDialog
         open={isOpen}
-        onOpenChange={(open) => {
-          if (!open) closeAction()
-        }}
+        onOpenChange={handleActionOpenChange}
         action={target?.action ?? null}
         taskName={target?.taskName}
         fields={target?.fields}
         entityId={target?.item.id}
-        onExecute={async ({ variables }) => {
-          if (!target) return
-          await completarWorkflowMutation.mutateAsync({
-            id: target.item.id,
-            payload: { variables },
-          })
-        }}
+        onExecute={handleExecuteWorkflow}
         onSuccess={closeAction}
       />
 
       {/* Diálogo para visualizar trazabilidad e historial */}
       <WorkflowHistoryDialog
         open={Boolean(traceabilityItem)}
-        onOpenChange={(open) => {
-          if (!open) setTraceabilityItem(null)
-        }}
+        onOpenChange={handleTraceabilityOpenChange}
         processInstanceId={traceabilityItem?.processInstanceId}
         entityCode={traceabilityItem?.numero}
         title="Trazabilidad de Solicitud"

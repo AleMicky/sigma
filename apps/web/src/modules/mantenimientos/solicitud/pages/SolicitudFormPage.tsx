@@ -18,7 +18,7 @@ type SolicitudFormPageProps = {
   solicitudId?: string
 }
 
-export function SolicitudFormPage({ solicitudId }: SolicitudFormPageProps) {
+export function SolicitudFormPage({ solicitudId }: Readonly<SolicitudFormPageProps>) {
   return (
     <SolicitudFormProvider solicitudId={solicitudId}>
       <SolicitudFormContent />

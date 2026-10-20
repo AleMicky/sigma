@@ -8,6 +8,12 @@ import type { ChecklistItem } from "./checklist-item.service"
 export type ActividadAplicacion = AuditableEntity & {
   id: string
   actividadMantenimientoId: string
+  actividad?: {
+    id: string
+    codigo: string
+    nombre: string
+    descripcion?: string
+  } | null
   tipoActivo?: {
     id: string
     nombre: string
@@ -49,4 +55,12 @@ export async function listAplicacionesByActividad(
       },
     }
   )
+}
+
+export async function listAplicacionesByTipoActivo(tipoActivoId: string) {
+  return http.get<ActividadAplicacion[]>(actividadAplicacionEndpoints.root, {
+    params: {
+      tipoActivoId,
+    },
+  })
 }

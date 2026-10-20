@@ -20,6 +20,8 @@ public interface SpringOrdenTrabajoRepository extends JpaRepository<OrdenTrabajo
 
     boolean existsBySolicitudMantenimientoIdAndIdNot(UUID solicitudMantenimientoId, UUID id);
 
+    boolean existsByActivoId(UUID activoId);
+
     Optional<OrdenTrabajoEntity> findByNumeroIgnoreCase(String numero);
 
     Optional<OrdenTrabajoEntity> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId);

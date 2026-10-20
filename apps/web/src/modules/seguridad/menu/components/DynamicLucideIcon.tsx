@@ -38,6 +38,7 @@ export const AVAILABLE_MENU_ICONS = [
   { name: "Type", label: "Tipos de Datos", icon: LucideIcons.Type },
   { name: "Ruler", label: "Unidades de Medida", icon: LucideIcons.Ruler },
   { name: "Wrench", label: "Mantenimientos", icon: LucideIcons.Wrench },
+  { name: "CalendarClock", label: "Programaciones", icon: LucideIcons.CalendarClock },
   { name: "ListTodo", label: "Actividades", icon: LucideIcons.ListTodo },
   { name: "CheckSquare", label: "Checklists", icon: LucideIcons.CheckSquare },
   { name: "AlertCircle", label: "Prioridades / Alertas", icon: LucideIcons.AlertCircle },
