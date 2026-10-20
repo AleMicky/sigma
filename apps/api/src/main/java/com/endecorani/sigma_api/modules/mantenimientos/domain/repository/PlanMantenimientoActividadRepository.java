@@ -16,6 +16,8 @@ public interface PlanMantenimientoActividadRepository {
 
     Optional<PlanMantenimientoActividad> findById(UUID id);
 
+    long countByPlanMantenimientoId(UUID planMantenimientoId);
+
     PlanMantenimientoActividad save(PlanMantenimientoActividad actividad);
 
     void deleteById(UUID id);

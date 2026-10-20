@@ -7,6 +7,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.plan.requ
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.plan.response.PlanMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.PlanMantenimientoMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.PlanMantenimiento;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.PlanMantenimientoActividadRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.PlanMantenimientoRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -40,6 +41,7 @@ public class PlanMantenimientoService {
     private final PlanMantenimientoRepository repository;
     private final PlanMantenimientoMapper mapper;
     private final TipoActivoRepository tipoActivoRepository;
+    private final PlanMantenimientoActividadRepository actividadRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<PlanMantenimientoResponse> listar(
@@ -72,7 +74,8 @@ public class PlanMantenimientoService {
     public PlanMantenimientoResponse buscarPorId(UUID id) {
         PlanMantenimiento plan = obtenerPorId(id);
         String tipoActivoNombre = obtenerNombreTipoActivo(plan.getTipoActivoId());
-        return mapper.toResponse(plan, tipoActivoNombre);
+        long count = actividadRepository.countByPlanMantenimientoId(plan.getId());
+        return mapper.toResponse(plan, tipoActivoNombre, (int) count);
     }
 
     @Transactional(readOnly = true)
@@ -80,7 +83,8 @@ public class PlanMantenimientoService {
         PlanMantenimiento plan = repository.findByCodigo(codigo)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan de mantenimiento no encontrado con código: " + codigo));
         String tipoActivoNombre = obtenerNombreTipoActivo(plan.getTipoActivoId());
-        return mapper.toResponse(plan, tipoActivoNombre);
+        long count = actividadRepository.countByPlanMantenimientoId(plan.getId());
+        return mapper.toResponse(plan, tipoActivoNombre, (int) count);
     }
 
     @Transactional(readOnly = true)
@@ -88,7 +92,10 @@ public class PlanMantenimientoService {
         List<PlanMantenimiento> planes = repository.findByTipoActivoId(tipoActivoId);
         String tipoActivoNombre = obtenerNombreTipoActivo(tipoActivoId);
         return planes.stream()
-                .map(plan -> mapper.toResponse(plan, tipoActivoNombre))
+                .map(plan -> {
+                    long count = actividadRepository.countByPlanMantenimientoId(plan.getId());
+                    return mapper.toResponse(plan, tipoActivoNombre, (int) count);
+                })
                 .toList();
     }
 
@@ -106,7 +113,7 @@ public class PlanMantenimientoService {
 
         PlanMantenimiento guardado = repository.save(plan);
         String tipoActivoNombre = obtenerNombreTipoActivo(guardado.getTipoActivoId());
-        return mapper.toResponse(guardado, tipoActivoNombre);
+        return mapper.toResponse(guardado, tipoActivoNombre, 0);
     }
 
     @Transactional
@@ -124,7 +131,8 @@ public class PlanMantenimientoService {
 
         PlanMantenimiento actualizado = repository.save(actual);
         String tipoActivoNombre = obtenerNombreTipoActivo(actualizado.getTipoActivoId());
-        return mapper.toResponse(actualizado, tipoActivoNombre);
+        long count = actividadRepository.countByPlanMantenimientoId(actualizado.getId());
+        return mapper.toResponse(actualizado, tipoActivoNombre, (int) count);
     }
 
     @Transactional
@@ -172,10 +180,14 @@ public class PlanMantenimientoService {
                         ));
 
         List<PlanMantenimientoResponse> content = page.getContent().stream()
-                .map(plan -> mapper.toResponse(
-                        plan,
-                        plan.getTipoActivoId() != null ? tipoActivoNombres.get(plan.getTipoActivoId()) : null
-                ))
+                .map(plan -> {
+                    long count = actividadRepository.countByPlanMantenimientoId(plan.getId());
+                    return mapper.toResponse(
+                            plan,
+                            plan.getTipoActivoId() != null ? tipoActivoNombres.get(plan.getTipoActivoId()) : null,
+                            (int) count
+                    );
+                })
                 .toList();
 
         return PageResponse.of(content, page);

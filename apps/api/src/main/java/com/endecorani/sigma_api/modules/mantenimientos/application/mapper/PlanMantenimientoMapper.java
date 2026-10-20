@@ -22,6 +22,7 @@ public interface PlanMantenimientoMapper {
 
     @Mapping(target = "auditoria", source = ".")
     @Mapping(target = "tipoActivoNombre", ignore = true)
+    @Mapping(target = "totalActividades", constant = "0")
     PlanMantenimientoResponse toResponse(PlanMantenimiento domain);
 
     @Mapping(target = "auditoria", source = "domain")
@@ -31,7 +32,18 @@ public interface PlanMantenimientoMapper {
     @Mapping(target = "descripcion", source = "domain.descripcion")
     @Mapping(target = "tipoActivoId", source = "domain.tipoActivoId")
     @Mapping(target = "tipoActivoNombre", source = "tipoActivoNombre")
+    @Mapping(target = "totalActividades", constant = "0")
     PlanMantenimientoResponse toResponse(PlanMantenimiento domain, String tipoActivoNombre);
+
+    @Mapping(target = "auditoria", source = "domain")
+    @Mapping(target = "id", source = "domain.id")
+    @Mapping(target = "codigo", source = "domain.codigo")
+    @Mapping(target = "nombre", source = "domain.nombre")
+    @Mapping(target = "descripcion", source = "domain.descripcion")
+    @Mapping(target = "tipoActivoId", source = "domain.tipoActivoId")
+    @Mapping(target = "tipoActivoNombre", source = "tipoActivoNombre")
+    @Mapping(target = "totalActividades", source = "totalActividades")
+    PlanMantenimientoResponse toResponse(PlanMantenimiento domain, String tipoActivoNombre, Integer totalActividades);
 
     @Mapping(target = "id", ignore = true)
     void updateDomain(PlanMantenimientoUpdate dto, @MappingTarget PlanMantenimiento domain);

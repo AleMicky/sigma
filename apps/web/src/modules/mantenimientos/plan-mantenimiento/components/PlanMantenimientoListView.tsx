@@ -1,9 +1,19 @@
 import React, { useState } from "react"
-import { Boxes, Calendar, Check, ClipboardList, Clock, Copy } from "lucide-react"
+import {
+  Boxes,
+  Calendar,
+  Check,
+  ClipboardList,
+  Clock,
+  Copy,
+  ListChecks,
+  Pencil,
+  Trash2,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
-import { RowActions } from "@/shared/components/row-actions"
+import { Button } from "@/shared/components/ui/button"
 import { formatDateTime } from "@/shared/utils/date.utils"
 
 import { useDeletePlanMantenimiento } from "../api/plan-mantenimiento.mutations"
@@ -12,11 +22,13 @@ import type { PlanMantenimiento } from "../api/plan-mantenimiento.service"
 type PlanMantenimientoListViewProps = {
   planesMantenimiento: PlanMantenimiento[]
   onEdit: (plan: PlanMantenimiento) => void
+  onSelectPlan: (plan: PlanMantenimiento) => void
 }
 
 export function PlanMantenimientoListView({
   planesMantenimiento,
   onEdit,
+  onSelectPlan,
 }: PlanMantenimientoListViewProps) {
   const [itemToDelete, setItemToDelete] = useState<PlanMantenimiento | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -44,15 +56,18 @@ export function PlanMantenimientoListView({
         const createdBy = audit.createdBy ?? null
         const updatedBy = audit.updatedBy ?? audit.createdBy ?? null
 
+        const totalActividades = plan.totalActividades ?? 0
+
         return (
           <div
             key={plan.id}
-            className="group flex items-start justify-between gap-3 p-3 sm:px-4 sm:py-3 transition-colors hover:bg-muted/30"
+            onClick={() => onSelectPlan(plan)}
+            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:px-4 sm:py-3.5 transition-colors hover:bg-muted/30 cursor-pointer"
           >
             {/* Lado izquierdo: Icono y contenido principal */}
             <div className="flex items-start gap-3 min-w-0 flex-1">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-2xs transition-transform group-hover:scale-105">
-                <ClipboardList className="size-4" />
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-2xs transition-transform group-hover:scale-105">
+                <ClipboardList className="size-4.5" />
               </span>
 
               <div className="flex flex-col min-w-0 flex-1 gap-1">
@@ -62,7 +77,7 @@ export function PlanMantenimientoListView({
                   </span>
 
                   <div className="flex items-center gap-1">
-                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground border border-border/40">
                       {plan.codigo}
                     </code>
                     <button
@@ -113,15 +128,51 @@ export function PlanMantenimientoListView({
               </div>
             </div>
 
-            {/* Acciones */}
-            <div className="flex items-center justify-end shrink-0 pt-0.5">
-              <RowActions
-                editLabel="Editar plan"
-                deleteLabel="Eliminar plan"
-                deleteDisabled={deleteMutation.isPending}
-                onEdit={() => onEdit(plan)}
-                onDelete={() => setItemToDelete(plan)}
-              />
+            {/* Lado derecho: Botón de actividades y acciones */}
+            <div
+              className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-1 sm:pt-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Badge interactivo con el conteo de actividades */}
+              <button
+                type="button"
+                onClick={() => onSelectPlan(plan)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/25 bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 transition-all cursor-pointer shadow-2xs hover:scale-102"
+                title="Ver y gestionar actividades del plan"
+              >
+                <ListChecks className="size-3.5" />
+                <span>
+                  {totalActividades} {totalActividades === 1 ? "actividad" : "actividades"}
+                </span>
+              </button>
+
+              {/* Botones de acción */}
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="Editar plan"
+                  title="Editar datos del plan"
+                  className="size-7 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                  onClick={() => onEdit(plan)}
+                >
+                  <Pencil className="size-3.5" />
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="Eliminar plan"
+                  title="Eliminar plan"
+                  disabled={deleteMutation.isPending}
+                  className="size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                  onClick={() => setItemToDelete(plan)}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
             </div>
           </div>
         )
@@ -135,7 +186,7 @@ export function PlanMantenimientoListView({
         title="Eliminar plan de mantenimiento"
         description={
           itemToDelete
-            ? `¿Seguro que deseas eliminar el plan de mantenimiento "${itemToDelete.nombre}"?`
+            ? `¿Seguro que deseas eliminar el plan de mantenimiento "${itemToDelete.nombre}"? Todas las actividades asociadas a este plan también serán desvinculadas.`
             : "¿Seguro que deseas eliminar este plan de mantenimiento?"
         }
         isPending={deleteMutation.isPending}

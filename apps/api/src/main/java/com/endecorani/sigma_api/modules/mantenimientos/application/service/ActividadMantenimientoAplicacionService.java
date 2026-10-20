@@ -133,10 +133,54 @@ public class ActividadMantenimientoAplicacionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Aplicación de actividad de mantenimiento", id));
     }
 
+    @Transactional(readOnly = true)
+    public List<ActividadMantenimientoAplicacionResponse> findByTipoActivoId(UUID tipoActivoId) {
+        List<ActividadMantenimientoAplicacion> items = repository.findByTipoActivoId(tipoActivoId);
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        Set<UUID> actividadIds = items.stream()
+                .map(ActividadMantenimientoAplicacion::getActividadMantenimientoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<UUID> componenteIds = items.stream()
+                .map(ActividadMantenimientoAplicacion::getComponenteId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento> actividadMap = actividadIds.isEmpty() ? Map.of() :
+                actividadIds.stream()
+                        .map(actId -> actividadRepository.findById(actId).orElse(null))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toMap(com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento::getId, Function.identity(), (a, b) -> a));
+
+        Map<UUID, Componente> componenteMap = componenteIds.isEmpty() ? Map.of() :
+                componenteRepository.findAllById(componenteIds).stream()
+                        .collect(Collectors.toMap(Componente::getId, Function.identity(), (a, b) -> a));
+
+        com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo tipoActivoDomain = tipoActivoRepository.findById(tipoActivoId).orElse(null);
+
+        return items.stream()
+                .map(a -> toResponse(
+                        a,
+                        a.getActividadMantenimientoId() != null ? actividadMap.get(a.getActividadMantenimientoId()) : null,
+                        tipoActivoDomain,
+                        a.getComponenteId() != null ? componenteMap.get(a.getComponenteId()) : null
+                ))
+                .toList();
+    }
+
     private PageResponse<ActividadMantenimientoAplicacionResponse> toPageResponse(Page<ActividadMantenimientoAplicacion> page) {
         if (page.isEmpty()) {
             return PageResponse.of(List.of(), page);
         }
+
+        Set<UUID> actividadIds = page.getContent().stream()
+                .map(ActividadMantenimientoAplicacion::getActividadMantenimientoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
         Set<UUID> tipoActivoIds = page.getContent().stream()
                 .map(ActividadMantenimientoAplicacion::getTipoActivoId)
@@ -147,6 +191,12 @@ public class ActividadMantenimientoAplicacionService {
                 .map(ActividadMantenimientoAplicacion::getComponenteId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+
+        Map<UUID, com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento> actividadMap = actividadIds.isEmpty() ? Map.of() :
+                actividadIds.stream()
+                        .map(actId -> actividadRepository.findById(actId).orElse(null))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toMap(com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento::getId, Function.identity(), (a, b) -> a));
 
         Map<UUID, com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo> tipoActivoMap = tipoActivoIds.isEmpty() ? Map.of() :
                 tipoActivoRepository.findAllById(tipoActivoIds).stream()
@@ -159,6 +209,7 @@ public class ActividadMantenimientoAplicacionService {
         List<ActividadMantenimientoAplicacionResponse> content = page.getContent().stream()
                 .map(a -> toResponse(
                         a,
+                        a.getActividadMantenimientoId() != null ? actividadMap.get(a.getActividadMantenimientoId()) : null,
                         a.getTipoActivoId() != null ? tipoActivoMap.get(a.getTipoActivoId()) : null,
                         a.getComponenteId() != null ? componenteMap.get(a.getComponenteId()) : null
                 ))
@@ -168,13 +219,33 @@ public class ActividadMantenimientoAplicacionService {
     }
 
     private ActividadMantenimientoAplicacionResponse toResponse(ActividadMantenimientoAplicacion domain) {
-        return toResponse(domain, null, null);
+        return toResponse(domain, null, null, null);
     }
 
     private ActividadMantenimientoAplicacionResponse toResponse(
             ActividadMantenimientoAplicacion domain,
+            com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento actividadDomain,
             com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo tipoActivoDomain,
             Componente componenteDomain) {
+
+        ActividadMantenimientoAplicacionResponse.ActividadInfo actividad = null;
+        if (actividadDomain != null) {
+            actividad = new ActividadMantenimientoAplicacionResponse.ActividadInfo(
+                    actividadDomain.getId(),
+                    actividadDomain.getCodigo(),
+                    actividadDomain.getNombre(),
+                    actividadDomain.getDescripcion()
+            );
+        } else if (domain.getActividadMantenimientoId() != null) {
+            actividad = actividadRepository.findById(domain.getActividadMantenimientoId())
+                    .map(a -> new ActividadMantenimientoAplicacionResponse.ActividadInfo(
+                            a.getId(),
+                            a.getCodigo(),
+                            a.getNombre(),
+                            a.getDescripcion()
+                    ))
+                    .orElse(null);
+        }
 
         ActividadMantenimientoAplicacionResponse.TipoActivoInfo tipoActivo = null;
         if (tipoActivoDomain != null) {
@@ -208,6 +279,7 @@ public class ActividadMantenimientoAplicacionService {
         return new ActividadMantenimientoAplicacionResponse(
                 domain.getId(),
                 domain.getActividadMantenimientoId(),
+                actividad,
                 tipoActivo,
                 componente,
                 checklist);

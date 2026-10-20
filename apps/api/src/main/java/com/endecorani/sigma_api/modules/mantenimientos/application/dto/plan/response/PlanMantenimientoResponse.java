@@ -11,6 +11,7 @@ public record PlanMantenimientoResponse(
         String codigo,
         String nombre,
         String descripcion,
+        Integer totalActividades,
         AuditoriaResponse auditoria
 ) {
 }

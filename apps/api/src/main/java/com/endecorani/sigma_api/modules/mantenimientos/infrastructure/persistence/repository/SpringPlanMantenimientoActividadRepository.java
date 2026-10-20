@@ -15,6 +15,8 @@ public interface SpringPlanMantenimientoActividadRepository
 
     Page<PlanMantenimientoActividadEntity> findByPlanMantenimientoId(UUID planMantenimientoId, Pageable pageable);
 
+    long countByPlanMantenimientoId(UUID planMantenimientoId);
+
     boolean existsByPlanMantenimientoIdAndActividadMantenimientoAplicacionId(
             UUID planMantenimientoId,
             UUID actividadMantenimientoAplicacionId

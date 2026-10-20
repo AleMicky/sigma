@@ -29,6 +29,7 @@ import { cn } from "@/shared/lib/utils"
 
 import { planMantenimientoQueries } from "../api/plan-mantenimiento.queries"
 import type { PlanMantenimiento } from "../api/plan-mantenimiento.service"
+import { PlanMantenimientoDetailSheet } from "../components/PlanMantenimientoDetailSheet"
 import { PlanMantenimientoFormDialog } from "../components/PlanMantenimientoFormDialog"
 import { PlanMantenimientoListView } from "../components/PlanMantenimientoListView"
 
@@ -37,6 +38,9 @@ const PAGE_SIZE = appConfig.pagination.defaultPageSize
 export function PlanesMantenimientoPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<PlanMantenimiento | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [selectedPlanForActivities, setSelectedPlanForActivities] =
+    useState<PlanMantenimiento | null>(null)
   const [selectedTipoActivoId, setSelectedTipoActivoId] = useState<string>("")
   const search = usePaginatedSearch()
 
@@ -65,6 +69,15 @@ export function PlanesMantenimientoPage() {
 
   const planesMantenimiento = planesMantenimientoQuery.data?.content ?? []
 
+  // Mantener actualizado el plan seleccionado en el drawer si cambia en la lista
+  const activePlanInDrawer = useMemo(() => {
+    if (!selectedPlanForActivities) return null
+    return (
+      planesMantenimiento.find((p) => p.id === selectedPlanForActivities.id) ??
+      selectedPlanForActivities
+    )
+  }, [planesMantenimiento, selectedPlanForActivities])
+
   useClampPage(
     search.page,
     search.setPage,
@@ -79,6 +92,11 @@ export function PlanesMantenimientoPage() {
   function openEdit(plan: PlanMantenimiento) {
     setEditing(plan)
     setDialogOpen(true)
+  }
+
+  function handleSelectPlan(plan: PlanMantenimiento) {
+    setSelectedPlanForActivities(plan)
+    setSheetOpen(true)
   }
 
   function handleFilterTipoActivo(val: TipoActivo | null) {
@@ -97,7 +115,7 @@ export function PlanesMantenimientoPage() {
             </h1>
             {planesMantenimientoQuery.data && (
               <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                {planesMantenimientoQuery.data.totalElements}
+                {planesMantenimientoQuery.data.totalElements} planes
               </span>
             )}
             <div className="flex items-center gap-1.5 md:hidden ml-auto">
@@ -114,7 +132,7 @@ export function PlanesMantenimientoPage() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Gestión y parametrización de planes de mantenimiento preventivo organizados por tipo de activo.
+            Gestión y parametrización de planes preventivos y sus actividades técnicas por tipo de activo.
           </p>
         </div>
 
@@ -124,7 +142,7 @@ export function PlanesMantenimientoPage() {
             size="sm"
             type="button"
             onClick={openCreate}
-            className="cursor-pointer gap-1.5"
+            className="cursor-pointer gap-1.5 font-semibold"
           >
             <Plus className="size-4" />
             <span>Nuevo Plan</span>
@@ -220,7 +238,7 @@ export function PlanesMantenimientoPage() {
             description={
               search.search.trim() || selectedTipoActivoId
                 ? "Prueba modificando el texto de búsqueda o borrando los filtros."
-                : "Comienza registrando el primer plan de mantenimiento para tus activos."
+                : "Comienza registrando el primer plan de mantenimiento y asignando sus actividades técnicas."
             }
             action={
               search.search.trim() || selectedTipoActivoId ? (
@@ -256,6 +274,7 @@ export function PlanesMantenimientoPage() {
               <PlanMantenimientoListView
                 planesMantenimiento={planesMantenimiento}
                 onEdit={openEdit}
+                onSelectPlan={handleSelectPlan}
               />
             </div>
 
@@ -270,7 +289,7 @@ export function PlanesMantenimientoPage() {
         )}
       </div>
 
-      {/* Form Dialog Modal */}
+      {/* Form Dialog Modal para Crear / Editar Plan */}
       <PlanMantenimientoFormDialog
         key={editing?.id ?? "new-plan-mantenimiento"}
         open={dialogOpen}
@@ -281,6 +300,15 @@ export function PlanesMantenimientoPage() {
             search.setPage(0)
           }
         }}
+      />
+
+      {/* Slide-over Drawer para Ver y Gestionar Actividades del Plan */}
+      <PlanMantenimientoDetailSheet
+        key={activePlanInDrawer?.id ?? "plan-detail-sheet"}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        plan={activePlanInDrawer}
+        onEditPlan={openEdit}
       />
     </PageShell>
   )

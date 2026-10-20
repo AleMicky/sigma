@@ -9,6 +9,7 @@ export type PlanMantenimiento = AuditableEntity & {
   codigo: string
   nombre: string
   descripcion: string | null
+  totalActividades?: number
 }
 
 export type PlanMantenimientoPayload = {

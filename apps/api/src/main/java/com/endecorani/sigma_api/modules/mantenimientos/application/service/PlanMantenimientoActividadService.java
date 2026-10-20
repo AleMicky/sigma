@@ -222,13 +222,17 @@ public class PlanMantenimientoActividadService {
             actividadRepository.findById(actUuid).ifPresent(a -> actMap.put(a.getId(), a));
         }
 
-        Map<UUID, TipoActivo> tipoMap = tipoActivoIds.isEmpty() ? Map.of() :
-                tipoActivoRepository.findAllById(tipoActivoIds).stream()
-                        .collect(Collectors.toMap(TipoActivo::getId, Function.identity(), (a, b) -> a));
+        Map<UUID, TipoActivo> tipoMap = new HashMap<>();
+        if (!tipoActivoIds.isEmpty()) {
+            tipoActivoRepository.findAllById(tipoActivoIds)
+                    .forEach(t -> tipoMap.put(t.getId(), t));
+        }
 
-        Map<UUID, Componente> compMap = componenteIds.isEmpty() ? Map.of() :
-                componenteRepository.findAllById(componenteIds).stream()
-                        .collect(Collectors.toMap(Componente::getId, Function.identity(), (a, b) -> a));
+        Map<UUID, Componente> compMap = new HashMap<>();
+        if (!componenteIds.isEmpty()) {
+            componenteRepository.findAllById(componenteIds)
+                    .forEach(c -> compMap.put(c.getId(), c));
+        }
 
         return items.stream()
                 .map(item -> {
@@ -238,28 +242,34 @@ public class PlanMantenimientoActividadService {
                     PlanMantenimientoActividadResponse.ComponenteInfo compInfo = null;
 
                     if (app != null) {
-                        ActividadMantenimiento act = actMap.get(app.getActividadMantenimientoId());
-                        if (act != null) {
-                            actInfo = new PlanMantenimientoActividadResponse.ActividadInfo(
-                                    act.getId(),
-                                    act.getCodigo(),
-                                    act.getNombre(),
-                                    act.getDescripcion()
-                            );
+                        if (app.getActividadMantenimientoId() != null) {
+                            ActividadMantenimiento act = actMap.get(app.getActividadMantenimientoId());
+                            if (act != null) {
+                                actInfo = new PlanMantenimientoActividadResponse.ActividadInfo(
+                                        act.getId(),
+                                        act.getCodigo(),
+                                        act.getNombre(),
+                                        act.getDescripcion()
+                                );
+                            }
                         }
-                        TipoActivo tipo = tipoMap.get(app.getTipoActivoId());
-                        if (tipo != null) {
-                            tipoInfo = new PlanMantenimientoActividadResponse.TipoActivoInfo(
-                                    tipo.getId(),
-                                    tipo.getNombre()
-                            );
+                        if (app.getTipoActivoId() != null) {
+                            TipoActivo tipo = tipoMap.get(app.getTipoActivoId());
+                            if (tipo != null) {
+                                tipoInfo = new PlanMantenimientoActividadResponse.TipoActivoInfo(
+                                        tipo.getId(),
+                                        tipo.getNombre()
+                                );
+                            }
                         }
-                        Componente comp = compMap.get(app.getComponenteId());
-                        if (comp != null) {
-                            compInfo = new PlanMantenimientoActividadResponse.ComponenteInfo(
-                                    comp.getId(),
-                                    comp.getNombre()
-                            );
+                        if (app.getComponenteId() != null) {
+                            Componente comp = compMap.get(app.getComponenteId());
+                            if (comp != null) {
+                                compInfo = new PlanMantenimientoActividadResponse.ComponenteInfo(
+                                        comp.getId(),
+                                        comp.getNombre()
+                                );
+                            }
                         }
                     }
 

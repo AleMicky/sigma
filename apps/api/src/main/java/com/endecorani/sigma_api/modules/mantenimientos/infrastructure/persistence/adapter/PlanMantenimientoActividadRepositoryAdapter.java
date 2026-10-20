@@ -41,6 +41,11 @@ public class PlanMantenimientoActividadRepositoryAdapter implements PlanMantenim
     }
 
     @Override
+    public long countByPlanMantenimientoId(UUID planMantenimientoId) {
+        return springRepository.countByPlanMantenimientoId(planMantenimientoId);
+    }
+
+    @Override
     public PlanMantenimientoActividad save(PlanMantenimientoActividad actividad) {
         PlanMantenimientoActividadEntity entity = mapper.toEntity(actividad);
         PlanMantenimientoActividadEntity saved = springRepository.save(entity);
