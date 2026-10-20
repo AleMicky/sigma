@@ -51,6 +51,27 @@ public class CargaCombustibleRepositoryAdapter implements CargaCombustibleReposi
     }
 
     @Override
+    public List<CargaCombustible> findForExport(
+            String search,
+            UUID activoId,
+            UUID viajeVehicularId,
+            UUID insumoId,
+            UUID empleadoId,
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta
+    ) {
+        return springRepository.findForExport(
+                search,
+                activoId,
+                viajeVehicularId,
+                insumoId,
+                empleadoId,
+                fechaDesde,
+                fechaHasta
+        ).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<CargaCombustible> findById(UUID id) {
         return springRepository.findById(id).map(mapper::toDomain);
     }

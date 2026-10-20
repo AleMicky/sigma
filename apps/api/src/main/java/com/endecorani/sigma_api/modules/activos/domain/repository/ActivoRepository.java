@@ -18,6 +18,23 @@ public interface ActivoRepository extends CrudRepository<Activo, UUID> {
 
     Page<Activo> search(String query, Pageable pageable);
 
+    Page<Activo> searchDisponibilidad(
+            String query,
+            UUID estadoOperativoId,
+            UUID tipoActivoId,
+            UUID categoriaId,
+            UUID ubicacionId,
+            Boolean activo,
+            Pageable pageable);
+
+    java.util.List<Activo> findForDisponibilidadExport(
+            String query,
+            UUID estadoOperativoId,
+            UUID tipoActivoId,
+            UUID categoriaId,
+            UUID ubicacionId,
+            Boolean activo);
+
     boolean existsByCodigoIgnoreCase(String codigo);
 
     boolean existsByCodigoIgnoreCaseAndIdNot(String codigo, UUID id);

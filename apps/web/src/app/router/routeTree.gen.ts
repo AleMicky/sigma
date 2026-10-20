@@ -28,6 +28,7 @@ import { Route as DashboardTiposDocumentoRouteRouteImport } from './../../routes
 import { Route as DashboardAccesoriosIndexRouteImport } from './../../routes/_dashboard/accesorios/index'
 import { Route as DashboardActivosIndexRouteImport } from './../../routes/_dashboard/activos/index'
 import { Route as DashboardActivosConsultaDocumentosRouteImport } from './../../routes/_dashboard/activos/consulta-documentos'
+import { Route as DashboardActivosDisponibilidadRouteImport } from './../../routes/_dashboard/activos/disponibilidad'
 import { Route as DashboardActivosNuevoRouteImport } from './../../routes/_dashboard/activos/nuevo'
 import { Route as DashboardCategoriasIndexRouteImport } from './../../routes/_dashboard/categorias/index'
 import { Route as DashboardEstadosOperativosIndexRouteImport } from './../../routes/_dashboard/estados-operativos/index'
@@ -62,6 +63,7 @@ import { Route as DashboardGestionVehicularAsignacionesIndexRouteImport } from '
 import { Route as DashboardGestionVehicularBitacoraIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/bitacora/index'
 import { Route as DashboardGestionVehicularCalendarioReservasIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/calendario-reservas/index'
 import { Route as DashboardGestionVehicularConductoresIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/conductores/index'
+import { Route as DashboardGestionVehicularConsumoCombustibleIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/consumo-combustible/index'
 import { Route as DashboardGestionVehicularControlesActivosNuevoRouteImport } from './../../routes/_dashboard/gestion-vehicular/controles-activos/nuevo'
 import { Route as DashboardGestionVehicularFlotasIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/flotas/index'
 import { Route as DashboardGestionVehicularHistorialViajesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/historial-viajes/index'
@@ -209,6 +211,12 @@ const DashboardActivosConsultaDocumentosRoute =
   DashboardActivosConsultaDocumentosRouteImport.update({
     id: '/consulta-documentos',
     path: '/consulta-documentos',
+    getParentRoute: () => DashboardActivosRouteRoute,
+  } as any)
+const DashboardActivosDisponibilidadRoute =
+  DashboardActivosDisponibilidadRouteImport.update({
+    id: '/disponibilidad',
+    path: '/disponibilidad',
     getParentRoute: () => DashboardActivosRouteRoute,
   } as any)
 const DashboardActivosNuevoRoute = DashboardActivosNuevoRouteImport.update({
@@ -411,6 +419,12 @@ const DashboardGestionVehicularConductoresIndexRoute =
   DashboardGestionVehicularConductoresIndexRouteImport.update({
     id: '/conductores/',
     path: '/conductores/',
+    getParentRoute: () => DashboardGestionVehicularRouteRoute,
+  } as any)
+const DashboardGestionVehicularConsumoCombustibleIndexRoute =
+  DashboardGestionVehicularConsumoCombustibleIndexRouteImport.update({
+    id: '/consumo-combustible/',
+    path: '/consumo-combustible/',
     getParentRoute: () => DashboardGestionVehicularRouteRoute,
   } as any)
 const DashboardGestionVehicularControlesActivosNuevoRoute =
@@ -693,6 +707,7 @@ export interface FileRoutesByFullPath {
   '/mantenimientos/tipos-mantenimiento': typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
   '/tipos-activo/$tipoActivoId': typeof DashboardTiposActivoTipoActivoIdRouteRouteWithChildren
   '/activos/consulta-documentos': typeof DashboardActivosConsultaDocumentosRoute
+  '/activos/disponibilidad': typeof DashboardActivosDisponibilidadRoute
   '/activos/nuevo': typeof DashboardActivosNuevoRoute
   '/inventarios/nuevo': typeof DashboardInventariosNuevoRoute
   '/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
@@ -729,6 +744,7 @@ export interface FileRoutesByFullPath {
   '/gestion-vehicular/bitacora/': typeof DashboardGestionVehicularBitacoraIndexRoute
   '/gestion-vehicular/calendario-reservas/': typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   '/gestion-vehicular/conductores/': typeof DashboardGestionVehicularConductoresIndexRoute
+  '/gestion-vehicular/consumo-combustible/': typeof DashboardGestionVehicularConsumoCombustibleIndexRoute
   '/gestion-vehicular/flotas/': typeof DashboardGestionVehicularFlotasIndexRoute
   '/gestion-vehicular/historial-viajes/': typeof DashboardGestionVehicularHistorialViajesIndexRoute
   '/gestion-vehicular/mis-viajes/': typeof DashboardGestionVehicularMisViajesIndexRoute
@@ -769,6 +785,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof DashboardPerfilRoute
   '/': typeof DashboardIndexRoute
   '/activos/consulta-documentos': typeof DashboardActivosConsultaDocumentosRoute
+  '/activos/disponibilidad': typeof DashboardActivosDisponibilidadRoute
   '/activos/nuevo': typeof DashboardActivosNuevoRoute
   '/inventarios/nuevo': typeof DashboardInventariosNuevoRoute
   '/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
@@ -804,6 +821,7 @@ export interface FileRoutesByTo {
   '/gestion-vehicular/bitacora': typeof DashboardGestionVehicularBitacoraIndexRoute
   '/gestion-vehicular/calendario-reservas': typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   '/gestion-vehicular/conductores': typeof DashboardGestionVehicularConductoresIndexRoute
+  '/gestion-vehicular/consumo-combustible': typeof DashboardGestionVehicularConsumoCombustibleIndexRoute
   '/gestion-vehicular/flotas': typeof DashboardGestionVehicularFlotasIndexRoute
   '/gestion-vehicular/historial-viajes': typeof DashboardGestionVehicularHistorialViajesIndexRoute
   '/gestion-vehicular/mis-viajes': typeof DashboardGestionVehicularMisViajesIndexRoute
@@ -866,6 +884,7 @@ export interface FileRoutesById {
   '/_dashboard/mantenimientos/tipos-mantenimiento': typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
   '/_dashboard/tipos-activo/$tipoActivoId': typeof DashboardTiposActivoTipoActivoIdRouteRouteWithChildren
   '/_dashboard/activos/consulta-documentos': typeof DashboardActivosConsultaDocumentosRoute
+  '/_dashboard/activos/disponibilidad': typeof DashboardActivosDisponibilidadRoute
   '/_dashboard/activos/nuevo': typeof DashboardActivosNuevoRoute
   '/_dashboard/inventarios/nuevo': typeof DashboardInventariosNuevoRoute
   '/_dashboard/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
@@ -902,6 +921,7 @@ export interface FileRoutesById {
   '/_dashboard/gestion-vehicular/bitacora/': typeof DashboardGestionVehicularBitacoraIndexRoute
   '/_dashboard/gestion-vehicular/calendario-reservas/': typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   '/_dashboard/gestion-vehicular/conductores/': typeof DashboardGestionVehicularConductoresIndexRoute
+  '/_dashboard/gestion-vehicular/consumo-combustible/': typeof DashboardGestionVehicularConsumoCombustibleIndexRoute
   '/_dashboard/gestion-vehicular/flotas/': typeof DashboardGestionVehicularFlotasIndexRoute
   '/_dashboard/gestion-vehicular/historial-viajes/': typeof DashboardGestionVehicularHistorialViajesIndexRoute
   '/_dashboard/gestion-vehicular/mis-viajes/': typeof DashboardGestionVehicularMisViajesIndexRoute
@@ -964,6 +984,7 @@ export interface FileRouteTypes {
     | '/mantenimientos/tipos-mantenimiento'
     | '/tipos-activo/$tipoActivoId'
     | '/activos/consulta-documentos'
+    | '/activos/disponibilidad'
     | '/activos/nuevo'
     | '/inventarios/nuevo'
     | '/parametros/catalogos'
@@ -1000,6 +1021,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/bitacora/'
     | '/gestion-vehicular/calendario-reservas/'
     | '/gestion-vehicular/conductores/'
+    | '/gestion-vehicular/consumo-combustible/'
     | '/gestion-vehicular/flotas/'
     | '/gestion-vehicular/historial-viajes/'
     | '/gestion-vehicular/mis-viajes/'
@@ -1040,6 +1062,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/'
     | '/activos/consulta-documentos'
+    | '/activos/disponibilidad'
     | '/activos/nuevo'
     | '/inventarios/nuevo'
     | '/parametros/catalogos'
@@ -1075,6 +1098,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/bitacora'
     | '/gestion-vehicular/calendario-reservas'
     | '/gestion-vehicular/conductores'
+    | '/gestion-vehicular/consumo-combustible'
     | '/gestion-vehicular/flotas'
     | '/gestion-vehicular/historial-viajes'
     | '/gestion-vehicular/mis-viajes'
@@ -1136,6 +1160,7 @@ export interface FileRouteTypes {
     | '/_dashboard/mantenimientos/tipos-mantenimiento'
     | '/_dashboard/tipos-activo/$tipoActivoId'
     | '/_dashboard/activos/consulta-documentos'
+    | '/_dashboard/activos/disponibilidad'
     | '/_dashboard/activos/nuevo'
     | '/_dashboard/inventarios/nuevo'
     | '/_dashboard/parametros/catalogos'
@@ -1172,6 +1197,7 @@ export interface FileRouteTypes {
     | '/_dashboard/gestion-vehicular/bitacora/'
     | '/_dashboard/gestion-vehicular/calendario-reservas/'
     | '/_dashboard/gestion-vehicular/conductores/'
+    | '/_dashboard/gestion-vehicular/consumo-combustible/'
     | '/_dashboard/gestion-vehicular/flotas/'
     | '/_dashboard/gestion-vehicular/historial-viajes/'
     | '/_dashboard/gestion-vehicular/mis-viajes/'
@@ -1345,6 +1371,13 @@ declare module '@tanstack/react-router' {
       path: '/consulta-documentos'
       fullPath: '/activos/consulta-documentos'
       preLoaderRoute: typeof DashboardActivosConsultaDocumentosRouteImport
+      parentRoute: typeof DashboardActivosRouteRoute
+    }
+    '/_dashboard/activos/disponibilidad': {
+      id: '/_dashboard/activos/disponibilidad'
+      path: '/disponibilidad'
+      fullPath: '/activos/disponibilidad'
+      preLoaderRoute: typeof DashboardActivosDisponibilidadRouteImport
       parentRoute: typeof DashboardActivosRouteRoute
     }
     '/_dashboard/activos/nuevo': {
@@ -1583,6 +1616,13 @@ declare module '@tanstack/react-router' {
       path: '/conductores'
       fullPath: '/gestion-vehicular/conductores/'
       preLoaderRoute: typeof DashboardGestionVehicularConductoresIndexRouteImport
+      parentRoute: typeof DashboardGestionVehicularRouteRoute
+    }
+    '/_dashboard/gestion-vehicular/consumo-combustible/': {
+      id: '/_dashboard/gestion-vehicular/consumo-combustible/'
+      path: '/consumo-combustible'
+      fullPath: '/gestion-vehicular/consumo-combustible/'
+      preLoaderRoute: typeof DashboardGestionVehicularConsumoCombustibleIndexRouteImport
       parentRoute: typeof DashboardGestionVehicularRouteRoute
     }
     '/_dashboard/gestion-vehicular/controles-activos/nuevo': {
@@ -1898,6 +1938,7 @@ const DashboardAccesoriosRouteRouteWithChildren =
 
 interface DashboardActivosRouteRouteChildren {
   DashboardActivosConsultaDocumentosRoute: typeof DashboardActivosConsultaDocumentosRoute
+  DashboardActivosDisponibilidadRoute: typeof DashboardActivosDisponibilidadRoute
   DashboardActivosNuevoRoute: typeof DashboardActivosNuevoRoute
   DashboardActivosIndexRoute: typeof DashboardActivosIndexRoute
   DashboardActivosActivoIdEditarRoute: typeof DashboardActivosActivoIdEditarRoute
@@ -1909,6 +1950,7 @@ interface DashboardActivosRouteRouteChildren {
 const DashboardActivosRouteRouteChildren: DashboardActivosRouteRouteChildren = {
   DashboardActivosConsultaDocumentosRoute:
     DashboardActivosConsultaDocumentosRoute,
+  DashboardActivosDisponibilidadRoute: DashboardActivosDisponibilidadRoute,
   DashboardActivosNuevoRoute: DashboardActivosNuevoRoute,
   DashboardActivosIndexRoute: DashboardActivosIndexRoute,
   DashboardActivosActivoIdEditarRoute: DashboardActivosActivoIdEditarRoute,
@@ -1958,6 +2000,7 @@ interface DashboardGestionVehicularRouteRouteChildren {
   DashboardGestionVehicularBitacoraIndexRoute: typeof DashboardGestionVehicularBitacoraIndexRoute
   DashboardGestionVehicularCalendarioReservasIndexRoute: typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   DashboardGestionVehicularConductoresIndexRoute: typeof DashboardGestionVehicularConductoresIndexRoute
+  DashboardGestionVehicularConsumoCombustibleIndexRoute: typeof DashboardGestionVehicularConsumoCombustibleIndexRoute
   DashboardGestionVehicularFlotasIndexRoute: typeof DashboardGestionVehicularFlotasIndexRoute
   DashboardGestionVehicularHistorialViajesIndexRoute: typeof DashboardGestionVehicularHistorialViajesIndexRoute
   DashboardGestionVehicularMisViajesIndexRoute: typeof DashboardGestionVehicularMisViajesIndexRoute
@@ -1981,6 +2024,8 @@ const DashboardGestionVehicularRouteRouteChildren: DashboardGestionVehicularRout
       DashboardGestionVehicularCalendarioReservasIndexRoute,
     DashboardGestionVehicularConductoresIndexRoute:
       DashboardGestionVehicularConductoresIndexRoute,
+    DashboardGestionVehicularConsumoCombustibleIndexRoute:
+      DashboardGestionVehicularConsumoCombustibleIndexRoute,
     DashboardGestionVehicularFlotasIndexRoute:
       DashboardGestionVehicularFlotasIndexRoute,
     DashboardGestionVehicularHistorialViajesIndexRoute:

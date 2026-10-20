@@ -52,6 +52,7 @@ public class CargaCombustibleService {
     private final SpringInsumoRepository springInsumoRepository;
     private final SpringVEmpleadoRepository springVEmpleadoRepository;
     private final CargaCombustibleMapper mapper;
+    private final CargaCombustibleExcelService excelService;
 
     @Transactional(readOnly = true)
     public PageResponse<CargaCombustibleResponse> listar(
@@ -78,6 +79,30 @@ public class CargaCombustibleService {
         );
 
         return toPageResponse(resultado);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportarExcel(
+            String search,
+            UUID activoId,
+            UUID viajeVehicularId,
+            UUID insumoId,
+            UUID empleadoId,
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta
+    ) {
+        String normalizedSearch = StringUtils.normalize(search);
+        List<CargaCombustible> cargas = repository.findForExport(
+                normalizedSearch,
+                activoId,
+                viajeVehicularId,
+                insumoId,
+                empleadoId,
+                fechaDesde,
+                fechaHasta
+        );
+        List<CargaCombustibleResponse> responseList = toListResponse(cargas);
+        return excelService.generarExcel(responseList, fechaDesde, fechaHasta);
     }
 
     @Transactional(readOnly = true)

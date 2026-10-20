@@ -128,3 +128,36 @@ export const updateCargaCombustible = (
 export const deleteCargaCombustible = (id: string): Promise<void> => {
   return http.delete<void>(cargaCombustibleEndpoints.byId(id))
 }
+
+export const exportarCargasCombustibleExcel = async (
+  filtros?: Omit<CargaCombustibleListFilters, "page" | "size" | "sort">
+): Promise<void> => {
+  const params: Record<string, string> = {}
+
+  if (filtros?.search) params.search = filtros.search
+  if (filtros?.activoId) params.activoId = filtros.activoId
+  if (filtros?.viajeVehicularId) params.viajeVehicularId = filtros.viajeVehicularId
+  if (filtros?.insumoId) params.insumoId = filtros.insumoId
+  if (filtros?.empleadoId) params.empleadoId = filtros.empleadoId
+  if (filtros?.fechaDesde) params.fechaDesde = filtros.fechaDesde
+  if (filtros?.fechaHasta) params.fechaHasta = filtros.fechaHasta
+
+  const blob = await http.get<Blob>(cargaCombustibleEndpoints.exportarExcel, {
+    params,
+    responseType: "blob",
+    headers: {
+      Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const fechaHoy = new Date().toISOString().split("T")[0]
+  a.download = `consumo-combustible-${fechaHoy}.xlsx`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+

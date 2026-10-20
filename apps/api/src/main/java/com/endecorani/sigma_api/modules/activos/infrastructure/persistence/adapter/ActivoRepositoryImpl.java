@@ -65,6 +65,35 @@ public class ActivoRepositoryImpl
     }
 
     @Override
+    public Page<Activo> searchDisponibilidad(
+            String query,
+            UUID estadoOperativoId,
+            UUID tipoActivoId,
+            UUID categoriaId,
+            UUID ubicacionId,
+            Boolean activo,
+            Pageable pageable) {
+        return springRepository
+                .searchDisponibilidad(query, estadoOperativoId, tipoActivoId, categoriaId, ubicacionId, activo, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public java.util.List<Activo> findForDisponibilidadExport(
+            String query,
+            UUID estadoOperativoId,
+            UUID tipoActivoId,
+            UUID categoriaId,
+            UUID ubicacionId,
+            Boolean activo) {
+        return springRepository
+                .findForDisponibilidadExport(query, estadoOperativoId, tipoActivoId, categoriaId, ubicacionId, activo)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public boolean existsByCodigoIgnoreCase(String codigo) {
         return springRepository.existsByCodigoIgnoreCase(codigo);
     }

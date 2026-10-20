@@ -15,10 +15,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -59,6 +63,33 @@ public class CargaCombustibleController {
                         pageRequest
                 ))
         );
+    }
+
+    @GetMapping(value = "/exportar-excel", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Operation(summary = "Exportar reporte de consumo y cargas de combustible en formato Excel (.xlsx)")
+    public ResponseEntity<byte[]> exportarExcel(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) UUID activoId,
+            @RequestParam(required = false) UUID viajeVehicularId,
+            @RequestParam(required = false) UUID insumoId,
+            @RequestParam(required = false) UUID empleadoId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta
+    ) {
+        byte[] excelBytes = service.exportarExcel(
+                search, activoId, viajeVehicularId, insumoId, empleadoId, fechaDesde, fechaHasta
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(
+                ContentDisposition.attachment()
+                        .filename("consumo-combustible-" + LocalDate.now() + ".xlsx")
+                        .build()
+        );
+        headers.setContentLength(excelBytes.length);
+
+        return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")

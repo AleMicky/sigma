@@ -42,6 +42,57 @@ public interface SpringActivoRepository
                         @Param("query") String query,
                         Pageable pageable);
 
+        @Query("""
+                SELECT a
+                FROM ActivoEntity a
+                LEFT JOIN TipoActivoEntity ta ON a.tipoActivoId = ta.id
+                WHERE (:estadoOperativoId IS NULL OR a.estadoOperativoId = :estadoOperativoId)
+                  AND (:tipoActivoId IS NULL OR a.tipoActivoId = :tipoActivoId)
+                  AND (:categoriaId IS NULL OR ta.categoriaId = :categoriaId)
+                  AND (:ubicacionId IS NULL OR a.ubicacionId = :ubicacionId)
+                  AND (:activo IS NULL OR a.activo = :activo)
+                  AND (
+                    :query IS NULL
+                    OR LOWER(a.codigo) LIKE LOWER(CONCAT('%', :query, '%'))
+                    OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', :query, '%'))
+                    OR (a.descripcion IS NOT NULL AND LOWER(a.descripcion) LIKE LOWER(CONCAT('%', :query, '%')))
+                  )
+                ORDER BY a.nombre ASC
+                """)
+        Page<ActivoEntity> searchDisponibilidad(
+                @Param("query") String query,
+                @Param("estadoOperativoId") UUID estadoOperativoId,
+                @Param("tipoActivoId") UUID tipoActivoId,
+                @Param("categoriaId") UUID categoriaId,
+                @Param("ubicacionId") UUID ubicacionId,
+                @Param("activo") Boolean activo,
+                Pageable pageable);
+
+        @Query("""
+                SELECT a
+                FROM ActivoEntity a
+                LEFT JOIN TipoActivoEntity ta ON a.tipoActivoId = ta.id
+                WHERE (:estadoOperativoId IS NULL OR a.estadoOperativoId = :estadoOperativoId)
+                  AND (:tipoActivoId IS NULL OR a.tipoActivoId = :tipoActivoId)
+                  AND (:categoriaId IS NULL OR ta.categoriaId = :categoriaId)
+                  AND (:ubicacionId IS NULL OR a.ubicacionId = :ubicacionId)
+                  AND (:activo IS NULL OR a.activo = :activo)
+                  AND (
+                    :query IS NULL
+                    OR LOWER(a.codigo) LIKE LOWER(CONCAT('%', :query, '%'))
+                    OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', :query, '%'))
+                    OR (a.descripcion IS NOT NULL AND LOWER(a.descripcion) LIKE LOWER(CONCAT('%', :query, '%')))
+                  )
+                ORDER BY a.nombre ASC
+                """)
+        java.util.List<ActivoEntity> findForDisponibilidadExport(
+                @Param("query") String query,
+                @Param("estadoOperativoId") UUID estadoOperativoId,
+                @Param("tipoActivoId") UUID tipoActivoId,
+                @Param("categoriaId") UUID categoriaId,
+                @Param("ubicacionId") UUID ubicacionId,
+                @Param("activo") Boolean activo);
+
         boolean existsByCodigoIgnoreCase(String codigo);
 
         boolean existsByCodigoIgnoreCaseAndIdNot(String codigo, UUID id);

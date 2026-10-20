@@ -104,3 +104,51 @@ export async function cambiarEstadoOperativoActivo(
     payload,
   )
 }
+
+export type ActivoDisponibilidadParams = PageParams & {
+  q?: string
+  estadoOperativoId?: string
+  tipoActivoId?: string
+  categoriaId?: string
+  ubicacionId?: string
+  activo?: boolean
+}
+
+export function listActivosDisponibilidad(
+  params?: ActivoDisponibilidadParams,
+): Promise<import("@/shared/types/api.types").PageResponse<Activo>> {
+  return http.get<import("@/shared/types/api.types").PageResponse<Activo>>("/activos/disponibilidad", {
+    params,
+  })
+}
+
+export async function exportarActivosDisponibilidadExcel(
+  filtros?: Omit<ActivoDisponibilidadParams, "page" | "size" | "sort">,
+): Promise<void> {
+  const params: Record<string, string> = {}
+  if (filtros?.q) params.q = filtros.q
+  if (filtros?.estadoOperativoId) params.estadoOperativoId = filtros.estadoOperativoId
+  if (filtros?.tipoActivoId) params.tipoActivoId = filtros.tipoActivoId
+  if (filtros?.categoriaId) params.categoriaId = filtros.categoriaId
+  if (filtros?.ubicacionId) params.ubicacionId = filtros.ubicacionId
+  if (filtros?.activo !== undefined) params.activo = String(filtros.activo)
+
+  const blob = await http.get<Blob>("/activos/disponibilidad/exportar-excel", {
+    params,
+    responseType: "blob",
+    headers: {
+      Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const fechaHoy = new Date().toISOString().split("T")[0]
+  a.download = `disponibilidad-activos-${fechaHoy}.xlsx`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+

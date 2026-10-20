@@ -25,6 +25,16 @@ public interface CargaCombustibleRepository {
             Pageable pageable
     );
 
+    List<CargaCombustible> findForExport(
+            String search,
+            UUID activoId,
+            UUID viajeVehicularId,
+            UUID insumoId,
+            UUID empleadoId,
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta
+    );
+
     Optional<CargaCombustible> findById(UUID id);
 
     List<CargaCombustible> findByActivoId(UUID activoId);
