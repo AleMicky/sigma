@@ -35,6 +35,8 @@ public class ViajeVehicularRepositoryAdapter implements ViajeVehicularRepository
             UUID activoId,
             UUID conductorId,
             EstadoViajeVehicular estado,
+            java.time.LocalDateTime fechaDesde,
+            java.time.LocalDateTime fechaHasta,
             Pageable pageable
     ) {
         return springRepository.searchWithFilters(
@@ -44,8 +46,33 @@ public class ViajeVehicularRepositoryAdapter implements ViajeVehicularRepository
                 activoId,
                 conductorId,
                 estado,
+                fechaDesde,
+                fechaHasta,
                 pageable
         ).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<ViajeVehicular> findHistorialForExport(
+            String search,
+            UUID asignacionVehicularId,
+            UUID solicitudVehicularId,
+            UUID activoId,
+            UUID conductorId,
+            EstadoViajeVehicular estado,
+            java.time.LocalDateTime fechaDesde,
+            java.time.LocalDateTime fechaHasta
+    ) {
+        return springRepository.findHistorialForExport(
+                search,
+                asignacionVehicularId,
+                solicitudVehicularId,
+                activoId,
+                conductorId,
+                estado,
+                fechaDesde,
+                fechaHasta
+        ).stream().map(mapper::toDomain).toList();
     }
 
     @Override

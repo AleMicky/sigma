@@ -64,6 +64,7 @@ import { Route as DashboardGestionVehicularCalendarioReservasIndexRouteImport } 
 import { Route as DashboardGestionVehicularConductoresIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/conductores/index'
 import { Route as DashboardGestionVehicularControlesActivosNuevoRouteImport } from './../../routes/_dashboard/gestion-vehicular/controles-activos/nuevo'
 import { Route as DashboardGestionVehicularFlotasIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/flotas/index'
+import { Route as DashboardGestionVehicularHistorialViajesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/historial-viajes/index'
 import { Route as DashboardGestionVehicularMisViajesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/mis-viajes/index'
 import { Route as DashboardGestionVehicularSolicitudesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/solicitudes/index'
 import { Route as DashboardGestionVehicularSolicitudesNuevaRouteImport } from './../../routes/_dashboard/gestion-vehicular/solicitudes/nueva'
@@ -424,6 +425,12 @@ const DashboardGestionVehicularFlotasIndexRoute =
     path: '/flotas/',
     getParentRoute: () => DashboardGestionVehicularRouteRoute,
   } as any)
+const DashboardGestionVehicularHistorialViajesIndexRoute =
+  DashboardGestionVehicularHistorialViajesIndexRouteImport.update({
+    id: '/historial-viajes/',
+    path: '/historial-viajes/',
+    getParentRoute: () => DashboardGestionVehicularRouteRoute,
+  } as any)
 const DashboardGestionVehicularMisViajesIndexRoute =
   DashboardGestionVehicularMisViajesIndexRouteImport.update({
     id: '/mis-viajes/',
@@ -723,6 +730,7 @@ export interface FileRoutesByFullPath {
   '/gestion-vehicular/calendario-reservas/': typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   '/gestion-vehicular/conductores/': typeof DashboardGestionVehicularConductoresIndexRoute
   '/gestion-vehicular/flotas/': typeof DashboardGestionVehicularFlotasIndexRoute
+  '/gestion-vehicular/historial-viajes/': typeof DashboardGestionVehicularHistorialViajesIndexRoute
   '/gestion-vehicular/mis-viajes/': typeof DashboardGestionVehicularMisViajesIndexRoute
   '/gestion-vehicular/solicitudes/': typeof DashboardGestionVehicularSolicitudesIndexRoute
   '/gestion-vehicular/tipos-solicitud/': typeof DashboardGestionVehicularTiposSolicitudIndexRoute
@@ -797,6 +805,7 @@ export interface FileRoutesByTo {
   '/gestion-vehicular/calendario-reservas': typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   '/gestion-vehicular/conductores': typeof DashboardGestionVehicularConductoresIndexRoute
   '/gestion-vehicular/flotas': typeof DashboardGestionVehicularFlotasIndexRoute
+  '/gestion-vehicular/historial-viajes': typeof DashboardGestionVehicularHistorialViajesIndexRoute
   '/gestion-vehicular/mis-viajes': typeof DashboardGestionVehicularMisViajesIndexRoute
   '/gestion-vehicular/solicitudes': typeof DashboardGestionVehicularSolicitudesIndexRoute
   '/gestion-vehicular/tipos-solicitud': typeof DashboardGestionVehicularTiposSolicitudIndexRoute
@@ -894,6 +903,7 @@ export interface FileRoutesById {
   '/_dashboard/gestion-vehicular/calendario-reservas/': typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   '/_dashboard/gestion-vehicular/conductores/': typeof DashboardGestionVehicularConductoresIndexRoute
   '/_dashboard/gestion-vehicular/flotas/': typeof DashboardGestionVehicularFlotasIndexRoute
+  '/_dashboard/gestion-vehicular/historial-viajes/': typeof DashboardGestionVehicularHistorialViajesIndexRoute
   '/_dashboard/gestion-vehicular/mis-viajes/': typeof DashboardGestionVehicularMisViajesIndexRoute
   '/_dashboard/gestion-vehicular/solicitudes/': typeof DashboardGestionVehicularSolicitudesIndexRoute
   '/_dashboard/gestion-vehicular/tipos-solicitud/': typeof DashboardGestionVehicularTiposSolicitudIndexRoute
@@ -991,6 +1001,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/calendario-reservas/'
     | '/gestion-vehicular/conductores/'
     | '/gestion-vehicular/flotas/'
+    | '/gestion-vehicular/historial-viajes/'
     | '/gestion-vehicular/mis-viajes/'
     | '/gestion-vehicular/solicitudes/'
     | '/gestion-vehicular/tipos-solicitud/'
@@ -1065,6 +1076,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/calendario-reservas'
     | '/gestion-vehicular/conductores'
     | '/gestion-vehicular/flotas'
+    | '/gestion-vehicular/historial-viajes'
     | '/gestion-vehicular/mis-viajes'
     | '/gestion-vehicular/solicitudes'
     | '/gestion-vehicular/tipos-solicitud'
@@ -1161,6 +1173,7 @@ export interface FileRouteTypes {
     | '/_dashboard/gestion-vehicular/calendario-reservas/'
     | '/_dashboard/gestion-vehicular/conductores/'
     | '/_dashboard/gestion-vehicular/flotas/'
+    | '/_dashboard/gestion-vehicular/historial-viajes/'
     | '/_dashboard/gestion-vehicular/mis-viajes/'
     | '/_dashboard/gestion-vehicular/solicitudes/'
     | '/_dashboard/gestion-vehicular/tipos-solicitud/'
@@ -1586,6 +1599,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardGestionVehicularFlotasIndexRouteImport
       parentRoute: typeof DashboardGestionVehicularRouteRoute
     }
+    '/_dashboard/gestion-vehicular/historial-viajes/': {
+      id: '/_dashboard/gestion-vehicular/historial-viajes/'
+      path: '/historial-viajes'
+      fullPath: '/gestion-vehicular/historial-viajes/'
+      preLoaderRoute: typeof DashboardGestionVehicularHistorialViajesIndexRouteImport
+      parentRoute: typeof DashboardGestionVehicularRouteRoute
+    }
     '/_dashboard/gestion-vehicular/mis-viajes/': {
       id: '/_dashboard/gestion-vehicular/mis-viajes/'
       path: '/mis-viajes'
@@ -1939,6 +1959,7 @@ interface DashboardGestionVehicularRouteRouteChildren {
   DashboardGestionVehicularCalendarioReservasIndexRoute: typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   DashboardGestionVehicularConductoresIndexRoute: typeof DashboardGestionVehicularConductoresIndexRoute
   DashboardGestionVehicularFlotasIndexRoute: typeof DashboardGestionVehicularFlotasIndexRoute
+  DashboardGestionVehicularHistorialViajesIndexRoute: typeof DashboardGestionVehicularHistorialViajesIndexRoute
   DashboardGestionVehicularMisViajesIndexRoute: typeof DashboardGestionVehicularMisViajesIndexRoute
   DashboardGestionVehicularSolicitudesIndexRoute: typeof DashboardGestionVehicularSolicitudesIndexRoute
   DashboardGestionVehicularTiposSolicitudIndexRoute: typeof DashboardGestionVehicularTiposSolicitudIndexRoute
@@ -1962,6 +1983,8 @@ const DashboardGestionVehicularRouteRouteChildren: DashboardGestionVehicularRout
       DashboardGestionVehicularConductoresIndexRoute,
     DashboardGestionVehicularFlotasIndexRoute:
       DashboardGestionVehicularFlotasIndexRoute,
+    DashboardGestionVehicularHistorialViajesIndexRoute:
+      DashboardGestionVehicularHistorialViajesIndexRoute,
     DashboardGestionVehicularMisViajesIndexRoute:
       DashboardGestionVehicularMisViajesIndexRoute,
     DashboardGestionVehicularSolicitudesIndexRoute:

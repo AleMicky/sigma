@@ -2,10 +2,15 @@ import { queryOptions } from "@tanstack/react-query"
 import {
   getViajeByAsignacion,
   getViajeBySolicitud,
+  listViajes,
+  type ViajeVehicularFiltros,
 } from "./viaje-vehicular.service"
 
 export const viajeVehicularKeys = {
   all: ["viajes-vehiculares"] as const,
+  lists: () => [...viajeVehicularKeys.all, "list"] as const,
+  list: (filtros?: ViajeVehicularFiltros) =>
+    [...viajeVehicularKeys.lists(), filtros] as const,
   byAsignacion: (asignacionId: string) =>
     [...viajeVehicularKeys.all, "asignacion", asignacionId] as const,
   bySolicitud: (solicitudId: string) =>
@@ -13,6 +18,12 @@ export const viajeVehicularKeys = {
 }
 
 export const viajeVehicularQueries = {
+  list: (filtros?: ViajeVehicularFiltros) =>
+    queryOptions({
+      queryKey: viajeVehicularKeys.list(filtros),
+      queryFn: () => listViajes(filtros),
+      staleTime: 1000 * 30,
+    }),
   byAsignacion: (asignacionId?: string | null) =>
     queryOptions({
       queryKey: viajeVehicularKeys.byAsignacion(asignacionId ?? ""),

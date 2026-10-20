@@ -63,6 +63,8 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
         LEFT JOIN com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity act ON a.activoId = act.id
         WHERE (:search IS NULL
             OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
             OR EXISTS (
@@ -77,6 +79,8 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
           AND (:activoId IS NULL OR a.activoId = :activoId)
           AND (:conductorId IS NULL OR a.conductorId = :conductorId)
           AND (:estado IS NULL OR v.estado = :estado)
+          AND (:fechaDesde IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) >= :fechaDesde)
+          AND (:fechaHasta IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) <= :fechaHasta)
     """)
     Page<ViajeVehicularEntity> searchWithFilters(
             @Param("search") String search,
@@ -85,7 +89,49 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
             @Param("activoId") UUID activoId,
             @Param("conductorId") UUID conductorId,
             @Param("estado") EstadoViajeVehicular estado,
+            @Param("fechaDesde") java.time.LocalDateTime fechaDesde,
+            @Param("fechaHasta") java.time.LocalDateTime fechaHasta,
             Pageable pageable
+    );
+
+    @Query("""
+        SELECT v
+        FROM ViajeVehicularEntity v
+        LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.AsignacionVehicularEntity a ON v.asignacionVehicularId = a.id
+        LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.SolicitudVehicularEntity s ON a.solicitudVehicularId = s.id
+        LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorEntity c ON a.conductorId = c.id
+        LEFT JOIN com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity act ON a.activoId = act.id
+        WHERE (:search IS NULL
+            OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR EXISTS (
+                SELECT 1 
+                FROM com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity l
+                WHERE l.conductorId = a.conductorId
+                  AND LOWER(l.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+            )
+            OR LOWER(COALESCE(v.observacion, '')) LIKE LOWER(CONCAT('%', :search, '%')))
+          AND (:asignacionVehicularId IS NULL OR v.asignacionVehicularId = :asignacionVehicularId)
+          AND (:solicitudVehicularId IS NULL OR a.solicitudVehicularId = :solicitudVehicularId)
+          AND (:activoId IS NULL OR a.activoId = :activoId)
+          AND (:conductorId IS NULL OR a.conductorId = :conductorId)
+          AND (:estado IS NULL OR v.estado = :estado)
+          AND (:fechaDesde IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) >= :fechaDesde)
+          AND (:fechaHasta IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) <= :fechaHasta)
+        ORDER BY COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) DESC
+    """)
+    List<ViajeVehicularEntity> findHistorialForExport(
+            @Param("search") String search,
+            @Param("asignacionVehicularId") UUID asignacionVehicularId,
+            @Param("solicitudVehicularId") UUID solicitudVehicularId,
+            @Param("activoId") UUID activoId,
+            @Param("conductorId") UUID conductorId,
+            @Param("estado") EstadoViajeVehicular estado,
+            @Param("fechaDesde") java.time.LocalDateTime fechaDesde,
+            @Param("fechaHasta") java.time.LocalDateTime fechaHasta
     );
 
     @Query("""

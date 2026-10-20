@@ -48,6 +48,7 @@ public class ViajeVehicularService {
     private final AsignacionVehicularRepository asignacionVehicularRepository;
     private final AsignacionVehicularService asignacionVehicularService;
     private final ViajeVehicularMapper mapper;
+    private final ViajeVehicularExcelService excelService;
 
     @Transactional(readOnly = true)
     public PageResponse<ViajeVehicularResponse> listar(
@@ -59,6 +60,21 @@ public class ViajeVehicularService {
             EstadoViajeVehicular estado,
             PageRequestDto pageRequest
     ) {
+        return listar(search, asignacionVehicularId, solicitudVehicularId, activoId, conductorId, estado, null, null, pageRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ViajeVehicularResponse> listar(
+            String search,
+            UUID asignacionVehicularId,
+            UUID solicitudVehicularId,
+            UUID activoId,
+            UUID conductorId,
+            EstadoViajeVehicular estado,
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta,
+            PageRequestDto pageRequest
+    ) {
         String normalizedSearch = StringUtils.normalize(search);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Page<ViajeVehicular> resultado = repository.searchWithFilters(
@@ -68,10 +84,53 @@ public class ViajeVehicularService {
                 activoId,
                 conductorId,
                 estado,
+                fechaDesde,
+                fechaHasta,
                 pageable
         );
 
         return toPageResponse(resultado);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportarExcel(
+            String search,
+            UUID asignacionVehicularId,
+            UUID solicitudVehicularId,
+            UUID activoId,
+            UUID conductorId,
+            EstadoViajeVehicular estado,
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta
+    ) {
+        String normalizedSearch = StringUtils.normalize(search);
+        List<ViajeVehicular> viajes = repository.findHistorialForExport(
+                normalizedSearch,
+                asignacionVehicularId,
+                solicitudVehicularId,
+                activoId,
+                conductorId,
+                estado,
+                fechaDesde,
+                fechaHasta
+        );
+
+        if (viajes.isEmpty()) {
+            return excelService.generarExcel(Collections.emptyList(), fechaDesde, fechaHasta);
+        }
+
+        Set<UUID> asignacionIds = viajes.stream()
+                .map(ViajeVehicular::getAsignacionVehicularId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, AsignacionVehicularResponse> asignacionesMap = asignacionVehicularService.findResponsesByIds(asignacionIds);
+
+        List<ViajeVehicularResponse> responses = viajes.stream()
+                .map(v -> mapper.toResponse(v, asignacionesMap.get(v.getAsignacionVehicularId())))
+                .toList();
+
+        return excelService.generarExcel(responses, fechaDesde, fechaHasta);
     }
 
     @Transactional(readOnly = true)
