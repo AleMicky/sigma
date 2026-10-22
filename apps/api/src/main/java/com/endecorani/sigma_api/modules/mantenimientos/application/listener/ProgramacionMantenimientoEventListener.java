@@ -1,5 +1,8 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.listener;
 
+import java.math.BigDecimal;
+
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.event.VehiculoKilometrajeRegistradoEvent;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.ProgramacionMantenimientoService;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.event.SolicitudMantenimientoEstadoCambiadoEvent;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +36,25 @@ public class ProgramacionMantenimientoEventListener {
                 log.error("Error al sincronizar fin de mantenimiento para solicitud {}: {}",
                         event.solicitudId(), e.getMessage(), e);
             }
+        }
+    }
+
+    @EventListener
+    public void onVehiculoKilometrajeRegistrado(VehiculoKilometrajeRegistradoEvent event) {
+        if (event == null || event.activoId() == null || event.kilometraje() == null) {
+            return;
+        }
+
+        log.info("Actualizando telemetría de odómetro de activo {} a {} km (fuente: {})",
+                event.activoId(), event.kilometraje(), event.origen());
+        try {
+            programacionMantenimientoService.actualizarTelemetriaActivo(
+                    event.activoId(),
+                    BigDecimal.valueOf(event.kilometraje()),
+                    null
+            );
+        } catch (Exception e) {
+            log.error("Error al sincronizar kilometraje para activo {}: {}", event.activoId(), e.getMessage(), e);
         }
     }
 

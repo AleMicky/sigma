@@ -1,6 +1,15 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { ClipboardList, Plus, X } from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
+import {
+  CalendarClock,
+  ChevronDown,
+  ChevronUp,
+  ClipboardList,
+  Lightbulb,
+  Plus,
+  X,
+} from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
@@ -36,6 +45,7 @@ import { PlanMantenimientoListView } from "../components/PlanMantenimientoListVi
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function PlanesMantenimientoPage() {
+  const navigate = useNavigate()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<PlanMantenimiento | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -43,6 +53,7 @@ export function PlanesMantenimientoPage() {
   const [selectedPlanForActivities, setSelectedPlanForActivities] =
     useState<PlanMantenimiento | null>(null)
   const [selectedTipoActivoId, setSelectedTipoActivoId] = useState<string>("")
+  const [showGuide, setShowGuide] = useState(true)
   const search = usePaginatedSearch()
 
   const tiposActivoQuery = useQuery(
@@ -139,18 +150,80 @@ export function PlanesMantenimientoPage() {
         </div>
 
         <div className="hidden md:flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            onClick={() => navigate({ to: "/mantenimientos/programaciones-mantenimiento" })}
+            className="cursor-pointer gap-1.5 font-medium border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300 rounded-xl"
+          >
+            <CalendarClock className="size-4 text-amber-500" />
+            <span>Ver Programaciones Activas</span>
+          </Button>
           <RefreshButton queries={[planesMantenimientoQuery]} />
           <Button
             size="sm"
             type="button"
             onClick={openCreate}
-            className="cursor-pointer gap-1.5 font-semibold"
+            className="cursor-pointer gap-1.5 font-semibold rounded-xl"
           >
             <Plus className="size-4" />
             <span>Nuevo Plan</span>
           </Button>
         </div>
       </header>
+
+      {/* Guía Visual y Transparente del Ciclo Preventivo */}
+      <div className="rounded-2xl border border-border/70 bg-gradient-to-r from-blue-500/5 via-amber-500/5 to-emerald-500/5 p-4 my-2 text-xs space-y-3 shadow-2xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
+            <Lightbulb className="size-4 text-amber-500" />
+            <span>Ciclo Preventivo: ¿Cómo se conectan los Planes, Activos y Programaciones?</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowGuide((prev) => !prev)}
+            className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-1 font-medium"
+          >
+            <span>{showGuide ? "Ocultar guía" : "Ver explicación del ciclo"}</span>
+            {showGuide ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+          </button>
+        </div>
+
+        {showGuide && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+            <div className="rounded-xl border border-blue-500/20 bg-background/80 p-3 space-y-1">
+              <div className="flex items-center gap-2 font-bold text-blue-600 dark:text-blue-400">
+                <span className="flex size-5 items-center justify-center rounded-full bg-blue-500/20 text-[11px]">1</span>
+                <span>Planes de Mantenimiento</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Aquí defines la estrategia técnica: tareas y actividades a realizar para una tipología de activo (p.ej. Camionetas o Generadores).
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-emerald-500/20 bg-background/80 p-3 space-y-1">
+              <div className="flex items-center gap-2 font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="flex size-5 items-center justify-center rounded-full bg-emerald-500/20 text-[11px]">2</span>
+                <span>Activos Asignados</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Dentro de cada plan, vinculas los vehículos o máquinas reales. En la pestaña <strong>"Activos"</strong> verás de inmediato si ya están programados.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-amber-500/20 bg-background/80 p-3 space-y-1">
+              <div className="flex items-center gap-2 font-bold text-amber-600 dark:text-amber-400">
+                <span className="flex size-5 items-center justify-center rounded-full bg-amber-500/20 text-[11px]">3</span>
+                <span>Programaciones de Telemetría</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Es el sensor que vigila km, horas u fechas. Cuando se cumple el umbral, genera automáticamente la Solicitud Preventiva sin tareas manuales.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Barra de Búsqueda y Filtros */}
       <div className="flex shrink-0 flex-col gap-2.5 py-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/40">

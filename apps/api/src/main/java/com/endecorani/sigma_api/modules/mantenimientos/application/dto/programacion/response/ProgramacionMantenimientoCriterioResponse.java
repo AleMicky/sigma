@@ -15,6 +15,7 @@ public record ProgramacionMantenimientoCriterioResponse(
         BigDecimal intervaloUso,
         LocalDate proximaFecha,
         BigDecimal proximoValorUso,
+        BigDecimal valorActualUso,
         Boolean activo,
         AuditoriaResponse auditoria
 ) {

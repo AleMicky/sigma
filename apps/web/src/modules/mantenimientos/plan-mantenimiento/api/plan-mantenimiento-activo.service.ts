@@ -94,3 +94,24 @@ export async function activarPlanMantenimientoActivo(id: string): Promise<PlanMa
 export async function deletePlanMantenimientoActivo(id: string): Promise<void> {
   return http.delete<void>(planMantenimientoActivoEndpoints.detail(id))
 }
+
+export type PageResponse<T> = {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+}
+
+export async function getPlanMantenimientoActivosPaginado(params?: {
+  page?: number
+  size?: number
+  activo?: boolean
+}): Promise<PageResponse<PlanMantenimientoActivo>> {
+  const query = new URLSearchParams()
+  if (params?.page !== undefined) query.set("page", String(params.page))
+  if (params?.size !== undefined) query.set("size", String(params.size))
+  if (params?.activo !== undefined) query.set("activo", String(params.activo))
+  const qs = query.toString() ? `?${query.toString()}` : ""
+  return http.get<PageResponse<PlanMantenimientoActivo>>(`${planMantenimientoActivoEndpoints.root}${qs}`)
+}

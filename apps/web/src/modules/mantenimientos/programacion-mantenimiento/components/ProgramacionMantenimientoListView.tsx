@@ -6,6 +6,7 @@ import {
   Gauge,
   History,
   Hourglass,
+  Info,
   MoreVertical,
   Pencil,
   Play,
@@ -135,25 +136,55 @@ export function ProgramacionMantenimientoListView({
             const activo = prog.planActivo
             const criteriosActivos = prog.criterios.filter((c) => c.activo)
 
+            // Evaluar condición general de la tarjeta
+            let hasVencido = false
+            let hasProximo = false
+
+            for (const c of criteriosActivos) {
+              if (c.tipoCriterio === "TIEMPO") {
+                if (c.proximaFecha && c.proximaFecha <= todayStr) {
+                  hasVencido = true
+                } else if (c.proximaFecha) {
+                  const diffDays = Math.ceil((new Date(c.proximaFecha).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24))
+                  if (diffDays <= 7) hasProximo = true
+                }
+              } else {
+                const actual = c.valorActualUso ?? 0
+                const proximo = c.proximoValorUso ?? 0
+                const intervalo = c.intervaloUso ?? 1
+                if (proximo > 0 && actual >= proximo) {
+                  hasVencido = true
+                } else if (proximo > 0) {
+                  const base = Math.max(0, proximo - intervalo)
+                  const pct = ((actual - base) / (proximo - base)) * 100
+                  if (pct >= 85) hasProximo = true
+                }
+              }
+            }
+
             return (
               <div
                 key={prog.id}
-                className={`relative rounded-2xl border p-4 shadow-xs transition-all hover:shadow-md flex flex-col justify-between ${
-                  prog.activo
-                    ? "bg-card border-border/70 hover:border-primary/40"
-                    : "bg-muted/30 border-border/40 opacity-75"
+                className={`relative rounded-2xl border p-4 shadow-2xs transition-all hover:shadow-md flex flex-col justify-between gap-3 ${
+                  !prog.activo
+                    ? "bg-muted/20 border-border/40 opacity-75"
+                    : hasVencido
+                    ? "bg-red-500/5 border-red-500/30 hover:border-red-500/50"
+                    : hasProximo
+                    ? "bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50"
+                    : "bg-card border-border/70 hover:border-primary/40"
                 }`}
               >
-                <div>
+                <div className="space-y-3">
                   {/* Cabecera de la Tarjeta */}
-                  <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="space-y-0.5">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-bold text-sm text-foreground">
                           {activo?.activoCodigo ?? "Activo"}
                         </span>
                         {activo?.tipoActivoNombre && (
-                          <Badge variant="outline" className="text-[10px] font-normal py-0 px-1.5">
+                          <Badge variant="outline" className="text-[10px] font-normal py-0 px-1.5 border-border/60">
                             {activo.tipoActivoNombre}
                           </Badge>
                         )}
@@ -163,24 +194,34 @@ export function ProgramacionMantenimientoListView({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      <Badge
-                        variant={prog.activo ? "default" : "secondary"}
-                        className={`text-[10.5px] font-semibold py-0.5 ${
-                          prog.activo
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {prog.activo ? "Vigente" : "Inactivo"}
-                      </Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!prog.activo ? (
+                        <Badge variant="secondary" className="text-[10px] py-0.5">
+                          Inactivo
+                        </Badge>
+                      ) : hasVencido ? (
+                        <Badge variant="destructive" className="text-[10px] font-semibold py-0.5 flex items-center gap-1 bg-red-600 text-white shadow-xs">
+                          <span className="size-1.5 rounded-full bg-white animate-pulse" />
+                          <span>Requiere Servicio</span>
+                        </Badge>
+                      ) : hasProximo ? (
+                        <Badge variant="outline" className="text-[10px] font-semibold py-0.5 border-amber-500/40 text-amber-700 bg-amber-500/10 dark:text-amber-300">
+                          <span className="size-1.5 rounded-full bg-amber-500 mr-1" />
+                          <span>Próximo a Disparar</span>
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] font-semibold py-0.5 border-emerald-500/30 text-emerald-700 bg-emerald-500/10 dark:text-emerald-400">
+                          <span className="size-1.5 rounded-full bg-emerald-500 mr-1" />
+                          <span>Monitoreo al Día</span>
+                        </Badge>
+                      )}
 
                       <DropdownMenu>
                         <DropdownMenuTrigger
                           render={
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size="icon-xs"
                               className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
                             />
                           }
@@ -259,63 +300,198 @@ export function ProgramacionMantenimientoListView({
                   </div>
 
                   {/* Plan Asociado */}
-                  <div className="text-[11.5px] text-muted-foreground mb-3 flex items-center gap-1.5">
-                    <span className="font-semibold text-primary">Plan:</span>
-                    <span className="line-clamp-1">{activo?.planNombre ?? "—"}</span>
+                  <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 bg-muted/30 px-2 py-1 rounded-lg border border-border/40">
+                    <span className="font-semibold text-primary shrink-0">Plan:</span>
+                    <span className="line-clamp-1 font-medium text-foreground/90">{activo?.planNombre ?? "—"}</span>
                   </div>
 
-                  {/* Criterios Configurados */}
-                  <div className="space-y-1.5 mb-3">
-                    <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Criterios ({criteriosActivos.length} activos):
+                  {/* Criterios Configurados con Barra de Avance Real */}
+                  <div className="space-y-2">
+                    <div className="text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                      <span>Criterios Preventivos:</span>
+                      <span className="text-[10px] font-medium lowercase text-muted-foreground">
+                        {criteriosActivos.length} activos
+                      </span>
                     </div>
-                    <div className="grid grid-cols-1 gap-1.5 text-xs">
+
+                    <div className="space-y-2">
                       {prog.criterios.map((c) => {
-                        const isVencido =
-                          c.tipoCriterio === "TIEMPO" && c.proximaFecha && c.proximaFecha <= todayStr
+                        if (c.tipoCriterio === "KILOMETRAJE") {
+                          const actual = c.valorActualUso ?? 0
+                          const proximo = c.proximoValorUso ?? 0
+                          const intervalo = c.intervaloUso ?? 5000
+                          const base = Math.max(0, proximo - intervalo)
+                          const pct = proximo > base ? Math.min(100, Math.max(0, Math.round(((actual - base) / (proximo - base)) * 100))) : 0
+                          const restante = proximo - actual
+                          const isAlcanzado = proximo > 0 && actual >= proximo
+                          const isCerca = pct >= 85 && !isAlcanzado
+
+                          return (
+                            <div
+                              key={c.id}
+                              className={`rounded-xl border p-2.5 text-xs space-y-1.5 transition-all ${
+                                !c.activo
+                                  ? "bg-muted/20 border-border/30 opacity-60 line-through"
+                                  : isAlcanzado
+                                  ? "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300"
+                                  : isCerca
+                                  ? "bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300"
+                                  : "bg-muted/30 border-border/50 text-foreground"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between font-medium text-[11px]">
+                                <div className="flex items-center gap-1.5">
+                                  <Gauge className="size-3.5 text-amber-500 shrink-0" />
+                                  <span className="font-semibold">Odómetro</span>
+                                  <span className="text-muted-foreground font-normal">
+                                    (cada {intervalo.toLocaleString()} km)
+                                  </span>
+                                </div>
+                                <span className="font-bold">
+                                  {actual.toLocaleString()} / {proximo.toLocaleString()} km
+                                </span>
+                              </div>
+
+                              {/* Barra de Progreso del Odómetro */}
+                              <div className="w-full bg-muted/80 rounded-full h-1.5 overflow-hidden border border-border/30">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    isAlcanzado ? "bg-red-600" : isCerca ? "bg-amber-500" : "bg-emerald-500"
+                                  }`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between text-[10.5px]">
+                                <span className={isAlcanzado ? "font-bold text-red-600 dark:text-red-400" : "text-muted-foreground"}>
+                                  {isAlcanzado
+                                    ? `⚠️ Umbral alcanzado (+${(actual - proximo).toLocaleString()} km)`
+                                    : `Faltan ${restante.toLocaleString()} km para el servicio`}
+                                </span>
+                                <span className="font-semibold text-muted-foreground">{pct}%</span>
+                              </div>
+                            </div>
+                          )
+                        }
+
+                        if (c.tipoCriterio === "HORAS_USO") {
+                          const actual = c.valorActualUso ?? 0
+                          const proximo = c.proximoValorUso ?? 0
+                          const intervalo = c.intervaloUso ?? 250
+                          const base = Math.max(0, proximo - intervalo)
+                          const pct = proximo > base ? Math.min(100, Math.max(0, Math.round(((actual - base) / (proximo - base)) * 100))) : 0
+                          const restante = proximo - actual
+                          const isAlcanzado = proximo > 0 && actual >= proximo
+                          const isCerca = pct >= 85 && !isAlcanzado
+
+                          return (
+                            <div
+                              key={c.id}
+                              className={`rounded-xl border p-2.5 text-xs space-y-1.5 transition-all ${
+                                !c.activo
+                                  ? "bg-muted/20 border-border/30 opacity-60 line-through"
+                                  : isAlcanzado
+                                  ? "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300"
+                                  : isCerca
+                                  ? "bg-purple-500/10 border-purple-500/30 text-purple-800 dark:text-purple-300"
+                                  : "bg-muted/30 border-border/50 text-foreground"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between font-medium text-[11px]">
+                                <div className="flex items-center gap-1.5">
+                                  <Hourglass className="size-3.5 text-purple-500 shrink-0" />
+                                  <span className="font-semibold">Horómetro</span>
+                                  <span className="text-muted-foreground font-normal">
+                                    (cada {intervalo.toLocaleString()} hrs)
+                                  </span>
+                                </div>
+                                <span className="font-bold">
+                                  {actual.toLocaleString()} / {proximo.toLocaleString()} hrs
+                                </span>
+                              </div>
+
+                              {/* Barra de Progreso del Horómetro */}
+                              <div className="w-full bg-muted/80 rounded-full h-1.5 overflow-hidden border border-border/30">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    isAlcanzado ? "bg-red-600" : isCerca ? "bg-purple-500" : "bg-emerald-500"
+                                  }`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between text-[10.5px]">
+                                <span className={isAlcanzado ? "font-bold text-red-600 dark:text-red-400" : "text-muted-foreground"}>
+                                  {isAlcanzado
+                                    ? `⚠️ Umbral alcanzado (+${(actual - proximo).toLocaleString()} hrs)`
+                                    : `Faltan ${restante.toLocaleString()} hrs de operación`}
+                                </span>
+                                <span className="font-semibold text-muted-foreground">{pct}%</span>
+                              </div>
+                            </div>
+                          )
+                        }
+
+                        // TIEMPO
+                        const targetDate = c.proximaFecha
+                        let diffDays = 0
+                        let isVencido = false
+                        let isCerca = false
+                        if (targetDate) {
+                          diffDays = Math.ceil((new Date(targetDate).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24))
+                          isVencido = diffDays <= 0
+                          isCerca = diffDays > 0 && diffDays <= 7
+                        }
 
                         return (
                           <div
                             key={c.id}
-                            className={`flex items-center justify-between rounded-lg border p-2 text-[11px] transition-all ${
+                            className={`rounded-xl border p-2.5 text-xs space-y-1 transition-all ${
                               !c.activo
                                 ? "bg-muted/20 border-border/30 opacity-60 line-through"
                                 : isVencido
-                                ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 font-medium"
-                                : "bg-muted/40 border-border/50 text-foreground"
+                                ? "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300"
+                                : isCerca
+                                ? "bg-blue-500/10 border-blue-500/30 text-blue-800 dark:text-blue-300"
+                                : "bg-muted/30 border-border/50 text-foreground"
                             }`}
                           >
-                            <div className="flex items-center gap-1.5 font-medium">
-                              {c.tipoCriterio === "TIEMPO" && (
+                            <div className="flex items-center justify-between font-medium text-[11px]">
+                              <div className="flex items-center gap-1.5">
                                 <Clock className="size-3.5 text-blue-500 shrink-0" />
-                              )}
-                              {c.tipoCriterio === "KILOMETRAJE" && (
-                                <Gauge className="size-3.5 text-amber-500 shrink-0" />
-                              )}
-                              {c.tipoCriterio === "HORAS_USO" && (
-                                <Hourglass className="size-3.5 text-purple-500 shrink-0" />
-                              )}
-                              <span>{c.tipoCriterio}:</span>
-                              <span className="text-muted-foreground font-normal">
-                                {c.tipoCriterio === "TIEMPO" && `cada ${c.intervaloDias} días`}
-                                {c.tipoCriterio === "KILOMETRAJE" &&
-                                  `cada ${c.intervaloUso?.toLocaleString()} km`}
-                                {c.tipoCriterio === "HORAS_USO" &&
-                                  `cada ${c.intervaloUso?.toLocaleString()} hrs`}
-                              </span>
+                                <span className="font-semibold">Calendario</span>
+                                <span className="text-muted-foreground font-normal">
+                                  (cada {c.intervaloDias} días)
+                                </span>
+                              </div>
+                              <span className="font-bold">{targetDate ?? "Sin fecha"}</span>
                             </div>
 
-                            <div className="font-semibold shrink-0 text-right">
-                              {c.tipoCriterio === "TIEMPO" && (c.proximaFecha ?? "Sin fecha")}
-                              {c.tipoCriterio === "KILOMETRAJE" &&
-                                `${c.proximoValorUso?.toLocaleString() ?? 0} km`}
-                              {c.tipoCriterio === "HORAS_USO" &&
-                                `${c.proximoValorUso?.toLocaleString() ?? 0} hrs`}
+                            <div className="text-[10.5px]">
+                              <span className={isVencido ? "font-bold text-red-600 dark:text-red-400" : "text-muted-foreground"}>
+                                {isVencido
+                                  ? diffDays === 0
+                                    ? "⚠️ Vence hoy"
+                                    : `⚠️ Vencido hace ${Math.abs(diffDays)} días`
+                                  : isCerca
+                                  ? `⏰ Próximo a vencer en ${diffDays} días`
+                                  : `Faltan ${diffDays} días para la fecha objetivo`}
+                              </span>
                             </div>
                           </div>
                         )
                       })}
                     </div>
+                  </div>
+
+                  {/* Resumen explicativo del próximo disparo */}
+                  <div className="rounded-xl bg-muted/40 p-2 text-[10.5px] text-muted-foreground flex items-center gap-1.5 border border-border/40">
+                    <Info className="size-3.5 text-primary shrink-0" />
+                    <span className="line-clamp-2">
+                      {hasVencido
+                        ? "⚠️ Criterio alcanzado. Haz clic en 'Evaluar' para generar la Solicitud Preventiva."
+                        : "Al alcanzarse cualquiera de los umbrales, el sistema generará automáticamente la solicitud preventiva."}
+                    </span>
                   </div>
                 </div>
 
@@ -325,7 +501,7 @@ export function ProgramacionMantenimientoListView({
                     size="sm"
                     variant="outline"
                     onClick={() => setSelectedForHistorial(prog)}
-                    className="h-7 text-[11px] gap-1 px-2.5 cursor-pointer text-muted-foreground hover:text-foreground"
+                    className="h-8 text-xs gap-1 px-2.5 cursor-pointer text-muted-foreground hover:text-foreground rounded-lg"
                   >
                     <History className="size-3" />
                     <span>Historial</span>
@@ -336,20 +512,24 @@ export function ProgramacionMantenimientoListView({
                       size="sm"
                       variant="outline"
                       onClick={() => setSelectedForComplete(prog)}
-                      className="h-7 text-[11px] gap-1 px-2.5 cursor-pointer text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
+                      className="h-8 text-xs gap-1.5 px-3 cursor-pointer text-emerald-700 hover:text-emerald-800 hover:bg-emerald-500/10 border-emerald-500/30 rounded-lg font-medium"
                       title="Registrar servicio completado y recalcular umbrales"
                     >
-                      <CheckCircle className="size-3" />
+                      <CheckCircle className="size-3.5" />
                       <span>Completar</span>
                     </Button>
 
                     <Button
                       size="sm"
                       onClick={() => setSelectedForEval(prog)}
-                      className="h-7 text-[11px] gap-1 px-2.5 cursor-pointer bg-amber-600 hover:bg-amber-700 text-white"
+                      className={`h-8 text-xs gap-1.5 px-3 cursor-pointer shadow-xs rounded-lg font-medium ${
+                        hasVencido
+                          ? "bg-red-600 hover:bg-red-700 text-white animate-pulse"
+                          : "bg-amber-600 hover:bg-amber-700 text-white"
+                      }`}
                       title="Evaluar criterios y generar solicitud preventiva si corresponde"
                     >
-                      <Play className="size-3 fill-current" />
+                      <Play className="size-3.5 fill-current" />
                       <span>Evaluar</span>
                     </Button>
                   </div>

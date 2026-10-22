@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import {
   CalendarClock,
+  ClipboardList,
   Clock,
   Gauge,
   Hourglass,
@@ -16,8 +18,10 @@ import { ProgramacionMantenimientoFormDialog } from "../components/ProgramacionM
 import { EvaluarTodasDialog } from "../components/EvaluarTodasDialog"
 
 export function ProgramacionesMantenimientoPage() {
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState("")
   const [filtroEstado, setFiltroEstado] = useState<"todos" | "activos" | "inactivos">("todos")
+  const [showExplain, setShowExplain] = useState(true)
   const [formDialogOpen, setFormDialogOpen] = useState(false)
   const [evaluarTodasOpen, setEvaluarTodasOpen] = useState(false)
   const [editingProgramacion, setEditingProgramacion] = useState<ProgramacionMantenimiento | null>(null)
@@ -70,13 +74,23 @@ export function ProgramacionesMantenimientoPage() {
                 Programaciones de Mantenimiento
               </h1>
               <p className="text-xs text-muted-foreground">
-                Gestión automatizada de planes preventivos basados en tiempo, odómetro y horómetro
+                Motor de monitoreo preventivo y disparo automatizado por odómetro, horómetro y calendario
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate({ to: "/mantenimientos/planes-mantenimiento" })}
+            className="h-9 gap-1.5 text-xs rounded-xl border-blue-500/30 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300 cursor-pointer font-medium"
+          >
+            <ClipboardList className="size-3.5 text-blue-500" />
+            <span>Ver Planes Base</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -107,6 +121,30 @@ export function ProgramacionesMantenimientoPage() {
             <span>Nueva Programación</span>
           </Button>
         </div>
+      </div>
+
+      {/* Banner Explicativo: Funcionamiento del Motor Preventivo */}
+      <div className="rounded-2xl border border-border/70 bg-gradient-to-r from-amber-500/5 via-primary/5 to-emerald-500/5 p-4 text-xs space-y-2 shadow-2xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
+            <Sparkles className="size-4 text-amber-500" />
+            <span>Motor Preventivo: ¿Cómo se disparan las Solicitudes Automáticas?</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowExplain((prev) => !prev)}
+            className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer font-medium"
+          >
+            {showExplain ? "Ocultar explicación" : "¿Cómo funciona?"}
+          </button>
+        </div>
+
+        {showExplain && (
+          <p className="text-[11.5px] text-muted-foreground leading-relaxed">
+            El sistema monitorea activamente la telemetría de cada activo: <strong>odómetro de retorno</strong> de viajes vehiculares, <strong>horómetro</strong> de operación y <strong>calendario</strong>.
+            Cuando un activo alcanza o supera su umbral objetivo, la evaluación genera automáticamente una <strong>Solicitud de Mantenimiento Preventivo</strong> con las actividades técnicas de su plan. Al registrar la culminación en <em>"Completar"</em>, el nuevo umbral se recalcula automáticamente sumando el intervalo de uso.
+          </p>
+        )}
       </div>
 
       {/* Métricas Principales */}

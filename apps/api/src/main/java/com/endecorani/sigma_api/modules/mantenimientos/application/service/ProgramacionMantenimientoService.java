@@ -828,10 +828,12 @@ public class ProgramacionMantenimientoService {
     private ProgramacionMantenimientoResponse toEnrichedResponse(ProgramacionMantenimiento domain) {
         ProgramacionMantenimientoResponse.PlanActivoInfo planActivoInfo = null;
 
+        UUID resolvedActivoId = null;
         if (domain.getPlanMantenimientoActivoId() != null) {
             Optional<PlanMantenimientoActivo> paOpt = planMantenimientoActivoRepository.findById(domain.getPlanMantenimientoActivoId());
             if (paOpt.isPresent()) {
                 PlanMantenimientoActivo pa = paOpt.get();
+                resolvedActivoId = pa.getActivoId();
                 Optional<PlanMantenimiento> planOpt = planMantenimientoRepository.findById(pa.getPlanMantenimientoId());
                 Optional<Activo> activoOpt = activoRepository.findById(pa.getActivoId());
                 Optional<TipoActivo> tipoActivoOpt = activoOpt.flatMap(a -> a.getTipoActivoId() != null
@@ -855,9 +857,46 @@ public class ProgramacionMantenimientoService {
             }
         }
 
+        final UUID targetActivoId = resolvedActivoId;
         List<ProgramacionMantenimientoCriterioResponse> criteriosResponse = criterioRepository
                 .findByProgramacionMantenimientoId(domain.getId()).stream()
-                .map(criterioMapper::toResponse)
+                .map(c -> {
+                    BigDecimal valorActual = null;
+                    if (targetActivoId != null) {
+                        if (c.getTipoCriterio() == TipoCriterioMantenimiento.KILOMETRAJE) {
+                            valorActual = obtenerKilometrajeActual(targetActivoId);
+                        } else if (c.getTipoCriterio() == TipoCriterioMantenimiento.HORAS_USO) {
+                            valorActual = obtenerHorasUsoActual(targetActivoId);
+                        }
+                    }
+                    ProgramacionMantenimientoCriterioResponse base = criterioMapper.toResponse(c);
+                    if (base == null) {
+                        return new ProgramacionMantenimientoCriterioResponse(
+                                c.getId(),
+                                c.getProgramacionMantenimientoId(),
+                                c.getTipoCriterio(),
+                                c.getIntervaloDias(),
+                                c.getIntervaloUso(),
+                                c.getProximaFecha(),
+                                c.getProximoValorUso(),
+                                valorActual,
+                                c.getActivo(),
+                                null
+                        );
+                    }
+                    return new ProgramacionMantenimientoCriterioResponse(
+                            base.id(),
+                            base.programacionMantenimientoId(),
+                            base.tipoCriterio(),
+                            base.intervaloDias(),
+                            base.intervaloUso(),
+                            base.proximaFecha(),
+                            base.proximoValorUso(),
+                            valorActual,
+                            base.activo(),
+                            base.auditoria()
+                    );
+                })
                 .collect(Collectors.toList());
 
         return mapper.toResponse(domain, planActivoInfo, criteriosResponse);

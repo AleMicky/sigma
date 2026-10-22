@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
 import {
+  AlertTriangle,
   CalendarClock,
   Clock,
   Gauge,
@@ -20,9 +22,20 @@ import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Badge } from "@/shared/components/ui/badge"
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/shared/components/ui/combobox"
+import { planMantenimientoActivoQueries } from "../../plan-mantenimiento/api/plan-mantenimiento-activo.queries"
+import type { PlanMantenimientoActivo } from "../../plan-mantenimiento/api/plan-mantenimiento-activo.service"
+import {
   useCreateProgramacion,
   useUpdateProgramacion,
 } from "../api/programacion-mantenimiento.mutations"
+import { useProgramaciones } from "../api/programacion-mantenimiento.queries"
 import type {
   ProgramacionMantenimiento,
   TipoCriterioMantenimiento,
@@ -65,10 +78,27 @@ export function ProgramacionMantenimientoFormDialog({
   const [activo, setActivo] = useState(true)
   const [criterios, setCriterios] = useState<CriterioItemState[]>([])
   const [formError, setFormError] = useState<string | null>(null)
+  const [selectedAsignacion, setSelectedAsignacion] = useState<PlanMantenimientoActivo | null>(null)
+
+  const asignacionesQuery = useQuery({
+    ...planMantenimientoActivoQueries.listPaginado({ page: 0, size: 200, activo: true }),
+    enabled: open && !isEditing && !planMantenimientoActivoId,
+  })
+  const asignaciones = asignacionesQuery.data?.content ?? []
+
+  const { data: programacionesData } = useProgramaciones({ activo: true, pageSize: 200 })
+  const occupiedPlanActivoIds = useMemo(
+    () => new Set(programacionesData?.content.map((p) => p.planMantenimientoActivoId)),
+    [programacionesData],
+  )
+  const isSelectedOcupada = Boolean(
+    !isEditing && selectedAsignacion && occupiedPlanActivoIds.has(selectedAsignacion.id),
+  )
 
   useEffect(() => {
     if (open) {
       setFormError(null)
+      setSelectedAsignacion(null)
       if (programacionToEdit) {
         setActivo(programacionToEdit.activo)
         setCriterios(
@@ -205,9 +235,13 @@ export function ProgramacionMantenimientoFormDialog({
           },
         })
       } else {
-        const targetPlanActivoId = planMantenimientoActivoId ?? ""
+        const targetPlanActivoId = planMantenimientoActivoId || selectedAsignacion?.id || ""
         if (!targetPlanActivoId) {
-          setFormError("Debe especificar la asignación del activo al plan.")
+          setFormError("Debe seleccionar la asignación del activo al plan de mantenimiento.")
+          return
+        }
+        if (isSelectedOcupada) {
+          setFormError("Ya existe una programación activa para este activo y plan. Puedes editar la existente desde la lista.")
           return
         }
         await createMutation.mutateAsync({
@@ -224,12 +258,18 @@ export function ProgramacionMantenimientoFormDialog({
         })
       }
       onOpenChange(false)
-    } catch {
-      // Handled by mutation toast
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } }; message?: string }
+      const message = errorObj?.response?.data?.message || errorObj?.message || "Error al procesar la programación"
+      setFormError(message)
     }
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending
+
+  const effectiveActivoNombre = activoNombre || (selectedAsignacion?.activo ? `${selectedAsignacion.activo.codigo} - ${selectedAsignacion.activo.nombre}` : null)
+  const effectivePlanNombre = planNombre || (selectedAsignacion?.plan ? `${selectedAsignacion.plan.codigo} - ${selectedAsignacion.plan.nombre}` : null)
+  const effectiveTipoActivoNombre = tipoActivoNombre || selectedAsignacion?.activo?.tipoActivoNombre || selectedAsignacion?.plan?.tipoActivoNombre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -246,20 +286,102 @@ export function ProgramacionMantenimientoFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Info del Activo y Plan */}
-        {(activoNombre || planNombre) && (
-          <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-xs space-y-1">
-            <div className="flex items-center justify-between font-semibold text-foreground">
-              <span>{activoNombre}</span>
-              {tipoActivoNombre && (
-                <Badge variant="outline" className="text-[10px]">
-                  {tipoActivoNombre}
+        {/* Selector de Asignación Plan-Activo cuando se crea desde la lista global */}
+        {!isEditing && !planMantenimientoActivoId && (
+          <div className="space-y-1.5 rounded-xl border border-border/70 bg-card p-3 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-foreground">
+                Asignación Plan - Activo <span className="text-destructive">*</span>
+              </Label>
+              {selectedAsignacion && (
+                <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                  Asignación seleccionada
                 </Badge>
               )}
             </div>
-            {planNombre && (
+            <p className="text-[11px] text-muted-foreground">
+              Seleccione el activo vinculado al plan preventivo sobre el cual se establecerá la programación.
+            </p>
+            <Combobox
+              value={selectedAsignacion}
+              onValueChange={(val: PlanMantenimientoActivo | null) => {
+                setSelectedAsignacion(val)
+                setFormError(null)
+              }}
+              itemToStringLabel={(item: PlanMantenimientoActivo) =>
+                item
+                  ? `${item.activo?.codigo ?? ""} - ${item.activo?.nombre ?? ""} (Plan: ${item.plan?.nombre ?? ""})`
+                  : ""
+              }
+            >
+              <ComboboxInput placeholder="Buscar por código de activo, nombre o plan..." className="h-9 text-xs" />
+              <ComboboxContent>
+                <ComboboxEmpty>
+                  {asignacionesQuery.isLoading ? "Cargando asignaciones..." : "No se encontraron asignaciones de activos a planes"}
+                </ComboboxEmpty>
+                <ComboboxList>
+                  {asignaciones.map((item) => {
+                    const isOcupada = occupiedPlanActivoIds.has(item.id)
+                    return (
+                      <ComboboxItem key={item.id} value={item}>
+                        <div className="flex flex-col py-0.5">
+                          <div className="flex items-center gap-1.5 font-medium text-foreground">
+                            <span>{item.activo?.codigo} - {item.activo?.nombre}</span>
+                            {item.activo?.tipoActivoNombre && (
+                              <Badge variant="outline" className="text-[9.5px] px-1.5 py-0 h-4">
+                                {item.activo.tipoActivoNombre}
+                              </Badge>
+                            )}
+                            {isOcupada && (
+                              <Badge variant="outline" className="text-[9.5px] px-1.5 py-0 h-4 border-amber-500/30 text-amber-600 bg-amber-500/10">
+                                Ya programado
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">
+                            Plan: <strong className="text-foreground/80">{item.plan?.codigo} - {item.plan?.nombre}</strong>
+                          </span>
+                          {item.responsable && (
+                            <span className="text-[10px] text-muted-foreground">
+                              Responsable: {item.responsable.nombreCompleto}
+                            </span>
+                          )}
+                        </div>
+                      </ComboboxItem>
+                    )
+                  })}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+
+            {isSelectedOcupada && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-[11px] text-amber-700 dark:text-amber-300 space-y-1">
+                <div className="font-semibold flex items-center gap-1.5">
+                  <AlertTriangle className="size-3.5 text-amber-500 shrink-0" />
+                  <span>Este activo ya cuenta con una programación activa</span>
+                </div>
+                <p className="text-muted-foreground text-[10.5px]">
+                  No se permite crear programaciones duplicadas para el mismo activo y plan. Para modificar sus criterios (tiempo, odómetro u horómetro), edita la programación existente desde la tabla principal.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Info del Activo y Plan */}
+        {(effectiveActivoNombre || effectivePlanNombre) && (
+          <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-xs space-y-1">
+            <div className="flex items-center justify-between font-semibold text-foreground">
+              <span>{effectiveActivoNombre}</span>
+              {effectiveTipoActivoNombre && (
+                <Badge variant="outline" className="text-[10px]">
+                  {effectiveTipoActivoNombre}
+                </Badge>
+              )}
+            </div>
+            {effectivePlanNombre && (
               <div className="text-muted-foreground text-[11px]">
-                Plan: <span className="text-foreground font-medium">{planNombre}</span>
+                Plan: <span className="text-foreground font-medium">{effectivePlanNombre}</span>
               </div>
             )}
           </div>
@@ -527,7 +649,7 @@ export function ProgramacionMantenimientoFormDialog({
             <Button
               type="submit"
               size="sm"
-              disabled={isPending}
+              disabled={isPending || isSelectedOcupada}
               className="h-8 text-xs gap-1.5 cursor-pointer"
             >
               <span>{isPending ? "Guardando..." : isEditing ? "Actualizar Programación" : "Guardar Programación"}</span>

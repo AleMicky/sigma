@@ -11,6 +11,7 @@ export type ProgramacionMantenimientoCriterio = {
   intervaloUso?: number | null
   proximaFecha?: string | null
   proximoValorUso?: number | null
+  valorActualUso?: number | null
   activo: boolean
   auditoria?: {
     createdAt?: string
