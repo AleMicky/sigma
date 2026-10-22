@@ -9,6 +9,7 @@ export const programacionMantenimientoEndpoints = {
   activar: (id: string) => `/programaciones-mantenimiento/${id}/activar`,
   desactivar: (id: string) => `/programaciones-mantenimiento/${id}/desactivar`,
   evaluar: (id: string) => `/programaciones-mantenimiento/${id}/evaluar`,
+  evaluarTodas: "/programaciones-mantenimiento/evaluar-todas",
   completar: (id: string) => `/programaciones-mantenimiento/${id}/completar`,
   historial: (id: string) => `/programaciones-mantenimiento/${id}/historial`,
 

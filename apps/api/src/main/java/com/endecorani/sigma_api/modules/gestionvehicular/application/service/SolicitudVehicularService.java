@@ -118,6 +118,7 @@ public class SolicitudVehicularService {
     private final UsuarioRepository usuarioRepository;
     private final SecurityUtils securityUtils;
     private final ActivoService activoService;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudVehicularResponse> listar(String search, PageRequestDto pageRequest) {
@@ -500,6 +501,15 @@ public class SolicitudVehicularService {
 
         if (modificado) {
             viajeVehicularRepository.save(viaje);
+
+            // Notificar sincronización de telemetría si se registró retorno con kilometraje
+            if (viaje.getKilometrajeRetorno() != null && activoId != null && eventPublisher != null) {
+                eventPublisher.publishEvent(new com.endecorani.sigma_api.modules.gestionvehicular.domain.event.VehiculoKilometrajeRegistradoEvent(
+                        activoId,
+                        viaje.getKilometrajeRetorno(),
+                        "SOLICITUD_VEHICULAR_RETORNO"
+                ));
+            }
         }
     }
 

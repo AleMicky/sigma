@@ -4,12 +4,15 @@ import com.endecorani.sigma_api.config.security.SecurityUtils;
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoAtributoEntity;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoAtributoValorEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoValorRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.CompletarMantenimientoProgramadoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.EvaluarProgramacionRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ProgramacionMantenimientoCriterioRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ProgramacionMantenimientoRequest;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.BatchEvaluacionProgramacionResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.EvaluacionProgramacionResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ProgramacionMantenimientoCriterioMapper;
@@ -236,7 +239,7 @@ class ProgramacionMantenimientoServiceTest {
                 .activo(true)
                 .build();
 
-        when(repository.findById(programacionId)).thenReturn(Optional.of(programacion));
+        when(repository.findByIdWithLock(programacionId)).thenReturn(Optional.of(programacion));
         when(planMantenimientoActivoRepository.findById(planMantenimientoActivoId)).thenReturn(Optional.of(planActivo));
         when(activoRepository.findById(activoId)).thenReturn(Optional.of(activo));
         when(planMantenimientoRepository.findById(planId)).thenReturn(Optional.of(plan));
@@ -317,5 +320,150 @@ class ProgramacionMantenimientoServiceTest {
         assertEquals(new BigDecimal("15200"), criterioKm.getProximoValorUso());
 
         verify(criterioRepository, times(2)).save(any(ProgramacionMantenimientoCriterio.class));
+    }
+
+    @Test
+    @DisplayName("Regla 4: Falla con BusinessException si tipo PREVENTIVO no existe en el sistema")
+    void testEvaluar_FallaSiTipoPreventivoNoExiste() {
+        ProgramacionMantenimiento programacion = ProgramacionMantenimiento.builder()
+                .id(programacionId)
+                .planMantenimientoActivoId(planMantenimientoActivoId)
+                .activo(true)
+                .build();
+
+        ProgramacionMantenimientoCriterio criterioTiempo = ProgramacionMantenimientoCriterio.builder()
+                .id(UUID.randomUUID())
+                .programacionMantenimientoId(programacionId)
+                .tipoCriterio(TipoCriterioMantenimiento.TIEMPO)
+                .intervaloDias(30)
+                .proximaFecha(LocalDate.now().minusDays(1))
+                .activo(true)
+                .build();
+
+        when(repository.findByIdWithLock(programacionId)).thenReturn(Optional.of(programacion));
+        when(planMantenimientoActivoRepository.findById(planMantenimientoActivoId)).thenReturn(Optional.of(planActivo));
+        when(activoRepository.findById(activoId)).thenReturn(Optional.of(activo));
+        when(planMantenimientoRepository.findById(planId)).thenReturn(Optional.of(plan));
+        when(criterioRepository.findByProgramacionMantenimientoIdAndActivoTrue(programacionId)).thenReturn(List.of(criterioTiempo));
+        when(historialRepository.findFirstPendingByProgramacionMantenimientoId(programacionId)).thenReturn(Optional.empty());
+        when(springTipoMantenimientoRepository.findByCodigoIgnoreCase("PREVENTIVO")).thenReturn(Optional.empty());
+
+        EvaluarProgramacionRequest evalReq = new EvaluarProgramacionRequest(LocalDate.now(), null, null, false);
+        BusinessException ex = assertThrows(BusinessException.class, () -> service.evaluarProgramacion(programacionId, evalReq));
+        assertTrue(ex.getMessage().contains("PREVENTIVO"));
+    }
+
+    @Test
+    @DisplayName("Regla 5 y 6: sincronizarFinMantenimientoPorSolicitud completa y recalcula criterios automáticamente")
+    void testSincronizarFinMantenimientoPorSolicitud() {
+        UUID solId = UUID.randomUUID();
+        ProgramacionMantenimiento programacion = ProgramacionMantenimiento.builder()
+                .id(programacionId)
+                .planMantenimientoActivoId(planMantenimientoActivoId)
+                .activo(true)
+                .build();
+
+        ProgramacionMantenimientoHistorial historial = ProgramacionMantenimientoHistorial.builder()
+                .id(UUID.randomUUID())
+                .programacionMantenimientoId(programacionId)
+                .solicitudMantenimientoId(solId)
+                .solicitudNumero("SOL-001")
+                .completado(false)
+                .build();
+
+        ProgramacionMantenimientoCriterio criterioTiempo = ProgramacionMantenimientoCriterio.builder()
+                .id(UUID.randomUUID())
+                .programacionMantenimientoId(programacionId)
+                .tipoCriterio(TipoCriterioMantenimiento.TIEMPO)
+                .intervaloDias(60)
+                .proximaFecha(LocalDate.now().minusDays(10))
+                .activo(true)
+                .build();
+
+        when(historialRepository.findBySolicitudMantenimientoId(solId)).thenReturn(Optional.of(historial));
+        when(repository.findById(programacionId)).thenReturn(Optional.of(programacion));
+        when(criterioRepository.findByProgramacionMantenimientoId(programacionId)).thenReturn(List.of(criterioTiempo));
+
+        service.sincronizarFinMantenimientoPorSolicitud(solId, activoId);
+
+        assertTrue(historial.getCompletado());
+        assertEquals(LocalDate.now().plusDays(60), criterioTiempo.getProximaFecha());
+        verify(historialRepository, times(1)).save(historial);
+        verify(criterioRepository, times(1)).save(criterioTiempo);
+    }
+
+    @Test
+    @DisplayName("evaluarTodas debe evaluar todas las programaciones activas y compilar el resumen batch")
+    void evaluarTodas_debeRetornarResumenBatch() {
+        ProgramacionMantenimiento prog1 = ProgramacionMantenimiento.builder()
+                .id(UUID.randomUUID())
+                .planMantenimientoActivoId(UUID.randomUUID())
+                .activo(true)
+                .build();
+
+        when(repository.findByActivoTrue()).thenReturn(List.of(prog1));
+        when(repository.findByIdWithLock(prog1.getId())).thenReturn(Optional.of(prog1));
+        when(planMantenimientoActivoRepository.findById(prog1.getPlanMantenimientoActivoId())).thenReturn(Optional.empty());
+
+        BatchEvaluacionProgramacionResponse batchResp = service.evaluarTodas();
+
+        assertNotNull(batchResp);
+        assertEquals(1, batchResp.totalEvaluadas());
+        assertEquals(0, batchResp.solicitudesGeneradas());
+        assertEquals(1, batchResp.evaluaciones().size());
+        verify(repository, times(1)).findByActivoTrue();
+    }
+
+    @Test
+    @DisplayName("completarMantenimiento debe actualizar telemetría en activo_atributo_valores si el valor es mayor")
+    void completarMantenimiento_debeActualizarTelemetriaActivo() {
+        UUID progId = UUID.randomUUID();
+        UUID planActivoId = UUID.randomUUID();
+        UUID activoId = UUID.randomUUID();
+        UUID tipoActivoId = UUID.randomUUID();
+        UUID attrId = UUID.randomUUID();
+
+        ProgramacionMantenimiento prog = ProgramacionMantenimiento.builder()
+                .id(progId)
+                .planMantenimientoActivoId(planActivoId)
+                .activo(true)
+                .build();
+        PlanMantenimientoActivo planActivo = PlanMantenimientoActivo.builder()
+                .id(planActivoId)
+                .activoId(activoId)
+                .build();
+        Activo activo = Activo.builder()
+                .id(activoId)
+                .tipoActivoId(tipoActivoId)
+                .build();
+
+        ActivoAtributoValorEntity attrValor = new ActivoAtributoValorEntity();
+        attrValor.setActivoId(activoId);
+        attrValor.setActivoAtributoId(attrId);
+        attrValor.setValor("5000");
+
+        ActivoAtributoEntity attrDef = new ActivoAtributoEntity();
+        attrDef.setCodigo("KILOMETRAJE");
+
+        when(repository.findById(progId)).thenReturn(Optional.of(prog));
+        when(planMantenimientoActivoRepository.findById(planActivoId)).thenReturn(Optional.of(planActivo));
+        when(criterioRepository.findByProgramacionMantenimientoId(progId)).thenReturn(List.of());
+        when(historialRepository.findFirstPendingByProgramacionMantenimientoId(progId)).thenReturn(Optional.empty());
+        when(activoRepository.findById(activoId)).thenReturn(Optional.of(activo));
+        when(springActivoAtributoValorRepository.findByActivoId(activoId)).thenReturn(List.of(attrValor));
+        when(springActivoAtributoRepository.findById(attrId)).thenReturn(Optional.of(attrDef));
+
+        CompletarMantenimientoProgramadoRequest req = new CompletarMantenimientoProgramadoRequest(
+                LocalDate.now(),
+                new BigDecimal("6500"),
+                null,
+                null,
+                "Servicio preventivo completado"
+        );
+
+        service.completarMantenimiento(progId, req);
+
+        assertEquals("6500", attrValor.getValor());
+        verify(springActivoAtributoValorRepository, times(1)).save(attrValor);
     }
 }

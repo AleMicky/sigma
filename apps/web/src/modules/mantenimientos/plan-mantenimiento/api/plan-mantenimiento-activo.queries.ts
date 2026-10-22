@@ -5,6 +5,7 @@ import {
   getActivosByPlan,
   getPlanesByActivo,
   getPlanMantenimientoActivo,
+  getPlanMantenimientoActivosPaginado,
 } from "./plan-mantenimiento-activo.service"
 
 export const planMantenimientoActivoQueries = {
@@ -27,5 +28,11 @@ export const planMantenimientoActivoQueries = {
       queryKey: planMantenimientoActivoKeys.detail(id),
       queryFn: () => getPlanMantenimientoActivo(id),
       enabled: Boolean(id),
+    }),
+
+  listPaginado: (params?: { page?: number; size?: number; activo?: boolean }) =>
+    queryOptions({
+      queryKey: [...planMantenimientoActivoKeys.all, "paginado", params],
+      queryFn: () => getPlanMantenimientoActivosPaginado(params),
     }),
 }

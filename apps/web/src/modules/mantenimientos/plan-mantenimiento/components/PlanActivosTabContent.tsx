@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
 import {
   AlertCircle,
   Boxes,
@@ -47,6 +46,9 @@ import {
 import { planMantenimientoActivoQueries } from "../api/plan-mantenimiento-activo.queries"
 import type { PlanMantenimientoActivo } from "../api/plan-mantenimiento-activo.service"
 import type { PlanMantenimiento } from "../api/plan-mantenimiento.service"
+import { useProgramaciones } from "@/modules/mantenimientos/programacion-mantenimiento/api/programacion-mantenimiento.queries"
+import { ProgramacionMantenimientoFormDialog } from "@/modules/mantenimientos/programacion-mantenimiento/components/ProgramacionMantenimientoFormDialog"
+import type { ProgramacionMantenimiento } from "@/modules/mantenimientos/programacion-mantenimiento/api/programacion-mantenimiento.service"
 import { PlanActivoAddDialog } from "./PlanActivoAddDialog"
 import { PlanActivoEditDialog } from "./PlanActivoEditDialog"
 
@@ -55,7 +57,6 @@ type PlanActivosTabContentProps = {
 }
 
 export function PlanActivosTabContent({ plan }: PlanActivosTabContentProps) {
-  const navigate = useNavigate()
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PlanMantenimientoActivo | null>(null)
   const [itemToDelete, setItemToDelete] = useState<PlanMantenimientoActivo | null>(null)
@@ -91,6 +92,24 @@ export function PlanActivosTabContent({ plan }: PlanActivosTabContentProps) {
   const deleteMutation = useDeletePlanMantenimientoActivo(planId)
   const desactivarMutation = useDesactivarPlanMantenimientoActivo(planId)
   const activarMutation = useActivarPlanMantenimientoActivo(planId)
+
+  // Consultar programaciones preventivas activas para asociar a cada activo asignado
+  const { data: programacionesData, refetch: refetchProgramaciones } = useProgramaciones({ pageSize: 200 })
+  const programacionesByPlanActivo = useMemo(() => {
+    const map = new Map<string, ProgramacionMantenimiento>()
+    if (programacionesData?.content) {
+      for (const prog of programacionesData.content) {
+        if (prog.planMantenimientoActivoId) {
+          map.set(prog.planMantenimientoActivoId, prog)
+        }
+      }
+    }
+    return map
+  }, [programacionesData])
+
+  const [selectedPlanActivoForProgramacion, setSelectedPlanActivoForProgramacion] = useState<PlanMantenimientoActivo | null>(null)
+  const [programacionToEdit, setProgramacionToEdit] = useState<ProgramacionMantenimiento | null>(null)
+  const [programacionDialogOpen, setProgramacionDialogOpen] = useState(false)
 
   // Métricas
   const totalAsignados = asignaciones.length
@@ -306,175 +325,224 @@ export function PlanActivosTabContent({ plan }: PlanActivosTabContentProps) {
             {filteredAsignaciones.map((item) => {
               const isCopied = copiedCode === item.activo?.codigo
               const isActivo = Boolean(item.estadoActivo)
+              const prog = programacionesByPlanActivo.get(item.id)
 
               return (
                 <div
                   key={item.id}
                   className={cn(
-                    "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4 transition-all shadow-2xs",
+                    "group relative flex flex-col justify-between gap-3 rounded-2xl border p-4 transition-all shadow-2xs",
                     isActivo
                       ? "border-border/80 bg-card hover:border-emerald-500/40 hover:shadow-xs"
                       : "border-border/50 bg-muted/20 opacity-80 hover:opacity-100",
                   )}
                 >
-                  {/* Lado izquierdo: Datos del Activo */}
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <span
-                      className={cn(
-                        "flex size-10 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105",
-                        isActivo
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
-                          : "bg-muted text-muted-foreground border-border/60",
-                      )}
-                    >
-                      <Boxes className="size-5" />
-                    </span>
+                  {/* Fila superior: Datos del Activo y Acciones */}
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <span
+                        className={cn(
+                          "flex size-10 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105",
+                          isActivo
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+                            : "bg-muted text-muted-foreground border-border/60",
+                        )}
+                      >
+                        <Boxes className="size-5" />
+                      </span>
 
-                    <div className="flex flex-col min-w-0 flex-1 gap-1">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <span className="font-bold text-sm text-foreground">
-                          {item.activo?.nombre ?? "Activo sin nombre"}
-                        </span>
+                      <div className="flex flex-col min-w-0 flex-1 gap-1">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <span className="font-bold text-sm text-foreground">
+                            {item.activo?.nombre ?? "Activo sin nombre"}
+                          </span>
 
-                        {item.activo?.codigo && (
-                          <div className="flex items-center gap-1">
-                            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px] font-semibold text-foreground border border-border/50">
-                              {item.activo.codigo}
-                            </code>
-                            <button
-                              type="button"
-                              onClick={() => copyText(item.activo!.codigo)}
-                              className="inline-flex size-4 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
-                              title="Copiar código"
-                            >
-                              {isCopied ? (
-                                <Check className="size-2.5 text-emerald-500" />
-                              ) : (
-                                <Copy className="size-2.5" />
-                              )}
-                            </button>
-                          </div>
+                          {item.activo?.codigo && (
+                            <div className="flex items-center gap-1">
+                              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px] font-semibold text-foreground border border-border/50">
+                                {item.activo.codigo}
+                              </code>
+                              <button
+                                type="button"
+                                onClick={() => copyText(item.activo!.codigo)}
+                                className="inline-flex size-4 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+                                title="Copiar código"
+                              >
+                                {isCopied ? (
+                                  <Check className="size-2.5 text-emerald-500" />
+                                ) : (
+                                  <Copy className="size-2.5" />
+                                )}
+                              </button>
+                            </div>
+                          )}
+
+                          {item.activo?.tipoActivoNombre && (
+                            <Badge variant="outline" className="border-border/60 text-[10.5px] font-medium text-muted-foreground">
+                              {item.activo.tipoActivoNombre}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {item.activo?.descripcion && (
+                          <p className="line-clamp-1 text-xs text-muted-foreground">
+                            {item.activo.descripcion}
+                          </p>
                         )}
 
-                        {item.activo?.tipoActivoNombre && (
-                          <Badge variant="outline" className="border-border/60 text-[10.5px] font-medium text-muted-foreground">
-                            {item.activo.tipoActivoNombre}
-                          </Badge>
-                        )}
+                        {/* Información de Vigencia y Responsable */}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 text-xs">
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <Calendar className="size-3 text-muted-foreground" />
+                            <span>Desde: <strong>{item.fechaInicio}</strong></span>
+                            <span>•</span>
+                            <span>Hasta: <strong>{item.fechaFin ?? "Indefinido"}</strong></span>
+                          </span>
+
+                          {item.responsable && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-secondary/80 px-2 py-0.5 text-[11px] font-medium text-secondary-foreground border border-border/40">
+                              <UserCheck className="size-3 text-primary" />
+                              {item.responsable.nombreCompleto}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                    </div>
 
-                      {item.activo?.descripcion && (
-                        <p className="line-clamp-1 text-xs text-muted-foreground">
-                          {item.activo.descripcion}
-                        </p>
-                      )}
-
-                      {/* Información de Vigencia y Responsable */}
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 text-xs">
-                        <span className="inline-flex items-center gap-1 text-muted-foreground">
-                          <Calendar className="size-3 text-muted-foreground" />
-                          <span>Desde: <strong>{item.fechaInicio}</strong></span>
-                          <span>•</span>
-                          <span>Hasta: <strong>{item.fechaFin ?? "Indefinido"}</strong></span>
-                        </span>
-
-                        {item.responsable && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-secondary/80 px-2 py-0.5 text-[11px] font-medium text-secondary-foreground border border-border/40">
-                            <UserCheck className="size-3 text-primary" />
-                            {item.responsable.nombreCompleto}
+                    {/* Lado derecho: Estado y Acciones de la Asignación */}
+                    <div className="flex items-center justify-between sm:justify-end gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40">
+                      <div className="flex items-center mr-1">
+                        {isActivo ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 shadow-2xs">
+                            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Vigente
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground border border-border/50">
+                            <History className="size-3 text-muted-foreground" />
+                            Desactivado
                           </span>
                         )}
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Lado derecho: Estado y Acciones */}
-                  <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40">
-                    {/* Badge de Estado */}
-                    <div className="flex items-center mr-1">
+                      {/* Botón Desactivar / Reactivar */}
                       {isActivo ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 shadow-2xs">
-                          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          Vigente
-                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setItemToDesactivar(item)}
+                          disabled={desactivarMutation.isPending}
+                          title="Desactivar asignación (impedir solicitudes automáticas sin borrar historial)"
+                          className="h-8 gap-1.5 text-xs text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 cursor-pointer rounded-lg"
+                        >
+                          <PauseCircle className="size-3.5" />
+                          <span className="hidden sm:inline">Desactivar</span>
+                        </Button>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground border border-border/50">
-                          <History className="size-3 text-muted-foreground" />
-                          Desactivado
-                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => activarMutation.mutate(item.id)}
+                          disabled={activarMutation.isPending}
+                          title="Reactivar asignación para este activo"
+                          className="h-8 gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer rounded-lg"
+                        >
+                          <PlayCircle className="size-3.5" />
+                          <span className="hidden sm:inline">Reactivar</span>
+                        </Button>
                       )}
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => setEditingItem(item)}
+                        title="Editar fechas y responsable"
+                        className="size-8 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        <Edit3 className="size-3.5" />
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => setItemToDelete(item)}
+                        disabled={deleteMutation.isPending}
+                        title="Eliminar asignación permanentemente"
+                        className="size-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
                     </div>
-
-                    {/* Botón Desactivar / Reactivar - Regla 5 */}
-                    {isActivo ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setItemToDesactivar(item)}
-                        disabled={desactivarMutation.isPending}
-                        title="Desactivar asignación (impedir solicitudes automáticas sin borrar historial)"
-                        className="h-8 gap-1.5 text-xs text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 cursor-pointer rounded-lg"
-                      >
-                        <PauseCircle className="size-3.5" />
-                        <span className="hidden sm:inline">Desactivar</span>
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => activarMutation.mutate(item.id)}
-                        disabled={activarMutation.isPending}
-                        title="Reactivar asignación para este activo"
-                        className="h-8 gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer rounded-lg"
-                      >
-                        <PlayCircle className="size-3.5" />
-                        <span className="hidden sm:inline">Reactivar</span>
-                      </Button>
-                    )}
-
-                    {/* Botón Ir a Programación de Mantenimiento */}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() =>
-                        navigate({
-                          to: "/mantenimientos/programaciones-mantenimiento",
-                        })
-                      }
-                      title="Ver o configurar programación de mantenimiento para este activo"
-                      className="size-8 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
-                    >
-                      <CalendarClock className="size-3.5" />
-                    </Button>
-
-                    {/* Botón Editar Fechas / Responsable */}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => setEditingItem(item)}
-                      title="Editar fechas y responsable"
-                      className="size-8 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      <Edit3 className="size-3.5" />
-                    </Button>
-
-                    {/* Botón Eliminar Físicamente - Regla 4 */}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => setItemToDelete(item)}
-                      disabled={deleteMutation.isPending}
-                      title="Eliminar asignación (solo si no registra mantenimientos)"
-                      className="size-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
                   </div>
+
+                  {/* Fila inferior: Estado de la Programación Preventiva Automática */}
+                  {prog && prog.activo ? (
+                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-2.5 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
+                          <CalendarClock className="size-3.5" />
+                          <span>Programación Preventiva Activa</span>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setProgramacionToEdit(prog)
+                            setSelectedPlanActivoForProgramacion(item)
+                            setProgramacionDialogOpen(true)
+                          }}
+                          className="h-6 px-2 text-[11px] gap-1 text-primary hover:text-primary hover:bg-primary/10 cursor-pointer font-medium"
+                        >
+                          <Edit3 className="size-3" />
+                          <span>Modificar Criterios</span>
+                        </Button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 text-[11px]">
+                        {prog.criterios.filter((c) => c.activo).map((c) => (
+                          <span
+                            key={c.id}
+                            className="inline-flex items-center gap-1 rounded-md bg-background/90 px-2 py-0.5 font-medium border border-border/60 text-foreground text-[10.5px]"
+                          >
+                            {c.tipoCriterio === "TIEMPO" && `📅 Cada ${c.intervaloDias} días (Próx: ${c.proximaFecha ?? "—"})`}
+                            {c.tipoCriterio === "KILOMETRAJE" && `🚗 Cada ${c.intervaloUso?.toLocaleString()} km (Próx: ${c.proximoValorUso?.toLocaleString()} km)`}
+                            {c.tipoCriterio === "HORAS_USO" && `⏱️ Cada ${c.intervaloUso?.toLocaleString()} hrs (Próx: ${c.proximoValorUso?.toLocaleString()} hrs)`}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div className="space-y-0.5">
+                        <div className="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                          <AlertCircle className="size-3.5 text-amber-600 shrink-0" />
+                          <span>Sin Programación Preventiva</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          Este activo no disparará solicitudes automáticas hasta configurar sus criterios de telemetría (km, horas o días).
+                        </p>
+                      </div>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPlanActivoForProgramacion(item)
+                          setProgramacionToEdit(null)
+                          setProgramacionDialogOpen(true)
+                        }}
+                        className="h-7 shrink-0 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white cursor-pointer shadow-xs rounded-lg font-medium"
+                      >
+                        <Plus className="size-3.5" />
+                        <span>Configurar Programación</span>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -584,6 +652,23 @@ export function PlanActivosTabContent({ plan }: PlanActivosTabContentProps) {
           await deleteMutation.mutateAsync(itemToDelete.id)
           setItemToDelete(null)
         }}
+      />
+      {/* Diálogo para Configurar / Editar Programación Preventiva desde el Activo */}
+      <ProgramacionMantenimientoFormDialog
+        open={programacionDialogOpen}
+        onOpenChange={(isOpen) => {
+          setProgramacionDialogOpen(isOpen)
+          if (!isOpen) {
+            refetchProgramaciones()
+            setSelectedPlanActivoForProgramacion(null)
+            setProgramacionToEdit(null)
+          }
+        }}
+        programacionToEdit={programacionToEdit}
+        planMantenimientoActivoId={selectedPlanActivoForProgramacion?.id ?? programacionToEdit?.planMantenimientoActivoId}
+        planNombre={plan.nombre}
+        activoNombre={selectedPlanActivoForProgramacion?.activo?.nombre ?? programacionToEdit?.planActivo?.activoNombre}
+        tipoActivoNombre={(selectedPlanActivoForProgramacion?.activo?.tipoActivoNombre ?? plan.tipoActivoNombre) || undefined}
       />
     </div>
   )

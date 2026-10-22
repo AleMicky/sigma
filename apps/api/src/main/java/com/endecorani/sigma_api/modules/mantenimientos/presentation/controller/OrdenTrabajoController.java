@@ -3,6 +3,7 @@ package com.endecorani.sigma_api.modules.mantenimientos.presentation.controller;
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.request.OrdenTrabajoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.request.OrdenTrabajoUpdate;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.response.ActividadSugeridaResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.response.OrdenTrabajoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.OrdenTrabajoService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -21,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -87,6 +89,16 @@ public class OrdenTrabajoController {
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(service.findBySolicitudMantenimientoId(solicitudId))
+        );
+    }
+
+    @GetMapping("/sugerir-actividades")
+    @Operation(summary = "Sugerir actividades y checklist del plan de mantenimiento para una solicitud")
+    public ResponseEntity<ApiResponse<List<ActividadSugeridaResponse>>> sugerirActividades(
+            @RequestParam UUID solicitudMantenimientoId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.sugerirActividades(solicitudMantenimientoId))
         );
     }
 

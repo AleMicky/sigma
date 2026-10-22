@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { CheckCircle, Clock, Gauge, Hourglass, RefreshCw } from "lucide-react"
 import {
   Dialog,
@@ -33,6 +33,25 @@ export function CompletarMantenimientoDialog({
 
   const completarMutation = useCompletarMantenimiento()
 
+  useEffect(() => {
+    if (open && programacion) {
+      setFechaServicio(new Date().toISOString().split("T")[0])
+      const kmCrit = programacion.criterios.find((c) => c.tipoCriterio === "KILOMETRAJE")
+      if (kmCrit && kmCrit.proximoValorUso != null) {
+        setKilometrajeServicio(String(kmCrit.proximoValorUso))
+      } else {
+        setKilometrajeServicio("")
+      }
+      const horasCrit = programacion.criterios.find((c) => c.tipoCriterio === "HORAS_USO")
+      if (horasCrit && horasCrit.proximoValorUso != null) {
+        setHorasUsoServicio(String(horasCrit.proximoValorUso))
+      } else {
+        setHorasUsoServicio("")
+      }
+      setObservacion("")
+    }
+  }, [open, programacion])
+
   if (!programacion) return null
 
   const activo = programacion.planActivo
@@ -45,6 +64,7 @@ export function CompletarMantenimientoDialog({
         baseDate.setDate(baseDate.getDate() + c.intervaloDias)
         return {
           ...c,
+          formula: `${fechaServicio || "Hoy"} + ${c.intervaloDias} días`,
           nuevoProximo: baseDate.toISOString().split("T")[0],
         }
       }
@@ -52,6 +72,7 @@ export function CompletarMantenimientoDialog({
         const baseKm = kilometrajeServicio ? Number(kilometrajeServicio) : (c.proximoValorUso ?? 0)
         return {
           ...c,
+          formula: `${baseKm.toLocaleString()} + ${c.intervaloUso.toLocaleString()} km`,
           nuevoProximo: `${(baseKm + c.intervaloUso).toLocaleString()} km`,
         }
       }
@@ -59,10 +80,11 @@ export function CompletarMantenimientoDialog({
         const baseHoras = horasUsoServicio ? Number(horasUsoServicio) : (c.proximoValorUso ?? 0)
         return {
           ...c,
+          formula: `${baseHoras.toLocaleString()} + ${c.intervaloUso.toLocaleString()} hrs`,
           nuevoProximo: `${(baseHoras + c.intervaloUso).toLocaleString()} hrs`,
         }
       }
-      return { ...c, nuevoProximo: "—" }
+      return { ...c, formula: "", nuevoProximo: "—" }
     })
   }, [programacion.criterios, fechaServicio, kilometrajeServicio, horasUsoServicio])
 
@@ -179,11 +201,18 @@ export function CompletarMantenimientoDialog({
                 key={c.id}
                 className="flex items-center justify-between rounded-lg border border-border/50 bg-background/80 p-2.5"
               >
-                <div className="flex items-center gap-1.5 font-medium">
-                  {c.tipoCriterio === "TIEMPO" && <Clock className="size-3.5 text-blue-500" />}
-                  {c.tipoCriterio === "KILOMETRAJE" && <Gauge className="size-3.5 text-amber-500" />}
-                  {c.tipoCriterio === "HORAS_USO" && <Hourglass className="size-3.5 text-purple-500" />}
-                  <span>{c.tipoCriterio}</span>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5 font-medium">
+                    {c.tipoCriterio === "TIEMPO" && <Clock className="size-3.5 text-blue-500" />}
+                    {c.tipoCriterio === "KILOMETRAJE" && <Gauge className="size-3.5 text-amber-500" />}
+                    {c.tipoCriterio === "HORAS_USO" && <Hourglass className="size-3.5 text-purple-500" />}
+                    <span>{c.tipoCriterio}</span>
+                  </div>
+                  {c.formula && (
+                    <span className="text-[10px] text-muted-foreground mt-0.5">
+                      {c.formula}
+                    </span>
+                  )}
                 </div>
                 <div className="text-right">
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">

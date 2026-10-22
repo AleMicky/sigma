@@ -370,3 +370,32 @@ export async function openOrdenTrabajoReportePdf(id: string): Promise<void> {
   const url = window.URL.createObjectURL(blob)
   window.open(url, "_blank")
 }
+
+export type ChecklistItemSugerido = {
+  id: string
+  nombre: string
+  descripcion?: string | null
+  orden?: number
+}
+
+export type ActividadSugerida = {
+  actividadMantenimientoId: string
+  actividadMantenimientoAplicacionId: string
+  codigo?: string | null
+  nombre: string
+  descripcion?: string | null
+  orden: number
+  checklist: ChecklistItemSugerido[]
+}
+
+/**
+ * Obtiene las actividades sugeridas del plan de mantenimiento para una solicitud.
+ * Endpoint: GET /api/v1/ordenes-trabajo/sugerir-actividades?solicitudMantenimientoId=...
+ */
+export async function getActividadesSugeridas(
+  solicitudMantenimientoId: string,
+): Promise<ActividadSugerida[]> {
+  return http.get<ActividadSugerida[]>(
+    ORDEN_TRABAJO_ENDPOINTS.sugerirActividades(solicitudMantenimientoId),
+  )
+}

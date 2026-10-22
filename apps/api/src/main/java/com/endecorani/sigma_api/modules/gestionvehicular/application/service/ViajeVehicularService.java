@@ -49,6 +49,7 @@ public class ViajeVehicularService {
     private final AsignacionVehicularService asignacionVehicularService;
     private final ViajeVehicularMapper mapper;
     private final ViajeVehicularExcelService excelService;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public PageResponse<ViajeVehicularResponse> listar(
@@ -264,6 +265,20 @@ public class ViajeVehicularService {
         }
 
         ViajeVehicular guardado = repository.save(viaje);
+
+        // Notificar telemetría de odómetro del vehículo si corresponde
+        if (dto.kilometrajeRetorno() != null && viaje.getAsignacionVehicularId() != null && eventPublisher != null) {
+            asignacionVehicularRepository.findById(viaje.getAsignacionVehicularId()).ifPresent(asig -> {
+                if (asig.getActivoId() != null) {
+                    eventPublisher.publishEvent(new com.endecorani.sigma_api.modules.gestionvehicular.domain.event.VehiculoKilometrajeRegistradoEvent(
+                            asig.getActivoId(),
+                            dto.kilometrajeRetorno(),
+                            "VIAJE_VEHICULAR_RETORNO"
+                    ));
+                }
+            });
+        }
+
         return toResponse(guardado);
     }
 

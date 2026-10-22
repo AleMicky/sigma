@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programac
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.EvaluarProgramacionRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ProgramacionMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ProgramacionMantenimientoUpdate;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.BatchEvaluacionProgramacionResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.EvaluacionProgramacionResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.ProgramacionMantenimientoHistorialResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.ProgramacionMantenimientoResponse;
@@ -126,6 +127,18 @@ public class ProgramacionMantenimientoController {
     ) {
         service.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Programación eliminada correctamente", null));
+    }
+
+    @PostMapping("/evaluar-todas")
+    @Operation(
+            summary = "Evaluar todas las programaciones de mantenimiento activas en lote",
+            description = "Evalúa todo el parque de programaciones activas generando solicitudes preventivas para los activos que alcanzaron sus criterios de tiempo o uso."
+    )
+    public ResponseEntity<ApiResponse<BatchEvaluacionProgramacionResponse>> evaluarTodas() {
+        BatchEvaluacionProgramacionResponse response = service.evaluarTodas();
+        return ResponseEntity.ok(
+                ApiResponse.success("Evaluación en lote completada exitosamente", response)
+        );
     }
 
     @PostMapping("/{id}/evaluar")

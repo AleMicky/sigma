@@ -292,7 +292,7 @@ public class ProgramacionMantenimientoService {
     public EvaluacionProgramacionResponse evaluarProgramacion(UUID id, EvaluarProgramacionRequest request) {
         log.info("Evaluando programación de mantenimiento: {}", id);
 
-        ProgramacionMantenimiento programacion = repository.findById(id)
+        ProgramacionMantenimiento programacion = repository.findByIdWithLock(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Programación de mantenimiento no encontrada: " + id));
 
         if (!Boolean.TRUE.equals(programacion.getActivo())) {
@@ -398,12 +398,21 @@ public class ProgramacionMantenimientoService {
             if (openSolOpt.isPresent()) {
                 SolicitudMantenimiento openSol = openSolOpt.get();
                 String estado = openSol.getEstado() != null ? openSol.getEstado().toUpperCase() : "";
-                if (!estado.equals("FINALIZADO") && !estado.equals("CERRADO") && !estado.equals("CANCELADO") && !estado.equals("RECHAZADO")) {
+                boolean esTerminado = estado.equals("FINALIZADO") || estado.equals("CERRADO")
+                        || estado.equals("CANCELADO") || estado.equals("RECHAZADO")
+                        || estado.equals("TRABAJO_REALIZADO");
+
+                if (!esTerminado) {
                     return new EvaluacionProgramacionResponse(
                             id, true, criterioDisparador.getTipoCriterio(), motivoDisparo,
                             false, true, openSol.getId(), openSol.getNumero(),
                             "El criterio se cumple, pero ya existe una solicitud activa en trámite (" + openSol.getNumero() + " - " + openSol.getEstado() + ") para esta programación."
                     );
+                } else if (estado.equals("FINALIZADO") || estado.equals("CERRADO") || estado.equals("TRABAJO_REALIZADO")) {
+                    ProgramacionMantenimientoHistorial h = pendingHistorial.get();
+                    h.setCompletado(true);
+                    h.setFechaServicio(LocalDate.now());
+                    historialRepository.save(h);
                 }
             }
         }
@@ -411,31 +420,24 @@ public class ProgramacionMantenimientoService {
         // Regla 4: Generar una sola solicitud para esa ejecución
         UUID tipoMantenimientoId = springTipoMantenimientoRepository.findByCodigoIgnoreCase("PREVENTIVO")
                 .map(TipoMantenimientoEntity::getId)
-                .orElseGet(() -> springTipoMantenimientoRepository.findAll().stream()
-                        .findFirst()
-                        .map(TipoMantenimientoEntity::getId)
-                        .orElseThrow(() -> new BusinessException("No se encontró ningún tipo de mantenimiento configurado en el sistema.")));
+                .orElseThrow(() -> new BusinessException("TIPO_MANTENIMIENTO_NO_CONFIGURADO",
+                        "No se encontró el tipo de mantenimiento 'PREVENTIVO' configurado en el sistema."));
 
         UUID prioridadId = springPrioridadRepository.findFirstByPorDefectoTrue()
                 .or(() -> springPrioridadRepository.findByCodigoIgnoreCase("NORMAL"))
                 .or(() -> springPrioridadRepository.findByCodigoIgnoreCase("MEDIA"))
                 .map(PrioridadEntity::getId)
-                .orElseGet(() -> springPrioridadRepository.findAll().stream()
-                        .findFirst()
-                        .map(PrioridadEntity::getId)
-                        .orElseThrow(() -> new BusinessException("No se encontró ninguna prioridad configurada en el sistema.")));
+                .orElseThrow(() -> new BusinessException("PRIORIDAD_NO_CONFIGURADA",
+                        "No se encontró una prioridad por defecto ('NORMAL' o 'MEDIA') configurada en el sistema."));
 
         UUID solicitanteId = planActivo.getResponsableId();
         if (solicitanteId == null) {
             solicitanteId = obtenerEmpleadoIdActual();
         }
         if (solicitanteId == null) {
-            org.springframework.data.domain.Page<Empleado> page = empleadoRepository.findAll(Pageable.ofSize(1));
-            if (page != null && page.hasContent()) {
-                solicitanteId = page.getContent().get(0).getId();
-            } else {
-                throw new BusinessException("No se encontró un empleado solicitante válido para generar la solicitud.");
-            }
+            throw new BusinessException("SOLICITANTE_NO_ASIGNADO",
+                    "No se puede generar la solicitud automática: el activo asignado al plan ('" +
+                    activo.getCodigo() + " - " + activo.getNombre() + "') no tiene un empleado responsable asignado como solicitante.");
         }
 
         String titulo = "Mantenimiento Preventivo: " + plan.getNombre() + " (" + activo.getCodigo() + ")";
@@ -499,6 +501,64 @@ public class ProgramacionMantenimientoService {
     }
 
     /**
+     * Evalúa todas las programaciones de mantenimiento activas en lote.
+     * Útil para ejecución manual por el planificador o invocación masiva.
+     */
+    @Transactional
+    public BatchEvaluacionProgramacionResponse evaluarTodas() {
+        log.info("Iniciando evaluación en lote de todas las programaciones activas");
+        List<ProgramacionMantenimiento> activas = repository.findByActivoTrue();
+
+        int solicitudesGeneradas = 0;
+        int yaExistiaSolicitudAbierta = 0;
+        int cumplieronCriterio = 0;
+        int errores = 0;
+        List<EvaluacionProgramacionResponse> resultados = new ArrayList<>();
+
+        for (ProgramacionMantenimiento prog : activas) {
+            try {
+                EvaluacionProgramacionResponse resp = evaluarProgramacion(prog.getId(), null);
+                resultados.add(resp);
+                if (resp.solicitudGenerada()) {
+                    solicitudesGeneradas++;
+                }
+                if (resp.yaExistiaSolicitudAbierta()) {
+                    yaExistiaSolicitudAbierta++;
+                }
+                if (resp.cumpleCriterio()) {
+                    cumplieronCriterio++;
+                }
+            } catch (Exception e) {
+                log.error("Error al evaluar programación en lote {}: {}", prog.getId(), e.getMessage());
+                errores++;
+                resultados.add(new EvaluacionProgramacionResponse(
+                        prog.getId(),
+                        false,
+                        null,
+                        "Error al evaluar: " + e.getMessage(),
+                        false,
+                        false,
+                        null,
+                        null,
+                        "Error durante la evaluación de la programación: " + e.getMessage()
+                ));
+            }
+        }
+
+        log.info("Evaluación en lote finalizada. Total: {}, Solicitudes generadas: {}, Ya abiertas: {}, Errores: {}",
+                activas.size(), solicitudesGeneradas, yaExistiaSolicitudAbierta, errores);
+
+        return new BatchEvaluacionProgramacionResponse(
+                activas.size(),
+                solicitudesGeneradas,
+                yaExistiaSolicitudAbierta,
+                cumplieronCriterio,
+                errores,
+                resultados
+        );
+    }
+
+    /**
      * Regla 5: Una vez completado el mantenimiento, recalcular todos los criterios de la programación tomando como referencia el servicio realizado.
      * Regla 6: Conservar el historial de los valores que provocaron cada mantenimiento y registrar la culminación del servicio.
      */
@@ -513,6 +573,12 @@ public class ProgramacionMantenimientoService {
                 ? request.fechaServicio()
                 : LocalDate.now();
 
+        PlanMantenimientoActivo planActivo = null;
+        if (programacion.getPlanMantenimientoActivoId() != null) {
+            planActivo = planMantenimientoActivoRepository.findById(programacion.getPlanMantenimientoActivoId()).orElse(null);
+        }
+        UUID activoId = planActivo != null ? planActivo.getActivoId() : null;
+
         List<ProgramacionMantenimientoCriterio> criterios = criterioRepository.findByProgramacionMantenimientoId(id);
 
         for (ProgramacionMantenimientoCriterio criterio : criterios) {
@@ -524,14 +590,20 @@ public class ProgramacionMantenimientoService {
                 if (criterio.getIntervaloUso() != null) {
                     BigDecimal base = (request != null && request.kilometrajeServicio() != null)
                             ? request.kilometrajeServicio()
-                            : (criterio.getProximoValorUso() != null ? criterio.getProximoValorUso() : BigDecimal.ZERO);
+                            : (activoId != null ? obtenerKilometrajeActual(activoId) : null);
+                    if (base == null) {
+                        base = criterio.getProximoValorUso() != null ? criterio.getProximoValorUso() : BigDecimal.ZERO;
+                    }
                     criterio.setProximoValorUso(base.add(criterio.getIntervaloUso()));
                 }
             } else if (criterio.getTipoCriterio() == TipoCriterioMantenimiento.HORAS_USO) {
                 if (criterio.getIntervaloUso() != null) {
                     BigDecimal base = (request != null && request.horasUsoServicio() != null)
                             ? request.horasUsoServicio()
-                            : (criterio.getProximoValorUso() != null ? criterio.getProximoValorUso() : BigDecimal.ZERO);
+                            : (activoId != null ? obtenerHorasUsoActual(activoId) : null);
+                    if (base == null) {
+                        base = criterio.getProximoValorUso() != null ? criterio.getProximoValorUso() : BigDecimal.ZERO;
+                    }
                     criterio.setProximoValorUso(base.add(criterio.getIntervaloUso()));
                 }
             }
@@ -556,8 +628,54 @@ public class ProgramacionMantenimientoService {
             historialRepository.save(hist);
         }
 
+        // Actualizar telemetría del activo en activo_atributo_valores si se registró nuevo odómetro/horómetro
+        if (activoId != null && request != null && (request.kilometrajeServicio() != null || request.horasUsoServicio() != null)) {
+            actualizarTelemetriaActivo(activoId, request.kilometrajeServicio(), request.horasUsoServicio());
+        }
+
         programacion.setCriterios(criterios);
         return toEnrichedResponse(programacion);
+    }
+
+    /**
+     * Cierra el ciclo preventivo recalculando los criterios de la programación asociada a una solicitud concluida.
+     */
+    @Transactional
+    public void sincronizarFinMantenimientoPorSolicitud(UUID solicitudId, UUID activoId) {
+        if (solicitudId == null) {
+            return;
+        }
+
+        Optional<ProgramacionMantenimientoHistorial> histOpt = historialRepository.findBySolicitudMantenimientoId(solicitudId);
+        if (histOpt.isEmpty()) {
+            return;
+        }
+
+        ProgramacionMantenimientoHistorial hist = histOpt.get();
+        if (Boolean.TRUE.equals(hist.getCompletado())) {
+            log.debug("El historial de la solicitud {} ya se encuentra marcado como completado.", solicitudId);
+            return;
+        }
+
+        UUID programacionId = hist.getProgramacionMantenimientoId();
+        if (programacionId == null) {
+            return;
+        }
+
+        BigDecimal kmActual = activoId != null ? obtenerKilometrajeActual(activoId) : null;
+        BigDecimal horasActual = activoId != null ? obtenerHorasUsoActual(activoId) : null;
+
+        CompletarMantenimientoProgramadoRequest req = new CompletarMantenimientoProgramadoRequest(
+                LocalDate.now(),
+                kmActual,
+                horasActual,
+                solicitudId,
+                "Mantenimiento preventivo completado automáticamente al finalizar solicitud " +
+                        (hist.getSolicitudNumero() != null ? hist.getSolicitudNumero() : solicitudId)
+        );
+
+        completarMantenimiento(programacionId, req);
+        log.info("Programación {} recalculada exitosamente por finalización de solicitud {}", programacionId, solicitudId);
     }
 
     @Transactional(readOnly = true)
@@ -608,6 +726,96 @@ public class ProgramacionMantenimientoService {
         return null;
     }
 
+    /**
+     * Sincroniza y actualiza los valores de telemetría (odómetro y horómetro) del activo.
+     * Solo actualiza si el valor nuevo es mayor al registrado previamente.
+     */
+    @Transactional
+    public void actualizarTelemetriaActivo(UUID activoId, BigDecimal kilometraje, BigDecimal horasUso) {
+        if (activoId == null) {
+            return;
+        }
+
+        try {
+            Activo activo = activoRepository.findById(activoId).orElse(null);
+            if (activo == null || activo.getTipoActivoId() == null) {
+                return;
+            }
+            UUID tipoActivoId = activo.getTipoActivoId();
+
+            List<ActivoAtributoValorEntity> valoresExistentes = springActivoAtributoValorRepository.findByActivoId(activoId);
+
+            if (kilometraje != null && kilometraje.compareTo(BigDecimal.ZERO) >= 0) {
+                actualizarOInsertarAtributo(
+                        activoId,
+                        tipoActivoId,
+                        valoresExistentes,
+                        List.of("KILOMETRAJE", "KM", "ODOMETRO"),
+                        kilometraje
+                );
+            }
+
+            if (horasUso != null && horasUso.compareTo(BigDecimal.ZERO) >= 0) {
+                actualizarOInsertarAtributo(
+                        activoId,
+                        tipoActivoId,
+                        valoresExistentes,
+                        List.of("HORAS_USO", "HOROMETRO", "HORAS", "HORAS_TRABAJO"),
+                        horasUso
+                );
+            }
+        } catch (Exception e) {
+            log.warn("Error al actualizar telemetría para activo {}: {}", activoId, e.getMessage());
+        }
+    }
+
+    private void actualizarOInsertarAtributo(
+            UUID activoId,
+            UUID tipoActivoId,
+            List<ActivoAtributoValorEntity> valoresExistentes,
+            List<String> codigosCandidatos,
+            BigDecimal nuevoValor
+    ) {
+        for (ActivoAtributoValorEntity v : valoresExistentes) {
+            if (v.getActivoAtributoId() != null) {
+                Optional<ActivoAtributoEntity> attrOpt = springActivoAtributoRepository.findById(v.getActivoAtributoId());
+                if (attrOpt.isPresent() && codigosCandidatos.stream().anyMatch(c -> c.equalsIgnoreCase(attrOpt.get().getCodigo()))) {
+                    BigDecimal valorActual = null;
+                    try {
+                        if (v.getValor() != null && !v.getValor().isBlank()) {
+                            valorActual = new BigDecimal(v.getValor().trim());
+                        }
+                    } catch (Exception ignored) {
+                    }
+
+                    if (valorActual == null || nuevoValor.compareTo(valorActual) > 0) {
+                        v.setValor(nuevoValor.stripTrailingZeros().toPlainString());
+                        springActivoAtributoValorRepository.save(v);
+                        log.info("Telemetría actualizada para activo {} en atributo {}: de {} a {}",
+                                activoId, attrOpt.get().getCodigo(), valorActual, nuevoValor);
+                    }
+                    return;
+                }
+            }
+        }
+
+        if (tipoActivoId != null) {
+            List<ActivoAtributoEntity> definiciones = springActivoAtributoRepository.findByTipoActivoId(tipoActivoId);
+            for (ActivoAtributoEntity def : definiciones) {
+                if (codigosCandidatos.stream().anyMatch(c -> c.equalsIgnoreCase(def.getCodigo()))) {
+                    ActivoAtributoValorEntity nuevo = new ActivoAtributoValorEntity();
+                    nuevo.setActivoId(activoId);
+                    nuevo.setActivoAtributoId(def.getId());
+                    nuevo.setValor(nuevoValor.stripTrailingZeros().toPlainString());
+                    springActivoAtributoValorRepository.save(nuevo);
+                    log.info("Nuevo valor de telemetría registrado para activo {} en atributo {}: {}",
+                            activoId, def.getCodigo(), nuevoValor);
+                    return;
+                }
+            }
+        }
+    }
+
     private UUID obtenerEmpleadoIdActual() {
         return securityUtils.getCurrentUserId()
                 .flatMap(usuarioRepository::findById)
@@ -620,10 +828,12 @@ public class ProgramacionMantenimientoService {
     private ProgramacionMantenimientoResponse toEnrichedResponse(ProgramacionMantenimiento domain) {
         ProgramacionMantenimientoResponse.PlanActivoInfo planActivoInfo = null;
 
+        UUID resolvedActivoId = null;
         if (domain.getPlanMantenimientoActivoId() != null) {
             Optional<PlanMantenimientoActivo> paOpt = planMantenimientoActivoRepository.findById(domain.getPlanMantenimientoActivoId());
             if (paOpt.isPresent()) {
                 PlanMantenimientoActivo pa = paOpt.get();
+                resolvedActivoId = pa.getActivoId();
                 Optional<PlanMantenimiento> planOpt = planMantenimientoRepository.findById(pa.getPlanMantenimientoId());
                 Optional<Activo> activoOpt = activoRepository.findById(pa.getActivoId());
                 Optional<TipoActivo> tipoActivoOpt = activoOpt.flatMap(a -> a.getTipoActivoId() != null
@@ -647,9 +857,46 @@ public class ProgramacionMantenimientoService {
             }
         }
 
+        final UUID targetActivoId = resolvedActivoId;
         List<ProgramacionMantenimientoCriterioResponse> criteriosResponse = criterioRepository
                 .findByProgramacionMantenimientoId(domain.getId()).stream()
-                .map(criterioMapper::toResponse)
+                .map(c -> {
+                    BigDecimal valorActual = null;
+                    if (targetActivoId != null) {
+                        if (c.getTipoCriterio() == TipoCriterioMantenimiento.KILOMETRAJE) {
+                            valorActual = obtenerKilometrajeActual(targetActivoId);
+                        } else if (c.getTipoCriterio() == TipoCriterioMantenimiento.HORAS_USO) {
+                            valorActual = obtenerHorasUsoActual(targetActivoId);
+                        }
+                    }
+                    ProgramacionMantenimientoCriterioResponse base = criterioMapper.toResponse(c);
+                    if (base == null) {
+                        return new ProgramacionMantenimientoCriterioResponse(
+                                c.getId(),
+                                c.getProgramacionMantenimientoId(),
+                                c.getTipoCriterio(),
+                                c.getIntervaloDias(),
+                                c.getIntervaloUso(),
+                                c.getProximaFecha(),
+                                c.getProximoValorUso(),
+                                valorActual,
+                                c.getActivo(),
+                                null
+                        );
+                    }
+                    return new ProgramacionMantenimientoCriterioResponse(
+                            base.id(),
+                            base.programacionMantenimientoId(),
+                            base.tipoCriterio(),
+                            base.intervaloDias(),
+                            base.intervaloUso(),
+                            base.proximaFecha(),
+                            base.proximoValorUso(),
+                            valorActual,
+                            base.activo(),
+                            base.auditoria()
+                    );
+                })
                 .collect(Collectors.toList());
 
         return mapper.toResponse(domain, planActivoInfo, criteriosResponse);

@@ -14,6 +14,7 @@ import {
   MapPin,
   Plus,
   Save,
+  Sparkles,
   Trash2,
   User,
   UserCheck,
@@ -34,7 +35,7 @@ import { Textarea } from "@/shared/components/ui/textarea"
 import { cn, generateId } from "@/shared/lib/utils"
 
 import { useCreateOrdenTrabajoWithActividades } from "../api/orden-trabajo.mutations"
-import type { OrdenTrabajoPayload } from "../api/orden-trabajo.service"
+import { getActividadesSugeridas, type OrdenTrabajoPayload } from "../api/orden-trabajo.service"
 import { ActividadMantenimientoCombobox } from "../components/ActividadMantenimientoCombobox"
 import { ActivoCombobox } from "../components/ActivoCombobox"
 import {
@@ -93,6 +94,7 @@ export function OrdenTrabajoFormPage({
 
   // Modal State - Cargar desde Checklist / Plantilla
   const [isChecklistDialogOpen, setIsChecklistDialogOpen] = useState(false)
+  const [isLoadingSugeridas, setIsLoadingSugeridas] = useState(false)
 
   // Set default initial date
   useEffect(() => {
@@ -165,6 +167,46 @@ export function OrdenTrabajoFormPage({
       observacion: "",
     }
     setActividades((prev) => [...prev, newItem])
+  }
+
+  async function handleCargarDelPlan() {
+    if (!solicitudMantenimientoId) {
+      toast.warning("Seleccione primero una solicitud de mantenimiento vinculada")
+      return
+    }
+
+    try {
+      setIsLoadingSugeridas(true)
+      const sugeridas = await getActividadesSugeridas(solicitudMantenimientoId)
+      if (!sugeridas || sugeridas.length === 0) {
+        toast.info("No se encontraron actividades configuradas en el plan preventivo para esta solicitud")
+        return
+      }
+
+      const nuevasActividades: ActividadFormItem[] = []
+      for (const sug of sugeridas) {
+        let desc = sug.nombre
+        if (sug.checklist && sug.checklist.length > 0) {
+          desc += ` [Checklist: ${sug.checklist.map((c) => c.nombre).join(", ")}]`
+        }
+
+        nuevasActividades.push({
+          id: generateId(),
+          actividadMantenimientoId: sug.actividadMantenimientoId || null,
+          descripcion: desc,
+          realizado: false,
+          observacion: sug.descripcion || "",
+        })
+      }
+
+      setActividades((prev) => [...prev, ...nuevasActividades])
+      toast.success(`Se cargaron ${nuevasActividades.length} actividad(es) desde el plan preventivo`)
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? "Error al consultar actividades del plan"
+      toast.error(msg)
+    } finally {
+      setIsLoadingSugeridas(false)
+    }
   }
 
   // Handler for importing tasks from checklist template
@@ -490,8 +532,25 @@ export function OrdenTrabajoFormPage({
               </span>
             </div>
 
-            {/* Acciones de carga: Checklist y Manual */}
+            {/* Acciones de carga: Checklist, Plan y Manual */}
             <div className="flex items-center gap-1.5 self-end sm:self-center">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={isLoadingSugeridas || !solicitudMantenimientoId}
+                onClick={handleCargarDelPlan}
+                className="h-7 gap-1 px-2.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 rounded-lg cursor-pointer"
+                title="Cargar actividades y checklists vinculados al plan preventivo de esta solicitud"
+              >
+                {isLoadingSugeridas ? (
+                  <Loader2 className="size-3.5 animate-spin text-amber-600 dark:text-amber-400" />
+                ) : (
+                  <Sparkles className="size-3.5 text-amber-600 dark:text-amber-400" />
+                )}
+                <span>Cargar del Plan</span>
+              </Button>
+
               <Button
                 type="button"
                 size="sm"

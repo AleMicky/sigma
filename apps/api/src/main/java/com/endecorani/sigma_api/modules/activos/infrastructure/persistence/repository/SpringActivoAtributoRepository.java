@@ -22,6 +22,10 @@ public interface SpringActivoAtributoRepository
             Pageable pageable
     );
 
+    java.util.List<ActivoAtributoEntity> findByTipoActivoId(
+            UUID tipoActivoId
+    );
+
     @Query("""
             select atributo
             from ActivoAtributoEntity atributo

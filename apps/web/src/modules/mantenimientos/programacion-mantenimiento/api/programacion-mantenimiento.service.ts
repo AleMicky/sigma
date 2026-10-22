@@ -11,6 +11,7 @@ export type ProgramacionMantenimientoCriterio = {
   intervaloUso?: number | null
   proximaFecha?: string | null
   proximoValorUso?: number | null
+  valorActualUso?: number | null
   activo: boolean
   auditoria?: {
     createdAt?: string
@@ -81,6 +82,15 @@ export type EvaluacionProgramacionResponse = {
   solicitudMantenimientoId?: string | null
   solicitudNumero?: string | null
   mensaje: string
+}
+
+export type BatchEvaluacionProgramacionResponse = {
+  totalEvaluadas: number
+  solicitudesGeneradas: number
+  yaExistiaSolicitudAbierta: number
+  cumplieronCriterio: number
+  errores: number
+  evaluaciones: EvaluacionProgramacionResponse[]
 }
 
 export type ProgramacionMantenimientoCriterioPayload = {
@@ -203,6 +213,12 @@ export async function evaluarProgramacion(
   return http.post<EvaluacionProgramacionResponse>(
     programacionMantenimientoEndpoints.evaluar(id),
     payload ?? {},
+  )
+}
+
+export async function evaluarTodasProgramaciones(): Promise<BatchEvaluacionProgramacionResponse> {
+  return http.post<BatchEvaluacionProgramacionResponse>(
+    programacionMantenimientoEndpoints.evaluarTodas,
   )
 }
 

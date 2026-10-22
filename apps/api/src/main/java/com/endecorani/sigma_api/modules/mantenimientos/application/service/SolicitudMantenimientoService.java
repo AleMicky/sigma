@@ -22,10 +22,12 @@ import com.endecorani.sigma_api.modules.activos.application.service.ActivoServic
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.event.SolicitudMantenimientoEstadoCambiadoEvent;
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
 import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -36,6 +38,7 @@ import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundExceptio
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -87,6 +90,7 @@ public class SolicitudMantenimientoService {
     private final DocumentStorageService documentStorageService;
     private final com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService jasperReportService;
     private final ActivoService activoService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private record InterfazFiltros(UUID solicitanteId, UUID aprobadorId, UUID supervisorId, UUID responsableId) {}
 
@@ -104,7 +108,7 @@ public class SolicitudMantenimientoService {
         } else if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
             return new InterfazFiltros(null, null, null, empleadoActual);
         }
-        return new InterfazFiltros(null, null, null, null);
+        return new InterfazFiltros(empleadoActual, null, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -496,6 +500,14 @@ public class SolicitudMantenimientoService {
                 "Envío de la solicitud para aprobación",
                 actorEmpleadoId);
 
+        eventPublisher.publishEvent(new SolicitudMantenimientoEstadoCambiadoEvent(
+                actualizado.getId(),
+                actualizado.getActivo() != null ? actualizado.getActivo().getId() : null,
+                estadoAnterior,
+                ESTADO_SOLICITADO,
+                LocalDateTime.now()
+        ));
+
         return toResponse(actualizado);
     }
 
@@ -508,6 +520,31 @@ public class SolicitudMantenimientoService {
             throw new ConflictException(
                     "SOLICITUD_SIN_WORKFLOW",
                     "La solicitud no tiene workflow iniciado");
+        }
+
+        // Validar que exista una tarea activa en el proceso
+        WorkflowTaskResponse tareaActual = workflowApplicationService.obtenerTareaActual(solicitud.getProcessInstanceId());
+        if (tareaActual == null || tareaActual.id() == null) {
+            throw new ConflictException(
+                    "SOLICITUD_SIN_TAREA_ACTIVA",
+                    "La solicitud no tiene una tarea activa en el flujo de trabajo");
+        }
+
+        // Validar permisos del actor asignado a la tarea
+        UUID currentEmpId = obtenerEmpleadoIdActual();
+        if (!securityUtils.isAdmin()) {
+            if (currentEmpId == null) {
+                throw new BusinessException(
+                        "USUARIO_NO_EMPLEADO",
+                        "El usuario actual no está vinculado a un empleado para ejecutar acciones del flujo");
+            }
+            if (tareaActual.assignee() != null && !tareaActual.assignee().isBlank()) {
+                if (!currentEmpId.toString().equalsIgnoreCase(tareaActual.assignee().trim())) {
+                    throw new ConflictException(
+                            "TAREA_NO_ASIGNADA",
+                            "No tiene permisos para completar esta tarea de la solicitud. Está asignada a otro usuario.");
+                }
+            }
         }
 
         String estadoAnterior = solicitud.getEstado();
@@ -546,34 +583,42 @@ public class SolicitudMantenimientoService {
 
         LocalDateTime ahora = LocalDateTime.now();
 
+        // Controlar que variables de asignación solo se actualicen en las tareas correspondientes del BPMN
+        String taskDefKey = tareaActual.taskDefinitionKey() != null ? tareaActual.taskDefinitionKey().trim() : "";
         if (request != null && request.variables() != null) {
-            Object aprobadorIdObj = request.variables().get("aprobadorId");
-            if (aprobadorIdObj != null && !aprobadorIdObj.toString().isBlank()) {
-                try {
-                    empleadoRepository.findById(UUID.fromString(aprobadorIdObj.toString().trim()))
-                            .ifPresent(solicitud::setAprobador);
-                } catch (Exception e) {
-                    log.warn("No se pudo asignar aprobadorId={} en solicitud {}: {}", aprobadorIdObj, solicitudId, e.getMessage());
+            if ("borradorSolicitud".equalsIgnoreCase(taskDefKey) || securityUtils.isAdmin()) {
+                Object aprobadorIdObj = request.variables().get("aprobadorId");
+                if (aprobadorIdObj != null && !aprobadorIdObj.toString().isBlank()) {
+                    try {
+                        empleadoRepository.findById(UUID.fromString(aprobadorIdObj.toString().trim()))
+                                .ifPresent(solicitud::setAprobador);
+                    } catch (Exception e) {
+                        log.warn("No se pudo asignar aprobadorId={} en solicitud {}: {}", aprobadorIdObj, solicitudId, e.getMessage());
+                    }
                 }
             }
 
-            Object responsableIdObj = request.variables().get("responsableId");
-            if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
-                try {
-                    empleadoRepository.findById(UUID.fromString(responsableIdObj.toString().trim()))
-                            .ifPresent(solicitud::setResponsable);
-                } catch (Exception e) {
-                    log.warn("No se pudo asignar responsableId={} en solicitud {}: {}", responsableIdObj, solicitudId, e.getMessage());
+            if ("revisarSolicitud".equalsIgnoreCase(taskDefKey) || securityUtils.isAdmin()) {
+                Object responsableIdObj = request.variables().get("responsableId");
+                if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
+                    try {
+                        empleadoRepository.findById(UUID.fromString(responsableIdObj.toString().trim()))
+                                .ifPresent(solicitud::setResponsable);
+                    } catch (Exception e) {
+                        log.warn("No se pudo asignar responsableId={} en solicitud {}: {}", responsableIdObj, solicitudId, e.getMessage());
+                    }
                 }
             }
 
-            Object supervisorIdObj = request.variables().get("supervisorId");
-            if (supervisorIdObj != null && !supervisorIdObj.toString().isBlank()) {
-                try {
-                    empleadoRepository.findById(UUID.fromString(supervisorIdObj.toString().trim()))
-                            .ifPresent(solicitud::setSupervisor);
-                } catch (Exception e) {
-                    log.warn("No se pudo asignar supervisorId={} en solicitud {}: {}", supervisorIdObj, solicitudId, e.getMessage());
+            if ("enviarRevision".equalsIgnoreCase(taskDefKey) || securityUtils.isAdmin()) {
+                Object supervisorIdObj = request.variables().get("supervisorId");
+                if (supervisorIdObj != null && !supervisorIdObj.toString().isBlank()) {
+                    try {
+                        empleadoRepository.findById(UUID.fromString(supervisorIdObj.toString().trim()))
+                                .ifPresent(solicitud::setSupervisor);
+                    } catch (Exception e) {
+                        log.warn("No se pudo asignar supervisorId={} en solicitud {}: {}", supervisorIdObj, solicitudId, e.getMessage());
+                    }
                 }
             }
         }
@@ -612,6 +657,15 @@ public class SolicitudMantenimientoService {
         // Sincronizar estado operativo del activo (EN_MANTENIMIENTO -> MANTENIMIENTO, TRABAJO_REALIZADO -> OPERATIVO)
         sincronizarEstadoOperativoActivo(guardado, guardado.getEstado());
 
+        // Notificar cambio de estado a otros módulos (p.ej. recálculo de programaciones preventivas)
+        eventPublisher.publishEvent(new SolicitudMantenimientoEstadoCambiadoEvent(
+                guardado.getId(),
+                guardado.getActivo() != null ? guardado.getActivo().getId() : null,
+                estadoAnterior,
+                guardado.getEstado(),
+                ahora
+        ));
+
         if (nuevoEstado != null && !nuevoEstado.equalsIgnoreCase(estadoAnterior)) {
             String comentario = "Cambio de estado en el flujo de trabajo";
             if (request != null && request.variables() != null) {
@@ -626,7 +680,7 @@ public class SolicitudMantenimientoService {
                     comentario = request.variables().get("motivo").toString().trim();
                 }
             }
-            UUID actorEmpleadoId = resolverEmpleadoIdParaWorkflow(request, guardado);
+            UUID actorEmpleadoId = currentEmpId != null ? currentEmpId : resolverEmpleadoIdParaWorkflow(tareaActual, guardado);
             registrarTrazabilidad(
                     guardado.getId(),
                     estadoAnterior,
@@ -727,44 +781,16 @@ public class SolicitudMantenimientoService {
                 .orElse(null);
     }
 
-    private UUID resolverEmpleadoIdParaWorkflow(CompleteWorkflowTaskRequest request, SolicitudMantenimiento solicitud) {
+    private UUID resolverEmpleadoIdParaWorkflow(WorkflowTaskResponse tareaActual, SolicitudMantenimiento solicitud) {
         UUID currentEmpId = obtenerEmpleadoIdActual();
         if (currentEmpId != null) {
             return currentEmpId;
         }
 
-        if (request != null && request.variables() != null) {
-            Object empIdObj = request.variables().get("empleadoId");
-            if (empIdObj != null && !empIdObj.toString().isBlank()) {
-                try {
-                    return UUID.fromString(empIdObj.toString().trim());
-                } catch (Exception e) {
-                    log.debug("No se pudo parsear empleadoId '{}': {}", empIdObj, e.getMessage());
-                }
-            }
-            Object responsableIdObj = request.variables().get("responsableId");
-            if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
-                try {
-                    return UUID.fromString(responsableIdObj.toString().trim());
-                } catch (Exception e) {
-                    log.debug("No se pudo parsear responsableId '{}': {}", responsableIdObj, e.getMessage());
-                }
-            }
-            Object supervisorIdObj = request.variables().get("supervisorId");
-            if (supervisorIdObj != null && !supervisorIdObj.toString().isBlank()) {
-                try {
-                    return UUID.fromString(supervisorIdObj.toString().trim());
-                } catch (Exception e) {
-                    log.debug("No se pudo parsear supervisorId '{}': {}", supervisorIdObj, e.getMessage());
-                }
-            }
-            Object aprobadorIdObj = request.variables().get("aprobadorId");
-            if (aprobadorIdObj != null && !aprobadorIdObj.toString().isBlank()) {
-                try {
-                    return UUID.fromString(aprobadorIdObj.toString().trim());
-                } catch (Exception e) {
-                    log.debug("No se pudo parsear aprobadorId '{}': {}", aprobadorIdObj, e.getMessage());
-                }
+        if (tareaActual != null && tareaActual.assignee() != null && !tareaActual.assignee().isBlank()) {
+            try {
+                return UUID.fromString(tareaActual.assignee().trim());
+            } catch (Exception ignored) {
             }
         }
 
