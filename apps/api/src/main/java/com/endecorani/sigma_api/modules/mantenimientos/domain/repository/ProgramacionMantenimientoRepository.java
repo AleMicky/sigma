@@ -14,7 +14,11 @@ public interface ProgramacionMantenimientoRepository {
 
     Optional<ProgramacionMantenimiento> findById(UUID id);
 
+    Optional<ProgramacionMantenimiento> findByIdWithLock(UUID id);
+
     List<ProgramacionMantenimiento> findByPlanMantenimientoActivoId(UUID planMantenimientoActivoId);
+
+    List<ProgramacionMantenimiento> findByActivoTrue();
 
     Optional<ProgramacionMantenimiento> findByPlanMantenimientoActivoIdAndActivoTrue(UUID planMantenimientoActivoId);
 

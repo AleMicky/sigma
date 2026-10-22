@@ -33,8 +33,20 @@ public class ProgramacionMantenimientoRepositoryAdapter implements ProgramacionM
     }
 
     @Override
+    public Optional<ProgramacionMantenimiento> findByIdWithLock(UUID id) {
+        return springRepository.findByIdWithLock(id).map(mapper::toDomain);
+    }
+
+    @Override
     public List<ProgramacionMantenimiento> findByPlanMantenimientoActivoId(UUID planMantenimientoActivoId) {
         return springRepository.findByPlanMantenimientoActivoId(planMantenimientoActivoId).stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProgramacionMantenimiento> findByActivoTrue() {
+        return springRepository.findByActivoTrue().stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }

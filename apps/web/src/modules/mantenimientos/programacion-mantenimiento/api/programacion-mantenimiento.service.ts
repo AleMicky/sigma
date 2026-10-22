@@ -83,6 +83,15 @@ export type EvaluacionProgramacionResponse = {
   mensaje: string
 }
 
+export type BatchEvaluacionProgramacionResponse = {
+  totalEvaluadas: number
+  solicitudesGeneradas: number
+  yaExistiaSolicitudAbierta: number
+  cumplieronCriterio: number
+  errores: number
+  evaluaciones: EvaluacionProgramacionResponse[]
+}
+
 export type ProgramacionMantenimientoCriterioPayload = {
   id?: string
   tipoCriterio: TipoCriterioMantenimiento
@@ -203,6 +212,12 @@ export async function evaluarProgramacion(
   return http.post<EvaluacionProgramacionResponse>(
     programacionMantenimientoEndpoints.evaluar(id),
     payload ?? {},
+  )
+}
+
+export async function evaluarTodasProgramaciones(): Promise<BatchEvaluacionProgramacionResponse> {
+  return http.post<BatchEvaluacionProgramacionResponse>(
+    programacionMantenimientoEndpoints.evaluarTodas,
   )
 }
 

@@ -27,6 +27,20 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.infrastructure.report.BarcodeUtil;
 import com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.response.ActividadSugeridaResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimientoAplicacion;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ChecklistItem;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.PlanMantenimientoActivo;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.PlanMantenimientoActividad;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ProgramacionMantenimiento;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ProgramacionMantenimientoHistorial;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ActividadMantenimientoAplicacionRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ActividadMantenimientoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.PlanMantenimientoActivoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.PlanMantenimientoActividadRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ProgramacionMantenimientoHistorialRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ProgramacionMantenimientoRepository;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +56,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -72,6 +87,12 @@ public class OrdenTrabajoService {
     private final SpringVEmpleadoRepository springVEmpleadoRepository;
     private final SolicitudMantenimientoRepository solicitudRepository;
     private final ActivoRepository activoRepository;
+    private final ProgramacionMantenimientoHistorialRepository historialRepository;
+    private final ProgramacionMantenimientoRepository programacionRepository;
+    private final PlanMantenimientoActivoRepository planMantenimientoActivoRepository;
+    private final PlanMantenimientoActividadRepository planMantenimientoActividadRepository;
+    private final ActividadMantenimientoAplicacionRepository actividadMantenimientoAplicacionRepository;
+    private final ActividadMantenimientoRepository actividadMantenimientoRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<OrdenTrabajoResponse> findAll(PageRequestDto pageRequest) {
@@ -115,6 +136,99 @@ public class OrdenTrabajoService {
         OrdenTrabajo ordenTrabajo = repository.findBySolicitudMantenimientoId(solicitudMantenimientoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Orden de trabajo no encontrada para la solicitud: " + solicitudMantenimientoId));
         return mapper.toResponse(ordenTrabajo);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ActividadSugeridaResponse> sugerirActividades(UUID solicitudMantenimientoId) {
+        if (solicitudMantenimientoId == null) {
+            return List.of();
+        }
+
+        UUID planMantenimientoId = null;
+
+        // 1. Buscar si la solicitud proviene de una programación preventiva en historial
+        Optional<ProgramacionMantenimientoHistorial> histOpt = historialRepository.findBySolicitudMantenimientoId(solicitudMantenimientoId);
+        if (histOpt.isPresent() && histOpt.get().getProgramacionMantenimientoId() != null) {
+            Optional<ProgramacionMantenimiento> progOpt = programacionRepository.findById(histOpt.get().getProgramacionMantenimientoId());
+            if (progOpt.isPresent() && progOpt.get().getPlanMantenimientoActivoId() != null) {
+                Optional<PlanMantenimientoActivo> planActivoOpt = planMantenimientoActivoRepository.findById(progOpt.get().getPlanMantenimientoActivoId());
+                if (planActivoOpt.isPresent()) {
+                    planMantenimientoId = planActivoOpt.get().getPlanMantenimientoId();
+                }
+            }
+        }
+
+        // 2. Si no proviene de historial, buscar el plan activo del activo asociado
+        if (planMantenimientoId == null) {
+            SolicitudMantenimiento solicitud = solicitudRepository.findById(solicitudMantenimientoId).orElse(null);
+            if (solicitud != null && solicitud.getActivo() != null && solicitud.getActivo().getId() != null) {
+                List<PlanMantenimientoActivo> planesActivo = planMantenimientoActivoRepository.findByActivoId(solicitud.getActivo().getId());
+                planMantenimientoId = planesActivo.stream()
+                        .filter(p -> Boolean.TRUE.equals(p.getActivo()))
+                        .map(PlanMantenimientoActivo::getPlanMantenimientoId)
+                        .findFirst()
+                        .orElse(null);
+            }
+        }
+
+        if (planMantenimientoId == null) {
+            return List.of();
+        }
+
+        // 3. Obtener actividades asociadas al plan
+        List<PlanMantenimientoActividad> actividadesPlan = planMantenimientoActividadRepository.findByPlanMantenimientoId(planMantenimientoId);
+        if (actividadesPlan.isEmpty()) {
+            return List.of();
+        }
+
+        List<ActividadSugeridaResponse> sugeridas = new ArrayList<>();
+        int orden = 1;
+
+        for (PlanMantenimientoActividad actPlan : actividadesPlan) {
+            UUID appUuid = actPlan.getActividadMantenimientoAplicacionId();
+            if (appUuid == null) {
+                continue;
+            }
+
+            Optional<ActividadMantenimientoAplicacion> appOpt = actividadMantenimientoAplicacionRepository.findById(appUuid);
+            if (appOpt.isEmpty()) {
+                continue;
+            }
+            ActividadMantenimientoAplicacion app = appOpt.get();
+
+            ActividadMantenimiento actInfo = null;
+            if (app.getActividadMantenimientoId() != null) {
+                actInfo = actividadMantenimientoRepository.findById(app.getActividadMantenimientoId()).orElse(null);
+            }
+
+            String codigo = actInfo != null ? actInfo.getCodigo() : null;
+            String nombre = actInfo != null ? actInfo.getNombre() : "Actividad sin nombre";
+            String descripcion = actInfo != null ? actInfo.getDescripcion() : null;
+
+            List<ActividadSugeridaResponse.ChecklistItemSugerido> checklists = new ArrayList<>();
+            if (app.getChecklist() != null) {
+                for (ChecklistItem item : app.getChecklist()) {
+                    checklists.add(new ActividadSugeridaResponse.ChecklistItemSugerido(
+                            item.getId(),
+                            item.getNombre(),
+                            item.getDescripcion(),
+                            item.getOrden()
+                    ));
+                }
+            }
+
+            sugeridas.add(new ActividadSugeridaResponse(
+                    actInfo != null ? actInfo.getId() : null,
+                    app.getId(),
+                    codigo,
+                    nombre,
+                    descripcion,
+                    orden++,
+                    checklists
+            ));
+        }
+
+        return sugeridas;
     }
 
     @Transactional(readOnly = true)
@@ -265,6 +379,33 @@ public class OrdenTrabajoService {
 
         OrdenTrabajo ordenTrabajo = mapper.toDomain(dto);
         ordenTrabajo.setNumero(numero);
+
+        // Precarga automática de actividades si no vienen especificadas en el request
+        if ((ordenTrabajo.getActividades() == null || ordenTrabajo.getActividades().isEmpty())
+                && dto.solicitudMantenimientoId() != null) {
+            List<ActividadSugeridaResponse> sugeridas = sugerirActividades(dto.solicitudMantenimientoId());
+            if (!sugeridas.isEmpty()) {
+                List<OrdenTrabajoActividad> actividadesGeneradas = new ArrayList<>();
+                for (ActividadSugeridaResponse sug : sugeridas) {
+                    StringBuilder desc = new StringBuilder(sug.nombre());
+                    if (sug.checklist() != null && !sug.checklist().isEmpty()) {
+                        desc.append(" [Checklist: ");
+                        for (int i = 0; i < sug.checklist().size(); i++) {
+                            if (i > 0) desc.append(", ");
+                            desc.append(sug.checklist().get(i).nombre());
+                        }
+                        desc.append("]");
+                    }
+                    actividadesGeneradas.add(OrdenTrabajoActividad.builder()
+                            .ordenTrabajoId(ordenTrabajo.getId())
+                            .actividadMantenimientoId(sug.actividadMantenimientoId())
+                            .descripcion(desc.toString())
+                            .realizado(false)
+                            .build());
+                }
+                ordenTrabajo.setActividades(actividadesGeneradas);
+            }
+        }
 
         if (ordenTrabajo.getActividades() != null) {
             ordenTrabajo.getActividades().forEach(actividad -> {

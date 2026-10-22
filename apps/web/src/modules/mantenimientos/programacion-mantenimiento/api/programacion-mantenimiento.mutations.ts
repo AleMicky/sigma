@@ -12,6 +12,7 @@ import {
   desactivarCriterio,
   desactivarProgramacion,
   evaluarProgramacion,
+  evaluarTodasProgramaciones,
   updateCriterio,
   updateProgramacion,
   type CompletarMantenimientoPayload,
@@ -115,6 +116,36 @@ export function useEvaluarProgramacion() {
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? "Error al evaluar la programación"
+      toast.error(msg)
+    },
+  })
+}
+
+export function useEvaluarTodasProgramaciones() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => evaluarTodasProgramaciones(),
+    onSuccess: (data) => {
+      if (data.solicitudesGeneradas > 0) {
+        toast.success(
+          `Evaluación en lote completada: se generaron ${data.solicitudesGeneradas} nueva(s) solicitud(es) preventiva(s).`,
+        )
+      } else if (data.yaExistiaSolicitudAbierta > 0) {
+        toast.info(
+          `Evaluación en lote: ${data.totalEvaluadas} programaciones evaluadas. Ya existen solicitudes preventivas abiertas.`,
+        )
+      } else {
+        toast.info(
+          `Evaluación en lote: ${data.totalEvaluadas} programaciones evaluadas. Ningún activo requiere mantenimiento preventivo por el momento.`,
+        )
+      }
+      queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
+      queryClient.invalidateQueries({ queryKey: ["solicitudes"] })
+    },
+    onError: (err: any) => {
+      const msg =
+        err?.response?.data?.message ??
+        "Error al evaluar las programaciones de mantenimiento en lote"
       toast.error(msg)
     },
   })

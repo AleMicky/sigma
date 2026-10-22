@@ -13,11 +13,13 @@ import { useProgramaciones } from "../api/programacion-mantenimiento.queries"
 import type { ProgramacionMantenimiento } from "../api/programacion-mantenimiento.service"
 import { ProgramacionMantenimientoListView } from "../components/ProgramacionMantenimientoListView"
 import { ProgramacionMantenimientoFormDialog } from "../components/ProgramacionMantenimientoFormDialog"
+import { EvaluarTodasDialog } from "../components/EvaluarTodasDialog"
 
 export function ProgramacionesMantenimientoPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filtroEstado, setFiltroEstado] = useState<"todos" | "activos" | "inactivos">("todos")
   const [formDialogOpen, setFormDialogOpen] = useState(false)
+  const [evaluarTodasOpen, setEvaluarTodasOpen] = useState(false)
   const [editingProgramacion, setEditingProgramacion] = useState<ProgramacionMantenimiento | null>(null)
 
   const { data: pageData, isLoading, refetch, isRefetching } = useProgramaciones({
@@ -87,6 +89,16 @@ export function ProgramacionesMantenimientoPage() {
           </Button>
 
           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEvaluarTodasOpen(true)}
+            className="h-9 gap-1.5 text-xs rounded-xl border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 hover:text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 dark:hover:bg-amber-400/20 cursor-pointer shadow-xs transition-colors font-medium"
+          >
+            <Sparkles className="size-3.5 text-amber-500" />
+            <span>Evaluar Parque Preventivo</span>
+          </Button>
+
+          <Button
             size="sm"
             onClick={handleCreate}
             className="h-9 gap-1.5 text-xs rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs cursor-pointer"
@@ -152,6 +164,12 @@ export function ProgramacionesMantenimientoPage() {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         programacionToEdit={editingProgramacion}
+      />
+
+      {/* Diálogo de Evaluación en Lote */}
+      <EvaluarTodasDialog
+        open={evaluarTodasOpen}
+        onOpenChange={setEvaluarTodasOpen}
       />
     </div>
   )
