@@ -75,6 +75,7 @@ public class ProgramacionMantenimientoService {
     private final ProgramacionMantenimientoMapper mapper;
     private final ProgramacionMantenimientoCriterioMapper criterioMapper;
     private final ProgramacionMantenimientoHistorialMapper historialMapper;
+    private final ProgramacionSeguimientoExcelService excelService;
 
     @Transactional
     public ProgramacionMantenimientoResponse create(ProgramacionMantenimientoRequest request) {
@@ -282,6 +283,21 @@ public class ProgramacionMantenimientoService {
         return repository.findByPlanMantenimientoActivoId(planMantenimientoActivoId).stream()
                 .map(this::toEnrichedResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] generarReporteExcel(
+            UUID planMantenimientoActivoId,
+            UUID activoId,
+            Boolean activo,
+            String q
+    ) {
+        log.info("Generando reporte Excel de seguimiento preventivo");
+        Page<ProgramacionMantenimiento> page = repository.search(planMantenimientoActivoId, activoId, activo, q, Pageable.unpaged());
+        List<ProgramacionMantenimientoResponse> content = page.getContent().stream()
+                .map(this::toEnrichedResponse)
+                .collect(Collectors.toList());
+        return excelService.generarExcel(content);
     }
 
     /**
