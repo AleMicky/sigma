@@ -12,6 +12,7 @@ export const programacionMantenimientoEndpoints = {
   evaluarTodas: "/programaciones-mantenimiento/evaluar-todas",
   completar: (id: string) => `/programaciones-mantenimiento/${id}/completar`,
   historial: (id: string) => `/programaciones-mantenimiento/${id}/historial`,
+  reporteExcel: "/programaciones-mantenimiento/reporte-excel",
 
   // Endpoints individuales de criterios
   criterioCreate: (programacionId: string) =>

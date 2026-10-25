@@ -120,6 +120,9 @@ class ProgramacionMantenimientoServiceTest {
     @Mock
     private ProgramacionMantenimientoHistorialMapper historialMapper;
 
+    @Mock
+    private ProgramacionSeguimientoExcelService excelService;
+
     @InjectMocks
     private ProgramacionMantenimientoService service;
 

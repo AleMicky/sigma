@@ -132,15 +132,24 @@ public class ActivoService {
     @Transactional(readOnly = true)
     public PageResponse<ActivoResponse> findAll(
             String query,
+            UUID tipoActivoId,
+            Boolean activo,
             PageRequestDto pageRequest) {
         String normalized = StringUtils.normalize(query);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
         Page<Activo> page = (normalized == null)
-                ? activoRepository.findAll(pageable)
-                : activoRepository.search(normalized, pageable);
+                ? activoRepository.findAllFiltered(tipoActivoId, activo, pageable)
+                : activoRepository.searchFiltered(normalized, tipoActivoId, activo, pageable);
 
         return toPageResponse(page);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ActivoResponse> findAll(
+            String query,
+            PageRequestDto pageRequest) {
+        return findAll(query, null, null, pageRequest);
     }
 
     @Transactional(readOnly = true)

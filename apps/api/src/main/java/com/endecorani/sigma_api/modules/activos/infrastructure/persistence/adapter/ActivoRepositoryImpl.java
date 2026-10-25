@@ -65,6 +65,27 @@ public class ActivoRepositoryImpl
     }
 
     @Override
+    public Page<Activo> findAllFiltered(
+            UUID tipoActivoId,
+            Boolean activo,
+            Pageable pageable) {
+        return springRepository
+                .findAllFiltered(tipoActivoId, activo, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<Activo> searchFiltered(
+            String query,
+            UUID tipoActivoId,
+            Boolean activo,
+            Pageable pageable) {
+        return springRepository
+                .searchFiltered(query, tipoActivoId, activo, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public Page<Activo> searchDisponibilidad(
             String query,
             UUID estadoOperativoId,

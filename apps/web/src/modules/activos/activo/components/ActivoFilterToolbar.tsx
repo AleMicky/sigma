@@ -1,4 +1,4 @@
-import { FileSpreadsheet, Filter, RotateCcw } from "lucide-react"
+import { FileSpreadsheet, Filter, LayoutGrid, List, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
 import { SearchField } from "@/shared/components/search-field"
@@ -34,6 +34,8 @@ type ActivoFilterToolbarProps = {
   tiposById: Map<string, TipoActivo>
   hasActiveFilters: boolean
   onResetFilters: () => void
+  viewMode?: "list" | "grid"
+  onViewModeChange?: (mode: "list" | "grid") => void
 }
 
 export function ActivoFilterToolbar({
@@ -48,6 +50,8 @@ export function ActivoFilterToolbar({
   tiposById,
   hasActiveFilters,
   onResetFilters,
+  viewMode = "list",
+  onViewModeChange,
 }: ActivoFilterToolbarProps) {
   function handleExportExcel() {
     toast.info("Exportación a Excel", {
@@ -57,8 +61,8 @@ export function ActivoFilterToolbar({
   }
 
   return (
-    <div className="flex shrink-0 flex-col gap-3 py-3 sm:py-4 border-b">
-      {/* Fila 1: Pestañas de Estado (Izquierda) y Exportar a Excel (Derecha) */}
+    <div className="flex shrink-0 flex-col gap-3 py-3 sm:py-4 border-b border-border/60">
+      {/* Fila 1: Pestañas de Estado (Izquierda) + View Switcher & Exportar a Excel (Derecha) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
         <div className="inline-flex items-center rounded-lg border border-border/80 bg-muted/40 p-1 self-start">
           <button
@@ -118,17 +122,47 @@ export function ActivoFilterToolbar({
           </button>
         </div>
 
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={handleExportExcel}
-          className="h-8 px-2.5 text-xs font-medium gap-1.5 self-start sm:self-auto shrink-0 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
-          title="Exportar a Excel"
-        >
-          <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span>Exportar Excel</span>
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          {/* Switch de Modo de Vista */}
+          {onViewModeChange ? (
+            <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-0.5">
+              <Button
+                size="sm"
+                variant={viewMode === "list" ? "secondary" : "ghost"}
+                type="button"
+                onClick={() => onViewModeChange("list")}
+                className="h-7 px-2.5 text-xs gap-1.5 rounded-md font-medium cursor-pointer"
+                title="Vista en lista"
+              >
+                <List className="size-3.5" />
+                <span className="hidden sm:inline">Lista</span>
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === "grid" ? "secondary" : "ghost"}
+                type="button"
+                onClick={() => onViewModeChange("grid")}
+                className="h-7 px-2.5 text-xs gap-1.5 rounded-md font-medium cursor-pointer"
+                title="Vista en tarjetas"
+              >
+                <LayoutGrid className="size-3.5" />
+                <span className="hidden sm:inline">Tarjetas</span>
+              </Button>
+            </div>
+          ) : null}
+
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleExportExcel}
+            className="h-8 px-2.5 text-xs font-medium gap-1.5 shrink-0 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
+            title="Exportar a Excel"
+          >
+            <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden sm:inline">Exportar Excel</span>
+          </Button>
+        </div>
       </div>
 
       {/* Fila 2: Buscador completo + Selector de tipo + Limpiar */}

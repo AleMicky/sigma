@@ -155,7 +155,8 @@ export async function getProgramaciones(
   if (params?.activo !== undefined) query.append("activo", String(params.activo))
   if (params?.q) query.append("q", params.q)
   if (params?.page !== undefined) query.append("page", String(params.page))
-  if (params?.pageSize !== undefined) query.append("pageSize", String(params.pageSize))
+  const size = params?.pageSize ?? 100
+  query.append("size", String(size))
 
   const qs = query.toString()
   return http.get<PageResponse<ProgramacionMantenimiento>>(
@@ -272,4 +273,35 @@ export async function desactivarCriterio(id: string): Promise<ProgramacionManten
 
 export async function deleteCriterio(id: string): Promise<void> {
   return http.delete(programacionMantenimientoEndpoints.criterioDelete(id))
+}
+
+export async function exportarSeguimientoExcel(params?: {
+  planMantenimientoActivoId?: string
+  activoId?: string
+  activo?: boolean
+  q?: string
+}): Promise<void> {
+  const queryParams: Record<string, string> = {}
+  if (params?.planMantenimientoActivoId) queryParams.planMantenimientoActivoId = params.planMantenimientoActivoId
+  if (params?.activoId) queryParams.activoId = params.activoId
+  if (params?.activo !== undefined) queryParams.activo = String(params.activo)
+  if (params?.q) queryParams.q = params.q
+
+  const blob = await http.get<Blob>(programacionMantenimientoEndpoints.reporteExcel, {
+    params: queryParams,
+    responseType: "blob",
+    headers: {
+      Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const fechaHoy = new Date().toISOString().split("T")[0]
+  a.download = `seguimiento-mantenimiento-preventivo-${fechaHoy}.xlsx`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
 }

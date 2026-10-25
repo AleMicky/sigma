@@ -2,16 +2,15 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
 } from "react"
-import { ImageIcon, Trash2, Upload } from "lucide-react"
+import { ImagePlus, RefreshCw, Trash2, Upload } from "lucide-react"
 
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Button } from "@/shared/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/shared/components/ui/field"
-import { Input } from "@/shared/components/ui/input"
-import { cn } from "@/shared/lib/utils"
 
 const ACCEPTED_TYPES = [
   "image/jpeg",
@@ -34,7 +33,7 @@ type ImageUploadFieldProps = {
 }
 
 export function ImageUploadField({
-  label = "Imagen",
+  label = "Fotografía",
   currentUrl,
   file,
   onFileChange,
@@ -44,6 +43,7 @@ export function ImageUploadField({
   className,
 }: ImageUploadFieldProps) {
   const inputId = useId()
+  const inputRef = useRef<HTMLInputElement>(null)
   const [localError, setLocalError] = useState<string | null>(null)
 
   const localPreviewUrl = useMemo(() => {
@@ -98,66 +98,100 @@ export function ImageUploadField({
     <Field className={className}>
       <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div
-          className={cn(
-            "relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted",
-            !hasPreview && "border-dashed",
-          )}
-        >
-          {localPreviewUrl ? (
-            <img
-              src={localPreviewUrl}
-              alt="Vista previa"
-              className="size-full object-cover"
-            />
-          ) : showExisting ? (
-            <AuthenticatedImage
-              src={currentUrl}
-              alt="Imagen actual"
-              className="size-full"
-              fallbackClassName="size-full"
-              fallback={<ImageIcon className="size-5" />}
-            />
-          ) : (
-            <ImageIcon className="size-5 text-muted-foreground" />
-          )}
-        </div>
+      {/* Hidden file input triggered by custom buttons */}
+      <input
+        ref={inputRef}
+        id={inputId}
+        type="file"
+        accept={ACCEPTED_TYPES.join(",")}
+        disabled={disabled}
+        onChange={handleFileChange}
+        className="sr-only"
+        tabIndex={-1}
+      />
 
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <Input
-            id={inputId}
-            type="file"
-            accept={ACCEPTED_TYPES.join(",")}
-            disabled={disabled}
-            onChange={handleFileChange}
-          />
-          <FieldDescription>
-            JPEG, PNG, WebP o GIF. Máximo 5 MB.
-          </FieldDescription>
-          {hasPreview ? (
+      {hasPreview ? (
+        <div className="flex flex-col gap-3">
+          {/* Contenedor de imagen visible con proporción clara */}
+          <div className="relative w-full h-44 sm:h-48 overflow-hidden rounded-xl border border-border/80 bg-muted/30 p-1.5 flex items-center justify-center shadow-2xs group">
+            {localPreviewUrl ? (
+              <img
+                src={localPreviewUrl}
+                alt="Vista previa de activo"
+                className="size-full object-contain drop-shadow-xs"
+              />
+            ) : (
+              <AuthenticatedImage
+                src={currentUrl}
+                alt="Fotografía del activo"
+                className="size-full object-contain drop-shadow-xs"
+                fallbackClassName="size-full flex items-center justify-center"
+                fallback={<ImagePlus className="size-8 text-muted-foreground/60" />}
+              />
+            )}
+          </div>
+
+          {/* Botones de acción con texto completo sin cortar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              onClick={() => inputRef.current?.click()}
+              className="flex-1 min-w-[120px] gap-1.5 text-xs font-medium cursor-pointer"
+            >
+              <RefreshCw className="size-3.5" />
+              <span>Cambiar imagen</span>
+            </Button>
+
             <Button
               type="button"
               variant="outline"
               size="sm"
               disabled={disabled}
               onClick={handleRemove}
-              className="w-fit"
+              className="gap-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 hover:border-destructive/30 cursor-pointer"
             >
-              <Trash2 />
-              Quitar imagen
+              <Trash2 className="size-3.5" />
+              <span>Quitar</span>
             </Button>
-          ) : (
-            <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Upload className="size-3.5" />
-              Opcional
-            </p>
-          )}
-          {localError ? (
-            <p className="text-sm text-destructive">{localError}</p>
-          ) : null}
+          </div>
+
+          <FieldDescription className="text-[11px]">
+            JPEG, PNG, WebP o GIF. Tamaño máximo de 5 MB.
+          </FieldDescription>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {/* Dropzone interactivo que nunca corta texto */}
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => inputRef.current?.click()}
+            className="group relative flex flex-col items-center justify-center gap-2.5 rounded-xl border border-dashed border-border/90 bg-muted/20 p-6 text-center hover:bg-muted/40 hover:border-primary/50 transition-all cursor-pointer w-full"
+          >
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:scale-105 transition-transform">
+              <Upload className="size-5" />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-semibold text-foreground">
+                Seleccionar fotografía
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                Haz clic para subir desde tu dispositivo
+              </span>
+            </div>
+            <span className="text-[10px] text-muted-foreground/75 font-mono">
+              JPEG, PNG, WebP o GIF (Máx. 5 MB)
+            </span>
+          </button>
+        </div>
+      )}
+
+      {localError ? (
+        <p className="text-xs font-medium text-destructive pt-1">{localError}</p>
+      ) : null}
     </Field>
   )
 }

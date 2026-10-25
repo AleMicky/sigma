@@ -19,10 +19,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -90,6 +92,24 @@ public class ProgramacionMantenimientoController {
         return ResponseEntity.ok(
                 ApiResponse.success(service.findAll(planMantenimientoActivoId, activoId, activo, q, pageRequest))
         );
+    }
+
+    @GetMapping(value = "/reporte-excel", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Operation(
+            summary = "Exportar reporte de seguimiento de mantenimiento preventivo y telemetría a Excel",
+            description = "Genera un archivo Excel con el estado actual de todas las programaciones, telemetría de odómetro/horómetro y alertas preventivas."
+    )
+    public ResponseEntity<byte[]> exportarReporteExcel(
+            @RequestParam(required = false) UUID planMantenimientoActivoId,
+            @RequestParam(required = false) UUID activoId,
+            @RequestParam(required = false) Boolean activo,
+            @RequestParam(required = false) String q
+    ) {
+        byte[] bytes = service.generarReporteExcel(planMantenimientoActivoId, activoId, activo, q);
+        String filename = "seguimiento-mantenimiento-preventivo-" + LocalDate.now() + ".xlsx";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(bytes);
     }
 
     @GetMapping("/plan-activo/{planMantenimientoActivoId}")

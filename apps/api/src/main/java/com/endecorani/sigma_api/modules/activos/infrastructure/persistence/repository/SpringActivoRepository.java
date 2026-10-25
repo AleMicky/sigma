@@ -45,6 +45,34 @@ public interface SpringActivoRepository
         @Query("""
                 SELECT a
                 FROM ActivoEntity a
+                WHERE (:tipoActivoId IS NULL OR a.tipoActivoId = :tipoActivoId)
+                  AND (:activo IS NULL OR a.activo = :activo)
+                """)
+        Page<ActivoEntity> findAllFiltered(
+                @Param("tipoActivoId") UUID tipoActivoId,
+                @Param("activo") Boolean activo,
+                Pageable pageable);
+
+        @Query("""
+                SELECT a
+                FROM ActivoEntity a
+                WHERE (:tipoActivoId IS NULL OR a.tipoActivoId = :tipoActivoId)
+                  AND (:activo IS NULL OR a.activo = :activo)
+                  AND (
+                    LOWER(a.codigo) LIKE LOWER(CONCAT('%', :query, '%'))
+                    OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', :query, '%'))
+                    OR (a.descripcion IS NOT NULL AND LOWER(a.descripcion) LIKE LOWER(CONCAT('%', :query, '%')))
+                  )
+                """)
+        Page<ActivoEntity> searchFiltered(
+                @Param("query") String query,
+                @Param("tipoActivoId") UUID tipoActivoId,
+                @Param("activo") Boolean activo,
+                Pageable pageable);
+
+        @Query("""
+                SELECT a
+                FROM ActivoEntity a
                 LEFT JOIN TipoActivoEntity ta ON a.tipoActivoId = ta.id
                 WHERE (:estadoOperativoId IS NULL OR a.estadoOperativoId = :estadoOperativoId)
                   AND (:tipoActivoId IS NULL OR a.tipoActivoId = :tipoActivoId)
@@ -52,10 +80,10 @@ public interface SpringActivoRepository
                   AND (:ubicacionId IS NULL OR a.ubicacionId = :ubicacionId)
                   AND (:activo IS NULL OR a.activo = :activo)
                   AND (
-                    :query IS NULL
-                    OR LOWER(a.codigo) LIKE LOWER(CONCAT('%', :query, '%'))
-                    OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', :query, '%'))
-                    OR (a.descripcion IS NOT NULL AND LOWER(a.descripcion) LIKE LOWER(CONCAT('%', :query, '%')))
+                    CAST(:query AS String) IS NULL
+                    OR LOWER(a.codigo) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%'))
+                    OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%'))
+                    OR (a.descripcion IS NOT NULL AND LOWER(a.descripcion) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%')))
                   )
                 ORDER BY a.nombre ASC
                 """)
@@ -78,10 +106,10 @@ public interface SpringActivoRepository
                   AND (:ubicacionId IS NULL OR a.ubicacionId = :ubicacionId)
                   AND (:activo IS NULL OR a.activo = :activo)
                   AND (
-                    :query IS NULL
-                    OR LOWER(a.codigo) LIKE LOWER(CONCAT('%', :query, '%'))
-                    OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', :query, '%'))
-                    OR (a.descripcion IS NOT NULL AND LOWER(a.descripcion) LIKE LOWER(CONCAT('%', :query, '%')))
+                    CAST(:query AS String) IS NULL
+                    OR LOWER(a.codigo) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%'))
+                    OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%'))
+                    OR (a.descripcion IS NOT NULL AND LOWER(a.descripcion) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%')))
                   )
                 ORDER BY a.nombre ASC
                 """)

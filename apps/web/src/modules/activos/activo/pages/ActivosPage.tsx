@@ -1,7 +1,14 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
-import { Package, Plus, RotateCcw } from "lucide-react"
+import {
+  CheckCircle2,
+  Package,
+  Plus,
+  PowerOff,
+  RotateCcw,
+  Wrench,
+} from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
@@ -21,6 +28,7 @@ import { cn } from "@/shared/lib/utils"
 import { activoQueries } from "../api/activo.queries"
 import type { Activo } from "../api/activo.service"
 import { ActivoFilterToolbar, type StatusFilter } from "../components/ActivoFilterToolbar"
+import { ActivoGridView } from "../components/ActivoGridView"
 import { ActivoHeader } from "../components/ActivoHeader"
 import { ActivoListView } from "../components/ActivoListView"
 
@@ -31,6 +39,7 @@ export function ActivosPage() {
   const navigate = useNavigate()
   const [tipoActivoId, setTipoActivoId] = useState<string>(ALL_TIPOS)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list")
 
   const search = usePaginatedSearch({ resetKey: `${tipoActivoId}-${statusFilter}` })
 
@@ -52,7 +61,10 @@ export function ActivosPage() {
     }),
   )
 
-  const tipos = tiposQuery.data?.content ?? []
+  const tipos = useMemo(
+    () => tiposQuery.data?.content ?? [],
+    [tiposQuery.data?.content],
+  )
   const tiposById = useMemo(
     () => new Map(tipos.map((tipo) => [tipo.id, tipo])),
     [tipos],
@@ -66,6 +78,13 @@ export function ActivosPage() {
     [ubicaciones],
   )
 
+  const activoParam =
+    statusFilter === "active"
+      ? true
+      : statusFilter === "inactive"
+        ? false
+        : undefined
+
   const activosQuery = useQuery(
     activoQueries.list({
       page: search.page,
@@ -73,36 +92,32 @@ export function ActivosPage() {
       sortBy: "nombre",
       direction: "ASC",
       ...(tipoActivoId !== ALL_TIPOS ? { tipoActivoId } : {}),
+      ...(activoParam !== undefined ? { activo: activoParam } : {}),
       ...(search.query ? { q: search.query } : {}),
     }),
   )
 
-  const rawActivos = activosQuery.data?.content ?? []
+  const activos = useMemo(
+    () => activosQuery.data?.content ?? [],
+    [activosQuery.data?.content],
+  )
 
-  const statusCounts = useMemo(() => {
-    const list =
-      tipoActivoId === ALL_TIPOS
-        ? rawActivos
-        : rawActivos.filter((item) => item.tipoActivoId === tipoActivoId)
-    return {
-      all: list.length,
-      active: list.filter((item) => item.activo !== false).length,
-      inactive: list.filter((item) => item.activo === false).length,
-    }
-  }, [rawActivos, tipoActivoId])
+  const kpiStats = useMemo(() => {
+    const total = activosQuery.data?.totalElements ?? activos.length
+    const deBaja = activos.filter((a) => a.activo === false).length
+    const enMantenimiento = activos.filter((a) =>
+      a.estadoOperativo?.nombre?.toLowerCase().includes("mantenimiento"),
+    ).length
+    const operativos = activos.filter((a) => {
+      const nombre = a.estadoOperativo?.nombre?.toLowerCase() || ""
+      return (
+        nombre.includes("operativo") ||
+        (!nombre.includes("mantenimiento") && a.activo !== false)
+      )
+    }).length
 
-  const activos = useMemo(() => {
-    let list = rawActivos
-    if (tipoActivoId !== ALL_TIPOS) {
-      list = list.filter((item) => item.tipoActivoId === tipoActivoId)
-    }
-    if (statusFilter === "active") {
-      list = list.filter((item) => item.activo !== false)
-    } else if (statusFilter === "inactive") {
-      list = list.filter((item) => item.activo === false)
-    }
-    return list
-  }, [rawActivos, tipoActivoId, statusFilter])
+    return { total, deBaja, enMantenimiento, operativos }
+  }, [activosQuery.data?.totalElements, activos])
 
   useClampPage(search.page, search.setPage, activosQuery.data?.totalPages)
 
@@ -138,7 +153,7 @@ export function ActivosPage() {
     statusFilter !== "all"
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
+    <PageShell size="full" padding="none" layout="auto" className="w-full space-y-4 pb-12">
       {/* Header */}
       <ActivoHeader
         totalActivos={activosQuery.data?.totalElements}
@@ -146,7 +161,66 @@ export function ActivosPage() {
         queries={[activosQuery, tiposQuery, ubicacionesQuery]}
       />
 
-      {/* Filter Toolbar with Status Tabs */}
+      {/* KPI Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+        <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-2xs">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Package className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wider truncate">
+              Total Activos
+            </p>
+            <p className="text-xl font-bold font-heading text-foreground">
+              {kpiStats.total}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-2xs">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wider truncate">
+              Operativos
+            </p>
+            <p className="text-xl font-bold font-heading text-emerald-600 dark:text-emerald-400">
+              {kpiStats.operativos}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-2xs">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <Wrench className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wider truncate">
+              En Mantenimiento
+            </p>
+            <p className="text-xl font-bold font-heading text-amber-600 dark:text-amber-400">
+              {kpiStats.enMantenimiento}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-2xs">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <PowerOff className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wider truncate">
+              De Baja
+            </p>
+            <p className="text-xl font-bold font-heading text-muted-foreground">
+              {kpiStats.deBaja}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Toolbar with Status Tabs & View Switcher */}
       <ActivoFilterToolbar
         searchValue={search.search}
         onSearchChange={search.setSearch}
@@ -160,15 +234,16 @@ export function ActivosPage() {
           setStatusFilter(st)
           search.setPage(0)
         }}
-        statusCounts={statusCounts}
         tipos={tipos}
         tiposById={tiposById}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={resetFilters}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
+      <div className="flex flex-col pt-1">
         {activosQuery.isLoading ? (
           <ListSkeleton
             rows={6}
@@ -178,7 +253,7 @@ export function ActivosPage() {
         ) : activosQuery.isError ? (
           <EmptyState
             title={getErrorMessage(activosQuery.error)}
-            className="text-destructive my-auto"
+            className="text-destructive py-12"
           />
         ) : activos.length === 0 ? (
           <EmptyState
@@ -206,32 +281,40 @@ export function ActivosPage() {
                 </Button>
               )
             }
-            className="my-auto"
+            className="py-12"
           />
         ) : (
-          <>
+          <div className="flex flex-col space-y-4">
             <div
               className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 pr-1",
                 activosQuery.isFetching && "opacity-75 transition-opacity",
               )}
             >
-              <ActivoListView
-                activos={activos}
-                tiposById={tiposById}
-                ubicacionesById={ubicacionesById}
-                onEdit={goEdit}
-              />
+              {viewMode === "list" ? (
+                <ActivoListView
+                  activos={activos}
+                  tiposById={tiposById}
+                  ubicacionesById={ubicacionesById}
+                  onEdit={goEdit}
+                />
+              ) : (
+                <ActivoGridView
+                  activos={activos}
+                  tiposById={tiposById}
+                  ubicacionesById={ubicacionesById}
+                  onEdit={goEdit}
+                />
+              )}
             </div>
 
             {activosQuery.data ? (
               <Pagination
                 page={activosQuery.data}
                 onPageChange={search.setPage}
-                className="border-t border-border/50 py-2 bg-transparent shrink-0"
+                className="border-t border-border/50 py-3 bg-transparent"
               />
             ) : null}
-          </>
+          </div>
         )}
       </div>
     </PageShell>
