@@ -29,7 +29,7 @@ export function ActivoAtributoValorFields({
   errors,
   onChange,
   disabled = false,
-}: ActivoAtributoValorFieldsProps) {
+}: Readonly<ActivoAtributoValorFieldsProps>) {
   if (atributos.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -105,7 +105,7 @@ function AtributoInput({
   disabled,
   invalid,
   onChange,
-}: AtributoInputProps) {
+}: Readonly<AtributoInputProps>) {
   if (codigo === "TEXTAREA") {
     return (
       <Textarea
