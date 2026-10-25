@@ -57,7 +57,7 @@ export function ActivoFormHeader({ isEditing, codigo }: ActivoFormHeaderProps) {
             type="button"
             variant="outline"
             size="sm"
-            render={<Link to={routes.activos.root} />}
+            render={<Link to={routes.activos.listarActivos} />}
             className="text-xs"
           >
             Volver al listado

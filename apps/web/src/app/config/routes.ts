@@ -5,7 +5,8 @@ export const routes = {
 
   activos: {
     root: "/activos",
-    nuevo: "/activos/nuevo",
+    listarActivos: "/activos/registro-activo",
+    nuevo: "/activos/registro-activo/nuevo",
     catalogo: "/activos/catalogo",
     consultaDocumentos: "/activos/consulta-documentos",
     detail: (activoId: string) => `/activos/catalogo/${activoId}`,

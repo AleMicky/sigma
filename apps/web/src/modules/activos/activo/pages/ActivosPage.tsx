@@ -147,7 +147,7 @@ export function ActivosPage() {
 
   function goCreate() {
     void navigate({
-      to: "/activos/nuevo",
+      to: "/activos/registro-activo/nuevo",
       search: {
         tipoActivoId:
           tipoActivoId !== ALL_TIPOS

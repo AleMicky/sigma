@@ -9,7 +9,7 @@ const activoNuevoSearchSchema = z.object({
 
 export type ActivoNuevoSearch = z.infer<typeof activoNuevoSearchSchema>
 
-export const Route = createFileRoute("/_dashboard/activos/nuevo")({
+export const Route = createFileRoute("/_dashboard/activos/registro-activo/nuevo")({
   validateSearch: (search: Record<string, unknown>): ActivoNuevoSearch =>
     activoNuevoSearchSchema.parse(search),
   component: ActivoNuevoRoute,
