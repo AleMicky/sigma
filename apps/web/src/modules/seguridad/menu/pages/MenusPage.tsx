@@ -17,6 +17,7 @@ import {
   usePaginatedSearch,
 } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
+import type { PageResponse } from "@/shared/types/api.types"
 
 import { menuQueries } from "../api/menu.queries"
 import type { Menu, MenuTreeNode } from "../api/menu.service"
@@ -32,6 +33,231 @@ import { MenuTableView } from "../components/MenuTableView"
 import { MenuTreeView } from "../components/MenuTreeView"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
+const EMPTY_MENUS: Menu[] = []
+const EMPTY_TREE_NODES: MenuTreeNode[] = []
+const EMPTY_PERMISOS: { menuId: string }[] = []
+
+function buildPermisosCountMap(permisos: { menuId: string }[]): Map<string, number> {
+  const map = new Map<string, number>()
+  for (const p of permisos) {
+    map.set(p.menuId, (map.get(p.menuId) ?? 0) + 1)
+  }
+  return map
+}
+
+function buildParentsMap(menus: Menu[]): Map<string, Menu> {
+  const map = new Map<string, Menu>()
+  for (const m of menus) {
+    map.set(m.id, m)
+  }
+  return map
+}
+
+function findMenuById(menus: Menu[], id: string | null): Menu | null {
+  if (!id) return null
+  return menus.find((m) => m.id === id) ?? null
+}
+
+function findParentMenu(
+  menu: Menu | null,
+  parentsById: Map<string, Menu>,
+): Menu | null {
+  if (!menu?.menuPadreId) return null
+  return parentsById.get(menu.menuPadreId) ?? null
+}
+
+function filterMenusByStatus(
+  menus: Menu[],
+  statusFilter: MenuStatusFilter,
+): Menu[] {
+  if (statusFilter === "all") return menus
+  const wantActive = statusFilter === "active"
+  return menus.filter((m) => m.activo === wantActive)
+}
+
+type MenuTreeSectionProps = {
+  isLoading: boolean
+  error: unknown
+  treeNodes: MenuTreeNode[]
+  searchQuery: string
+  statusFilter: MenuStatusFilter
+  expandedAll: boolean
+  permisosCountByMenuId: Map<string, number>
+  onEdit: (menu: Menu) => void
+  onAddChild: (parent: MenuTreeNode) => void
+  onQuickView: (id: string) => void
+  onOpenCreate: () => void
+  onManagePermisos: (menu: Menu) => void
+}
+
+function MenuTreeSection({
+  isLoading,
+  error,
+  treeNodes,
+  searchQuery,
+  statusFilter,
+  expandedAll,
+  permisosCountByMenuId,
+  onEdit,
+  onAddChild,
+  onQuickView,
+  onOpenCreate,
+  onManagePermisos,
+}: Readonly<MenuTreeSectionProps>) {
+  if (isLoading) {
+    return <ListSkeleton rows={7} rowClassName="h-12 rounded-lg" />
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        title={getErrorMessage(error)}
+        className="text-destructive"
+      />
+    )
+  }
+
+  return (
+    <MenuTreeView
+      treeNodes={treeNodes}
+      searchQuery={searchQuery}
+      statusFilter={statusFilter}
+      expandedAll={expandedAll}
+      permisosCountByMenuId={permisosCountByMenuId}
+      onEdit={onEdit}
+      onAddChild={onAddChild}
+      onQuickView={onQuickView}
+      onOpenCreate={onOpenCreate}
+      onManagePermisos={onManagePermisos}
+    />
+  )
+}
+
+type MenuTableEmptyStateProps = {
+  hasActiveFilters: boolean
+  onResetFilters: () => void
+  onOpenCreate: () => void
+}
+
+function MenuTableEmptyState({
+  hasActiveFilters,
+  onResetFilters,
+  onOpenCreate,
+}: Readonly<MenuTableEmptyStateProps>) {
+  if (hasActiveFilters) {
+    return (
+      <EmptyState
+        icon={<FolderTree className="size-5 text-muted-foreground" />}
+        title="Sin resultados"
+        description="Prueba con otra búsqueda o restablece los filtros."
+        action={
+          <Button size="sm" type="button" onClick={onResetFilters}>
+            Limpiar filtros
+          </Button>
+        }
+      />
+    )
+  }
+
+  return (
+    <EmptyState
+      icon={<FolderTree className="size-5 text-muted-foreground" />}
+      title="No hay menús disponibles"
+      description="Crea tu primer menú para configurar el árbol de navegación."
+      action={
+        <Button size="sm" type="button" onClick={onOpenCreate} className="gap-1.5">
+          <Plus className="size-4" />
+          Crear Menú
+        </Button>
+      }
+    />
+  )
+}
+
+type MenuTableSectionProps = {
+  isLoading: boolean
+  isFetching: boolean
+  error: unknown
+  menus: Menu[]
+  pageData?: PageResponse<Menu>
+  hasActiveFilters: boolean
+  parentsById: Map<string, Menu>
+  permisosCountByMenuId: Map<string, number>
+  onPageChange: (page: number) => void
+  onResetFilters: () => void
+  onOpenCreate: () => void
+  onEdit: (menu: Menu) => void
+  onQuickView: (id: string) => void
+  onManagePermisos: (menu: Menu) => void
+}
+
+function MenuTableSection({
+  isLoading,
+  isFetching,
+  error,
+  menus,
+  pageData,
+  hasActiveFilters,
+  parentsById,
+  permisosCountByMenuId,
+  onPageChange,
+  onResetFilters,
+  onOpenCreate,
+  onEdit,
+  onQuickView,
+  onManagePermisos,
+}: Readonly<MenuTableSectionProps>) {
+  if (isLoading) {
+    return <ListSkeleton rows={8} rowClassName="h-14 rounded-lg" />
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        title={getErrorMessage(error)}
+        className="text-destructive"
+      />
+    )
+  }
+
+  if (menus.length === 0) {
+    return (
+      <MenuTableEmptyState
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={onResetFilters}
+        onOpenCreate={onOpenCreate}
+      />
+    )
+  }
+
+  return (
+    <>
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3",
+          isFetching && "opacity-70",
+        )}
+      >
+        <MenuTableView
+          menus={menus}
+          parentsById={parentsById}
+          permisosCountByMenuId={permisosCountByMenuId}
+          onEdit={onEdit}
+          onQuickView={onQuickView}
+          onManagePermisos={onManagePermisos}
+        />
+      </div>
+
+      {pageData && (
+        <Pagination
+          page={pageData}
+          onPageChange={onPageChange}
+          className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 shrink-0"
+        />
+      )}
+    </>
+  )
+}
 
 export function MenusPage() {
   const [viewMode, setViewMode] = useState<MenuViewMode>("tree")
@@ -60,39 +286,33 @@ export function MenusPage() {
     }),
   )
 
-  const treeNodes = arbolQuery.data ?? []
-  const allMenus = allListQuery.data ?? []
-  const allPermisos = allPermisosQuery.data ?? []
-  const paginatedMenus = paginatedListQuery.data?.content ?? []
+  const treeNodes = arbolQuery.data ?? EMPTY_TREE_NODES
+  const allMenus = allListQuery.data ?? EMPTY_MENUS
+  const allPermisos = allPermisosQuery.data ?? EMPTY_PERMISOS
+  const paginatedMenus = paginatedListQuery.data?.content ?? EMPTY_MENUS
 
   // Permissions count per menu
-  const permisosCountByMenuId = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const p of allPermisos) {
-      map.set(p.menuId, (map.get(p.menuId) ?? 0) + 1)
-    }
-    return map
-  }, [allPermisos])
+  const permisosCountByMenuId = useMemo(
+    () => buildPermisosCountMap(allPermisos),
+    [allPermisos],
+  )
 
   // Create lookup maps for parent menu lookup
-  const parentsById = useMemo(() => {
-    const map = new Map<string, Menu>()
-    for (const m of allMenus) {
-      map.set(m.id, m)
-    }
-    return map
-  }, [allMenus])
+  const parentsById = useMemo(
+    () => buildParentsMap(allMenus),
+    [allMenus],
+  )
 
   // Selected menu for quick view dialog
-  const selectedQuickViewMenu = useMemo(() => {
-    if (!quickViewId) return null
-    return allMenus.find((m) => m.id === quickViewId) ?? null
-  }, [quickViewId, allMenus])
+  const selectedQuickViewMenu = useMemo(
+    () => findMenuById(allMenus, quickViewId),
+    [allMenus, quickViewId],
+  )
 
-  const selectedQuickViewParent = useMemo(() => {
-    if (!selectedQuickViewMenu?.menuPadreId) return null
-    return parentsById.get(selectedQuickViewMenu.menuPadreId) ?? null
-  }, [selectedQuickViewMenu, parentsById])
+  const selectedQuickViewParent = useMemo(
+    () => findParentMenu(selectedQuickViewMenu, parentsById),
+    [selectedQuickViewMenu, parentsById],
+  )
 
   useClampPage(
     search.page,
@@ -120,6 +340,24 @@ export function MenusPage() {
     setPermisosMenu(menu)
   }
 
+  function handleCloseQuickView(open: boolean) {
+    if (!open) {
+      setQuickViewId(null)
+    }
+  }
+
+  function handleClosePermisos(open: boolean) {
+    if (!open) {
+      setPermisosMenu(null)
+    }
+  }
+
+  function handleFormSuccess() {
+    if (!editing) {
+      search.setPage(0)
+    }
+  }
+
   const hasActiveFilters = Boolean(
     search.search.trim() || statusFilter !== "all",
   )
@@ -130,12 +368,17 @@ export function MenusPage() {
   }
 
   // Filter list for table view if status filter active
-  const filteredTableMenus = useMemo(() => {
-    if (statusFilter === "all") return paginatedMenus
-    return paginatedMenus.filter((m) =>
-      statusFilter === "active" ? m.activo : !m.activo,
-    )
-  }, [paginatedMenus, statusFilter])
+  const filteredTableMenus = useMemo(
+    () => filterMenusByStatus(paginatedMenus, statusFilter),
+    [paginatedMenus, statusFilter],
+  )
+
+  const allQueries = [
+    arbolQuery,
+    allListQuery,
+    paginatedListQuery,
+    allPermisosQuery,
+  ]
 
   return (
     <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
@@ -156,15 +399,7 @@ export function MenusPage() {
 
             {/* Mobile Actions */}
             <div className="flex items-center gap-1.5 shrink-0 md:hidden">
-              <RefreshButton
-                size="sm"
-                queries={[
-                  arbolQuery,
-                  allListQuery,
-                  paginatedListQuery,
-                  allPermisosQuery,
-                ]}
-              />
+              <RefreshButton size="sm" queries={allQueries} />
               <Button
                 size="sm"
                 variant="outline"
@@ -193,15 +428,7 @@ export function MenusPage() {
 
         {/* Desktop Actions */}
         <div className="hidden shrink-0 items-center gap-2 md:flex">
-          <RefreshButton
-            size="sm"
-            queries={[
-              arbolQuery,
-              allListQuery,
-              paginatedListQuery,
-              allPermisosQuery,
-            ]}
-          />
+          <RefreshButton size="sm" queries={allQueries} />
 
           <Button
             size="sm"
@@ -243,82 +470,37 @@ export function MenusPage() {
       {/* Content Section */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2">
         {viewMode === "tree" ? (
-          arbolQuery.isLoading ? (
-            <ListSkeleton rows={7} rowClassName="h-12 rounded-lg" />
-          ) : arbolQuery.isError ? (
-            <EmptyState
-              title={getErrorMessage(arbolQuery.error)}
-              className="text-destructive"
-            />
-          ) : (
-            <MenuTreeView
-              treeNodes={treeNodes}
-              searchQuery={search.search}
-              statusFilter={statusFilter}
-              expandedAll={treeExpandedAll}
-              permisosCountByMenuId={permisosCountByMenuId}
-              onEdit={openEdit}
-              onAddChild={handleAddChildNode}
-              onQuickView={(id) => setQuickViewId(id)}
-              onOpenCreate={() => openCreate()}
-              onManagePermisos={handleManagePermisos}
-            />
-          )
-        ) : paginatedListQuery.isLoading ? (
-          <ListSkeleton rows={8} rowClassName="h-14 rounded-lg" />
-        ) : paginatedListQuery.isError ? (
-          <EmptyState
-            title={getErrorMessage(paginatedListQuery.error)}
-            className="text-destructive"
-          />
-        ) : filteredTableMenus.length === 0 ? (
-          <EmptyState
-            icon={<FolderTree className="size-5 text-muted-foreground" />}
-            title={hasActiveFilters ? "Sin resultados" : "No hay menús disponibles"}
-            description={
-              hasActiveFilters
-                ? "Prueba con otra búsqueda o restablece los filtros."
-                : "Crea tu primer menú para configurar el árbol de navegación."
-            }
-            action={
-              hasActiveFilters ? (
-                <Button size="sm" type="button" onClick={resetFilters}>
-                  Limpiar filtros
-                </Button>
-              ) : (
-                <Button size="sm" type="button" onClick={() => openCreate()} className="gap-1.5">
-                  <Plus className="size-4" />
-                  Crear Menú
-                </Button>
-              )
-            }
+          <MenuTreeSection
+            isLoading={arbolQuery.isLoading}
+            error={arbolQuery.error}
+            treeNodes={treeNodes}
+            searchQuery={search.search}
+            statusFilter={statusFilter}
+            expandedAll={treeExpandedAll}
+            permisosCountByMenuId={permisosCountByMenuId}
+            onEdit={openEdit}
+            onAddChild={handleAddChildNode}
+            onQuickView={(id) => setQuickViewId(id)}
+            onOpenCreate={() => openCreate()}
+            onManagePermisos={handleManagePermisos}
           />
         ) : (
-          <>
-            <div
-              className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3",
-                paginatedListQuery.isFetching && "opacity-70",
-              )}
-            >
-              <MenuTableView
-                menus={filteredTableMenus}
-                parentsById={parentsById}
-                permisosCountByMenuId={permisosCountByMenuId}
-                onEdit={openEdit}
-                onQuickView={(id) => setQuickViewId(id)}
-                onManagePermisos={handleManagePermisos}
-              />
-            </div>
-
-            {paginatedListQuery.data && (
-              <Pagination
-                page={paginatedListQuery.data}
-                onPageChange={search.setPage}
-                className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 shrink-0"
-              />
-            )}
-          </>
+          <MenuTableSection
+            isLoading={paginatedListQuery.isLoading}
+            isFetching={paginatedListQuery.isFetching}
+            error={paginatedListQuery.error}
+            menus={filteredTableMenus}
+            pageData={paginatedListQuery.data}
+            hasActiveFilters={hasActiveFilters}
+            parentsById={parentsById}
+            permisosCountByMenuId={permisosCountByMenuId}
+            onPageChange={search.setPage}
+            onResetFilters={resetFilters}
+            onOpenCreate={() => openCreate()}
+            onEdit={openEdit}
+            onQuickView={(id) => setQuickViewId(id)}
+            onManagePermisos={handleManagePermisos}
+          />
         )}
       </div>
 
@@ -330,17 +512,13 @@ export function MenusPage() {
         menu={editing}
         parentMenuId={presetParentId}
         availableMenus={allMenus}
-        onSuccess={() => {
-          if (!editing) {
-            search.setPage(0)
-          }
-        }}
+        onSuccess={handleFormSuccess}
       />
 
       {/* Quick View Dialog */}
       <MenuDetailDialog
         open={Boolean(quickViewId)}
-        onOpenChange={(open) => !open && setQuickViewId(null)}
+        onOpenChange={handleCloseQuickView}
         menu={selectedQuickViewMenu}
         parentMenu={selectedQuickViewParent}
         allMenus={allMenus}
@@ -352,7 +530,7 @@ export function MenusPage() {
       <MenuPermisosSheet
         key={`permisos-${permisosMenu?.id ?? "closed"}-${permisosMenu ? "open" : "closed"}`}
         open={Boolean(permisosMenu)}
-        onOpenChange={(open) => !open && setPermisosMenu(null)}
+        onOpenChange={handleClosePermisos}
         menu={permisosMenu}
       />
 
@@ -364,3 +542,4 @@ export function MenusPage() {
     </PageShell>
   )
 }
+

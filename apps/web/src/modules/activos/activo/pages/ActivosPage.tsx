@@ -138,7 +138,7 @@ export function ActivosPage() {
     statusFilter !== "all"
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
+    <PageShell size="full" padding="none" layout="auto" className="w-full space-y-3 pb-8">
       {/* Header */}
       <ActivoHeader
         totalActivos={activosQuery.data?.totalElements}
@@ -168,7 +168,7 @@ export function ActivosPage() {
       />
 
       {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
+      <div className="flex flex-col pt-2">
         {activosQuery.isLoading ? (
           <ListSkeleton
             rows={6}
@@ -178,7 +178,7 @@ export function ActivosPage() {
         ) : activosQuery.isError ? (
           <EmptyState
             title={getErrorMessage(activosQuery.error)}
-            className="text-destructive my-auto"
+            className="text-destructive py-12"
           />
         ) : activos.length === 0 ? (
           <EmptyState
@@ -206,13 +206,12 @@ export function ActivosPage() {
                 </Button>
               )
             }
-            className="my-auto"
+            className="py-12"
           />
         ) : (
-          <>
+          <div className="flex flex-col space-y-4">
             <div
               className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 pr-1",
                 activosQuery.isFetching && "opacity-75 transition-opacity",
               )}
             >
@@ -228,10 +227,10 @@ export function ActivosPage() {
               <Pagination
                 page={activosQuery.data}
                 onPageChange={search.setPage}
-                className="border-t border-border/50 py-2 bg-transparent shrink-0"
+                className="border-t border-border/50 py-3 bg-transparent"
               />
             ) : null}
-          </>
+          </div>
         )}
       </div>
     </PageShell>

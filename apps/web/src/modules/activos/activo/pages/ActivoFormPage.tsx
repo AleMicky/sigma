@@ -10,6 +10,7 @@ import type { ActivoAtributo } from "@/modules/activos/activo-atributo/api/activ
 import { activoAtributoValorKeys } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.keys"
 import { activoAtributoValorQueries } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.queries"
 import type { ActivoAtributoValor } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.service"
+import { estadoOperativoQueries } from "@/modules/activos/estado-operativo/api/estado-operativo.queries"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
@@ -34,6 +35,7 @@ import { ActivoFormFooter } from "../components/form/ActivoFormFooter"
 import { ActivoFormHeader } from "../components/form/ActivoFormHeader"
 import { ActivoFormImageSection } from "../components/form/ActivoFormImageSection"
 import { ActivoFormMainSection } from "../components/form/ActivoFormMainSection"
+import { ActivoLivePreviewCard } from "../components/form/ActivoLivePreviewCard"
 import { syncAtributoValores, validateAtributos } from "../lib/activo-form.utils"
 import { activoSchema, defaultActivoValues } from "../schemas/activo.schema"
 
@@ -56,10 +58,12 @@ export function ActivoFormPage({
   const [atributoErrors, setAtributoErrors] = useState<Record<string, string>>(
     {},
   )
-  const [valores, setValores] = useState<Record<string, string>>({})
+  const [userValores, setUserValores] = useState<Record<string, string>>({})
+  const [prevTipoActivoId, setPrevTipoActivoId] = useState(
+    defaultTipoActivoId ?? "",
+  )
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [removeExistingImage, setRemoveExistingImage] = useState(false)
-  const lastTipoIdRef = useRef<string | null>(null)
   const syncRef = useRef({
     atributos: [] as ActivoAtributo[],
     valores: {} as Record<string, string>,
@@ -102,7 +106,19 @@ export function ActivoFormPage({
     }),
   )
 
-  const tipos = tiposQuery.data?.content ?? []
+  const estadosOperativosQuery = useQuery(
+    estadoOperativoQueries.list({
+      page: 0,
+      size: 100,
+      sortBy: "nombre",
+      direction: "ASC",
+    }),
+  )
+
+  const tipos = useMemo(
+    () => tiposQuery.data?.content ?? [],
+    [tiposQuery.data?.content],
+  )
   const tiposById = useMemo(
     () => new Map(tipos.map((tipo) => [tipo.id, tipo])),
     [tipos],
@@ -121,6 +137,10 @@ export function ActivoFormPage({
   const ubicacionesById = useMemo(
     () => new Map(ubicaciones.map((ubicacion) => [ubicacion.id, ubicacion])),
     [ubicaciones],
+  )
+  const estadosOperativos = useMemo(
+    () => estadosOperativosQuery.data?.content ?? [],
+    [estadosOperativosQuery.data?.content],
   )
 
   const form = useForm({
@@ -204,9 +224,30 @@ export function ActivoFormPage({
     },
   })
 
+  // Reactive subscriptions for live preview & attributes
   const tipoActivoId = useStore(
     form.store,
     (state) => state.values.tipoActivoId,
+  )
+  const codigo = useStore(form.store, (state) => state.values.codigo)
+  const nombre = useStore(form.store, (state) => state.values.nombre)
+  const ubicacionId = useStore(form.store, (state) => state.values.ubicacionId)
+  const estadoOperativoId = useStore(
+    form.store,
+    (state) => state.values.estadoOperativoId,
+  )
+  const fechaAdquisicion = useStore(
+    form.store,
+    (state) => state.values.fechaAdquisicion,
+  )
+  const descripcion = useStore(
+    form.store,
+    (state) => state.values.descripcion,
+  )
+
+  const selectedEstadoOperativo = useMemo(
+    () => estadosOperativos.find((e) => e.id === estadoOperativoId),
+    [estadosOperativos, estadoOperativoId],
   )
 
   const atributosQuery = useQuery(
@@ -239,14 +280,53 @@ export function ActivoFormPage({
     return map
   }, [valoresQuery.data?.content])
 
-  syncRef.current = {
-    atributos: atributosVisibles,
-    valores,
-    existentes: valoresExistentesByAtributoId,
+  if (tipoActivoId !== prevTipoActivoId) {
+    setPrevTipoActivoId(tipoActivoId)
+    setUserValores({})
+    setAtributoErrors({})
+  }
+
+  const valores = useMemo(() => {
+    if (!tipoActivoId) return {}
+
+    const result: Record<string, string> = {}
+    for (const atributo of atributosVisibles) {
+      if (userValores[atributo.id] !== undefined) {
+        result[atributo.id] = userValores[atributo.id]
+      } else {
+        const existente = valoresExistentesByAtributoId.get(atributo.id)
+        if (existente?.valor != null) {
+          result[atributo.id] = existente.valor
+        } else {
+          result[atributo.id] = atributo.valorDefecto ?? ""
+        }
+      }
+    }
+    return result
+  }, [
+    atributosVisibles,
+    tipoActivoId,
+    userValores,
+    valoresExistentesByAtributoId,
+  ])
+
+  useEffect(() => {
+    syncRef.current = {
+      atributos: atributosVisibles,
+      valores,
+      existentes: valoresExistentesByAtributoId,
+      activo,
+      pendingFile,
+      removeExistingImage,
+    }
+  }, [
     activo,
+    atributosVisibles,
     pendingFile,
     removeExistingImage,
-  }
+    valores,
+    valoresExistentesByAtributoId,
+  ])
 
   useEffect(() => {
     if (!isEditing || !activo) return
@@ -260,45 +340,6 @@ export function ActivoFormPage({
     form.setFieldValue("fechaAdquisicion", activo.fechaAdquisicion ?? "")
   }, [activo, form, isEditing])
 
-  useEffect(() => {
-    if (!tipoActivoId) {
-      setValores({})
-      lastTipoIdRef.current = null
-      return
-    }
-
-    if (atributosQuery.isLoading) return
-    if (isEditing && valoresQuery.isLoading) return
-
-    const tipoChanged = lastTipoIdRef.current !== tipoActivoId
-    lastTipoIdRef.current = tipoActivoId
-
-    setValores((prev) => {
-      const next: Record<string, string> = {}
-
-      for (const atributo of atributosVisibles) {
-        const existente = valoresExistentesByAtributoId.get(atributo.id)
-        if (existente?.valor != null) {
-          next[atributo.id] = existente.valor
-        } else if (!tipoChanged && prev[atributo.id] !== undefined) {
-          next[atributo.id] = prev[atributo.id]
-        } else {
-          next[atributo.id] = atributo.valorDefecto ?? ""
-        }
-      }
-
-      return next
-    })
-    setAtributoErrors({})
-  }, [
-    atributosQuery.isLoading,
-    atributosVisibles,
-    isEditing,
-    tipoActivoId,
-    valoresExistentesByAtributoId,
-    valoresQuery.isLoading,
-  ])
-
   const selectedTipo = tiposById.get(tipoActivoId)
   const SelectedIcon = selectedTipo
     ? getTipoActivoIcon(selectedTipo.icono)
@@ -307,7 +348,7 @@ export function ActivoFormPage({
 
   if (isEditing && activoQuery.isLoading) {
     return (
-      <PageShell className="max-w-4xl">
+      <PageShell size="full" padding="none" layout="auto" className="w-full max-w-5xl mx-auto py-8">
         <ListSkeleton rows={8} rowClassName="h-12 rounded-xl" />
       </PageShell>
     )
@@ -315,7 +356,7 @@ export function ActivoFormPage({
 
   if (isEditing && activoQuery.isError) {
     return (
-      <PageShell className="max-w-4xl">
+      <PageShell size="full" padding="none" layout="auto" className="w-full max-w-5xl mx-auto py-8">
         <EmptyState
           title={getErrorMessage(activoQuery.error)}
           className="text-destructive my-auto"
@@ -335,11 +376,11 @@ export function ActivoFormPage({
   }
 
   return (
-    <PageShell className="max-w-7xl w-full mx-auto gap-0 px-4 py-0 sm:px-6 md:px-8 md:py-0 flex flex-col min-h-0">
+    <PageShell size="full" padding="none" layout="auto" className="w-full max-w-7xl mx-auto space-y-4 pb-16">
       <ActivoFormHeader isEditing={isEditing} codigo={activo?.codigo} />
 
       <form
-        className="flex min-h-0 flex-1 flex-col gap-5 py-4 overflow-y-auto overflow-x-hidden pr-1"
+        className="flex flex-col gap-5 pt-1"
         onSubmit={(event) => {
           event.preventDefault()
           event.stopPropagation()
@@ -355,7 +396,7 @@ export function ActivoFormPage({
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Main Info & Dynamic Attributes (Steps 1, 2, 3) */}
-          <div className="lg:col-span-8 xl:col-span-8 flex flex-col gap-5 order-2 lg:order-1">
+          <div className="lg:col-span-8 flex flex-col gap-5">
             <ActivoFormMainSection
               form={form}
               tipos={tipos}
@@ -380,7 +421,7 @@ export function ActivoFormPage({
               isError={atributosQuery.isError}
               error={atributosQuery.error}
               onChange={(atributoId, value) => {
-                setValores((prev) => ({ ...prev, [atributoId]: value }))
+                setUserValores((prev) => ({ ...prev, [atributoId]: value }))
                 setAtributoErrors((prev) => {
                   if (!prev[atributoId]) return prev
                   const next = { ...prev }
@@ -391,14 +432,28 @@ export function ActivoFormPage({
             />
           </div>
 
-          {/* Side Media Panel (Step 4) */}
-          <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-5 lg:sticky lg:top-4 order-1 lg:order-2">
+          {/* Side Media Panel & Live Preview */}
+          <div className="lg:col-span-4 flex flex-col gap-5 lg:sticky lg:top-4">
             <ActivoFormImageSection
               currentUrl={activo?.urlImagen}
               pendingFile={pendingFile}
               onFileChange={setPendingFile}
               removeExistingImage={removeExistingImage}
               onRemoveExistingChange={setRemoveExistingImage}
+            />
+
+            <ActivoLivePreviewCard
+              codigo={codigo}
+              nombre={nombre}
+              descripcion={descripcion}
+              fechaAdquisicion={fechaAdquisicion}
+              selectedTipo={selectedTipo}
+              ubicacion={ubicacionId ? ubicacionesById.get(ubicacionId) : undefined}
+              estadoOperativoNombre={selectedEstadoOperativo?.nombre}
+              estadoOperativoColor={selectedEstadoOperativo?.color}
+              pendingFile={pendingFile}
+              currentUrl={activo?.urlImagen}
+              removeExistingImage={removeExistingImage}
             />
           </div>
         </div>

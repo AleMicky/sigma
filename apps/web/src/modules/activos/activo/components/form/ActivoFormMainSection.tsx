@@ -191,7 +191,10 @@ export function ActivoFormMainSection({
               field.state.meta.isTouched && !field.state.meta.isValid
 
             return (
-              <Field data-invalid={isInvalid || undefined}>
+              <Field
+                data-invalid={isInvalid || undefined}
+                className="col-span-1 md:col-span-2"
+              >
                 <RequiredFieldLabel htmlFor={field.name}>
                   Nombre del Activo
                 </RequiredFieldLabel>
@@ -248,7 +251,7 @@ export function ActivoFormMainSection({
         title="Clasificación & Ubicación"
         description="Localización en planta o sede física y descripción extendida."
         icon={MapPin}
-        columns={1}
+        columns={2}
       >
         <form.Field name="ubicacionId">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -397,7 +400,8 @@ export function ActivoFormMainSection({
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
                     placeholder="Detalles adicionales, número de serie de fábrica, notas de estado u observaciones."
-                    rows={3}
+                    rows={4}
+                    className="min-h-[100px] leading-relaxed resize-y"
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>

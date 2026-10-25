@@ -39,18 +39,31 @@ function mapTreeNodeToNavNode(node: MenuTreeNode): NavNode {
 }
 
 /**
+ * Extrae la lista de nodos del árbol a partir de un arreglo o una respuesta envuelta en { data: [...] }.
+ */
+function extractMenuTreeNodes(nodes: unknown): MenuTreeNode[] {
+  if (Array.isArray(nodes)) {
+    return nodes
+  }
+
+  if (
+    typeof nodes === "object" &&
+    nodes !== null &&
+    "data" in nodes &&
+    Array.isArray((nodes as { data: unknown }).data)
+  ) {
+    return (nodes as { data: MenuTreeNode[] }).data
+  }
+
+  return []
+}
+
+/**
  * Transforma el árbol de menús dinámico entregado por la API (GET /menus/mis-menus)
  * a secciones del Sidebar respetando la configuración de la BD sin valores quemados.
  */
-function convertTreeToNavSections(nodes: MenuTreeNode[] | unknown): NavSection[] {
-  const rawList: MenuTreeNode[] = Array.isArray(nodes)
-    ? nodes
-    : typeof nodes === "object" &&
-        nodes !== null &&
-        "data" in nodes &&
-        Array.isArray((nodes as { data: unknown }).data)
-      ? (nodes as { data: MenuTreeNode[] }).data
-      : []
+function convertTreeToNavSections(nodes: unknown): NavSection[] {
+  const rawList = extractMenuTreeNodes(nodes)
 
   if (!rawList || rawList.length === 0) return []
 
