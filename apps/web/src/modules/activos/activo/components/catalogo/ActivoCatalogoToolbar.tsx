@@ -1,5 +1,12 @@
 import { useMemo } from "react"
-import { FileSpreadsheet, Filter, MapPin, RotateCcw } from "lucide-react"
+import {
+  FileSpreadsheet,
+  Filter,
+  LayoutGrid,
+  List,
+  MapPin,
+  RotateCcw,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
@@ -14,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select"
+import { cn } from "@/shared/lib/utils"
 
 export const ALL_TIPOS = "__all__"
 export const ALL_UBICACIONES = "__all__"
@@ -29,6 +37,8 @@ interface ActivoCatalogoToolbarProps {
   ubicaciones: Ubicacion[]
   hasActiveFilters: boolean
   onResetFilters: () => void
+  viewMode?: "list" | "grid"
+  onViewModeChange?: (mode: "list" | "grid") => void
 }
 
 export function ActivoCatalogoToolbar({
@@ -42,7 +52,9 @@ export function ActivoCatalogoToolbar({
   ubicaciones,
   hasActiveFilters,
   onResetFilters,
-}: ActivoCatalogoToolbarProps) {
+  viewMode = "list",
+  onViewModeChange,
+}: Readonly<ActivoCatalogoToolbarProps>) {
   const tiposById = useMemo(
     () => new Map(tipos.map((t) => [t.id, t])),
     [tipos],
@@ -66,7 +78,7 @@ export function ActivoCatalogoToolbar({
   }
 
   return (
-    <div className="flex shrink-0 flex-col gap-2.5 py-3 sm:py-4 border-b">
+    <div className="flex shrink-0 flex-col gap-2.5 py-3 sm:py-4 border-b border-border/60">
       <div className="flex flex-col md:flex-row md:items-center gap-2.5">
         {/* Buscador */}
         <SearchField
@@ -187,6 +199,39 @@ export function ActivoCatalogoToolbar({
               <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Exportar Excel</span>
             </Button>
+
+            {onViewModeChange && (
+              <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => onViewModeChange("list")}
+                  className={cn(
+                    "flex size-7.5 items-center justify-center rounded-md transition-all cursor-pointer",
+                    viewMode === "list"
+                      ? "bg-background text-foreground shadow-xs font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                  title="Vista en lista"
+                  aria-label="Vista en lista"
+                >
+                  <List className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onViewModeChange("grid")}
+                  className={cn(
+                    "flex size-7.5 items-center justify-center rounded-md transition-all cursor-pointer",
+                    viewMode === "grid"
+                      ? "bg-background text-foreground shadow-xs font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                  title="Vista en cuadrícula"
+                  aria-label="Vista en cuadrícula"
+                >
+                  <LayoutGrid className="size-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

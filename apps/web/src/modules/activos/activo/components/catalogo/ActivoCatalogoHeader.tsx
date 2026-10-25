@@ -12,7 +12,7 @@ export function ActivoCatalogoHeader({
   onRefresh,
   isRefreshing,
   queries,
-}: ActivoCatalogoHeaderProps) {
+}: Readonly<ActivoCatalogoHeaderProps>) {
   return (
     <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:gap-4 sm:py-6 md:flex-row md:items-start md:justify-between md:py-8">
       <div className="min-w-0 flex flex-1 flex-col gap-1">
