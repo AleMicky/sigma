@@ -60,6 +60,7 @@ export type ActivoPayload = {
 export type ActivoListParams = PageParams & {
   tipoActivoId?: string
   q?: string
+  activo?: boolean
 }
 
 const crud = createCrudService<Activo, ActivoPayload, ActivoListParams>(

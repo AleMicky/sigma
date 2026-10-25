@@ -78,27 +78,15 @@ public class ActivoController {
         }
 
         @GetMapping
-        @Operation(summary = "Listar activos con paginación y búsqueda opcional")
+        @Operation(summary = "Listar activos con paginación y filtros opcionales (búsqueda, tipo de activo, estado activo/inactivo)")
         public ResponseEntity<ApiResponse<PageResponse<ActivoResponse>>> findAll(
                         @RequestParam(required = false) String q,
+                        @RequestParam(required = false) UUID tipoActivoId,
+                        @RequestParam(required = false) Boolean activo,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
                 return ResponseEntity.ok(
                                 ApiResponse.success(
-                                                activoService.findAll(q, pageRequest)));
-        }
-
-        @GetMapping(params = "tipoActivoId")
-        @Operation(summary = "Listar activos filtrados por tipo de activo")
-        public ResponseEntity<ApiResponse<PageResponse<ActivoResponse>>> findByTipoActivoId(
-                        @RequestParam UUID tipoActivoId,
-                        @RequestParam(required = false) String q,
-                        @Valid @ModelAttribute PageRequestDto pageRequest) {
-                return ResponseEntity.ok(
-                                ApiResponse.success(
-                                                activoService.findByTipoActivoId(
-                                                                tipoActivoId,
-                                                                q,
-                                                                pageRequest)));
+                                                activoService.findAll(q, tipoActivoId, activo, pageRequest)));
         }
 
         @GetMapping("/disponibilidad")
