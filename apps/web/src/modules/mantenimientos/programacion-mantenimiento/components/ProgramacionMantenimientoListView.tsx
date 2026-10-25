@@ -134,7 +134,7 @@ export function ProgramacionMantenimientoListView({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {programaciones.map((prog) => {
             const activo = prog.planActivo
-            const criteriosActivos = prog.criterios.filter((c) => c.activo)
+            const criteriosActivos = (prog.criterios ?? []).filter((c) => c.activo)
 
             // Evaluar condición general de la tarjeta
             let hasVencido = false
@@ -315,7 +315,7 @@ export function ProgramacionMantenimientoListView({
                     </div>
 
                     <div className="space-y-2">
-                      {prog.criterios.map((c) => {
+                      {(prog.criterios ?? []).map((c) => {
                         if (c.tipoCriterio === "KILOMETRAJE") {
                           const actual = c.valorActualUso ?? 0
                           const proximo = c.proximoValorUso ?? 0
@@ -449,6 +449,8 @@ export function ProgramacionMantenimientoListView({
                             className={`rounded-xl border p-2.5 text-xs space-y-1 transition-all ${
                               !c.activo
                                 ? "bg-muted/20 border-border/30 opacity-60 line-through"
+                                : !targetDate
+                                ? "bg-muted/30 border-border/50 text-foreground"
                                 : isVencido
                                 ? "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300"
                                 : isCerca
@@ -464,12 +466,14 @@ export function ProgramacionMantenimientoListView({
                                   (cada {c.intervaloDias} días)
                                 </span>
                               </div>
-                              <span className="font-bold">{targetDate ?? "Sin fecha"}</span>
+                              <span className="font-bold">{targetDate ?? "Por evaluar"}</span>
                             </div>
 
                             <div className="text-[10.5px]">
-                              <span className={isVencido ? "font-bold text-red-600 dark:text-red-400" : "text-muted-foreground"}>
-                                {isVencido
+                              <span className={!targetDate ? "text-muted-foreground italic" : isVencido ? "font-bold text-red-600 dark:text-red-400" : "text-muted-foreground"}>
+                                {!targetDate
+                                  ? "ℹ️ Fecha objetivo aún no calculada (evalúe el parque)"
+                                  : isVencido
                                   ? diffDays === 0
                                     ? "⚠️ Vence hoy"
                                     : `⚠️ Vencido hace ${Math.abs(diffDays)} días`

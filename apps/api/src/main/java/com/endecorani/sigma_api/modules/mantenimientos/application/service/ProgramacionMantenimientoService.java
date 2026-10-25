@@ -270,7 +270,8 @@ public class ProgramacionMantenimientoService {
             PageRequestDto pageRequest
     ) {
         Pageable pageable = pageRequest.toPageable(Set.of("id", "createdAt", "updatedAt", "activo"));
-        Page<ProgramacionMantenimiento> page = repository.search(planMantenimientoActivoId, activoId, activo, q, pageable);
+        String searchQ = (q != null && !q.isBlank()) ? q.trim() : null;
+        Page<ProgramacionMantenimiento> page = repository.search(planMantenimientoActivoId, activoId, activo, searchQ, pageable);
         List<ProgramacionMantenimientoResponse> content = page.getContent().stream()
                 .map(this::toEnrichedResponse)
                 .collect(Collectors.toList());
@@ -293,7 +294,8 @@ public class ProgramacionMantenimientoService {
             String q
     ) {
         log.info("Generando reporte Excel de seguimiento preventivo");
-        Page<ProgramacionMantenimiento> page = repository.search(planMantenimientoActivoId, activoId, activo, q, Pageable.unpaged());
+        String searchQ = (q != null && !q.isBlank()) ? q.trim() : null;
+        Page<ProgramacionMantenimiento> page = repository.search(planMantenimientoActivoId, activoId, activo, searchQ, Pageable.unpaged());
         List<ProgramacionMantenimientoResponse> content = page.getContent().stream()
                 .map(this::toEnrichedResponse)
                 .collect(Collectors.toList());

@@ -32,22 +32,40 @@ public interface SpringProgramacionMantenimientoRepository
 
     boolean existsByPlanMantenimientoActivoIdAndActivoTrueAndIdNot(UUID planMantenimientoActivoId, UUID id);
 
-    @Query("""
-        SELECT p
-        FROM ProgramacionMantenimientoEntity p
-        JOIN p.planMantenimientoActivo pma
-        JOIN pma.activo a
-        JOIN pma.planMantenimiento pm
-        WHERE (:planMantenimientoActivoId IS NULL OR p.planMantenimientoActivoId = :planMantenimientoActivoId)
-          AND (:activoId IS NULL OR pma.activoId = :activoId)
-          AND (:activo IS NULL OR p.activo = :activo)
-          AND (:q IS NULL OR (
-                LOWER(a.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
-                LOWER(a.nombre) LIKE LOWER(CONCAT('%', :q, '%')) OR
-                LOWER(pm.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
-                LOWER(pm.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
-          ))
-    """)
+    @Query(
+        value = """
+            SELECT p
+            FROM ProgramacionMantenimientoEntity p
+            LEFT JOIN p.planMantenimientoActivo pma
+            LEFT JOIN pma.activo a
+            LEFT JOIN pma.planMantenimiento pm
+            WHERE (:planMantenimientoActivoId IS NULL OR p.planMantenimientoActivoId = :planMantenimientoActivoId)
+              AND (:activoId IS NULL OR pma.activoId = :activoId)
+              AND (:activo IS NULL OR p.activo = :activo)
+              AND (:q IS NULL OR (
+                    LOWER(a.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
+                    LOWER(a.nombre) LIKE LOWER(CONCAT('%', :q, '%')) OR
+                    LOWER(pm.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
+                    LOWER(pm.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+              ))
+        """,
+        countQuery = """
+            SELECT COUNT(p)
+            FROM ProgramacionMantenimientoEntity p
+            LEFT JOIN p.planMantenimientoActivo pma
+            LEFT JOIN pma.activo a
+            LEFT JOIN pma.planMantenimiento pm
+            WHERE (:planMantenimientoActivoId IS NULL OR p.planMantenimientoActivoId = :planMantenimientoActivoId)
+              AND (:activoId IS NULL OR pma.activoId = :activoId)
+              AND (:activo IS NULL OR p.activo = :activo)
+              AND (:q IS NULL OR (
+                    LOWER(a.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
+                    LOWER(a.nombre) LIKE LOWER(CONCAT('%', :q, '%')) OR
+                    LOWER(pm.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
+                    LOWER(pm.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+              ))
+        """
+    )
     Page<ProgramacionMantenimientoEntity> search(
             @Param("planMantenimientoActivoId") UUID planMantenimientoActivoId,
             @Param("activoId") UUID activoId,

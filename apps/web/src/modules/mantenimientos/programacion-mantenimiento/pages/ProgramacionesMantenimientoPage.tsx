@@ -39,21 +39,27 @@ export function ProgramacionesMantenimientoPage() {
     pageSize: 100,
   })
 
-  const programaciones = pageData?.content ?? []
+  const programaciones: ProgramacionMantenimiento[] = useMemo(() => {
+    if (Array.isArray(pageData)) return pageData as ProgramacionMantenimiento[]
+    if (pageData && Array.isArray((pageData as any).content)) {
+      return (pageData as any).content as ProgramacionMantenimiento[]
+    }
+    return []
+  }, [pageData])
 
   // Métricas
   const total = programaciones.length
   const vigentes = useMemo(() => programaciones.filter((p) => p.activo).length, [programaciones])
   const conTiempo = useMemo(
-    () => programaciones.filter((p) => p.criterios.some((c) => c.tipoCriterio === "TIEMPO" && c.activo)).length,
+    () => programaciones.filter((p) => (p.criterios ?? []).some((c) => c.tipoCriterio === "TIEMPO" && c.activo)).length,
     [programaciones],
   )
   const conKm = useMemo(
-    () => programaciones.filter((p) => p.criterios.some((c) => c.tipoCriterio === "KILOMETRAJE" && c.activo)).length,
+    () => programaciones.filter((p) => (p.criterios ?? []).some((c) => c.tipoCriterio === "KILOMETRAJE" && c.activo)).length,
     [programaciones],
   )
   const conHoras = useMemo(
-    () => programaciones.filter((p) => p.criterios.some((c) => c.tipoCriterio === "HORAS_USO" && c.activo)).length,
+    () => programaciones.filter((p) => (p.criterios ?? []).some((c) => c.tipoCriterio === "HORAS_USO" && c.activo)).length,
     [programaciones],
   )
 

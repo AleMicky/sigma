@@ -155,7 +155,8 @@ export async function getProgramaciones(
   if (params?.activo !== undefined) query.append("activo", String(params.activo))
   if (params?.q) query.append("q", params.q)
   if (params?.page !== undefined) query.append("page", String(params.page))
-  if (params?.pageSize !== undefined) query.append("pageSize", String(params.pageSize))
+  const size = params?.pageSize ?? 100
+  query.append("size", String(size))
 
   const qs = query.toString()
   return http.get<PageResponse<ProgramacionMantenimiento>>(
