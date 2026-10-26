@@ -1,11 +1,13 @@
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
-  Calendar,
   CheckCircle2,
+  Clock,
+  Eye,
+  EyeOff,
   FolderTree,
-  Hash,
   KeyRound,
+  Layers,
   Link as LinkIcon,
   Pencil,
   ShieldAlert,
@@ -47,7 +49,7 @@ export function MenuDetailDialog({
   allMenus = [],
   onEdit,
   onManagePermisos,
-}: MenuDetailDialogProps) {
+}: Readonly<MenuDetailDialogProps>) {
   const hijos = useMemo(
     () =>
       menu
@@ -69,34 +71,46 @@ export function MenuDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden sm:max-w-xl">
-        {/* Header with Icon */}
-        <DialogHeader className="p-6 border-b bg-muted/20 pb-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
+      <DialogContent className="max-w-md p-0 overflow-hidden sm:max-w-lg">
+        {/* Compact Header */}
+        <DialogHeader className="p-4 sm:p-5 border-b bg-muted/20 pb-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <div
-                className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs font-mono font-bold"
-                style={menu.color ? { color: menu.color, borderColor: `${menu.color}33`, backgroundColor: `${menu.color}15` } : undefined}
+                className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20"
+                style={
+                  menu.color
+                    ? {
+                        color: menu.color,
+                        borderColor: `${menu.color}33`,
+                        backgroundColor: `${menu.color}15`,
+                      }
+                    : undefined
+                }
               >
                 {menu.icono ? (
-                  <DynamicLucideIcon name={menu.icono} className="size-6" />
+                  <DynamicLucideIcon name={menu.icono} className="size-5" />
                 ) : (
-                  <span className="text-base text-muted-foreground">Ø</span>
+                  <FolderTree className="size-5 text-muted-foreground" />
                 )}
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <DialogTitle className="text-lg font-bold">
+                  <DialogTitle className="text-base font-semibold truncate text-foreground">
                     {menu.nombre}
                   </DialogTitle>
                   {menu.badge && (
-                    <span className="rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 px-1.5 py-0.2 text-[10px] font-semibold">
+                    <span className="rounded bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 px-1.5 py-0.2 text-[10px] font-semibold shrink-0">
                       {menu.badge}
                     </span>
                   )}
                 </div>
-                <DialogDescription className="text-xs font-mono text-muted-foreground pt-0.5">
-                  Código: {menu.codigo}
+                <DialogDescription className="text-xs font-mono text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                  <span>{menu.codigo}</span>
+                  <span>•</span>
+                  <span>{menu.tipo ?? "ITEM"}</span>
+                  <span>•</span>
+                  <span>Posición #{menu.orden}</span>
                 </DialogDescription>
               </div>
             </div>
@@ -105,8 +119,8 @@ export function MenuDetailDialog({
               variant={menu.activo ? "default" : "outline"}
               className={
                 menu.activo
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                  : "text-destructive border-destructive/40"
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 shrink-0 text-xs py-0.5"
+                  : "text-destructive border-destructive/40 shrink-0 text-xs py-0.5"
               }
             >
               {menu.activo ? (
@@ -124,95 +138,121 @@ export function MenuDetailDialog({
           </div>
         </DialogHeader>
 
-        {/* Content Details */}
-        <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-          {/* General Attributes */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+        {/* Compact Content */}
+        <div className="p-4 sm:p-5 space-y-3 max-h-[65vh] overflow-y-auto">
+          {/* Optional Description */}
+          {menu.descripcion && (
+            <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs text-foreground/80">
+              <span className="font-semibold text-foreground">Descripción: </span>
+              {menu.descripcion}
+            </div>
+          )}
+
+          {/* Properties Grid */}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {/* Parent / Level */}
+            <div className="rounded-lg border border-border/60 bg-card p-2.5 space-y-0.5">
+              <span className="text-[10.5px] font-medium text-muted-foreground flex items-center gap-1">
                 <FolderTree className="size-3 text-primary" />
-                Nivel / Padre
+                Padre / Nivel
               </span>
-              <p className="text-xs font-medium truncate">
+              <p className="font-medium text-foreground truncate">
                 {parentMenu ? (
-                  <span className="font-semibold text-foreground">
-                    {parentMenu.nombre} ({parentMenu.codigo})
+                  <span title={`${parentMenu.nombre} (${parentMenu.codigo})`}>
+                    {parentMenu.nombre}
                   </span>
                 ) : (
-                  <span className="rounded bg-primary/10 px-1.5 py-0.5 font-medium text-primary text-[11px]">
-                    Módulo Raíz
-                  </span>
+                  <span className="text-primary font-semibold">Módulo Raíz</span>
                 )}
               </p>
             </div>
 
-            <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
-                <Hash className="size-3 text-primary" />
-                Tipo de Menú
+            {/* Type & Structure */}
+            <div className="rounded-lg border border-border/60 bg-card p-2.5 space-y-0.5">
+              <span className="text-[10.5px] font-medium text-muted-foreground flex items-center gap-1">
+                <Layers className="size-3 text-primary" />
+                Tipo / Estructura
               </span>
-              <p className="text-xs font-semibold text-foreground">
-                {menu.tipo ?? "ITEM"} ({menu.esFolder ? "Carpeta" : "Interfaz"})
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
-                <Hash className="size-3 text-primary" />
-                Orden
-              </span>
-              <p className="text-xs font-mono font-semibold text-foreground">
-                Posición #{menu.orden}
-              </p>
-            </div>
-          </div>
-
-          {/* Color & Descripción */}
-          {menu.color && (
-            <div className="rounded-xl border border-border/70 bg-card p-3 flex items-center gap-2">
-              <span className="text-[11px] font-medium text-muted-foreground">Color de acento:</span>
-              <span
-                className="size-3.5 rounded-full ring-1 ring-border"
-                style={{ backgroundColor: menu.color }}
-              />
-              <code className="text-xs font-mono text-muted-foreground">{menu.color}</code>
-            </div>
-          )}
-
-          {menu.descripcion && (
-            <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground">Descripción:</span>
-              <p className="text-xs text-foreground">{menu.descripcion}</p>
-            </div>
-          )}
-
-          {/* Ruta */}
-          <div className="rounded-xl border border-border/70 bg-card p-3 space-y-1">
-            <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
-              <LinkIcon className="size-3 text-primary" />
-              Ruta en Aplicación
-            </span>
-            <p className="text-xs font-mono font-medium text-foreground truncate">
-              {menu.ruta ? (
-                <span className="text-primary hover:underline">{menu.ruta}</span>
-              ) : (
-                <span className="text-muted-foreground italic">
-                  Sin ruta asignada (Contenedor de submenús / Carpeta)
+              <p className="font-semibold text-foreground truncate">
+                {menu.tipo ?? "ITEM"}
+                <span className="font-normal text-muted-foreground ml-1">
+                  ({menu.esFolder ? "Carpeta" : "Interfaz"})
                 </span>
-              )}
-            </p>
+              </p>
+            </div>
+
+            {/* Route & Accent Color */}
+            <div className="col-span-2 rounded-lg border border-border/60 bg-card p-2.5 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <LinkIcon className="size-3 text-primary shrink-0" />
+                <span className="text-[10.5px] font-medium text-muted-foreground shrink-0">
+                  Ruta:
+                </span>
+                <code className="text-[11px] font-mono text-foreground truncate">
+                  {menu.ruta || (
+                    <span className="text-muted-foreground italic font-sans">
+                      Sin ruta (Contenedor)
+                    </span>
+                  )}
+                </code>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {menu.color && (
+                  <div className="flex items-center gap-1">
+                    <span
+                      className="size-2.5 rounded-full ring-1 ring-border"
+                      style={{ backgroundColor: menu.color }}
+                    />
+                    <span className="text-[10.5px] font-mono text-muted-foreground">
+                      {menu.color}
+                    </span>
+                  </div>
+                )}
+                <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground">
+                  {menu.visibleEnMenu ? (
+                    <>
+                      <Eye className="size-3 text-emerald-500" /> Visible
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="size-3 text-amber-500" /> Oculto
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Permisos de API Asociados */}
-          <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <KeyRound className="size-3.5 text-primary" />
-                Permisos de API Asociados
+          {/* Associated API Permissions */}
+          {permisos.length === 0 ? (
+            <div className="flex items-center justify-between rounded-lg border border-border/50 bg-card/60 px-3 py-2 text-xs">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <KeyRound className="size-3.5 text-muted-foreground" />
+                Sin permisos de API vinculados
               </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-mono text-muted-foreground">
-                  {permisos.length} {permisos.length === 1 ? "permiso" : "permisos"}
+              {onManagePermisos && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-[11px] px-2 text-primary hover:bg-primary/10 cursor-pointer"
+                  onClick={() => {
+                    onOpenChange(false)
+                    onManagePermisos(menu)
+                  }}
+                >
+                  Asignar
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border/60 bg-card p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <KeyRound className="size-3.5 text-primary" />
+                  Permisos de API
+                  <span className="rounded-full bg-primary/10 text-primary text-[10px] font-semibold px-1.5 py-0.2">
+                    {permisos.length}
+                  </span>
                 </span>
                 {onManagePermisos && (
                   <Button
@@ -228,18 +268,12 @@ export function MenuDetailDialog({
                   </Button>
                 )}
               </div>
-            </div>
 
-            {permisos.length === 0 ? (
-              <p className="text-xs italic text-muted-foreground pt-1">
-                No hay permisos de API registrados para este menú.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border/50 rounded-lg border border-border/60 bg-muted/20 overflow-hidden max-h-48 overflow-y-auto">
+              <ul className="divide-y divide-border/40 rounded-md border border-border/50 bg-muted/20 overflow-hidden max-h-36 overflow-y-auto">
                 {permisos.map((p) => (
                   <li
                     key={p.id}
-                    className="flex items-center justify-between p-2 text-xs gap-2"
+                    className="flex items-center justify-between px-2.5 py-1.5 text-xs gap-2"
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <PermisoMethodBadge method={p.metodoHttp} size="sm" />
@@ -247,44 +281,33 @@ export function MenuDetailDialog({
                         {p.nombre}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 font-mono text-[10.5px]">
-                      <code className="text-muted-foreground bg-muted px-1.5 py-0.5 rounded truncate max-w-[140px]">
-                        {p.ruta}
-                      </code>
-                      {!p.activo && (
-                        <Badge variant="outline" className="text-[9px] py-0 px-1 border-destructive/40 text-destructive">
-                          Inactivo
-                        </Badge>
-                      )}
-                    </div>
+                    <code className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded truncate max-w-[130px]">
+                      {p.ruta}
+                    </code>
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
-
-          {/* Submenús directos */}
-          <div className="rounded-xl border border-border/70 bg-card p-3.5 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <FolderTree className="size-3.5 text-primary" />
-                Submenús Asociados
-              </span>
-              <span className="text-[11px] text-muted-foreground">
-                {hijos.length} {hijos.length === 1 ? "hijo" : "hijos"}
-              </span>
             </div>
+          )}
 
-            {hijos.length === 0 ? (
-              <p className="text-xs italic text-muted-foreground pt-1">
-                Este menú no tiene submenús directos.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border/50 rounded-lg border border-border/60 bg-muted/20 overflow-hidden">
+          {/* Child Submenus (only shown if present to keep view compact) */}
+          {hijos.length > 0 && (
+            <div className="rounded-lg border border-border/60 bg-card p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <FolderTree className="size-3.5 text-primary" />
+                  Submenús Directos
+                  <span className="rounded-full bg-primary/10 text-primary text-[10px] font-semibold px-1.5 py-0.2">
+                    {hijos.length}
+                  </span>
+                </span>
+              </div>
+
+              <ul className="divide-y divide-border/40 rounded-md border border-border/50 bg-muted/20 overflow-hidden max-h-32 overflow-y-auto">
                 {hijos.map((hijo) => (
                   <li
                     key={hijo.id}
-                    className="flex items-center justify-between p-2 text-xs"
+                    className="flex items-center justify-between px-2.5 py-1.5 text-xs gap-2"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <DynamicLucideIcon
@@ -295,73 +318,57 @@ export function MenuDetailDialog({
                         {hijo.nombre}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <code className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
+                    <div className="flex items-center gap-1.5 shrink-0 text-[10px] font-mono text-muted-foreground">
+                      <code className="bg-muted px-1.5 py-0.5 rounded">
                         {hijo.codigo}
                       </code>
-                      <span className="text-[10px] font-mono text-muted-foreground">
-                        #{hijo.orden}
-                      </span>
+                      <span>#{hijo.orden}</span>
                     </div>
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Auditoría */}
+          {/* Compact Audit Footnote */}
           {menu.auditoria && (
-            <div className="rounded-xl border border-border/70 bg-muted/10 p-3.5 space-y-2">
-              <span className="text-xs font-semibold text-foreground">
-                Información de Auditoría
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-[11px]">
-                    <User className="size-3" />
-                    <span>Creado por:</span>
-                    <span className="font-medium text-foreground">
-                      {menu.auditoria.createdBy ?? "Sistema"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px]">
-                    <Calendar className="size-3" />
-                    <span>Fecha creación:</span>
-                    <span className="font-medium text-foreground">
-                      {formatDateTime(menu.auditoria.createdAt)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-[11px]">
-                    <User className="size-3" />
-                    <span>Modificado por:</span>
-                    <span className="font-medium text-foreground">
-                      {menu.auditoria.updatedBy ?? "—"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px]">
-                    <Calendar className="size-3" />
-                    <span>Fecha modificación:</span>
-                    <span className="font-medium text-foreground">
-                      {menu.auditoria.updatedAt ? formatDateTime(menu.auditoria.updatedAt) : "—"}
-                    </span>
-                  </div>
-                </div>
+            <div className="rounded-lg border border-border/40 bg-muted/20 px-3 py-2 text-[10.5px] text-muted-foreground flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <div className="flex items-center gap-1.5">
+                <User className="size-3 text-muted-foreground" />
+                <span>
+                  Creado por{" "}
+                  <strong className="text-foreground font-medium">
+                    {menu.auditoria.createdBy ?? "Sistema"}
+                  </strong>
+                </span>
+                <span>•</span>
+                <span>{formatDateTime(menu.auditoria.createdAt)}</span>
               </div>
+              {menu.auditoria.updatedAt && (
+                <div className="flex items-center gap-1.5">
+                  <Clock className="size-3 text-muted-foreground" />
+                  <span>
+                    Modificado por{" "}
+                    <strong className="text-foreground font-medium">
+                      {menu.auditoria.updatedBy ?? "Sistema"}
+                    </strong>
+                  </span>
+                  <span>•</span>
+                  <span>{formatDateTime(menu.auditoria.updatedAt)}</span>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <DialogFooter className="p-4 border-t bg-card flex-row gap-2 justify-end">
+        {/* Compact Footer */}
+        <DialogFooter className="p-3 px-4 sm:px-5 border-t bg-muted/10 flex-row gap-2 justify-end">
           {onManagePermisos && (
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5 cursor-pointer"
+              className="h-8 gap-1.5 text-xs cursor-pointer"
               onClick={() => {
                 onOpenChange(false)
                 onManagePermisos(menu)
@@ -377,7 +384,7 @@ export function MenuDetailDialog({
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5 cursor-pointer"
+              className="h-8 gap-1.5 text-xs cursor-pointer"
               onClick={() => {
                 onOpenChange(false)
                 onEdit(menu)
@@ -387,11 +394,12 @@ export function MenuDetailDialog({
               <span>Editar</span>
             </Button>
           )}
+
           <Button
             type="button"
             size="sm"
+            className="h-8 text-xs cursor-pointer"
             onClick={() => onOpenChange(false)}
-            className="cursor-pointer"
           >
             Cerrar
           </Button>
