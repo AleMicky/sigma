@@ -4,11 +4,13 @@ import type { AuditableEntity } from "@/shared/types/audit.types"
 
 import { menuEndpoints } from "./menu.endpoints"
 
+export type TipoMenu = "MODULO" | "AGRUPADOR" | "ITEM"
+
 export type Menu = AuditableEntity & {
   menuPadreId: string | null
   codigo: string
   nombre: string
-  tipo?: "MODULO" | "AGRUPADOR" | "ITEM"
+  tipo?: TipoMenu
   icono: string | null
   color?: string | null
   esFolder?: boolean
@@ -26,7 +28,7 @@ export type MenuTreeNode = {
   menuPadreId: string | null
   codigo: string
   nombre: string
-  tipo?: "MODULO" | "AGRUPADOR" | "ITEM"
+  tipo?: TipoMenu
   icono: string | null
   color?: string | null
   esFolder?: boolean
@@ -43,7 +45,7 @@ export type MenuTreeNode = {
 export type CreateMenuDto = {
   codigo: string
   nombre: string
-  tipo?: "MODULO" | "AGRUPADOR" | "ITEM"
+  tipo?: TipoMenu
   icono?: string | null
   color?: string | null
   ruta?: string | null
@@ -58,7 +60,7 @@ export type CreateMenuDto = {
 export type UpdateMenuDto = {
   codigo: string
   nombre: string
-  tipo?: "MODULO" | "AGRUPADOR" | "ITEM"
+  tipo?: TipoMenu
   icono?: string | null
   color?: string | null
   ruta?: string | null

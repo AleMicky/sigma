@@ -42,7 +42,7 @@ export function MenuTreeNodeItem({
   onAddChild,
   onQuickView,
   onManagePermisos,
-}: MenuTreeNodeItemProps) {
+}: Readonly<MenuTreeNodeItemProps>) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const deleteMutation = useDeleteMenu()
@@ -87,11 +87,11 @@ export function MenuTreeNodeItem({
     <li className="flex flex-col min-w-0">
       <div
         className={cn(
-          "group relative flex items-center justify-between gap-1.5 rounded-lg border border-transparent px-2.5 py-1 text-xs sm:text-sm transition-all duration-150 hover:border-border/80 hover:bg-accent/40",
+          "group relative flex items-center justify-between gap-1.5 rounded-md border border-transparent px-2 py-0.5 sm:py-1 text-xs transition-all duration-150 hover:border-border/80 hover:bg-accent/40",
           !node.activo && "opacity-60 hover:opacity-100 bg-muted/20",
           isHighlighted && "bg-primary/10 border-primary/40 font-medium shadow-2xs",
         )}
-        style={{ paddingLeft: `${level * 18 + 6}px` }}
+        style={{ paddingLeft: `${level * 14 + 4}px` }}
       >
         {/* Left Side: Toggle button, Icon, Name, Code, Route, Active status */}
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -100,17 +100,17 @@ export function MenuTreeNodeItem({
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="flex size-5.5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+              className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
               aria-label={expanded ? "Colapsar submenús" : "Expandir submenús"}
             >
               {expanded ? (
-                <ChevronDown className="size-3.5" />
+                <ChevronDown className="size-3" />
               ) : (
-                <ChevronRight className="size-3.5" />
+                <ChevronRight className="size-3" />
               )}
             </button>
           ) : (
-            <span className="size-5.5 shrink-0 flex items-center justify-center">
+            <span className="size-5 shrink-0 flex items-center justify-center">
               <span className="size-1 rounded-full bg-border" />
             </span>
           )}
@@ -119,7 +119,7 @@ export function MenuTreeNodeItem({
           {node.icono ? (
             <div
               className={cn(
-                "flex size-6.5 items-center justify-center rounded-md border shrink-0 transition-colors shadow-2xs",
+                "flex size-5.5 items-center justify-center rounded border shrink-0 transition-colors shadow-2xs",
                 level === 0
                   ? "bg-primary/10 border-primary/20 text-primary"
                   : "bg-muted/80 border-border text-muted-foreground",
@@ -140,23 +140,23 @@ export function MenuTreeNodeItem({
           )}
 
           {/* Name and Code */}
-          <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <button
               type="button"
               onClick={() => onQuickView(node.id)}
-              className="text-left font-medium text-foreground hover:text-primary transition-colors truncate cursor-pointer"
+              className="text-left font-medium text-foreground hover:text-primary transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               {node.nombre}
             </button>
 
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border/40 shrink-0">
+            <code className="rounded bg-muted px-1.5 py-0.2 font-mono text-[9.5px] text-muted-foreground border border-border/40 shrink-0">
               {node.codigo}
             </code>
 
             {/* Folder vs Interfaz Badge */}
             <span
               className={cn(
-                "hidden sm:inline-flex items-center gap-1 rounded-md px-1.5 py-0.2 text-[9.5px] font-medium shrink-0 border",
+                "hidden md:inline-flex items-center gap-1 rounded px-1.5 py-0.2 text-[9px] font-medium shrink-0 border",
                 isFolder
                   ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                   : "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
@@ -167,14 +167,14 @@ export function MenuTreeNodeItem({
 
             {/* Custom Badge if exists */}
             {node.badge && (
-              <span className="hidden sm:inline-flex items-center rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 px-1.5 py-0.2 text-[9.5px] font-semibold shrink-0">
+              <span className="hidden sm:inline-flex items-center rounded bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 px-1.5 py-0.2 text-[9px] font-semibold shrink-0">
                 {node.badge}
               </span>
             )}
 
             {/* Route link preview */}
             {node.ruta && (
-              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground/80 font-mono truncate max-w-[180px]">
+              <span className="hidden xl:inline-flex items-center gap-1 text-[10.5px] text-muted-foreground/80 font-mono truncate max-w-[160px] shrink-0">
                 <LinkIcon className="size-2.5 shrink-0 opacity-60" />
                 <span className="truncate">{node.ruta}</span>
               </span>
@@ -188,7 +188,7 @@ export function MenuTreeNodeItem({
               onClick={() => onManagePermisos(menuObj)}
               title={`${permisosCount} permisos de API configurados para este menú`}
               className={cn(
-                "hidden md:inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-mono transition-colors shrink-0 border cursor-pointer",
+                "hidden lg:inline-flex items-center gap-1 rounded px-1.5 py-0.2 text-[9.5px] font-mono transition-colors shrink-0 border cursor-pointer",
                 permisosCount > 0
                   ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
                   : "bg-muted/60 text-muted-foreground/80 border-border/50 hover:bg-muted hover:text-foreground",
@@ -200,20 +200,20 @@ export function MenuTreeNodeItem({
           )}
 
           {/* Orden badge */}
-          <span className="hidden lg:inline-flex rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground font-mono shrink-0">
+          <span className="hidden 2xl:inline-flex rounded bg-muted/60 px-1.5 py-0.2 text-[9.5px] text-muted-foreground font-mono shrink-0">
             Ord: {node.orden}
           </span>
 
           {/* Children Counter */}
           {hasChildren ? (
-            <span className="rounded-full bg-muted/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground shrink-0 border border-border/40">
+            <span className="rounded-full bg-muted/80 px-1.5 py-0.2 text-[9.5px] font-medium text-muted-foreground shrink-0 border border-border/40">
               {childrenCount} {childrenCount === 1 ? "submenú" : "submenús"}
             </span>
           ) : null}
 
           {/* Active status */}
           {!node.activo && (
-            <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-destructive/40 text-destructive shrink-0">
+            <Badge variant="outline" className="text-[9.5px] py-0 px-1.5 border-destructive/40 text-destructive shrink-0">
               Inactivo
             </Badge>
           )}
@@ -227,9 +227,9 @@ export function MenuTreeNodeItem({
               variant="ghost"
               title="Gestionar permisos de API de este menú"
               onClick={() => onManagePermisos(menuObj)}
-              className="h-6.5 w-6.5 text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer"
+              className="h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer"
             >
-              <KeyRound className="size-3.5" />
+              <KeyRound className="size-3" />
             </Button>
           )}
 
@@ -238,9 +238,9 @@ export function MenuTreeNodeItem({
             variant="ghost"
             title="Agregar submenú hijo"
             onClick={() => onAddChild(node)}
-            className="h-6.5 w-6.5 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
           >
-            <Plus className="size-3.5" />
+            <Plus className="size-3" />
           </Button>
 
           <Button
@@ -248,9 +248,9 @@ export function MenuTreeNodeItem({
             variant="ghost"
             title="Ver detalles del menú"
             onClick={() => onQuickView(node.id)}
-            className="h-6.5 w-6.5 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
           >
-            <Eye className="size-3.5" />
+            <Eye className="size-3" />
           </Button>
 
           <RowActions

@@ -61,6 +61,8 @@ export const SEGMENT_LABELS: Record<string, string> = {
 
   // Gestión Vehicular
   "gestion-vehicular": "Gestión Vehicular",
+  configuraciones: "Configuraciones",
+  reportes: "Reportes",
   asignaciones: "Asignación Vehicular",
   conductores: "Conductores",
   flotas: "Flotas",
@@ -68,6 +70,9 @@ export const SEGMENT_LABELS: Record<string, string> = {
   "calendario-reservas": "Calendario de Reservas",
   "tipos-solicitud": "Tipos de Solicitud",
   "solicitudes-vehiculares": "Solicitudes Vehiculares",
+  bitacora: "Bitácora",
+  "consumo-combustible": "Consumo de Combustible",
+  "historial-viajes": "Historial de Viajes",
 
   // Acciones comunes
   nuevo: "Nuevo",

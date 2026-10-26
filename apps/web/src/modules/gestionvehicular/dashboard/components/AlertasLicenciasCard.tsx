@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import { ArrowRight, CheckCircle2, ShieldAlert } from "lucide-react"
 
+import { routes } from "@/app/config"
 import {
   Card,
   CardContent,
@@ -56,7 +57,7 @@ export const AlertasLicenciasCard = ({
         </div>
 
         <Link
-          to="/gestion-vehicular/conductores"
+          to={routes.gestionVehicular.configuraciones.conductores}
           className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "h-8 text-xs gap-1 text-rose-600 hover:text-rose-700")}
         >
           Gestionar

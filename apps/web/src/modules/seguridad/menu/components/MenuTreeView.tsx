@@ -31,7 +31,7 @@ export function MenuTreeView({
   onQuickView,
   onOpenCreate,
   onManagePermisos,
-}: MenuTreeViewProps) {
+}: Readonly<MenuTreeViewProps>) {
   // Recursive filter helper
   const filteredTree = useMemo(() => {
     const filterNodes = (nodes: MenuTreeNode[]): MenuTreeNode[] => {
@@ -42,7 +42,7 @@ export function MenuTreeView({
             !query ||
             node.nombre.toLowerCase().includes(query) ||
             node.codigo.toLowerCase().includes(query) ||
-            (node.ruta && node.ruta.toLowerCase().includes(query))
+            node.ruta?.toLowerCase().includes(query)
 
           const matchesStatus =
             statusFilter === "all" ||
@@ -89,40 +89,38 @@ export function MenuTreeView({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/70 bg-card p-3 sm:p-3.5 shadow-2xs">
+    <div className="w-full rounded-xl border border-border/70 bg-card p-2 sm:p-2.5 shadow-2xs">
       {/* Header Info */}
-      <div className="flex items-center justify-between border-b pb-2 mb-2 shrink-0">
+      <div className="flex items-center justify-between border-b pb-1.5 mb-1.5">
         <div className="flex items-center gap-2">
           <FolderTree className="size-3.5 text-primary" />
           <span className="text-xs font-semibold text-foreground">
             Jerarquía y Submenús
           </span>
-          <span className="text-[11px] text-muted-foreground font-mono">
+          <span className="text-[10px] text-muted-foreground font-mono">
             ({filteredTree.length} {filteredTree.length === 1 ? "raíz" : "raíces"})
           </span>
         </div>
       </div>
 
       {/* Tree Nodes List */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-        <ul className="flex flex-col gap-0.5" key={expandedAll ? "expanded" : "collapsed"}>
-          {filteredTree.map((node) => (
-            <MenuTreeNodeItem
-              key={node.id}
-              node={node}
-              level={0}
-              defaultExpanded={expandedAll}
-              searchQuery={searchQuery}
-              statusFilter={statusFilter}
-              permisosCountByMenuId={permisosCountByMenuId}
-              onEdit={onEdit}
-              onAddChild={onAddChild}
-              onQuickView={onQuickView}
-              onManagePermisos={onManagePermisos}
-            />
-          ))}
-        </ul>
-      </div>
+      <ul className="flex flex-col gap-0.5 w-full" key={expandedAll ? "expanded" : "collapsed"}>
+        {filteredTree.map((node) => (
+          <MenuTreeNodeItem
+            key={node.id}
+            node={node}
+            level={0}
+            defaultExpanded={expandedAll}
+            searchQuery={searchQuery}
+            statusFilter={statusFilter}
+            permisosCountByMenuId={permisosCountByMenuId}
+            onEdit={onEdit}
+            onAddChild={onAddChild}
+            onQuickView={onQuickView}
+            onManagePermisos={onManagePermisos}
+          />
+        ))}
+      </ul>
     </div>
   )
 }

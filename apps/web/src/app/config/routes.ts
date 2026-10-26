@@ -116,14 +116,22 @@ export const routes = {
     nuevaSolicitud: "/gestion-vehicular/solicitudes/nueva",
     editarSolicitud: (solicitudId: string) =>
       `/gestion-vehicular/solicitudes/${solicitudId}/editar`,
-    conductores: "/gestion-vehicular/conductores",
-    tiposSolicitud: "/gestion-vehicular/tipos-solicitud",
-    flotas: "/gestion-vehicular/flotas",
     misViajes: "/gestion-vehicular/mis-viajes",
     calendarioReservas: "/gestion-vehicular/calendario-reservas",
-    bitacora: "/gestion-vehicular/bitacora",
     controlesActivos: {
       nuevo: "/gestion-vehicular/controles-activos/nuevo",
+    },
+    configuraciones: {
+      root: "/gestion-vehicular/configuraciones",
+      conductores: "/gestion-vehicular/configuraciones/conductores",
+      flotas: "/gestion-vehicular/configuraciones/flotas",
+      tiposSolicitud: "/gestion-vehicular/configuraciones/tipos-solicitud",
+    },
+    reportes: {
+      root: "/gestion-vehicular/reportes",
+      bitacora: "/gestion-vehicular/reportes/bitacora",
+      consumoCombustible: "/gestion-vehicular/reportes/consumo-combustible",
+      historialViajes: "/gestion-vehicular/reportes/historial-viajes",
     },
   },
 } as const

@@ -5,3 +5,4 @@ import { GestionVehicularDashboardPage } from "@/modules/gestionvehicular/dashbo
 export const Route = createFileRoute("/_dashboard/gestion-vehicular/")({
   component: GestionVehicularDashboardPage,
 })
+

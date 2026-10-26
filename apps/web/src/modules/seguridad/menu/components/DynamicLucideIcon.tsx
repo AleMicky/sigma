@@ -1,3 +1,4 @@
+import { createElement } from "react"
 import type { LucideIcon, LucideProps } from "lucide-react"
 import * as LucideIcons from "lucide-react"
 
@@ -138,9 +139,8 @@ export function DynamicLucideIcon({
 
   if (!IconComponent) {
     if (!fallback) return null
-    const FallbackIcon = fallback
-    return <FallbackIcon {...props} />
+    return createElement(fallback, props)
   }
 
-  return <IconComponent {...props} />
+  return createElement(IconComponent, props)
 }

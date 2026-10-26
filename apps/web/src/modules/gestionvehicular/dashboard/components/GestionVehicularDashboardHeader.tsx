@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 
 import { Button, buttonVariants } from "@/shared/components/ui/button"
+import { routes } from "@/app/config"
 import {
   Select,
   SelectContent,
@@ -82,7 +83,7 @@ export const GestionVehicularDashboardHeader = ({
         </Button>
 
         <Link
-          to="/gestion-vehicular/historial-viajes"
+          to={routes.gestionVehicular.reportes.historialViajes}
           className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-9 px-3 text-xs gap-1.5 hidden md:flex")}
         >
           <History className="h-3.5 w-3.5 text-emerald-500" />
@@ -90,7 +91,7 @@ export const GestionVehicularDashboardHeader = ({
         </Link>
 
         <Link
-          to="/gestion-vehicular/consumo-combustible"
+          to={routes.gestionVehicular.reportes.consumoCombustible}
           className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-9 px-3 text-xs gap-1.5 hidden md:flex")}
         >
           <Fuel className="h-3.5 w-3.5 text-amber-500" />
