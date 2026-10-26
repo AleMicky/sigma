@@ -17,7 +17,7 @@ export function ActivoFormHeader({ isEditing, codigo }: ActivoFormHeaderProps) {
           <Button
             variant="outline"
             size="icon-sm"
-            render={<Link to={routes.activos.root} />}
+            render={<Link to={routes.activos.listarActivos} />}
             aria-label="Volver a activos"
             className="shrink-0 rounded-lg shadow-xs hover:bg-accent transition-colors cursor-pointer"
           >
@@ -57,7 +57,7 @@ export function ActivoFormHeader({ isEditing, codigo }: ActivoFormHeaderProps) {
             type="button"
             variant="outline"
             size="sm"
-            render={<Link to={routes.activos.root} />}
+            render={<Link to={routes.activos.listarActivos} />}
             className="text-xs"
           >
             Volver al listado

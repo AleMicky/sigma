@@ -1,7 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
-import { ActivosPage } from "@/modules/activos/activo/pages/ActivosPage"
+import { routes } from "@/app/config"
 
 export const Route = createFileRoute("/_dashboard/activos/")({
-  component: ActivosPage,
+  beforeLoad: () => {
+    throw redirect({
+      to: routes.activos.listarActivos,
+    })
+  },
 })

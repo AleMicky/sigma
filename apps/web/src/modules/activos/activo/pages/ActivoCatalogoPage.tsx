@@ -1,24 +1,19 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Package, RotateCcw } from "lucide-react"
 
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
-import { getErrorMessage } from "@/shared/api"
-import { EmptyState } from "@/shared/components/empty-state"
-import { ListSkeleton } from "@/shared/components/list-skeleton"
 import { PageShell } from "@/shared/components/page-shell"
-import { Pagination } from "@/shared/components/pagination"
-import { Button } from "@/shared/components/ui/button"
 import {
   useClampPage,
   usePaginatedSearch,
 } from "@/shared/hooks/use-paginated-search"
-import { cn } from "@/shared/lib/utils"
 
 import { activoQueries } from "../api/activo.queries"
+import type { Activo } from "../api/activo.service"
+import { ActivoKpiCards, type ActivoKpiStats } from "../components/ActivoKpiCards"
+import { ActivoCatalogoContentSection } from "../components/catalogo/ActivoCatalogoContentSection"
 import { ActivoCatalogoHeader } from "../components/catalogo/ActivoCatalogoHeader"
-import { ActivoCatalogoListView } from "../components/catalogo/ActivoCatalogoListView"
 import {
   ActivoCatalogoToolbar,
   ALL_TIPOS,
@@ -27,9 +22,53 @@ import {
 
 const PAGE_SIZE = 12
 
+function checkHasActiveFilters(
+  searchQuery: string,
+  tipoActivoId: string,
+  ubicacionId: string,
+): boolean {
+  return (
+    searchQuery.trim().length > 0 ||
+    tipoActivoId !== ALL_TIPOS ||
+    ubicacionId !== ALL_UBICACIONES
+  )
+}
+
+function isOperativoActivo(activo: Activo): boolean {
+  const nombre = activo.estadoOperativo?.nombre?.toLowerCase() ?? ""
+  if (nombre.includes("operativo")) return true
+  return !nombre.includes("mantenimiento") && activo.activo !== false
+}
+
+function computeActivoKpiStats(
+  activos: Activo[],
+  totalElements?: number,
+): ActivoKpiStats {
+  const total = totalElements ?? activos.length
+  const deBaja = activos.filter((a) => a.activo === false).length
+  const enMantenimiento = activos.filter((a) =>
+    a.estadoOperativo?.nombre?.toLowerCase().includes("mantenimiento"),
+  ).length
+  const operativos = activos.filter(isOperativoActivo).length
+
+  return { total, deBaja, enMantenimiento, operativos }
+}
+
+function filterActivosByUbicacion(
+  rawActivos: Activo[],
+  ubicacionId: string,
+): Activo[] {
+  let list = rawActivos.filter((a) => a.activo !== false)
+  if (ubicacionId !== ALL_UBICACIONES) {
+    list = list.filter((a) => a.ubicacionId === ubicacionId)
+  }
+  return list
+}
+
 export function ActivoCatalogoPage() {
   const [tipoActivoId, setTipoActivoId] = useState<string>(ALL_TIPOS)
   const [ubicacionId, setUbicacionId] = useState<string>(ALL_UBICACIONES)
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list")
 
   const search = usePaginatedSearch({
     resetKey: `${tipoActivoId}-${ubicacionId}`,
@@ -53,16 +92,19 @@ export function ActivoCatalogoPage() {
     }),
   )
 
-  const activosQuery = useQuery(
-    activoQueries.list({
+  const queryParams = useMemo(
+    () => ({
       page: search.page,
       size: PAGE_SIZE,
       q: search.debouncedSearch.trim() || undefined,
       tipoActivoId: tipoActivoId === ALL_TIPOS ? undefined : tipoActivoId,
       sortBy: "createdAt",
-      direction: "DESC",
+      direction: "DESC" as const,
     }),
+    [search.page, search.debouncedSearch, tipoActivoId],
   )
+
+  const activosQuery = useQuery(activoQueries.list(queryParams))
 
   useClampPage(search.page, search.setPage, activosQuery.data?.totalPages)
 
@@ -91,14 +133,15 @@ export function ActivoCatalogoPage() {
     [rawUbicaciones],
   )
 
-  // Filter client-side by location and only include active assets (a.activo !== false)
-  const activos = useMemo(() => {
-    let list = rawActivos.filter((a) => a.activo !== false)
-    if (ubicacionId !== ALL_UBICACIONES) {
-      list = list.filter((a) => a.ubicacionId === ubicacionId)
-    }
-    return list
-  }, [rawActivos, ubicacionId])
+  const activos = useMemo(
+    () => filterActivosByUbicacion(rawActivos, ubicacionId),
+    [rawActivos, ubicacionId],
+  )
+
+  const kpiStats = useMemo(
+    () => computeActivoKpiStats(rawActivos, activosQuery.data?.totalElements),
+    [rawActivos, activosQuery.data?.totalElements],
+  )
 
   function resetFilters() {
     search.setSearch("")
@@ -107,99 +150,65 @@ export function ActivoCatalogoPage() {
     search.setPage(0)
   }
 
-  const hasActiveFilters =
-    search.search.trim().length > 0 ||
-    tipoActivoId !== ALL_TIPOS ||
-    ubicacionId !== ALL_UBICACIONES
+  function handleTipoActivoChange(val: string) {
+    setTipoActivoId(val ?? ALL_TIPOS)
+    search.setPage(0)
+  }
+
+  function handleUbicacionChange(val: string) {
+    setUbicacionId(val ?? ALL_UBICACIONES)
+    search.setPage(0)
+  }
+
+  const hasActiveFilters = checkHasActiveFilters(
+    search.search,
+    tipoActivoId,
+    ubicacionId,
+  )
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
+    <PageShell size="full" padding="none" layout="auto" className="w-full space-y-4 pb-12">
       {/* Header */}
       <ActivoCatalogoHeader
-        totalActivos={activos.length}
+        totalActivos={activosQuery.data?.totalElements ?? rawActivos.length}
         queries={[activosQuery, tiposQuery, ubicacionesQuery]}
       />
+
+      {/* KPI Summary Cards */}
+      <ActivoKpiCards stats={kpiStats} />
 
       {/* Toolbar */}
       <ActivoCatalogoToolbar
         search={search.search}
         onSearchChange={search.setSearch}
         tipoActivoId={tipoActivoId}
-        onTipoActivoChange={(val) => {
-          setTipoActivoId(val ?? ALL_TIPOS)
-          search.setPage(0)
-        }}
+        onTipoActivoChange={handleTipoActivoChange}
         ubicacionId={ubicacionId}
-        onUbicacionChange={(val) => {
-          setUbicacionId(val ?? ALL_UBICACIONES)
-          search.setPage(0)
-        }}
+        onUbicacionChange={handleUbicacionChange}
         tipos={rawTipos}
         ubicaciones={rawUbicaciones}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={resetFilters}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
-      {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
-        {activosQuery.isLoading ? (
-          <ListSkeleton
-            rows={6}
-            rowClassName="h-28 rounded-2xl"
-            className="p-0 space-y-3"
-          />
-        ) : activosQuery.isError ? (
-          <EmptyState
-            title={getErrorMessage(activosQuery.error)}
-            className="text-destructive my-auto"
-          />
-        ) : activos.length === 0 ? (
-          <EmptyState
-            icon={<Package className="size-8 text-muted-foreground/60" />}
-            title={
-              hasActiveFilters
-                ? "Sin resultados para los filtros seleccionados"
-                : "Catálogo vacío"
-            }
-            description={
-              hasActiveFilters
-                ? "Prueba a modificar los términos de búsqueda o cambiar los filtros seleccionados."
-                : "Aún no se han registrado activos vigentes en el sistema."
-            }
-            action={
-              hasActiveFilters ? (
-                <Button size="sm" variant="outline" onClick={resetFilters}>
-                  <RotateCcw className="size-4" />
-                  Limpiar filtros
-                </Button>
-              ) : undefined
-            }
-            className="my-auto"
-          />
-        ) : (
-          <>
-            <div
-              className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 pr-1",
-                activosQuery.isFetching && "opacity-75 transition-opacity",
-              )}
-            >
-              <ActivoCatalogoListView
-                activos={activos}
-                tiposById={tiposById}
-                ubicacionesById={ubicacionesById}
-              />
-            </div>
-
-            {activosQuery.data ? (
-              <Pagination
-                page={activosQuery.data}
-                onPageChange={search.setPage}
-                className="border-t border-border/50 py-2 bg-transparent shrink-0"
-              />
-            ) : null}
-          </>
-        )}
+      {/* Main Content Area con las tarjetas de ActivoCatalogoListView (solo Ver Ficha) */}
+      <div className="flex flex-col pt-1">
+        <ActivoCatalogoContentSection
+          isLoading={activosQuery.isLoading}
+          isFetching={activosQuery.isFetching}
+          isError={activosQuery.isError}
+          error={activosQuery.error}
+          activos={activos}
+          hasActiveFilters={hasActiveFilters}
+          viewMode={viewMode}
+          tiposById={tiposById}
+          ubicacionesById={ubicacionesById}
+          pageData={activosQuery.data}
+          onPageChange={search.setPage}
+          onResetFilters={resetFilters}
+        />
       </div>
     </PageShell>
   )

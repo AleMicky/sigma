@@ -34,7 +34,10 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/shared/components/ui/**/*.{ts,tsx}'],
+    files: [
+      'src/shared/components/ui/**/*.{ts,tsx}',
+      'src/routes/**/*.{ts,tsx}',
+    ],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

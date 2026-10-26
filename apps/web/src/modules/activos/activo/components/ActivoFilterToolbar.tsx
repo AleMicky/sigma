@@ -38,6 +38,13 @@ type ActivoFilterToolbarProps = {
   onViewModeChange?: (mode: "list" | "grid") => void
 }
 
+function handleExportExcel() {
+  toast.info("Exportación a Excel", {
+    description:
+      "La generación de reportes y exportación en formato Excel (.xlsx) estará disponible próximamente.",
+  })
+}
+
 export function ActivoFilterToolbar({
   searchValue,
   onSearchChange,
@@ -52,13 +59,7 @@ export function ActivoFilterToolbar({
   onResetFilters,
   viewMode = "list",
   onViewModeChange,
-}: ActivoFilterToolbarProps) {
-  function handleExportExcel() {
-    toast.info("Exportación a Excel", {
-      description:
-        "La generación de reportes y exportación en formato Excel (.xlsx) estará disponible próximamente.",
-    })
-  }
+}: Readonly<ActivoFilterToolbarProps>) {
 
   return (
     <div className="flex shrink-0 flex-col gap-3 py-3 sm:py-4 border-b border-border/60">
