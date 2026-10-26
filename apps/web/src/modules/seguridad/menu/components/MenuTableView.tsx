@@ -27,7 +27,7 @@ export function MenuTableView({
   onEdit,
   onQuickView,
   onManagePermisos,
-}: MenuTableViewProps) {
+}: Readonly<MenuTableViewProps>) {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const deleteMutation = useDeleteMenu()
 

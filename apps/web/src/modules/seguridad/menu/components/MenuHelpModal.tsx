@@ -20,7 +20,7 @@ type MenuHelpModalProps = {
   onOpenChange: (open: boolean) => void
 }
 
-export function MenuHelpModal({ open, onOpenChange }: MenuHelpModalProps) {
+export function MenuHelpModal({ open, onOpenChange }: Readonly<MenuHelpModalProps>) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl p-0 overflow-hidden sm:max-w-2xl">

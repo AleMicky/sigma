@@ -31,7 +31,7 @@ export function MenuTreeView({
   onQuickView,
   onOpenCreate,
   onManagePermisos,
-}: MenuTreeViewProps) {
+}: Readonly<MenuTreeViewProps>) {
   // Recursive filter helper
   const filteredTree = useMemo(() => {
     const filterNodes = (nodes: MenuTreeNode[]): MenuTreeNode[] => {
@@ -42,7 +42,7 @@ export function MenuTreeView({
             !query ||
             node.nombre.toLowerCase().includes(query) ||
             node.codigo.toLowerCase().includes(query) ||
-            (node.ruta && node.ruta.toLowerCase().includes(query))
+            node.ruta?.toLowerCase().includes(query)
 
           const matchesStatus =
             statusFilter === "all" ||

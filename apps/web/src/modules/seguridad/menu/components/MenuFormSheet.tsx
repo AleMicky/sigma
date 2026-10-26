@@ -23,7 +23,7 @@ import {
 } from "@/shared/components/ui/sheet"
 
 import { useCreateMenu, useUpdateMenu } from "../api/menu.mutations"
-import type { Menu } from "../api/menu.service"
+import type { Menu, TipoMenu } from "../api/menu.service"
 import { defaultMenuValues, menuSchema } from "../schemas/menu.schema"
 import { AVAILABLE_MENU_ICONS, DynamicLucideIcon } from "./DynamicLucideIcon"
 
@@ -71,7 +71,7 @@ export function MenuFormSheet({
   parentMenuId,
   availableMenus = [],
   onSuccess,
-}: MenuFormSheetProps) {
+}: Readonly<MenuFormSheetProps>) {
   const isEditing = Boolean(menu)
   const createMutation = useCreateMenu()
   const updateMutation = useUpdateMenu()
@@ -96,7 +96,7 @@ export function MenuFormSheet({
       ? {
           codigo: menu.codigo,
           nombre: menu.nombre,
-          tipo: (menu.tipo ?? "ITEM") as "MODULO" | "AGRUPADOR" | "ITEM",
+          tipo: (menu.tipo ?? "ITEM") as TipoMenu,
           icono: menu.icono ?? "",
           color: menu.color ?? "",
           ruta: menu.ruta ?? "",
@@ -182,7 +182,7 @@ export function MenuFormSheet({
       if (menu) {
         form.setFieldValue("codigo", menu.codigo)
         form.setFieldValue("nombre", menu.nombre)
-        form.setFieldValue("tipo", (menu.tipo ?? "ITEM") as "MODULO" | "AGRUPADOR" | "ITEM")
+        form.setFieldValue("tipo", (menu.tipo ?? "ITEM") as TipoMenu)
         form.setFieldValue("icono", menu.icono ?? "")
         form.setFieldValue("color", menu.color ?? "")
         form.setFieldValue("ruta", menu.ruta ?? "")
@@ -208,7 +208,7 @@ export function MenuFormSheet({
         form.setFieldValue("activo", true)
       }
     }
-  }, [open, menu, initialParentId, availableMenus])
+  }, [open, menu, initialParentId, availableMenus, form])
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending
 
@@ -526,7 +526,7 @@ export function MenuFormSheet({
                   <FieldLabel htmlFor={field.name}>Tipo de Elemento</FieldLabel>
                   <Select
                     value={field.state.value}
-                    onValueChange={(val) => field.handleChange(val as "MODULO" | "AGRUPADOR" | "ITEM")}
+                    onValueChange={(val) => field.handleChange(val as TipoMenu)}
                   >
                     <SelectTrigger id={field.name}>
                       <SelectValue placeholder="Selecciona tipo" />

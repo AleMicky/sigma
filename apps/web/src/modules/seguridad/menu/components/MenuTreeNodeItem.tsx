@@ -42,7 +42,7 @@ export function MenuTreeNodeItem({
   onAddChild,
   onQuickView,
   onManagePermisos,
-}: MenuTreeNodeItemProps) {
+}: Readonly<MenuTreeNodeItemProps>) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const deleteMutation = useDeleteMenu()
