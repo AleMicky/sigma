@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { ActivosPage } from '@/modules/activos/activo/pages/ActivosPage'
+import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/_dashboard/activos/registro-activo/')({
-    component: ActivosPage,
+import { ActivosPage } from "@/modules/activos/activo/pages/ActivosPage"
+
+export const Route = createFileRoute("/_dashboard/activos/registro-activo/")({
+  component: ActivosPage,
 })
-

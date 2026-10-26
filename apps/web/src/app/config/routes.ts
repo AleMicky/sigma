@@ -9,8 +9,10 @@ export const routes = {
     nuevo: "/activos/registro-activo/nuevo",
     catalogo: "/activos/catalogo",
     consultaDocumentos: "/activos/consulta-documentos",
+    disponibilidad: "/activos/disponibilidad",
     detail: (activoId: string) => `/activos/catalogo/${activoId}`,
-    editar: (activoId: string) => `/activos/${activoId}/editar`,
+    editar: (activoId: string) =>
+      `/activos/registro-activo/${activoId}/editar`,
   },
 
   tiposActivo: {

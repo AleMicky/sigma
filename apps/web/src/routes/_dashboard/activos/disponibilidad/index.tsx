@@ -1,9 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { DisponibilidadActivosPage } from '@/modules/activos/disponibilidad/pages/DisponibilidadActivosPage'
-export const Route = createFileRoute('/_dashboard/activos/disponibilidad/')({
-    component: RouteComponent,
+import { createFileRoute } from "@tanstack/react-router"
+
+import { DisponibilidadActivosPage } from "@/modules/activos/disponibilidad/pages/DisponibilidadActivosPage"
+
+export const Route = createFileRoute("/_dashboard/activos/disponibilidad/")({
+  component: ActivoDisponibilidadRoute,
 })
 
-function RouteComponent() {
-    return <DisponibilidadActivosPage />
+function ActivoDisponibilidadRoute() {
+  return <DisponibilidadActivosPage />
 }

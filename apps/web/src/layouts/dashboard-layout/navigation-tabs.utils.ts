@@ -18,8 +18,10 @@ export function getStorageKey(userId?: string | null): string {
 export const PATH_TITLES: Record<string, string> = {
   "/": "Inicio",
   "/activos": "Activos",
+  "/activos/registro-activo": "Registro de Activos",
   "/activos/catalogo": "Catálogo de Activos",
   "/activos/consulta-documentos": "Consulta de Documentos",
+  "/activos/disponibilidad": "Disponibilidad y Estados",
   "/tipos-activo": "Tipos de Activo",
   "/tipos-activo/historial": "Historial de Tipos de Activo",
   "/categorias": "Categorías",

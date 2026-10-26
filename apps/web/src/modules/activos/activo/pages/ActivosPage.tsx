@@ -159,7 +159,7 @@ export function ActivosPage() {
 
   function goEdit(activo: Activo) {
     void navigate({
-      to: "/activos/$activoId/editar",
+      to: "/activos/registro-activo/$activoId/editar",
       params: { activoId: activo.id },
     })
   }

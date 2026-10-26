@@ -1,12 +1,13 @@
-import { ActivoConsultaDocumentosPage } from '@/modules/activos/activo/pages/ActivoConsultaDocumentosPage'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router"
+
+import { ActivoConsultaDocumentosPage } from "@/modules/activos/activo/pages/ActivoConsultaDocumentosPage"
 
 export const Route = createFileRoute(
-    '/_dashboard/activos/consulta-documentos/',
+  "/_dashboard/activos/consulta-documentos/",
 )({
-    component: RouteComponent,
+  component: ActivoConsultaDocumentosRoute,
 })
 
-function RouteComponent() {
-    return <ActivoConsultaDocumentosPage />
+function ActivoConsultaDocumentosRoute() {
+  return <ActivoConsultaDocumentosPage />
 }

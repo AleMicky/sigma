@@ -26,6 +26,7 @@ import { Route as DashboardSeguridadRouteRouteImport } from './../../routes/_das
 import { Route as DashboardTiposActivoRouteRouteImport } from './../../routes/_dashboard/tipos-activo/route'
 import { Route as DashboardTiposDocumentoRouteRouteImport } from './../../routes/_dashboard/tipos-documento/route'
 import { Route as DashboardAccesoriosIndexRouteImport } from './../../routes/_dashboard/accesorios/index'
+import { Route as DashboardActivosIndexRouteImport } from './../../routes/_dashboard/activos/index'
 import { Route as DashboardCategoriasIndexRouteImport } from './../../routes/_dashboard/categorias/index'
 import { Route as DashboardEstadosOperativosIndexRouteImport } from './../../routes/_dashboard/estados-operativos/index'
 import { Route as DashboardGestionVehicularIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/index'
@@ -51,8 +52,6 @@ import { Route as DashboardTiposActivoIndexRouteImport } from './../../routes/_d
 import { Route as DashboardTiposActivoTipoActivoIdRouteRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/route'
 import { Route as DashboardTiposActivoHistorialRouteImport } from './../../routes/_dashboard/tipos-activo/historial'
 import { Route as DashboardTiposDocumentoIndexRouteImport } from './../../routes/_dashboard/tipos-documento/index'
-import { Route as DashboardActivosActivoIdIndexRouteImport } from './../../routes/_dashboard/activos/$activoId/index'
-import { Route as DashboardActivosActivoIdEditarRouteImport } from './../../routes/_dashboard/activos/$activoId/editar'
 import { Route as DashboardActivosCatalogoIndexRouteImport } from './../../routes/_dashboard/activos/catalogo/index'
 import { Route as DashboardActivosCatalogoActivoIdRouteImport } from './../../routes/_dashboard/activos/catalogo/$activoId'
 import { Route as DashboardActivosConsultaDocumentosIndexRouteImport } from './../../routes/_dashboard/activos/consulta-documentos/index'
@@ -102,6 +101,7 @@ import { Route as DashboardSeguridadUsuariosIndexRouteImport } from './../../rou
 import { Route as DashboardTiposActivoTipoActivoIdIndexRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/index'
 import { Route as DashboardTiposActivoTipoActivoIdAtributosRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/atributos'
 import { Route as DashboardTiposActivoTipoActivoIdComponentesRouteImport } from './../../routes/_dashboard/tipos-activo/$tipoActivoId/componentes'
+import { Route as DashboardActivosRegistroActivoActivoIdEditarRouteImport } from './../../routes/_dashboard/activos/registro-activo/$activoId/editar'
 import { Route as DashboardGestionVehicularSolicitudesSolicitudIdEditarRouteImport } from './../../routes/_dashboard/gestion-vehicular/solicitudes/$solicitudId/editar'
 import { Route as DashboardInventariosTiposInsumoTipoInsumoIdIndexRouteImport } from './../../routes/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/index'
 import { Route as DashboardInventariosTiposInsumoTipoInsumoIdAtributosRouteImport } from './../../routes/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/atributos'
@@ -202,6 +202,11 @@ const DashboardAccesoriosIndexRoute =
     path: '/',
     getParentRoute: () => DashboardAccesoriosRouteRoute,
   } as any)
+const DashboardActivosIndexRoute = DashboardActivosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardActivosRouteRoute,
+} as any)
 const DashboardCategoriasIndexRoute =
   DashboardCategoriasIndexRouteImport.update({
     id: '/',
@@ -350,18 +355,6 @@ const DashboardTiposDocumentoIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => DashboardTiposDocumentoRouteRoute,
-  } as any)
-const DashboardActivosActivoIdIndexRoute =
-  DashboardActivosActivoIdIndexRouteImport.update({
-    id: '/$activoId/',
-    path: '/$activoId/',
-    getParentRoute: () => DashboardActivosRouteRoute,
-  } as any)
-const DashboardActivosActivoIdEditarRoute =
-  DashboardActivosActivoIdEditarRouteImport.update({
-    id: '/$activoId/editar',
-    path: '/$activoId/editar',
-    getParentRoute: () => DashboardActivosRouteRoute,
   } as any)
 const DashboardActivosCatalogoIndexRoute =
   DashboardActivosCatalogoIndexRouteImport.update({
@@ -658,6 +651,12 @@ const DashboardTiposActivoTipoActivoIdComponentesRoute =
     path: '/componentes',
     getParentRoute: () => DashboardTiposActivoTipoActivoIdRouteRoute,
   } as any)
+const DashboardActivosRegistroActivoActivoIdEditarRoute =
+  DashboardActivosRegistroActivoActivoIdEditarRouteImport.update({
+    id: '/registro-activo/$activoId/editar',
+    path: '/registro-activo/$activoId/editar',
+    getParentRoute: () => DashboardActivosRouteRoute,
+  } as any)
 const DashboardGestionVehicularSolicitudesSolicitudIdEditarRoute =
   DashboardGestionVehicularSolicitudesSolicitudIdEditarRouteImport.update({
     id: '/solicitudes/$solicitudId/editar',
@@ -716,6 +715,7 @@ export interface FileRoutesByFullPath {
   '/parametros/unidades-medida': typeof DashboardParametrosUnidadesMedidaRoute
   '/tipos-activo/historial': typeof DashboardTiposActivoHistorialRoute
   '/accesorios/': typeof DashboardAccesoriosIndexRoute
+  '/activos/': typeof DashboardActivosIndexRoute
   '/categorias/': typeof DashboardCategoriasIndexRoute
   '/estados-operativos/': typeof DashboardEstadosOperativosIndexRoute
   '/gestion-vehicular/': typeof DashboardGestionVehicularIndexRoute
@@ -726,7 +726,6 @@ export interface FileRoutesByFullPath {
   '/tipos-activo/': typeof DashboardTiposActivoIndexRoute
   '/tipos-documento/': typeof DashboardTiposDocumentoIndexRoute
   '/inventarios/tipos-insumo/$tipoInsumoId': typeof DashboardInventariosTiposInsumoTipoInsumoIdRouteRouteWithChildren
-  '/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/activos/registro-activo/nuevo': typeof DashboardActivosRegistroActivoNuevoRoute
   '/gestion-vehicular/controles-activos/nuevo': typeof DashboardGestionVehicularControlesActivosNuevoRoute
@@ -737,7 +736,6 @@ export interface FileRoutesByFullPath {
   '/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
-  '/activos/$activoId/': typeof DashboardActivosActivoIdIndexRoute
   '/activos/catalogo/': typeof DashboardActivosCatalogoIndexRoute
   '/activos/consulta-documentos/': typeof DashboardActivosConsultaDocumentosIndexRoute
   '/activos/disponibilidad/': typeof DashboardActivosDisponibilidadIndexRoute
@@ -776,6 +774,7 @@ export interface FileRoutesByFullPath {
   '/seguridad/roles/': typeof DashboardSeguridadRolesIndexRoute
   '/seguridad/usuarios/': typeof DashboardSeguridadUsuariosIndexRoute
   '/tipos-activo/$tipoActivoId/': typeof DashboardTiposActivoTipoActivoIdIndexRoute
+  '/activos/registro-activo/$activoId/editar': typeof DashboardActivosRegistroActivoActivoIdEditarRoute
   '/gestion-vehicular/solicitudes/$solicitudId/editar': typeof DashboardGestionVehicularSolicitudesSolicitudIdEditarRoute
   '/inventarios/tipos-insumo/$tipoInsumoId/atributos': typeof DashboardInventariosTiposInsumoTipoInsumoIdAtributosRoute
   '/mantenimientos/solicitudes/$solicitudId/editar': typeof DashboardMantenimientosSolicitudesSolicitudIdEditarRoute
@@ -783,7 +782,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/activos': typeof DashboardActivosRouteRouteWithChildren
   '/parametros': typeof DashboardParametrosRouteRouteWithChildren
   '/perfil': typeof DashboardPerfilRoute
   '/': typeof DashboardIndexRoute
@@ -795,6 +793,7 @@ export interface FileRoutesByTo {
   '/parametros/unidades-medida': typeof DashboardParametrosUnidadesMedidaRoute
   '/tipos-activo/historial': typeof DashboardTiposActivoHistorialRoute
   '/accesorios': typeof DashboardAccesoriosIndexRoute
+  '/activos': typeof DashboardActivosIndexRoute
   '/categorias': typeof DashboardCategoriasIndexRoute
   '/estados-operativos': typeof DashboardEstadosOperativosIndexRoute
   '/gestion-vehicular': typeof DashboardGestionVehicularIndexRoute
@@ -804,7 +803,6 @@ export interface FileRoutesByTo {
   '/seguridad': typeof DashboardSeguridadIndexRoute
   '/tipos-activo': typeof DashboardTiposActivoIndexRoute
   '/tipos-documento': typeof DashboardTiposDocumentoIndexRoute
-  '/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/activos/registro-activo/nuevo': typeof DashboardActivosRegistroActivoNuevoRoute
   '/gestion-vehicular/controles-activos/nuevo': typeof DashboardGestionVehicularControlesActivosNuevoRoute
@@ -815,7 +813,6 @@ export interface FileRoutesByTo {
   '/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
-  '/activos/$activoId': typeof DashboardActivosActivoIdIndexRoute
   '/activos/catalogo': typeof DashboardActivosCatalogoIndexRoute
   '/activos/consulta-documentos': typeof DashboardActivosConsultaDocumentosIndexRoute
   '/activos/disponibilidad': typeof DashboardActivosDisponibilidadIndexRoute
@@ -854,6 +851,7 @@ export interface FileRoutesByTo {
   '/seguridad/roles': typeof DashboardSeguridadRolesIndexRoute
   '/seguridad/usuarios': typeof DashboardSeguridadUsuariosIndexRoute
   '/tipos-activo/$tipoActivoId': typeof DashboardTiposActivoTipoActivoIdIndexRoute
+  '/activos/registro-activo/$activoId/editar': typeof DashboardActivosRegistroActivoActivoIdEditarRoute
   '/gestion-vehicular/solicitudes/$solicitudId/editar': typeof DashboardGestionVehicularSolicitudesSolicitudIdEditarRoute
   '/inventarios/tipos-insumo/$tipoInsumoId/atributos': typeof DashboardInventariosTiposInsumoTipoInsumoIdAtributosRoute
   '/mantenimientos/solicitudes/$solicitudId/editar': typeof DashboardMantenimientosSolicitudesSolicitudIdEditarRoute
@@ -894,6 +892,7 @@ export interface FileRoutesById {
   '/_dashboard/parametros/unidades-medida': typeof DashboardParametrosUnidadesMedidaRoute
   '/_dashboard/tipos-activo/historial': typeof DashboardTiposActivoHistorialRoute
   '/_dashboard/accesorios/': typeof DashboardAccesoriosIndexRoute
+  '/_dashboard/activos/': typeof DashboardActivosIndexRoute
   '/_dashboard/categorias/': typeof DashboardCategoriasIndexRoute
   '/_dashboard/estados-operativos/': typeof DashboardEstadosOperativosIndexRoute
   '/_dashboard/gestion-vehicular/': typeof DashboardGestionVehicularIndexRoute
@@ -904,7 +903,6 @@ export interface FileRoutesById {
   '/_dashboard/tipos-activo/': typeof DashboardTiposActivoIndexRoute
   '/_dashboard/tipos-documento/': typeof DashboardTiposDocumentoIndexRoute
   '/_dashboard/inventarios/tipos-insumo/$tipoInsumoId': typeof DashboardInventariosTiposInsumoTipoInsumoIdRouteRouteWithChildren
-  '/_dashboard/activos/$activoId/editar': typeof DashboardActivosActivoIdEditarRoute
   '/_dashboard/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/_dashboard/activos/registro-activo/nuevo': typeof DashboardActivosRegistroActivoNuevoRoute
   '/_dashboard/gestion-vehicular/controles-activos/nuevo': typeof DashboardGestionVehicularControlesActivosNuevoRoute
@@ -915,7 +913,6 @@ export interface FileRoutesById {
   '/_dashboard/mantenimientos/solicitudes/nueva': typeof DashboardMantenimientosSolicitudesNuevaRoute
   '/_dashboard/tipos-activo/$tipoActivoId/atributos': typeof DashboardTiposActivoTipoActivoIdAtributosRoute
   '/_dashboard/tipos-activo/$tipoActivoId/componentes': typeof DashboardTiposActivoTipoActivoIdComponentesRoute
-  '/_dashboard/activos/$activoId/': typeof DashboardActivosActivoIdIndexRoute
   '/_dashboard/activos/catalogo/': typeof DashboardActivosCatalogoIndexRoute
   '/_dashboard/activos/consulta-documentos/': typeof DashboardActivosConsultaDocumentosIndexRoute
   '/_dashboard/activos/disponibilidad/': typeof DashboardActivosDisponibilidadIndexRoute
@@ -954,6 +951,7 @@ export interface FileRoutesById {
   '/_dashboard/seguridad/roles/': typeof DashboardSeguridadRolesIndexRoute
   '/_dashboard/seguridad/usuarios/': typeof DashboardSeguridadUsuariosIndexRoute
   '/_dashboard/tipos-activo/$tipoActivoId/': typeof DashboardTiposActivoTipoActivoIdIndexRoute
+  '/_dashboard/activos/registro-activo/$activoId/editar': typeof DashboardActivosRegistroActivoActivoIdEditarRoute
   '/_dashboard/gestion-vehicular/solicitudes/$solicitudId/editar': typeof DashboardGestionVehicularSolicitudesSolicitudIdEditarRoute
   '/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/atributos': typeof DashboardInventariosTiposInsumoTipoInsumoIdAtributosRoute
   '/_dashboard/mantenimientos/solicitudes/$solicitudId/editar': typeof DashboardMantenimientosSolicitudesSolicitudIdEditarRoute
@@ -994,6 +992,7 @@ export interface FileRouteTypes {
     | '/parametros/unidades-medida'
     | '/tipos-activo/historial'
     | '/accesorios/'
+    | '/activos/'
     | '/categorias/'
     | '/estados-operativos/'
     | '/gestion-vehicular/'
@@ -1004,7 +1003,6 @@ export interface FileRouteTypes {
     | '/tipos-activo/'
     | '/tipos-documento/'
     | '/inventarios/tipos-insumo/$tipoInsumoId'
-    | '/activos/$activoId/editar'
     | '/activos/catalogo/$activoId'
     | '/activos/registro-activo/nuevo'
     | '/gestion-vehicular/controles-activos/nuevo'
@@ -1015,7 +1013,6 @@ export interface FileRouteTypes {
     | '/mantenimientos/solicitudes/nueva'
     | '/tipos-activo/$tipoActivoId/atributos'
     | '/tipos-activo/$tipoActivoId/componentes'
-    | '/activos/$activoId/'
     | '/activos/catalogo/'
     | '/activos/consulta-documentos/'
     | '/activos/disponibilidad/'
@@ -1054,6 +1051,7 @@ export interface FileRouteTypes {
     | '/seguridad/roles/'
     | '/seguridad/usuarios/'
     | '/tipos-activo/$tipoActivoId/'
+    | '/activos/registro-activo/$activoId/editar'
     | '/gestion-vehicular/solicitudes/$solicitudId/editar'
     | '/inventarios/tipos-insumo/$tipoInsumoId/atributos'
     | '/mantenimientos/solicitudes/$solicitudId/editar'
@@ -1061,7 +1059,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
-    | '/activos'
     | '/parametros'
     | '/perfil'
     | '/'
@@ -1073,6 +1070,7 @@ export interface FileRouteTypes {
     | '/parametros/unidades-medida'
     | '/tipos-activo/historial'
     | '/accesorios'
+    | '/activos'
     | '/categorias'
     | '/estados-operativos'
     | '/gestion-vehicular'
@@ -1082,7 +1080,6 @@ export interface FileRouteTypes {
     | '/seguridad'
     | '/tipos-activo'
     | '/tipos-documento'
-    | '/activos/$activoId/editar'
     | '/activos/catalogo/$activoId'
     | '/activos/registro-activo/nuevo'
     | '/gestion-vehicular/controles-activos/nuevo'
@@ -1093,7 +1090,6 @@ export interface FileRouteTypes {
     | '/mantenimientos/solicitudes/nueva'
     | '/tipos-activo/$tipoActivoId/atributos'
     | '/tipos-activo/$tipoActivoId/componentes'
-    | '/activos/$activoId'
     | '/activos/catalogo'
     | '/activos/consulta-documentos'
     | '/activos/disponibilidad'
@@ -1132,6 +1128,7 @@ export interface FileRouteTypes {
     | '/seguridad/roles'
     | '/seguridad/usuarios'
     | '/tipos-activo/$tipoActivoId'
+    | '/activos/registro-activo/$activoId/editar'
     | '/gestion-vehicular/solicitudes/$solicitudId/editar'
     | '/inventarios/tipos-insumo/$tipoInsumoId/atributos'
     | '/mantenimientos/solicitudes/$solicitudId/editar'
@@ -1171,6 +1168,7 @@ export interface FileRouteTypes {
     | '/_dashboard/parametros/unidades-medida'
     | '/_dashboard/tipos-activo/historial'
     | '/_dashboard/accesorios/'
+    | '/_dashboard/activos/'
     | '/_dashboard/categorias/'
     | '/_dashboard/estados-operativos/'
     | '/_dashboard/gestion-vehicular/'
@@ -1181,7 +1179,6 @@ export interface FileRouteTypes {
     | '/_dashboard/tipos-activo/'
     | '/_dashboard/tipos-documento/'
     | '/_dashboard/inventarios/tipos-insumo/$tipoInsumoId'
-    | '/_dashboard/activos/$activoId/editar'
     | '/_dashboard/activos/catalogo/$activoId'
     | '/_dashboard/activos/registro-activo/nuevo'
     | '/_dashboard/gestion-vehicular/controles-activos/nuevo'
@@ -1192,7 +1189,6 @@ export interface FileRouteTypes {
     | '/_dashboard/mantenimientos/solicitudes/nueva'
     | '/_dashboard/tipos-activo/$tipoActivoId/atributos'
     | '/_dashboard/tipos-activo/$tipoActivoId/componentes'
-    | '/_dashboard/activos/$activoId/'
     | '/_dashboard/activos/catalogo/'
     | '/_dashboard/activos/consulta-documentos/'
     | '/_dashboard/activos/disponibilidad/'
@@ -1231,6 +1227,7 @@ export interface FileRouteTypes {
     | '/_dashboard/seguridad/roles/'
     | '/_dashboard/seguridad/usuarios/'
     | '/_dashboard/tipos-activo/$tipoActivoId/'
+    | '/_dashboard/activos/registro-activo/$activoId/editar'
     | '/_dashboard/gestion-vehicular/solicitudes/$solicitudId/editar'
     | '/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/atributos'
     | '/_dashboard/mantenimientos/solicitudes/$solicitudId/editar'
@@ -1362,6 +1359,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/accesorios/'
       preLoaderRoute: typeof DashboardAccesoriosIndexRouteImport
       parentRoute: typeof DashboardAccesoriosRouteRoute
+    }
+    '/_dashboard/activos/': {
+      id: '/_dashboard/activos/'
+      path: '/'
+      fullPath: '/activos/'
+      preLoaderRoute: typeof DashboardActivosIndexRouteImport
+      parentRoute: typeof DashboardActivosRouteRoute
     }
     '/_dashboard/categorias/': {
       id: '/_dashboard/categorias/'
@@ -1537,20 +1541,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/tipos-documento/'
       preLoaderRoute: typeof DashboardTiposDocumentoIndexRouteImport
       parentRoute: typeof DashboardTiposDocumentoRouteRoute
-    }
-    '/_dashboard/activos/$activoId/': {
-      id: '/_dashboard/activos/$activoId/'
-      path: '/$activoId'
-      fullPath: '/activos/$activoId/'
-      preLoaderRoute: typeof DashboardActivosActivoIdIndexRouteImport
-      parentRoute: typeof DashboardActivosRouteRoute
-    }
-    '/_dashboard/activos/$activoId/editar': {
-      id: '/_dashboard/activos/$activoId/editar'
-      path: '/$activoId/editar'
-      fullPath: '/activos/$activoId/editar'
-      preLoaderRoute: typeof DashboardActivosActivoIdEditarRouteImport
-      parentRoute: typeof DashboardActivosRouteRoute
     }
     '/_dashboard/activos/catalogo/': {
       id: '/_dashboard/activos/catalogo/'
@@ -1895,6 +1885,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTiposActivoTipoActivoIdComponentesRouteImport
       parentRoute: typeof DashboardTiposActivoTipoActivoIdRouteRoute
     }
+    '/_dashboard/activos/registro-activo/$activoId/editar': {
+      id: '/_dashboard/activos/registro-activo/$activoId/editar'
+      path: '/registro-activo/$activoId/editar'
+      fullPath: '/activos/registro-activo/$activoId/editar'
+      preLoaderRoute: typeof DashboardActivosRegistroActivoActivoIdEditarRouteImport
+      parentRoute: typeof DashboardActivosRouteRoute
+    }
     '/_dashboard/gestion-vehicular/solicitudes/$solicitudId/editar': {
       id: '/_dashboard/gestion-vehicular/solicitudes/$solicitudId/editar'
       path: '/solicitudes/$solicitudId/editar'
@@ -1941,22 +1938,21 @@ const DashboardAccesoriosRouteRouteWithChildren =
   )
 
 interface DashboardActivosRouteRouteChildren {
-  DashboardActivosActivoIdEditarRoute: typeof DashboardActivosActivoIdEditarRoute
+  DashboardActivosIndexRoute: typeof DashboardActivosIndexRoute
   DashboardActivosCatalogoActivoIdRoute: typeof DashboardActivosCatalogoActivoIdRoute
   DashboardActivosRegistroActivoNuevoRoute: typeof DashboardActivosRegistroActivoNuevoRoute
-  DashboardActivosActivoIdIndexRoute: typeof DashboardActivosActivoIdIndexRoute
   DashboardActivosCatalogoIndexRoute: typeof DashboardActivosCatalogoIndexRoute
   DashboardActivosConsultaDocumentosIndexRoute: typeof DashboardActivosConsultaDocumentosIndexRoute
   DashboardActivosDisponibilidadIndexRoute: typeof DashboardActivosDisponibilidadIndexRoute
   DashboardActivosRegistroActivoIndexRoute: typeof DashboardActivosRegistroActivoIndexRoute
+  DashboardActivosRegistroActivoActivoIdEditarRoute: typeof DashboardActivosRegistroActivoActivoIdEditarRoute
 }
 
 const DashboardActivosRouteRouteChildren: DashboardActivosRouteRouteChildren = {
-  DashboardActivosActivoIdEditarRoute: DashboardActivosActivoIdEditarRoute,
+  DashboardActivosIndexRoute: DashboardActivosIndexRoute,
   DashboardActivosCatalogoActivoIdRoute: DashboardActivosCatalogoActivoIdRoute,
   DashboardActivosRegistroActivoNuevoRoute:
     DashboardActivosRegistroActivoNuevoRoute,
-  DashboardActivosActivoIdIndexRoute: DashboardActivosActivoIdIndexRoute,
   DashboardActivosCatalogoIndexRoute: DashboardActivosCatalogoIndexRoute,
   DashboardActivosConsultaDocumentosIndexRoute:
     DashboardActivosConsultaDocumentosIndexRoute,
@@ -1964,6 +1960,8 @@ const DashboardActivosRouteRouteChildren: DashboardActivosRouteRouteChildren = {
     DashboardActivosDisponibilidadIndexRoute,
   DashboardActivosRegistroActivoIndexRoute:
     DashboardActivosRegistroActivoIndexRoute,
+  DashboardActivosRegistroActivoActivoIdEditarRoute:
+    DashboardActivosRegistroActivoActivoIdEditarRoute,
 }
 
 const DashboardActivosRouteRouteWithChildren =

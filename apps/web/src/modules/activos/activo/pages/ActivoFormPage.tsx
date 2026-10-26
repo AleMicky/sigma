@@ -213,7 +213,7 @@ export function ActivoFormPage({
           queryKey: activoAtributoValorKeys.lists(),
         })
 
-        await navigate({ to: "/activos" })
+        await navigate({ to: routes.activos.listarActivos })
       } catch (error) {
         setFormError(
           isApiError(error)
