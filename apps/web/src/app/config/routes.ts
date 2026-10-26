@@ -13,32 +13,34 @@ export const routes = {
     detail: (activoId: string) => `/activos/catalogo/${activoId}`,
     editar: (activoId: string) =>
       `/activos/registro-activo/${activoId}/editar`,
+    configuraciones: {
+      root: "/activos/configuraciones",
+      tiposActivo: "/activos/configuraciones/tipos-activo",
+      categorias: "/activos/configuraciones/categorias-activos",
+      accesorios: "/activos/configuraciones/accesorios",
+      tiposDocumento: "/activos/configuraciones/tipos-documento",
+      estadosOperativos: "/activos/configuraciones/estados-operativos",
+    },
   },
 
   tiposActivo: {
-    root: "/tipos-activo",
-    historial: "/tipos-activo/historial",
-    detail: (tipoActivoId: string) => `/tipos-activo/${tipoActivoId}`,
-    atributos: (tipoActivoId: string) =>
-      `/tipos-activo/${tipoActivoId}/atributos`,
-    componentes: (tipoActivoId: string) =>
-      `/tipos-activo/${tipoActivoId}/componentes`,
+    root: "/activos/configuraciones/tipos-activo",
   },
 
   categorias: {
-    root: "/categorias",
+    root: "/activos/configuraciones/categorias-activos",
   },
 
   accesorios: {
-    root: "/accesorios",
+    root: "/activos/configuraciones/accesorios",
   },
 
   tiposDocumento: {
-    root: "/tipos-documento",
+    root: "/activos/configuraciones/tipos-documento",
   },
 
   estadosOperativos: {
-    root: "/estados-operativos",
+    root: "/activos/configuraciones/estados-operativos",
   },
 
   parametros: {
