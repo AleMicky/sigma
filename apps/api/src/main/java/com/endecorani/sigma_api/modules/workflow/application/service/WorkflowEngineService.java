@@ -31,4 +31,9 @@ public interface WorkflowEngineService {
             String taskId,
             Map<String, Object> variables
     );
+
+    void cancelarProceso(
+            String processInstanceId,
+            String motivo
+    );
 }

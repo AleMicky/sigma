@@ -157,6 +157,22 @@ public class FlowableClient {
         }
     }
 
+    public void cancelarProceso(String processInstanceId, String deleteReason) {
+        if (processInstanceId == null || processInstanceId.isBlank()) {
+            return;
+        }
+        executeVoid(
+                () -> restClient.delete()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/runtime/process-instances/{id}")
+                                .queryParam("deleteReason", deleteReason != null && !deleteReason.isBlank() ? deleteReason : "Cancelado por usuario")
+                                .build(processInstanceId))
+                        .retrieve()
+                        .toBodilessEntity(),
+                "Error cancelando la instancia de proceso %s en Flowable".formatted(processInstanceId)
+        );
+    }
+
     private <T> T execute(Supplier<T> action, String errorMessage) {
         try {
             return action.get();
