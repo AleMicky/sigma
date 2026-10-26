@@ -7,6 +7,7 @@ import {
   User,
 } from "lucide-react"
 
+import { routes } from "@/app/config"
 import {
   Card,
   CardContent,
@@ -109,7 +110,7 @@ export const ViajesActivosLiveList = ({
         </div>
 
         <Link
-          to="/gestion-vehicular/historial-viajes"
+          to={routes.gestionVehicular.reportes.historialViajes}
           className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "h-8 text-xs gap-1 text-cyan-600 hover:text-cyan-700")}
         >
           Ver historial
