@@ -53,19 +53,6 @@ function buildParentsMap(menus: Menu[]): Map<string, Menu> {
   return map
 }
 
-function findMenuById(menus: Menu[], id: string | null): Menu | null {
-  if (!id) return null
-  return menus.find((m) => m.id === id) ?? null
-}
-
-function findParentMenu(
-  menu: Menu | null,
-  parentsById: Map<string, Menu>,
-): Menu | null {
-  if (!menu?.menuPadreId) return null
-  return parentsById.get(menu.menuPadreId) ?? null
-}
-
 function filterMenusByStatus(
   menus: Menu[],
   statusFilter: MenuStatusFilter,
@@ -231,13 +218,8 @@ function MenuTableSection({
   }
 
   return (
-    <>
-      <div
-        className={cn(
-          "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3",
-          isFetching && "opacity-70",
-        )}
-      >
+    <div className="w-full space-y-3">
+      <div className={cn("w-full", isFetching && "opacity-70")}>
         <MenuTableView
           menus={menus}
           parentsById={parentsById}
@@ -252,10 +234,10 @@ function MenuTableSection({
         <Pagination
           page={pageData}
           onPageChange={onPageChange}
-          className="-mx-4 border-x-0 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 shrink-0"
+          className="border rounded-lg bg-card px-3 py-2"
         />
       )}
-    </>
+    </div>
   )
 }
 
@@ -273,18 +255,22 @@ export function MenusPage() {
   const search = usePaginatedSearch()
 
   // Queries
-  const arbolQuery = useQuery(menuQueries.arbol())
+  const arbolQuery = useQuery({
+    ...menuQueries.arbol(),
+    enabled: viewMode === "tree",
+  })
   const allListQuery = useQuery(menuQueries.allList())
   const allPermisosQuery = useQuery(permisoQueries.allList())
-  const paginatedListQuery = useQuery(
-    menuQueries.list({
+  const paginatedListQuery = useQuery({
+    ...menuQueries.list({
       page: search.page,
       size: PAGE_SIZE,
       sortBy: "orden",
       direction: "ASC",
       ...(search.query ? { q: search.query } : {}),
     }),
-  )
+    enabled: viewMode === "table",
+  })
 
   const treeNodes = arbolQuery.data ?? EMPTY_TREE_NODES
   const allMenus = allListQuery.data ?? EMPTY_MENUS
@@ -303,16 +289,14 @@ export function MenusPage() {
     [allMenus],
   )
 
-  // Selected menu for quick view dialog
-  const selectedQuickViewMenu = useMemo(
-    () => findMenuById(allMenus, quickViewId),
-    [allMenus, quickViewId],
-  )
+  // Selected menu for quick view dialog (O(1) lookup via parentsById map)
+  const selectedQuickViewMenu = quickViewId
+    ? parentsById.get(quickViewId) ?? null
+    : null
 
-  const selectedQuickViewParent = useMemo(
-    () => findParentMenu(selectedQuickViewMenu, parentsById),
-    [selectedQuickViewMenu, parentsById],
-  )
+  const selectedQuickViewParent = selectedQuickViewMenu?.menuPadreId
+    ? parentsById.get(selectedQuickViewMenu.menuPadreId) ?? null
+    : null
 
   useClampPage(
     search.page,
@@ -381,53 +365,28 @@ export function MenusPage() {
   ]
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
+    <PageShell size="full" padding="none" layout="auto" className="w-full pb-8">
       {/* Header */}
-      <header className="flex shrink-0 flex-col gap-2.5 border-b py-3 sm:gap-3 sm:py-4 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0 flex flex-1 flex-col gap-1">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-2xs">
-                <FolderTree className="size-4 sm:size-4.5" />
-              </div>
-              <div>
-                <h1 className="font-heading text-xl font-bold tracking-tight sm:text-2xl">
-                  Administración de Menús
-                </h1>
-              </div>
+      <header className="flex shrink-0 flex-col gap-2 border-b py-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex flex-col gap-0.5">
+          <div className="flex items-center gap-2">
+            <div className="flex size-7.5 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-2xs shrink-0">
+              <FolderTree className="size-4" />
             </div>
-
-            {/* Mobile Actions */}
-            <div className="flex items-center gap-1.5 shrink-0 md:hidden">
-              <RefreshButton size="sm" queries={allQueries} />
-              <Button
-                size="sm"
-                variant="outline"
-                type="button"
-                onClick={() => setHelpModalOpen(true)}
-              >
-                <HelpCircle className="size-4 text-primary" />
-                <span className="sr-only sm:not-sr-only">Guía</span>
-              </Button>
-              <Button
-                size="sm"
-                type="button"
-                onClick={() => openCreate()}
-                className="gap-1"
-              >
-                <Plus className="size-4" />
-                <span className="sr-only sm:not-sr-only">Crear</span>
-              </Button>
+            <div>
+              <h1 className="font-heading text-lg font-bold tracking-tight sm:text-xl">
+                Administración de Menús
+              </h1>
             </div>
           </div>
 
-          <p className="text-xs sm:text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Estructura jerárquica, iconos, rutas, orden y permisos de seguridad por menú.
           </p>
         </div>
 
-        {/* Desktop Actions */}
-        <div className="hidden shrink-0 items-center gap-2 md:flex">
+        {/* Unified Actions */}
+        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
           <RefreshButton size="sm" queries={allQueries} />
 
           <Button
@@ -435,20 +394,22 @@ export function MenusPage() {
             variant="outline"
             type="button"
             onClick={() => setHelpModalOpen(true)}
-            className="gap-1.5 border-border/80 hover:bg-muted cursor-pointer"
+            className="h-8 gap-1.5 px-2 sm:px-2.5 text-xs border-border/80 hover:bg-muted cursor-pointer"
           >
-            <HelpCircle className="size-4 text-primary" />
-            <span>Guía de Estructura</span>
+            <HelpCircle className="size-3.5 text-primary" />
+            <span className="hidden sm:inline">Guía de Estructura</span>
+            <span className="sm:hidden">Guía</span>
           </Button>
 
           <Button
             size="sm"
             type="button"
             onClick={() => openCreate()}
-            className="gap-1.5 cursor-pointer"
+            className="h-8 gap-1.5 px-2 sm:px-2.5 text-xs cursor-pointer"
           >
-            <Plus className="size-4" />
-            <span>Crear Menú Raíz</span>
+            <Plus className="size-3.5" />
+            <span className="hidden sm:inline">Crear Menú Raíz</span>
+            <span className="sm:hidden">Crear</span>
           </Button>
         </div>
       </header>
@@ -468,7 +429,7 @@ export function MenusPage() {
       />
 
       {/* Content Section */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-2">
+      <div className="w-full py-1">
         {viewMode === "tree" ? (
           <MenuTreeSection
             isLoading={arbolQuery.isLoading}
@@ -506,7 +467,7 @@ export function MenusPage() {
 
       {/* Form Drawer Sheet */}
       <MenuFormSheet
-        key={`${editing?.id ?? "new"}-${presetParentId ?? "root"}-${dialogOpen ? "open" : "closed"}-${allMenus.length}`}
+        key={`${editing?.id ?? presetParentId ?? "new"}-${dialogOpen ? "open" : "closed"}`}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         menu={editing}

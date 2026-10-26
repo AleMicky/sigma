@@ -47,23 +47,23 @@ export function MenuFilterToolbar({
   onCollapseAll,
 }: MenuFilterToolbarProps) {
   return (
-    <div className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
+    <div className="flex flex-col gap-1.5 py-1 sm:flex-row sm:items-center sm:justify-between shrink-0">
       {/* Left: Search input and Status filter */}
-      <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-1 flex-col gap-1.5 sm:flex-row sm:items-center">
         <SearchField
           value={searchValue}
           onChange={onSearchChange}
           placeholder="Buscar por nombre, código o ruta del menú…"
           aria-label="Buscar menús"
-          className="w-full sm:max-w-md"
+          className="w-full sm:max-w-sm"
         />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Select
             value={statusFilter}
             onValueChange={(val) => onStatusFilterChange(val as MenuStatusFilter)}
           >
-            <SelectTrigger className="h-8.5 w-[145px] text-xs">
+            <SelectTrigger className="h-8 w-[140px] text-xs">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
@@ -91,7 +91,7 @@ export function MenuFilterToolbar({
               variant="ghost"
               size="sm"
               onClick={onResetFilters}
-              className="h-8.5 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+              className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <RotateCcw className="size-3.5" />
               <span className="hidden sm:inline">Limpiar</span>
@@ -101,7 +101,7 @@ export function MenuFilterToolbar({
       </div>
 
       {/* Right: Expand/Collapse (Tree mode) and View Switcher */}
-      <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+      <div className="flex items-center justify-between sm:justify-end gap-1.5 shrink-0">
         {viewMode === "tree" && (
           <div className="flex items-center gap-1">
             {onExpandAll && (
@@ -110,7 +110,7 @@ export function MenuFilterToolbar({
                 size="xs"
                 variant="outline"
                 onClick={onExpandAll}
-                className="h-7.5 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                 title="Expandir todos los niveles"
               >
                 <ChevronsDown className="size-3.5" />
@@ -123,7 +123,7 @@ export function MenuFilterToolbar({
                 size="xs"
                 variant="outline"
                 onClick={onCollapseAll}
-                className="h-7.5 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                 title="Colapsar todos los niveles"
               >
                 <ChevronsUp className="size-3.5" />
@@ -139,9 +139,9 @@ export function MenuFilterToolbar({
             size="xs"
             variant={viewMode === "tree" ? "secondary" : "ghost"}
             onClick={() => onViewModeChange("tree")}
-            className="h-6.5 gap-1.5 px-2.5 text-xs font-medium"
+            className="h-6 gap-1 px-2 text-xs font-medium cursor-pointer"
           >
-            <FolderTree className="size-3.5" />
+            <FolderTree className="size-3" />
             <span>Árbol</span>
           </Button>
           <Button
@@ -149,9 +149,9 @@ export function MenuFilterToolbar({
             size="xs"
             variant={viewMode === "table" ? "secondary" : "ghost"}
             onClick={() => onViewModeChange("table")}
-            className="h-6.5 gap-1.5 px-2.5 text-xs font-medium"
+            className="h-6 gap-1 px-2 text-xs font-medium cursor-pointer"
           >
-            <List className="size-3.5" />
+            <List className="size-3" />
             <span>Tabla</span>
           </Button>
         </div>
