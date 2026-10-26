@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:flowable="http://flowable.org/bpmn"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+  typeLanguage="http://www.w3.org/2001/XMLSchema"
+  expressionLanguage="http://www.w3.org/1999/XPath"
+  targetNamespace="http://endecorani.com/sigma/gestionvehicular"
+  exporter="Flowable Open Source Modeler"
+  exporterVersion="6.8.0">
+
+  <process id="procesoSalidaVehicular" name="Proceso de Gestión de Salidas Vehiculares" isExecutable="true">
+    <startEvent id="inicio" name="Inicio" flowable:formFieldValidation="true"></startEvent>
+
+    <!-- ESTADO 1: REGISTRADA - INICIAR SALIDA -->
+    <userTask
+      id="iniciarSalida"
+      name="REGISTRADA - Iniciar Salida"
+      flowable:assignee="${empleadoId}"
+      flowable:candidateGroups="responsable_flota,conductores"
+      flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="kilometraje" name="Kilometraje Inicial" type="long" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="latitud" name="Latitud" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="longitud" name="Longitud" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="observacion" name="Observaciones de Salida" type="string" required="false" writable="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+
+    <!-- ESTADO 2: EN_CURSO - REGISTRAR LLEGADA A DESTINO -->
+    <userTask
+      id="registrarLlegada"
+      name="EN_CURSO - Registrar Llegada"
+      flowable:assignee="${empleadoId}"
+      flowable:candidateGroups="responsable_flota,conductores"
+      flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="kilometraje" name="Kilometraje Llegada" type="long" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="latitud" name="Latitud" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="longitud" name="Longitud" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="observacion" name="Observaciones de Llegada" type="string" required="false" writable="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+
+    <!-- ESTADO 3: EN_DESTINO - INICIAR RETORNO -->
+    <userTask
+      id="iniciarRetorno"
+      name="EN_DESTINO - Iniciar Retorno"
+      flowable:assignee="${empleadoId}"
+      flowable:candidateGroups="responsable_flota,conductores"
+      flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="kilometraje" name="Kilometraje Inicio Retorno" type="long" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="latitud" name="Latitud" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="longitud" name="Longitud" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="observacion" name="Observaciones de Retorno" type="string" required="false" writable="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+
+    <!-- ESTADO 4: EN_RETORNO - FINALIZAR SALIDA -->
+    <userTask
+      id="finalizarSalida"
+      name="EN_RETORNO - Finalizar Salida"
+      flowable:assignee="${empleadoId}"
+      flowable:candidateGroups="responsable_flota,conductores"
+      flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="kilometraje" name="Kilometraje Final" type="long" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="latitud" name="Latitud" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="longitud" name="Longitud" type="string" required="false" writable="true"></flowable:formProperty>
+        <flowable:formProperty id="observacion" name="Observaciones de Cierre" type="string" required="false" writable="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+
+    <endEvent id="finalizado" name="Salida Finalizada"></endEvent>
+
+    <!-- TRANSICIONES -->
+    <sequenceFlow id="flujo_inicio_iniciar" sourceRef="inicio" targetRef="iniciarSalida"></sequenceFlow>
+    <sequenceFlow id="flujo_iniciar_salida" name="Iniciar Salida" sourceRef="iniciarSalida" targetRef="registrarLlegada"></sequenceFlow>
+    <sequenceFlow id="flujo_registrar_llegada" name="Registrar Llegada" sourceRef="registrarLlegada" targetRef="iniciarRetorno"></sequenceFlow>
+    <sequenceFlow id="flujo_iniciar_retorno" name="Iniciar Retorno" sourceRef="iniciarRetorno" targetRef="finalizarSalida"></sequenceFlow>
+    <sequenceFlow id="flujo_finalizar" name="Finalizar" sourceRef="finalizarSalida" targetRef="finalizado"></sequenceFlow>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_procesoSalidaVehicular">
+    <bpmndi:BPMNPlane bpmnElement="procesoSalidaVehicular" id="BPMNPlane_procesoSalidaVehicular">
+      <bpmndi:BPMNShape bpmnElement="inicio" id="BPMNShape_inicio">
+        <omgdc:Bounds height="30.0" width="30.0" x="50.0" y="160.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="iniciarSalida" id="BPMNShape_iniciarSalida">
+        <omgdc:Bounds height="80.0" width="130.0" x="140.0" y="135.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="registrarLlegada" id="BPMNShape_registrarLlegada">
+        <omgdc:Bounds height="80.0" width="130.0" x="330.0" y="135.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="iniciarRetorno" id="BPMNShape_iniciarRetorno">
+        <omgdc:Bounds height="80.0" width="130.0" x="520.0" y="135.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="finalizarSalida" id="BPMNShape_finalizarSalida">
+        <omgdc:Bounds height="80.0" width="130.0" x="710.0" y="135.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="finalizado" id="BPMNShape_finalizado">
+        <omgdc:Bounds height="28.0" width="28.0" x="900.0" y="161.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flujo_inicio_iniciar" id="BPMNEdge_flujo_inicio_iniciar">
+        <omgdi:waypoint x="80.0" y="175.0"></omgdi:waypoint>
+        <omgdi:waypoint x="140.0" y="175.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_iniciar_salida" id="BPMNEdge_flujo_iniciar_salida">
+        <omgdi:waypoint x="270.0" y="175.0"></omgdi:waypoint>
+        <omgdi:waypoint x="330.0" y="175.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_registrar_llegada" id="BPMNEdge_flujo_registrar_llegada">
+        <omgdi:waypoint x="460.0" y="175.0"></omgdi:waypoint>
+        <omgdi:waypoint x="520.0" y="175.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_iniciar_retorno" id="BPMNEdge_flujo_iniciar_retorno">
+        <omgdi:waypoint x="650.0" y="175.0"></omgdi:waypoint>
+        <omgdi:waypoint x="710.0" y="175.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flujo_finalizar" id="BPMNEdge_flujo_finalizar">
+        <omgdi:waypoint x="840.0" y="175.0"></omgdi:waypoint>
+        <omgdi:waypoint x="900.0" y="175.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

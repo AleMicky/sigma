@@ -98,6 +98,7 @@ public class CorrelativoService {
             case CorrelativoCodigo.ORDEN_TRABAJO -> "OT";
             case CorrelativoCodigo.ACTIVO -> "ACT";
             case CorrelativoCodigo.SOLICITUD_VEHICULAR -> "SV";
+            case CorrelativoCodigo.SALIDA_VEHICULAR -> "SAL";
             default -> {
                 String[] partes = codigo.split("_");
                 if (partes.length > 1) {

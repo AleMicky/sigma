@@ -68,6 +68,10 @@ public class WorkflowApplicationService {
                 );
     }
 
+    public void cancelarProceso(String processInstanceId, String motivo) {
+        workflowEngineService.cancelarProceso(processInstanceId, motivo);
+    }
+
     public WorkflowTaskActionsResponse completarTarea(
             String processInstanceId,
             CompleteWorkflowTaskRequest request
@@ -260,6 +264,12 @@ public class WorkflowApplicationService {
         variables.add("detalle");
 
         // Compatibilidad con variables estándar de asignación e ids comunes
+        variables.add("accion");
+        variables.add("accionId");
+        variables.add("kilometraje");
+        variables.add("latitud");
+        variables.add("longitud");
+        variables.add("salidaId");
         variables.add("responsableId");
         variables.add("responsableAsignacionId");
         variables.add("conductorAsignadoId");

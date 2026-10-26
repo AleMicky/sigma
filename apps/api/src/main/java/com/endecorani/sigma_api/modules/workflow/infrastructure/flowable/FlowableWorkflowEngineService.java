@@ -420,6 +420,18 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
         );
     }
 
+    @Override
+    public void cancelarProceso(String processInstanceId, String motivo) {
+        if (processInstanceId == null || processInstanceId.isBlank()) {
+            return;
+        }
+        try {
+            flowableClient.cancelarProceso(processInstanceId, motivo);
+        } catch (Exception ex) {
+            // Ignorar o registrar advertencia si la instancia ya finalizó o no existe en Flowable
+        }
+    }
+
     private String obtenerNombreRecurso(
             String resource
     ) {
