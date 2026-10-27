@@ -49,14 +49,14 @@ export const TopVehiculosSection = ({
 
   return (
     <Card className="border-border/60 shadow-xs">
-      <CardHeader className="pb-3 flex flex-row items-center justify-between gap-4">
+      <CardHeader className="p-3.5 pb-2 flex flex-row items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Award className="h-4 w-4" />
+            <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <Award className="h-3.5 w-3.5" />
             </div>
-            <CardTitle className="text-base font-semibold">
-              Top 5 Vehículos con Mayor Actividad
+            <CardTitle className="text-sm sm:text-base font-semibold">
+              Top 5 Vehículos en Operación
             </CardTitle>
           </div>
           <CardDescription className="text-xs text-muted-foreground mt-0.5">
@@ -69,20 +69,20 @@ export const TopVehiculosSection = ({
           onValueChange={(val) => setTab(val as "km" | "combustible")}
           className="w-auto"
         >
-          <TabsList className="h-8 p-0.5 bg-muted/60">
-            <TabsTrigger value="km" className="h-7 px-2.5 text-xs">
-              <Gauge className="h-3 w-3 mr-1 text-emerald-500" />
+          <TabsList className="h-7 p-0.5 bg-muted/60">
+            <TabsTrigger value="km" className="h-6 px-2 text-[11px]">
+              <Gauge className="h-2.5 w-2.5 mr-1 text-emerald-500" />
               Por Km
             </TabsTrigger>
-            <TabsTrigger value="combustible" className="h-7 px-2.5 text-xs">
-              <Fuel className="h-3 w-3 mr-1 text-amber-500" />
-              Por Combustible
+            <TabsTrigger value="combustible" className="h-6 px-2 text-[11px]">
+              <Fuel className="h-2.5 w-2.5 mr-1 text-amber-500" />
+              Combustible
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </CardHeader>
 
-      <CardContent className="pt-1">
+      <CardContent className="p-3.5 pt-0">
         {tab === "km" ? (
           topKm.length === 0 ? (
             <div className="py-8 text-center text-xs text-muted-foreground">

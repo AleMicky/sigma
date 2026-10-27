@@ -54,24 +54,24 @@ export const TendenciaViajesKmChart = ({
 
   return (
     <Card className="border-border/60 shadow-xs">
-      <CardHeader className="pb-3 flex flex-row items-start justify-between gap-4">
+      <CardHeader className="p-3.5 pb-2 flex flex-row items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <TrendingUp className="h-4 w-4" />
+            <div className="p-1 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <TrendingUp className="h-3.5 w-3.5" />
             </div>
-            <CardTitle className="text-base font-semibold">
-              Evolución Operativa: Viajes y Kilómetros
+            <CardTitle className="text-sm sm:text-base font-semibold">
+              Evolución: Viajes y Kilometraje
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-muted-foreground mt-1">
-            Tendencia mensual consolidada del padrón vehicular
+          <CardDescription className="text-xs text-muted-foreground mt-0.5">
+            Tendencia operativa por mes en el periodo seleccionado
           </CardDescription>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex flex-col items-end text-xs">
-            <span className="text-muted-foreground font-medium">Acumulado periodo:</span>
+        <div className="flex items-center gap-2.5">
+          <div className="hidden sm:flex flex-col items-end text-[11px]">
+            <span className="text-muted-foreground">Total periodo:</span>
             <span className="font-bold text-foreground">
               {metricView === "viajes"
                 ? `${totalViajesPeriodo} viajes`
@@ -84,13 +84,13 @@ export const TendenciaViajesKmChart = ({
             onValueChange={(val) => setMetricView(val as "viajes" | "km")}
             className="w-auto"
           >
-            <TabsList className="h-8 p-0.5 bg-muted/60">
-              <TabsTrigger value="viajes" className="h-7 px-2.5 text-xs">
-                <Navigation className="h-3 w-3 mr-1" />
+            <TabsList className="h-7 p-0.5 bg-muted/60">
+              <TabsTrigger value="viajes" className="h-6 px-2 text-[11px]">
+                <Navigation className="h-2.5 w-2.5 mr-1" />
                 Viajes
               </TabsTrigger>
-              <TabsTrigger value="km" className="h-7 px-2.5 text-xs">
-                <Route className="h-3 w-3 mr-1" />
+              <TabsTrigger value="km" className="h-6 px-2 text-[11px]">
+                <Route className="h-2.5 w-2.5 mr-1" />
                 Km
               </TabsTrigger>
             </TabsList>
@@ -98,8 +98,8 @@ export const TendenciaViajesKmChart = ({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-2">
-        <div className="h-64 w-full">
+      <CardContent className="p-3.5 pt-0">
+        <div className="h-52 w-full">
           {data.length === 0 ? (
             <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
               No hay datos registrados en este periodo

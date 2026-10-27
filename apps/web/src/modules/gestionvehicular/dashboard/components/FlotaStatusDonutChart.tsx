@@ -46,12 +46,12 @@ export const FlotaStatusDonutChart = ({
 
   return (
     <Card className="border-border/60 shadow-xs flex flex-col justify-between">
-      <CardHeader className="pb-2">
+      <CardHeader className="p-3.5 pb-1">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <PieIcon className="h-4 w-4" />
+          <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <PieIcon className="h-3.5 w-3.5" />
           </div>
-          <CardTitle className="text-base font-semibold">
+          <CardTitle className="text-sm sm:text-base font-semibold">
             Estado de Flota Vehicular
           </CardTitle>
         </div>
@@ -60,7 +60,7 @@ export const FlotaStatusDonutChart = ({
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="pt-2">
+      <CardContent className="p-3.5 pt-0">
         <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-4">
           {/* Donut Chart with Center Text */}
           <div className="relative h-48 w-full flex items-center justify-center">

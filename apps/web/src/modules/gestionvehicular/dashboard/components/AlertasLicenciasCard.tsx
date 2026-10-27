@@ -41,31 +41,34 @@ export const AlertasLicenciasCard = ({
 
   return (
     <Card className="border-border/60 shadow-xs flex flex-col justify-between">
-      <CardHeader className="pb-3 flex flex-row items-center justify-between gap-4">
+      <CardHeader className="p-3.5 pb-2 flex flex-row items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
-              <ShieldAlert className="h-4 w-4" />
+            <div className="p-1 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400">
+              <ShieldAlert className="h-3.5 w-3.5" />
             </div>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-sm sm:text-base font-semibold">
               Alertas de Licencias de Conducir
             </CardTitle>
           </div>
           <CardDescription className="text-xs text-muted-foreground mt-0.5">
-            Documentación de conductores vencida o por vencer en menos de 30 días
+            Documentación vencida o próxima a expirar (&le; 30 días)
           </CardDescription>
         </div>
 
         <Link
           to={routes.gestionVehicular.configuraciones.conductores}
-          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "h-8 text-xs gap-1 text-rose-600 hover:text-rose-700")}
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "sm" }),
+            "h-7 text-xs gap-1 text-rose-600 hover:text-rose-700 px-2"
+          )}
         >
-          Gestionar
-          <ArrowRight className="h-3.5 w-3.5" />
+          <span>Gestionar</span>
+          <ArrowRight className="h-3 w-3" />
         </Link>
       </CardHeader>
 
-      <CardContent className="pt-1">
+      <CardContent className="p-3.5 pt-0">
         {alertas.length === 0 ? (
           <div className="py-8 flex flex-col items-center justify-center text-center space-y-2">
             <div className="p-2.5 rounded-full bg-emerald-500/10 text-emerald-600">

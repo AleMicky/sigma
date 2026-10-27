@@ -15,6 +15,7 @@ import {
   FileText,
   Flag,
   Gauge,
+  Map,
   MapPin,
   Navigation,
   Play,
@@ -45,6 +46,7 @@ import type { SalidaVehicularEvento } from "../api/salida-vehicular.types"
 import { CancelarSalidaDialog } from "../components/CancelarSalidaDialog"
 import { EjecutarAccionFlowableDialog } from "../components/EjecutarAccionFlowableDialog"
 import { RegistrarBitacoraModal } from "../components/RegistrarBitacoraModal"
+import { SalidaVehicularRouteMap } from "../components/SalidaVehicularRouteMap"
 import { SalidaVehicularStatusBadge } from "../components/SalidaVehicularStatusBadge"
 import { getSalidaNextActionConfig } from "../components/salida-action.utils"
 
@@ -206,6 +208,13 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
     }
 
     return null
+  }, [eventos, bitacoras])
+
+  // Contador total de puntos geolocalizados
+  const totalGpsPoints = useMemo(() => {
+    const evCount = eventos.filter((e) => e.latitud != null && e.longitud != null).length
+    const bitCount = bitacoras.filter((b) => b.latitud != null && b.longitud != null).length
+    return evCount + bitCount
   }, [eventos, bitacoras])
 
   const formatDate = (dateStr?: string | null) => {
@@ -584,16 +593,20 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
 
       {/* 4. TABS NAVIGATION */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
-        <TabsList className="grid grid-cols-3 w-full max-w-lg h-9 p-0.5 bg-muted/60">
-          <TabsTrigger value="general" className="text-xs gap-1.5 cursor-pointer">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-2xl h-auto sm:h-9 p-0.5 bg-muted/60">
+          <TabsTrigger value="general" className="text-xs gap-1.5 cursor-pointer py-1.5 sm:py-0">
             <Navigation className="size-3.5 text-primary" />
             General y Ruta
           </TabsTrigger>
-          <TabsTrigger value="eventos" className="text-xs gap-1.5 cursor-pointer">
+          <TabsTrigger value="mapa" className="text-xs gap-1.5 cursor-pointer py-1.5 sm:py-0">
+            <Map className="size-3.5 text-indigo-500" />
+            Recorrido GPS ({totalGpsPoints})
+          </TabsTrigger>
+          <TabsTrigger value="eventos" className="text-xs gap-1.5 cursor-pointer py-1.5 sm:py-0">
             <Activity className="size-3.5 text-blue-500" />
             Eventos ({eventos.length})
           </TabsTrigger>
-          <TabsTrigger value="bitacoras" className="text-xs gap-1.5 cursor-pointer">
+          <TabsTrigger value="bitacoras" className="text-xs gap-1.5 cursor-pointer py-1.5 sm:py-0">
             <FileText className="size-3.5 text-emerald-500" />
             Bitácora ({bitacoras.length})
           </TabsTrigger>
@@ -769,6 +782,24 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
               </CardContent>
             </Card>
           </div>
+
+          {/* Mapa Interactivo de Seguimiento en General */}
+          <SalidaVehicularRouteMap
+            salida={salida}
+            eventos={eventos}
+            bitacoras={bitacoras}
+            height="h-[360px]"
+          />
+        </TabsContent>
+
+        {/* TAB 2: RECORRIDO Y GEOLOCALIZACIÓN GPS COMPLETA */}
+        <TabsContent value="mapa" className="space-y-4 pt-1">
+          <SalidaVehicularRouteMap
+            salida={salida}
+            eventos={eventos}
+            bitacoras={bitacoras}
+            height="h-[600px]"
+          />
         </TabsContent>
 
         {/* TAB 2: EVENTOS Y ODÓMETRO */}
