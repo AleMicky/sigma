@@ -1,4 +1,4 @@
-import { Filter, LayoutGrid, RotateCcw, Table, X } from "lucide-react"
+import { Filter, RotateCcw, X } from "lucide-react"
 
 import { SearchField } from "@/shared/components/search-field"
 import { Badge } from "@/shared/components/ui/badge"
@@ -22,8 +22,6 @@ export interface SalidaVehicularFilterToolbarProps {
   totalResults?: number
   filteredCount?: number
   onClearAll?: () => void
-  viewMode?: "cards" | "table"
-  onViewModeChange?: (mode: "cards" | "table") => void
   placeholder?: string
   className?: string
 }
@@ -47,8 +45,6 @@ export function SalidaVehicularFilterToolbar({
   totalResults,
   filteredCount,
   onClearAll,
-  viewMode = "cards",
-  onViewModeChange,
   placeholder = "Buscar por placa, conductor, destino o folio…",
   className,
 }: SalidaVehicularFilterToolbarProps) {
@@ -91,7 +87,7 @@ export function SalidaVehicularFilterToolbar({
           )}
         </div>
 
-        {/* Lado derecho: Selector de vista y conteo */}
+        {/* Lado derecho: Conteo de resultados */}
         <div className="flex items-center gap-2.5 justify-between sm:justify-end">
           {totalResults !== undefined && (
             <span className="text-[11.5px] text-muted-foreground whitespace-nowrap">
@@ -105,37 +101,6 @@ export function SalidaVehicularFilterToolbar({
                 </>
               )}
             </span>
-          )}
-
-          {onViewModeChange && (
-            <div className="flex items-center rounded-lg border border-border/70 p-0.5 bg-muted/40 shadow-2xs">
-              <button
-                type="button"
-                onClick={() => onViewModeChange("cards")}
-                className={cn(
-                  "flex items-center justify-center size-7 rounded-md text-xs font-medium transition-all cursor-pointer",
-                  viewMode === "cards"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                title="Vista en Tarjetas"
-              >
-                <LayoutGrid className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onViewModeChange("table")}
-                className={cn(
-                  "flex items-center justify-center size-7 rounded-md text-xs font-medium transition-all cursor-pointer",
-                  viewMode === "table"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                title="Vista en Tabla"
-              >
-                <Table className="size-3.5" />
-              </button>
-            </div>
           )}
         </div>
       </div>

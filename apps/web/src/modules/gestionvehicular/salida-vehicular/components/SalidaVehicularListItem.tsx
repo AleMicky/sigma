@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Eye,
   FilePlus2,
-  GitBranch,
   History,
   MapPin,
   Navigation,
@@ -19,6 +18,7 @@ import { cn } from "@/shared/lib/utils"
 
 import type { SalidaVehicular } from "../api/salida-vehicular.types"
 import { SalidaVehicularStatusBadge } from "./SalidaVehicularStatusBadge"
+import { getSalidaNextActionConfig } from "./salida-action.utils"
 
 export interface SalidaVehicularListItemProps {
   salida: SalidaVehicular
@@ -68,6 +68,9 @@ export function SalidaVehicularListItem({
   const isFinalizado = estadoNorm.includes("FINALIZ") || estadoNorm.includes("COMPLET")
   const isCancelado = estadoNorm.includes("CANCEL") || estadoNorm.includes("ANULAD")
   const isInactive = isFinalizado || isCancelado
+
+  const nextAction = getSalidaNextActionConfig(salida.estado, salida.destino)
+  const ActionIcon = nextAction.icon
 
   const vehiculoTexto = salida.marca
     ? `${salida.marca} ${salida.modelo ?? ""}`.trim()
@@ -144,11 +147,20 @@ export function SalidaVehicularListItem({
               size="xs"
               variant="outline"
               onClick={() => onExecuteAction(salida)}
-              className="h-6.5 gap-1 px-2 text-[11px] font-semibold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 shadow-2xs cursor-pointer"
-              title="Avanzar estado en BPMN"
+              className={cn(
+                "group/btn relative h-6.5 gap-1.5 px-2.5 text-[11px] font-semibold transition-all duration-200 cursor-pointer shadow-2xs active:scale-[0.98]",
+                nextAction.buttonClassName
+              )}
+              title={nextAction.title}
             >
-              <GitBranch className="size-3 text-indigo-600 dark:text-indigo-400" />
-              <span>Transición Flowable</span>
+              <span
+                className={cn(
+                  "size-1.5 rounded-full animate-pulse shrink-0",
+                  nextAction.dotClassName
+                )}
+              />
+              <ActionIcon className={cn("shrink-0", nextAction.iconClassName)} />
+              <span>{nextAction.label}</span>
             </Button>
           )}
 

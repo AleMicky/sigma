@@ -31,6 +31,8 @@ import {
 } from "@/shared/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 
+import { cn } from "@/shared/lib/utils"
+
 import { useEjecutarAccionSalidaMutation } from "../api/salida-vehicular.mutations"
 import { salidaVehicularQueries } from "../api/salida-vehicular.queries"
 import type { WorkflowAction } from "../api/salida-vehicular.types"
@@ -38,6 +40,7 @@ import { CancelarSalidaDialog } from "../components/CancelarSalidaDialog"
 import { EjecutarAccionFlowableDialog } from "../components/EjecutarAccionFlowableDialog"
 import { RegistrarBitacoraDialog } from "../components/RegistrarBitacoraDialog"
 import { SalidaVehicularStatusBadge } from "../components/SalidaVehicularStatusBadge"
+import { getSalidaNextActionConfig } from "../components/salida-action.utils"
 
 interface SalidaVehicularDetailPageProps {
   salidaId: string
@@ -69,6 +72,9 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
   const isFinalizado = salida?.estado?.toUpperCase().includes("FINALIZ")
   const isCancelado = salida?.estado?.toUpperCase().includes("CANCEL")
   const isInactive = isFinalizado || isCancelado
+
+  const nextAction = getSalidaNextActionConfig(salida?.estado, salida?.destino)
+  const ActionIcon = nextAction.icon
 
   const handleQuickExecute = async (action: WorkflowAction) => {
     if (!salida) return
@@ -155,10 +161,14 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
             <Button
               size="sm"
               onClick={() => setIsActionDialogOpen(true)}
-              className="text-xs font-semibold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+              className={cn(
+                "text-xs font-semibold gap-1.5 shadow-xs cursor-pointer",
+                nextAction.buttonClassName
+              )}
+              title={nextAction.title}
             >
-              <GitBranch className="h-4 w-4" />
-              Avanzar Flujo BPMN
+              <ActionIcon className={cn("size-3.5", nextAction.iconClassName)} />
+              <span>{nextAction.label}</span>
             </Button>
           )}
 

@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   Compass,
   Gauge,
-  GitBranch,
   Loader2,
   MapPin,
   Play,
@@ -23,11 +22,13 @@ import {
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { cn } from "@/shared/lib/utils"
 
 import { useEjecutarAccionSalidaMutation } from "../api/salida-vehicular.mutations"
 import { salidaVehicularQueries } from "../api/salida-vehicular.queries"
 import type { SalidaVehicular, WorkflowAction } from "../api/salida-vehicular.types"
 import { SalidaVehicularStatusBadge } from "./SalidaVehicularStatusBadge"
+import { getSalidaNextActionConfig } from "./salida-action.utils"
 
 interface EjecutarAccionFlowableDialogProps {
   open: boolean
@@ -61,6 +62,9 @@ export function EjecutarAccionFlowableDialog({
 
   const currentTask = tareaQuery.data
   const availableActions = accionesQuery.data?.actions ?? []
+
+  const nextAction = getSalidaNextActionConfig(salida?.estado, salida?.destino)
+  const ActionIcon = nextAction.icon
 
   const handleCaptureGPS = () => {
     if (!navigator.geolocation) {
@@ -115,12 +119,19 @@ export function EjecutarAccionFlowableDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[580px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-            <GitBranch className="h-5 w-5 text-indigo-500" />
-            Transición de Flujo BPMN Flowable
+          <DialogTitle className="flex items-center gap-2.5 text-base sm:text-lg font-bold">
+            <div
+              className={cn(
+                "flex size-7 items-center justify-center rounded-lg border shadow-2xs shrink-0",
+                nextAction.buttonClassName
+              )}
+            >
+              <ActionIcon className={cn("size-3.5", nextAction.iconClassName)} />
+            </div>
+            <span>{nextAction.label} &bull; Salida #{salida?.numero}</span>
           </DialogTitle>
-          <DialogDescription className="text-xs">
-            Avance el estado de la salida vehicular {salida?.numero} mediante las tareas configuradas en el motor BPMN.
+          <DialogDescription className="text-xs text-muted-foreground">
+            Registre los datos operativos de odómetro, geolocalización GPS y observaciones para ejecutar la acción.
           </DialogDescription>
         </DialogHeader>
 
