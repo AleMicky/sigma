@@ -141,6 +141,29 @@ export function EjecutarAccionFlowableDialog({
   const handleExecute = async (action: WorkflowAction) => {
     if (!salida) return
 
+    let currentLat = latitud
+    let currentLng = longitud
+
+    // Si aún no se capturaron coordenadas GPS y el navegador lo soporta, intentar una captura rápida
+    if ((!currentLat || !currentLng) && typeof window !== "undefined" && navigator.geolocation) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 3500,
+            maximumAge: 10000,
+          })
+        })
+        currentLat = pos.coords.latitude.toFixed(6)
+        currentLng = pos.coords.longitude.toFixed(6)
+        setLatitud(currentLat)
+        setLongitud(currentLng)
+        setGpsStatus("success")
+      } catch {
+        // Continuar si no se pudo obtener GPS
+      }
+    }
+
     const accionId = action.variable || action.value || action.name
 
     await accionMutation.mutateAsync({
@@ -148,8 +171,8 @@ export function EjecutarAccionFlowableDialog({
       accionId,
       data: {
         kilometraje: kilometraje ? parseFloat(kilometraje) : undefined,
-        latitud: latitud ? parseFloat(latitud) : undefined,
-        longitud: longitud ? parseFloat(longitud) : undefined,
+        latitud: currentLat ? parseFloat(currentLat) : undefined,
+        longitud: currentLng ? parseFloat(currentLng) : undefined,
         observacion: observacion.trim() || undefined,
         variables: {
           [action.variable]: action.value,
@@ -299,62 +322,93 @@ export function EjecutarAccionFlowableDialog({
                 </p>
               </div>
 
-              {/* Registro Interno de Ubicación GPS (Automático en segundo plano, sin campos de texto) */}
-              <div className="pt-0.5">
-                {activeGpsStatus === "locating" && (
-                  <div className="flex items-center gap-2 rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs text-blue-700 dark:text-blue-300">
-                    <Loader2 className="size-3.5 animate-spin text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span>Detectando ubicación GPS en segundo plano...</span>
+              {/* Registro Automático en Bitácora con Geolocalización GPS Interna */}
+              <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3 space-y-2">
+                <div className="flex items-start gap-2.5">
+                  <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 shrink-0 mt-0.5">
+                    <FileText className="size-3.5" />
                   </div>
-                )}
-
-                {activeGpsStatus === "success" && (
-                  <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="flex size-2 rounded-full bg-emerald-500 shrink-0" />
-                      <span className="font-medium text-emerald-800 dark:text-emerald-300 truncate">
-                        Ubicación GPS registrada internamente
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-bold text-foreground">
+                        Registro Automático en Bitácora
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                        Automático
                       </span>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={captureGPS}
-                      className="h-6 px-2 text-[11px] text-emerald-700 hover:text-emerald-800 hover:bg-emerald-500/15 dark:text-emerald-300 shrink-0 gap-1 cursor-pointer"
-                      title="Volver a capturar coordenadas"
-                    >
-                      <RefreshCw className="size-2.5" />
-                      Actualizar
-                    </Button>
+                    <p className="text-[11.5px] text-muted-foreground mt-0.5 leading-snug">
+                      {nextAction.type === "INICIAR" &&
+                        "Al iniciar, la bitácora se registrará automáticamente con la partida hacia el destino, geolocalización GPS interna y odómetro inicial."}
+                      {nextAction.type === "LLEGADA" &&
+                        "Al registrar llegada, la bitácora registrará automáticamente el arribo a destino con geolocalización GPS interna y fecha/hora."}
+                      {nextAction.type === "RETORNO" &&
+                        "Al iniciar retorno, la bitácora registrará automáticamente la partida hacia la base con geolocalización GPS."}
+                      {nextAction.type === "FINALIZAR" &&
+                        "Al finalizar la salida, la bitácora registrará automáticamente el cierre del viaje con odómetro final y geolocalización."}
+                      {nextAction.type === "AVANZAR" &&
+                        "La bitácora registrará automáticamente el hito operativo del flujo vehicular con geolocalización interna."}
+                    </p>
                   </div>
-                )}
+                </div>
 
-                {activeGpsStatus === "error" && (
-                  <div className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <AlertCircle className="size-3.5 text-amber-600 shrink-0" />
-                      <span className="truncate">GPS no disponible (se continuará sin coordenadas)</span>
+                {/* Estado de Geolocalización GPS Interna */}
+                <div className="pt-2 border-t border-emerald-500/15">
+                  {activeGpsStatus === "locating" && (
+                    <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                      <Loader2 className="size-3.5 animate-spin text-blue-600 dark:text-blue-400 shrink-0" />
+                      <span>Detectando ubicación GPS automática en segundo plano...</span>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={captureGPS}
-                      className="h-6 px-2 text-[11px] text-amber-700 hover:text-amber-800 hover:bg-amber-500/15 dark:text-amber-300 shrink-0 gap-1 cursor-pointer"
-                    >
-                      <RefreshCw className="size-2.5" />
-                      Reintentar
-                    </Button>
-                  </div>
-                )}
+                  )}
 
-                {activeGpsStatus === "unsupported" && (
-                  <div className="flex items-center gap-2 rounded-lg border border-muted bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                    <AlertCircle className="size-3.5 shrink-0" />
-                    <span>Navegador sin soporte de geolocalización.</span>
-                  </div>
-                )}
+                  {activeGpsStatus === "success" && (
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="flex size-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="font-medium text-emerald-800 dark:text-emerald-300 truncate">
+                          Ubicación GPS registrada internamente ({latitud}, {longitud})
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={captureGPS}
+                        className="h-6 px-2 text-[11px] text-emerald-700 hover:text-emerald-800 hover:bg-emerald-500/15 dark:text-emerald-300 shrink-0 gap-1 cursor-pointer"
+                        title="Volver a capturar coordenadas"
+                      >
+                        <RefreshCw className="size-2.5" />
+                        Actualizar GPS
+                      </Button>
+                    </div>
+                  )}
+
+                  {activeGpsStatus === "error" && (
+                    <div className="flex items-center justify-between text-xs text-amber-800 dark:text-amber-300">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <AlertCircle className="size-3.5 text-amber-600 shrink-0" />
+                        <span className="truncate">GPS no disponible (se registrará con hora y odómetro)</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={captureGPS}
+                        className="h-6 px-2 text-[11px] text-amber-700 hover:text-amber-800 hover:bg-amber-500/15 dark:text-amber-300 shrink-0 gap-1 cursor-pointer"
+                      >
+                        <RefreshCw className="size-2.5" />
+                        Reintentar
+                      </Button>
+                    </div>
+                  )}
+
+                  {activeGpsStatus === "unsupported" && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <AlertCircle className="size-3.5 shrink-0" />
+                      <span>Navegador sin soporte de geolocalización.</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Observaciones */}

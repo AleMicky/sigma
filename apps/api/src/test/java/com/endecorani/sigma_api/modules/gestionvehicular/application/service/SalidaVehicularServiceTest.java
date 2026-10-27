@@ -203,6 +203,13 @@ class SalidaVehicularServiceTest {
                         && ev.getTipoEvento().equals("Iniciar Salida")
                         && ev.getKilometraje().compareTo(new BigDecimal("12500.50")) == 0
         ));
+        verify(bitacoraRepository).save(argThat(bit ->
+                bit.getSalidaVehicularId().equals(salidaId)
+                        && bit.getTipo().equals("ACTIVIDAD")
+                        && bit.getLatitud().compareTo(new BigDecimal("-17.3895")) == 0
+                        && bit.getLongitud().compareTo(new BigDecimal("-66.1568")) == 0
+                        && bit.getDescripcion().contains("Inicio de salida vehicular")
+        ));
     }
 
     @Test

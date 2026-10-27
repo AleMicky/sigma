@@ -119,9 +119,12 @@ export function useEjecutarAccionSalidaMutation() {
       void queryClient.invalidateQueries({
         queryKey: salidaVehicularKeys.eventos(entity.id),
       })
+      void queryClient.invalidateQueries({
+        queryKey: salidaVehicularKeys.bitacoras(entity.id),
+      })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.activas() })
-      toast.success("Acción de flujo ejecutada correctamente")
+      toast.success("Acción de flujo y registro en bitácora ejecutados correctamente")
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
