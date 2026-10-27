@@ -89,43 +89,39 @@ public class SalidaVehicularService {
 
         String numero = correlativoService.generar(CorrelativoCodigo.SALIDA_VEHICULAR, LocalDate.now().getYear());
 
-        UUID salidaId = UUID.randomUUID();
-
-        // Iniciar proceso Flowable
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("salidaId", salidaId.toString());
-        variables.put("empleadoId", empleadoId.toString());
-        variables.put("activoId", request.activoId().toString());
-        variables.put("origen", request.origen());
-        variables.put("destino", request.destino());
-        variables.put("motivo", request.motivo());
-
-        String processInstanceId = null;
-        String estadoInicial = "REGISTRADA";
-
-        try {
-            processInstanceId = workflowApplicationService.iniciar(WORKFLOW_CODIGO, salidaId.toString(), variables);
-            WorkflowTaskResponse task = workflowApplicationService.obtenerTareaActual(processInstanceId);
-            if (task != null && task.name() != null) {
-                estadoInicial = extraerEstado(task.name());
-            }
-        } catch (Exception ex) {
-            log.warn("No se pudo iniciar el proceso Flowable para la salida vehicular: {}", ex.getMessage());
-        }
-
         SalidaVehicular salida = SalidaVehicular.builder()
-                .id(salidaId)
                 .numero(numero)
                 .activoId(request.activoId())
                 .empleadoId(empleadoId)
                 .motivo(request.motivo().trim())
                 .origen(request.origen().trim())
                 .destino(request.destino().trim())
-                .estado(estadoInicial)
-                .processInstanceId(processInstanceId)
+                .estado("REGISTRADA")
                 .build();
 
         SalidaVehicular guardada = salidaRepository.save(salida);
+
+        // Iniciar proceso Flowable
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("salidaId", guardada.getId().toString());
+        variables.put("empleadoId", empleadoId.toString());
+        variables.put("activoId", request.activoId().toString());
+        variables.put("origen", request.origen());
+        variables.put("destino", request.destino());
+        variables.put("motivo", request.motivo());
+
+        try {
+            String processInstanceId = workflowApplicationService.iniciar(WORKFLOW_CODIGO, guardada.getId().toString(), variables);
+            guardada.setProcessInstanceId(processInstanceId);
+            WorkflowTaskResponse task = workflowApplicationService.obtenerTareaActual(processInstanceId);
+            if (task != null && task.name() != null) {
+                guardada.setEstado(extraerEstado(task.name()));
+            }
+            guardada = salidaRepository.save(guardada);
+        } catch (Exception ex) {
+            log.warn("No se pudo iniciar el proceso Flowable para la salida vehicular: {}", ex.getMessage());
+        }
+
         return toResponse(guardada);
     }
 
@@ -233,7 +229,6 @@ public class SalidaVehicularService {
         }
 
         SalidaVehicularEvento evento = SalidaVehicularEvento.builder()
-                .id(UUID.randomUUID())
                 .salidaVehicularId(salida.getId())
                 .empleadoId(empleadoId)
                 .tipoEvento("CANCELACION")
@@ -344,7 +339,6 @@ public class SalidaVehicularService {
 
         String tipoEvento = matchingAction != null ? matchingAction.name() : actionValue;
         SalidaVehicularEvento evento = SalidaVehicularEvento.builder()
-                .id(UUID.randomUUID())
                 .salidaVehicularId(salida.getId())
                 .empleadoId(empleadoId)
                 .tipoEvento(tipoEvento)
@@ -415,7 +409,6 @@ public class SalidaVehicularService {
         }
 
         BitacoraVehicular bitacora = BitacoraVehicular.builder()
-                .id(UUID.randomUUID())
                 .salidaVehicularId(salida.getId())
                 .empleadoId(empleadoId)
                 .tipo(request.tipo().trim().toUpperCase())

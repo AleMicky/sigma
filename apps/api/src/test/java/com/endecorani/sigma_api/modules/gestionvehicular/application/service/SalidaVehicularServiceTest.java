@@ -131,7 +131,13 @@ class SalidaVehicularServiceTest {
         when(workflowApplicationService.obtenerTareaActual("proc-123")).thenReturn(
                 new WorkflowTaskResponse("task-1", "REGISTRADA - Iniciar Salida", "iniciarSalida", null, "proc-123", "def-1")
         );
-        when(salidaRepository.save(any(SalidaVehicular.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(salidaRepository.save(any(SalidaVehicular.class))).thenAnswer(invocation -> {
+            SalidaVehicular s = invocation.getArgument(0);
+            if (s.getId() == null) {
+                s.setId(salidaId);
+            }
+            return s;
+        });
         ActivoEntity activo = new ActivoEntity();
         activo.setId(activoId);
         activo.setCodigo("VEH-01");

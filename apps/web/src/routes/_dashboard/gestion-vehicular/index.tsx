@@ -1,8 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
-import { GestionVehicularDashboardPage } from "@/modules/gestionvehicular/dashboard/pages/GestionVehicularDashboardPage"
+import { routes } from "@/app/config"
+
 
 export const Route = createFileRoute("/_dashboard/gestion-vehicular/")({
-  component: GestionVehicularDashboardPage,
-})
+  beforeLoad: () => {
+    throw redirect({
 
+      to: routes.gestionVehicular.dashboard,
+
+    })
+  },
+})
