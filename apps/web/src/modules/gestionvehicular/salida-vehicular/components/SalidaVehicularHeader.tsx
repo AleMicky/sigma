@@ -83,6 +83,7 @@ export function SalidaVehicularHeader({
 
         {/* Acciones en pantallas móviles (< md) */}
         <div className="flex items-center gap-1.5 shrink-0 md:hidden self-center sm:self-auto">
+          {extraActions}
           {showRefresh && (
             <RefreshButton
               size="sm"
