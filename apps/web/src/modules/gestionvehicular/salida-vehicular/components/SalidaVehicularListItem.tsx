@@ -6,7 +6,7 @@ import {
   Car,
   ChevronRight,
   Eye,
-  FilePlus2,
+  FileText,
   History,
   MapPin,
   Navigation,
@@ -171,9 +171,9 @@ export function SalidaVehicularListItem({
               variant="outline"
               onClick={() => onAddBitacora(salida)}
               className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-2xs cursor-pointer"
-              title="Registrar bitácora o novedad del viaje"
+              title="Consultar bitácora en tiempo real"
             >
-              <FilePlus2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+              <FileText className="size-3 text-emerald-600 dark:text-emerald-400" />
               <span className="hidden xs:inline-block">Bitácora</span>
             </Button>
           )}

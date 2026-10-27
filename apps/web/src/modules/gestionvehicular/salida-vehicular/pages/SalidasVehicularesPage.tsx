@@ -1,12 +1,25 @@
 import { useCallback, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { AlertCircle, Car, Plus, RefreshCw } from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
+import {
+  Activity,
+  AlertCircle,
+  BarChart3,
+  Car,
+  Compass,
+  Gauge,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  SearchX,
+} from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
+import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { WorkflowHistoryDialog } from "@/modules/workflow"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
@@ -20,8 +33,8 @@ import type {
   SalidaVehicularFiltros,
 } from "../api/salida-vehicular.types"
 import { CancelarSalidaDialog } from "../components/CancelarSalidaDialog"
+import { ConsultarBitacoraDialog } from "../components/ConsultarBitacoraDialog"
 import { EjecutarAccionFlowableDialog } from "../components/EjecutarAccionFlowableDialog"
-import { RegistrarBitacoraDialog } from "../components/RegistrarBitacoraDialog"
 import { RegistrarSalidaDialog } from "../components/RegistrarSalidaDialog"
 import { SalidaVehicularFilterToolbar } from "../components/SalidaVehicularFilterToolbar"
 import { SalidaVehicularHeader } from "../components/SalidaVehicularHeader"
@@ -34,7 +47,7 @@ import {
   type SalidaVehicularResumen,
 } from "../components/SalidaVehicularResumenCards"
 
-const PAGE_SIZE = appConfig.pagination?.defaultPageSize ?? 20
+const DEFAULT_PAGE_SIZE = appConfig.pagination?.defaultPageSize ?? 20
 
 const ESTADO_LABELS: Record<string, string> = {
   INICIADO: "Iniciadas",
@@ -56,7 +69,9 @@ function matchesPattern(value: string, patterns: readonly string[]): boolean {
   return patterns.some((p) => value.includes(p))
 }
 
-function classifyEstado(rawEstado?: string | null): "iniciada" | "transito" | "retorno" | "finalizada" | "cancelada" {
+function classifyEstado(
+  rawEstado?: string | null
+): "iniciada" | "transito" | "retorno" | "finalizada" | "cancelada" {
   const est = (rawEstado || "").toUpperCase().trim()
   if (matchesPattern(est, ESTADO_PATTERNS.iniciada)) return "iniciada"
   if (matchesPattern(est, ESTADO_PATTERNS.transito)) return "transito"
@@ -137,66 +152,120 @@ function getSelectedEstadoLabel(selectedEstado: string): string | undefined {
 interface SalidasEmptyStateProps {
   searchQuery: string
   selectedEstado: string
+  selectedEstadoLabel?: string
   onClearFilters: () => void
   onCreate: () => void
-}
-
-function getEmptyStateInfo(searchQuery: string, selectedEstado: string) {
-  if (searchQuery) {
-    return {
-      title: "No se encontraron salidas vehiculares coincidentes",
-      description: `No se hallaron resultados para "${searchQuery}". Prueba con otro término o limpia la búsqueda.`,
-    }
-  }
-  if (selectedEstado) {
-    return {
-      title: "No hay salidas vehiculares con los filtros seleccionados",
-      description: "Puedes seleccionar otros estados o restablecer los filtros.",
-    }
-  }
-  return {
-    title: "No hay salidas vehiculares registradas",
-    description: "Registra una salida vehicular para comenzar el seguimiento de viajes y bitácoras.",
-  }
 }
 
 function SalidasEmptyState({
   searchQuery,
   selectedEstado,
+  selectedEstadoLabel,
   onClearFilters,
   onCreate,
 }: Readonly<SalidasEmptyStateProps>) {
-  const hasFilters = Boolean(searchQuery || selectedEstado)
-  const { title, description } = getEmptyStateInfo(searchQuery, selectedEstado)
+  const hasFilters = Boolean(searchQuery.trim() || (selectedEstado && selectedEstado !== "ALL"))
 
+  if (hasFilters) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center rounded-xl border border-dashed border-border/80 bg-muted/10 my-4 animate-in fade-in-50">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-muted/60 border border-border/80 shadow-2xs text-muted-foreground/80 mb-3.5">
+          <SearchX className="size-7" />
+        </div>
+        <h3 className="font-heading text-base font-semibold text-foreground mb-1">
+          No se encontraron salidas vehiculares coincidentes
+        </h3>
+        <p className="text-xs text-muted-foreground max-w-md mb-4 leading-relaxed">
+          No hay salidas que coincidan con los criterios de búsqueda y filtros seleccionados.
+        </p>
+
+        <div className="flex items-center gap-1.5 flex-wrap justify-center mb-4">
+          {searchQuery.trim() && (
+            <Badge variant="secondary" className="text-xs px-2.5 py-0.5">
+              Búsqueda: &ldquo;{searchQuery.trim()}&rdquo;
+            </Badge>
+          )}
+          {selectedEstado && selectedEstado !== "ALL" && (
+            <Badge variant="secondary" className="text-xs px-2.5 py-0.5 bg-primary/10 text-primary border-primary/20">
+              Estado: {selectedEstadoLabel ?? selectedEstado}
+            </Badge>
+          )}
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onClearFilters}
+          className="gap-1.5 text-xs font-medium cursor-pointer shadow-2xs hover:bg-muted"
+        >
+          <RotateCcw className="size-3.5" />
+          <span>Restablecer todos los filtros</span>
+        </Button>
+      </div>
+    )
+  }
+
+  // Estado cuando no hay ninguna salida registrada en el sistema
   return (
-    <div className="flex flex-1 items-center justify-center p-6">
-      <EmptyState
-        icon={<Car className="size-8 text-muted-foreground/60" />}
-        title={title}
-        description={description}
-        action={
-          hasFilters ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClearFilters}
-              className="mt-2 text-xs font-medium cursor-pointer shadow-2xs"
-            >
-              Limpiar todos los filtros
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              onClick={onCreate}
-              className="mt-2 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
-            >
-              <Plus className="size-3.5" />
-              <span>Registrar Primera Salida</span>
-            </Button>
-          )
-        }
-      />
+    <div className="flex flex-col items-center justify-center p-8 sm:p-10 text-center rounded-2xl border border-dashed border-border bg-gradient-to-b from-card/80 to-muted/20 my-4 animate-in fade-in-50">
+      <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 text-primary border border-primary/25 shadow-xs mb-4">
+        <Car className="size-8" />
+      </div>
+
+      <h3 className="font-heading text-lg font-bold text-foreground mb-1.5">
+        Comienza a gestionar tus salidas vehiculares
+      </h3>
+      <p className="text-xs sm:text-sm text-muted-foreground max-w-lg mb-6 leading-relaxed">
+        Despacha vehículos de la flota, monitorea el trayecto en tiempo real con Flowable BPMN y mantén un registro confiable de bitácoras y novedades.
+      </p>
+
+      {/* 3 Pilares informativos */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-xl mb-6 text-left">
+        <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-card/60 p-3 shadow-2xs">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <Gauge className="size-3.5" />
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold text-foreground">Despacho & Kilometraje</h4>
+            <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+              Control de odómetro inicial y chofer responsable.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-card/60 p-3 shadow-2xs">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <Compass className="size-3.5" />
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold text-foreground">Seguimiento en Ruta</h4>
+            <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+              Transiciones automáticas por workflow Flowable.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-card/60 p-3 shadow-2xs">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <Activity className="size-3.5" />
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold text-foreground">Bitácoras y Cierre</h4>
+            <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+              Registro de novedades y retorno a base.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <Button
+        size="sm"
+        onClick={onCreate}
+        className="text-xs font-semibold gap-1.5 shadow-sm shadow-primary/20 px-4 h-8.5 cursor-pointer"
+      >
+        <Plus className="size-4" />
+        <span>Registrar Primera Salida</span>
+      </Button>
     </div>
   )
 }
@@ -210,6 +279,7 @@ interface SalidasVehicularesContentProps {
   isFetching: boolean
   searchQuery: string
   selectedEstado: string
+  selectedEstadoLabel?: string
   onRefresh: () => void
   onClearFilters: () => void
   onCreate: () => void
@@ -229,6 +299,7 @@ function SalidasVehicularesContent({
   isFetching,
   searchQuery,
   selectedEstado,
+  selectedEstadoLabel,
   onRefresh,
   onClearFilters,
   onCreate,
@@ -276,6 +347,7 @@ function SalidasVehicularesContent({
       <SalidasEmptyState
         searchQuery={searchQuery}
         selectedEstado={selectedEstado}
+        selectedEstadoLabel={selectedEstadoLabel}
         onClearFilters={onClearFilters}
         onCreate={onCreate}
       />
@@ -288,7 +360,7 @@ function SalidasVehicularesContent({
     <div className="space-y-3">
       <div
         className={cn(
-          "flex flex-col gap-3 transition-opacity duration-200",
+          "flex flex-col gap-2.5 transition-opacity duration-200",
           isFetching && !isLoading && "opacity-75"
         )}
       >
@@ -308,7 +380,7 @@ function SalidasVehicularesContent({
         <Pagination
           page={pageData}
           onPageChange={onPageChange}
-          className="border-t pt-2 shrink-0 text-xs"
+          className="border-t border-border/60 pt-2 shrink-0 text-xs rounded-b-xl"
         />
       )}
     </div>
@@ -316,27 +388,37 @@ function SalidasVehicularesContent({
 }
 
 export function SalidasVehicularesPage() {
-  const [selectedEstado, setSelectedEstado] = useState<string>("")
+  const navigate = useNavigate()
 
-  // Diálogos y acciones
+  const [selectedEstado, setSelectedEstado] = useState<string>("")
+  const [sortOption, setSortOption] = useState<string>("createdAt:DESC")
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE)
+
+  // Diálogos y acciones operativas
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [actionSalida, setActionSalida] = useState<SalidaVehicular | null>(null)
   const [bitacoraSalida, setBitacoraSalida] = useState<SalidaVehicular | null>(null)
   const [cancelSalida, setCancelSalida] = useState<SalidaVehicular | null>(null)
   const [historySalida, setHistorySalida] = useState<SalidaVehicular | null>(null)
 
-  // Búsqueda paginada reactiva
+  // Búsqueda paginada reactiva con debounce
   const search = usePaginatedSearch({
     debounceMs: 300,
   })
 
-  // Consulta de Salidas Vehiculares
+  // Descomponer ordenamiento (sortBy y direction)
+  const [sortBy, direction] = useMemo(() => {
+    const [s = "createdAt", d = "DESC"] = sortOption.split(":")
+    return [s, d as "ASC" | "DESC"]
+  }, [sortOption])
+
+  // Parámetros de consulta
   const queryParams = useMemo(() => {
     const params: SalidaVehicularFiltros = {
       page: search.page,
-      size: PAGE_SIZE,
-      sortBy: "createdAt",
-      direction: "DESC",
+      size: pageSize,
+      sortBy,
+      direction,
     }
     if (search.query) {
       params.search = search.query
@@ -345,11 +427,11 @@ export function SalidasVehicularesPage() {
       params.estado = selectedEstado
     }
     return params
-  }, [search.page, search.query, selectedEstado])
+  }, [search.page, pageSize, sortBy, direction, search.query, selectedEstado])
 
   const salidasQuery = useQuery(salidaVehicularQueries.list(queryParams))
 
-  // Consulta de Reporte General para métricas globales
+  // Consulta de Reporte General para métricas globales acumuladas
   const reporteGeneralQuery = useQuery({
     ...salidaVehicularQueries.reporteGeneral(),
     staleTime: 1000 * 60 * 3,
@@ -361,7 +443,7 @@ export function SalidasVehicularesPage() {
   )
   const totalElements = salidasQuery.data?.totalElements ?? 0
 
-  // Resumen calculado para tarjetas KPI interactivas
+  // Resumen reactivo para KPI cards y barra porcentual
   const resumen = useMemo(
     () => calculateResumen(reporteGeneralQuery.data, totalElements, salidas),
     [reporteGeneralQuery.data, totalElements, salidas]
@@ -377,10 +459,27 @@ export function SalidasVehicularesPage() {
     [search]
   )
 
+  const handleSortChange = useCallback(
+    (newSort: string) => {
+      setSortOption(newSort)
+      search.setPage(0)
+    },
+    [search]
+  )
+
+  const handlePageSizeChange = useCallback(
+    (newSize: number) => {
+      setPageSize(newSize)
+      search.setPage(0)
+    },
+    [search]
+  )
+
   const handleClearAllFilters = useCallback(() => {
     search.setSearch("")
     search.setPage(0)
     setSelectedEstado("")
+    setSortOption("createdAt:DESC")
   }, [search])
 
   const selectedEstadoLabel = useMemo(
@@ -398,18 +497,35 @@ export function SalidasVehicularesPage() {
   return (
     <PageShell
       layout="scroll"
-      className="w-full max-w-none px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 lg:px-6 space-y-3"
+      className="w-full max-w-none px-2.5 py-2.5 sm:px-4 sm:py-3 md:px-5 lg:px-6 space-y-3.5"
     >
-      {/* 1. Encabezado principal */}
+      {/* 1. Encabezado principal con acceso a nueva salida y reportes */}
       <SalidaVehicularHeader
         queries={[salidasQuery, reporteGeneralQuery]}
         totalCount={resumen.total}
         onRefresh={handleRefresh}
         isRefreshing={salidasQuery.isRefetching || reporteGeneralQuery.isRefetching}
         onCreate={() => setIsCreateOpen(true)}
+        extraActions={
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            onClick={() =>
+              navigate({
+                to: "/gestion-vehicular/reportes/salidas-vehiculares",
+              })
+            }
+            className="h-7.5 px-2.5 text-xs font-medium cursor-pointer shadow-2xs gap-1.5 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-all"
+            title="Ver reportes y métricas analíticas"
+          >
+            <BarChart3 className="size-3.5 text-primary" />
+            <span className="hidden sm:inline-block">Reportes</span>
+          </Button>
+        }
       />
 
-      {/* 2. Tarjetas KPI de Resumen interactivo con barra porcentual y elevación */}
+      {/* 2. Tarjetas KPI de Resumen interactivo con barra porcentual de distribución */}
       <SalidaVehicularResumenCards
         resumen={resumen}
         isLoading={reporteGeneralQuery.isLoading && !reporteGeneralQuery.data}
@@ -417,27 +533,30 @@ export function SalidasVehicularesPage() {
         onSelectEstado={handleSelectEstado}
       />
 
-      {/* 3. Barra de Búsqueda y Filtros */}
-      <SalidaVehicularFilterToolbar
-        searchQuery={search.search}
-        onSearchChange={search.setSearch}
-        selectedEstado={selectedEstado}
-        selectedEstadoLabel={selectedEstadoLabel}
-        onClearEstado={() => setSelectedEstado("")}
-        onSelectEstado={handleSelectEstado}
-        totalResults={resumen.total}
-        filteredCount={salidasQuery.data?.totalElements}
-        onClearAll={handleClearAllFilters}
-      />
-
-      {/* 4. Listado y Estados UX */}
-      <div className="relative flex flex-col space-y-2.5">
-        {/* Barra indicadora de sincronización en segundo plano */}
+      {/* 3. Panel de Búsqueda, Filtrado Avanzado, Ordenamiento y Listado */}
+      <div className="relative flex flex-col space-y-3 rounded-2xl border border-border/70 bg-card/40 p-3 sm:p-4 shadow-2xs backdrop-blur-xs">
+        {/* Barra indicadora sutil de sincronización en segundo plano */}
         {isBackgroundSyncing && (
-          <div className="absolute -top-1 left-0 right-0 z-10 h-0.5 overflow-hidden bg-primary/10 rounded-full">
+          <div className="absolute -top-1 left-3 right-3 z-10 h-0.5 overflow-hidden bg-primary/10 rounded-full">
             <div className="h-full w-1/3 animate-[shimmer_1.5s_infinite] bg-primary rounded-full" />
           </div>
         )}
+
+        <SalidaVehicularFilterToolbar
+          searchQuery={search.search}
+          onSearchChange={search.setSearch}
+          selectedEstado={selectedEstado}
+          selectedEstadoLabel={selectedEstadoLabel}
+          onClearEstado={() => setSelectedEstado("")}
+          onSelectEstado={handleSelectEstado}
+          sortOption={sortOption}
+          onSortChange={handleSortChange}
+          pageSize={pageSize}
+          onPageSizeChange={handlePageSizeChange}
+          totalResults={resumen.total}
+          filteredCount={salidasQuery.data?.totalElements}
+          onClearAll={handleClearAllFilters}
+        />
 
         <SalidasVehicularesContent
           isLoading={salidasQuery.isLoading}
@@ -448,6 +567,7 @@ export function SalidasVehicularesPage() {
           isFetching={salidasQuery.isFetching}
           searchQuery={search.debouncedSearch}
           selectedEstado={selectedEstado}
+          selectedEstadoLabel={selectedEstadoLabel}
           onRefresh={handleRefresh}
           onClearFilters={handleClearAllFilters}
           onCreate={() => setIsCreateOpen(true)}
@@ -459,7 +579,7 @@ export function SalidasVehicularesPage() {
         />
       </div>
 
-      {/* 5. Diálogos Operativos y de Workflow */}
+      {/* 4. Diálogos Operativos y de Workflow */}
       <RegistrarSalidaDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
@@ -471,11 +591,10 @@ export function SalidasVehicularesPage() {
         salida={actionSalida}
       />
 
-      <RegistrarBitacoraDialog
+      <ConsultarBitacoraDialog
         open={Boolean(bitacoraSalida)}
         onOpenChange={(open) => !open && setBitacoraSalida(null)}
-        salidaId={bitacoraSalida?.id ?? ""}
-        salidaNumero={bitacoraSalida?.numero}
+        salida={bitacoraSalida}
       />
 
       <CancelarSalidaDialog
@@ -495,4 +614,3 @@ export function SalidasVehicularesPage() {
     </PageShell>
   )
 }
-

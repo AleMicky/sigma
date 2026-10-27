@@ -350,6 +350,19 @@ public class SalidaVehicularService {
                 .build();
         eventoRepository.save(evento);
 
+        // Registrar automáticamente la entrada en bitácora vehicular con geolocalización y odómetro del hito
+        String descripcionBitacora = construirDescripcionBitacoraAutomatica(salida, tipoEvento, actionValue, request);
+        BitacoraVehicular bitacora = BitacoraVehicular.builder()
+                .salidaVehicularId(salida.getId())
+                .empleadoId(empleadoId)
+                .tipo(com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoBitacoraVehicular.ACTIVIDAD.name())
+                .fechaHora(Instant.now())
+                .descripcion(descripcionBitacora)
+                .latitud(request != null ? request.latitud() : null)
+                .longitud(request != null ? request.longitud() : null)
+                .build();
+        bitacoraRepository.save(bitacora);
+
         // Actualizar estado de la salida según el nuevo estado del proceso
         if (resultado == null || resultado.taskId() == null) {
             // El proceso completó todas las tareas BPMN
@@ -651,4 +664,42 @@ public class SalidaVehicularService {
         }
         return result;
     }
+
+    private String construirDescripcionBitacoraAutomatica(
+            SalidaVehicular salida,
+            String tipoEvento,
+            String actionValue,
+            EjecutarAccionSalidaRequest request
+    ) {
+        String base = (tipoEvento != null && !tipoEvento.isBlank())
+                ? tipoEvento.toUpperCase(Locale.ROOT)
+                : (actionValue != null ? actionValue.toUpperCase(Locale.ROOT) : "");
+        StringBuilder desc = new StringBuilder();
+
+        if (base.contains("INICIAR") || base.contains("PARTIDA") || base.contains("SALIDA")) {
+            desc.append("Inicio de salida vehicular hacia ").append(salida.getDestino());
+        } else if (base.contains("LLEGAD") || base.contains("DESTINO")) {
+            desc.append("Llegada al punto de destino: ").append(salida.getDestino());
+        } else if (base.contains("RETORN")) {
+            desc.append("Inicio de trayecto de retorno hacia base ").append(salida.getOrigen()).append(" desde ").append(salida.getDestino());
+        } else if (base.contains("FINALIZ") || base.contains("CIERRE") || base.contains("COMPLET")) {
+            desc.append("Finalización de salida vehicular y arribo a base ").append(salida.getOrigen());
+        } else {
+            desc.append(tipoEvento != null ? tipoEvento : "Transición de estado operativo");
+            if (salida.getDestino() != null) {
+                desc.append(" (Ruta: ").append(salida.getOrigen()).append(" -> ").append(salida.getDestino()).append(")");
+            }
+        }
+
+        if (request != null && request.kilometraje() != null) {
+            desc.append(" - Odómetro: ").append(request.kilometraje()).append(" km");
+        }
+
+        if (request != null && request.observacion() != null && !request.observacion().isBlank()) {
+            desc.append(" - Obs: ").append(request.observacion().trim());
+        }
+
+        return desc.toString();
+    }
 }
+

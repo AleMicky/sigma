@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Car,
   Compass,
-  FilePlus2,
   FileText,
   Gauge,
   GitBranch,
@@ -38,7 +37,6 @@ import { salidaVehicularQueries } from "../api/salida-vehicular.queries"
 import type { WorkflowAction } from "../api/salida-vehicular.types"
 import { CancelarSalidaDialog } from "../components/CancelarSalidaDialog"
 import { EjecutarAccionFlowableDialog } from "../components/EjecutarAccionFlowableDialog"
-import { RegistrarBitacoraDialog } from "../components/RegistrarBitacoraDialog"
 import { SalidaVehicularStatusBadge } from "../components/SalidaVehicularStatusBadge"
 import { getSalidaNextActionConfig } from "../components/salida-action.utils"
 
@@ -49,7 +47,6 @@ interface SalidaVehicularDetailPageProps {
 export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPageProps) {
   const navigate = useNavigate()
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false)
-  const [isBitacoraDialogOpen, setIsBitacoraDialogOpen] = useState(false)
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
 
   // Queries
@@ -169,18 +166,6 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
             >
               <ActionIcon className={cn("size-3.5", nextAction.iconClassName)} />
               <span>{nextAction.label}</span>
-            </Button>
-          )}
-
-          {!isCancelado && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsBitacoraDialogOpen(true)}
-              className="text-xs gap-1.5"
-            >
-              <FilePlus2 className="h-4 w-4 text-emerald-600" />
-              Nueva Bitácora
             </Button>
           )}
 
@@ -451,20 +436,16 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
               <div>
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                   <FileText className="h-4 w-4 text-emerald-500" />
-                  Bitácora de Novedades e Incidentes
+                  Bitácora de Salida Vehicular
                 </CardTitle>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Registro de eventualidades ocurridas durante la ejecución del viaje.
+                  Registros generados automáticamente en tiempo real con geolocalización GPS.
                 </p>
               </div>
-              <Button
-                size="sm"
-                onClick={() => setIsBitacoraDialogOpen(true)}
-                className="text-xs gap-1.5"
-              >
-                <FilePlus2 className="h-3.5 w-3.5" />
-                Registrar Entrada
-              </Button>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Automático en Tiempo Real
+              </span>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
@@ -602,13 +583,6 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
         open={isActionDialogOpen}
         onOpenChange={setIsActionDialogOpen}
         salida={salida}
-      />
-
-      <RegistrarBitacoraDialog
-        open={isBitacoraDialogOpen}
-        onOpenChange={setIsBitacoraDialogOpen}
-        salidaId={salida.id}
-        salidaNumero={salida.numero}
       />
 
       <CancelarSalidaDialog

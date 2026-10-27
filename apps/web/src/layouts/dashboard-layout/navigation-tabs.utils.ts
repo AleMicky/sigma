@@ -47,9 +47,12 @@ export const PATH_TITLES: Record<string, string> = {
   "/mantenimientos/tipos-mantenimiento": "Tipos de Mantenimiento",
   "/mantenimientos/prioridades": "Prioridades",
   "/mantenimientos/controles-activos": "Controles de Activos",
+  "/mantenimientos/programaciones-mantenimiento": "Programaciones de Mantenimiento",
   "/gestion-vehicular": "Gestión Vehicular",
+  "/gestion-vehicular/dashboard-gestion-vehicular": "Dashboard Vehicular",
   "/gestion-vehicular/solicitudes": "Solicitudes de Vehículos",
   "/gestion-vehicular/asignaciones": "Asignación Vehicular",
+  "/gestion-vehicular/salidas": "Salidas Vehiculares",
   "/gestion-vehicular/mis-viajes": "Mis Viajes",
   "/gestion-vehicular/calendario-reservas": "Calendario de Reservas",
   "/gestion-vehicular/configuraciones/conductores": "Conductores",
@@ -58,6 +61,7 @@ export const PATH_TITLES: Record<string, string> = {
   "/gestion-vehicular/reportes/bitacora": "Bitácora Vehicular",
   "/gestion-vehicular/reportes/consumo-combustible": "Consumo de Combustible",
   "/gestion-vehicular/reportes/historial-viajes": "Historial de Viajes",
+  "/gestion-vehicular/reportes/salidas-vehiculares": "Reporte de Salidas Vehiculares",
   "/gestion-vehicular/controles-activos/nuevo": "Control de Activo Vehicular",
   "/organizacion": "Organización",
   "/organizacion/empleados": "Empleados",
@@ -77,6 +81,7 @@ export const PATH_TITLES: Record<string, string> = {
   "/seguridad/usuarios": "Usuarios",
   "/seguridad/roles": "Roles",
   "/seguridad/menus": "Menús",
+  "/seguridad/permisos": "Permisos",
   "/perfil": "Mi Perfil",
 }
 
