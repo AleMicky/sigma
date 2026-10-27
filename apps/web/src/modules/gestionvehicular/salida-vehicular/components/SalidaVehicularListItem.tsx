@@ -8,8 +8,6 @@ import {
   Eye,
   FileText,
   History,
-  MapPin,
-  Navigation,
   Quote,
 } from "lucide-react"
 
@@ -88,8 +86,17 @@ export function SalidaVehicularListItem({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={handleNavigateDetail}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          handleNavigateDetail()
+        }
+      }}
       className={cn(
-        "group relative rounded-xl border border-border/80 bg-card hover:bg-card/95 p-3 sm:p-3.5 shadow-2xs transition-all duration-200 hover:shadow-xs space-y-2.5",
+        "group relative rounded-xl border border-border/70 bg-card hover:bg-card/95 hover:border-primary/40 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all duration-200 space-y-3 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         isFinalizado && "border-l-3.5 border-l-emerald-500",
         isCancelado && "border-l-3.5 border-l-rose-500 opacity-90",
         !isInactive && "border-l-3.5 border-l-primary",
@@ -97,12 +104,16 @@ export function SalidaVehicularListItem({
       )}
     >
       {/* 1. CABECERA: Folio, Estado, Fecha y Acciones */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/50 pb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/50 pb-2.5">
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={handleNavigateDetail}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleNavigateDetail()
+            }}
             className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all cursor-pointer shadow-2xs"
+            title="Ir al detalle"
           >
             {salida.numero}
           </button>
@@ -126,13 +137,16 @@ export function SalidaVehicularListItem({
         </div>
 
         {/* Acciones Rápidas */}
-        <div className="flex items-center gap-1 flex-wrap justify-end">
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
           {onTraceability && salida.processInstanceId && (
             <Button
               type="button"
               size="xs"
               variant="outline"
-              onClick={() => onTraceability(salida)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onTraceability(salida)
+              }}
               className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 shadow-2xs cursor-pointer"
               title="Ver trazabilidad de Flowable BPMN"
             >
@@ -146,7 +160,10 @@ export function SalidaVehicularListItem({
               type="button"
               size="xs"
               variant="outline"
-              onClick={() => onExecuteAction(salida)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onExecuteAction(salida)
+              }}
               className={cn(
                 "group/btn relative h-6.5 gap-1.5 px-2.5 text-[11px] font-semibold transition-all duration-200 cursor-pointer shadow-2xs active:scale-[0.98]",
                 nextAction.buttonClassName
@@ -169,7 +186,10 @@ export function SalidaVehicularListItem({
               type="button"
               size="xs"
               variant="outline"
-              onClick={() => onAddBitacora(salida)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onAddBitacora(salida)
+              }}
               className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-2xs cursor-pointer"
               title="Consultar bitácora en tiempo real"
             >
@@ -183,7 +203,10 @@ export function SalidaVehicularListItem({
               type="button"
               size="xs"
               variant="outline"
-              onClick={() => onCancel(salida)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onCancel(salida)
+              }}
               className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/30 shadow-2xs cursor-pointer"
               title="Cancelar salida vehicular"
             >
@@ -196,7 +219,10 @@ export function SalidaVehicularListItem({
             type="button"
             size="xs"
             variant="outline"
-            onClick={handleNavigateDetail}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleNavigateDetail()
+            }}
             className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-background hover:bg-muted text-foreground border-border/80 shadow-2xs cursor-pointer"
             title="Ver detalle completo"
           >
@@ -207,72 +233,118 @@ export function SalidaVehicularListItem({
         </div>
       </div>
 
-      {/* 2. CUERPO: Ruta + Vehículo + Conductor en Grid adaptativa */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 sm:gap-3 items-stretch">
-        {/* Ruta: Origen -> Destino (5 cols) */}
-        <div className="md:col-span-5 flex flex-col justify-center rounded-lg border border-border/60 bg-muted/20 p-2 sm:p-2.5 space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
-            <MapPin className="size-3.5 text-emerald-500 shrink-0" />
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/80 shrink-0">
-              Origen:
-            </span>
-            <span className="font-semibold text-foreground truncate">{salida.origen}</span>
+      {/* 2. CUERPO: Ruta + Vehículo + Conductor en Layout limpio sin cajas ni bordes internos */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 md:gap-4 items-center">
+        {/* Ruta: Origen -> Destino con timeline visual fluido (5 cols) */}
+        <div className="md:col-span-5 flex items-center gap-3 min-w-0">
+          <div className="flex flex-col items-center shrink-0">
+            <span
+              className="size-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"
+              title="Punto de partida"
+            />
+            <div className="w-0.5 h-3.5 my-0.5 bg-gradient-to-b from-emerald-500/50 via-border to-indigo-500/50" />
+            <span
+              className="size-2 rounded-full bg-indigo-500 ring-4 ring-indigo-500/20"
+              title="Punto de destino"
+            />
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-foreground min-w-0">
-            <Navigation className="size-3.5 text-indigo-500 shrink-0" />
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/80 shrink-0">
-              Destino:
-            </span>
-            <span className="font-semibold text-foreground truncate">{salida.destino}</span>
+          <div className="flex flex-col justify-between gap-1 min-w-0 flex-1">
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 shrink-0">
+                Origen:
+              </span>
+              <span
+                className="text-xs font-semibold text-foreground truncate"
+                title={salida.origen ?? "Origen no especificado"}
+              >
+                {salida.origen || "No especificado"}
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 shrink-0">
+                Destino:
+              </span>
+              <span
+                className="text-xs font-bold text-foreground truncate"
+                title={salida.destino ?? "Destino no especificado"}
+              >
+                {salida.destino || "No especificado"}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Vehículo (4 cols) */}
-        <div className="md:col-span-4 flex items-center gap-2 rounded-lg border border-border/60 bg-muted/20 p-2 sm:p-2.5 min-w-0">
-          <div className="flex size-7.5 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-2xs">
-            <Car className="size-3.5" />
+        {/* Separador vertical sutil en desktop */}
+        <div className="hidden md:block w-px h-9 self-center bg-border/40" />
+
+        {/* Vehículo Asignado (4 cols en md) */}
+        <div className="md:col-span-4 flex items-center gap-3 min-w-0">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Car className="size-4" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-mono text-xs font-bold text-foreground">
+              <span className="font-mono text-xs sm:text-sm font-bold text-foreground tracking-wide">
                 {placaTexto}
               </span>
               {salida.activoCodigo && salida.activoCodigo !== placaTexto && (
-                <span className="text-[10px] text-muted-foreground font-mono">
+                <span className="text-[10px] text-muted-foreground/75 font-mono">
                   ({salida.activoCodigo})
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground truncate">{vehiculoTexto}</p>
+            <p
+              className="text-[11.5px] text-muted-foreground truncate"
+              title={vehiculoTexto}
+            >
+              {vehiculoTexto}
+            </p>
           </div>
         </div>
 
-        {/* Conductor asignado (3 cols) */}
-        <div className="md:col-span-3 flex items-center gap-2 rounded-lg border border-border/60 bg-muted/20 p-2 sm:p-2.5 min-w-0">
-          <div className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary border border-primary/25 font-bold text-[10px] shadow-2xs">
+        {/* Separador vertical sutil en desktop */}
+        <div className="hidden md:block w-px h-9 self-center bg-border/40" />
+
+        {/* Conductor asignado (restantes cols) */}
+        <div className="md:col-span-2 md:flex-1 flex items-center gap-2.5 min-w-0">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[11px] ring-1 ring-primary/20">
             {getInitials(salida.empleadoNombre)}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-foreground truncate">
+            <p
+              className="text-xs font-semibold text-foreground truncate"
+              title={salida.empleadoNombre ?? "Sin conductor"}
+            >
               {salida.empleadoNombre ?? "Sin conductor"}
             </p>
-            {salida.empleadoCodigo && (
-              <p className="text-[10px] text-muted-foreground font-mono">
+            {salida.empleadoCodigo ? (
+              <p className="text-[10px] text-muted-foreground/80 font-mono">
                 Cod: {salida.empleadoCodigo}
+              </p>
+            ) : (
+              <p className="text-[10.5px] text-muted-foreground/60">
+                Chofer designado
               </p>
             )}
           </div>
         </div>
       </div>
 
-      {/* 3. Motivo del traslado / comisión */}
+      {/* 3. Motivo del traslado / comisión - Limpio sin caja gris ni bordes */}
       {salida.motivo && (
-        <div className="flex items-start gap-1.5 rounded-lg bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground border border-border/40">
-          <Quote className="size-3 text-muted-foreground/60 shrink-0 mt-0.5" />
-          <span className="line-clamp-2 text-[11.5px] text-foreground/90 leading-relaxed">
+        <div className="flex items-start gap-2 pt-2 border-t border-border/40 text-xs">
+          <Quote className="size-3 text-muted-foreground/50 shrink-0 mt-0.5" />
+          <p
+            className="text-[11.5px] text-muted-foreground line-clamp-1 italic leading-relaxed"
+            title={salida.motivo}
+          >
+            <span className="font-medium not-italic text-foreground/80 mr-1.5">
+              Motivo:
+            </span>
             {salida.motivo}
-          </span>
+          </p>
         </div>
       )}
     </div>
@@ -281,8 +353,8 @@ export function SalidaVehicularListItem({
 
 export function SalidaVehicularListItemSkeleton() {
   return (
-    <div className="rounded-xl border border-border/70 bg-card p-3 sm:p-3.5 space-y-2.5 animate-pulse shadow-2xs">
-      <div className="flex items-center justify-between border-b border-border/40 pb-2">
+    <div className="rounded-xl border border-border/60 bg-card p-3.5 sm:p-4 space-y-3 animate-pulse shadow-2xs">
+      <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
         <div className="flex items-center gap-2">
           <div className="h-5 w-24 rounded-md bg-muted" />
           <div className="h-5 w-20 rounded-full bg-muted" />
@@ -294,13 +366,33 @@ export function SalidaVehicularListItemSkeleton() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5">
-        <div className="md:col-span-5 h-14 rounded-lg bg-muted/40" />
-        <div className="md:col-span-4 h-14 rounded-lg bg-muted/40" />
-        <div className="md:col-span-3 h-14 rounded-lg bg-muted/40" />
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 md:gap-4 items-center">
+        <div className="md:col-span-5 flex items-center gap-3">
+          <div className="w-2 h-9 rounded-full bg-muted/60" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3.5 w-3/4 rounded bg-muted/60" />
+            <div className="h-3.5 w-1/2 rounded bg-muted/60" />
+          </div>
+        </div>
+        <div className="hidden md:block w-px h-9 bg-border/40" />
+        <div className="md:col-span-4 flex items-center gap-3">
+          <div className="size-8 rounded-lg bg-muted/60" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3.5 w-24 rounded bg-muted/60" />
+            <div className="h-3 w-32 rounded bg-muted/40" />
+          </div>
+        </div>
+        <div className="hidden md:block w-px h-9 bg-border/40" />
+        <div className="md:col-span-2 flex items-center gap-2.5">
+          <div className="size-8 rounded-full bg-muted/60" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3.5 w-24 rounded bg-muted/60" />
+            <div className="h-3 w-16 rounded bg-muted/40" />
+          </div>
+        </div>
       </div>
 
-      <div className="h-7 w-full rounded-lg bg-muted/30" />
+      <div className="h-3.5 w-2/3 rounded bg-muted/30 pt-1" />
     </div>
   )
 }
