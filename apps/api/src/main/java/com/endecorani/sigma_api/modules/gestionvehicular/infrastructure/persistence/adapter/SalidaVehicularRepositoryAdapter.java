@@ -97,12 +97,15 @@ public class SalidaVehicularRepositoryAdapter implements SalidaVehicularReposito
     public SalidaVehicular save(SalidaVehicular salidaVehicular) {
         SalidaVehicularEntity entity;
         if (salidaVehicular.getId() != null) {
-            entity = springRepository.findById(salidaVehicular.getId())
-                    .orElseGet(() -> mapper.toEntity(salidaVehicular));
-            mapper.updateEntity(salidaVehicular, entity);
-        } else {
-            entity = mapper.toEntity(salidaVehicular);
+            Optional<SalidaVehicularEntity> existing = springRepository.findById(salidaVehicular.getId());
+            if (existing.isPresent()) {
+                entity = existing.get();
+                mapper.updateEntity(salidaVehicular, entity);
+                SalidaVehicularEntity saved = springRepository.save(entity);
+                return mapper.toDomain(saved);
+            }
         }
+        entity = mapper.toEntity(salidaVehicular);
         SalidaVehicularEntity saved = springRepository.save(entity);
         return mapper.toDomain(saved);
     }

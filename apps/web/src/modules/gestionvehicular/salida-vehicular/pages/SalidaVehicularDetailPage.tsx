@@ -331,7 +331,7 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
                   <div>
                     <span className="text-muted-foreground text-[11px]">Código de Activo:</span>
                     <p className="font-mono text-primary font-semibold mt-0.5">
-                      {salida.activoCodigo ?? salida.activoId}
+                      {salida.activoCodigo ?? "Sin código"}
                     </p>
                   </div>
                 </div>
