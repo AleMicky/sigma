@@ -36,17 +36,17 @@ export const SolicitudesStatusChart = ({
 
   return (
     <Card className="border-border/60 shadow-xs flex flex-col justify-between">
-      <CardHeader className="pb-2">
+      <CardHeader className="p-3.5 pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              <FileCheck className="h-4 w-4" />
+            <div className="p-1 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+              <FileCheck className="h-3.5 w-3.5" />
             </div>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-sm sm:text-base font-semibold">
               Embudo de Solicitudes
             </CardTitle>
           </div>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">
             {totalSolicitudes} registradas
           </span>
         </div>
@@ -55,7 +55,7 @@ export const SolicitudesStatusChart = ({
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="pt-2 space-y-3">
+      <CardContent className="p-3.5 pt-0 space-y-2.5">
         {data.map((item) => (
           <div key={item.clave} className="space-y-1">
             <div className="flex items-center justify-between text-xs">

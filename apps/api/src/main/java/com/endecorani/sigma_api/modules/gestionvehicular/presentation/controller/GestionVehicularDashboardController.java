@@ -30,8 +30,9 @@ public class GestionVehicularDashboardController {
     @GetMapping
     @Operation(summary = "Obtener tablero consolidado e indicadores de gestión vehicular")
     public ResponseEntity<ApiResponse<GestionVehicularDashboardResponse>> obtenerDashboard(
-            @RequestParam(defaultValue = "6") int meses
+            @RequestParam(defaultValue = "6") int meses,
+            @RequestParam(required = false) java.util.UUID flotaId
     ) {
-        return ResponseEntity.ok(ApiResponse.success(dashboardService.obtenerDashboard(meses)));
+        return ResponseEntity.ok(ApiResponse.success(dashboardService.obtenerDashboard(meses, flotaId)));
     }
 }

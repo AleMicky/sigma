@@ -95,6 +95,11 @@ export interface AlertaLicenciaConductor {
   nivelAlerta: "VENCIDA" | "CRITICA" | "ADVERTENCIA" | string
 }
 
+export interface GestionVehicularDashboardFilterParams {
+  meses?: number
+  flotaId?: string
+}
+
 export interface GestionVehicularDashboardData {
   kpis: GestionVehicularKpis
   tendenciaViajesYKm: TendenciaViajes[]

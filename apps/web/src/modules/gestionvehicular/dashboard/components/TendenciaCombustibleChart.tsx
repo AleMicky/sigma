@@ -54,27 +54,27 @@ export const TendenciaCombustibleChart = ({
 
   return (
     <Card className="border-border/60 shadow-xs">
-      <CardHeader className="pb-3 flex flex-row items-start justify-between gap-4">
+      <CardHeader className="p-3.5 pb-2 flex flex-row items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Fuel className="h-4 w-4" />
+            <div className="p-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <Fuel className="h-3.5 w-3.5" />
             </div>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-sm sm:text-base font-semibold">
               Consumo y Gasto de Combustible
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-muted-foreground mt-1">
-            Inversión mensual y volumen suministrado
+          <CardDescription className="text-xs text-muted-foreground mt-0.5">
+            Inversión económica y volumen suministrado en el periodo
           </CardDescription>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex flex-col items-end text-xs">
-            <span className="text-muted-foreground font-medium">Total invertido:</span>
-            <span className="font-bold text-amber-600 dark:text-amber-400">
+        <div className="flex items-center gap-2.5">
+          <div className="hidden sm:flex flex-col items-end text-[11px]">
+            <span className="text-muted-foreground">Total invertido:</span>
+            <span className="font-bold text-amber-600 dark:text-amber-400 font-mono">
               {metricView === "costo"
-                ? `Bs. ${totalCostoPeriodo.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                ? `Bs. ${totalCostoPeriodo.toLocaleString("es-BO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`
                 : `${totalLitrosPeriodo.toLocaleString("es-BO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} L`}
             </span>
           </div>
@@ -84,22 +84,22 @@ export const TendenciaCombustibleChart = ({
             onValueChange={(val) => setMetricView(val as "costo" | "litros")}
             className="w-auto"
           >
-            <TabsList className="h-8 p-0.5 bg-muted/60">
-              <TabsTrigger value="costo" className="h-7 px-2.5 text-xs">
-                <DollarSign className="h-3 w-3 mr-0.5" />
-                Costo (Bs.)
+            <TabsList className="h-7 p-0.5 bg-muted/60">
+              <TabsTrigger value="costo" className="h-6 px-2 text-[11px]">
+                <DollarSign className="h-2.5 w-2.5 mr-0.5" />
+                Costo
               </TabsTrigger>
-              <TabsTrigger value="litros" className="h-7 px-2.5 text-xs">
-                <Droplets className="h-3 w-3 mr-0.5" />
-                Litros (L)
+              <TabsTrigger value="litros" className="h-6 px-2 text-[11px]">
+                <Droplets className="h-2.5 w-2.5 mr-0.5" />
+                Litros
               </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
       </CardHeader>
 
-      <CardContent className="pt-2">
-        <div className="h-64 w-full">
+      <CardContent className="p-3.5 pt-0">
+        <div className="h-52 w-full">
           {data.length === 0 ? (
             <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
               No hay cargas de combustible registradas

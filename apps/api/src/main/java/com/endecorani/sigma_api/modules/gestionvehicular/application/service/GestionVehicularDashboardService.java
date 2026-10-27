@@ -55,6 +55,11 @@ public class GestionVehicularDashboardService {
 
     @Transactional(readOnly = true)
     public GestionVehicularDashboardResponse obtenerDashboard(int meses) {
+        return obtenerDashboard(meses, null);
+    }
+
+    @Transactional(readOnly = true)
+    public GestionVehicularDashboardResponse obtenerDashboard(int meses, UUID flotaId) {
         if (meses < 1) {
             meses = 6;
         }
@@ -65,7 +70,9 @@ public class GestionVehicularDashboardService {
         LocalDateTime finMesActual = mesActual.atEndOfMonth().atTime(23, 59, 59);
 
         // 1. Obtener datos clave de flotas y vehículos
-        List<FlotaVehiculoEntity> flotaVehiculos = flotaVehiculoRepository.findAll();
+        List<FlotaVehiculoEntity> flotaVehiculos = (flotaId != null)
+                ? flotaVehiculoRepository.findByFlotaVehicularId(flotaId)
+                : flotaVehiculoRepository.findAll();
         Set<UUID> vehiculoIds = flotaVehiculos.stream()
                 .filter(FlotaVehiculoEntity::isActivo)
                 .map(FlotaVehiculoEntity::getActivoId)
@@ -80,10 +87,17 @@ public class GestionVehicularDashboardService {
                 .collect(Collectors.toMap(EstadoOperativoEntity::getId, e -> e));
 
         // 3. Viajes y Asignaciones
-        List<ViajeVehicularEntity> todosLosViajes = viajeVehicularRepository.findAll();
         List<AsignacionVehicularEntity> todasAsignaciones = asignacionVehicularRepository.findAll();
         Map<UUID, AsignacionVehicularEntity> asignacionMap = todasAsignaciones.stream()
                 .collect(Collectors.toMap(AsignacionVehicularEntity::getId, a -> a, (a, b) -> a));
+
+        List<ViajeVehicularEntity> todosLosViajes = viajeVehicularRepository.findAll().stream()
+                .filter(v -> {
+                    if (flotaId == null) return true;
+                    AsignacionVehicularEntity asig = asignacionMap.get(v.getAsignacionVehicularId());
+                    return asig != null && asig.getActivoId() != null && vehiculoIds.contains(asig.getActivoId());
+                })
+                .toList();
 
         // Viajes activos en curso
         List<ViajeVehicularEntity> viajesEnCurso = todosLosViajes.stream()
@@ -107,14 +121,30 @@ public class GestionVehicularDashboardService {
         // 4. Resolver metadatos de vehículos (placas, marca, modelo)
         Set<UUID> todosActivoIds = new HashSet<>(vehiculoIds);
         todasAsignaciones.forEach(a -> {
-            if (a.getActivoId() != null) todosActivoIds.add(a.getActivoId());
+            if (a.getActivoId() != null && (flotaId == null || vehiculoIds.contains(a.getActivoId()))) {
+                todosActivoIds.add(a.getActivoId());
+            }
         });
         Map<UUID, VehiculoInfo> vehiculosInfoMap = resolverVehiculosInfo(todosActivoIds, activoMap);
 
         // 5. Conductores y Licencias
-        List<ConductorEntity> conductores = conductorRepository.findAll();
-        List<ConductorLicenciaEntity> licencias = conductorLicenciaRepository.findAll();
-        Map<UUID, ConductorEntity> conductorMap = conductores.stream().collect(Collectors.toMap(ConductorEntity::getId, c -> c));
+        Set<UUID> conductorIdsDeFlota = (flotaId != null)
+                ? todasAsignaciones.stream()
+                        .filter(a -> a.getActivoId() != null && vehiculoIds.contains(a.getActivoId()) && a.getConductorId() != null)
+                        .map(AsignacionVehicularEntity::getConductorId)
+                        .collect(Collectors.toSet())
+                : null;
+
+        List<ConductorEntity> conductoresRaw = conductorRepository.findAll();
+        List<ConductorEntity> conductores = (conductorIdsDeFlota != null && !conductorIdsDeFlota.isEmpty())
+                ? conductoresRaw.stream().filter(c -> conductorIdsDeFlota.contains(c.getId())).toList()
+                : conductoresRaw;
+
+        List<ConductorLicenciaEntity> licencias = conductorLicenciaRepository.findAll().stream()
+                .filter(l -> conductorIdsDeFlota == null || conductorIdsDeFlota.isEmpty() || conductorIdsDeFlota.contains(l.getConductorId()))
+                .toList();
+
+        Map<UUID, ConductorEntity> conductorMap = conductoresRaw.stream().collect(Collectors.toMap(ConductorEntity::getId, c -> c));
 
         Set<UUID> empleadoIds = conductores.stream().map(ConductorEntity::getEmpleadoId).filter(Objects::nonNull).collect(Collectors.toSet());
         Map<UUID, VEmpleadoEntity> empleadoMap = empleadoIds.isEmpty() ? Map.of() :
@@ -122,12 +152,28 @@ public class GestionVehicularDashboardService {
                         .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, e -> e, (a, b) -> a));
 
         // 6. Solicitudes Vehiculares
-        List<SolicitudVehicularEntity> todasSolicitudes = solicitudVehicularRepository.findAll();
-        Map<UUID, SolicitudVehicularEntity> solicitudMap = todasSolicitudes.stream()
+        Set<UUID> solicitudesDeFlota = (flotaId != null)
+                ? todasAsignaciones.stream()
+                        .filter(a -> a.getActivoId() != null && vehiculoIds.contains(a.getActivoId()) && a.getSolicitudVehicularId() != null)
+                        .map(AsignacionVehicularEntity::getSolicitudVehicularId)
+                        .collect(Collectors.toSet())
+                : null;
+
+        List<SolicitudVehicularEntity> todasSolicitudesRaw = solicitudVehicularRepository.findAll();
+        List<SolicitudVehicularEntity> todasSolicitudes = (solicitudesDeFlota != null && !solicitudesDeFlota.isEmpty())
+                ? todasSolicitudesRaw.stream().filter(s -> solicitudesDeFlota.contains(s.getId())).toList()
+                : todasSolicitudesRaw;
+
+        Map<UUID, SolicitudVehicularEntity> solicitudMap = todasSolicitudesRaw.stream()
                 .collect(Collectors.toMap(SolicitudVehicularEntity::getId, s -> s, (a, b) -> a));
 
         // 7. Cargas de Combustible
-        List<CargaCombustibleEntity> todasCargas = cargaCombustibleRepository.findAll();
+        List<CargaCombustibleEntity> todasCargas = cargaCombustibleRepository.findAll().stream()
+                .filter(c -> {
+                    if (flotaId == null) return true;
+                    return c.getActivoId() != null && vehiculoIds.contains(c.getActivoId());
+                })
+                .toList();
 
         // ==========================================
         // CÁLCULO DE KPIS
