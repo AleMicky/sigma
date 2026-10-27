@@ -105,6 +105,10 @@ public class RolMenuService {
                 .anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_ADMIN")
                         || a.getAuthority().equalsIgnoreCase("ADMIN"));
 
+        if (isAdmin) {
+            return menuService.buildArbol();
+        }
+
         Set<UUID> rolIds = new HashSet<>();
 
         // 1. Roles provenientes del token JWT / authorities

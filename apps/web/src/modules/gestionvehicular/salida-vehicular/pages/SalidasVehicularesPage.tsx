@@ -33,8 +33,8 @@ import type {
   SalidaVehicularFiltros,
 } from "../api/salida-vehicular.types"
 import { CancelarSalidaDialog } from "../components/CancelarSalidaDialog"
+import { ConsultarBitacoraDialog } from "../components/ConsultarBitacoraDialog"
 import { EjecutarAccionFlowableDialog } from "../components/EjecutarAccionFlowableDialog"
-import { RegistrarBitacoraDialog } from "../components/RegistrarBitacoraDialog"
 import { RegistrarSalidaDialog } from "../components/RegistrarSalidaDialog"
 import { SalidaVehicularFilterToolbar } from "../components/SalidaVehicularFilterToolbar"
 import { SalidaVehicularHeader } from "../components/SalidaVehicularHeader"
@@ -591,11 +591,10 @@ export function SalidasVehicularesPage() {
         salida={actionSalida}
       />
 
-      <RegistrarBitacoraDialog
+      <ConsultarBitacoraDialog
         open={Boolean(bitacoraSalida)}
         onOpenChange={(open) => !open && setBitacoraSalida(null)}
-        salidaId={bitacoraSalida?.id ?? ""}
-        salidaNumero={bitacoraSalida?.numero}
+        salida={bitacoraSalida}
       />
 
       <CancelarSalidaDialog
