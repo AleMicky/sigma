@@ -17,6 +17,8 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
 
     List<CargaCombustibleEntity> findByViajeVehicularIdOrderByFechaCargaDesc(UUID viajeVehicularId);
 
+    List<CargaCombustibleEntity> findBySalidaVehicularIdOrderByFechaCargaDesc(UUID salidaVehicularId);
+
     List<CargaCombustibleEntity> findByInsumoIdOrderByFechaCargaDesc(UUID insumoId);
 
     List<CargaCombustibleEntity> findByEmpleadoIdOrderByFechaCargaDesc(UUID empleadoId);
@@ -28,6 +30,7 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
         LEFT JOIN com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.entity.InsumoEntity ins ON c.insumoId = ins.id
         WHERE (:activoId IS NULL OR c.activoId = :activoId)
           AND (:viajeVehicularId IS NULL OR c.viajeVehicularId = :viajeVehicularId)
+          AND (:salidaVehicularId IS NULL OR c.salidaVehicularId = :salidaVehicularId)
           AND (:insumoId IS NULL OR c.insumoId = :insumoId)
           AND (:empleadoId IS NULL OR c.empleadoId = :empleadoId)
           AND (:fechaDesde IS NULL OR c.fechaCarga >= :fechaDesde)
@@ -46,6 +49,7 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
             @Param("search") String search,
             @Param("activoId") UUID activoId,
             @Param("viajeVehicularId") UUID viajeVehicularId,
+            @Param("salidaVehicularId") UUID salidaVehicularId,
             @Param("insumoId") UUID insumoId,
             @Param("empleadoId") UUID empleadoId,
             @Param("fechaDesde") LocalDateTime fechaDesde,
@@ -60,6 +64,7 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
         LEFT JOIN com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.entity.InsumoEntity ins ON c.insumoId = ins.id
         WHERE (:activoId IS NULL OR c.activoId = :activoId)
           AND (:viajeVehicularId IS NULL OR c.viajeVehicularId = :viajeVehicularId)
+          AND (:salidaVehicularId IS NULL OR c.salidaVehicularId = :salidaVehicularId)
           AND (:insumoId IS NULL OR c.insumoId = :insumoId)
           AND (:empleadoId IS NULL OR c.empleadoId = :empleadoId)
           AND (:fechaDesde IS NULL OR c.fechaCarga >= :fechaDesde)
@@ -78,6 +83,7 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
             @Param("search") String search,
             @Param("activoId") UUID activoId,
             @Param("viajeVehicularId") UUID viajeVehicularId,
+            @Param("salidaVehicularId") UUID salidaVehicularId,
             @Param("insumoId") UUID insumoId,
             @Param("empleadoId") UUID empleadoId,
             @Param("fechaDesde") LocalDateTime fechaDesde,

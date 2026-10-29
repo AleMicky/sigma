@@ -32,6 +32,7 @@ public class CargaCombustibleRepositoryAdapter implements CargaCombustibleReposi
             String search,
             UUID activoId,
             UUID viajeVehicularId,
+            UUID salidaVehicularId,
             UUID insumoId,
             UUID empleadoId,
             LocalDateTime fechaDesde,
@@ -42,6 +43,7 @@ public class CargaCombustibleRepositoryAdapter implements CargaCombustibleReposi
                 search,
                 activoId,
                 viajeVehicularId,
+                salidaVehicularId,
                 insumoId,
                 empleadoId,
                 fechaDesde,
@@ -55,6 +57,7 @@ public class CargaCombustibleRepositoryAdapter implements CargaCombustibleReposi
             String search,
             UUID activoId,
             UUID viajeVehicularId,
+            UUID salidaVehicularId,
             UUID insumoId,
             UUID empleadoId,
             LocalDateTime fechaDesde,
@@ -64,6 +67,7 @@ public class CargaCombustibleRepositoryAdapter implements CargaCombustibleReposi
                 search,
                 activoId,
                 viajeVehicularId,
+                salidaVehicularId,
                 insumoId,
                 empleadoId,
                 fechaDesde,
@@ -86,6 +90,13 @@ public class CargaCombustibleRepositoryAdapter implements CargaCombustibleReposi
     @Override
     public List<CargaCombustible> findByViajeVehicularId(UUID viajeVehicularId) {
         return springRepository.findByViajeVehicularIdOrderByFechaCargaDesc(viajeVehicularId).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<CargaCombustible> findBySalidaVehicularId(UUID salidaVehicularId) {
+        return springRepository.findBySalidaVehicularIdOrderByFechaCargaDesc(salidaVehicularId).stream()
                 .map(mapper::toDomain)
                 .toList();
     }

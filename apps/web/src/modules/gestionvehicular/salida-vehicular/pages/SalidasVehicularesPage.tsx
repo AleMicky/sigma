@@ -36,6 +36,7 @@ import { CancelarSalidaDialog } from "../components/CancelarSalidaDialog"
 import { ConsultarBitacoraDialog } from "../components/ConsultarBitacoraDialog"
 import { EjecutarAccionFlowableDialog } from "../components/EjecutarAccionFlowableDialog"
 import { RegistrarSalidaDialog } from "../components/RegistrarSalidaDialog"
+import { SalidaCargaCombustibleDialog } from "../components/SalidaCargaCombustibleDialog"
 import { SalidaVehicularFilterToolbar } from "../components/SalidaVehicularFilterToolbar"
 import { SalidaVehicularHeader } from "../components/SalidaVehicularHeader"
 import {
@@ -272,6 +273,7 @@ interface SalidasVehicularesContentProps {
   onPageChange: (page: number) => void
   onExecuteAction: (salida: SalidaVehicular) => void
   onAddBitacora: (salida: SalidaVehicular) => void
+  onFuelLoad: (salida: SalidaVehicular) => void
   onCancel: (salida: SalidaVehicular) => void
   onTraceability: (salida: SalidaVehicular) => void
 }
@@ -292,6 +294,7 @@ function SalidasVehicularesContent({
   onPageChange,
   onExecuteAction,
   onAddBitacora,
+  onFuelLoad,
   onCancel,
   onTraceability,
 }: Readonly<SalidasVehicularesContentProps>) {
@@ -356,6 +359,7 @@ function SalidasVehicularesContent({
             salida={salida}
             onExecuteAction={onExecuteAction}
             onAddBitacora={onAddBitacora}
+            onFuelLoad={onFuelLoad}
             onCancel={onCancel}
             onTraceability={onTraceability}
           />
@@ -384,6 +388,7 @@ export function SalidasVehicularesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [actionSalida, setActionSalida] = useState<SalidaVehicular | null>(null)
   const [bitacoraSalida, setBitacoraSalida] = useState<SalidaVehicular | null>(null)
+  const [fuelSalida, setFuelSalida] = useState<SalidaVehicular | null>(null)
   const [cancelSalida, setCancelSalida] = useState<SalidaVehicular | null>(null)
   const [historySalida, setHistorySalida] = useState<SalidaVehicular | null>(null)
 
@@ -560,6 +565,7 @@ export function SalidasVehicularesPage() {
           onPageChange={search.setPage}
           onExecuteAction={setActionSalida}
           onAddBitacora={setBitacoraSalida}
+          onFuelLoad={setFuelSalida}
           onCancel={setCancelSalida}
           onTraceability={setHistorySalida}
         />
@@ -581,6 +587,12 @@ export function SalidasVehicularesPage() {
         open={Boolean(bitacoraSalida)}
         onOpenChange={(open) => !open && setBitacoraSalida(null)}
         salida={bitacoraSalida}
+      />
+
+      <SalidaCargaCombustibleDialog
+        open={Boolean(fuelSalida)}
+        onOpenChange={(open) => !open && setFuelSalida(null)}
+        salida={fuelSalida}
       />
 
       <CancelarSalidaDialog

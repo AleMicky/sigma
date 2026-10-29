@@ -14,6 +14,8 @@ public record CargaCombustibleRequest(
 
         UUID viajeVehicularId,
 
+        UUID salidaVehicularId,
+
         @NotNull(message = "El insumo (combustible) es obligatorio")
         UUID insumoId,
 
@@ -31,6 +33,10 @@ public record CargaCombustibleRequest(
         String numeroFactura,
 
         @NotNull(message = "El empleado que registra/recibe es obligatorio")
-        UUID empleadoId
+        UUID empleadoId,
+
+        BigDecimal latitud,
+
+        BigDecimal longitud
 ) {
 }

@@ -29,6 +29,10 @@ import java.util.UUID;
                         columnList = "viaje_vehicular_id"
                 ),
                 @Index(
+                        name = "idx_carga_combustible_salida",
+                        columnList = "salida_vehicular_id"
+                ),
+                @Index(
                         name = "idx_carga_combustible_fecha",
                         columnList = "fecha_carga"
                 )
@@ -45,6 +49,11 @@ public class CargaCombustibleEntity  extends BaseEntity {
             name = "viaje_vehicular_id"
     )
     private UUID viajeVehicularId;
+
+    @Column(
+            name = "salida_vehicular_id"
+    )
+    private UUID salidaVehicularId;
 
     @Column(
             name = "insumo_id",

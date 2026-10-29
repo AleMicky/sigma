@@ -3,5 +3,6 @@ export const cargaCombustibleEndpoints = {
   byId: (id: string) => `/cargas-combustible/${id}`,
   byActivo: (activoId: string) => `/cargas-combustible/activo/${activoId}`,
   byViaje: (viajeId: string) => `/cargas-combustible/viaje/${viajeId}`,
+  bySalida: (salidaId: string) => `/cargas-combustible/salida/${salidaId}`,
   exportarExcel: "/cargas-combustible/exportar-excel",
 }

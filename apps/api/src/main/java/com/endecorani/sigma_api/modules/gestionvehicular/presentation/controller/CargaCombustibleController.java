@@ -45,6 +45,7 @@ public class CargaCombustibleController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) UUID activoId,
             @RequestParam(required = false) UUID viajeVehicularId,
+            @RequestParam(required = false) UUID salidaVehicularId,
             @RequestParam(required = false) UUID insumoId,
             @RequestParam(required = false) UUID empleadoId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
@@ -56,6 +57,7 @@ public class CargaCombustibleController {
                         search,
                         activoId,
                         viajeVehicularId,
+                        salidaVehicularId,
                         insumoId,
                         empleadoId,
                         fechaDesde,
@@ -71,13 +73,14 @@ public class CargaCombustibleController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) UUID activoId,
             @RequestParam(required = false) UUID viajeVehicularId,
+            @RequestParam(required = false) UUID salidaVehicularId,
             @RequestParam(required = false) UUID insumoId,
             @RequestParam(required = false) UUID empleadoId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta
     ) {
         byte[] excelBytes = service.exportarExcel(
-                search, activoId, viajeVehicularId, insumoId, empleadoId, fechaDesde, fechaHasta
+                search, activoId, viajeVehicularId, salidaVehicularId, insumoId, empleadoId, fechaDesde, fechaHasta
         );
 
         HttpHeaders headers = new HttpHeaders();
@@ -119,6 +122,16 @@ public class CargaCombustibleController {
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(service.findByViajeVehicularId(viajeVehicularId))
+        );
+    }
+
+    @GetMapping("/salida/{salidaVehicularId}")
+    @Operation(summary = "Listar cargas de combustible por salida vehicular")
+    public ResponseEntity<ApiResponse<List<CargaCombustibleResponse>>> findBySalidaVehicularId(
+            @PathVariable UUID salidaVehicularId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(service.findBySalidaVehicularId(salidaVehicularId))
         );
     }
 

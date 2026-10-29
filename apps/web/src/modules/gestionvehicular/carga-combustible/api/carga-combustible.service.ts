@@ -17,6 +17,13 @@ export type CargaCombustibleViajeInfo = {
   fechaRetornoReal?: string | null
 }
 
+export type CargaCombustibleSalidaInfo = {
+  id: string
+  numero: string
+  estado: string
+  descripcionActividad?: string | null
+}
+
 export type CargaCombustibleInsumoInfo = {
   id: string
   codigo: string
@@ -37,6 +44,8 @@ export type CargaCombustible = AuditableEntity & {
   activo?: CargaCombustibleActivoInfo | null
   viajeVehicularId?: string | null
   viajeVehicular?: CargaCombustibleViajeInfo | null
+  salidaVehicularId?: string | null
+  salidaVehicular?: CargaCombustibleSalidaInfo | null
   insumoId: string
   insumo?: CargaCombustibleInsumoInfo | null
   fechaCarga: string
@@ -51,17 +60,21 @@ export type CargaCombustible = AuditableEntity & {
 export type CargaCombustiblePayload = {
   activoId: string
   viajeVehicularId?: string | null
+  salidaVehicularId?: string | null
   insumoId: string
   fechaCarga?: string | null
   litros: number
   precioTotal: number
   numeroFactura?: string | null
   empleadoId: string
+  latitud?: number | null
+  longitud?: number | null
 }
 
 export type CargaCombustibleUpdatePayload = {
   activoId: string
   viajeVehicularId?: string | null
+  salidaVehicularId?: string | null
   insumoId: string
   fechaCarga: string
   litros: number
@@ -76,6 +89,7 @@ export type CargaCombustibleListFilters = {
   search?: string
   activoId?: string
   viajeVehicularId?: string
+  salidaVehicularId?: string
   insumoId?: string
   empleadoId?: string
   fechaDesde?: string
@@ -109,6 +123,14 @@ export const getCargasByViaje = (
 ): Promise<CargaCombustible[]> => {
   return http.get<CargaCombustible[]>(
     cargaCombustibleEndpoints.byViaje(viajeId)
+  )
+}
+
+export const getCargasBySalida = (
+  salidaId: string
+): Promise<CargaCombustible[]> => {
+  return http.get<CargaCombustible[]>(
+    cargaCombustibleEndpoints.bySalida(salidaId)
   )
 }
 
