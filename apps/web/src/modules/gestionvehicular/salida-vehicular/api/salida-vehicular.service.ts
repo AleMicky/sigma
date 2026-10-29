@@ -170,3 +170,68 @@ export const getReporteBitacoras = (
     { params }
   )
 }
+
+export interface DescargarReporteBitacoraPdfParams {
+  activoId: string
+  fechaDesde: string
+  fechaHasta: string
+  search?: string
+  placa?: string | null
+}
+
+export const descargarReporteSalidasBitacoraPdf = async (
+  params: DescargarReporteBitacoraPdfParams
+): Promise<void> => {
+  const queryParams: Record<string, string> = {
+    activoId: params.activoId,
+    fechaDesde: `${params.fechaDesde}T00:00:00`,
+    fechaHasta: `${params.fechaHasta}T23:59:59`,
+  }
+  if (params.search?.trim()) {
+    queryParams.search = params.search.trim()
+  }
+
+  const blob = await http.get<Blob>(salidaVehicularEndpoints.reportes.pdf, {
+    params: queryParams,
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const cleanPlaca = params.placa
+    ? params.placa.replace(/[^a-zA-Z0-9-]/g, "")
+    : "vehiculo"
+  a.download = `bitacora-salidas-${cleanPlaca}-${params.fechaDesde}_${params.fechaHasta}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+
+export const abrirReporteSalidasBitacoraPdf = async (
+  params: DescargarReporteBitacoraPdfParams
+): Promise<void> => {
+  const queryParams: Record<string, string> = {
+    activoId: params.activoId,
+    fechaDesde: `${params.fechaDesde}T00:00:00`,
+    fechaHasta: `${params.fechaHasta}T23:59:59`,
+  }
+  if (params.search?.trim()) {
+    queryParams.search = params.search.trim()
+  }
+
+  const blob = await http.get<Blob>(salidaVehicularEndpoints.reportes.pdf, {
+    params: queryParams,
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  window.open(url, "_blank")
+}

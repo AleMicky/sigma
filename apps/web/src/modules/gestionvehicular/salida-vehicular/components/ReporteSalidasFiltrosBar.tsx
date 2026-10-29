@@ -2,6 +2,7 @@ import {
   Calendar,
   Car,
   CheckCircle2,
+  FileDown,
   FileSpreadsheet,
   Filter,
   Loader2,
@@ -43,9 +44,11 @@ export interface ReporteSalidasFiltrosBarProps {
   searchQuery: string
   onSearchQueryChange: (q: string) => void
   onConsultar: () => void
+  onDescargarPdf: () => void
   onImprimir: () => void
   onExportarCsv: () => void
   isLoading?: boolean
+  isPdfLoading?: boolean
   hasData?: boolean
   placaSeleccionada?: string | null
 }
@@ -60,9 +63,11 @@ export function ReporteSalidasFiltrosBar({
   searchQuery,
   onSearchQueryChange,
   onConsultar,
+  onDescargarPdf,
   onImprimir,
   onExportarCsv,
   isLoading = false,
+  isPdfLoading = false,
   hasData = false,
   placaSeleccionada,
 }: Readonly<ReporteSalidasFiltrosBarProps>) {
@@ -279,7 +284,7 @@ export function ReporteSalidasFiltrosBar({
               <span>Formulario Bitácora preparado listo para visualizar o exportar</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 type="button"
                 variant="outline"
@@ -293,13 +298,34 @@ export function ReporteSalidasFiltrosBar({
 
               <Button
                 type="button"
-                variant="default"
+                variant="outline"
                 size="sm"
                 onClick={onImprimir}
-                className="h-8 text-xs gap-1.5 cursor-pointer bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900"
+                className="h-8 text-xs gap-1.5 cursor-pointer"
               >
-                <Printer className="h-3.5 w-3.5" />
-                <span>Imprimir Formulario</span>
+                <Printer className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                <span>Imprimir</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={onDescargarPdf}
+                disabled={isPdfLoading}
+                className="h-8 text-xs gap-1.5 cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs"
+              >
+                {isPdfLoading ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Generando PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileDown className="h-3.5 w-3.5" />
+                    <span>Descargar PDF Oficial</span>
+                  </>
+                )}
               </Button>
             </div>
           </div>

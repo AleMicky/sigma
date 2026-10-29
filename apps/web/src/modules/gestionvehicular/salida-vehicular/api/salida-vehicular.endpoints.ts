@@ -29,5 +29,6 @@ export const salidaVehicularEndpoints = {
     empleados: "/reportes/salidas-vehiculares/empleados",
     tiempos: "/reportes/salidas-vehiculares/tiempos",
     bitacoras: "/reportes/salidas-vehiculares/bitacoras",
+    pdf: "/reportes/salidas-vehiculares/pdf",
   },
 } as const

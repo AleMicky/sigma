@@ -10,6 +10,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -96,5 +100,27 @@ public class SalidaVehicularReporteController {
         return ResponseEntity.ok(
                 ApiResponse.success(reporteService.generarReporteBitacoras(salidaId, empleadoId, tipo, fechaDesde, fechaHasta))
         );
+    }
+
+    @GetMapping(value = "/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Descargar reporte oficial en PDF de la bitácora de salidas vehiculares en formato ENDE CORANI")
+    public ResponseEntity<byte[]> reporteBitacoraPdf(
+            @RequestParam UUID activoId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta,
+            @RequestParam(required = false) String search
+    ) {
+        byte[] pdfBytes = reporteService.generarReporteBitacoraPdf(activoId, fechaDesde, fechaHasta, search);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition.inline()
+                        .filename("bitacora-salidas-vehiculares-" + activoId + ".pdf")
+                        .build()
+        );
+        headers.setContentLength(pdfBytes.length);
+
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 }

@@ -6,6 +6,8 @@ import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entit
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoValorRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoRepository;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringTipoActivoRepository;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.salidavehicular.reporte.BitacoraSalidaItemReporteDto;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.salidavehicular.response.*;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.BitacoraVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SalidaVehicular;
@@ -13,33 +15,49 @@ import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SalidaVehi
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.BitacoraVehicularRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.SalidaVehicularEventoRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.SalidaVehicularRepository;
+import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.CargaCombustibleEntity;
+import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.repository.SpringCargaCombustibleRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
+import com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SalidaVehicularReporteService {
+
+    private static final String REPORTE_BITACORA_SALIDAS_PATH = "reports/gestion-vehicular/bitacora_salidas_vehiculares.jrxml";
+    private static final Pattern PLACA_PATTERN = Pattern.compile("PLACA[:\\s#-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)*)", Pattern.CASE_INSENSITIVE);
 
     private final SalidaVehicularRepository salidaRepository;
     private final SalidaVehicularEventoRepository eventoRepository;
     private final BitacoraVehicularRepository bitacoraRepository;
     private final SalidaVehicularService salidaService;
     private final SpringActivoRepository activoRepository;
+    private final SpringTipoActivoRepository tipoActivoRepository;
     private final SpringActivoAtributoRepository activoAtributoRepository;
     private final SpringActivoAtributoValorRepository activoAtributoValorRepository;
     private final SpringVEmpleadoRepository vempleadoRepository;
+    private final SpringCargaCombustibleRepository cargaCombustibleRepository;
+    private final JasperReportService jasperReportService;
 
     @Transactional(readOnly = true)
     public ReporteSalidasGeneralResponse generarReporteGeneral(
@@ -432,5 +450,201 @@ public class SalidaVehicularReporteService {
             }
         }
         return result;
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] generarReporteBitacoraPdf(
+            UUID activoId,
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta,
+            String search
+    ) {
+        if (activoId == null) {
+            throw new BusinessException("El vehículo (activoId) es obligatorio para generar el reporte en PDF.");
+        }
+
+        Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
+        Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
+
+        // 1. Obtener vehículo y sus atributos
+        ActivoEntity activo = activoRepository.findById(activoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Vehículo o Activo", activoId));
+        Map<String, String> attrs = obtenerAtributosVehiculosBatch(Set.of(activoId)).getOrDefault(activoId, Collections.emptyMap());
+
+        String placa = attrs.get("PLACA");
+        if (placa == null || placa.isBlank()) {
+            placa = extractPlacaFromDescripcion(activo.getDescripcion());
+        }
+        String marca = attrs.getOrDefault("MARCA", "");
+        String modelo = attrs.getOrDefault("MODELO", "");
+        String tipoActivoNombre = (activo.getTipoActivoId() != null)
+                ? tipoActivoRepository.findById(activo.getTipoActivoId()).map(t -> t.getNombre()).orElse("CAMIONETA")
+                : "CAMIONETA";
+        String tipoVehiculo = Stream.of(tipoActivoNombre, marca, modelo)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.joining(" "));
+
+        // 2. Obtener salidas en el rango
+        List<SalidaVehicular> salidas = new ArrayList<>(salidaRepository.findForReporte(
+                search, activoId, null, null, instantDesde, instantHasta
+        ));
+        // Orden cronológico ascendente (por fecha o createdAt)
+        salidas.sort(Comparator.comparing(s -> s.getFecha() != null ? s.getFecha() : s.getCreatedAt()));
+
+        // 3. Obtener eventos de las salidas para kmSalida y kmLlegada
+        List<UUID> salidaIds = salidas.stream().map(SalidaVehicular::getId).toList();
+        List<SalidaVehicularEvento> eventos = salidaIds.isEmpty() ? Collections.emptyList() : eventoRepository.findBySalidaVehicularIdIn(salidaIds);
+        Map<UUID, List<SalidaVehicularEvento>> eventosPorSalida = eventos.stream()
+                .collect(Collectors.groupingBy(SalidaVehicularEvento::getSalidaVehicularId));
+
+        // 4. Obtener cargas de combustible del vehículo
+        List<CargaCombustibleEntity> cargasCombustible = (fechaDesde != null && fechaHasta != null)
+                ? cargaCombustibleRepository.findByActivoIdAndFechaCargaBetween(activoId, fechaDesde, fechaHasta)
+                : cargaCombustibleRepository.findByActivoIdOrderByFechaCargaDesc(activoId);
+
+        Map<UUID, List<CargaCombustibleEntity>> cargasPorSalida = cargasCombustible.stream()
+                .filter(c -> c.getSalidaVehicularId() != null)
+                .collect(Collectors.groupingBy(CargaCombustibleEntity::getSalidaVehicularId));
+
+        // Nombres de conductores
+        Set<UUID> empIds = salidas.stream().map(SalidaVehicular::getEmpleadoId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<UUID, String> nombresMap = empIds.isEmpty() ? Collections.emptyMap() : vempleadoRepository.findAllById(empIds).stream()
+                .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, VEmpleadoEntity::getNombreCompleto));
+
+        DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("d").withZone(ZoneId.of("America/La_Paz"));
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.of("America/La_Paz"));
+
+        long totalKmRecorrido = 0;
+        BigDecimal totalLitros = BigDecimal.ZERO;
+        String conductorPrincipal = null;
+
+        List<BitacoraSalidaItemReporteDto> dataSourceList = new ArrayList<>();
+
+        for (SalidaVehicular s : salidas) {
+            Instant fechaInst = s.getFecha() != null ? s.getFecha() : s.getCreatedAt();
+            Integer dia = null;
+            String fechaStr = "-";
+            if (fechaInst != null) {
+                try {
+                    dia = Integer.parseInt(dayFormatter.format(fechaInst));
+                    fechaStr = dateFormatter.format(fechaInst);
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Odómetro
+            List<SalidaVehicularEvento> evs = eventosPorSalida.getOrDefault(s.getId(), Collections.emptyList());
+            List<SalidaVehicularEvento> kmEvents = evs.stream()
+                    .filter(e -> e.getKilometraje() != null)
+                    .sorted(Comparator.comparing(e -> e.getFechaHora() != null ? e.getFechaHora() : e.getCreatedAt()))
+                    .toList();
+
+            Long kmSalida = null;
+            Long kmLlegada = null;
+
+            if (!kmEvents.isEmpty()) {
+                Optional<SalidaVehicularEvento> salidaEv = kmEvents.stream()
+                        .filter(e -> e.getTipoEvento() != null && e.getTipoEvento().toUpperCase(Locale.ROOT).contains("SALIDA"))
+                        .findFirst();
+                Optional<SalidaVehicularEvento> llegadaEv = kmEvents.stream()
+                        .filter(e -> e.getTipoEvento() != null && e.getTipoEvento().toUpperCase(Locale.ROOT).contains("LLEGADA"))
+                        .reduce((first, second) -> second);
+
+                kmSalida = salidaEv.map(e -> e.getKilometraje().longValue())
+                        .orElse(kmEvents.getFirst().getKilometraje().longValue());
+
+                if (llegadaEv.isPresent()) {
+                    kmLlegada = llegadaEv.get().getKilometraje().longValue();
+                } else if (kmEvents.size() > 1) {
+                    kmLlegada = kmEvents.getLast().getKilometraje().longValue();
+                }
+            }
+
+            Long kmRecorrido = (kmSalida != null && kmLlegada != null && kmLlegada >= kmSalida)
+                    ? (kmLlegada - kmSalida)
+                    : null;
+            if (kmRecorrido != null) {
+                totalKmRecorrido += kmRecorrido;
+            }
+
+            // Combustible
+            List<CargaCombustibleEntity> cargas = cargasPorSalida.getOrDefault(s.getId(), Collections.emptyList());
+            String combustibleTexto = "-";
+            if (!cargas.isEmpty()) {
+                BigDecimal sumLitros = cargas.stream()
+                        .map(CargaCombustibleEntity::getLitros)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                totalLitros = totalLitros.add(sumLitros);
+
+                String facts = cargas.stream()
+                        .map(CargaCombustibleEntity::getNumeroFactura)
+                        .filter(f -> f != null && !f.isBlank())
+                        .collect(Collectors.joining(", "));
+                combustibleTexto = sumLitros.stripTrailingZeros().toPlainString() + " lts" + (!facts.isBlank() ? " / " + facts : "");
+            }
+
+            String conductor = nombresMap.getOrDefault(s.getEmpleadoId(), "-");
+            if (conductorPrincipal == null && conductor != null && !conductor.equals("-")) {
+                conductorPrincipal = conductor;
+            }
+
+            dataSourceList.add(BitacoraSalidaItemReporteDto.builder()
+                    .id(s.getId())
+                    .dia(dia)
+                    .fecha(fechaStr)
+                    .descripcionActividad(s.getDescripcionActividad() != null ? s.getDescripcionActividad() : "-")
+                    .kmSalida(kmSalida)
+                    .kmLlegada(kmLlegada)
+                    .kmRecorrido(kmRecorrido)
+                    .combustibleTexto(combustibleTexto)
+                    .conductorNombre(conductor)
+                    .observaciones(s.getObservaciones() != null ? s.getObservaciones() : "-")
+                    .build());
+        }
+
+        // Parámetros para JasperReports
+        Map<String, Object> parameters = new HashMap<>();
+        try {
+            ClassPathResource logoResource = new ClassPathResource("reports/images/logo-ende-corani.png");
+            if (logoResource.exists()) {
+                parameters.put("LOGO_EMPRESA", logoResource.getInputStream());
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo cargar el logo institucional: {}", e.getMessage());
+        }
+
+        int anio = fechaDesde != null ? fechaDesde.getYear() : LocalDate.now().getYear();
+        String mes = fechaDesde != null
+                ? fechaDesde.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "BO")).toUpperCase(Locale.ROOT)
+                : "OCTUBRE";
+        String periodoTexto = (fechaDesde != null && fechaHasta != null)
+                ? fechaDesde.toLocalDate() + " al " + fechaHasta.toLocalDate()
+                : "PERIODO ACTUAL";
+
+        parameters.put("TITULO_REPORTE", "BITACORA DE VEHICULOS");
+        parameters.put("FORMULARIO_CODIGO", "GA-IN7-04");
+        parameters.put("FORMULARIO_VERSION", "01");
+        parameters.put("VEHICULO_TIPO", tipoVehiculo != null && !tipoVehiculo.isBlank() ? tipoVehiculo : activo.getNombre());
+        parameters.put("VEHICULO_PLACA", placa != null && !placa.isBlank() ? placa : "-");
+        parameters.put("RESPONSABLE_VEH", conductorPrincipal != null ? conductorPrincipal : "-");
+        parameters.put("UBICACION", "CORANI");
+        parameters.put("ANIO", String.valueOf(anio));
+        parameters.put("MES", mes);
+        parameters.put("PERIODO_TEXTO", periodoTexto);
+        parameters.put("TOTAL_SALIDAS", String.valueOf(salidas.size()));
+        parameters.put("TOTAL_KM", String.format("%,d", totalKmRecorrido));
+        parameters.put("TOTAL_LITROS", totalLitros.compareTo(BigDecimal.ZERO) > 0 ? totalLitros.stripTrailingZeros().toPlainString() + " lts" : "-");
+
+        return jasperReportService.generatePdfReport(REPORTE_BITACORA_SALIDAS_PATH, parameters, dataSourceList);
+    }
+
+    private String extractPlacaFromDescripcion(String descripcion) {
+        if (descripcion == null || descripcion.isBlank()) return null;
+        Matcher m = PLACA_PATTERN.matcher(descripcion);
+        if (m.find()) {
+            return m.group(1).trim();
+        }
+        return null;
     }
 }

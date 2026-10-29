@@ -5,9 +5,11 @@ import {
   BarChart3,
   BookOpen,
   Car,
+  ExternalLink,
+  FileDown,
   Fuel,
   Gauge,
-  Printer,
+  Loader2,
   RefreshCw,
   Route,
 } from "lucide-react"
@@ -23,6 +25,10 @@ import { Card, CardContent } from "@/shared/components/ui/card"
 import { Skeleton } from "@/shared/components/ui/skeleton"
 
 import { salidaVehicularQueries } from "../api/salida-vehicular.queries"
+import {
+  descargarReporteSalidasBitacoraPdf,
+  abrirReporteSalidasBitacoraPdf,
+} from "../api/salida-vehicular.service"
 import type { SalidaVehicular } from "../api/salida-vehicular.types"
 import {
   ReporteBitacoraVehicularTable,
@@ -339,6 +345,64 @@ export const ReportesSalidasVehicularesPage = () => {
     toast.success("Bitácora de vehículo consultada.")
   }
 
+  // Estado de carga del PDF generado en el Backend API
+  const [isPdfLoading, setIsPdfLoading] = useState(false)
+
+  // Descargar PDF generado por el Backend (JasperReports en Spring Boot API)
+  const handleDescargarPdf = async () => {
+    if (!filtrosActivos?.activoId) {
+      toast.error("Seleccione un vehículo y rango de fechas para generar el reporte.")
+      return
+    }
+
+    try {
+      setIsPdfLoading(true)
+      toast.info("Generando reporte oficial en PDF desde el servidor...")
+      await descargarReporteSalidasBitacoraPdf({
+        activoId: filtrosActivos.activoId,
+        fechaDesde: filtrosActivos.fechaDesde,
+        fechaHasta: filtrosActivos.fechaHasta,
+        search: searchQuery || undefined,
+        placa: datosVehiculo.placa,
+      })
+      toast.success("Reporte oficial en PDF generado y descargado exitosamente.")
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Error al generar el PDF en el servidor"
+      toast.error(`No se pudo generar el PDF: ${message}`)
+    } finally {
+      setIsPdfLoading(false)
+    }
+  }
+
+  // Abrir PDF oficial en nueva pestaña generado por el Backend API
+  const handleAbrirPdf = async () => {
+    if (!filtrosActivos?.activoId) {
+      toast.error("Seleccione un vehículo y rango de fechas.")
+      return
+    }
+
+    try {
+      setIsPdfLoading(true)
+      toast.info("Abriendo reporte en PDF desde el servidor...")
+      await abrirReporteSalidasBitacoraPdf({
+        activoId: filtrosActivos.activoId,
+        fechaDesde: filtrosActivos.fechaDesde,
+        fechaHasta: filtrosActivos.fechaHasta,
+        search: searchQuery || undefined,
+        placa: datosVehiculo.placa,
+      })
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Error al abrir el PDF"
+      toast.error(`No se pudo abrir el PDF: ${message}`)
+    } finally {
+      setIsPdfLoading(false)
+    }
+  }
+
   // Imprimir formulario oficial (window.print con estilos CSS landscape)
   const handleImprimir = () => {
     if (filas.length === 0) {
@@ -447,7 +511,7 @@ export const ReportesSalidasVehicularesPage = () => {
               variant="outline"
               size="sm"
               onClick={handleConsultar}
-              disabled={isLoading}
+              disabled={isLoading || isPdfLoading}
               className="text-xs h-8 gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
@@ -455,14 +519,35 @@ export const ReportesSalidasVehicularesPage = () => {
             </Button>
             <Button
               type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAbrirPdf}
+              disabled={filas.length === 0 || isPdfLoading}
+              className="text-xs h-8 gap-1.5 cursor-pointer"
+              title="Abrir PDF oficial en nueva pestaña"
+            >
+              <ExternalLink className="h-3.5 w-3.5 text-primary" />
+              <span>Ver PDF</span>
+            </Button>
+            <Button
+              type="button"
               variant="default"
               size="sm"
-              onClick={handleImprimir}
-              disabled={filas.length === 0}
-              className="text-xs h-8 gap-1.5 cursor-pointer"
+              onClick={handleDescargarPdf}
+              disabled={filas.length === 0 || isPdfLoading}
+              className="text-xs h-8 gap-1.5 cursor-pointer bg-primary font-semibold shadow-xs"
             >
-              <Printer className="h-3.5 w-3.5" />
-              <span>Imprimir</span>
+              {isPdfLoading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Generando PDF...</span>
+                </>
+              ) : (
+                <>
+                  <FileDown className="h-3.5 w-3.5" />
+                  <span>Descargar PDF</span>
+                </>
+              )}
             </Button>
           </div>
         )}
@@ -481,9 +566,11 @@ export const ReportesSalidasVehicularesPage = () => {
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
         onConsultar={handleConsultar}
+        onDescargarPdf={handleDescargarPdf}
         onImprimir={handleImprimir}
         onExportarCsv={handleExportarCsv}
         isLoading={isLoading}
+        isPdfLoading={isPdfLoading}
         hasData={filas.length > 0}
         placaSeleccionada={datosVehiculo.placa !== "S/P" ? datosVehiculo.placa : null}
       />
