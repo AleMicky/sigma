@@ -292,7 +292,7 @@ public class SalidaVehicularReporteService {
             Map<String, String> attrs = atributosMap.getOrDefault(salida.getActivoId(), Collections.emptyMap());
 
             List<SalidaVehicularEvento> evs = eventosPorSalida.getOrDefault(salida.getId(), Collections.emptyList());
-            Instant inicio = salida.getCreatedAt();
+            Instant inicio = salida.getFecha() != null ? salida.getFecha() : salida.getCreatedAt();
             Instant fin = null;
 
             if (!evs.isEmpty()) {

@@ -17,6 +17,7 @@ public class SalidaVehicularPersistenceMapper {
         entity.setNumero(domain.getNumero());
         entity.setActivoId(domain.getActivoId());
         entity.setEmpleadoId(domain.getEmpleadoId());
+        entity.setFecha(domain.getFecha());
         entity.setDescripcionActividad(domain.getDescripcionActividad());
         entity.setObservaciones(domain.getObservaciones());
         entity.setEstado(domain.getEstado());
@@ -37,6 +38,7 @@ public class SalidaVehicularPersistenceMapper {
         entity.setNumero(domain.getNumero());
         entity.setActivoId(domain.getActivoId());
         entity.setEmpleadoId(domain.getEmpleadoId());
+        entity.setFecha(domain.getFecha());
         entity.setDescripcionActividad(domain.getDescripcionActividad());
         entity.setObservaciones(domain.getObservaciones());
         entity.setEstado(domain.getEstado());
@@ -53,6 +55,7 @@ public class SalidaVehicularPersistenceMapper {
                 .numero(entity.getNumero())
                 .activoId(entity.getActivoId())
                 .empleadoId(entity.getEmpleadoId())
+                .fecha(entity.getFecha())
                 .descripcionActividad(entity.getDescripcionActividad())
                 .observaciones(entity.getObservaciones())
                 .estado(entity.getEstado())

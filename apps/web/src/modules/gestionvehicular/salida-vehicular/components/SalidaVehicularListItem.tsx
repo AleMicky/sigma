@@ -131,7 +131,7 @@ export function SalidaVehicularListItem({
 
           <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground ml-1">
             <Calendar className="size-3 text-muted-foreground/70" />
-            <span>{formatDate(salida.createdAt)}</span>
+            <span>{formatDate(salida.fecha || salida.createdAt)}</span>
           </span>
 
           {bitacorasCount > 0 && (

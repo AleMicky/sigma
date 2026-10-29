@@ -5,6 +5,7 @@ import {
   Activity,
   ArrowLeft,
   BarChart3,
+  Calendar,
   Car,
   Clock,
   Compass,
@@ -19,6 +20,7 @@ import {
   TrendingUp,
   User,
   Users,
+  X,
 } from "lucide-react"
 import {
   Bar,
@@ -101,6 +103,10 @@ export function ReportesSalidasVehicularesPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<string>("general")
 
+  // Global date filters
+  const [fechaDesde, setFechaDesde] = useState("")
+  const [fechaHasta, setFechaHasta] = useState("")
+
   // Search filters per tab
   const [searchGeneral, setSearchGeneral] = useState("")
   const [searchVehiculos, setSearchVehiculos] = useState("")
@@ -109,12 +115,19 @@ export function ReportesSalidasVehicularesPage() {
   const [searchBitacoras, setSearchBitacoras] = useState("")
   const [filterTipoBitacora, setFilterTipoBitacora] = useState<string>("ALL")
 
+  const dateQueryParams = useMemo(() => {
+    const params: Record<string, unknown> = {}
+    if (fechaDesde) params.fechaDesde = `${fechaDesde}T00:00:00`
+    if (fechaHasta) params.fechaHasta = `${fechaHasta}T23:59:59`
+    return Object.keys(params).length > 0 ? params : undefined
+  }, [fechaDesde, fechaHasta])
+
   // Report Queries
-  const generalQuery = useQuery(salidaVehicularQueries.reporteGeneral())
-  const vehiculosQuery = useQuery(salidaVehicularQueries.reporteVehiculos())
-  const empleadosQuery = useQuery(salidaVehicularQueries.reporteEmpleados())
-  const tiemposQuery = useQuery(salidaVehicularQueries.reporteTiempos())
-  const bitacorasQuery = useQuery(salidaVehicularQueries.reporteBitacoras())
+  const generalQuery = useQuery(salidaVehicularQueries.reporteGeneral(dateQueryParams))
+  const vehiculosQuery = useQuery(salidaVehicularQueries.reporteVehiculos(dateQueryParams))
+  const empleadosQuery = useQuery(salidaVehicularQueries.reporteEmpleados(dateQueryParams))
+  const tiemposQuery = useQuery(salidaVehicularQueries.reporteTiempos(dateQueryParams))
+  const bitacorasQuery = useQuery(salidaVehicularQueries.reporteBitacoras(dateQueryParams))
 
   const isFetchingAny =
     generalQuery.isFetching ||
@@ -278,7 +291,7 @@ export function ReportesSalidasVehicularesPage() {
             Actividad: s.descripcionActividad,
             Observaciones: s.observaciones ?? "-",
             Estado: s.estado,
-            FechaCreacion: s.createdAt,
+            FechaSalida: s.fecha || s.createdAt,
           }))
         )
         break
@@ -377,6 +390,44 @@ export function ReportesSalidasVehicularesPage() {
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="relative flex items-center">
+            <Calendar className="size-3 absolute left-2 text-muted-foreground pointer-events-none" />
+            <Input
+              type="date"
+              value={fechaDesde}
+              onChange={(e) => setFechaDesde(e.target.value)}
+              title="Fecha desde"
+              className="h-7 pl-6.5 pr-2 w-[128px] text-[11px] rounded-md shadow-2xs bg-card"
+            />
+          </div>
+
+          <div className="relative flex items-center">
+            <Calendar className="size-3 absolute left-2 text-muted-foreground pointer-events-none" />
+            <Input
+              type="date"
+              value={fechaHasta}
+              onChange={(e) => setFechaHasta(e.target.value)}
+              title="Fecha hasta"
+              className="h-7 pl-6.5 pr-2 w-[128px] text-[11px] rounded-md shadow-2xs bg-card"
+            />
+          </div>
+
+          {(fechaDesde || fechaHasta) && (
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                setFechaDesde("")
+                setFechaHasta("")
+              }}
+              className="h-7 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+              title="Limpiar filtro de fechas"
+            >
+              <X className="size-3" />
+              <span>Limpiar</span>
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="xs"
@@ -686,7 +737,7 @@ export function ReportesSalidasVehicularesPage() {
                       <TableHead className="w-44 font-semibold whitespace-nowrap">Vehículo / Placa</TableHead>
                       <TableHead className="w-44 font-semibold whitespace-nowrap">Conductor</TableHead>
                       <TableHead className="min-w-[180px] font-semibold whitespace-nowrap">Actividad</TableHead>
-                      <TableHead className="w-36 font-semibold whitespace-nowrap">Fecha Registro</TableHead>
+                      <TableHead className="w-36 font-semibold whitespace-nowrap">Fecha Salida</TableHead>
                       <TableHead className="w-28 font-semibold whitespace-nowrap">Estado</TableHead>
                       <TableHead className="w-16 font-semibold text-right whitespace-nowrap">Acción</TableHead>
                     </TableRow>
@@ -731,7 +782,7 @@ export function ReportesSalidasVehicularesPage() {
                             </span>
                           </TableCell>
                           <TableCell className="font-mono text-muted-foreground whitespace-nowrap text-[11px]">
-                            {formatDate(item.createdAt)}
+                            {formatDate(item.fecha || item.createdAt)}
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
                             <SalidaVehicularStatusBadge status={item.estado} />

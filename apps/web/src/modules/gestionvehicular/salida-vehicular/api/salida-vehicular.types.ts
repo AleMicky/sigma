@@ -12,6 +12,7 @@ export interface SalidaVehicular {
   empleadoId: string
   empleadoCodigo?: string | null
   empleadoNombre?: string | null
+  fecha: string
   descripcionActividad: string
   observaciones?: string | null
   estado: string
@@ -106,11 +107,13 @@ export interface WorkflowHistory {
 export interface RegistrarSalidaVehicularRequest {
   activoId: string
   empleadoId?: string | null
+  fecha?: string | null
   descripcionActividad: string
   observaciones?: string | null
 }
 
 export interface ActualizarSalidaVehicularRequest {
+  fecha?: string | null
   descripcionActividad?: string
   observaciones?: string | null
 }

@@ -57,6 +57,19 @@ public class SalidaVehicularService {
     private static final String ESTADO_LLEGADA = "LLEGADA";
     private static final String ESTADO_CANCELADA = "CANCELADA";
 
+    private static final Set<String> SORT_FIELDS = Set.of(
+            "id",
+            "numero",
+            "activoId",
+            "empleadoId",
+            "fecha",
+            "descripcionActividad",
+            "observaciones",
+            "estado",
+            "createdAt",
+            "updatedAt"
+    );
+
     private final SalidaVehicularRepository salidaRepository;
     private final SalidaVehicularEventoRepository eventoRepository;
     private final BitacoraVehicularRepository bitacoraRepository;
@@ -94,10 +107,13 @@ public class SalidaVehicularService {
                 ? request.observaciones().trim()
                 : null;
 
+        Instant fecha = request.fecha() != null ? request.fecha() : Instant.now();
+
         SalidaVehicular salida = SalidaVehicular.builder()
                 .numero(numero)
                 .activoId(request.activoId())
                 .empleadoId(empleadoId)
+                .fecha(fecha)
                 .descripcionActividad(request.descripcionActividad().trim())
                 .observaciones(observaciones)
                 .estado("SALIDA")
@@ -110,6 +126,7 @@ public class SalidaVehicularService {
         variables.put("salidaId", guardada.getId().toString());
         variables.put("empleadoId", empleadoId.toString());
         variables.put("activoId", request.activoId().toString());
+        variables.put("fecha", fecha.toString());
         variables.put("descripcionActividad", guardada.getDescripcionActividad());
         if (observaciones != null) {
             variables.put("observaciones", observaciones);
@@ -137,12 +154,26 @@ public class SalidaVehicularService {
             LocalDateTime fechaHasta,
             PageRequestDto pageRequest
     ) {
-        Pageable pageable = pageRequest.toPageable();
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
         Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
 
+        UUID targetEmpleadoId;
+        if (securityUtils.isAdmin()) {
+            targetEmpleadoId = empleadoId;
+        } else {
+            UUID empleadoActual = obtenerEmpleadoIdActual();
+            if (empleadoActual == null) {
+                Page<SalidaVehicular> emptyPage = new org.springframework.data.domain.PageImpl<>(
+                        Collections.emptyList(), pageable, 0
+                );
+                return PageResponse.of(Collections.emptyList(), emptyPage);
+            }
+            targetEmpleadoId = empleadoActual;
+        }
+
         Page<SalidaVehicular> page = salidaRepository.searchWithFilters(
-                search, activoId, empleadoId, estado, instantDesde, instantHasta, pageable
+                search, activoId, targetEmpleadoId, estado, instantDesde, instantHasta, pageable
         );
 
         List<SalidaVehicularResponse> responses = mapListToResponse(page.getContent());
@@ -166,6 +197,9 @@ public class SalidaVehicularService {
             throw new BusinessException("No se puede modificar una salida vehicular que ya está en " + estadoActual);
         }
 
+        if (request.fecha() != null) {
+            salida.setFecha(request.fecha());
+        }
         if (request.descripcionActividad() != null && !request.descripcionActividad().isBlank()) {
             salida.setDescripcionActividad(request.descripcionActividad().trim());
         }
@@ -185,15 +219,16 @@ public class SalidaVehicularService {
 
     @Transactional(readOnly = true)
     public PageResponse<SalidaVehicularResponse> listarMisSalidas(PageRequestDto pageRequest) {
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         UUID empleadoId = obtenerEmpleadoIdActual();
         if (empleadoId == null) {
             Page<SalidaVehicular> emptyPage = new org.springframework.data.domain.PageImpl<>(
-                    Collections.emptyList(), pageRequest.toPageable(), 0
+                    Collections.emptyList(), pageable, 0
             );
             return PageResponse.of(Collections.emptyList(), emptyPage);
         }
 
-        Page<SalidaVehicular> page = salidaRepository.findByEmpleadoId(empleadoId, pageRequest.toPageable());
+        Page<SalidaVehicular> page = salidaRepository.findByEmpleadoId(empleadoId, pageable);
         List<SalidaVehicularResponse> responses = mapListToResponse(page.getContent());
         return PageResponse.of(responses, page);
     }
@@ -513,6 +548,7 @@ public class SalidaVehicularService {
                 .empleadoId(salida.getEmpleadoId())
                 .empleadoCodigo(empleadoCodigo)
                 .empleadoNombre(empleadoNombre)
+                .fecha(salida.getFecha() != null ? salida.getFecha() : salida.getCreatedAt())
                 .descripcionActividad(salida.getDescripcionActividad())
                 .observaciones(salida.getObservaciones())
                 .estado(salida.getEstado())
@@ -562,6 +598,7 @@ public class SalidaVehicularService {
                     .empleadoId(salida.getEmpleadoId())
                     .empleadoCodigo(emp != null ? emp.getCodigo() : null)
                     .empleadoNombre(emp != null ? emp.getNombreCompleto() : null)
+                    .fecha(salida.getFecha() != null ? salida.getFecha() : salida.getCreatedAt())
                     .descripcionActividad(salida.getDescripcionActividad())
                     .observaciones(salida.getObservaciones())
                     .estado(salida.getEstado())

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Getter
@@ -31,6 +32,10 @@ import java.util.UUID;
                 @Index(
                         name = "idx_salida_estado",
                         columnList = "estado"
+                ),
+                @Index(
+                        name = "idx_salida_fecha",
+                        columnList = "fecha"
                 )
         },
         uniqueConstraints = {
@@ -53,6 +58,9 @@ public class SalidaVehicularEntity extends BaseEntity {
 
     @Column(name = "empleado_id", nullable = false)
     private UUID empleadoId;
+
+    @Column(name = "fecha", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    private Instant fecha;
 
     @Column(name = "descripcion_actividad", nullable = false, columnDefinition = "TEXT")
     private String descripcionActividad;

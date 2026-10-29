@@ -26,6 +26,7 @@ import {
   ComboboxList,
 } from "@/shared/components/ui/combobox"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
+import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { cn } from "@/shared/lib/utils"
@@ -34,6 +35,7 @@ import { useRegistrarSalidaMutation } from "../api/salida-vehicular.mutations"
 import type { SalidaVehicular } from "../api/salida-vehicular.types"
 import {
   defaultRegistrarSalidaValues,
+  getLocalCurrentIsoString,
   registrarSalidaSchema,
 } from "../schemas/salida-vehicular.schema"
 
@@ -82,6 +84,7 @@ export function RegistrarSalidaDialog({
         const created = await registrarMutation.mutateAsync({
           activoId: value.activoId,
           empleadoId: value.empleadoId,
+          fecha: value.fecha ? new Date(value.fecha).toISOString() : new Date().toISOString(),
           descripcionActividad: value.descripcionActividad.trim(),
           observaciones: value.observaciones.trim() || undefined,
         })
@@ -136,7 +139,10 @@ export function RegistrarSalidaDialog({
     setSelectedActivo(null)
     setVehiculoSearch("")
     setVehiculoPage(0)
-    form.reset()
+    form.reset({
+      ...defaultRegistrarSalidaValues,
+      fecha: getLocalCurrentIsoString(),
+    })
   }, [form])
 
   useEffect(() => {
@@ -467,7 +473,34 @@ export function RegistrarSalidaDialog({
           }}
         </form.Field>
 
-        {/* 3. Descripción de la Actividad */}
+        {/* 3. Fecha y Hora de Salida */}
+        <form.Field name="fecha">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+
+            return (
+              <Field data-invalid={isInvalid || undefined}>
+                <RequiredFieldLabel htmlFor={field.name}>
+                  Fecha y Hora de Salida
+                </RequiredFieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="datetime-local"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  className="h-9 text-xs shadow-2xs"
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+
+        {/* 4. Descripción de la Actividad */}
         <form.Field name="descripcionActividad">
           {(field) => {
             const isInvalid =
