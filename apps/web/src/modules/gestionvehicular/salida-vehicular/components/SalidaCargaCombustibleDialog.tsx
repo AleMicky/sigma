@@ -37,6 +37,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
+import { cn } from "@/shared/lib/utils"
 import { formatDate } from "@/shared/utils/date.utils"
 
 import type { SalidaVehicular } from "../api/salida-vehicular.types"
@@ -138,36 +139,31 @@ function SalidaCargaCombustibleForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.04] p-3 text-xs flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Fuel className="size-4 text-amber-500 shrink-0" />
-          <p className="text-muted-foreground">
-            Registra la carga de combustible realizada durante la salida{" "}
-            <strong className="text-foreground font-mono">{salida.numero}</strong>. Se
-            añadirá automáticamente una entrada en la bitácora del recorrido.
-          </p>
-        </div>
-        {coords && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shrink-0">
-            <Compass className="size-3" />
-            GPS activo
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {coords && (
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md">
+          <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300">
+            <Compass className="size-3 shrink-0" />
+            Ubicación GPS capturada para la bitácora
           </span>
-        )}
-      </div>
+          <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
+            {coords.lat}, {coords.lng}
+          </span>
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         {/* Tipo de Insumo / Combustible */}
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label className="text-xs font-semibold flex items-center gap-1">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium flex items-center gap-1">
             <Droplet className="size-3 text-amber-500" />
-            Tipo de Combustible / Insumo *
+            Combustible *
           </Label>
           <select
             value={activeInsumoId}
             onChange={(e) => setInsumoId(e.target.value)}
             required
-            className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="w-full h-8 rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             {insumos.length === 0 && (
               <option value="">Cargando combustibles...</option>
@@ -180,9 +176,24 @@ function SalidaCargaCombustibleForm({
           </select>
         </div>
 
+        {/* Fecha y Hora de Carga */}
+        <div className="space-y-1">
+          <Label className="text-xs font-medium flex items-center gap-1">
+            <Calendar className="size-3 text-muted-foreground" />
+            Fecha y Hora *
+          </Label>
+          <Input
+            type="datetime-local"
+            value={fechaCarga}
+            onChange={(e) => setFechaCarga(e.target.value)}
+            required
+            className="h-8 text-xs"
+          />
+        </div>
+
         {/* Litros cargados */}
-        <div className="space-y-1.5">
-          <Label className="text-xs font-semibold flex items-center gap-1">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium flex items-center gap-1">
             <Fuel className="size-3 text-primary" />
             Litros Cargados *
           </Label>
@@ -194,16 +205,23 @@ function SalidaCargaCombustibleForm({
             value={litros}
             onChange={(e) => setLitros(e.target.value)}
             required
-            className="h-9 text-xs"
+            className="h-8 text-xs font-mono"
           />
         </div>
 
         {/* Precio Total */}
-        <div className="space-y-1.5">
-          <Label className="text-xs font-semibold flex items-center gap-1">
-            <DollarSign className="size-3 text-emerald-500" />
-            Precio Total (Bs.) *
-          </Label>
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-medium flex items-center gap-1">
+              <DollarSign className="size-3 text-emerald-500" />
+              Total (Bs.) *
+            </Label>
+            {calculatedUnitPrice && (
+              <span className="text-[10.5px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                ≈ {calculatedUnitPrice} Bs./L
+              </span>
+            )}
+          </div>
           <Input
             type="number"
             step="0.01"
@@ -212,63 +230,36 @@ function SalidaCargaCombustibleForm({
             value={precioTotal}
             onChange={(e) => setPrecioTotal(e.target.value)}
             required
-            className="h-9 text-xs"
+            className="h-8 text-xs font-mono"
           />
         </div>
 
-        {/* Preview Unitario */}
-        {calculatedUnitPrice && (
-          <div className="sm:col-span-2 bg-emerald-500/10 border border-emerald-500/25 rounded-md px-3 py-1.5 flex items-center justify-between text-xs">
-            <span className="text-emerald-700 dark:text-emerald-300 font-medium">
-              Precio calculado por litro:
-            </span>
-            <span className="font-mono font-bold text-emerald-800 dark:text-emerald-200">
-              {calculatedUnitPrice} Bs. / Litro
-            </span>
-          </div>
-        )}
+        {/* Empleado Conductor Responsable */}
+        <div className="space-y-1">
+          <Label className="text-xs font-medium flex items-center gap-1">
+            <User className="size-3 text-muted-foreground" />
+            Conductor / Responsable *
+          </Label>
+          <EmpleadoCombobox
+            value={activeEmpleadoId}
+            onValueChange={(val) => setEmpleadoId(val)}
+            placeholder="Seleccionar conductor..."
+            className="h-8 text-xs"
+          />
+        </div>
 
         {/* Número de Factura / Recibo */}
-        <div className="space-y-1.5">
-          <Label className="text-xs font-semibold flex items-center gap-1">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium flex items-center gap-1">
             <Receipt className="size-3 text-muted-foreground" />
-            Nº Factura o Recibo
+            Nº Factura / Recibo
           </Label>
           <Input
             type="text"
             placeholder="Ej. FAC-98234"
             value={numeroFactura}
             onChange={(e) => setNumeroFactura(e.target.value)}
-            className="h-9 text-xs"
-          />
-        </div>
-
-        {/* Fecha y Hora de Carga */}
-        <div className="space-y-1.5">
-          <Label className="text-xs font-semibold flex items-center gap-1">
-            <Calendar className="size-3 text-muted-foreground" />
-            Fecha y Hora de Carga *
-          </Label>
-          <Input
-            type="datetime-local"
-            value={fechaCarga}
-            onChange={(e) => setFechaCarga(e.target.value)}
-            required
-            className="h-9 text-xs"
-          />
-        </div>
-
-        {/* Empleado Conductor Responsable */}
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label className="text-xs font-semibold flex items-center gap-1">
-            <User className="size-3 text-muted-foreground" />
-            Empleado Responsable / Conductor *
-          </Label>
-          <EmpleadoCombobox
-            value={activeEmpleadoId}
-            onValueChange={(val) => setEmpleadoId(val)}
-            placeholder="Seleccionar empleado o conductor..."
-            className="h-9 text-xs"
+            className="h-8 text-xs"
           />
         </div>
       </div>
@@ -280,7 +271,7 @@ function SalidaCargaCombustibleForm({
           size="sm"
           onClick={onCancel}
           disabled={createMutation.isPending}
-          className="h-8 text-xs cursor-pointer"
+          className="h-7 text-xs cursor-pointer px-2.5"
         >
           Cancelar
         </Button>
@@ -288,7 +279,7 @@ function SalidaCargaCombustibleForm({
           type="submit"
           size="sm"
           disabled={createMutation.isPending}
-          className="h-8 text-xs font-semibold gap-1.5 bg-amber-600 hover:bg-amber-500 text-white cursor-pointer"
+          className="h-7 text-xs font-medium gap-1.5 bg-amber-600 hover:bg-amber-500 text-white cursor-pointer px-3"
         >
           {createMutation.isPending ? (
             <>
@@ -372,37 +363,38 @@ export function SalidaCargaCombustibleDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleModalOpenChange}>
-        <DialogContent className="max-w-2xl sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden border border-border/80 shadow-2xl">
+        <DialogContent className="sm:max-w-[540px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border border-border/80 shadow-2xl">
           {/* Header */}
-          <DialogHeader className="p-4 sm:p-5 border-b border-border/60 bg-card/60 backdrop-blur-md">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="size-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-500 shadow-inner">
-                  <Fuel className="size-5" />
+          <DialogHeader className="px-4 py-3 sm:px-4 sm:py-3.5 border-b border-border/60 bg-card/60 backdrop-blur-md">
+            <div className="flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="size-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-500">
+                  <Fuel className="size-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <DialogTitle className="text-base sm:text-lg font-bold tracking-tight">
-                      Combustible en Salida Vehicular
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <DialogTitle className="text-sm font-semibold tracking-tight">
+                      Combustible en Salida
                     </DialogTitle>
                     {salida?.numero && (
-                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                      <span className="font-mono text-[10.5px] font-bold px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20">
                         {salida.numero}
                       </span>
                     )}
                   </div>
-                  <DialogDescription className="text-xs text-muted-foreground truncate mt-0.5 flex items-center gap-2 flex-wrap">
+                  <DialogDescription className="text-[11px] text-muted-foreground truncate mt-0.5 flex items-center gap-2 flex-wrap">
                     {salida && (
                       <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
                         <Car className="size-3 text-amber-500" />
                         {vehiculoLabel}
-                        <span className="font-mono text-[10.5px] font-bold text-amber-500">
+                        <span className="font-mono text-[10px] text-amber-600 dark:text-amber-400">
                           ({placaLabel})
                         </span>
                       </span>
                     )}
                     {salida?.empleadoNombre && (
                       <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        <span>•</span>
                         <User className="size-3 text-emerald-500" />
                         {salida.empleadoNombre}
                       </span>
@@ -412,72 +404,62 @@ export function SalidaCargaCombustibleDialog({
               </div>
 
               {!readOnly && (
-                <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={viewMode === "create" ? "outline" : "default"}
+                  onClick={() => setViewMode(viewMode === "create" ? "list" : "create")}
+                  className={cn(
+                    "h-7 text-xs px-2.5 gap-1.5 cursor-pointer shrink-0 font-medium",
+                    viewMode === "list" && "bg-amber-600 hover:bg-amber-500 text-white"
+                  )}
+                >
                   {viewMode === "list" ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => setViewMode("create")}
-                      className="gap-1.5 h-8 text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white shadow-xs cursor-pointer"
-                    >
+                    <>
                       <Plus className="size-3.5" />
                       <span>Nueva Carga</span>
-                    </Button>
+                    </>
                   ) : (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setViewMode("list")}
-                      className="gap-1.5 h-8 text-xs font-medium cursor-pointer"
-                    >
+                    <>
                       <X className="size-3.5" />
                       <span>Ver Cargas</span>
-                    </Button>
+                    </>
                   )}
-                </div>
+                </Button>
               )}
             </div>
 
-            {/* Resumen Métricas */}
-            <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/40 text-[11px]">
-              <div className="bg-muted/40 rounded-lg p-2 border border-border/40">
-                <span className="text-[10px] text-muted-foreground font-semibold block uppercase">
-                  Cargas
-                </span>
-                <span className="text-sm font-bold text-foreground">
-                  {cargas.length}
-                </span>
+            {/* Resumen Métricas Compacto */}
+            {cargas.length > 0 && (
+              <div className="grid grid-cols-4 gap-1.5 mt-2.5 pt-2.5 border-t border-border/40 text-[11px]">
+                <div className="bg-muted/40 rounded px-2 py-1 border border-border/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
+                  <span className="text-[10px] text-muted-foreground">Cargas</span>
+                  <span className="font-semibold text-foreground font-mono">{cargas.length}</span>
+                </div>
+                <div className="bg-muted/40 rounded px-2 py-1 border border-border/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
+                  <span className="text-[10px] text-muted-foreground">Litros</span>
+                  <span className="font-semibold font-mono text-amber-600 dark:text-amber-400">
+                    {totalLitros.toFixed(2)} L
+                  </span>
+                </div>
+                <div className="bg-muted/40 rounded px-2 py-1 border border-border/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
+                  <span className="text-[10px] text-muted-foreground">Gasto</span>
+                  <span className="font-semibold font-mono text-emerald-600 dark:text-emerald-400">
+                    {totalGasto.toFixed(2)} Bs.
+                  </span>
+                </div>
+                <div className="bg-muted/40 rounded px-2 py-1 border border-border/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
+                  <span className="text-[10px] text-muted-foreground">Promedio</span>
+                  <span className="font-semibold font-mono text-sky-600 dark:text-sky-400">
+                    {promedioPorLitro > 0 ? `${promedioPorLitro.toFixed(2)}` : "-"}
+                  </span>
+                </div>
               </div>
-              <div className="bg-muted/40 rounded-lg p-2 border border-border/40">
-                <span className="text-[10px] text-muted-foreground font-semibold block uppercase">
-                  Litros Totales
-                </span>
-                <span className="text-sm font-bold text-amber-500">
-                  {totalLitros.toFixed(2)} L
-                </span>
-              </div>
-              <div className="bg-muted/40 rounded-lg p-2 border border-border/40">
-                <span className="text-[10px] text-muted-foreground font-semibold block uppercase">
-                  Gasto Total
-                </span>
-                <span className="text-sm font-bold text-emerald-500">
-                  {totalGasto.toFixed(2)} Bs.
-                </span>
-              </div>
-              <div className="bg-muted/40 rounded-lg p-2 border border-border/40">
-                <span className="text-[10px] text-muted-foreground font-semibold block uppercase">
-                  Promedio
-                </span>
-                <span className="text-sm font-bold text-sky-500 font-mono">
-                  {promedioPorLitro > 0 ? `${promedioPorLitro.toFixed(2)} Bs./L` : "-"}
-                </span>
-              </div>
-            </div>
+            )}
           </DialogHeader>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+          <div className="flex-1 overflow-y-auto p-3.5 sm:p-4">
             {viewMode === "create" && salida ? (
               <SalidaCargaCombustibleForm
                 salida={salida}
@@ -486,37 +468,37 @@ export function SalidaCargaCombustibleDialog({
                 onCancel={() => setViewMode("list")}
               />
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {cargasQuery.isLoading ? (
-                  <div className="py-10 flex flex-col items-center justify-center gap-2 text-muted-foreground text-xs">
-                    <Loader2 className="size-5 animate-spin text-amber-500" />
-                    <span>Cargando registros de combustible...</span>
+                  <div className="py-8 flex flex-col items-center justify-center gap-2 text-muted-foreground text-xs">
+                    <Loader2 className="size-4 animate-spin text-amber-500" />
+                    <span>Cargando registros...</span>
                   </div>
                 ) : cargas.length === 0 ? (
-                  <div className="py-10 border border-dashed border-border/80 rounded-xl flex flex-col items-center justify-center p-6 text-center">
-                    <div className="size-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 mb-2">
-                      <Fuel className="size-6" />
+                  <div className="py-7 px-4 border border-dashed border-border/70 rounded-xl flex flex-col items-center justify-center text-center">
+                    <div className="size-9 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 mb-2">
+                      <Fuel className="size-4.5" />
                     </div>
-                    <h4 className="text-sm font-semibold text-foreground">
-                      No hay cargas de combustible en esta salida
+                    <h4 className="text-xs font-semibold text-foreground">
+                      No hay cargas registradas
                     </h4>
-                    <p className="text-xs text-muted-foreground max-w-sm mt-1">
-                      Registra las cargas de combustible realizadas durante este recorrido para llevar el control de litros y gasto.
+                    <p className="text-[11px] text-muted-foreground max-w-xs mt-0.5">
+                      Registra el combustible cargado durante esta salida vehicular.
                     </p>
                     {!readOnly && (
                       <Button
                         type="button"
                         size="sm"
                         onClick={() => setViewMode("create")}
-                        className="mt-4 gap-1.5 text-xs bg-amber-600 hover:bg-amber-500 text-white cursor-pointer"
+                        className="mt-3 h-7 px-3 gap-1.5 text-xs bg-amber-600 hover:bg-amber-500 text-white cursor-pointer"
                       >
                         <Plus className="size-3.5" />
-                        <span>Registrar Primera Carga</span>
+                        <span>Registrar Carga</span>
                       </Button>
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {cargas.map((carga) => {
                       const l = Number(carga.litros) || 0
                       const p = Number(carga.precioTotal) || 0
@@ -526,28 +508,28 @@ export function SalidaCargaCombustibleDialog({
                       return (
                         <div
                           key={carga.id}
-                          className="group relative rounded-xl border border-border/80 bg-card p-3 shadow-2xs hover:border-amber-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                          className="group rounded-lg border border-border/70 bg-card/60 p-2.5 shadow-2xs hover:border-amber-500/40 transition-all flex items-center justify-between gap-2.5 text-xs"
                         >
-                          <div className="space-y-1 min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-foreground flex items-center gap-1">
+                          <div className="space-y-0.5 min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-semibold text-foreground flex items-center gap-1.5">
                                 <Fuel className="size-3.5 text-amber-500 shrink-0" />
                                 {carga.insumo?.nombre || "Combustible"}
                               </span>
                               {carga.numeroFactura && (
-                                <span className="font-mono text-[10.5px] px-1.5 py-0.5 rounded bg-muted text-foreground/80 border border-border/60">
+                                <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/50">
                                   Fac: {carga.numeroFactura}
                                 </span>
                               )}
                             </div>
 
-                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
                               <span className="flex items-center gap-1">
                                 <Calendar className="size-3 text-muted-foreground shrink-0" />
                                 {formatDate(carga.fechaCarga)}
                               </span>
                               {carga.empleado && (
-                                <span className="flex items-center gap-1 truncate">
+                                <span className="flex items-center gap-1 truncate max-w-[180px]">
                                   <User className="size-3 text-muted-foreground shrink-0" />
                                   {carga.empleado.nombreCompleto}
                                 </span>
@@ -555,14 +537,14 @@ export function SalidaCargaCombustibleDialog({
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40">
+                          <div className="flex items-center gap-2.5 shrink-0">
                             <div className="text-right">
-                              <div className="font-bold text-foreground">
-                                <span className="font-mono text-amber-500 font-black">
+                              <div className="font-bold text-foreground text-xs">
+                                <span className="font-mono text-amber-600 dark:text-amber-400">
                                   {l.toFixed(2)} L
                                 </span>
                                 <span className="text-muted-foreground mx-1">•</span>
-                                <span className="font-mono text-emerald-500 font-black">
+                                <span className="font-mono text-emerald-600 dark:text-emerald-400">
                                   {p.toFixed(2)} Bs.
                                 </span>
                               </div>
@@ -580,7 +562,7 @@ export function SalidaCargaCombustibleDialog({
                                 variant="ghost"
                                 onClick={() => setDeleteTarget(carga)}
                                 className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                                title="Eliminar registro de combustible"
+                                title="Eliminar registro"
                               >
                                 <Trash2 className="size-3.5" />
                               </Button>
@@ -595,17 +577,19 @@ export function SalidaCargaCombustibleDialog({
             )}
           </div>
 
-          <DialogFooter className="p-3 sm:p-4 border-t border-border/60 bg-muted/20 flex items-center justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleModalOpenChange(false)}
-              className="text-xs h-8 cursor-pointer"
-            >
-              Cerrar
-            </Button>
-          </DialogFooter>
+          {viewMode === "list" && (
+            <DialogFooter className="px-3.5 py-2 sm:px-4 sm:py-2.5 border-t border-border/60 bg-muted/20 flex items-center justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleModalOpenChange(false)}
+                className="text-xs h-7 px-3 cursor-pointer"
+              >
+                Cerrar
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
 

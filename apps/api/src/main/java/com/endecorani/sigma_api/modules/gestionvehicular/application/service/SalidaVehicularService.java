@@ -158,8 +158,22 @@ public class SalidaVehicularService {
         Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
         Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
 
+        UUID targetEmpleadoId;
+        if (securityUtils.isAdmin()) {
+            targetEmpleadoId = empleadoId;
+        } else {
+            UUID empleadoActual = obtenerEmpleadoIdActual();
+            if (empleadoActual == null) {
+                Page<SalidaVehicular> emptyPage = new org.springframework.data.domain.PageImpl<>(
+                        Collections.emptyList(), pageable, 0
+                );
+                return PageResponse.of(Collections.emptyList(), emptyPage);
+            }
+            targetEmpleadoId = empleadoActual;
+        }
+
         Page<SalidaVehicular> page = salidaRepository.searchWithFilters(
-                search, activoId, empleadoId, estado, instantDesde, instantHasta, pageable
+                search, activoId, targetEmpleadoId, estado, instantDesde, instantHasta, pageable
         );
 
         List<SalidaVehicularResponse> responses = mapListToResponse(page.getContent());
