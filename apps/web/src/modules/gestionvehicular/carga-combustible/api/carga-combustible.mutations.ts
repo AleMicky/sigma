@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { isApiError } from "@/shared/api"
+import { salidaVehicularKeys } from "../../salida-vehicular/api/salida-vehicular.keys"
 
 import { cargaCombustibleKeys } from "./carga-combustible.keys"
 import {
@@ -21,6 +22,7 @@ export function useCreateCargaCombustible() {
     onSuccess: () => {
       toast.success("Carga de combustible registrada correctamente")
       queryClient.invalidateQueries({ queryKey: cargaCombustibleKeys.all })
+      queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.all })
     },
     onError: (error) => {
       toast.error(
@@ -46,6 +48,7 @@ export function useUpdateCargaCombustible() {
     onSuccess: () => {
       toast.success("Carga de combustible actualizada correctamente")
       queryClient.invalidateQueries({ queryKey: cargaCombustibleKeys.all })
+      queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.all })
     },
     onError: (error) => {
       toast.error(
@@ -65,6 +68,7 @@ export function useDeleteCargaCombustible() {
     onSuccess: () => {
       toast.success("Carga de combustible eliminada correctamente")
       queryClient.invalidateQueries({ queryKey: cargaCombustibleKeys.all })
+      queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.all })
     },
     onError: (error) => {
       toast.error(

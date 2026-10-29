@@ -13,16 +13,25 @@ import {
   ExternalLink,
   FileText,
   Flag,
+  Fuel,
   Gauge,
   Map,
   Navigation,
   Play,
   Plus,
+  Receipt,
   RefreshCw,
+  Trash2,
   User,
 } from "lucide-react"
 import { toast } from "sonner"
 
+import {
+  useDeleteCargaCombustible,
+} from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.mutations"
+import { cargaCombustibleQueries } from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.queries"
+import type { CargaCombustible } from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.service"
+import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { PageShell } from "@/shared/components/page-shell"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -43,6 +52,7 @@ import type { SalidaVehicularEvento } from "../api/salida-vehicular.types"
 import { CancelarSalidaDialog } from "../components/CancelarSalidaDialog"
 import { EjecutarAccionFlowableDialog } from "../components/EjecutarAccionFlowableDialog"
 import { RegistrarBitacoraModal } from "../components/RegistrarBitacoraModal"
+import { SalidaCargaCombustibleDialog } from "../components/SalidaCargaCombustibleDialog"
 import { SalidaVehicularRouteMap } from "../components/SalidaVehicularRouteMap"
 import { SalidaVehicularStatusBadge } from "../components/SalidaVehicularStatusBadge"
 import { getSalidaNextActionConfig } from "../components/salida-action.utils"
@@ -65,24 +75,48 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false)
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
   const [isBitacoraDialogOpen, setIsBitacoraDialogOpen] = useState(false)
+  const [isFuelDialogOpen, setIsFuelDialogOpen] = useState(false)
+  const [deleteCargaTarget, setDeleteCargaTarget] = useState<CargaCombustible | null>(null)
 
   // Queries
   const salidaQuery = useQuery(salidaVehicularQueries.detail(salidaId))
   const eventosQuery = useQuery(salidaVehicularQueries.eventos(salidaId))
   const bitacorasQuery = useQuery(salidaVehicularQueries.bitacoras(salidaId))
+  const cargasCombustibleQuery = useQuery(cargaCombustibleQueries.bySalida(salidaId))
+  const deleteCargaMutation = useDeleteCargaCombustible()
 
   const salida = salidaQuery.data
   const eventos = useMemo(() => eventosQuery.data ?? [], [eventosQuery.data])
   const bitacoras = useMemo(() => bitacorasQuery.data ?? [], [bitacorasQuery.data])
+  const cargas = useMemo(
+    () => cargasCombustibleQuery.data ?? [],
+    [cargasCombustibleQuery.data]
+  )
+
+  const combustibleStats = useMemo(() => {
+    const totalLitros = cargas.reduce((acc, c) => acc + (Number(c.litros) || 0), 0)
+    const totalGasto = cargas.reduce((acc, c) => acc + (Number(c.precioTotal) || 0), 0)
+    const promedioPorLitro = totalLitros > 0 ? totalGasto / totalLitros : 0
+    return {
+      totalCargas: cargas.length,
+      totalLitros,
+      totalGasto,
+      promedioPorLitro,
+    }
+  }, [cargas])
 
   const isFetchingAny =
-    salidaQuery.isFetching || eventosQuery.isFetching || bitacorasQuery.isFetching
+    salidaQuery.isFetching ||
+    eventosQuery.isFetching ||
+    bitacorasQuery.isFetching ||
+    cargasCombustibleQuery.isFetching
 
   const handleRefresh = async () => {
     await Promise.all([
       salidaQuery.refetch(),
       eventosQuery.refetch(),
       bitacorasQuery.refetch(),
+      cargasCombustibleQuery.refetch(),
     ])
     toast.success("Información actualizada")
   }
@@ -360,6 +394,19 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
               <span>Nueva Bitácora</span>
             </Button>
 
+            {!isCancelado && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFuelDialogOpen(true)}
+                className="h-8 text-xs gap-1.5 cursor-pointer font-medium border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 shadow-2xs"
+              >
+                <Fuel className="size-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Combustible ({cargas.length})</span>
+              </Button>
+            )}
+
             {!isInactive && (
               <Button
                 type="button"
@@ -572,7 +619,7 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
 
       {/* 4. TABS NAVIGATION */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-2xl h-auto sm:h-9 p-0.5 bg-muted/60">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full max-w-3xl h-auto sm:h-9 p-0.5 bg-muted/60">
           <TabsTrigger value="general" className="text-xs gap-1.5 cursor-pointer py-1.5 sm:py-0">
             <Navigation className="size-3.5 text-primary" />
             General y Ruta
@@ -588,6 +635,10 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
           <TabsTrigger value="bitacoras" className="text-xs gap-1.5 cursor-pointer py-1.5 sm:py-0">
             <FileText className="size-3.5 text-emerald-500" />
             Bitácora ({bitacoras.length})
+          </TabsTrigger>
+          <TabsTrigger value="combustible" className="text-xs gap-1.5 cursor-pointer py-1.5 sm:py-0">
+            <Fuel className="size-3.5 text-amber-500" />
+            Combustible ({cargas.length})
           </TabsTrigger>
         </TabsList>
 
@@ -1032,6 +1083,181 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* TAB 5: COMBUSTIBLE */}
+        <TabsContent value="combustible" className="space-y-4 pt-1">
+          {/* Resumen KPI de Combustible en la Salida */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card className="border-border/70 shadow-2xs">
+              <CardContent className="p-3.5">
+                <span className="text-[10.5px] font-semibold uppercase text-muted-foreground block">
+                  Cargas Registradas
+                </span>
+                <span className="text-lg font-bold text-foreground font-mono">
+                  {combustibleStats.totalCargas}
+                </span>
+              </CardContent>
+            </Card>
+            <Card className="border-border/70 shadow-2xs">
+              <CardContent className="p-3.5">
+                <span className="text-[10.5px] font-semibold uppercase text-muted-foreground block">
+                  Litros Totales
+                </span>
+                <span className="text-lg font-bold text-amber-500 font-mono">
+                  {combustibleStats.totalLitros.toFixed(2)} L
+                </span>
+              </CardContent>
+            </Card>
+            <Card className="border-border/70 shadow-2xs">
+              <CardContent className="p-3.5">
+                <span className="text-[10.5px] font-semibold uppercase text-muted-foreground block">
+                  Gasto Total
+                </span>
+                <span className="text-lg font-bold text-emerald-500 font-mono">
+                  Bs. {combustibleStats.totalGasto.toFixed(2)}
+                </span>
+              </CardContent>
+            </Card>
+            <Card className="border-border/70 shadow-2xs">
+              <CardContent className="p-3.5">
+                <span className="text-[10.5px] font-semibold uppercase text-muted-foreground block">
+                  Precio Promedio
+                </span>
+                <span className="text-lg font-bold text-sky-500 font-mono">
+                  {combustibleStats.promedioPorLitro > 0
+                    ? `${combustibleStats.promedioPorLitro.toFixed(2)} Bs./L`
+                    : "-"}
+                </span>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-border/70 shadow-2xs">
+            <CardHeader className="pb-3 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Fuel className="size-4 text-amber-500" />
+                  Cargas de Combustible de la Salida
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Control de abastecimiento de combustible asociado directamente a la salida{" "}
+                  <span className="font-mono font-semibold text-foreground">#{salida.numero}</span>.
+                </p>
+              </div>
+
+              {!isCancelado && (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setIsFuelDialogOpen(true)}
+                  className="text-xs gap-1.5 cursor-pointer bg-amber-600 hover:bg-amber-500 text-white font-semibold shadow-2xs"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Registrar Carga</span>
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="text-xs">
+                    <TableHead className="font-semibold">Fecha y Hora</TableHead>
+                    <TableHead className="font-semibold">Combustible / Insumo</TableHead>
+                    <TableHead className="font-semibold">Nº Factura</TableHead>
+                    <TableHead className="font-semibold">Litros</TableHead>
+                    <TableHead className="font-semibold">Precio Unit.</TableHead>
+                    <TableHead className="font-semibold">Total (Bs.)</TableHead>
+                    <TableHead className="font-semibold">Responsable</TableHead>
+                    <TableHead className="font-semibold text-right w-[70px]">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {cargas.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-36 text-center text-xs text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <Fuel className="size-6 text-amber-500/60" />
+                          <p className="font-medium text-foreground">
+                            No hay cargas de combustible registradas en esta salida
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            Cada carga registrada generará automáticamente una anotación en la bitácora del recorrido.
+                          </p>
+                          {!isCancelado && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsFuelDialogOpen(true)}
+                              className="text-xs gap-1.5 mt-1 cursor-pointer border-amber-500/30 text-amber-700 dark:text-amber-300"
+                            >
+                              <Plus className="size-3.5" />
+                              Registrar Primera Carga
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    cargas.map((carga) => {
+                      const l = Number(carga.litros) || 0
+                      const p = Number(carga.precioTotal) || 0
+                      const unit = carga.precioPorLitro ?? (l > 0 ? p / l : null)
+
+                      return (
+                        <TableRow key={carga.id} className="text-xs hover:bg-muted/30">
+                          <TableCell className="font-mono text-muted-foreground whitespace-nowrap">
+                            {formatDate(carga.fechaCarga)}
+                          </TableCell>
+                          <TableCell className="font-semibold text-foreground">
+                            <span className="inline-flex items-center gap-1.5">
+                              <Fuel className="size-3.5 text-amber-500" />
+                              {carga.insumo?.nombre ?? "Combustible"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {carga.numeroFactura ? (
+                              <span className="inline-flex items-center gap-1 font-mono text-[11px] px-2 py-0.5 rounded bg-muted border border-border/60">
+                                <Receipt className="size-3 text-muted-foreground" />
+                                {carga.numeroFactura}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                            {l.toFixed(2)} L
+                          </TableCell>
+                          <TableCell className="font-mono text-muted-foreground">
+                            {unit != null ? `${unit.toFixed(2)} Bs./L` : "-"}
+                          </TableCell>
+                          <TableCell className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            Bs. {p.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {carga.empleado?.nombreCompleto ?? salida.empleadoNombre ?? "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => setDeleteCargaTarget(carga)}
+                              className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                              title="Eliminar carga de combustible"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* 5. MODALES Y DIÁLOGOS OPERATIVOS */}
@@ -1051,6 +1277,27 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
         open={isBitacoraDialogOpen}
         onOpenChange={setIsBitacoraDialogOpen}
         salida={salida}
+      />
+
+      <SalidaCargaCombustibleDialog
+        open={isFuelDialogOpen}
+        onOpenChange={setIsFuelDialogOpen}
+        salida={salida}
+      />
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteCargaTarget)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setDeleteCargaTarget(null)
+        }}
+        title="¿Eliminar registro de combustible?"
+        description={`Se eliminará el registro de carga de ${deleteCargaTarget?.litros ?? 0} litros por un importe de Bs. ${deleteCargaTarget?.precioTotal ?? 0}.`}
+        isPending={deleteCargaMutation.isPending}
+        onConfirm={async () => {
+          if (!deleteCargaTarget) return
+          await deleteCargaMutation.mutateAsync(deleteCargaTarget.id)
+          setDeleteCargaTarget(null)
+        }}
       />
     </PageShell>
   )

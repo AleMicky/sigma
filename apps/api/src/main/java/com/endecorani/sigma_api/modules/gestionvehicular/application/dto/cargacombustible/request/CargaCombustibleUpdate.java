@@ -14,6 +14,8 @@ public record CargaCombustibleUpdate(
 
         UUID viajeVehicularId,
 
+        UUID salidaVehicularId,
+
         @NotNull(message = "El insumo (combustible) es obligatorio")
         UUID insumoId,
 

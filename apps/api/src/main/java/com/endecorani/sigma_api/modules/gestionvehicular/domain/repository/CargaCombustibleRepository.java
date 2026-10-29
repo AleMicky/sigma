@@ -18,6 +18,7 @@ public interface CargaCombustibleRepository {
             String search,
             UUID activoId,
             UUID viajeVehicularId,
+            UUID salidaVehicularId,
             UUID insumoId,
             UUID empleadoId,
             LocalDateTime fechaDesde,
@@ -29,6 +30,7 @@ public interface CargaCombustibleRepository {
             String search,
             UUID activoId,
             UUID viajeVehicularId,
+            UUID salidaVehicularId,
             UUID insumoId,
             UUID empleadoId,
             LocalDateTime fechaDesde,
@@ -40,6 +42,8 @@ public interface CargaCombustibleRepository {
     List<CargaCombustible> findByActivoId(UUID activoId);
 
     List<CargaCombustible> findByViajeVehicularId(UUID viajeVehicularId);
+
+    List<CargaCombustible> findBySalidaVehicularId(UUID salidaVehicularId);
 
     List<CargaCombustible> findAllById(Collection<UUID> ids);
 

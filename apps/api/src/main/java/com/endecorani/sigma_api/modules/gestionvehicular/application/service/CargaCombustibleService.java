@@ -6,10 +6,15 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.cargaco
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.cargacombustible.request.CargaCombustibleUpdate;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.cargacombustible.response.*;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.mapper.CargaCombustibleMapper;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoBitacoraVehicular;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.BitacoraVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.CargaCombustible;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.ViajeVehicular;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.BitacoraVehicularRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.CargaCombustibleRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ViajeVehicularRepository;
+import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.SalidaVehicularEntity;
+import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.repository.SpringSalidaVehicularRepository;
 import com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.entity.InsumoEntity;
 import com.endecorani.sigma_api.modules.inventarios.infrastructure.persistence.repository.SpringInsumoRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
@@ -24,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,6 +42,7 @@ public class CargaCombustibleService {
             "id",
             "activoId",
             "viajeVehicularId",
+            "salidaVehicularId",
             "insumoId",
             "fechaCarga",
             "litros",
@@ -49,6 +56,8 @@ public class CargaCombustibleService {
     private final CargaCombustibleRepository repository;
     private final SpringActivoRepository springActivoRepository;
     private final ViajeVehicularRepository viajeVehicularRepository;
+    private final SpringSalidaVehicularRepository springSalidaVehicularRepository;
+    private final BitacoraVehicularRepository bitacoraVehicularRepository;
     private final SpringInsumoRepository springInsumoRepository;
     private final SpringVEmpleadoRepository springVEmpleadoRepository;
     private final CargaCombustibleMapper mapper;
@@ -59,6 +68,7 @@ public class CargaCombustibleService {
             String search,
             UUID activoId,
             UUID viajeVehicularId,
+            UUID salidaVehicularId,
             UUID insumoId,
             UUID empleadoId,
             LocalDateTime fechaDesde,
@@ -71,6 +81,7 @@ public class CargaCombustibleService {
                 normalizedSearch,
                 activoId,
                 viajeVehicularId,
+                salidaVehicularId,
                 insumoId,
                 empleadoId,
                 fechaDesde,
@@ -86,6 +97,7 @@ public class CargaCombustibleService {
             String search,
             UUID activoId,
             UUID viajeVehicularId,
+            UUID salidaVehicularId,
             UUID insumoId,
             UUID empleadoId,
             LocalDateTime fechaDesde,
@@ -96,6 +108,7 @@ public class CargaCombustibleService {
                 normalizedSearch,
                 activoId,
                 viajeVehicularId,
+                salidaVehicularId,
                 insumoId,
                 empleadoId,
                 fechaDesde,
@@ -121,9 +134,14 @@ public class CargaCombustibleService {
         return toListResponse(repository.findByViajeVehicularId(viajeVehicularId));
     }
 
+    @Transactional(readOnly = true)
+    public List<CargaCombustibleResponse> findBySalidaVehicularId(UUID salidaVehicularId) {
+        return toListResponse(repository.findBySalidaVehicularId(salidaVehicularId));
+    }
+
     @Transactional
     public CargaCombustibleResponse create(CargaCombustibleRequest dto) {
-        validarDependencias(dto.activoId(), dto.viajeVehicularId(), dto.insumoId(), dto.empleadoId());
+        validarDependencias(dto.activoId(), dto.viajeVehicularId(), dto.salidaVehicularId(), dto.insumoId(), dto.empleadoId());
 
         CargaCombustible carga = mapper.toDomain(dto);
         if (carga.getFechaCarga() == null) {
@@ -131,13 +149,19 @@ public class CargaCombustibleService {
         }
 
         CargaCombustible guardada = repository.save(carga);
-        return toResponse(guardada);
+        CargaCombustibleResponse response = toResponse(guardada);
+
+        if (guardada.getSalidaVehicularId() != null) {
+            registrarBitacoraCombustible(guardada, response, dto);
+        }
+
+        return response;
     }
 
     @Transactional
     public CargaCombustibleResponse update(UUID id, CargaCombustibleUpdate dto) {
         CargaCombustible actual = obtenerPorId(id);
-        validarDependencias(dto.activoId(), dto.viajeVehicularId(), dto.insumoId(), dto.empleadoId());
+        validarDependencias(dto.activoId(), dto.viajeVehicularId(), dto.salidaVehicularId(), dto.insumoId(), dto.empleadoId());
 
         mapper.updateDomain(dto, actual);
         CargaCombustible actualizada = repository.save(actual);
@@ -157,12 +181,21 @@ public class CargaCombustibleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Carga de combustible", id));
     }
 
-    private void validarDependencias(UUID activoId, UUID viajeVehicularId, UUID insumoId, UUID empleadoId) {
+    private void validarDependencias(
+            UUID activoId,
+            UUID viajeVehicularId,
+            UUID salidaVehicularId,
+            UUID insumoId,
+            UUID empleadoId
+    ) {
         if (activoId != null && !springActivoRepository.existsById(activoId)) {
             throw new ResourceNotFoundException("Activo vehicular", activoId);
         }
         if (viajeVehicularId != null && !viajeVehicularRepository.existsById(viajeVehicularId)) {
             throw new ResourceNotFoundException("Viaje vehicular", viajeVehicularId);
+        }
+        if (salidaVehicularId != null && !springSalidaVehicularRepository.existsById(salidaVehicularId)) {
+            throw new ResourceNotFoundException("Salida vehicular", salidaVehicularId);
         }
         if (insumoId != null && !springInsumoRepository.existsById(insumoId)) {
             throw new ResourceNotFoundException("Insumo de combustible", insumoId);
@@ -170,6 +203,48 @@ public class CargaCombustibleService {
         if (empleadoId != null && !springVEmpleadoRepository.existsById(empleadoId)) {
             throw new ResourceNotFoundException("Empleado", empleadoId);
         }
+    }
+
+    private void registrarBitacoraCombustible(
+            CargaCombustible carga,
+            CargaCombustibleResponse response,
+            CargaCombustibleRequest dto
+    ) {
+        UUID empleadoBitacora = carga.getEmpleadoId();
+        if (empleadoBitacora == null) {
+            empleadoBitacora = springSalidaVehicularRepository.findById(carga.getSalidaVehicularId())
+                    .map(SalidaVehicularEntity::getEmpleadoId)
+                    .orElse(null);
+        }
+        if (empleadoBitacora == null) {
+            return;
+        }
+
+        String nombreInsumo = response.insumo() != null && response.insumo().nombre() != null
+                ? response.insumo().nombre()
+                : "Combustible";
+        String facturaInfo = carga.getNumeroFactura() != null && !carga.getNumeroFactura().isBlank()
+                ? " · Factura N° " + carga.getNumeroFactura().trim()
+                : "";
+        String descripcion = String.format(
+                "Carga de combustible: %s L de %s por Bs. %s%s",
+                carga.getLitros().stripTrailingZeros().toPlainString(),
+                nombreInsumo,
+                carga.getPrecioTotal().toPlainString(),
+                facturaInfo
+        );
+
+        BitacoraVehicular bitacora = BitacoraVehicular.builder()
+                .salidaVehicularId(carga.getSalidaVehicularId())
+                .empleadoId(empleadoBitacora)
+                .tipo(TipoBitacoraVehicular.ACTIVIDAD.name())
+                .fechaHora(Instant.now())
+                .descripcion(descripcion)
+                .latitud(dto.latitud())
+                .longitud(dto.longitud())
+                .build();
+
+        bitacoraVehicularRepository.save(bitacora);
     }
 
     private PageResponse<CargaCombustibleResponse> toPageResponse(Page<CargaCombustible> page) {
@@ -196,6 +271,11 @@ public class CargaCombustibleService {
 
         Set<UUID> viajeIds = content.stream()
                 .map(CargaCombustible::getViajeVehicularId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<UUID> salidaIds = content.stream()
+                .map(CargaCombustible::getSalidaVehicularId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
@@ -227,6 +307,15 @@ public class CargaCombustibleService {
                         (a, b) -> a
                 ));
 
+        Map<UUID, CargaCombustibleSalidaInfo> salidaMap = salidaIds.isEmpty()
+                ? Map.of()
+                : springSalidaVehicularRepository.findAllById(salidaIds).stream()
+                .collect(Collectors.toMap(
+                        SalidaVehicularEntity::getId,
+                        s -> new CargaCombustibleSalidaInfo(s.getId(), s.getNumero(), s.getEstado(), s.getDescripcionActividad()),
+                        (a, b) -> a
+                ));
+
         Map<UUID, CargaCombustibleInsumoInfo> insumoMap = insumoIds.isEmpty()
                 ? Map.of()
                 : springInsumoRepository.findAllById(insumoIds).stream()
@@ -255,6 +344,7 @@ public class CargaCombustibleService {
                         c,
                         c.getActivoId() != null ? activoMap.get(c.getActivoId()) : null,
                         c.getViajeVehicularId() != null ? viajeMap.get(c.getViajeVehicularId()) : null,
+                        c.getSalidaVehicularId() != null ? salidaMap.get(c.getSalidaVehicularId()) : null,
                         c.getInsumoId() != null ? insumoMap.get(c.getInsumoId()) : null,
                         c.getEmpleadoId() != null ? empleadoMap.get(c.getEmpleadoId()) : null
                 ))

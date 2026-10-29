@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Eye,
   FileText,
+  Fuel,
   History,
   Quote,
 } from "lucide-react"
@@ -22,6 +23,7 @@ export interface SalidaVehicularListItemProps {
   salida: SalidaVehicular
   onExecuteAction?: (salida: SalidaVehicular) => void
   onAddBitacora?: (salida: SalidaVehicular) => void
+  onFuelLoad?: (salida: SalidaVehicular) => void
   onCancel?: (salida: SalidaVehicular) => void
   onTraceability?: (salida: SalidaVehicular) => void
   className?: string
@@ -56,6 +58,7 @@ export function SalidaVehicularListItem({
   salida,
   onExecuteAction,
   onAddBitacora,
+  onFuelLoad,
   onCancel,
   onTraceability,
   className,
@@ -201,6 +204,23 @@ export function SalidaVehicularListItem({
             >
               <FileText className="size-3 text-emerald-600 dark:text-emerald-400" />
               <span className="hidden xs:inline-block">Bitácora</span>
+            </Button>
+          )}
+
+          {!isCancelado && onFuelLoad && (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onFuelLoad(salida)
+              }}
+              className="h-6.5 gap-1 px-2 text-[11px] font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 shadow-2xs cursor-pointer"
+              title="Ver y registrar cargas de combustible"
+            >
+              <Fuel className="size-3 text-amber-600 dark:text-amber-400" />
+              <span className="hidden xs:inline-block">Combustible</span>
             </Button>
           )}
 

@@ -20,6 +20,7 @@ public class CargaCombustible extends AuditableModel {
     private UUID id;
     private UUID activoId;
     private UUID viajeVehicularId;
+    private UUID salidaVehicularId;
 
     private UUID insumoId;
 

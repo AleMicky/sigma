@@ -16,6 +16,7 @@ public class CargaCombustiblePersistenceMapper {
         entity.setId(domain.getId());
         entity.setActivoId(domain.getActivoId());
         entity.setViajeVehicularId(domain.getViajeVehicularId());
+        entity.setSalidaVehicularId(domain.getSalidaVehicularId());
         entity.setInsumoId(domain.getInsumoId());
         entity.setFechaCarga(domain.getFechaCarga());
         entity.setLitros(domain.getLitros());
@@ -34,6 +35,7 @@ public class CargaCombustiblePersistenceMapper {
                 .id(entity.getId())
                 .activoId(entity.getActivoId())
                 .viajeVehicularId(entity.getViajeVehicularId())
+                .salidaVehicularId(entity.getSalidaVehicularId())
                 .insumoId(entity.getInsumoId())
                 .fechaCarga(entity.getFechaCarga())
                 .litros(entity.getLitros())

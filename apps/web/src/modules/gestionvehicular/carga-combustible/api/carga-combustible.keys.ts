@@ -11,4 +11,6 @@ export const cargaCombustibleKeys = {
     [...cargaCombustibleKeys.all, "by-activo", activoId] as const,
   byViaje: (viajeId: string) =>
     [...cargaCombustibleKeys.all, "by-viaje", viajeId] as const,
+  bySalida: (salidaId: string) =>
+    [...cargaCombustibleKeys.all, "by-salida", salidaId] as const,
 }

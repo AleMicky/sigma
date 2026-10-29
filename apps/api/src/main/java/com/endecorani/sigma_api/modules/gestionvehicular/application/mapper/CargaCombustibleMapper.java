@@ -31,6 +31,8 @@ public interface CargaCombustibleMapper {
     @Mapping(target = "activo", source = "activo")
     @Mapping(target = "viajeVehicularId", source = "domain.viajeVehicularId")
     @Mapping(target = "viajeVehicular", source = "viajeVehicular")
+    @Mapping(target = "salidaVehicularId", source = "domain.salidaVehicularId")
+    @Mapping(target = "salidaVehicular", source = "salidaVehicular")
     @Mapping(target = "insumoId", source = "domain.insumoId")
     @Mapping(target = "insumo", source = "insumo")
     @Mapping(target = "fechaCarga", source = "domain.fechaCarga")
@@ -44,12 +46,13 @@ public interface CargaCombustibleMapper {
             CargaCombustible domain,
             CargaCombustibleActivoInfo activo,
             CargaCombustibleViajeInfo viajeVehicular,
+            CargaCombustibleSalidaInfo salidaVehicular,
             CargaCombustibleInsumoInfo insumo,
             CargaCombustibleEmpleadoInfo empleado
     );
 
     default CargaCombustibleResponse toResponse(CargaCombustible domain) {
-        return toResponse(domain, null, null, null, null);
+        return toResponse(domain, null, null, null, null, null);
     }
 
     default BigDecimal calcularPrecioPorLitro(CargaCombustible domain) {

@@ -12,6 +12,8 @@ public record CargaCombustibleResponse(
         CargaCombustibleActivoInfo activo,
         UUID viajeVehicularId,
         CargaCombustibleViajeInfo viajeVehicular,
+        UUID salidaVehicularId,
+        CargaCombustibleSalidaInfo salidaVehicular,
         UUID insumoId,
         CargaCombustibleInsumoInfo insumo,
         LocalDateTime fechaCarga,

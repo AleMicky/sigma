@@ -4,6 +4,7 @@ import { cargaCombustibleKeys } from "./carga-combustible.keys"
 import {
   getCargaCombustible,
   getCargasByActivo,
+  getCargasBySalida,
   getCargasByViaje,
   listCargasCombustible,
   type CargaCombustibleListFilters,
@@ -35,5 +36,12 @@ export const cargaCombustibleQueries = {
       queryKey: cargaCombustibleKeys.byViaje(viajeId),
       queryFn: () => getCargasByViaje(viajeId),
       enabled: Boolean(viajeId),
+    }),
+
+  bySalida: (salidaId: string) =>
+    queryOptions({
+      queryKey: cargaCombustibleKeys.bySalida(salidaId),
+      queryFn: () => getCargasBySalida(salidaId),
+      enabled: Boolean(salidaId),
     }),
 }
