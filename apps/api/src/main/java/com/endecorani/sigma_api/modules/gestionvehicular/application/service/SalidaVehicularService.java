@@ -94,10 +94,13 @@ public class SalidaVehicularService {
                 ? request.observaciones().trim()
                 : null;
 
+        Instant fecha = request.fecha() != null ? request.fecha() : Instant.now();
+
         SalidaVehicular salida = SalidaVehicular.builder()
                 .numero(numero)
                 .activoId(request.activoId())
                 .empleadoId(empleadoId)
+                .fecha(fecha)
                 .descripcionActividad(request.descripcionActividad().trim())
                 .observaciones(observaciones)
                 .estado("SALIDA")
@@ -110,6 +113,7 @@ public class SalidaVehicularService {
         variables.put("salidaId", guardada.getId().toString());
         variables.put("empleadoId", empleadoId.toString());
         variables.put("activoId", request.activoId().toString());
+        variables.put("fecha", fecha.toString());
         variables.put("descripcionActividad", guardada.getDescripcionActividad());
         if (observaciones != null) {
             variables.put("observaciones", observaciones);
@@ -166,6 +170,9 @@ public class SalidaVehicularService {
             throw new BusinessException("No se puede modificar una salida vehicular que ya está en " + estadoActual);
         }
 
+        if (request.fecha() != null) {
+            salida.setFecha(request.fecha());
+        }
         if (request.descripcionActividad() != null && !request.descripcionActividad().isBlank()) {
             salida.setDescripcionActividad(request.descripcionActividad().trim());
         }
@@ -513,6 +520,7 @@ public class SalidaVehicularService {
                 .empleadoId(salida.getEmpleadoId())
                 .empleadoCodigo(empleadoCodigo)
                 .empleadoNombre(empleadoNombre)
+                .fecha(salida.getFecha() != null ? salida.getFecha() : salida.getCreatedAt())
                 .descripcionActividad(salida.getDescripcionActividad())
                 .observaciones(salida.getObservaciones())
                 .estado(salida.getEstado())
@@ -562,6 +570,7 @@ public class SalidaVehicularService {
                     .empleadoId(salida.getEmpleadoId())
                     .empleadoCodigo(emp != null ? emp.getCodigo() : null)
                     .empleadoNombre(emp != null ? emp.getNombreCompleto() : null)
+                    .fecha(salida.getFecha() != null ? salida.getFecha() : salida.getCreatedAt())
                     .descripcionActividad(salida.getDescripcionActividad())
                     .observaciones(salida.getObservaciones())
                     .estado(salida.getEstado())

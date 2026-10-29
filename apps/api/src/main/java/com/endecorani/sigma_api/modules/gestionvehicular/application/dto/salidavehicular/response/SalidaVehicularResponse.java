@@ -19,6 +19,7 @@ public record SalidaVehicularResponse(
         UUID empleadoId,
         String empleadoCodigo,
         String empleadoNombre,
+        Instant fecha,
         String descripcionActividad,
         String observaciones,
         String estado,

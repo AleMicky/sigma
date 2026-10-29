@@ -1,5 +1,11 @@
 import { z } from "zod"
 
+export function getLocalCurrentIsoString(): string {
+  const now = new Date()
+  const offset = now.getTimezoneOffset() * 60000
+  return new Date(now.getTime() - offset).toISOString().slice(0, 16)
+}
+
 export const registrarSalidaSchema = z.object({
   activoId: z
     .string()
@@ -9,6 +15,10 @@ export const registrarSalidaSchema = z.object({
     .string()
     .trim()
     .min(1, "Debes seleccionar un conductor o empleado"),
+  fecha: z
+    .string()
+    .trim()
+    .min(1, "La fecha y hora de salida es obligatoria"),
   descripcionActividad: z
     .string()
     .trim()
@@ -24,6 +34,7 @@ export type RegistrarSalidaFormValues = z.infer<typeof registrarSalidaSchema>
 export const defaultRegistrarSalidaValues: RegistrarSalidaFormValues = {
   activoId: "",
   empleadoId: "",
+  fecha: getLocalCurrentIsoString(),
   descripcionActividad: "",
   observaciones: "",
 }

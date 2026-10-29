@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record RegistrarSalidaVehicularRequest(
@@ -11,6 +12,8 @@ public record RegistrarSalidaVehicularRequest(
         UUID activoId,
 
         UUID empleadoId,
+
+        Instant fecha,
 
         @NotBlank(message = "La descripción de la actividad es obligatoria")
         @Size(max = 1000, message = "La descripción de la actividad no puede exceder 1000 caracteres")

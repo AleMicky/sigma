@@ -1,8 +1,9 @@
-import { ArrowUpDown, Filter, RotateCcw, X } from "lucide-react"
+import { ArrowUpDown, Calendar, Filter, RotateCcw, X } from "lucide-react"
 
 import { SearchField } from "@/shared/components/search-field"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -19,6 +20,10 @@ export interface SalidaVehicularFilterToolbarProps {
   selectedEstadoLabel?: string
   onClearEstado?: () => void
   onSelectEstado?: (estado: string) => void
+  fechaDesde?: string
+  onFechaDesdeChange?: (value: string) => void
+  fechaHasta?: string
+  onFechaHastaChange?: (value: string) => void
   sortOption?: string
   onSortChange?: (sort: string) => void
   pageSize?: number
@@ -38,6 +43,8 @@ const ESTADOS_DISPONIBLES = [
 ]
 
 const SORT_OPTIONS = [
+  { value: "fecha:DESC", label: "Fecha salida (Recientes)" },
+  { value: "fecha:ASC", label: "Fecha salida (Antiguas)" },
   { value: "createdAt:DESC", label: "Más recientes primero" },
   { value: "createdAt:ASC", label: "Más antiguos primero" },
   { value: "numero:DESC", label: "Folio (Mayor a Menor)" },
@@ -57,7 +64,11 @@ export function SalidaVehicularFilterToolbar({
   selectedEstadoLabel,
   onClearEstado,
   onSelectEstado,
-  sortOption = "createdAt:DESC",
+  fechaDesde = "",
+  onFechaDesdeChange,
+  fechaHasta = "",
+  onFechaHastaChange,
+  sortOption = "fecha:DESC",
   onSortChange,
   pageSize = 20,
   onPageSizeChange,
@@ -68,14 +79,16 @@ export function SalidaVehicularFilterToolbar({
   className,
 }: SalidaVehicularFilterToolbarProps) {
   const isEstadoFiltered = Boolean(selectedEstado && selectedEstado !== "ALL")
-  const isSortModified = sortOption !== "createdAt:DESC"
+  const isFechaFiltered = Boolean(fechaDesde || fechaHasta)
+  const isSortModified = sortOption !== "fecha:DESC" && sortOption !== "createdAt:DESC"
   const hasActiveFilters = Boolean(
-    searchQuery.trim() || isEstadoFiltered || isSortModified
+    searchQuery.trim() || isEstadoFiltered || isFechaFiltered || isSortModified
   )
 
   const activeFiltersCount = [
     Boolean(searchQuery.trim()),
     isEstadoFiltered,
+    isFechaFiltered,
     isSortModified,
   ].filter(Boolean).length
 
@@ -112,6 +125,32 @@ export function SalidaVehicularFilterToolbar({
                 ))}
               </SelectContent>
             </Select>
+          )}
+
+          {onFechaDesdeChange && (
+            <div className="relative flex items-center">
+              <Calendar className="size-3.5 absolute left-2.5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => onFechaDesdeChange(e.target.value)}
+                title="Fecha desde"
+                className="h-9 pl-8 w-[140px] text-xs rounded-lg shadow-2xs bg-card"
+              />
+            </div>
+          )}
+
+          {onFechaHastaChange && (
+            <div className="relative flex items-center">
+              <Calendar className="size-3.5 absolute left-2.5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => onFechaHastaChange(e.target.value)}
+                title="Fecha hasta"
+                className="h-9 pl-8 w-[140px] text-xs rounded-lg shadow-2xs bg-card"
+              />
+            </div>
           )}
 
           {onSortChange && (
@@ -222,6 +261,29 @@ export function SalidaVehicularFilterToolbar({
             </Badge>
           )}
 
+          {isFechaFiltered && (
+            <Badge
+              variant="secondary"
+              className="gap-1 pl-2 pr-1 py-0.5 text-[11px] font-medium bg-muted/80 text-foreground border border-border/70 hover:bg-muted transition-all shadow-2xs"
+            >
+              <span>
+                Fecha: {fechaDesde || "…"} a {fechaHasta || "…"}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  onFechaDesdeChange?.("")
+                  onFechaHastaChange?.("")
+                }}
+                className="flex size-3.5 items-center justify-center rounded-full hover:bg-background/80 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                title="Quitar filtro de fechas"
+              >
+                <X className="size-2.5" />
+                <span className="sr-only">Quitar filtro de fechas</span>
+              </button>
+            </Badge>
+          )}
+
           {isSortModified && onSortChange && (
             <Badge
               variant="secondary"
@@ -230,7 +292,7 @@ export function SalidaVehicularFilterToolbar({
               <span>Orden: {currentSortLabel}</span>
               <button
                 type="button"
-                onClick={() => onSortChange("createdAt:DESC")}
+                onClick={() => onSortChange("fecha:DESC")}
                 className="flex size-3.5 items-center justify-center rounded-full hover:bg-background/80 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
                 title="Restablecer orden por defecto"
               >

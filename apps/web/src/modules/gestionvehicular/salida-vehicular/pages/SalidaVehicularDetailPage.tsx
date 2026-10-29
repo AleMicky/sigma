@@ -363,7 +363,7 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
               <span>&bull;</span>
               <span className="inline-flex items-center gap-1">
                 <Clock className="size-3 text-muted-foreground/70" />
-                Registrado {formatDate(salida.createdAt)}
+                Fecha salida: {formatDate(salida.fecha || salida.createdAt)}
               </span>
             </p>
           </div>
@@ -715,9 +715,9 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
 
                 <div className="pt-2 border-t border-border/50 grid grid-cols-2 gap-3">
                   <div>
-                    <span className="text-muted-foreground text-[11px]">Fecha de Solicitud:</span>
+                    <span className="text-muted-foreground text-[11px]">Fecha de Salida:</span>
                     <p className="font-medium text-foreground mt-0.5">
-                      {formatDate(salida.createdAt)}
+                      {formatDate(salida.fecha || salida.createdAt)}
                     </p>
                   </div>
                   <div>

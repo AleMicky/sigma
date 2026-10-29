@@ -381,7 +381,9 @@ export function SalidasVehicularesPage() {
   const navigate = useNavigate()
 
   const [selectedEstado, setSelectedEstado] = useState<string>("")
-  const [sortOption, setSortOption] = useState<string>("createdAt:DESC")
+  const [fechaDesde, setFechaDesde] = useState<string>("")
+  const [fechaHasta, setFechaHasta] = useState<string>("")
+  const [sortOption, setSortOption] = useState<string>("fecha:DESC")
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE)
 
   // Diálogos y acciones operativas
@@ -399,7 +401,7 @@ export function SalidasVehicularesPage() {
 
   // Descomponer ordenamiento (sortBy y direction)
   const [sortBy, direction] = useMemo(() => {
-    const [s = "createdAt", d = "DESC"] = sortOption.split(":")
+    const [s = "fecha", d = "DESC"] = sortOption.split(":")
     return [s, d as "ASC" | "DESC"]
   }, [sortOption])
 
@@ -417,8 +419,14 @@ export function SalidasVehicularesPage() {
     if (selectedEstado && selectedEstado !== "ALL") {
       params.estado = selectedEstado
     }
+    if (fechaDesde) {
+      params.fechaDesde = `${fechaDesde}T00:00:00`
+    }
+    if (fechaHasta) {
+      params.fechaHasta = `${fechaHasta}T23:59:59`
+    }
     return params
-  }, [search.page, pageSize, sortBy, direction, search.query, selectedEstado])
+  }, [search.page, pageSize, sortBy, direction, search.query, selectedEstado, fechaDesde, fechaHasta])
 
   const salidasQuery = useQuery(salidaVehicularQueries.list(queryParams))
 
@@ -470,7 +478,9 @@ export function SalidasVehicularesPage() {
     search.setSearch("")
     search.setPage(0)
     setSelectedEstado("")
-    setSortOption("createdAt:DESC")
+    setFechaDesde("")
+    setFechaHasta("")
+    setSortOption("fecha:DESC")
   }, [search])
 
   const selectedEstadoLabel = useMemo(
@@ -540,6 +550,16 @@ export function SalidasVehicularesPage() {
           selectedEstadoLabel={selectedEstadoLabel}
           onClearEstado={() => setSelectedEstado("")}
           onSelectEstado={handleSelectEstado}
+          fechaDesde={fechaDesde}
+          onFechaDesdeChange={(val) => {
+            setFechaDesde(val)
+            search.setPage(0)
+          }}
+          fechaHasta={fechaHasta}
+          onFechaHastaChange={(val) => {
+            setFechaHasta(val)
+            search.setPage(0)
+          }}
           sortOption={sortOption}
           onSortChange={handleSortChange}
           pageSize={pageSize}

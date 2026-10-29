@@ -27,8 +27,8 @@ public interface SpringSalidaVehicularRepository extends JpaRepository<SalidaVeh
           AND (:activoId IS NULL OR s.activoId = :activoId)
           AND (:empleadoId IS NULL OR s.empleadoId = :empleadoId)
           AND (:estado IS NULL OR :estado = '' OR UPPER(s.estado) = UPPER(:estado))
-          AND (CAST(:fechaDesde AS java.time.Instant) IS NULL OR s.createdAt >= :fechaDesde)
-          AND (CAST(:fechaHasta AS java.time.Instant) IS NULL OR s.createdAt <= :fechaHasta)
+          AND (CAST(:fechaDesde AS java.time.Instant) IS NULL OR COALESCE(s.fecha, s.createdAt) >= :fechaDesde)
+          AND (CAST(:fechaHasta AS java.time.Instant) IS NULL OR COALESCE(s.fecha, s.createdAt) <= :fechaHasta)
     """)
     Page<SalidaVehicularEntity> searchWithFilters(
             @Param("search") String search,
@@ -49,9 +49,9 @@ public interface SpringSalidaVehicularRepository extends JpaRepository<SalidaVeh
           AND (:activoId IS NULL OR s.activoId = :activoId)
           AND (:empleadoId IS NULL OR s.empleadoId = :empleadoId)
           AND (:estado IS NULL OR :estado = '' OR UPPER(s.estado) = UPPER(:estado))
-          AND (CAST(:fechaDesde AS java.time.Instant) IS NULL OR s.createdAt >= :fechaDesde)
-          AND (CAST(:fechaHasta AS java.time.Instant) IS NULL OR s.createdAt <= :fechaHasta)
-        ORDER BY s.createdAt DESC
+          AND (CAST(:fechaDesde AS java.time.Instant) IS NULL OR COALESCE(s.fecha, s.createdAt) >= :fechaDesde)
+          AND (CAST(:fechaHasta AS java.time.Instant) IS NULL OR COALESCE(s.fecha, s.createdAt) <= :fechaHasta)
+        ORDER BY COALESCE(s.fecha, s.createdAt) DESC
     """)
     List<SalidaVehicularEntity> findForReporte(
             @Param("search") String search,
@@ -65,7 +65,7 @@ public interface SpringSalidaVehicularRepository extends JpaRepository<SalidaVeh
     @Query("""
         SELECT s FROM SalidaVehicularEntity s
         WHERE UPPER(s.estado) NOT IN ('LLEGADA', 'FINALIZADA', 'CANCELADA', 'FINALIZADO', 'CANCELADO')
-        ORDER BY s.createdAt DESC
+        ORDER BY COALESCE(s.fecha, s.createdAt) DESC
     """)
     List<SalidaVehicularEntity> findActivas();
 
