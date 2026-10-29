@@ -5,11 +5,8 @@ import {
   BarChart3,
   BookOpen,
   Car,
-  ExternalLink,
-  FileDown,
   Fuel,
   Gauge,
-  Loader2,
   RefreshCw,
   Route,
 } from "lucide-react"
@@ -532,77 +529,29 @@ export const ReportesSalidasVehicularesPage = () => {
     cargasQuery.isFetching
 
   return (
-    <PageShell size="full" padding="compact" layout="scroll" className="space-y-4 pb-12">
+    <PageShell size="full" padding="compact" layout="scroll" className="space-y-3 pb-10">
       {/* ========================================================= */}
       {/* 1. ENCABEZADO DE LA PÁGINA (Oculto al imprimir)           */}
       {/* ========================================================= */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3 print:hidden">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shadow-2xs">
-            <BookOpen className="h-5 w-5" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2.5 print:hidden">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shadow-2xs">
+            <BookOpen className="h-4.5 w-4.5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
                 Reporte de Bitácora de Vehículos
               </h1>
-              <Badge variant="outline" className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 font-semibold">
-                Formulario Oficial
+              <Badge variant="outline" className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 font-semibold py-0">
+                Formulario Oficial GA-IN7-04
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Control de salidas operativas, kilometrajes (odómetros), combustible y conductores según formato físico ENDE CORANI.
+              ENDE CORANI • Control de actividades, kilometraje y combustible según libreta física
             </p>
           </div>
         </div>
-
-        {filtrosActivos && (
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleConsultar}
-              disabled={isLoading || isPdfLoading}
-              className="text-xs h-8 gap-1.5 cursor-pointer"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-              <span>Actualizar</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleAbrirPdf}
-              disabled={filas.length === 0 || isPdfLoading}
-              className="text-xs h-8 gap-1.5 cursor-pointer"
-              title="Abrir PDF oficial en nueva pestaña"
-            >
-              <ExternalLink className="h-3.5 w-3.5 text-primary" />
-              <span>Ver PDF</span>
-            </Button>
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              onClick={handleDescargarPdf}
-              disabled={filas.length === 0 || isPdfLoading}
-              className="text-xs h-8 gap-1.5 cursor-pointer bg-primary font-semibold shadow-xs"
-            >
-              {isPdfLoading ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>Generando PDF...</span>
-                </>
-              ) : (
-                <>
-                  <FileDown className="h-3.5 w-3.5" />
-                  <span>Descargar PDF</span>
-                </>
-              )}
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* ========================================================= */}
@@ -619,86 +568,76 @@ export const ReportesSalidasVehicularesPage = () => {
         onSearchQueryChange={setSearchQuery}
         onConsultar={handleConsultar}
         onDescargarPdf={handleDescargarPdf}
+        onAbrirPdf={handleAbrirPdf}
         onImprimir={handleImprimir}
         onExportarCsv={handleExportarCsv}
         isLoading={isLoading}
         isPdfLoading={isPdfLoading}
         hasData={filas.length > 0}
+        totalSalidas={totalesMetricas.totalSalidas}
         placaSeleccionada={datosVehiculo.placa !== "S/P" ? datosVehiculo.placa : null}
       />
 
       {/* ========================================================= */}
-      {/* 3. RESUMEN DE MÉTRICAS RÁPIDAS (Oculto al imprimir)       */}
+      {/* 3. RESUMEN DE MÉTRICAS RÁPIDAS COMPACTO (Oculto print)    */}
       {/* ========================================================= */}
       {filtrosActivos && !isLoading && filas.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 print:hidden">
-          <Card className="border-border/60 shadow-2xs bg-card">
-            <CardContent className="p-3.5 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase">
-                  Total Salidas
-                </span>
-                <p className="text-xl font-bold text-foreground mt-0.5">
-                  {totalesMetricas.totalSalidas}
-                </p>
-                <span className="text-[10px] text-muted-foreground">En el período consultado</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
-                <Route className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 print:hidden">
+          <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
+            <div className="p-1.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0">
+              <Route className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[9.5px] uppercase font-bold text-muted-foreground block tracking-wider leading-none">
+                Salidas
+              </span>
+              <p className="text-base font-bold text-foreground leading-tight mt-0.5">
+                {totalesMetricas.totalSalidas} viajes
+              </p>
+            </div>
+          </div>
 
-          <Card className="border-border/60 shadow-2xs bg-card">
-            <CardContent className="p-3.5 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase">
-                  Km. Recorrido Total
-                </span>
-                <p className="text-xl font-bold text-primary mt-0.5">
-                  {totalesMetricas.totalKm.toLocaleString()} km
-                </p>
-                <span className="text-[10px] text-muted-foreground">Distancia acumulada</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <Gauge className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
+            <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+              <Gauge className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[9.5px] uppercase font-bold text-muted-foreground block tracking-wider leading-none">
+                Recorrido Total
+              </span>
+              <p className="text-base font-bold text-primary leading-tight mt-0.5">
+                {totalesMetricas.totalKm.toLocaleString()} km
+              </p>
+            </div>
+          </div>
 
-          <Card className="border-border/60 shadow-2xs bg-card">
-            <CardContent className="p-3.5 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase">
-                  Combustible Total
-                </span>
-                <p className="text-xl font-bold text-amber-600 dark:text-amber-400 mt-0.5">
-                  {totalesMetricas.totalLitros > 0 ? `${totalesMetricas.totalLitros.toFixed(1)} L` : "0 L"}
-                </p>
-                <span className="text-[10px] text-muted-foreground">Litros abastecidos</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <Fuel className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
+            <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+              <Fuel className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[9.5px] uppercase font-bold text-muted-foreground block tracking-wider leading-none">
+                Combustible
+              </span>
+              <p className="text-base font-bold text-amber-600 dark:text-amber-400 leading-tight mt-0.5">
+                {totalesMetricas.totalLitros > 0 ? `${totalesMetricas.totalLitros.toFixed(1)} L` : "0 L"}
+              </p>
+            </div>
+          </div>
 
-          <Card className="border-border/60 shadow-2xs bg-card">
-            <CardContent className="p-3.5 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase">
-                  Promedio por Salida
-                </span>
-                <p className="text-xl font-bold text-foreground mt-0.5">
-                  {totalesMetricas.promedioKmPorSalida.toLocaleString()} km
-                </p>
-                <span className="text-[10px] text-muted-foreground">Recorrido por viaje</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                <BarChart3 className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
+            <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
+              <BarChart3 className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[9.5px] uppercase font-bold text-muted-foreground block tracking-wider leading-none">
+                Promedio
+              </span>
+              <p className="text-base font-bold text-foreground leading-tight mt-0.5">
+                {totalesMetricas.promedioKmPorSalida.toLocaleString()} km / viaje
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
