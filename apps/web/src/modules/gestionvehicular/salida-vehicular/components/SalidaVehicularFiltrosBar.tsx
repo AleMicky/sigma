@@ -24,11 +24,10 @@ interface SalidaVehicularFiltrosBarProps {
 
 const ESTADOS_DISPONIBLES = [
   { value: "ALL", label: "Todos los estados" },
-  { value: "INICIADO", label: "Iniciado / Salida" },
-  { value: "EN_TRANSITO", label: "En Tránsito / Destino" },
-  { value: "RETORNO", label: "Retorno" },
-  { value: "FINALIZADO", label: "Finalizado" },
-  { value: "CANCELADO", label: "Cancelado" },
+  { value: "SALIDA", label: "Salida" },
+  { value: "LLEGADA", label: "Llegada" },
+  { value: "FINALIZADA", label: "Finalizada" },
+  { value: "CANCELADA", label: "Cancelada" },
 ]
 
 export function SalidaVehicularFiltrosBar({

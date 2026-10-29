@@ -24,11 +24,9 @@ public class SalidaVehicular extends AuditableModel {
 
     private UUID empleadoId;
 
-    private String motivo;
+    private String descripcionActividad;
 
-    private String origen;
-
-    private String destino;
+    private String observaciones;
 
     private String estado;
 

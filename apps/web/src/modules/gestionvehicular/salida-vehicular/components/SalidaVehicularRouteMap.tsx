@@ -161,8 +161,8 @@ export function SalidaVehicularRouteMap({
           fechaHora: e.fechaHora || e.createdAt,
           kilometraje: e.kilometraje,
           empleadoNombre: e.empleadoNombre,
-          isStart: estadoUpper.includes("SALIDA") && !estadoUpper.includes("RETORNO"),
-          isEnd: estadoUpper.includes("FINAL") || estadoUpper.includes("COMPLET") || estadoUpper.includes("BASE"),
+          isStart: estadoUpper.includes("SALIDA") || estadoUpper.includes("INICI"),
+          isEnd: estadoUpper.includes("LLEGAD") || estadoUpper.includes("FINAL") || estadoUpper.includes("COMPLET"),
           orderIndex: 0,
         })
       }
@@ -243,7 +243,7 @@ export function SalidaVehicularRouteMap({
 
   const googleMapsUrl = latestPoint
     ? `https://www.google.com/maps/search/?api=1&query=${latestPoint.lat},${latestPoint.lng}`
-    : `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(salida.origen)}&destination=${encodeURIComponent(salida.destino)}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(salida.descripcionActividad || "Bolivia")}`
 
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "-"
@@ -295,7 +295,7 @@ export function SalidaVehicularRouteMap({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Trayecto de {salida.origen} hacia {salida.destino} &bull; Vehículo{" "}
+            Actividad: {salida.descripcionActividad} &bull; Vehículo{" "}
             <strong className="text-foreground">{salida.placa ?? "S/P"}</strong>
           </p>
         </div>
@@ -397,7 +397,7 @@ export function SalidaVehicularRouteMap({
               </h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Los puntos geográficos se trazan de forma automática cuando el conductor marca los
-                hitos del viaje (Salida, Llegada a destino, Retorno) o registra una novedad en la bitácora.
+                hitos del viaje (Salida y Llegada) o registra una novedad en la bitácora.
               </p>
               <div className="pt-1 flex items-center justify-center gap-2 text-[11px] text-muted-foreground font-medium">
                 <span className="size-2 rounded-full bg-amber-500" />
@@ -430,7 +430,10 @@ export function SalidaVehicularRouteMap({
                 weight: 4,
                 opacity: 0.85,
                 lineJoin: "round",
-                dashArray: salida.estado.includes("FINALIZ") ? undefined : "6, 8",
+                dashArray:
+                  salida.estado.includes("LLEGAD") || salida.estado.includes("FINALIZ")
+                    ? undefined
+                    : "6, 8",
               }}
             />
           )}

@@ -4,8 +4,6 @@ import {
   Car,
   CheckCircle2,
   Clock,
-  Navigation,
-  RotateCcw,
 } from "lucide-react"
 
 import { cn } from "@/shared/lib/utils"
@@ -14,7 +12,6 @@ export interface SalidaVehicularResumen {
   total: number
   iniciadas: number
   enTransito: number
-  retorno: number
   finalizadas: number
   canceladas: number
 }
@@ -60,8 +57,8 @@ const RESUMEN_CARDS: ResumenCardConfig[] = [
     barClass: "bg-primary",
   },
   {
-    estado: "INICIADO",
-    label: "Iniciadas",
+    estado: "SALIDA",
+    label: "Salida",
     icon: Clock,
     getValue: (resumen) => resumen?.iniciadas ?? 0,
     activeClass:
@@ -76,42 +73,8 @@ const RESUMEN_CARDS: ResumenCardConfig[] = [
     barClass: "bg-blue-500",
   },
   {
-    estado: "EN_TRANSITO",
-    label: "En Tránsito",
-    icon: Navigation,
-    getValue: (resumen) => resumen?.enTransito ?? 0,
-    activeClass:
-      "border-amber-500/70 bg-gradient-to-br from-amber-500/20 via-amber-500/5 to-transparent ring-2 ring-amber-500/40 shadow-sm",
-    indicatorClass: "bg-amber-500 shadow-xs shadow-amber-500/50",
-    hoverBorderClass: "hover:border-amber-500/50",
-    hoverBgClass: "hover:bg-amber-500/[0.06]",
-    iconActiveClass: "bg-amber-600 text-white shadow-sm shadow-amber-600/30",
-    iconInactiveClass:
-      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
-    numberClass: "text-amber-600 dark:text-amber-400",
-    labelClass: "text-amber-700 dark:text-amber-400",
-    barClass: "bg-amber-500",
-  },
-  {
-    estado: "RETORNO",
-    label: "En Retorno",
-    icon: RotateCcw,
-    getValue: (resumen) => resumen?.retorno ?? 0,
-    activeClass:
-      "border-purple-500/70 bg-gradient-to-br from-purple-500/20 via-purple-500/5 to-transparent ring-2 ring-purple-500/40 shadow-sm",
-    indicatorClass: "bg-purple-500 shadow-xs shadow-purple-500/50",
-    hoverBorderClass: "hover:border-purple-500/50",
-    hoverBgClass: "hover:bg-purple-500/[0.06]",
-    iconActiveClass: "bg-purple-600 text-white shadow-sm shadow-purple-600/30",
-    iconInactiveClass:
-      "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
-    numberClass: "text-purple-600 dark:text-purple-400",
-    labelClass: "text-purple-700 dark:text-purple-400",
-    barClass: "bg-purple-500 dark:bg-purple-400",
-  },
-  {
-    estado: "FINALIZADO",
-    label: "Finalizadas",
+    estado: "LLEGADA",
+    label: "Llegada (Finalizadas)",
     icon: CheckCircle2,
     getValue: (resumen) => resumen?.finalizadas ?? 0,
     activeClass:
@@ -127,7 +90,7 @@ const RESUMEN_CARDS: ResumenCardConfig[] = [
     barClass: "bg-emerald-500 dark:bg-emerald-400",
   },
   {
-    estado: "CANCELADO",
+    estado: "CANCELADA",
     label: "Canceladas",
     icon: Ban,
     getValue: (resumen) => resumen?.canceladas ?? 0,
@@ -155,8 +118,6 @@ export function SalidaVehicularResumenCards({
 }: SalidaVehicularResumenCardsProps) {
   const total = resumen?.total ?? 0
   const iniciadas = resumen?.iniciadas ?? 0
-  const enTransito = resumen?.enTransito ?? 0
-  const retorno = resumen?.retorno ?? 0
   const finalizadas = resumen?.finalizadas ?? 0
   const canceladas = resumen?.canceladas ?? 0
 
@@ -166,14 +127,12 @@ export function SalidaVehicularResumenCards({
   }
 
   const iniciadasPct = getPercent(iniciadas)
-  const enTransitoPct = getPercent(enTransito)
-  const retornoPct = getPercent(retorno)
   const finalizadasPct = getPercent(finalizadas)
   const canceladasPct = getPercent(canceladas)
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="grid grid-cols-2 gap-1.5 sm:gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {RESUMEN_CARDS.map((card) => {
           const isSelected = card.estado
             ? selectedEstado.toUpperCase() === card.estado.toUpperCase()
@@ -259,28 +218,14 @@ export function SalidaVehicularResumenCards({
               <div
                 style={{ width: `${iniciadasPct}%` }}
                 className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                title={`Iniciadas: ${iniciadas} (${iniciadasPct}%)`}
-              />
-            )}
-            {enTransito > 0 && (
-              <div
-                style={{ width: `${enTransitoPct}%` }}
-                className="h-full rounded-full bg-amber-500 transition-all duration-500"
-                title={`En Tránsito: ${enTransito} (${enTransitoPct}%)`}
-              />
-            )}
-            {retorno > 0 && (
-              <div
-                style={{ width: `${retornoPct}%` }}
-                className="h-full rounded-full bg-purple-500 dark:bg-purple-400 transition-all duration-500"
-                title={`En Retorno: ${retorno} (${retornoPct}%)`}
+                title={`Salida: ${iniciadas} (${iniciadasPct}%)`}
               />
             )}
             {finalizadas > 0 && (
               <div
                 style={{ width: `${finalizadasPct}%` }}
                 className="h-full rounded-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-500"
-                title={`Finalizadas: ${finalizadas} (${finalizadasPct}%)`}
+                title={`Llegada (Finalizadas): ${finalizadas} (${finalizadasPct}%)`}
               />
             )}
             {canceladas > 0 && (

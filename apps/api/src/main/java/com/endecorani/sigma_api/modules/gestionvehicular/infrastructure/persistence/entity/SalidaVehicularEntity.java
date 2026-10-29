@@ -54,14 +54,11 @@ public class SalidaVehicularEntity extends BaseEntity {
     @Column(name = "empleado_id", nullable = false)
     private UUID empleadoId;
 
-    @Column(name = "motivo", nullable = false, columnDefinition = "TEXT")
-    private String motivo;
+    @Column(name = "descripcion_actividad", nullable = false, columnDefinition = "TEXT")
+    private String descripcionActividad;
 
-    @Column(name = "origen", nullable = false, length = 255)
-    private String origen;
-
-    @Column(name = "destino", nullable = false, length = 255)
-    private String destino;
+    @Column(name = "observaciones", columnDefinition = "TEXT")
+    private String observaciones;
 
     @Column(name = "estado", nullable = false, length = 50)
     private String estado;

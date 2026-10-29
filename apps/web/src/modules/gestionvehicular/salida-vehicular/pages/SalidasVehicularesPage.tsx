@@ -50,18 +50,14 @@ import {
 const DEFAULT_PAGE_SIZE = appConfig.pagination?.defaultPageSize ?? 20
 
 const ESTADO_LABELS: Record<string, string> = {
-  INICIADO: "Iniciadas",
-  EN_TRANSITO: "En Tránsito",
-  RETORNO: "En Retorno",
-  FINALIZADO: "Finalizadas",
-  CANCELADO: "Canceladas",
+  SALIDA: "Salida",
+  LLEGADA: "Llegada (Finalizada)",
+  CANCELADA: "Canceladas",
 }
 
 const ESTADO_PATTERNS = {
-  iniciada: ["INICIAD", "BORRADOR", "CREAD"],
-  transito: ["TRANSIT", "CURSO", "DESTINO"],
-  retorno: ["RETORN"],
-  finalizada: ["FINALIZ", "COMPLET"],
+  iniciada: ["SALIDA", "REGISTRAD", "INICIAD"],
+  finalizada: ["LLEGAD", "FINALIZ", "COMPLET"],
   cancelada: ["CANCEL", "ANULAD"],
 } as const
 
@@ -71,20 +67,17 @@ function matchesPattern(value: string, patterns: readonly string[]): boolean {
 
 function classifyEstado(
   rawEstado?: string | null
-): "iniciada" | "transito" | "retorno" | "finalizada" | "cancelada" {
+): "iniciada" | "finalizada" | "cancelada" {
   const est = (rawEstado || "").toUpperCase().trim()
   if (matchesPattern(est, ESTADO_PATTERNS.iniciada)) return "iniciada"
-  if (matchesPattern(est, ESTADO_PATTERNS.transito)) return "transito"
-  if (matchesPattern(est, ESTADO_PATTERNS.retorno)) return "retorno"
   if (matchesPattern(est, ESTADO_PATTERNS.finalizada)) return "finalizada"
   if (matchesPattern(est, ESTADO_PATTERNS.cancelada)) return "cancelada"
-  return "transito"
+  return "iniciada"
 }
 
 interface ResumenCounts {
   iniciadas: number
   enTransito: number
-  retorno: number
   finalizadas: number
   canceladas: number
 }
@@ -98,17 +91,11 @@ function accumulateEstado(
     case "iniciada":
       counts.iniciadas++
       break
-    case "retorno":
-      counts.retorno++
-      break
     case "finalizada":
       if (!hasReporte) counts.finalizadas++
       break
     case "cancelada":
       if (!hasReporte) counts.canceladas++
-      break
-    default:
-      counts.enTransito++
       break
   }
 }
@@ -121,7 +108,6 @@ function calculateResumen(
   const counts: ResumenCounts = {
     iniciadas: 0,
     enTransito: 0,
-    retorno: 0,
     finalizadas: reporte?.salidasFinalizadas ?? 0,
     canceladas: reporte?.salidasCanceladas ?? 0,
   }
@@ -133,7 +119,7 @@ function calculateResumen(
     accumulateEstado(counts, classifyEstado(item.estado), hasReporte)
   }
 
-  const hasNoMovement = counts.iniciadas === 0 && counts.retorno === 0
+  const hasNoMovement = counts.iniciadas === 0
   if (reporte && hasNoMovement) {
     counts.enTransito = reporte.salidasActivas
   }

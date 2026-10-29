@@ -10,10 +10,15 @@ import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.dto.Tas
 import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.exception.FlowableIntegrationException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 
 @Component
@@ -113,6 +118,45 @@ public class FlowableClient {
                         .retrieve()
                         .body(ProcessDefinitionResponse.class),
                 "Error consultando la definición de proceso %s en Flowable".formatted(processDefinitionId)
+        );
+    }
+
+    public ProcessDefinitionResponse obtenerUltimaDefinicionPorKey(String processDefinitionKey) {
+        FlowablePageResponse<ProcessDefinitionResponse> page = execute(
+                () -> restClient.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/repository/process-definitions")
+                                .queryParam("key", processDefinitionKey)
+                                .queryParam("latest", true)
+                                .build())
+                        .retrieve()
+                        .body(PROCESS_DEF_PAGE_TYPE),
+                "Error consultando la última definición del proceso %s en Flowable".formatted(processDefinitionKey)
+        );
+        if (page == null || page.data() == null || page.data().isEmpty()) {
+            return null;
+        }
+        return page.data().getFirst();
+    }
+
+    public void desplegarBpmn(String resourceName, String bpmnXml) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        ByteArrayResource resource = new ByteArrayResource(bpmnXml.trim().getBytes(StandardCharsets.UTF_8)) {
+            @Override
+            public String getFilename() {
+                return resourceName;
+            }
+        };
+        body.add("file", resource);
+
+        executeVoid(
+                () -> restClient.post()
+                        .uri("/repository/deployments")
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .body(body)
+                        .retrieve()
+                        .toBodilessEntity(),
+                "Error desplegando recurso BPMN '%s' en Flowable".formatted(resourceName)
         );
     }
 

@@ -2,14 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
-  ArrowRight,
   Car,
   CheckCircle2,
   FileText,
   Gauge,
   GitBranch,
   Loader2,
-  MapPin,
   Play,
   RefreshCw,
   User,
@@ -69,9 +67,30 @@ export function EjecutarAccionFlowableDialog({
 
   const currentTask = tareaQuery.data
   const availableActions = accionesQuery.data?.actions ?? []
+  const taskFields = accionesQuery.data?.fields ?? []
 
-  const nextAction = getSalidaNextActionConfig(salida?.estado, salida?.destino)
+  const hasSalidaEvent = useMemo(
+    () =>
+      (salida?.eventos ?? []).some((e) =>
+        (e.tipoEvento ?? "").toUpperCase().includes("SALIDA")
+      ),
+    [salida?.eventos]
+  )
+
+  const nextAction = getSalidaNextActionConfig(
+    currentTask?.name ?? (hasSalidaEvent ? "LLEGADA" : salida?.estado),
+    salida?.descripcionActividad
+  )
   const ActionIcon = nextAction.icon
+
+  const kilometrajeField = useMemo(
+    () => taskFields.find((f) => f.id === "kilometraje"),
+    [taskFields]
+  )
+
+  const kilometrajeLabel =
+    kilometrajeField?.name ||
+    (nextAction.type === "SALIDA" ? "Kilometraje de Salida" : "Kilometraje de Llegada")
 
   // Capture GPS internally in background
   const captureGPS = useCallback(() => {
@@ -170,7 +189,7 @@ export function EjecutarAccionFlowableDialog({
       id: salida.id,
       accionId,
       data: {
-        kilometraje: kilometraje ? parseFloat(kilometraje) : undefined,
+        kilometraje: kilometraje ? Math.round(parseFloat(kilometraje)) : undefined,
         latitud: currentLat ? parseFloat(currentLat) : undefined,
         longitud: currentLng ? parseFloat(currentLng) : undefined,
         observacion: observacion.trim() || undefined,
@@ -248,15 +267,11 @@ export function EjecutarAccionFlowableDialog({
                 <SalidaVehicularStatusBadge status={salida.estado} />
               </div>
 
-              {/* Ruta Origen -> Destino */}
+              {/* Descripción de la Actividad */}
               <div className="flex items-center gap-2 pt-2 border-t border-border/50 text-xs text-muted-foreground">
-                <MapPin className="size-3.5 text-primary shrink-0" />
-                <span className="font-medium text-foreground truncate max-w-[150px]">
-                  {salida.origen}
-                </span>
-                <ArrowRight className="size-3 text-muted-foreground/60 shrink-0" />
-                <span className="font-medium text-foreground truncate max-w-[150px]">
-                  {salida.destino}
+                <FileText className="size-3.5 text-primary shrink-0" />
+                <span className="font-medium text-foreground truncate max-w-[300px]" title={salida.descripcionActividad}>
+                  {salida.descripcionActividad}
                 </span>
               </div>
 
@@ -300,13 +315,14 @@ export function EjecutarAccionFlowableDialog({
               <div className="space-y-1.5">
                 <Label htmlFor="kilometraje" className="text-xs font-medium flex items-center gap-1.5 text-foreground">
                   <Gauge className="size-3.5 text-primary" />
-                  Kilometraje del Odómetro
+                  {kilometrajeLabel}
                 </Label>
                 <div className="relative">
                   <Input
                     id="kilometraje"
                     type="number"
-                    step="0.1"
+                    step="1"
+                    min="0"
                     placeholder="Ej. 125430"
                     value={kilometraje}
                     onChange={(e) => setKilometraje(e.target.value)}
@@ -318,7 +334,9 @@ export function EjecutarAccionFlowableDialog({
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Lectura del odómetro del vehículo al momento de la acción.
+                  {nextAction.type === "SALIDA"
+                    ? "Lectura del odómetro del vehículo al momento de registrar la salida."
+                    : "Lectura del odómetro del vehículo al momento de registrar la llegada."}
                 </p>
               </div>
 
@@ -338,16 +356,9 @@ export function EjecutarAccionFlowableDialog({
                       </span>
                     </div>
                     <p className="text-[11.5px] text-muted-foreground mt-0.5 leading-snug">
-                      {nextAction.type === "INICIAR" &&
-                        "Al iniciar, la bitácora se registrará automáticamente con la partida hacia el destino, geolocalización GPS interna y odómetro inicial."}
-                      {nextAction.type === "LLEGADA" &&
-                        "Al registrar llegada, la bitácora registrará automáticamente el arribo a destino con geolocalización GPS interna y fecha/hora."}
-                      {nextAction.type === "RETORNO" &&
-                        "Al iniciar retorno, la bitácora registrará automáticamente la partida hacia la base con geolocalización GPS."}
-                      {nextAction.type === "FINALIZAR" &&
-                        "Al finalizar la salida, la bitácora registrará automáticamente el cierre del viaje con odómetro final y geolocalización."}
-                      {nextAction.type === "AVANZAR" &&
-                        "La bitácora registrará automáticamente el hito operativo del flujo vehicular con geolocalización interna."}
+                      {nextAction.type === "SALIDA"
+                        ? "Al registrar la salida, se guardará automáticamente en la bitácora con geolocalización GPS y odómetro de salida."
+                        : "Al registrar la llegada, se guardará automáticamente en la bitácora con geolocalización GPS y odómetro de llegada."}
                     </p>
                   </div>
                 </div>
@@ -411,22 +422,24 @@ export function EjecutarAccionFlowableDialog({
                 </div>
               </div>
 
-              {/* Observaciones */}
-              <div className="space-y-1.5 pt-1">
-                <Label htmlFor="observacion" className="text-xs font-medium flex items-center gap-1.5 text-foreground">
-                  <FileText className="size-3.5 text-muted-foreground" />
-                  Observaciones o Novedades
-                  <span className="text-muted-foreground font-normal text-[11px]">(opcional)</span>
-                </Label>
-                <Textarea
-                  id="observacion"
-                  rows={2}
-                  placeholder="Detalles sobre el estado del vehículo, ruta o novedades..."
-                  value={observacion}
-                  onChange={(e) => setObservacion(e.target.value)}
-                  className="text-xs resize-none"
-                />
-              </div>
+              {/* Observaciones (solo si la tarea del BPMN lo define explícitamente) */}
+              {accionesQuery.data?.fields?.some((f) => f.id === "observacion") && (
+                <div className="space-y-1.5 pt-1">
+                  <Label htmlFor="observacion" className="text-xs font-medium flex items-center gap-1.5 text-foreground">
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    Observaciones de Llegada
+                    <span className="text-muted-foreground font-normal text-[11px]">(opcional)</span>
+                  </Label>
+                  <Textarea
+                    id="observacion"
+                    rows={2}
+                    placeholder="Detalles o novedades al registrar la llegada..."
+                    value={observacion}
+                    onChange={(e) => setObservacion(e.target.value)}
+                    className="text-xs resize-none"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Aviso si no hay acciones de Flowable */}
@@ -467,11 +480,8 @@ export function EjecutarAccionFlowableDialog({
                   disabled={accionMutation.isPending}
                   className={cn(
                     "h-8.5 text-xs font-semibold gap-1.5 shadow-sm cursor-pointer",
-                    nextAction.type === "INICIAR" && "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20",
-                    nextAction.type === "LLEGADA" && "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-500/20",
-                    nextAction.type === "RETORNO" && "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20",
-                    nextAction.type === "FINALIZAR" && "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20",
-                    nextAction.type === "AVANZAR" && "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/20"
+                    nextAction.type === "SALIDA" && "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20",
+                    nextAction.type === "LLEGADA" && "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
                   )}
                 >
                   {accionMutation.isPending ? (
@@ -479,7 +489,9 @@ export function EjecutarAccionFlowableDialog({
                   ) : (
                     <Play className="size-3.5 fill-current" />
                   )}
-                  <span>{action.name}</span>
+                  <span>
+                    {action.name.toUpperCase() === "COMPLETAR" ? nextAction.label : action.name}
+                  </span>
                 </Button>
               ))
             ) : null}

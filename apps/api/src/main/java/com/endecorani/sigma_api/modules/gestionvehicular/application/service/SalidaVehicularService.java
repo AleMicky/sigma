@@ -53,8 +53,9 @@ import java.util.stream.Collectors;
 public class SalidaVehicularService {
 
     private static final String WORKFLOW_CODIGO = "SALIDA_VEHICULAR";
+    private static final String ESTADO_SALIDA = "SALIDA";
+    private static final String ESTADO_LLEGADA = "LLEGADA";
     private static final String ESTADO_CANCELADA = "CANCELADA";
-    private static final String ESTADO_FINALIZADA = "FINALIZADA";
 
     private final SalidaVehicularRepository salidaRepository;
     private final SalidaVehicularEventoRepository eventoRepository;
@@ -89,14 +90,17 @@ public class SalidaVehicularService {
 
         String numero = correlativoService.generar(CorrelativoCodigo.SALIDA_VEHICULAR, LocalDate.now().getYear());
 
+        String observaciones = request.observaciones() != null && !request.observaciones().isBlank()
+                ? request.observaciones().trim()
+                : null;
+
         SalidaVehicular salida = SalidaVehicular.builder()
                 .numero(numero)
                 .activoId(request.activoId())
                 .empleadoId(empleadoId)
-                .motivo(request.motivo().trim())
-                .origen(request.origen().trim())
-                .destino(request.destino().trim())
-                .estado("REGISTRADA")
+                .descripcionActividad(request.descripcionActividad().trim())
+                .observaciones(observaciones)
+                .estado("SALIDA")
                 .build();
 
         SalidaVehicular guardada = salidaRepository.save(salida);
@@ -106,17 +110,15 @@ public class SalidaVehicularService {
         variables.put("salidaId", guardada.getId().toString());
         variables.put("empleadoId", empleadoId.toString());
         variables.put("activoId", request.activoId().toString());
-        variables.put("origen", request.origen());
-        variables.put("destino", request.destino());
-        variables.put("motivo", request.motivo());
+        variables.put("descripcionActividad", guardada.getDescripcionActividad());
+        if (observaciones != null) {
+            variables.put("observaciones", observaciones);
+        }
 
         try {
             String processInstanceId = workflowApplicationService.iniciar(WORKFLOW_CODIGO, guardada.getId().toString(), variables);
             guardada.setProcessInstanceId(processInstanceId);
-            WorkflowTaskResponse task = workflowApplicationService.obtenerTareaActual(processInstanceId);
-            if (task != null && task.name() != null) {
-                guardada.setEstado(extraerEstado(task.name()));
-            }
+            guardada.setEstado(ESTADO_SALIDA);
             guardada = salidaRepository.save(guardada);
         } catch (Exception ex) {
             log.warn("No se pudo iniciar el proceso Flowable para la salida vehicular: {}", ex.getMessage());
@@ -160,18 +162,15 @@ public class SalidaVehicularService {
                 .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
 
         String estadoActual = salida.getEstado() != null ? salida.getEstado().toUpperCase() : "";
-        if (ESTADO_FINALIZADA.equals(estadoActual) || ESTADO_CANCELADA.equals(estadoActual)) {
-            throw new BusinessException("No se puede modificar una salida vehicular que ya está " + estadoActual);
+        if (ESTADO_LLEGADA.equals(estadoActual) || "FINALIZADA".equals(estadoActual) || ESTADO_CANCELADA.equals(estadoActual)) {
+            throw new BusinessException("No se puede modificar una salida vehicular que ya está en " + estadoActual);
         }
 
-        if (request.motivo() != null && !request.motivo().isBlank()) {
-            salida.setMotivo(request.motivo().trim());
+        if (request.descripcionActividad() != null && !request.descripcionActividad().isBlank()) {
+            salida.setDescripcionActividad(request.descripcionActividad().trim());
         }
-        if (request.origen() != null && !request.origen().isBlank()) {
-            salida.setOrigen(request.origen().trim());
-        }
-        if (request.destino() != null && !request.destino().isBlank()) {
-            salida.setDestino(request.destino().trim());
+        if (request.observaciones() != null) {
+            salida.setObservaciones(request.observaciones().isBlank() ? null : request.observaciones().trim());
         }
 
         SalidaVehicular guardada = salidaRepository.save(salida);
@@ -205,8 +204,8 @@ public class SalidaVehicularService {
                 .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
 
         String estadoActual = salida.getEstado() != null ? salida.getEstado().toUpperCase() : "";
-        if (ESTADO_FINALIZADA.equals(estadoActual) || ESTADO_CANCELADA.equals(estadoActual)) {
-            throw new BusinessException("No se puede cancelar una salida vehicular que ya está " + estadoActual);
+        if (ESTADO_LLEGADA.equals(estadoActual) || "FINALIZADA".equals(estadoActual) || ESTADO_CANCELADA.equals(estadoActual)) {
+            throw new BusinessException("No se puede cancelar una salida vehicular que ya está en " + estadoActual);
         }
 
         String motivo = request != null && request.motivo() != null ? request.motivo() : "Cancelada a solicitud del usuario";
@@ -337,7 +336,7 @@ public class SalidaVehicularService {
             empleadoId = salida.getEmpleadoId();
         }
 
-        String tipoEvento = matchingAction != null ? matchingAction.name() : actionValue;
+        String tipoEvento = resolverTipoEvento(tareaActual, matchingAction, actionValue);
         SalidaVehicularEvento evento = SalidaVehicularEvento.builder()
                 .salidaVehicularId(salida.getId())
                 .empleadoId(empleadoId)
@@ -363,12 +362,13 @@ public class SalidaVehicularService {
                 .build();
         bitacoraRepository.save(bitacora);
 
-        // Actualizar estado de la salida según el nuevo estado del proceso
+        // Actualizar estado de la salida:
+        // - Si completó todas las tareas BPMN (LLEGADA fue la tarea final), el estado final es LLEGADA
+        // - Si acaba de completar la primera tarea (SALIDA), permanece en SALIDA en espera de registrar LLEGADA
         if (resultado == null || resultado.taskId() == null) {
-            // El proceso completó todas las tareas BPMN
-            salida.setEstado(ESTADO_FINALIZADA);
-        } else if (resultado.status() != null && !resultado.status().isBlank()) {
-            salida.setEstado(resultado.status().trim().toUpperCase());
+            salida.setEstado(ESTADO_LLEGADA);
+        } else {
+            salida.setEstado(ESTADO_SALIDA);
         }
 
         SalidaVehicular actualizada = salidaRepository.save(salida);
@@ -468,17 +468,6 @@ public class SalidaVehicularService {
         }
     }
 
-    private String extraerEstado(String taskName) {
-        if (taskName == null || taskName.isBlank()) {
-            return "REGISTRADA";
-        }
-        int separator = taskName.indexOf(" - ");
-        if (separator >= 0) {
-            return taskName.substring(0, separator).trim().toUpperCase();
-        }
-        return taskName.trim().toUpperCase();
-    }
-
     private String resolverNombreEmpleado(UUID empleadoId) {
         if (empleadoId == null) {
             return null;
@@ -524,9 +513,8 @@ public class SalidaVehicularService {
                 .empleadoId(salida.getEmpleadoId())
                 .empleadoCodigo(empleadoCodigo)
                 .empleadoNombre(empleadoNombre)
-                .motivo(salida.getMotivo())
-                .origen(salida.getOrigen())
-                .destino(salida.getDestino())
+                .descripcionActividad(salida.getDescripcionActividad())
+                .observaciones(salida.getObservaciones())
                 .estado(salida.getEstado())
                 .processInstanceId(salida.getProcessInstanceId())
                 .eventos(eventos)
@@ -541,6 +529,7 @@ public class SalidaVehicularService {
             return Collections.emptyList();
         }
 
+        Set<UUID> salidaIds = salidas.stream().map(SalidaVehicular::getId).collect(Collectors.toSet());
         Set<UUID> activoIds = salidas.stream().map(SalidaVehicular::getActivoId).collect(Collectors.toSet());
         Set<UUID> empleadoIds = salidas.stream().map(SalidaVehicular::getEmpleadoId).collect(Collectors.toSet());
 
@@ -551,6 +540,10 @@ public class SalidaVehicularService {
                 .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, e -> e));
 
         Map<UUID, Map<String, String>> atributosMap = obtenerAtributosVehiculosBatch(activoIds);
+
+        List<SalidaVehicularEvento> todosEventos = eventoRepository.findBySalidaVehicularIdIn(new ArrayList<>(salidaIds));
+        Map<UUID, List<SalidaVehicularEventoResponse>> eventosPorSalida = mapEventosToResponse(todosEventos).stream()
+                .collect(Collectors.groupingBy(SalidaVehicularEventoResponse::salidaVehicularId));
 
         return salidas.stream().map(salida -> {
             ActivoEntity activo = activoMap.get(salida.getActivoId());
@@ -569,11 +562,11 @@ public class SalidaVehicularService {
                     .empleadoId(salida.getEmpleadoId())
                     .empleadoCodigo(emp != null ? emp.getCodigo() : null)
                     .empleadoNombre(emp != null ? emp.getNombreCompleto() : null)
-                    .motivo(salida.getMotivo())
-                    .origen(salida.getOrigen())
-                    .destino(salida.getDestino())
+                    .descripcionActividad(salida.getDescripcionActividad())
+                    .observaciones(salida.getObservaciones())
                     .estado(salida.getEstado())
                     .processInstanceId(salida.getProcessInstanceId())
+                    .eventos(eventosPorSalida.getOrDefault(salida.getId(), Collections.emptyList()))
                     .createdAt(salida.getCreatedAt())
                     .updatedAt(salida.getUpdatedAt())
                     .build();
@@ -665,6 +658,38 @@ public class SalidaVehicularService {
         return result;
     }
 
+    private String resolverTipoEvento(
+            WorkflowTaskActionsResponse tareaActual,
+            WorkflowActionResponse matchingAction,
+            String actionValue
+    ) {
+        String taskKey = tareaActual != null && tareaActual.taskDefinitionKey() != null
+                ? tareaActual.taskDefinitionKey().toUpperCase(Locale.ROOT)
+                : "";
+        String taskStatus = tareaActual != null && tareaActual.status() != null
+                ? tareaActual.status().toUpperCase(Locale.ROOT)
+                : "";
+        String taskName = tareaActual != null && tareaActual.taskName() != null
+                ? tareaActual.taskName().toUpperCase(Locale.ROOT)
+                : "";
+        String actionName = matchingAction != null && matchingAction.name() != null
+                ? matchingAction.name().toUpperCase(Locale.ROOT)
+                : "";
+        String actVal = actionValue != null ? actionValue.toUpperCase(Locale.ROOT) : "";
+
+        String combined = taskKey + " " + taskStatus + " " + taskName + " " + actionName + " " + actVal;
+        if (combined.contains("LLEGAD")) {
+            return ESTADO_LLEGADA;
+        }
+        if (combined.contains("SALIDA")) {
+            return ESTADO_SALIDA;
+        }
+        if (matchingAction != null && matchingAction.name() != null && !matchingAction.name().isBlank()) {
+            return matchingAction.name();
+        }
+        return actionValue != null && !actionValue.isBlank() ? actionValue : ESTADO_SALIDA;
+    }
+
     private String construirDescripcionBitacoraAutomatica(
             SalidaVehicular salida,
             String tipoEvento,
@@ -676,19 +701,15 @@ public class SalidaVehicularService {
                 : (actionValue != null ? actionValue.toUpperCase(Locale.ROOT) : "");
         StringBuilder desc = new StringBuilder();
 
-        if (base.contains("INICIAR") || base.contains("PARTIDA") || base.contains("SALIDA")) {
-            desc.append("Inicio de salida vehicular hacia ").append(salida.getDestino());
-        } else if (base.contains("LLEGAD") || base.contains("DESTINO")) {
-            desc.append("Llegada al punto de destino: ").append(salida.getDestino());
-        } else if (base.contains("RETORN")) {
-            desc.append("Inicio de trayecto de retorno hacia base ").append(salida.getOrigen()).append(" desde ").append(salida.getDestino());
-        } else if (base.contains("FINALIZ") || base.contains("CIERRE") || base.contains("COMPLET")) {
-            desc.append("Finalización de salida vehicular y arribo a base ").append(salida.getOrigen());
-        } else {
-            desc.append(tipoEvento != null ? tipoEvento : "Transición de estado operativo");
-            if (salida.getDestino() != null) {
-                desc.append(" (Ruta: ").append(salida.getOrigen()).append(" -> ").append(salida.getDestino()).append(")");
+        if (base.contains("SALIDA")) {
+            desc.append("Registro de salida vehicular");
+            if (salida.getDescripcionActividad() != null && !salida.getDescripcionActividad().isBlank()) {
+                desc.append(" (Actividad: ").append(salida.getDescripcionActividad()).append(")");
             }
+        } else if (base.contains("LLEGAD")) {
+            desc.append("Registro de llegada vehicular");
+        } else {
+            desc.append(tipoEvento != null ? tipoEvento : "Evento de salida vehicular");
         }
 
         if (request != null && request.kilometraje() != null) {

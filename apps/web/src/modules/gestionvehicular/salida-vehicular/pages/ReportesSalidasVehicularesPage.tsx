@@ -4,7 +4,6 @@ import { useNavigate } from "@tanstack/react-router"
 import {
   Activity,
   ArrowLeft,
-  ArrowRight,
   BarChart3,
   Car,
   Clock,
@@ -204,8 +203,8 @@ export function ReportesSalidasVehicularesPage() {
         item.placa?.toLowerCase().includes(q) ||
         item.activoDescripcion?.toLowerCase().includes(q) ||
         item.empleadoNombre?.toLowerCase().includes(q) ||
-        item.origen?.toLowerCase().includes(q) ||
-        item.destino?.toLowerCase().includes(q) ||
+        item.descripcionActividad?.toLowerCase().includes(q) ||
+        item.observaciones?.toLowerCase().includes(q) ||
         item.estado?.toLowerCase().includes(q)
     )
   }, [generalData?.items, searchGeneral])
@@ -245,8 +244,8 @@ export function ReportesSalidasVehicularesPage() {
         t.placa?.toLowerCase().includes(q) ||
         t.vehiculoDescripcion?.toLowerCase().includes(q) ||
         t.empleadoNombre?.toLowerCase().includes(q) ||
-        t.origen?.toLowerCase().includes(q) ||
-        t.destino?.toLowerCase().includes(q)
+        t.descripcionActividad?.toLowerCase().includes(q) ||
+        t.observaciones?.toLowerCase().includes(q)
     )
   }, [tiemposData?.items, searchTiempos])
 
@@ -276,8 +275,8 @@ export function ReportesSalidasVehicularesPage() {
             Placa: s.placa ?? s.activoCodigo,
             Vehiculo: s.marca ? `${s.marca} ${s.modelo ?? ""}` : s.activoDescripcion,
             Conductor: s.empleadoNombre ?? "N/A",
-            Origen: s.origen,
-            Destino: s.destino,
+            Actividad: s.descripcionActividad,
+            Observaciones: s.observaciones ?? "-",
             Estado: s.estado,
             FechaCreacion: s.createdAt,
           }))
@@ -317,8 +316,8 @@ export function ReportesSalidasVehicularesPage() {
             Numero: t.numero,
             Vehiculo: t.placa ?? t.vehiculoDescripcion,
             Conductor: t.empleadoNombre ?? "N/A",
-            Origen: t.origen,
-            Destino: t.destino,
+            Actividad: t.descripcionActividad,
+            Observaciones: t.observaciones ?? "-",
             FechaInicio: t.fechaInicio,
             FechaFin: t.fechaFin,
             DuracionHoras: t.duracionHoras,
@@ -686,7 +685,7 @@ export function ReportesSalidasVehicularesPage() {
                       <TableHead className="w-24 font-semibold whitespace-nowrap">N° Salida</TableHead>
                       <TableHead className="w-44 font-semibold whitespace-nowrap">Vehículo / Placa</TableHead>
                       <TableHead className="w-44 font-semibold whitespace-nowrap">Conductor</TableHead>
-                      <TableHead className="min-w-[180px] font-semibold whitespace-nowrap">Ruta</TableHead>
+                      <TableHead className="min-w-[180px] font-semibold whitespace-nowrap">Actividad</TableHead>
                       <TableHead className="w-36 font-semibold whitespace-nowrap">Fecha Registro</TableHead>
                       <TableHead className="w-28 font-semibold whitespace-nowrap">Estado</TableHead>
                       <TableHead className="w-16 font-semibold text-right whitespace-nowrap">Acción</TableHead>
@@ -727,11 +726,9 @@ export function ReportesSalidasVehicularesPage() {
                             </span>
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
-                            <div className="flex items-center gap-1 font-medium text-foreground text-xs" title={`${item.origen} → ${item.destino}`}>
-                              <span className="truncate max-w-[90px]">{item.origen}</span>
-                              <ArrowRight className="size-3 text-muted-foreground shrink-0" />
-                              <span className="truncate max-w-[90px]">{item.destino}</span>
-                            </div>
+                            <span className="font-medium text-foreground text-xs truncate max-w-[200px] inline-block" title={item.descripcionActividad}>
+                              {item.descripcionActividad}
+                            </span>
                           </TableCell>
                           <TableCell className="font-mono text-muted-foreground whitespace-nowrap text-[11px]">
                             {formatDate(item.createdAt)}
@@ -1050,7 +1047,7 @@ export function ReportesSalidasVehicularesPage() {
                     <TableRow className="text-xs h-8">
                       <TableHead className="w-24 font-semibold whitespace-nowrap">N° Salida</TableHead>
                       <TableHead className="w-40 font-semibold whitespace-nowrap">Vehículo</TableHead>
-                      <TableHead className="min-w-[180px] font-semibold whitespace-nowrap">Ruta</TableHead>
+                      <TableHead className="min-w-[180px] font-semibold whitespace-nowrap">Actividad</TableHead>
                       <TableHead className="w-36 font-semibold whitespace-nowrap">Partida (Inicio)</TableHead>
                       <TableHead className="w-36 font-semibold whitespace-nowrap">Llegada / Cierre</TableHead>
                       <TableHead className="w-28 font-semibold text-right whitespace-nowrap">Duración Total</TableHead>
@@ -1081,11 +1078,9 @@ export function ReportesSalidasVehicularesPage() {
                             </span>
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
-                            <div className="flex items-center gap-1 font-medium text-xs" title={`${t.origen} → ${t.destino}`}>
-                              <span className="truncate max-w-[90px]">{t.origen}</span>
-                              <ArrowRight className="size-3 text-muted-foreground shrink-0" />
-                              <span className="truncate max-w-[90px]">{t.destino}</span>
-                            </div>
+                            <span className="font-medium text-xs truncate max-w-[200px] inline-block" title={t.descripcionActividad}>
+                              {t.descripcionActividad}
+                            </span>
                           </TableCell>
                           <TableCell className="font-mono text-muted-foreground whitespace-nowrap text-[11px]">
                             {formatDate(t.fechaInicio)}

@@ -2,12 +2,10 @@ import { useQuery } from "@tanstack/react-query"
 import {
   Compass,
   FileText,
-  MapPin,
   RefreshCw,
   ExternalLink,
   User,
   Clock,
-  ArrowRight,
 } from "lucide-react"
 
 import { Badge } from "@/shared/components/ui/badge"
@@ -104,13 +102,9 @@ export function ConsultarBitacoraDialog({
             <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-2 text-xs">
               <div className="flex items-center justify-between gap-2 flex-wrap text-muted-foreground">
                 <div className="flex items-center gap-2 min-w-0">
-                  <MapPin className="size-3.5 text-primary shrink-0" />
-                  <span className="font-medium text-foreground truncate max-w-[140px]">
-                    {salida.origen}
-                  </span>
-                  <ArrowRight className="size-3 text-muted-foreground/60 shrink-0" />
-                  <span className="font-medium text-foreground truncate max-w-[140px]">
-                    {salida.destino}
+                  <FileText className="size-3.5 text-primary shrink-0" />
+                  <span className="font-medium text-foreground truncate max-w-[260px]" title={salida.descripcionActividad}>
+                    {salida.descripcionActividad}
                   </span>
                 </div>
 
@@ -151,7 +145,7 @@ export function ConsultarBitacoraDialog({
                   Sin registros de bitácora todavía
                 </h4>
                 <p className="text-[11px] text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                  Las entradas en la bitácora se registran de forma 100% automática en tiempo real con las coordenadas GPS al cambiar de estado (Iniciar Salida, Llegada, Retorno y Finalizar).
+                  Las entradas en la bitácora se registran de forma 100% automática en tiempo real con las coordenadas GPS al ejecutar cada paso del flujo (Registrar Salida y Registrar Llegada).
                 </p>
               </div>
             ) : (

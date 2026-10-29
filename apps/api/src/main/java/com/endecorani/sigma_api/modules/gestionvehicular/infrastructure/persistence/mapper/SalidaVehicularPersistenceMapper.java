@@ -17,9 +17,8 @@ public class SalidaVehicularPersistenceMapper {
         entity.setNumero(domain.getNumero());
         entity.setActivoId(domain.getActivoId());
         entity.setEmpleadoId(domain.getEmpleadoId());
-        entity.setMotivo(domain.getMotivo());
-        entity.setOrigen(domain.getOrigen());
-        entity.setDestino(domain.getDestino());
+        entity.setDescripcionActividad(domain.getDescripcionActividad());
+        entity.setObservaciones(domain.getObservaciones());
         entity.setEstado(domain.getEstado());
         entity.setProcessInstanceId(domain.getProcessInstanceId());
         entity.setCreatedAt(domain.getCreatedAt());
@@ -38,9 +37,8 @@ public class SalidaVehicularPersistenceMapper {
         entity.setNumero(domain.getNumero());
         entity.setActivoId(domain.getActivoId());
         entity.setEmpleadoId(domain.getEmpleadoId());
-        entity.setMotivo(domain.getMotivo());
-        entity.setOrigen(domain.getOrigen());
-        entity.setDestino(domain.getDestino());
+        entity.setDescripcionActividad(domain.getDescripcionActividad());
+        entity.setObservaciones(domain.getObservaciones());
         entity.setEstado(domain.getEstado());
         entity.setProcessInstanceId(domain.getProcessInstanceId());
     }
@@ -55,9 +53,8 @@ public class SalidaVehicularPersistenceMapper {
                 .numero(entity.getNumero())
                 .activoId(entity.getActivoId())
                 .empleadoId(entity.getEmpleadoId())
-                .motivo(entity.getMotivo())
-                .origen(entity.getOrigen())
-                .destino(entity.getDestino())
+                .descripcionActividad(entity.getDescripcionActividad())
+                .observaciones(entity.getObservaciones())
                 .estado(entity.getEstado())
                 .processInstanceId(entity.getProcessInstanceId())
                 .createdAt(entity.getCreatedAt())

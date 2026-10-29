@@ -12,9 +12,8 @@ export interface SalidaVehicular {
   empleadoId: string
   empleadoCodigo?: string | null
   empleadoNombre?: string | null
-  motivo: string
-  origen: string
-  destino: string
+  descripcionActividad: string
+  observaciones?: string | null
   estado: string
   processInstanceId?: string | null
   eventos?: SalidaVehicularEvento[]
@@ -107,15 +106,13 @@ export interface WorkflowHistory {
 export interface RegistrarSalidaVehicularRequest {
   activoId: string
   empleadoId?: string | null
-  motivo: string
-  origen: string
-  destino: string
+  descripcionActividad: string
+  observaciones?: string | null
 }
 
 export interface ActualizarSalidaVehicularRequest {
-  motivo?: string
-  origen?: string
-  destino?: string
+  descripcionActividad?: string
+  observaciones?: string | null
 }
 
 export interface CancelarSalidaVehicularRequest {
@@ -189,8 +186,8 @@ export interface ItemTiempoRecorrido {
   placa?: string | null
   vehiculoDescripcion?: string | null
   empleadoNombre?: string | null
-  origen: string
-  destino: string
+  descripcionActividad: string
+  observaciones?: string | null
   estado: string
   fechaInicio?: string | null
   fechaFin?: string | null

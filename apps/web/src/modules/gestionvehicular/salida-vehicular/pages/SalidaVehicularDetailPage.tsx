@@ -5,7 +5,6 @@ import {
   Activity,
   AlertTriangle,
   ArrowLeft,
-  ArrowRight,
   Car,
   CheckCircle2,
   Clock,
@@ -16,12 +15,10 @@ import {
   Flag,
   Gauge,
   Map,
-  MapPin,
   Navigation,
   Play,
   Plus,
   RefreshCw,
-  RotateCcw,
   User,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -97,65 +94,50 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
   }
 
   const estadoNorm = (salida?.estado ?? "").trim().toUpperCase()
-  const isFinalizado = estadoNorm.includes("FINALIZ") || estadoNorm.includes("COMPLET")
+  const isFinalizado =
+    estadoNorm.includes("LLEGAD") ||
+    estadoNorm.includes("FINALIZ") ||
+    estadoNorm.includes("COMPLET")
   const isCancelado = estadoNorm.includes("CANCEL") || estadoNorm.includes("ANULAD")
   const isInactive = isFinalizado || isCancelado
 
-  const nextAction = getSalidaNextActionConfig(salida?.estado, salida?.destino)
+  const hasSalidaEvent = useMemo(
+    () => eventos.some((e) => (e.tipoEvento ?? "").toUpperCase().includes("SALIDA")),
+    [eventos]
+  )
+
+  const nextAction = getSalidaNextActionConfig(
+    hasSalidaEvent ? "LLEGADA" : salida?.estado,
+    salida?.descripcionActividad
+  )
   const ActionIcon = nextAction.icon
 
-  // Ciclo de vida del viaje (5 fases operativas)
+  // Ciclo de vida del viaje (2 tareas: Salida y Llegada, donde Llegada es la finalización)
   const currentStep = useMemo(() => {
     if (isCancelado) return -1
-    if (isFinalizado) return 4
-    if (estadoNorm.includes("RETORN")) return 3
-    if (estadoNorm.includes("DESTINO") || estadoNorm.includes("LLEGAD")) return 2
-    if (estadoNorm.includes("TRANSIT") || estadoNorm.includes("CURSO")) return 1
-    return 0 // Creada / Inicial
-  }, [estadoNorm, isCancelado, isFinalizado])
-
-  const destino = salida?.destino
-  const origen = salida?.origen
+    if (isFinalizado) return 2
+    if (hasSalidaEvent) return 1
+    return 0 // Salida
+  }, [hasSalidaEvent, isCancelado, isFinalizado])
 
   const steps: StepConfig[] = useMemo(
     () => [
       {
         step: 0,
-        key: "registro",
-        label: "Registro",
-        sublabel: "Salida programada",
+        key: "salida",
+        label: "Salida",
+        sublabel: "Registro de salida",
         icon: Play,
       },
       {
         step: 1,
-        key: "transito",
-        label: "En Tránsito",
-        sublabel: destino ? `Hacia ${destino}` : "En viaje al destino",
-        icon: Navigation,
-      },
-      {
-        step: 2,
-        key: "destino",
-        label: "En Destino",
-        sublabel: destino ?? "Llegada al punto",
-        icon: MapPin,
-      },
-      {
-        step: 3,
-        key: "retorno",
-        label: "En Retorno",
-        sublabel: origen ? `Hacia ${origen}` : "Viaje de vuelta",
-        icon: RotateCcw,
-      },
-      {
-        step: 4,
-        key: "finalizada",
-        label: "Finalizada",
-        sublabel: "Retorno y cierre",
+        key: "llegada",
+        label: "Llegada",
+        sublabel: "Registro de llegada",
         icon: Flag,
       },
     ],
-    [destino, origen]
+    []
   )
 
   // Métricas de Odómetro
@@ -437,15 +419,15 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
                   Progreso y Estado Operativo del Viaje
                 </span>
                 <span className="text-[11px] text-muted-foreground">
-                  Fase actual:{" "}
+                  Paso actual:{" "}
                   <strong className="text-foreground font-semibold">
-                    {steps[Math.max(0, currentStep)]?.label ?? "En Curso"}
+                    {isFinalizado ? "Llegada Completada" : (steps[Math.max(0, currentStep)]?.label ?? "Salida")}
                   </strong>
                 </span>
               </div>
 
               {/* Stepper Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                 {steps.map((st) => {
                   const isDone = currentStep > st.step || isFinalizado
                   const isCurrent = currentStep === st.step && !isFinalizado
@@ -502,24 +484,21 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
 
       {/* 3. QUICK STATS & METRICS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Ruta */}
+        {/* Actividad */}
         <Card className="border-border/70 shadow-2xs">
           <CardContent className="p-3.5 space-y-1.5">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <Navigation className="size-3 text-primary" />
-              Trayecto
+              <FileText className="size-3 text-primary" />
+              Actividad
             </span>
-            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-              <span className="truncate max-w-[90px]" title={salida.origen}>
-                {salida.origen}
-              </span>
-              <ArrowRight className="size-3 text-muted-foreground shrink-0" />
-              <span className="truncate max-w-[90px]" title={salida.destino}>
-                {salida.destino}
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground truncate" title={salida.motivo}>
-              {salida.motivo}
+            <p className="text-xs font-bold text-foreground truncate" title={salida.descripcionActividad}>
+              {salida.descripcionActividad}
+            </p>
+            <p
+              className="text-[11px] text-muted-foreground truncate"
+              title={salida.observaciones ?? "Sin observaciones"}
+            >
+              {salida.observaciones || "Sin observaciones"}
             </p>
           </CardContent>
         </Card>
@@ -656,42 +635,30 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
 
           {/* Cards Grid: Detalles de Ruta + Ficha de Vehículo y Personal */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Detalle de Ruta y Misión */}
+            {/* Detalle de Actividad y Observaciones */}
             <Card className="border-border/70 shadow-2xs">
               <CardHeader className="pb-3 border-b border-border/60">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <MapPin className="size-4 text-primary" />
-                  Detalle del Viaje y Destino
+                  <FileText className="size-4 text-primary" />
+                  Detalle de la Actividad y Observaciones
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-3.5 text-xs">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-xl bg-muted/20 border border-border/50 space-y-1">
-                    <span className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">
-                      Punto de Origen
-                    </span>
-                    <p className="font-bold text-foreground flex items-center gap-1.5 text-sm">
-                      <MapPin className="size-3.5 text-emerald-500 shrink-0" />
-                      <span className="truncate">{salida.origen}</span>
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-muted/20 border border-border/50 space-y-1">
-                    <span className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">
-                      Punto de Destino
-                    </span>
-                    <p className="font-bold text-foreground flex items-center gap-1.5 text-sm">
-                      <Navigation className="size-3.5 text-indigo-500 shrink-0" />
-                      <span className="truncate">{salida.destino}</span>
-                    </p>
+                <div className="space-y-1.5">
+                  <span className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">
+                    Descripción de la Actividad
+                  </span>
+                  <div className="p-3 bg-muted/30 rounded-xl border border-border/60 text-foreground leading-relaxed">
+                    {salida.descripcionActividad}
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <span className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">
-                    Motivo / Justificación del Traslado
+                    Observaciones
                   </span>
-                  <div className="p-3 bg-muted/30 rounded-xl border border-border/60 text-foreground leading-relaxed">
-                    {salida.motivo}
+                  <div className="p-3 bg-muted/20 rounded-xl border border-border/50 text-muted-foreground leading-relaxed">
+                    {salida.observaciones || "Sin observaciones adicionales registradas."}
                   </div>
                 </div>
 
