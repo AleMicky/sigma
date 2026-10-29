@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +19,13 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
     List<CargaCombustibleEntity> findByViajeVehicularIdOrderByFechaCargaDesc(UUID viajeVehicularId);
 
     List<CargaCombustibleEntity> findBySalidaVehicularIdOrderByFechaCargaDesc(UUID salidaVehicularId);
+
+    List<CargaCombustibleEntity> findBySalidaVehicularIdIn(Collection<UUID> salidaVehicularIds);
+
+    List<CargaCombustibleEntity> findByFechaCargaBetweenOrderByFechaCargaAsc(
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta
+    );
 
     List<CargaCombustibleEntity> findByInsumoIdOrderByFechaCargaDesc(UUID insumoId);
 
@@ -36,12 +44,12 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
           AND (:fechaDesde IS NULL OR c.fechaCarga >= :fechaDesde)
           AND (:fechaHasta IS NULL OR c.fechaCarga <= :fechaHasta)
           AND (
-            :search IS NULL
-            OR LOWER(c.numeroFactura) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(ins.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(ins.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+            CAST(:search AS string) IS NULL OR :search = ''
+            OR LOWER(c.numeroFactura) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR LOWER(ins.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR LOWER(ins.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
           )
         ORDER BY c.fechaCarga DESC
     """)
@@ -70,12 +78,12 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
           AND (:fechaDesde IS NULL OR c.fechaCarga >= :fechaDesde)
           AND (:fechaHasta IS NULL OR c.fechaCarga <= :fechaHasta)
           AND (
-            :search IS NULL
-            OR LOWER(c.numeroFactura) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(ins.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(ins.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+            CAST(:search AS string) IS NULL OR :search = ''
+            OR LOWER(c.numeroFactura) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR LOWER(ins.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR LOWER(ins.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
           )
         ORDER BY c.fechaCarga DESC
     """)
