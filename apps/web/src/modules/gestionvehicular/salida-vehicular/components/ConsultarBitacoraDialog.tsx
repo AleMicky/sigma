@@ -145,7 +145,7 @@ export function ConsultarBitacoraDialog({
                   Sin registros de bitácora todavía
                 </h4>
                 <p className="text-[11px] text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                  Las entradas en la bitácora se registran de forma 100% automática en tiempo real con las coordenadas GPS al cambiar de estado (Iniciar Salida, Llegada, Retorno y Finalizar).
+                  Las entradas en la bitácora se registran de forma 100% automática en tiempo real con las coordenadas GPS al ejecutar cada paso del flujo (Registrar Salida y Registrar Llegada).
                 </p>
               </div>
             ) : (

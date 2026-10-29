@@ -59,12 +59,12 @@ public class SalidaVehicularReporteService {
 
         long activas = salidas.stream().filter(s -> {
             String est = s.getEstado() != null ? s.getEstado().toUpperCase() : "";
-            return !est.contains("FINALIZ") && !est.contains("CANCEL");
+            return !est.contains("LLEGAD") && !est.contains("FINALIZ") && !est.contains("CANCEL");
         }).count();
 
         long finalizadas = salidas.stream().filter(s -> {
             String est = s.getEstado() != null ? s.getEstado().toUpperCase() : "";
-            return est.contains("FINALIZ");
+            return est.contains("LLEGAD") || est.contains("FINALIZ");
         }).count();
 
         long canceladas = salidas.stream().filter(s -> {
@@ -206,12 +206,12 @@ public class SalidaVehicularReporteService {
 
             long activas = empSalidas.stream().filter(s -> {
                 String est = s.getEstado() != null ? s.getEstado().toUpperCase() : "";
-                return !est.contains("FINALIZ") && !est.contains("CANCEL");
+                return !est.contains("LLEGAD") && !est.contains("FINALIZ") && !est.contains("CANCEL");
             }).count();
 
             long finalizadas = empSalidas.stream().filter(s -> {
                 String est = s.getEstado() != null ? s.getEstado().toUpperCase() : "";
-                return est.contains("FINALIZ");
+                return est.contains("LLEGAD") || est.contains("FINALIZ");
             }).count();
 
             long canceladas = empSalidas.stream().filter(s -> {

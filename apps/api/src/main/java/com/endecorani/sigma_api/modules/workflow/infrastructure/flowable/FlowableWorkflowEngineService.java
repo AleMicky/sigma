@@ -31,9 +31,12 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
     private final ConductorRepository conductorRepository;
 
     private final java.util.Map<String, String> bpmnCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Set<String> verifiedProcessKeys = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     @Override
     public String iniciarProceso(String processDefinitionKey, String businessKey, Map<String, Object> variables) {
+
+        asegurarDefinicionActualizada(processDefinitionKey);
 
         List<FlowableVariableRequest> flowableVariables = variables.entrySet()
                 .stream()
@@ -494,5 +497,67 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
             }
         }
         return null;
+    }
+
+    private void asegurarDefinicionActualizada(String processDefinitionKey) {
+        if (processDefinitionKey == null || processDefinitionKey.isBlank() || verifiedProcessKeys.contains(processDefinitionKey)) {
+            return;
+        }
+        try {
+            String resourceFileName = processDefinitionKey + ".bpmn20.xml";
+            String localXml = cargarBpmnLocal(resourceFileName);
+            if (localXml == null || localXml.isBlank()) {
+                verifiedProcessKeys.add(processDefinitionKey);
+                return;
+            }
+
+            ProcessDefinitionResponse latestDef = flowableClient.obtenerUltimaDefinicionPorKey(processDefinitionKey);
+            boolean requiereRedeploy = false;
+
+            if (latestDef == null || latestDef.deploymentId() == null) {
+                requiereRedeploy = true;
+            } else {
+                String remoteResource = obtenerNombreRecurso(latestDef.resource());
+                String remoteXml = flowableClient.obtenerBpmn(latestDef.deploymentId(), remoteResource);
+                if (remoteXml == null || !coincidenTareasBpmn(localXml, remoteXml)) {
+                    requiereRedeploy = true;
+                }
+            }
+
+            if (requiereRedeploy) {
+                flowableClient.desplegarBpmn(resourceFileName, localXml);
+                bpmnCache.clear();
+            }
+            verifiedProcessKeys.add(processDefinitionKey);
+        } catch (Exception ignored) {
+            // Si el motor Flowable no permite despliegue automático, continuar con la definición existente
+        }
+    }
+
+    private boolean coincidenTareasBpmn(String localXml, String remoteXml) {
+        try {
+            var factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(false);
+            var localDoc = factory.newDocumentBuilder().parse(
+                    new java.io.ByteArrayInputStream(localXml.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8))
+            );
+            var remoteDoc = factory.newDocumentBuilder().parse(
+                    new java.io.ByteArrayInputStream(remoteXml.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8))
+            );
+
+            return extraerFirmaTareas(localDoc).equals(extraerFirmaTareas(remoteDoc));
+        } catch (Exception ex) {
+            return true;
+        }
+    }
+
+    private java.util.List<String> extraerFirmaTareas(org.w3c.dom.Document doc) {
+        java.util.List<String> firma = new java.util.ArrayList<>();
+        org.w3c.dom.NodeList tasks = doc.getElementsByTagName("userTask");
+        for (int i = 0; i < tasks.getLength(); i++) {
+            org.w3c.dom.Element el = (org.w3c.dom.Element) tasks.item(i);
+            firma.add(el.getAttribute("id") + ":" + el.getAttribute("name"));
+        }
+        return firma;
     }
 }

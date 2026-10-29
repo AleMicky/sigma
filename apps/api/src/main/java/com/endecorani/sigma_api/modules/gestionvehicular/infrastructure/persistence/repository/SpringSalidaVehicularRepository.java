@@ -64,7 +64,7 @@ public interface SpringSalidaVehicularRepository extends JpaRepository<SalidaVeh
 
     @Query("""
         SELECT s FROM SalidaVehicularEntity s
-        WHERE UPPER(s.estado) NOT IN ('FINALIZADA', 'CANCELADA', 'FINALIZADO', 'CANCELADO')
+        WHERE UPPER(s.estado) NOT IN ('LLEGADA', 'FINALIZADA', 'CANCELADA', 'FINALIZADO', 'CANCELADO')
         ORDER BY s.createdAt DESC
     """)
     List<SalidaVehicularEntity> findActivas();

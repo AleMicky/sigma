@@ -38,7 +38,7 @@ public class BpmnDefinitionParser {
             factory.setNamespaceAware(false);
 
             Document document = factory.newDocumentBuilder()
-                    .parse(new ByteArrayInputStream(bpmnXml.getBytes(StandardCharsets.UTF_8)));
+                    .parse(new ByteArrayInputStream(bpmnXml.trim().getBytes(StandardCharsets.UTF_8)));
 
             document.getDocumentElement().normalize();
 
@@ -133,7 +133,7 @@ public class BpmnDefinitionParser {
             factory.setNamespaceAware(false);
 
             Document document = factory.newDocumentBuilder()
-                    .parse(new ByteArrayInputStream(bpmnXml.getBytes(StandardCharsets.UTF_8)));
+                    .parse(new ByteArrayInputStream(bpmnXml.trim().getBytes(StandardCharsets.UTF_8)));
 
             document.getDocumentElement().normalize();
 
@@ -424,7 +424,7 @@ public class BpmnDefinitionParser {
 
             String name = flow.getAttribute("name");
             if (name == null || name.isBlank()) {
-                name = "Completar";
+                name = inferirNombreAccionDesdeTarea(document, taskDefinitionKey);
             }
 
             String variable = "action";
@@ -438,6 +438,21 @@ public class BpmnDefinitionParser {
         }
 
         return actions;
+    }
+
+    private String inferirNombreAccionDesdeTarea(Document document, String taskDefinitionKey) {
+        Element taskElement = buscarElementoPorId(document, taskDefinitionKey);
+        if (taskElement != null) {
+            String taskName = taskElement.getAttribute("name");
+            if (taskName != null && !taskName.isBlank()) {
+                int separator = taskName.indexOf(" - ");
+                if (separator >= 0 && separator + 3 < taskName.length()) {
+                    return taskName.substring(separator + 3).trim();
+                }
+                return taskName.trim();
+            }
+        }
+        return "Completar";
     }
 
     private String obtenerConditionExpression(Element sequenceFlow) {

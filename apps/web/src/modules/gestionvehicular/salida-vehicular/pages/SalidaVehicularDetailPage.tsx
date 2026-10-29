@@ -15,12 +15,10 @@ import {
   Flag,
   Gauge,
   Map,
-  MapPin,
   Navigation,
   Play,
   Plus,
   RefreshCw,
-  RotateCcw,
   User,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -96,58 +94,46 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
   }
 
   const estadoNorm = (salida?.estado ?? "").trim().toUpperCase()
-  const isFinalizado = estadoNorm.includes("FINALIZ") || estadoNorm.includes("COMPLET")
+  const isFinalizado =
+    estadoNorm.includes("LLEGAD") ||
+    estadoNorm.includes("FINALIZ") ||
+    estadoNorm.includes("COMPLET")
   const isCancelado = estadoNorm.includes("CANCEL") || estadoNorm.includes("ANULAD")
   const isInactive = isFinalizado || isCancelado
 
-  const nextAction = getSalidaNextActionConfig(salida?.estado, salida?.descripcionActividad)
+  const hasSalidaEvent = useMemo(
+    () => eventos.some((e) => (e.tipoEvento ?? "").toUpperCase().includes("SALIDA")),
+    [eventos]
+  )
+
+  const nextAction = getSalidaNextActionConfig(
+    hasSalidaEvent ? "LLEGADA" : salida?.estado,
+    salida?.descripcionActividad
+  )
   const ActionIcon = nextAction.icon
 
-  // Ciclo de vida del viaje (5 fases operativas)
+  // Ciclo de vida del viaje (2 tareas: Salida y Llegada, donde Llegada es la finalización)
   const currentStep = useMemo(() => {
     if (isCancelado) return -1
-    if (isFinalizado) return 4
-    if (estadoNorm.includes("RETORN")) return 3
-    if (estadoNorm.includes("DESTINO") || estadoNorm.includes("LLEGAD")) return 2
-    if (estadoNorm.includes("TRANSIT") || estadoNorm.includes("CURSO")) return 1
-    return 0 // Creada / Inicial
-  }, [estadoNorm, isCancelado, isFinalizado])
+    if (isFinalizado) return 2
+    if (hasSalidaEvent) return 1
+    return 0 // Salida
+  }, [hasSalidaEvent, isCancelado, isFinalizado])
 
   const steps: StepConfig[] = useMemo(
     () => [
       {
         step: 0,
-        key: "registro",
-        label: "Registro",
-        sublabel: "Salida programada",
+        key: "salida",
+        label: "Salida",
+        sublabel: "Registro de salida",
         icon: Play,
       },
       {
         step: 1,
-        key: "transito",
-        label: "En Tránsito",
-        sublabel: "En viaje de actividad",
-        icon: Navigation,
-      },
-      {
-        step: 2,
-        key: "destino",
-        label: "En Destino",
-        sublabel: "En punto de actividad",
-        icon: MapPin,
-      },
-      {
-        step: 3,
-        key: "retorno",
-        label: "En Retorno",
-        sublabel: "Viaje de vuelta a base",
-        icon: RotateCcw,
-      },
-      {
-        step: 4,
-        key: "finalizada",
-        label: "Finalizada",
-        sublabel: "Retorno y cierre",
+        key: "llegada",
+        label: "Llegada",
+        sublabel: "Registro de llegada",
         icon: Flag,
       },
     ],
@@ -433,15 +419,15 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
                   Progreso y Estado Operativo del Viaje
                 </span>
                 <span className="text-[11px] text-muted-foreground">
-                  Fase actual:{" "}
+                  Paso actual:{" "}
                   <strong className="text-foreground font-semibold">
-                    {steps[Math.max(0, currentStep)]?.label ?? "En Curso"}
+                    {isFinalizado ? "Llegada Completada" : (steps[Math.max(0, currentStep)]?.label ?? "Salida")}
                   </strong>
                 </span>
               </div>
 
               {/* Stepper Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                 {steps.map((st) => {
                   const isDone = currentStep > st.step || isFinalizado
                   const isCurrent = currentStep === st.step && !isFinalizado

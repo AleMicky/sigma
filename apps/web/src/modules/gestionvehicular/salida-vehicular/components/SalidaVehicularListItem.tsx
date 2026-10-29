@@ -63,11 +63,17 @@ export function SalidaVehicularListItem({
   const navigate = useNavigate()
 
   const estadoNorm = (salida.estado ?? "").trim().toUpperCase()
-  const isFinalizado = estadoNorm.includes("FINALIZ") || estadoNorm.includes("COMPLET")
+  const isFinalizado = estadoNorm.includes("LLEGAD") || estadoNorm.includes("FINALIZ") || estadoNorm.includes("COMPLET")
   const isCancelado = estadoNorm.includes("CANCEL") || estadoNorm.includes("ANULAD")
   const isInactive = isFinalizado || isCancelado
 
-  const nextAction = getSalidaNextActionConfig(salida.estado, salida.descripcionActividad)
+  const hasSalidaEvent = (salida.eventos ?? []).some((e) =>
+    (e.tipoEvento ?? "").toUpperCase().includes("SALIDA")
+  )
+  const nextAction = getSalidaNextActionConfig(
+    hasSalidaEvent ? "LLEGADA" : salida.estado,
+    salida.descripcionActividad
+  )
   const ActionIcon = nextAction.icon
 
   const vehiculoTexto = salida.marca
