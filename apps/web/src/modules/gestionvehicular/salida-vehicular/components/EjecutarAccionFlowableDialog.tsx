@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
-  ArrowRight,
   Car,
   CheckCircle2,
   FileText,
@@ -70,7 +69,7 @@ export function EjecutarAccionFlowableDialog({
   const currentTask = tareaQuery.data
   const availableActions = accionesQuery.data?.actions ?? []
 
-  const nextAction = getSalidaNextActionConfig(salida?.estado, salida?.destino)
+  const nextAction = getSalidaNextActionConfig(salida?.estado, salida?.descripcionActividad)
   const ActionIcon = nextAction.icon
 
   // Capture GPS internally in background
@@ -248,15 +247,11 @@ export function EjecutarAccionFlowableDialog({
                 <SalidaVehicularStatusBadge status={salida.estado} />
               </div>
 
-              {/* Ruta Origen -> Destino */}
+              {/* Descripción de la Actividad */}
               <div className="flex items-center gap-2 pt-2 border-t border-border/50 text-xs text-muted-foreground">
-                <MapPin className="size-3.5 text-primary shrink-0" />
-                <span className="font-medium text-foreground truncate max-w-[150px]">
-                  {salida.origen}
-                </span>
-                <ArrowRight className="size-3 text-muted-foreground/60 shrink-0" />
-                <span className="font-medium text-foreground truncate max-w-[150px]">
-                  {salida.destino}
+                <FileText className="size-3.5 text-primary shrink-0" />
+                <span className="font-medium text-foreground truncate max-w-[300px]" title={salida.descripcionActividad}>
+                  {salida.descripcionActividad}
                 </span>
               </div>
 

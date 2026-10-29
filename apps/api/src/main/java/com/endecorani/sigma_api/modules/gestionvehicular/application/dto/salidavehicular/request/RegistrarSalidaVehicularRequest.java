@@ -12,16 +12,11 @@ public record RegistrarSalidaVehicularRequest(
 
         UUID empleadoId,
 
-        @NotBlank(message = "El motivo es obligatorio")
-        @Size(max = 1000, message = "El motivo no puede exceder 1000 caracteres")
-        String motivo,
+        @NotBlank(message = "La descripción de la actividad es obligatoria")
+        @Size(max = 1000, message = "La descripción de la actividad no puede exceder 1000 caracteres")
+        String descripcionActividad,
 
-        @NotBlank(message = "El origen es obligatorio")
-        @Size(max = 255, message = "El origen no puede exceder 255 caracteres")
-        String origen,
-
-        @NotBlank(message = "El destino es obligatorio")
-        @Size(max = 255, message = "El destino no puede exceder 255 caracteres")
-        String destino
+        @Size(max = 1000, message = "Las observaciones no pueden exceder 1000 caracteres")
+        String observaciones
 ) {
 }

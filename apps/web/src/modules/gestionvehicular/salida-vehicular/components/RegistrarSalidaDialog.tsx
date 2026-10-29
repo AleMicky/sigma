@@ -25,8 +25,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/shared/components/ui/combobox"
-import { Field, FieldError } from "@/shared/components/ui/field"
-import { Input } from "@/shared/components/ui/input"
+import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { cn } from "@/shared/lib/utils"
@@ -83,9 +82,8 @@ export function RegistrarSalidaDialog({
         const created = await registrarMutation.mutateAsync({
           activoId: value.activoId,
           empleadoId: value.empleadoId,
-          origen: value.origen.trim(),
-          destino: value.destino.trim(),
-          motivo: value.motivo.trim(),
+          descripcionActividad: value.descripcionActividad.trim(),
+          observaciones: value.observaciones.trim() || undefined,
         })
 
         handleReset()
@@ -469,61 +467,8 @@ export function RegistrarSalidaDialog({
           }}
         </form.Field>
 
-        {/* 3. Ruta: Origen y Destino */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <form.Field name="origen">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <RequiredFieldLabel htmlFor={field.name}>
-                    Origen
-                  </RequiredFieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    placeholder="Lugar de origen..."
-                    aria-invalid={isInvalid}
-                  />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <form.Field name="destino">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <RequiredFieldLabel htmlFor={field.name}>
-                    Destino
-                  </RequiredFieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    placeholder="Lugar de destino..."
-                    aria-invalid={isInvalid}
-                  />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
-        </div>
-
-        {/* 4. Motivo */}
-        <form.Field name="motivo">
+        {/* 3. Descripción de la Actividad */}
+        <form.Field name="descripcionActividad">
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
@@ -531,7 +476,7 @@ export function RegistrarSalidaDialog({
             return (
               <Field data-invalid={isInvalid || undefined}>
                 <RequiredFieldLabel htmlFor={field.name}>
-                  Motivo / Justificación del Viaje
+                  Descripción de la Actividad
                 </RequiredFieldLabel>
                 <Textarea
                   id={field.name}
@@ -539,8 +484,36 @@ export function RegistrarSalidaDialog({
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
-                  placeholder="Describa el objetivo o justificación del viaje..."
+                  placeholder="Describa la actividad a realizar en la salida vehicular..."
                   rows={3}
+                  className="resize-none"
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+
+        {/* 4. Observaciones */}
+        <form.Field name="observaciones">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+
+            return (
+              <Field data-invalid={isInvalid || undefined}>
+                <FieldLabel htmlFor={field.name}>
+                  Observaciones (Opcional)
+                </FieldLabel>
+                <Textarea
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="Ingrese observaciones adicionales si corresponde..."
+                  rows={2}
                   className="resize-none"
                   aria-invalid={isInvalid}
                 />

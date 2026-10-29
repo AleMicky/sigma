@@ -89,13 +89,16 @@ public class SalidaVehicularService {
 
         String numero = correlativoService.generar(CorrelativoCodigo.SALIDA_VEHICULAR, LocalDate.now().getYear());
 
+        String observaciones = request.observaciones() != null && !request.observaciones().isBlank()
+                ? request.observaciones().trim()
+                : null;
+
         SalidaVehicular salida = SalidaVehicular.builder()
                 .numero(numero)
                 .activoId(request.activoId())
                 .empleadoId(empleadoId)
-                .motivo(request.motivo().trim())
-                .origen(request.origen().trim())
-                .destino(request.destino().trim())
+                .descripcionActividad(request.descripcionActividad().trim())
+                .observaciones(observaciones)
                 .estado("REGISTRADA")
                 .build();
 
@@ -106,9 +109,10 @@ public class SalidaVehicularService {
         variables.put("salidaId", guardada.getId().toString());
         variables.put("empleadoId", empleadoId.toString());
         variables.put("activoId", request.activoId().toString());
-        variables.put("origen", request.origen());
-        variables.put("destino", request.destino());
-        variables.put("motivo", request.motivo());
+        variables.put("descripcionActividad", guardada.getDescripcionActividad());
+        if (observaciones != null) {
+            variables.put("observaciones", observaciones);
+        }
 
         try {
             String processInstanceId = workflowApplicationService.iniciar(WORKFLOW_CODIGO, guardada.getId().toString(), variables);
@@ -164,14 +168,11 @@ public class SalidaVehicularService {
             throw new BusinessException("No se puede modificar una salida vehicular que ya está " + estadoActual);
         }
 
-        if (request.motivo() != null && !request.motivo().isBlank()) {
-            salida.setMotivo(request.motivo().trim());
+        if (request.descripcionActividad() != null && !request.descripcionActividad().isBlank()) {
+            salida.setDescripcionActividad(request.descripcionActividad().trim());
         }
-        if (request.origen() != null && !request.origen().isBlank()) {
-            salida.setOrigen(request.origen().trim());
-        }
-        if (request.destino() != null && !request.destino().isBlank()) {
-            salida.setDestino(request.destino().trim());
+        if (request.observaciones() != null) {
+            salida.setObservaciones(request.observaciones().isBlank() ? null : request.observaciones().trim());
         }
 
         SalidaVehicular guardada = salidaRepository.save(salida);
@@ -524,9 +525,8 @@ public class SalidaVehicularService {
                 .empleadoId(salida.getEmpleadoId())
                 .empleadoCodigo(empleadoCodigo)
                 .empleadoNombre(empleadoNombre)
-                .motivo(salida.getMotivo())
-                .origen(salida.getOrigen())
-                .destino(salida.getDestino())
+                .descripcionActividad(salida.getDescripcionActividad())
+                .observaciones(salida.getObservaciones())
                 .estado(salida.getEstado())
                 .processInstanceId(salida.getProcessInstanceId())
                 .eventos(eventos)
@@ -569,9 +569,8 @@ public class SalidaVehicularService {
                     .empleadoId(salida.getEmpleadoId())
                     .empleadoCodigo(emp != null ? emp.getCodigo() : null)
                     .empleadoNombre(emp != null ? emp.getNombreCompleto() : null)
-                    .motivo(salida.getMotivo())
-                    .origen(salida.getOrigen())
-                    .destino(salida.getDestino())
+                    .descripcionActividad(salida.getDescripcionActividad())
+                    .observaciones(salida.getObservaciones())
                     .estado(salida.getEstado())
                     .processInstanceId(salida.getProcessInstanceId())
                     .createdAt(salida.getCreatedAt())
@@ -677,17 +676,20 @@ public class SalidaVehicularService {
         StringBuilder desc = new StringBuilder();
 
         if (base.contains("INICIAR") || base.contains("PARTIDA") || base.contains("SALIDA")) {
-            desc.append("Inicio de salida vehicular hacia ").append(salida.getDestino());
+            desc.append("Inicio de salida vehicular");
+            if (salida.getDescripcionActividad() != null && !salida.getDescripcionActividad().isBlank()) {
+                desc.append(" (Actividad: ").append(salida.getDescripcionActividad()).append(")");
+            }
         } else if (base.contains("LLEGAD") || base.contains("DESTINO")) {
-            desc.append("Llegada al punto de destino: ").append(salida.getDestino());
+            desc.append("Llegada al punto de actividad");
         } else if (base.contains("RETORN")) {
-            desc.append("Inicio de trayecto de retorno hacia base ").append(salida.getOrigen()).append(" desde ").append(salida.getDestino());
+            desc.append("Inicio de trayecto de retorno hacia base");
         } else if (base.contains("FINALIZ") || base.contains("CIERRE") || base.contains("COMPLET")) {
-            desc.append("Finalización de salida vehicular y arribo a base ").append(salida.getOrigen());
+            desc.append("Finalización de salida vehicular y arribo a base");
         } else {
             desc.append(tipoEvento != null ? tipoEvento : "Transición de estado operativo");
-            if (salida.getDestino() != null) {
-                desc.append(" (Ruta: ").append(salida.getOrigen()).append(" -> ").append(salida.getDestino()).append(")");
+            if (salida.getDescripcionActividad() != null && !salida.getDescripcionActividad().isBlank()) {
+                desc.append(" (Actividad: ").append(salida.getDescripcionActividad()).append(")");
             }
         }
 

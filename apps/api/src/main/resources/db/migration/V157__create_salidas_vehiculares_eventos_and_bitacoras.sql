@@ -8,15 +8,14 @@ CREATE SCHEMA IF NOT EXISTS gestion_vehicular;
 
 -- 1. Tabla de Salidas Vehiculares
 CREATE TABLE IF NOT EXISTS gestion_vehicular.salidas_vehiculares (
-    id                  UUID         PRIMARY KEY,
-    numero              VARCHAR(30)  NOT NULL,
-    activo_id           UUID         NOT NULL,
-    empleado_id         UUID         NOT NULL,
-    motivo              TEXT         NOT NULL,
-    origen              VARCHAR(255) NOT NULL,
-    destino             VARCHAR(255) NOT NULL,
-    estado              VARCHAR(50)  NOT NULL,
-    process_instance_id VARCHAR(100),
+    id                    UUID         PRIMARY KEY,
+    numero                VARCHAR(30)  NOT NULL,
+    activo_id             UUID         NOT NULL,
+    empleado_id           UUID         NOT NULL,
+    descripcion_actividad TEXT         NOT NULL,
+    observaciones         TEXT,
+    estado                VARCHAR(50)  NOT NULL,
+    process_instance_id   VARCHAR(100),
     created_at          TIMESTAMPTZ  NOT NULL,
     updated_at          TIMESTAMPTZ,
     created_by          VARCHAR(100),

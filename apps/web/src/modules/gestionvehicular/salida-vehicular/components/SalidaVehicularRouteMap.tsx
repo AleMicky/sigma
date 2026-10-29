@@ -243,7 +243,7 @@ export function SalidaVehicularRouteMap({
 
   const googleMapsUrl = latestPoint
     ? `https://www.google.com/maps/search/?api=1&query=${latestPoint.lat},${latestPoint.lng}`
-    : `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(salida.origen)}&destination=${encodeURIComponent(salida.destino)}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(salida.descripcionActividad || "Bolivia")}`
 
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "-"
@@ -295,7 +295,7 @@ export function SalidaVehicularRouteMap({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Trayecto de {salida.origen} hacia {salida.destino} &bull; Vehículo{" "}
+            Actividad: {salida.descripcionActividad} &bull; Vehículo{" "}
             <strong className="text-foreground">{salida.placa ?? "S/P"}</strong>
           </p>
         </div>

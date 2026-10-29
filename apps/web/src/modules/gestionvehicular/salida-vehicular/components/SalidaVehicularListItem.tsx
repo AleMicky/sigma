@@ -67,7 +67,7 @@ export function SalidaVehicularListItem({
   const isCancelado = estadoNorm.includes("CANCEL") || estadoNorm.includes("ANULAD")
   const isInactive = isFinalizado || isCancelado
 
-  const nextAction = getSalidaNextActionConfig(salida.estado, salida.destino)
+  const nextAction = getSalidaNextActionConfig(salida.estado, salida.descripcionActividad)
   const ActionIcon = nextAction.icon
 
   const vehiculoTexto = salida.marca
@@ -233,46 +233,24 @@ export function SalidaVehicularListItem({
         </div>
       </div>
 
-      {/* 2. CUERPO: Ruta + Vehículo + Conductor en Layout limpio sin cajas ni bordes internos */}
+      {/* 2. CUERPO: Actividad + Vehículo + Conductor en Layout limpio */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 md:gap-4 items-center">
-        {/* Ruta: Origen -> Destino con timeline visual fluido (5 cols) */}
-        <div className="md:col-span-5 flex items-center gap-3 min-w-0">
-          <div className="flex flex-col items-center shrink-0">
-            <span
-              className="size-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"
-              title="Punto de partida"
-            />
-            <div className="w-0.5 h-3.5 my-0.5 bg-gradient-to-b from-emerald-500/50 via-border to-indigo-500/50" />
-            <span
-              className="size-2 rounded-full bg-indigo-500 ring-4 ring-indigo-500/20"
-              title="Punto de destino"
-            />
+        {/* Descripción de la Actividad (5 cols) */}
+        <div className="md:col-span-5 flex items-start gap-3 min-w-0">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+            <FileText className="size-4" />
           </div>
 
-          <div className="flex flex-col justify-between gap-1 min-w-0 flex-1">
-            <div className="flex items-baseline gap-1.5 min-w-0">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 shrink-0">
-                Origen:
-              </span>
-              <span
-                className="text-xs font-semibold text-foreground truncate"
-                title={salida.origen ?? "Origen no especificado"}
-              >
-                {salida.origen || "No especificado"}
-              </span>
-            </div>
-
-            <div className="flex items-baseline gap-1.5 min-w-0">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 shrink-0">
-                Destino:
-              </span>
-              <span
-                className="text-xs font-bold text-foreground truncate"
-                title={salida.destino ?? "Destino no especificado"}
-              >
-                {salida.destino || "No especificado"}
-              </span>
-            </div>
+          <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75">
+              Descripción de la Actividad
+            </span>
+            <p
+              className="text-xs font-semibold text-foreground line-clamp-2 leading-snug"
+              title={salida.descripcionActividad ?? "Actividad no especificada"}
+            >
+              {salida.descripcionActividad || "No especificada"}
+            </p>
           </div>
         </div>
 
@@ -332,18 +310,18 @@ export function SalidaVehicularListItem({
         </div>
       </div>
 
-      {/* 3. Motivo del traslado / comisión - Limpio sin caja gris ni bordes */}
-      {salida.motivo && (
+      {/* 3. Observaciones de la salida */}
+      {salida.observaciones && (
         <div className="flex items-start gap-2 pt-2 border-t border-border/40 text-xs">
           <Quote className="size-3 text-muted-foreground/50 shrink-0 mt-0.5" />
           <p
             className="text-[11.5px] text-muted-foreground line-clamp-1 italic leading-relaxed"
-            title={salida.motivo}
+            title={salida.observaciones}
           >
             <span className="font-medium not-italic text-foreground/80 mr-1.5">
-              Motivo:
+              Observaciones:
             </span>
-            {salida.motivo}
+            {salida.observaciones}
           </p>
         </div>
       )}

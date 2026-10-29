@@ -9,21 +9,14 @@ export const registrarSalidaSchema = z.object({
     .string()
     .trim()
     .min(1, "Debes seleccionar un conductor o empleado"),
-  origen: z
+  descripcionActividad: z
     .string()
     .trim()
-    .min(1, "El lugar de origen es obligatorio")
-    .max(255, "El origen no puede superar los 255 caracteres"),
-  destino: z
+    .min(1, "La descripción de la actividad es obligatoria")
+    .max(1000, "La descripción de la actividad no puede superar los 1000 caracteres"),
+  observaciones: z
     .string()
-    .trim()
-    .min(1, "El lugar de destino es obligatorio")
-    .max(255, "El destino no puede superar los 255 caracteres"),
-  motivo: z
-    .string()
-    .trim()
-    .min(1, "El motivo o justificación del viaje es obligatorio")
-    .max(1000, "El motivo no puede superar los 1000 caracteres"),
+    .max(1000, "Las observaciones no pueden superar los 1000 caracteres"),
 })
 
 export type RegistrarSalidaFormValues = z.infer<typeof registrarSalidaSchema>
@@ -31,7 +24,6 @@ export type RegistrarSalidaFormValues = z.infer<typeof registrarSalidaSchema>
 export const defaultRegistrarSalidaValues: RegistrarSalidaFormValues = {
   activoId: "",
   empleadoId: "",
-  origen: "",
-  destino: "",
-  motivo: "",
+  descripcionActividad: "",
+  observaciones: "",
 }

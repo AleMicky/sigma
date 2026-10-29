@@ -30,7 +30,7 @@ export interface SalidaNextActionConfig {
  */
 export function getSalidaNextActionConfig(
   rawEstado?: string | null,
-  destino?: string | null
+  descripcionActividad?: string | null
 ): SalidaNextActionConfig {
   const norm = (rawEstado ?? "").trim().toUpperCase()
 
@@ -55,15 +55,15 @@ export function getSalidaNextActionConfig(
     }
   }
 
-  // 2. Estado En Tránsito / En Curso (hacia el destino)
+  // 2. Estado En Tránsito / En Curso (hacia el punto de actividad)
   // Tarea BPMN: registrarLlegada -> Acción: Registrar Llegada
   if (norm.includes("TRANSIT") || norm.includes("CURSO")) {
     return {
       type: "LLEGADA",
       label: "Registrar Llegada",
-      title: destino
-        ? `Registrar llegada al punto de destino: ${destino}`
-        : "Registrar llegada al punto de destino",
+      title: descripcionActividad
+        ? `Registrar llegada para la actividad: ${descripcionActividad}`
+        : "Registrar llegada al punto de actividad",
       icon: MapPin,
       buttonClassName:
         "bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border-amber-500/35 hover:border-amber-500/50 shadow-2xs hover:shadow-xs",

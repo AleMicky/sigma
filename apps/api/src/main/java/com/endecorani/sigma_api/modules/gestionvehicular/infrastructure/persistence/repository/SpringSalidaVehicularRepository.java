@@ -22,9 +22,8 @@ public interface SpringSalidaVehicularRepository extends JpaRepository<SalidaVeh
         SELECT s FROM SalidaVehicularEntity s
         WHERE (:search IS NULL OR :search = ''
             OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.origen) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%')))
+            OR LOWER(s.descripcionActividad) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(COALESCE(s.observaciones, '')) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:activoId IS NULL OR s.activoId = :activoId)
           AND (:empleadoId IS NULL OR s.empleadoId = :empleadoId)
           AND (:estado IS NULL OR :estado = '' OR UPPER(s.estado) = UPPER(:estado))
@@ -45,9 +44,8 @@ public interface SpringSalidaVehicularRepository extends JpaRepository<SalidaVeh
         SELECT s FROM SalidaVehicularEntity s
         WHERE (:search IS NULL OR :search = ''
             OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.origen) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%')))
+            OR LOWER(s.descripcionActividad) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(COALESCE(s.observaciones, '')) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:activoId IS NULL OR s.activoId = :activoId)
           AND (:empleadoId IS NULL OR s.empleadoId = :empleadoId)
           AND (:estado IS NULL OR :estado = '' OR UPPER(s.estado) = UPPER(:estado))
