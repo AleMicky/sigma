@@ -57,6 +57,19 @@ public class SalidaVehicularService {
     private static final String ESTADO_LLEGADA = "LLEGADA";
     private static final String ESTADO_CANCELADA = "CANCELADA";
 
+    private static final Set<String> SORT_FIELDS = Set.of(
+            "id",
+            "numero",
+            "activoId",
+            "empleadoId",
+            "fecha",
+            "descripcionActividad",
+            "observaciones",
+            "estado",
+            "createdAt",
+            "updatedAt"
+    );
+
     private final SalidaVehicularRepository salidaRepository;
     private final SalidaVehicularEventoRepository eventoRepository;
     private final BitacoraVehicularRepository bitacoraRepository;
@@ -141,7 +154,7 @@ public class SalidaVehicularService {
             LocalDateTime fechaHasta,
             PageRequestDto pageRequest
     ) {
-        Pageable pageable = pageRequest.toPageable();
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
         Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
 
@@ -192,15 +205,16 @@ public class SalidaVehicularService {
 
     @Transactional(readOnly = true)
     public PageResponse<SalidaVehicularResponse> listarMisSalidas(PageRequestDto pageRequest) {
+        Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         UUID empleadoId = obtenerEmpleadoIdActual();
         if (empleadoId == null) {
             Page<SalidaVehicular> emptyPage = new org.springframework.data.domain.PageImpl<>(
-                    Collections.emptyList(), pageRequest.toPageable(), 0
+                    Collections.emptyList(), pageable, 0
             );
             return PageResponse.of(Collections.emptyList(), emptyPage);
         }
 
-        Page<SalidaVehicular> page = salidaRepository.findByEmpleadoId(empleadoId, pageRequest.toPageable());
+        Page<SalidaVehicular> page = salidaRepository.findByEmpleadoId(empleadoId, pageable);
         List<SalidaVehicularResponse> responses = mapListToResponse(page.getContent());
         return PageResponse.of(responses, page);
     }
