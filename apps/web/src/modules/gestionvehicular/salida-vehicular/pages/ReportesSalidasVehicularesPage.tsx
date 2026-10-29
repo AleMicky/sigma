@@ -1,1337 +1,687 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
 import {
-  Activity,
-  ArrowLeft,
+  AlertCircle,
   BarChart3,
-  Calendar,
+  BookOpen,
   Car,
-  Clock,
-  Compass,
-  Download,
-  ExternalLink,
-  Eye,
-  FileText,
+  Fuel,
   Gauge,
-  RotateCw,
-  Search,
-  ShieldCheck,
-  TrendingUp,
-  User,
-  Users,
-  X,
+  Printer,
+  RefreshCw,
+  Route,
 } from "lucide-react"
-import {
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
 import { toast } from "sonner"
 
+import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
+import { cargaCombustibleQueries } from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.queries"
+import type { CargaCombustible } from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.service"
 import { PageShell } from "@/shared/components/page-shell"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/shared/components/ui/card"
-import { Input } from "@/shared/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
-import { cn } from "@/shared/lib/utils"
+import { Card, CardContent } from "@/shared/components/ui/card"
+import { Skeleton } from "@/shared/components/ui/skeleton"
 
 import { salidaVehicularQueries } from "../api/salida-vehicular.queries"
-import type {
-  BitacoraVehicular,
-  ItemTiempoRecorrido,
-  ReporteEmpleadoSalidas,
-  ReporteVehiculoKilometraje,
-  SalidaVehicular,
-} from "../api/salida-vehicular.types"
-import { SalidaVehicularStatusBadge } from "../components/SalidaVehicularStatusBadge"
+import type { SalidaVehicular } from "../api/salida-vehicular.types"
+import {
+  ReporteBitacoraVehicularTable,
+  type FilaReporteBitacoraSalida,
+} from "../components/ReporteBitacoraVehicularTable"
+import {
+  ReporteSalidasFiltrosBar,
+  type VehiculoMetaInfo,
+} from "../components/ReporteSalidasFiltrosBar"
 
-function exportToCsv(filename: string, rows: Record<string, unknown>[]) {
-  if (!rows || rows.length === 0) {
-    toast.error("No hay datos disponibles para exportar")
-    return
-  }
-  const headers = Object.keys(rows[0])
-  const csvContent = [
-    headers.join(";"),
-    ...rows.map((row) =>
-      headers
-        .map((header) => {
-          const val = row[header]
-          if (val == null) return '""'
-          const str = String(val).replace(/"/g, '""')
-          return `"${str}"`
-        })
-        .join(";")
-    ),
-  ].join("\n")
+const MESES = [
+  "ENERO",
+  "FEBRERO",
+  "MARZO",
+  "ABRIL",
+  "MAYO",
+  "JUNIO",
+  "JULIO",
+  "AGOSTO",
+  "SEPTIEMBRE",
+  "OCTUBRE",
+  "NOVIEMBRE",
+  "DICIEMBRE",
+]
 
-  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.setAttribute("href", url)
-  link.setAttribute("download", `${filename}_${new Date().toISOString().slice(0, 10)}.csv`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-  toast.success(`Reporte ${filename}.csv descargado con éxito`)
+function getPrimerDiaMes(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, "0")
+  return `${year}-${month}-01`
 }
 
-export function ReportesSalidasVehicularesPage() {
-  const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<string>("general")
+function getFechaActual(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, "0")
+  const day = String(now.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
-  // Global date filters
-  const [fechaDesde, setFechaDesde] = useState("")
-  const [fechaHasta, setFechaHasta] = useState("")
+function formatPeriodoMesAnio(fechaDesdeStr: string, fechaHastaStr: string): { mes: string; anio: number } {
+  try {
+    const dDesde = new Date(`${fechaDesdeStr}T00:00:00`)
+    const dHasta = new Date(`${fechaHastaStr}T00:00:00`)
+    const anio = dDesde.getFullYear() || new Date().getFullYear()
 
-  // Search filters per tab
-  const [searchGeneral, setSearchGeneral] = useState("")
-  const [searchVehiculos, setSearchVehiculos] = useState("")
-  const [searchEmpleados, setSearchEmpleados] = useState("")
-  const [searchTiempos, setSearchTiempos] = useState("")
-  const [searchBitacoras, setSearchBitacoras] = useState("")
-  const [filterTipoBitacora, setFilterTipoBitacora] = useState<string>("ALL")
-
-  const dateQueryParams = useMemo(() => {
-    const params: Record<string, unknown> = {}
-    if (fechaDesde) params.fechaDesde = `${fechaDesde}T00:00:00`
-    if (fechaHasta) params.fechaHasta = `${fechaHasta}T23:59:59`
-    return Object.keys(params).length > 0 ? params : undefined
-  }, [fechaDesde, fechaHasta])
-
-  // Report Queries
-  const generalQuery = useQuery(salidaVehicularQueries.reporteGeneral(dateQueryParams))
-  const vehiculosQuery = useQuery(salidaVehicularQueries.reporteVehiculos(dateQueryParams))
-  const empleadosQuery = useQuery(salidaVehicularQueries.reporteEmpleados(dateQueryParams))
-  const tiemposQuery = useQuery(salidaVehicularQueries.reporteTiempos(dateQueryParams))
-  const bitacorasQuery = useQuery(salidaVehicularQueries.reporteBitacoras(dateQueryParams))
-
-  const isFetchingAny =
-    generalQuery.isFetching ||
-    vehiculosQuery.isFetching ||
-    empleadosQuery.isFetching ||
-    tiemposQuery.isFetching ||
-    bitacorasQuery.isFetching
-
-  const handleRefreshAll = async () => {
-    await Promise.all([
-      generalQuery.refetch(),
-      vehiculosQuery.refetch(),
-      empleadosQuery.refetch(),
-      tiemposQuery.refetch(),
-      bitacorasQuery.refetch(),
-    ])
-    toast.success("Métricas y reportes actualizados")
-  }
-
-  const formatDate = (dateStr?: string | null) => {
-    if (!dateStr) return "-"
-    try {
-      return new Date(dateStr).toLocaleString("es-BO", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    } catch {
-      return dateStr
+    if (dDesde.getMonth() === dHasta.getMonth()) {
+      return { mes: MESES[dDesde.getMonth()] || "OCTUBRE", anio }
     }
+    return {
+      mes: `${MESES[dDesde.getMonth()] || ""} - ${MESES[dHasta.getMonth()] || ""}`,
+      anio,
+    }
+  } catch {
+    return { mes: "OCTUBRE", anio: 2026 }
   }
+}
 
-  // Raw data memoization
-  const generalData = generalQuery.data
-  const vehiculosData = useMemo(() => vehiculosQuery.data ?? [], [vehiculosQuery.data])
-  const empleadosData = useMemo(() => empleadosQuery.data ?? [], [empleadosQuery.data])
-  const tiemposData = tiemposQuery.data
-  const bitacorasData = bitacorasQuery.data
+export const ReportesSalidasVehicularesPage = () => {
+  // Filtros de entrada
+  const [activoId, setActivoId] = useState<string>("")
+  const [placaSeleccionada, setPlacaSeleccionada] = useState<string | null>(null)
+  const [vehiculoMeta, setVehiculoMeta] = useState<VehiculoMetaInfo | null>(null)
+  const [fechaDesde, setFechaDesde] = useState<string>(getPrimerDiaMes())
+  const [fechaHasta, setFechaHasta] = useState<string>(getFechaActual())
+  const [searchQuery, setSearchQuery] = useState<string>("")
 
-  // KPI Calculations
-  const totalSalidas = generalData?.totalSalidas ?? 0
-  const salidasActivas = generalData?.salidasActivas ?? 0
-  const salidasFinalizadas = generalData?.salidasFinalizadas ?? 0
-  const salidasCanceladas = generalData?.salidasCanceladas ?? 0
+  // Filtros aplicados a las queries
+  const [filtrosActivos, setFiltrosActivos] = useState<{
+    activoId: string
+    fechaDesde: string
+    fechaHasta: string
+  } | null>(null)
 
-  const tasaCompletado =
-    totalSalidas > 0 ? Math.round((salidasFinalizadas / totalSalidas) * 100) : 0
+  // Consulta 1: Reporte general de salidas vehiculares
+  const reporteQuery = useQuery({
+    ...salidaVehicularQueries.reporteGeneral({
+      activoId: filtrosActivos?.activoId,
+      fechaDesde: filtrosActivos?.fechaDesde ? `${filtrosActivos.fechaDesde}T00:00:00` : undefined,
+      fechaHasta: filtrosActivos?.fechaHasta ? `${filtrosActivos.fechaHasta}T23:59:59` : undefined,
+    }),
+    enabled: Boolean(filtrosActivos?.activoId),
+  })
 
-  const totalKmFlota = useMemo(() => {
-    return vehiculosData.reduce((acc, curr) => acc + (curr.kilometrajeTotalRecorrido || 0), 0)
-  }, [vehiculosData])
+  // Consulta 2: Cargas de combustible del vehículo
+  const cargasQuery = useQuery({
+    ...cargaCombustibleQueries.list({
+      activoId: filtrosActivos?.activoId,
+      fechaDesde: filtrosActivos?.fechaDesde,
+      fechaHasta: filtrosActivos?.fechaHasta,
+      size: 500,
+    }),
+    enabled: Boolean(filtrosActivos?.activoId),
+  })
 
-  const totalIncidentes = bitacorasData?.totalIncidentes ?? 0
+  // Consulta 3: Datos detallados del activo/vehículo
+  const activoDetailQuery = useQuery({
+    ...activoQueries.detail(filtrosActivos?.activoId ?? ""),
+    enabled: Boolean(filtrosActivos?.activoId),
+  })
 
-  // Chart data: Distribution of status
-  const statusChartData = useMemo(() => {
-    return [
-      { name: "Finalizadas", value: salidasFinalizadas, color: "#10b981" },
-      { name: "En Tránsito / Activas", value: salidasActivas, color: "#f59e0b" },
-      { name: "Canceladas", value: salidasCanceladas, color: "#f43f5e" },
-    ].filter((item) => item.value > 0)
-  }, [salidasFinalizadas, salidasActivas, salidasCanceladas])
+  // Metadatos consolidados del vehículo
+  const datosVehiculo = useMemo(() => {
+    const act = activoDetailQuery.data
+    const placa =
+      placaSeleccionada ||
+      vehiculoMeta?.placa ||
+      (act as { placa?: string })?.placa ||
+      "S/P"
 
-  // Chart data: Top 5 vehicles by Km
-  const topVehiculosKm = useMemo(() => {
-    return [...vehiculosData]
-      .sort((a, b) => (b.kilometrajeTotalRecorrido || 0) - (a.kilometrajeTotalRecorrido || 0))
-      .slice(0, 5)
-      .map((v) => ({
-        placa: v.placa ?? v.activoCodigo ?? "S/P",
-        km: v.kilometrajeTotalRecorrido || 0,
-        nombre: v.marca ? `${v.marca} ${v.modelo ?? ""}` : v.activoDescripcion ?? "Vehículo",
-      }))
-  }, [vehiculosData])
+    const marca = vehiculoMeta?.marca || (act as { marca?: string })?.marca || ""
+    const modelo = vehiculoMeta?.modelo || (act as { modelo?: string })?.modelo || ""
+    const tipo =
+      vehiculoMeta?.tipoVehiculo ||
+      (act as { tipoActivo?: { nombre?: string } })?.tipoActivo?.nombre ||
+      "CAMIONETA"
 
-  // Filtered lists
-  const filteredGeneralItems = useMemo(() => {
-    const items = generalData?.items ?? []
-    if (!searchGeneral.trim()) return items
-    const q = searchGeneral.toLowerCase().trim()
-    return items.filter(
-      (item) =>
-        item.numero?.toLowerCase().includes(q) ||
-        item.placa?.toLowerCase().includes(q) ||
-        item.activoDescripcion?.toLowerCase().includes(q) ||
-        item.empleadoNombre?.toLowerCase().includes(q) ||
-        item.descripcionActividad?.toLowerCase().includes(q) ||
-        item.observaciones?.toLowerCase().includes(q) ||
-        item.estado?.toLowerCase().includes(q)
-    )
-  }, [generalData?.items, searchGeneral])
+    const tipoVehiculoCompuesto = [tipo, marca, modelo].filter(Boolean).join(" ").trim() || "CAMIONETA TOYOTA HILUX"
+    const responsable =
+      (act as { responsable?: { nombreCompleto?: string } })?.responsable?.nombreCompleto ||
+      vehiculoMeta?.nombre ||
+      ""
+    const ubicacion =
+      (act as { ubicacion?: { nombre?: string } })?.ubicacion?.nombre || "CORANI"
 
-  const filteredVehiculos = useMemo(() => {
-    if (!searchVehiculos.trim()) return vehiculosData
-    const q = searchVehiculos.toLowerCase().trim()
-    return vehiculosData.filter(
-      (v) =>
-        v.placa?.toLowerCase().includes(q) ||
-        v.activoCodigo?.toLowerCase().includes(q) ||
-        v.marca?.toLowerCase().includes(q) ||
-        v.modelo?.toLowerCase().includes(q) ||
-        v.activoDescripcion?.toLowerCase().includes(q)
-    )
-  }, [vehiculosData, searchVehiculos])
+    return {
+      tipoVehiculo: tipoVehiculoCompuesto,
+      placa,
+      responsable,
+      ubicacion,
+    }
+  }, [activoDetailQuery.data, placaSeleccionada, vehiculoMeta])
 
-  const filteredEmpleados = useMemo(() => {
-    if (!searchEmpleados.trim()) return empleadosData
-    const q = searchEmpleados.toLowerCase().trim()
-    return empleadosData.filter(
-      (e) =>
-        e.empleadoNombre?.toLowerCase().includes(q) ||
-        e.empleadoCodigo?.toLowerCase().includes(q) ||
-        e.cargo?.toLowerCase().includes(q) ||
-        e.area?.toLowerCase().includes(q)
-    )
-  }, [empleadosData, searchEmpleados])
+  // Transformar salidas y asociar odómetros y combustible
+  const { filas, totalesMetricas } = useMemo(() => {
+    const rawSalidas: SalidaVehicular[] = reporteQuery.data?.items ?? []
+    const cargas: CargaCombustible[] = cargasQuery.data?.content ?? []
 
-  const filteredTiemposItems = useMemo(() => {
-    const items = tiemposData?.items ?? []
-    if (!searchTiempos.trim()) return items
-    const q = searchTiempos.toLowerCase().trim()
-    return items.filter(
-      (t) =>
-        t.numero?.toLowerCase().includes(q) ||
-        t.placa?.toLowerCase().includes(q) ||
-        t.vehiculoDescripcion?.toLowerCase().includes(q) ||
-        t.empleadoNombre?.toLowerCase().includes(q) ||
-        t.descripcionActividad?.toLowerCase().includes(q) ||
-        t.observaciones?.toLowerCase().includes(q)
-    )
-  }, [tiemposData?.items, searchTiempos])
+    // Formatear filas
+    const rows: FilaReporteBitacoraSalida[] = rawSalidas.map((salida) => {
+      const fechaObj = new Date(salida.fecha || salida.createdAt)
+      const dia = !Number.isNaN(fechaObj.getDate()) ? fechaObj.getDate() : 1
+      const fechaFormateada = !Number.isNaN(fechaObj.getTime())
+        ? fechaObj.toLocaleDateString("es-BO", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })
+        : "-"
 
-  const filteredBitacoras = useMemo(() => {
-    const items = bitacorasData?.items ?? []
-    return items.filter((b) => {
-      const matchesTipo = filterTipoBitacora === "ALL" || b.tipo === filterTipoBitacora
-      if (!matchesTipo) return false
-      if (!searchBitacoras.trim()) return true
-      const q = searchBitacoras.toLowerCase().trim()
-      return (
-        b.descripcion?.toLowerCase().includes(q) ||
-        b.empleadoNombre?.toLowerCase().includes(q) ||
-        b.tipo?.toLowerCase().includes(q)
+      // Odómetro de eventos
+      const kmEvents = (salida.eventos ?? [])
+        .filter((e) => typeof e.kilometraje === "number" && !Number.isNaN(e.kilometraje))
+        .sort(
+          (a, b) =>
+            new Date(a.fechaHora || a.createdAt).getTime() -
+            new Date(b.fechaHora || b.createdAt).getTime()
+        )
+
+      const salidaEvent = kmEvents.find((e) =>
+        (e.tipoEvento ?? "").toUpperCase().includes("SALIDA")
       )
-    })
-  }, [bitacorasData?.items, filterTipoBitacora, searchBitacoras])
+      const llegadaEvent = [...kmEvents]
+        .reverse()
+        .find((e) => (e.tipoEvento ?? "").toUpperCase().includes("LLEGADA"))
 
-  // CSV Export dispatcher
-  const handleExportCurrent = () => {
-    switch (activeTab) {
-      case "general":
-        exportToCsv(
-          "reporte_salidas_general",
-          filteredGeneralItems.map((s: SalidaVehicular) => ({
-            Numero: s.numero,
-            Placa: s.placa ?? s.activoCodigo,
-            Vehiculo: s.marca ? `${s.marca} ${s.modelo ?? ""}` : s.activoDescripcion,
-            Conductor: s.empleadoNombre ?? "N/A",
-            Actividad: s.descripcionActividad,
-            Observaciones: s.observaciones ?? "-",
-            Estado: s.estado,
-            FechaSalida: s.fecha || s.createdAt,
-          }))
+      const kmSalida =
+        salidaEvent?.kilometraje != null
+          ? Number(salidaEvent.kilometraje)
+          : kmEvents.length > 0 && kmEvents[0].kilometraje != null
+            ? Number(kmEvents[0].kilometraje)
+            : null
+
+      const kmLlegada =
+        llegadaEvent?.kilometraje != null
+          ? Number(llegadaEvent.kilometraje)
+          : kmEvents.length > 1 && kmEvents[kmEvents.length - 1].kilometraje != null
+            ? Number(kmEvents[kmEvents.length - 1].kilometraje)
+            : null
+
+      const kmRecorrido =
+        kmSalida != null && kmLlegada != null && kmLlegada >= kmSalida
+          ? kmLlegada - kmSalida
+          : null
+
+      // Combustible relacionado a la salida (por salidaVehicularId o misma fecha)
+      const salidaDateStr = (salida.fecha || salida.createdAt || "").slice(0, 10)
+      const matchingCargas = cargas.filter(
+        (c) =>
+          c.salidaVehicularId === salida.id ||
+          (Boolean(salidaDateStr) &&
+            Boolean(c.fechaCarga) &&
+            c.fechaCarga.slice(0, 10) === salidaDateStr)
+      )
+
+      let combustibleTexto = "-"
+      let totalLitros: number | null = null
+      let facturas: string[] = []
+
+      if (matchingCargas.length > 0) {
+        totalLitros = matchingCargas.reduce(
+          (acc, c) => acc + (Number(c.litros) || 0),
+          0
         )
-        break
-      case "vehiculos":
-        exportToCsv(
-          "reporte_vehiculos_kilometraje",
-          filteredVehiculos.map((v: ReporteVehiculoKilometraje) => ({
-            Placa: v.placa ?? v.activoCodigo,
-            MarcaModelo: v.marca ? `${v.marca} ${v.modelo ?? ""}` : v.activoDescripcion,
-            CantidadSalidas: v.cantidadSalidas,
-            KmInicial: v.kilometrajeInicial ?? "-",
-            KmFinal: v.kilometrajeFinal ?? "-",
-            KmTotalRecorrido: v.kilometrajeTotalRecorrido,
-          }))
-        )
-        break
-      case "empleados":
-        exportToCsv(
-          "reporte_conductores_salidas",
-          filteredEmpleados.map((e: ReporteEmpleadoSalidas) => ({
-            Empleado: e.empleadoNombre,
-            Codigo: e.empleadoCodigo,
-            CargoArea: e.cargo ?? e.area ?? "-",
-            TotalSalidas: e.totalSalidas,
-            SalidasActivas: e.salidasActivas,
-            SalidasFinalizadas: e.salidasFinalizadas,
-            TotalIncidentes: e.totalIncidentes,
-          }))
-        )
-        break
-      case "tiempos":
-        exportToCsv(
-          "reporte_tiempos_recorrido",
-          filteredTiemposItems.map((t: ItemTiempoRecorrido) => ({
-            Numero: t.numero,
-            Vehiculo: t.placa ?? t.vehiculoDescripcion,
-            Conductor: t.empleadoNombre ?? "N/A",
-            Actividad: t.descripcionActividad,
-            Observaciones: t.observaciones ?? "-",
-            FechaInicio: t.fechaInicio,
-            FechaFin: t.fechaFin,
-            DuracionHoras: t.duracionHoras,
-          }))
-        )
-        break
-      case "bitacoras":
-        exportToCsv(
-          "reporte_bitacoras_incidencias",
-          filteredBitacoras.map((b: BitacoraVehicular) => ({
-            Fecha: b.fechaHora || b.createdAt,
-            Tipo: b.tipo,
-            Descripcion: b.descripcion,
-            Empleado: b.empleadoNombre ?? "N/A",
-            Latitud: b.latitud ?? "-",
-            Longitud: b.longitud ?? "-",
-          }))
-        )
-        break
+        facturas = matchingCargas
+          .map((c) => c.numeroFactura)
+          .filter(Boolean) as string[]
+
+        const facStr = facturas.length > 0 ? facturas.join(", ") : "-"
+        combustibleTexto = `${totalLitros} lts / ${facStr}`
+      }
+
+      return {
+        id: salida.id,
+        numero: salida.numero,
+        fecha: salida.fecha || salida.createdAt,
+        dia,
+        fechaFormateada,
+        descripcionActividad: salida.descripcionActividad || "-",
+        kmSalida,
+        kmLlegada,
+        kmRecorrido,
+        combustibleTexto,
+        combustibleLitros: totalLitros,
+        combustibleFactura: facturas.length > 0 ? facturas.join(", ") : null,
+        conductorNombre: salida.empleadoNombre || "-",
+        observaciones: salida.observaciones || "-",
+        estado: salida.estado,
+      }
+    })
+
+    // Orden cronológico ascendente (por día / fecha) idéntico a la libreta física
+    rows.sort(
+      (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+    )
+
+    // Filtro por texto si el usuario escribe en la barra de búsqueda
+    const filteredRows = searchQuery.trim()
+      ? rows.filter((r) => {
+          const q = searchQuery.toLowerCase()
+          return (
+            r.descripcionActividad.toLowerCase().includes(q) ||
+            r.conductorNombre.toLowerCase().includes(q) ||
+            r.observaciones.toLowerCase().includes(q) ||
+            r.numero.toLowerCase().includes(q) ||
+            String(r.dia).includes(q)
+          )
+        })
+      : rows
+
+    // Totales calculados
+    const totalKm = filteredRows.reduce((acc, r) => acc + (r.kmRecorrido ?? 0), 0)
+    const totalLitros = filteredRows.reduce(
+      (acc, r) => acc + (r.combustibleLitros ?? 0),
+      0
+    )
+    const salidasConRecorrido = filteredRows.filter((r) => (r.kmRecorrido ?? 0) > 0).length
+    const promedioKmPorSalida =
+      salidasConRecorrido > 0 ? Math.round(totalKm / salidasConRecorrido) : 0
+
+    return {
+      filas: filteredRows,
+      totalesMetricas: {
+        totalSalidas: filteredRows.length,
+        totalKm,
+        totalLitros,
+        promedioKmPorSalida,
+      },
+    }
+  }, [cargasQuery.data?.content, reporteQuery.data?.items, searchQuery])
+
+  // Manejo de cambio de vehículo
+  const handleActivoChange = (
+    id: string,
+    placa?: string | null,
+    meta?: VehiculoMetaInfo | null
+  ) => {
+    setActivoId(id)
+    setPlacaSeleccionada(placa ?? null)
+    setVehiculoMeta(meta ?? null)
+
+    if (id && fechaDesde && fechaHasta && fechaDesde <= fechaHasta) {
+      setFiltrosActivos({
+        activoId: id,
+        fechaDesde,
+        fechaHasta,
+      })
     }
   }
 
-  const handleNavigateDetail = (salidaId: string) => {
-    void navigate({
-      to: "/gestion-vehicular/salidas/$salidaId",
-      params: { salidaId },
+  // Manejo de consulta manual
+  const handleConsultar = () => {
+    if (!activoId) {
+      toast.error("Debe seleccionar un vehículo obligatoriamente.")
+      return
+    }
+    if (!fechaDesde || !fechaHasta) {
+      toast.error("Debe especificar las fechas de inicio y fin.")
+      return
+    }
+    if (fechaDesde > fechaHasta) {
+      toast.error("La fecha de inicio no puede ser posterior a la fecha de fin.")
+      return
+    }
+
+    setFiltrosActivos({
+      activoId,
+      fechaDesde,
+      fechaHasta,
     })
+    void reporteQuery.refetch()
+    void cargasQuery.refetch()
+    void activoDetailQuery.refetch()
+    toast.success("Bitácora de vehículo consultada.")
   }
+
+  // Imprimir formulario oficial (window.print con estilos CSS landscape)
+  const handleImprimir = () => {
+    if (filas.length === 0) {
+      toast.info("No hay registros en el reporte para imprimir.")
+      return
+    }
+    window.print()
+  }
+
+  // Exportar a Excel (CSV con BOM)
+  const handleExportarCsv = () => {
+    if (filas.length === 0) {
+      toast.info("No hay datos para exportar.")
+      return
+    }
+
+    const headers = [
+      "DIA",
+      "FECHA",
+      "FOLIO",
+      "DESCRIPCION DE ACTIVIDAD",
+      "KM. SALIDA",
+      "KM. LLEGADA",
+      "KM. RECORRIDO",
+      "NRO. FACTURA / LITROS COMBUSTIBLE",
+      "CONDUCTOR",
+      "OBSERVACIONES / COMENTARIOS",
+    ]
+
+    const csvRows = filas.map((f) => [
+      f.dia,
+      `"${f.fechaFormateada}"`,
+      `"${f.numero}"`,
+      `"${f.descripcionActividad.replace(/"/g, '""')}"`,
+      f.kmSalida ?? "",
+      f.kmLlegada ?? "",
+      f.kmRecorrido ?? "",
+      `"${f.combustibleTexto.replace(/"/g, '""')}"`,
+      `"${f.conductorNombre.replace(/"/g, '""')}"`,
+      `"${f.observaciones.replace(/"/g, '""')}"`,
+    ])
+
+    const csvContent =
+      "\uFEFF" +
+      [
+        headers.join(";"),
+        ...csvRows.map((r) => r.join(";")),
+        "",
+        `"TOTALES";"";"${totalesMetricas.totalSalidas} salidas";"";"";"";"${totalesMetricas.totalKm} km";"${totalesMetricas.totalLitros} lts";"";""`,
+      ].join("\r\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    const cleanPlaca = (datosVehiculo.placa || "vehiculo").replace(/[^a-zA-Z0-9-]/g, "")
+    link.download = `bitacora-vehiculo-${cleanPlaca}-${fechaDesde}_${fechaHasta}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    toast.success("Archivo Excel (CSV) descargado.")
+  }
+
+  const { mes, anio } = useMemo(
+    () => formatPeriodoMesAnio(fechaDesde, fechaHasta),
+    [fechaDesde, fechaHasta]
+  )
+
+  const isLoading =
+    reporteQuery.isLoading ||
+    cargasQuery.isLoading ||
+    activoDetailQuery.isLoading ||
+    reporteQuery.isFetching ||
+    cargasQuery.isFetching
 
   return (
-    <PageShell size="full" padding="none" layout="auto" className="w-full space-y-3.5 pb-8">
-      {/* 1. COMPACT TOP HEADER & ACTIONS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/70 pb-3">
+    <PageShell size="full" padding="compact" layout="scroll" className="space-y-4 pb-12">
+      {/* ========================================================= */}
+      {/* 1. ENCABEZADO DE LA PÁGINA (Oculto al imprimir)           */}
+      {/* ========================================================= */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3 print:hidden">
         <div className="flex items-center gap-2.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => void navigate({ to: "/gestion-vehicular/salidas" })}
-            className="size-7.5 text-muted-foreground hover:text-foreground cursor-pointer"
-            title="Volver a Salidas"
-          >
-            <ArrowLeft className="size-4" />
-          </Button>
+          <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shadow-2xs">
+            <BookOpen className="h-5 w-5" />
+          </div>
           <div>
             <div className="flex items-center gap-2">
-              <div className="size-6.5 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
-                <BarChart3 className="size-4" />
-              </div>
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground whitespace-nowrap">
-                Reportes y Métricas Operativas
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                Reporte de Bitácora de Vehículos
               </h1>
+              <Badge variant="outline" className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 font-semibold">
+                Formulario Oficial
+              </Badge>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-              Consolidado de salidas, rendimiento de flota, tiempos y bitácoras.
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Control de salidas operativas, kilometrajes (odómetros), combustible y conductores según formato físico ENDE CORANI.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <div className="relative flex items-center">
-            <Calendar className="size-3 absolute left-2 text-muted-foreground pointer-events-none" />
-            <Input
-              type="date"
-              value={fechaDesde}
-              onChange={(e) => setFechaDesde(e.target.value)}
-              title="Fecha desde"
-              className="h-7 pl-6.5 pr-2 w-[128px] text-[11px] rounded-md shadow-2xs bg-card"
-            />
-          </div>
-
-          <div className="relative flex items-center">
-            <Calendar className="size-3 absolute left-2 text-muted-foreground pointer-events-none" />
-            <Input
-              type="date"
-              value={fechaHasta}
-              onChange={(e) => setFechaHasta(e.target.value)}
-              title="Fecha hasta"
-              className="h-7 pl-6.5 pr-2 w-[128px] text-[11px] rounded-md shadow-2xs bg-card"
-            />
-          </div>
-
-          {(fechaDesde || fechaHasta) && (
+        {filtrosActivos && (
+          <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => {
-                setFechaDesde("")
-                setFechaHasta("")
-              }}
-              className="h-7 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
-              title="Limpiar filtro de fechas"
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleConsultar}
+              disabled={isLoading}
+              className="text-xs h-8 gap-1.5 cursor-pointer"
             >
-              <X className="size-3" />
-              <span>Limpiar</span>
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+              <span>Actualizar</span>
             </Button>
-          )}
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              onClick={handleImprimir}
+              disabled={filas.length === 0}
+              className="text-xs h-8 gap-1.5 cursor-pointer"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              <span>Imprimir</span>
+            </Button>
+          </div>
+        )}
+      </div>
 
+      {/* ========================================================= */}
+      {/* 2. BARRA DE FILTROS (Vehículo + Fechas) (Oculto print)    */}
+      {/* ========================================================= */}
+      <ReporteSalidasFiltrosBar
+        activoId={activoId}
+        onActivoChange={handleActivoChange}
+        fechaDesde={fechaDesde}
+        onFechaDesdeChange={setFechaDesde}
+        fechaHasta={fechaHasta}
+        onFechaHastaChange={setFechaHasta}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        onConsultar={handleConsultar}
+        onImprimir={handleImprimir}
+        onExportarCsv={handleExportarCsv}
+        isLoading={isLoading}
+        hasData={filas.length > 0}
+        placaSeleccionada={datosVehiculo.placa !== "S/P" ? datosVehiculo.placa : null}
+      />
+
+      {/* ========================================================= */}
+      {/* 3. RESUMEN DE MÉTRICAS RÁPIDAS (Oculto al imprimir)       */}
+      {/* ========================================================= */}
+      {filtrosActivos && !isLoading && filas.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 print:hidden">
+          <Card className="border-border/60 shadow-2xs bg-card">
+            <CardContent className="p-3.5 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase">
+                  Total Salidas
+                </span>
+                <p className="text-xl font-bold text-foreground mt-0.5">
+                  {totalesMetricas.totalSalidas}
+                </p>
+                <span className="text-[10px] text-muted-foreground">En el período consultado</span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <Route className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60 shadow-2xs bg-card">
+            <CardContent className="p-3.5 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase">
+                  Km. Recorrido Total
+                </span>
+                <p className="text-xl font-bold text-primary mt-0.5">
+                  {totalesMetricas.totalKm.toLocaleString()} km
+                </p>
+                <span className="text-[10px] text-muted-foreground">Distancia acumulada</span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Gauge className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60 shadow-2xs bg-card">
+            <CardContent className="p-3.5 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase">
+                  Combustible Total
+                </span>
+                <p className="text-xl font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                  {totalesMetricas.totalLitros > 0 ? `${totalesMetricas.totalLitros.toFixed(1)} L` : "0 L"}
+                </p>
+                <span className="text-[10px] text-muted-foreground">Litros abastecidos</span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <Fuel className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60 shadow-2xs bg-card">
+            <CardContent className="p-3.5 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase">
+                  Promedio por Salida
+                </span>
+                <p className="text-xl font-bold text-foreground mt-0.5">
+                  {totalesMetricas.promedioKmPorSalida.toLocaleString()} km
+                </p>
+                <span className="text-[10px] text-muted-foreground">Recorrido por viaje</span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 4. ESTADO DE ERROR                                        */}
+      {/* ========================================================= */}
+      {reporteQuery.error && (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive print:hidden flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-semibold text-sm">Error al consultar el reporte de salidas</p>
+              <p className="text-xs text-destructive/90">
+                {reporteQuery.error instanceof Error
+                  ? reporteQuery.error.message
+                  : "No se pudo obtener la información desde el servidor."}
+              </p>
+            </div>
+          </div>
           <Button
             variant="outline"
-            size="xs"
-            onClick={handleExportCurrent}
-            className="h-7 text-[11px] gap-1 px-2.5 cursor-pointer font-medium shadow-2xs hover:bg-muted"
-            title="Exportar datos de la tabla actual a CSV"
+            size="sm"
+            onClick={() => void reporteQuery.refetch()}
+            className="gap-1.5 ml-4 text-xs h-8 cursor-pointer"
           >
-            <Download className="size-3 text-primary" />
-            <span>Exportar CSV</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={handleRefreshAll}
-            disabled={isFetchingAny}
-            className="h-7 text-[11px] gap-1 px-2.5 cursor-pointer shadow-2xs"
-            title="Actualizar reportes"
-          >
-            <RotateCw className={cn("size-3", isFetchingAny && "animate-spin text-primary")} />
-            <span>Actualizar</span>
+            <RefreshCw className="h-3.5 w-3.5" />
+            Reintentar
           </Button>
         </div>
-      </div>
+      )}
 
-      {/* 2. COMPACT GLOBAL EXECUTIVE KPI CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-        {/* Total Salidas */}
-        <Card className="border-border/70 bg-gradient-to-br from-card via-card to-blue-500/5 shadow-2xs">
-          <CardContent className="p-3 space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                Total Salidas
-              </span>
-              <div className="size-6 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                <BarChart3 className="size-3" />
-              </div>
+      {/* ========================================================= */}
+      {/* 5. ESTADO DE CARGA                                        */}
+      {/* ========================================================= */}
+      {isLoading && (
+        <div className="space-y-3 print:hidden">
+          <Skeleton className="h-28 w-full rounded-xl" />
+          <Skeleton className="h-72 w-full rounded-xl" />
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 6. ESTADO INICIAL (Sin vehículo seleccionado)             */}
+      {/* ========================================================= */}
+      {!filtrosActivos && !isLoading && (
+        <Card className="border-dashed border-2 border-border/80 bg-muted/10 print:hidden">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+            <div className="p-3.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400">
+              <Car className="h-8 w-8" />
             </div>
-            <div className="flex items-baseline justify-between gap-1.5 flex-wrap">
-              <span className="text-xl sm:text-2xl font-extrabold text-foreground font-mono">
-                {totalSalidas}
-              </span>
-              <Badge
-                variant="outline"
-                className="text-[9.5px] px-1.5 py-0 font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 whitespace-nowrap"
-              >
-                {tasaCompletado}% completadas
-              </Badge>
-            </div>
-            <div className="text-[10.5px] text-muted-foreground flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis pt-0.5">
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{salidasFinalizadas} cerradas</span>
-              <span>&bull;</span>
-              <span className="text-rose-600 dark:text-rose-400 font-semibold">{salidasCanceladas} anuladas</span>
+            <div className="max-w-md space-y-1">
+              <h3 className="font-bold text-sm text-foreground">
+                Seleccione un Vehículo y Rango de Fechas
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Utilice la barra superior para elegir el vehículo de la flota y el período a consultar (por ejemplo, el mes actual). A continuación presione <strong>Consultar</strong> para generar la planilla oficial de bitácora.
+              </p>
             </div>
           </CardContent>
         </Card>
+      )}
 
-        {/* Salidas Activas */}
-        <Card className="border-border/70 bg-gradient-to-br from-card via-card to-amber-500/5 shadow-2xs">
-          <CardContent className="p-3 space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                En Tránsito / Activas
-              </span>
-              <div className="size-6 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                <Car className="size-3" />
-              </div>
-            </div>
-            <div className="flex items-baseline justify-between gap-1.5 flex-wrap">
-              <span className="text-xl sm:text-2xl font-extrabold text-amber-600 dark:text-amber-400 font-mono">
-                {salidasActivas}
-              </span>
-              {salidasActivas > 0 && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[9.5px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 whitespace-nowrap">
-                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  En ruta
-                </span>
-              )}
-            </div>
-            <p className="text-[10.5px] text-muted-foreground truncate pt-0.5">
-              Vehículos en trayecto hacia destino o base
-            </p>
-          </CardContent>
-        </Card>
+      {/* ========================================================= */}
+      {/* 7. PLANILLA OFICIAL DE LA BITÁCORA (Imprimible y visible) */}
+      {/* ========================================================= */}
+      {filtrosActivos && !isLoading && (
+        <div id="bitacora-reporte-imprimible" className="space-y-4">
+          <ReporteBitacoraVehicularTable
+            filas={filas}
+            tipoVehiculo={datosVehiculo.tipoVehiculo}
+            placa={datosVehiculo.placa}
+            responsableVehiculo={datosVehiculo.responsable}
+            ubicacion={datosVehiculo.ubicacion}
+            anio={anio}
+            mes={mes}
+            periodoTexto={`${fechaDesde} al ${fechaHasta}`}
+          />
+        </div>
+      )}
 
-        {/* Flota & Kilometraje */}
-        <Card className="border-border/70 bg-gradient-to-br from-card via-card to-emerald-500/5 shadow-2xs">
-          <CardContent className="p-3 space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                Km Flota Total
-              </span>
-              <div className="size-6 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <Gauge className="size-3" />
-              </div>
-            </div>
-            <div className="flex items-baseline justify-between gap-1.5 flex-wrap">
-              <span className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
-                {totalKmFlota.toLocaleString()}
-              </span>
-              <span className="text-[10px] font-mono text-muted-foreground">km</span>
-            </div>
-            <p className="text-[10.5px] text-muted-foreground truncate pt-0.5">
-              {vehiculosData.length} vehículo{vehiculosData.length === 1 ? "" : "s"} activos monitoreados
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Incidentes & Seguridad */}
-        <Card className="border-border/70 bg-gradient-to-br from-card via-card to-rose-500/5 shadow-2xs">
-          <CardContent className="p-3 space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                Seguridad & Bitácora
-              </span>
-              <div className="size-6 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                <ShieldCheck className="size-3" />
-              </div>
-            </div>
-            <div className="flex items-baseline justify-between gap-1.5 flex-wrap">
-              <span
-                className={cn(
-                  "text-xl sm:text-2xl font-extrabold font-mono",
-                  totalIncidentes > 0
-                    ? "text-rose-600 dark:text-rose-400"
-                    : "text-emerald-600 dark:text-emerald-400"
-                )}
-              >
-                {totalIncidentes}
-              </span>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-[9.5px] px-1.5 py-0 font-semibold whitespace-nowrap",
-                  totalIncidentes > 0
-                    ? "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30"
-                    : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-                )}
-              >
-                {totalIncidentes === 0 ? "Sin incidentes" : "Incidentes"}
-              </Badge>
-            </div>
-            <p className="text-[10.5px] text-muted-foreground truncate pt-0.5">
-              {bitacorasData?.totalBitacoras ?? 0} registros georreferenciados
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 3. COMPACT TABS NAVIGATION */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-3">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full max-w-3xl h-8.5 p-0.5 bg-muted/60">
-          <TabsTrigger value="general" className="text-[11.5px] py-1 gap-1 cursor-pointer">
-            <BarChart3 className="size-3 text-blue-500" />
-            General ({totalSalidas})
-          </TabsTrigger>
-          <TabsTrigger value="vehiculos" className="text-[11.5px] py-1 gap-1 cursor-pointer">
-            <Gauge className="size-3 text-emerald-500" />
-            Vehículos & Km ({vehiculosData.length})
-          </TabsTrigger>
-          <TabsTrigger value="empleados" className="text-[11.5px] py-1 gap-1 cursor-pointer">
-            <Users className="size-3 text-indigo-500" />
-            Conductores ({empleadosData.length})
-          </TabsTrigger>
-          <TabsTrigger value="tiempos" className="text-[11.5px] py-1 gap-1 cursor-pointer">
-            <Clock className="size-3 text-amber-500" />
-            Tiempos
-          </TabsTrigger>
-          <TabsTrigger value="bitacoras" className="text-[11.5px] py-1 gap-1 cursor-pointer">
-            <Activity className="size-3 text-purple-500" />
-            Bitácoras ({bitacorasData?.totalBitacoras ?? 0})
-          </TabsTrigger>
-        </TabsList>
-
-        {/* 1. GENERAL TAB */}
-        <TabsContent value="general" className="space-y-3 pt-0">
-          {/* Charts Row - Compact Height */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            {/* Donut Chart: Estados */}
-            <Card className="border-border/70 shadow-2xs">
-              <CardHeader className="p-3 pb-1 border-b border-border/50">
-                <CardTitle className="text-xs font-bold flex items-center gap-1.5">
-                  <BarChart3 className="size-3.5 text-blue-500" />
-                  Distribución por Estado
-                </CardTitle>
-                <CardDescription className="text-[10.5px]">
-                  Proporción del ciclo de vida de salidas
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-3">
-                {totalSalidas === 0 ? (
-                  <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">
-                    Sin salidas registradas
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="size-32 shrink-0">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={statusChartData}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={34}
-                            outerRadius={50}
-                            paddingAngle={3}
-                          >
-                            {statusChartData.map((entry) => (
-                              <Cell key={entry.name} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <RechartsTooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    <div className="space-y-1.5 w-full text-[11px] min-w-0">
-                      <div className="flex items-center justify-between p-1.5 rounded-md bg-emerald-500/5 border border-emerald-500/20">
-                        <span className="flex items-center gap-1.5 truncate">
-                          <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
-                          Finalizadas
-                        </span>
-                        <span className="font-bold font-mono ml-1">{salidasFinalizadas}</span>
-                      </div>
-                      <div className="flex items-center justify-between p-1.5 rounded-md bg-amber-500/5 border border-amber-500/20">
-                        <span className="flex items-center gap-1.5 truncate">
-                          <span className="size-2 rounded-full bg-amber-500 shrink-0" />
-                          En Tránsito
-                        </span>
-                        <span className="font-bold font-mono ml-1">{salidasActivas}</span>
-                      </div>
-                      <div className="flex items-center justify-between p-1.5 rounded-md bg-rose-500/5 border border-rose-500/20">
-                        <span className="flex items-center gap-1.5 truncate">
-                          <span className="size-2 rounded-full bg-rose-500 shrink-0" />
-                          Canceladas
-                        </span>
-                        <span className="font-bold font-mono ml-1">{salidasCanceladas}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Top Vehicles Chart */}
-            <Card className="border-border/70 shadow-2xs lg:col-span-2">
-              <CardHeader className="p-3 pb-1 border-b border-border/50">
-                <CardTitle className="text-xs font-bold flex items-center gap-1.5">
-                  <TrendingUp className="size-3.5 text-emerald-500" />
-                  Top Vehículos con Mayor Recorrido (km)
-                </CardTitle>
-                <CardDescription className="text-[10.5px]">
-                  Flota vehicular con mayor distancia acumulada
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-3 pt-2">
-                {topVehiculosKm.length === 0 ? (
-                  <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">
-                    Sin registros de kilometraje
-                  </div>
-                ) : (
-                  <div className="h-32 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={topVehiculosKm} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                        <XAxis dataKey="placa" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} />
-                        <RechartsTooltip />
-                        <Bar dataKey="km" name="Km Recorridos" fill="#10b981" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Table Container - Auto-scrolling and non-deforming */}
-          <Card className="border-border/70 shadow-2xs">
-            <CardHeader className="p-3 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div>
-                <CardTitle className="text-xs font-bold flex items-center gap-1.5">
-                  <FileText className="size-3.5 text-primary" />
-                  Listado Detallado de Salidas
-                </CardTitle>
-                <CardDescription className="text-[10.5px] mt-0.5">
-                  Mostrando {filteredGeneralItems.length} de {totalSalidas} salidas registradas
-                </CardDescription>
-              </div>
-
-              <div className="relative w-full sm:w-60">
-                <Search className="size-3.5 absolute left-2.5 top-2 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Buscar folio, placa, chofer..."
-                  value={searchGeneral}
-                  onChange={(e) => setSearchGeneral(e.target.value)}
-                  className="h-7.5 pl-8 text-xs rounded-lg"
-                />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="w-full overflow-x-auto">
-                <Table className="min-w-[760px]">
-                  <TableHeader className="bg-muted/40">
-                    <TableRow className="text-xs h-8">
-                      <TableHead className="w-24 font-semibold whitespace-nowrap">N° Salida</TableHead>
-                      <TableHead className="w-44 font-semibold whitespace-nowrap">Vehículo / Placa</TableHead>
-                      <TableHead className="w-44 font-semibold whitespace-nowrap">Conductor</TableHead>
-                      <TableHead className="min-w-[180px] font-semibold whitespace-nowrap">Actividad</TableHead>
-                      <TableHead className="w-36 font-semibold whitespace-nowrap">Fecha Salida</TableHead>
-                      <TableHead className="w-28 font-semibold whitespace-nowrap">Estado</TableHead>
-                      <TableHead className="w-16 font-semibold text-right whitespace-nowrap">Acción</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredGeneralItems.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-28 text-center text-xs text-muted-foreground">
-                          No se encontraron salidas vehiculares coincidentes con la búsqueda.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredGeneralItems.map((item: SalidaVehicular) => (
-                        <TableRow key={item.id} className="text-xs hover:bg-muted/30 h-10">
-                          <TableCell className="whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => handleNavigateDetail(item.id)}
-                              className="font-mono font-bold text-primary hover:underline px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 cursor-pointer text-xs"
-                            >
-                              {item.numero}
-                            </button>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <div className="space-y-0.5 max-w-[170px]">
-                              <span className="font-mono font-semibold text-foreground">
-                                {item.placa ?? item.activoCodigo ?? "S/P"}
-                              </span>
-                              <p className="text-[10.5px] text-muted-foreground truncate" title={item.marca ? `${item.marca} ${item.modelo ?? ""}` : item.activoDescripcion || ""}>
-                                {item.marca ? `${item.marca} ${item.modelo ?? ""}` : item.activoDescripcion}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <span className="font-medium text-foreground truncate max-w-[170px] inline-block" title={item.empleadoNombre ?? ""}>
-                              {item.empleadoNombre ?? "Sin asignar"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <span className="font-medium text-foreground text-xs truncate max-w-[200px] inline-block" title={item.descripcionActividad}>
-                              {item.descripcionActividad}
-                            </span>
-                          </TableCell>
-                          <TableCell className="font-mono text-muted-foreground whitespace-nowrap text-[11px]">
-                            {formatDate(item.fecha || item.createdAt)}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <SalidaVehicularStatusBadge status={item.estado} />
-                          </TableCell>
-                          <TableCell className="text-right whitespace-nowrap">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="xs"
-                              onClick={() => handleNavigateDetail(item.id)}
-                              className="h-6.5 text-[11px] gap-1 px-2 cursor-pointer hover:bg-primary/10 text-primary"
-                            >
-                              <Eye className="size-3" />
-                              <span>Ver</span>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* 2. VEHICULOS & KM TAB */}
-        <TabsContent value="vehiculos" className="space-y-3 pt-0">
-          <Card className="border-border/70 shadow-2xs">
-            <CardHeader className="p-3 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div>
-                <CardTitle className="text-xs font-bold flex items-center gap-1.5">
-                  <Gauge className="size-3.5 text-emerald-500" />
-                  Rendimiento y Kilometraje por Vehículo
-                </CardTitle>
-                <CardDescription className="text-[10.5px] mt-0.5">
-                  Consolidado de lecturas de odómetro inicial, final y recorrido de flota
-                </CardDescription>
-              </div>
-
-              <div className="relative w-full sm:w-60">
-                <Search className="size-3.5 absolute left-2.5 top-2 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Buscar placa, marca, modelo..."
-                  value={searchVehiculos}
-                  onChange={(e) => setSearchVehiculos(e.target.value)}
-                  className="h-7.5 pl-8 text-xs rounded-lg"
-                />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="w-full overflow-x-auto">
-                <Table className="min-w-[720px]">
-                  <TableHeader className="bg-muted/40">
-                    <TableRow className="text-xs h-8">
-                      <TableHead className="w-28 font-semibold whitespace-nowrap">Placa / Código</TableHead>
-                      <TableHead className="min-w-[200px] font-semibold whitespace-nowrap">Marca / Modelo / Descripción</TableHead>
-                      <TableHead className="w-24 font-semibold text-center whitespace-nowrap">N° Salidas</TableHead>
-                      <TableHead className="w-28 font-semibold text-right whitespace-nowrap">Km Inicial</TableHead>
-                      <TableHead className="w-28 font-semibold text-right whitespace-nowrap">Km Final</TableHead>
-                      <TableHead className="w-32 font-semibold text-right whitespace-nowrap">Km Total Recorrido</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVehiculos.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-28 text-center text-xs text-muted-foreground">
-                          No se encontraron registros de vehículos coincidentes.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredVehiculos.map((v: ReporteVehiculoKilometraje) => (
-                        <TableRow key={v.activoId} className="text-xs hover:bg-muted/30 h-10">
-                          <TableCell className="whitespace-nowrap">
-                            <span className="font-mono font-bold text-foreground px-1.5 py-0.5 rounded bg-muted/60 border border-border/70 text-xs">
-                              {v.placa ?? v.activoCodigo ?? "S/P"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <div className="space-y-0.5 max-w-[280px]">
-                              <span className="font-medium text-foreground truncate block" title={v.marca ? `${v.marca} ${v.modelo ?? ""}` : v.activoDescripcion || ""}>
-                                {v.marca ? `${v.marca} ${v.modelo ?? ""}` : v.activoDescripcion}
-                              </span>
-                              {v.activoCodigo && (
-                                <p className="text-[10.5px] text-muted-foreground font-mono">
-                                  Activo: {v.activoCodigo}
-                                </p>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center font-mono font-semibold whitespace-nowrap">
-                            <Badge variant="secondary" className="font-mono text-xs px-2 py-0">
-                              {v.cantidadSalidas}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-muted-foreground text-right whitespace-nowrap">
-                            {v.kilometrajeInicial != null
-                              ? `${v.kilometrajeInicial.toLocaleString()} km`
-                              : "-"}
-                          </TableCell>
-                          <TableCell className="font-mono text-muted-foreground text-right whitespace-nowrap">
-                            {v.kilometrajeFinal != null
-                              ? `${v.kilometrajeFinal.toLocaleString()} km`
-                              : "-"}
-                          </TableCell>
-                          <TableCell className="text-right whitespace-nowrap">
-                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">
-                              {v.kilometrajeTotalRecorrido != null
-                                ? `${v.kilometrajeTotalRecorrido.toLocaleString()} km`
-                                : "0 km"}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* 3. CONDUCTORES TAB */}
-        <TabsContent value="empleados" className="space-y-3 pt-0">
-          <Card className="border-border/70 shadow-2xs">
-            <CardHeader className="p-3 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div>
-                <CardTitle className="text-xs font-bold flex items-center gap-1.5">
-                  <Users className="size-3.5 text-indigo-500" />
-                  Desempeño y Salidas por Conductor
-                </CardTitle>
-                <CardDescription className="text-[10.5px] mt-0.5">
-                  Estadísticas de viajes, salidas activas y récord de seguridad por chofer
-                </CardDescription>
-              </div>
-
-              <div className="relative w-full sm:w-60">
-                <Search className="size-3.5 absolute left-2.5 top-2 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Buscar conductor, código..."
-                  value={searchEmpleados}
-                  onChange={(e) => setSearchEmpleados(e.target.value)}
-                  className="h-7.5 pl-8 text-xs rounded-lg"
-                />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="w-full overflow-x-auto">
-                <Table className="min-w-[720px]">
-                  <TableHeader className="bg-muted/40">
-                    <TableRow className="text-xs h-8">
-                      <TableHead className="min-w-[180px] font-semibold whitespace-nowrap">Conductor</TableHead>
-                      <TableHead className="w-28 font-semibold whitespace-nowrap">Código</TableHead>
-                      <TableHead className="min-w-[140px] font-semibold whitespace-nowrap">Cargo / Área</TableHead>
-                      <TableHead className="w-24 font-semibold text-center whitespace-nowrap">Total Salidas</TableHead>
-                      <TableHead className="w-20 font-semibold text-center whitespace-nowrap">Activas</TableHead>
-                      <TableHead className="w-24 font-semibold text-center whitespace-nowrap">Finalizadas</TableHead>
-                      <TableHead className="w-28 font-semibold text-right whitespace-nowrap">Incidentes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredEmpleados.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-28 text-center text-xs text-muted-foreground">
-                          No se encontraron conductores coincidentes.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredEmpleados.map((e: ReporteEmpleadoSalidas) => (
-                        <TableRow key={e.empleadoId} className="text-xs hover:bg-muted/30 h-10">
-                          <TableCell className="whitespace-nowrap">
-                            <div className="flex items-center gap-2 max-w-[220px]">
-                              <div className="size-6 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
-                                <User className="size-3" />
-                              </div>
-                              <span className="font-semibold text-foreground truncate" title={e.empleadoNombre ?? ""}>
-                                {e.empleadoNombre}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-muted-foreground whitespace-nowrap text-[11px]">
-                            {e.empleadoCodigo ?? "-"}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground whitespace-nowrap">
-                            <span className="truncate max-w-[160px] inline-block" title={e.cargo ?? e.area ?? "Operativo"}>
-                              {e.cargo ?? e.area ?? "Operativo"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center font-mono font-bold whitespace-nowrap">
-                            {e.totalSalidas}
-                          </TableCell>
-                          <TableCell className="text-center whitespace-nowrap">
-                            <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">
-                              {e.salidasActivas}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center whitespace-nowrap">
-                            <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                              {e.salidasFinalizadas}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right whitespace-nowrap">
-                            {e.totalIncidentes > 0 ? (
-                              <Badge
-                                variant="outline"
-                                className="font-mono font-bold bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30 text-[10.5px] px-1.5 py-0"
-                              >
-                                {e.totalIncidentes} incidente{e.totalIncidentes > 1 ? "s" : ""}
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="font-mono text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25 px-1.5 py-0"
-                              >
-                                0 incidentes
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* 4. TIEMPOS DE RECORRIDO TAB */}
-        <TabsContent value="tiempos" className="space-y-3 pt-0">
-          {/* Sub-cards de Tiempos Compactas */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            <Card className="border-border/70 shadow-2xs">
-              <CardContent className="p-3 space-y-0.5">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                  Salidas Analizadas
-                </span>
-                <p className="text-lg sm:text-xl font-bold font-mono text-foreground">
-                  {tiemposData?.totalSalidasAnalizadas ?? 0}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/70 shadow-2xs">
-              <CardContent className="p-3 space-y-0.5">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                  Duración Promedio
-                </span>
-                <p className="text-lg sm:text-xl font-bold font-mono text-amber-600 dark:text-amber-400">
-                  {tiemposData?.duracionPromedioHoras != null
-                    ? `${tiemposData.duracionPromedioHoras} hrs`
-                    : "-"}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/70 shadow-2xs">
-              <CardContent className="p-3 space-y-0.5">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                  Duración Mínima
-                </span>
-                <p className="text-lg sm:text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                  {tiemposData?.duracionMinimaMinutos != null
-                    ? `${tiemposData.duracionMinimaMinutos} min`
-                    : "-"}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/70 shadow-2xs">
-              <CardContent className="p-3 space-y-0.5">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                  Duración Máxima
-                </span>
-                <p className="text-lg sm:text-xl font-bold font-mono text-indigo-600 dark:text-indigo-400">
-                  {tiemposData?.duracionMaximaMinutos != null
-                    ? `${tiemposData.duracionMaximaMinutos} min`
-                    : "-"}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="border-border/70 shadow-2xs">
-            <CardHeader className="p-3 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div>
-                <CardTitle className="text-xs font-bold flex items-center gap-1.5">
-                  <Clock className="size-3.5 text-amber-500" />
-                  Tiempos de Viaje por Salida
-                </CardTitle>
-                <CardDescription className="text-[10.5px] mt-0.5">
-                  Intervalo entre inicio de trayecto y llegada a destino o cierre
-                </CardDescription>
-              </div>
-
-              <div className="relative w-full sm:w-60">
-                <Search className="size-3.5 absolute left-2.5 top-2 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Buscar salida, vehículo, ruta..."
-                  value={searchTiempos}
-                  onChange={(e) => setSearchTiempos(e.target.value)}
-                  className="h-7.5 pl-8 text-xs rounded-lg"
-                />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="w-full overflow-x-auto">
-                <Table className="min-w-[740px]">
-                  <TableHeader className="bg-muted/40">
-                    <TableRow className="text-xs h-8">
-                      <TableHead className="w-24 font-semibold whitespace-nowrap">N° Salida</TableHead>
-                      <TableHead className="w-40 font-semibold whitespace-nowrap">Vehículo</TableHead>
-                      <TableHead className="min-w-[180px] font-semibold whitespace-nowrap">Actividad</TableHead>
-                      <TableHead className="w-36 font-semibold whitespace-nowrap">Partida (Inicio)</TableHead>
-                      <TableHead className="w-36 font-semibold whitespace-nowrap">Llegada / Cierre</TableHead>
-                      <TableHead className="w-28 font-semibold text-right whitespace-nowrap">Duración Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTiemposItems.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-28 text-center text-xs text-muted-foreground">
-                          No se encontraron registros de tiempos coincidentes.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredTiemposItems.map((t: ItemTiempoRecorrido) => (
-                        <TableRow key={t.salidaId} className="text-xs hover:bg-muted/30 h-10">
-                          <TableCell className="whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => handleNavigateDetail(t.salidaId)}
-                              className="font-mono font-bold text-primary hover:underline px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 cursor-pointer text-xs"
-                            >
-                              {t.numero}
-                            </button>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <span className="font-medium text-foreground truncate max-w-[150px] inline-block" title={t.placa ?? t.vehiculoDescripcion ?? "S/P"}>
-                              {t.placa ?? t.vehiculoDescripcion ?? "S/P"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <span className="font-medium text-xs truncate max-w-[200px] inline-block" title={t.descripcionActividad}>
-                              {t.descripcionActividad}
-                            </span>
-                          </TableCell>
-                          <TableCell className="font-mono text-muted-foreground whitespace-nowrap text-[11px]">
-                            {formatDate(t.fechaInicio)}
-                          </TableCell>
-                          <TableCell className="font-mono text-muted-foreground whitespace-nowrap text-[11px]">
-                            {formatDate(t.fechaFin)}
-                          </TableCell>
-                          <TableCell className="font-mono font-bold text-right text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                            {t.duracionHoras != null ? `${t.duracionHoras} hrs` : "-"}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* 5. BITACORAS & INCIDENCIAS TAB */}
-        <TabsContent value="bitacoras" className="space-y-3 pt-0">
-          {/* Sub-cards Bitácoras Compactas */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            <Card className="border-border/70 shadow-2xs">
-              <CardContent className="p-3 space-y-0.5">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                  Total Registros
-                </span>
-                <p className="text-lg sm:text-xl font-bold font-mono text-foreground">
-                  {bitacorasData?.totalBitacoras ?? 0}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/70 shadow-2xs">
-              <CardContent className="p-3 space-y-0.5">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                  Actividades
-                </span>
-                <p className="text-lg sm:text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                  {bitacorasData?.totalActividades ?? 0}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/70 shadow-2xs">
-              <CardContent className="p-3 space-y-0.5">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                  Novedades
-                </span>
-                <p className="text-lg sm:text-xl font-bold font-mono text-amber-600 dark:text-amber-400">
-                  {bitacorasData?.totalNovedades ?? 0}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/70 shadow-2xs">
-              <CardContent className="p-3 space-y-0.5">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                  Incidentes Críticos
-                </span>
-                <p className="text-lg sm:text-xl font-bold font-mono text-rose-600 dark:text-rose-400">
-                  {bitacorasData?.totalIncidentes ?? 0}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="border-border/70 shadow-2xs">
-            <CardHeader className="p-3 border-b border-border/60 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-              <div>
-                <CardTitle className="text-xs font-bold flex items-center gap-1.5">
-                  <Activity className="size-3.5 text-purple-500" />
-                  Consolidado de Bitácoras y Geolocalización GPS
-                </CardTitle>
-                <CardDescription className="text-[10.5px] mt-0.5">
-                  Registros generados en tiempo real durante los trayectos de salida
-                </CardDescription>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Tipo Filter Buttons */}
-                <div className="flex items-center gap-0.5 bg-muted/60 p-0.5 rounded-lg border border-border/60">
-                  {["ALL", "ACTIVIDAD", "NOVEDAD", "INCIDENTE"].map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setFilterTipoBitacora(t)}
-                      className={cn(
-                        "px-2 py-0.5 text-[10.5px] rounded-md font-medium transition-all cursor-pointer whitespace-nowrap",
-                        filterTipoBitacora === t
-                          ? "bg-card text-foreground font-semibold shadow-2xs"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {t === "ALL" ? "Todos" : t}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="relative w-full sm:w-52">
-                  <Search className="size-3.5 absolute left-2.5 top-2 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Buscar descripción o chofer..."
-                    value={searchBitacoras}
-                    onChange={(e) => setSearchBitacoras(e.target.value)}
-                    className="h-7.5 pl-8 text-xs rounded-lg"
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="w-full overflow-x-auto">
-                <Table className="min-w-[760px]">
-                  <TableHeader className="bg-muted/40">
-                    <TableRow className="text-xs h-8">
-                      <TableHead className="w-36 font-semibold whitespace-nowrap">Fecha y Hora</TableHead>
-                      <TableHead className="w-28 font-semibold whitespace-nowrap">Tipo</TableHead>
-                      <TableHead className="min-w-[220px] max-w-[340px] font-semibold whitespace-nowrap">Descripción del Evento</TableHead>
-                      <TableHead className="w-40 font-semibold whitespace-nowrap">Conductor</TableHead>
-                      <TableHead className="w-36 font-semibold whitespace-nowrap">Ubicación GPS</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredBitacoras.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="h-28 text-center text-xs text-muted-foreground">
-                          No se encontraron registros de bitácoras coincidentes con los filtros.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredBitacoras.map((b: BitacoraVehicular) => {
-                        const isIncidente = b.tipo === "INCIDENTE"
-                        const isNovedad = b.tipo === "NOVEDAD"
-                        const hasGps = b.latitud != null && b.longitud != null
-
-                        return (
-                          <TableRow key={b.id} className="text-xs hover:bg-muted/30 h-10">
-                            <TableCell className="font-mono text-muted-foreground whitespace-nowrap text-[11px]">
-                              {formatDate(b.fechaHora || b.createdAt)}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              <Badge
-                                variant="secondary"
-                                className={cn(
-                                  "text-[10px] font-semibold border px-1.5 py-0 whitespace-nowrap",
-                                  isIncidente &&
-                                    "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
-                                  isNovedad &&
-                                    "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
-                                  !isIncidente &&
-                                    !isNovedad &&
-                                    "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-                                )}
-                              >
-                                {b.tipo}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              <span className="font-medium text-foreground truncate max-w-[320px] block" title={b.descripcion}>
-                                {b.descripcion}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground font-medium whitespace-nowrap">
-                              <span className="truncate max-w-[150px] inline-block" title={b.empleadoNombre ?? "N/A"}>
-                                {b.empleadoNombre ?? "N/A"}
-                              </span>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              {hasGps ? (
-                                <a
-                                  href={`https://maps.google.com/?q=${b.latitud},${b.longitud}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 font-mono text-[11px] text-primary hover:underline font-semibold bg-primary/5 hover:bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 transition-colors"
-                                  title="Abrir ubicación en Google Maps"
-                                >
-                                  <Compass className="size-3" />
-                                  <span>
-                                    {Number(b.latitud).toFixed(4)}, {Number(b.longitud).toFixed(4)}
-                                  </span>
-                                  <ExternalLink className="size-2.5 opacity-70" />
-                                </a>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* ========================================================= */}
+      {/* ESTILOS DE IMPRESIÓN OFICIAL LANDSCAPE                     */}
+      {/* ========================================================= */}
+      <style>{`
+        @media print {
+          @page {
+            size: landscape;
+            margin: 6mm 8mm;
+          }
+          body {
+            background: white !important;
+            color: black !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          /* Ocultar elementos auxiliares de navegación y UI */
+          aside,
+          nav,
+          header,
+          .print\\:hidden {
+            display: none !important;
+          }
+          /* Formulario Bitácora */
+          .bitacora-reporte-hoja {
+            border: 1px solid #1e293b !important;
+            box-shadow: none !important;
+            width: 100% !important;
+            page-break-after: avoid;
+          }
+          table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+          }
+          th, td {
+            border-color: #334155 !important;
+          }
+          tr {
+            page-break-inside: avoid !important;
+          }
+        }
+      `}</style>
     </PageShell>
   )
 }
+export default ReportesSalidasVehicularesPage
