@@ -87,6 +87,24 @@ function formatPeriodoMesAnio(fechaDesdeStr: string, fechaHastaStr: string): { m
   }
 }
 
+function extractPlacaFromText(descripcion?: string | null): string | null {
+  if (!descripcion) return null
+  try {
+    const match = descripcion.match(
+      /PLACA[:\s#-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)*)/i
+    )
+    if (match && match[1]) {
+      const clean = match[1].replace(/[,.;-]+$/, "").trim()
+      if (clean.length >= 2 && clean.length <= 20) {
+        return clean
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 export const ReportesSalidasVehicularesPage = () => {
   // Filtros de entrada
   const [activoId, setActivoId] = useState<string>("")
@@ -96,35 +114,39 @@ export const ReportesSalidasVehicularesPage = () => {
   const [fechaHasta, setFechaHasta] = useState<string>(getFechaActual())
   const [searchQuery, setSearchQuery] = useState<string>("")
 
-  // Filtros aplicados a las queries
+  // Filtros aplicados a las queries: inicializamos por defecto con el mes actual
   const [filtrosActivos, setFiltrosActivos] = useState<{
     activoId: string
     fechaDesde: string
     fechaHasta: string
-  } | null>(null)
+  } | null>(() => ({
+    activoId: "",
+    fechaDesde: getPrimerDiaMes(),
+    fechaHasta: getFechaActual(),
+  }))
 
-  // Consulta 1: Reporte general de salidas vehiculares
+  // Consulta 1: Reporte general de salidas vehiculares (soporta activoId opcional para traer todo)
   const reporteQuery = useQuery({
     ...salidaVehicularQueries.reporteGeneral({
-      activoId: filtrosActivos?.activoId,
+      activoId: filtrosActivos?.activoId || undefined,
       fechaDesde: filtrosActivos?.fechaDesde ? `${filtrosActivos.fechaDesde}T00:00:00` : undefined,
       fechaHasta: filtrosActivos?.fechaHasta ? `${filtrosActivos.fechaHasta}T23:59:59` : undefined,
     }),
-    enabled: Boolean(filtrosActivos?.activoId),
+    enabled: Boolean(filtrosActivos?.fechaDesde && filtrosActivos?.fechaHasta),
   })
 
-  // Consulta 2: Cargas de combustible del vehículo
+  // Consulta 2: Cargas de combustible (soporta activoId opcional para traer todo)
   const cargasQuery = useQuery({
     ...cargaCombustibleQueries.list({
-      activoId: filtrosActivos?.activoId,
+      activoId: filtrosActivos?.activoId || undefined,
       fechaDesde: filtrosActivos?.fechaDesde,
       fechaHasta: filtrosActivos?.fechaHasta,
       size: 500,
     }),
-    enabled: Boolean(filtrosActivos?.activoId),
+    enabled: Boolean(filtrosActivos?.fechaDesde && filtrosActivos?.fechaHasta),
   })
 
-  // Consulta 3: Datos detallados del activo/vehículo
+  // Consulta 3: Datos detallados del activo/vehículo (solo si hay vehículo específico)
   const activoDetailQuery = useQuery({
     ...activoQueries.detail(filtrosActivos?.activoId ?? ""),
     enabled: Boolean(filtrosActivos?.activoId),
@@ -132,6 +154,15 @@ export const ReportesSalidasVehicularesPage = () => {
 
   // Metadatos consolidados del vehículo
   const datosVehiculo = useMemo(() => {
+    if (!filtrosActivos?.activoId) {
+      return {
+        tipoVehiculo: "TODOS LOS VEHÍCULOS (CONSOLIDADO)",
+        placa: "TODAS LAS PLACAS",
+        responsable: "VARIOS CONDUCTORES",
+        ubicacion: "CORANI",
+      }
+    }
+
     const act = activoDetailQuery.data
     const placa =
       placaSeleccionada ||
@@ -160,12 +191,13 @@ export const ReportesSalidasVehicularesPage = () => {
       responsable,
       ubicacion,
     }
-  }, [activoDetailQuery.data, placaSeleccionada, vehiculoMeta])
+  }, [filtrosActivos?.activoId, activoDetailQuery.data, placaSeleccionada, vehiculoMeta])
 
   // Transformar salidas y asociar odómetros y combustible
   const { filas, totalesMetricas } = useMemo(() => {
     const rawSalidas: SalidaVehicular[] = reporteQuery.data?.items ?? []
     const cargas: CargaCombustible[] = cargasQuery.data?.content ?? []
+    const isMultiVehiculo = !filtrosActivos?.activoId
 
     // Formatear filas
     const rows: FilaReporteBitacoraSalida[] = rawSalidas.map((salida) => {
@@ -214,15 +246,24 @@ export const ReportesSalidasVehicularesPage = () => {
           ? kmLlegada - kmSalida
           : null
 
-      // Combustible relacionado a la salida (por salidaVehicularId o misma fecha)
+      // Combustible relacionado a la salida
       const salidaDateStr = (salida.fecha || salida.createdAt || "").slice(0, 10)
-      const matchingCargas = cargas.filter(
-        (c) =>
-          c.salidaVehicularId === salida.id ||
-          (Boolean(salidaDateStr) &&
+      const matchingCargas = cargas.filter((c) => {
+        if (c.salidaVehicularId === salida.id) return true
+        if (isMultiVehiculo) {
+          return (
+            c.activoId === salida.activoId &&
+            Boolean(salidaDateStr) &&
             Boolean(c.fechaCarga) &&
-            c.fechaCarga.slice(0, 10) === salidaDateStr)
-      )
+            c.fechaCarga.slice(0, 10) === salidaDateStr
+          )
+        }
+        return (
+          Boolean(salidaDateStr) &&
+          Boolean(c.fechaCarga) &&
+          c.fechaCarga.slice(0, 10) === salidaDateStr
+        )
+      })
 
       let combustibleTexto = "-"
       let totalLitros: number | null = null
@@ -241,6 +282,12 @@ export const ReportesSalidasVehicularesPage = () => {
         combustibleTexto = `${totalLitros} lts / ${facStr}`
       }
 
+      // Placa identificada del vehículo
+      const placaVehiculo =
+        extractPlacaFromText(salida.activoDescripcion) ||
+        salida.activoCodigo ||
+        null
+
       return {
         id: salida.id,
         numero: salida.numero,
@@ -257,6 +304,8 @@ export const ReportesSalidasVehicularesPage = () => {
         conductorNombre: salida.empleadoNombre || "-",
         observaciones: salida.observaciones || "-",
         estado: salida.estado,
+        vehiculoPlaca: placaVehiculo,
+        vehiculoCodigo: salida.activoCodigo || null,
       }
     })
 
@@ -274,6 +323,7 @@ export const ReportesSalidasVehicularesPage = () => {
             r.conductorNombre.toLowerCase().includes(q) ||
             r.observaciones.toLowerCase().includes(q) ||
             r.numero.toLowerCase().includes(q) ||
+            (r.vehiculoPlaca && r.vehiculoPlaca.toLowerCase().includes(q)) ||
             String(r.dia).includes(q)
           )
         })
@@ -298,7 +348,7 @@ export const ReportesSalidasVehicularesPage = () => {
         promedioKmPorSalida,
       },
     }
-  }, [cargasQuery.data?.content, reporteQuery.data?.items, searchQuery])
+  }, [cargasQuery.data?.content, filtrosActivos?.activoId, reporteQuery.data?.items, searchQuery])
 
   // Manejo de cambio de vehículo
   const handleActivoChange = (
@@ -310,7 +360,7 @@ export const ReportesSalidasVehicularesPage = () => {
     setPlacaSeleccionada(placa ?? null)
     setVehiculoMeta(meta ?? null)
 
-    if (id && fechaDesde && fechaHasta && fechaDesde <= fechaHasta) {
+    if (fechaDesde && fechaHasta && fechaDesde <= fechaHasta) {
       setFiltrosActivos({
         activoId: id,
         fechaDesde,
@@ -321,10 +371,6 @@ export const ReportesSalidasVehicularesPage = () => {
 
   // Manejo de consulta manual
   const handleConsultar = () => {
-    if (!activoId) {
-      toast.error("Debe seleccionar un vehículo obligatoriamente.")
-      return
-    }
     if (!fechaDesde || !fechaHasta) {
       toast.error("Debe especificar las fechas de inicio y fin.")
       return
@@ -341,8 +387,14 @@ export const ReportesSalidasVehicularesPage = () => {
     })
     void reporteQuery.refetch()
     void cargasQuery.refetch()
-    void activoDetailQuery.refetch()
-    toast.success("Bitácora de vehículo consultada.")
+    if (activoId) {
+      void activoDetailQuery.refetch()
+    }
+    toast.success(
+      activoId
+        ? "Bitácora del vehículo consultada."
+        : "Bitácora general de todos los vehículos consultada."
+    )
   }
 
   // Estado de carga del PDF generado en el Backend API
@@ -350,8 +402,8 @@ export const ReportesSalidasVehicularesPage = () => {
 
   // Descargar PDF generado por el Backend (JasperReports en Spring Boot API)
   const handleDescargarPdf = async () => {
-    if (!filtrosActivos?.activoId) {
-      toast.error("Seleccione un vehículo y rango de fechas para generar el reporte.")
+    if (!filtrosActivos?.fechaDesde || !filtrosActivos?.fechaHasta) {
+      toast.error("Seleccione un rango de fechas para generar el reporte.")
       return
     }
 
@@ -359,11 +411,11 @@ export const ReportesSalidasVehicularesPage = () => {
       setIsPdfLoading(true)
       toast.info("Generando reporte oficial en PDF desde el servidor...")
       await descargarReporteSalidasBitacoraPdf({
-        activoId: filtrosActivos.activoId,
+        activoId: filtrosActivos.activoId || undefined,
         fechaDesde: filtrosActivos.fechaDesde,
         fechaHasta: filtrosActivos.fechaHasta,
         search: searchQuery || undefined,
-        placa: datosVehiculo.placa,
+        placa: filtrosActivos.activoId ? datosVehiculo.placa : "todos",
       })
       toast.success("Reporte oficial en PDF generado y descargado exitosamente.")
     } catch (err: unknown) {
@@ -379,8 +431,8 @@ export const ReportesSalidasVehicularesPage = () => {
 
   // Abrir PDF oficial en nueva pestaña generado por el Backend API
   const handleAbrirPdf = async () => {
-    if (!filtrosActivos?.activoId) {
-      toast.error("Seleccione un vehículo y rango de fechas.")
+    if (!filtrosActivos?.fechaDesde || !filtrosActivos?.fechaHasta) {
+      toast.error("Seleccione un rango de fechas.")
       return
     }
 
@@ -388,11 +440,11 @@ export const ReportesSalidasVehicularesPage = () => {
       setIsPdfLoading(true)
       toast.info("Abriendo reporte en PDF desde el servidor...")
       await abrirReporteSalidasBitacoraPdf({
-        activoId: filtrosActivos.activoId,
+        activoId: filtrosActivos.activoId || undefined,
         fechaDesde: filtrosActivos.fechaDesde,
         fechaHasta: filtrosActivos.fechaHasta,
         search: searchQuery || undefined,
-        placa: datosVehiculo.placa,
+        placa: filtrosActivos.activoId ? datosVehiculo.placa : "todos",
       })
     } catch (err: unknown) {
       const message =
@@ -689,7 +741,7 @@ export const ReportesSalidasVehicularesPage = () => {
       )}
 
       {/* ========================================================= */}
-      {/* 6. ESTADO INICIAL (Sin vehículo seleccionado)             */}
+      {/* 6. ESTADO INICIAL (Sin filtros aplicados)                 */}
       {/* ========================================================= */}
       {!filtrosActivos && !isLoading && (
         <Card className="border-dashed border-2 border-border/80 bg-muted/10 print:hidden">
@@ -699,10 +751,10 @@ export const ReportesSalidasVehicularesPage = () => {
             </div>
             <div className="max-w-md space-y-1">
               <h3 className="font-bold text-sm text-foreground">
-                Seleccione un Vehículo y Rango de Fechas
+                Seleccione Rango de Fechas y Filtros
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Utilice la barra superior para elegir el vehículo de la flota y el período a consultar (por ejemplo, el mes actual). A continuación presione <strong>Consultar</strong> para generar la planilla oficial de bitácora.
+                Utilice la barra superior para elegir el período a consultar y opcionalmente un vehículo de la flota (o dejarlo vacío para consultar todos). A continuación presione <strong>Consultar</strong>.
               </p>
             </div>
           </CardContent>

@@ -104,7 +104,7 @@ export function ReporteSalidasFiltrosBar({
     onFechaHastaChange(lastDay.toISOString().split("T")[0])
   }
 
-  const isFormValid = Boolean(activoId && fechaDesde && fechaHasta)
+  const isFormValid = Boolean(fechaDesde && fechaHasta && fechaDesde <= fechaHasta)
 
   return (
     <Card className="border-border/60 shadow-xs print:hidden">
@@ -120,7 +120,7 @@ export function ReporteSalidasFiltrosBar({
                 Filtros de Bitácora de Vehículos
               </h2>
               <p className="text-xs text-muted-foreground">
-                Filtre por vehículo y rango de fechas para generar la bitácora oficial de salidas.
+                Filtre por rango de fechas y opcionalmente por un vehículo específico, o consulte todos los vehículos con datos.
               </p>
             </div>
           </div>
@@ -178,11 +178,15 @@ export function ReporteSalidasFiltrosBar({
               <Label className="text-xs font-medium flex items-center gap-1.5">
                 <Car className="h-3.5 w-3.5 text-primary" />
                 <span>Vehículo (Activo)</span>
-                <span className="text-destructive font-bold">*</span>
+                <span className="text-[10px] text-muted-foreground font-normal">(Opcional: Todos)</span>
               </Label>
-              {placaSeleccionada && (
+              {placaSeleccionada ? (
                 <Badge variant="secondary" className="text-[10px] h-4 px-1.5 bg-primary/10 text-primary">
                   Placa: {placaSeleccionada}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-muted-foreground">
+                  Todos los vehículos
                 </Badge>
               )}
             </div>
@@ -201,7 +205,7 @@ export function ReporteSalidasFiltrosBar({
                   onActivoChange("", null, null)
                 }
               }}
-              placeholder="Buscar vehículo por placa, nombre o código…"
+              placeholder="Todos los vehículos (o filtrar por placa/nombre)…"
             />
           </div>
 

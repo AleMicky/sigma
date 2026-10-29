@@ -459,37 +459,65 @@ public class SalidaVehicularReporteService {
             LocalDateTime fechaHasta,
             String search
     ) {
-        if (activoId == null) {
-            throw new BusinessException("El vehículo (activoId) es obligatorio para generar el reporte en PDF.");
-        }
-
         Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
         Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
 
-        // 1. Obtener vehículo y sus atributos
-        ActivoEntity activo = activoRepository.findById(activoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Vehículo o Activo", activoId));
-        Map<String, String> attrs = obtenerAtributosVehiculosBatch(Set.of(activoId)).getOrDefault(activoId, Collections.emptyMap());
-
-        String placa = attrs.get("PLACA");
-        if (placa == null || placa.isBlank()) {
-            placa = extractPlacaFromDescripcion(activo.getDescripcion());
-        }
-        String marca = attrs.getOrDefault("MARCA", "");
-        String modelo = attrs.getOrDefault("MODELO", "");
-        String tipoActivoNombre = (activo.getTipoActivoId() != null)
-                ? tipoActivoRepository.findById(activo.getTipoActivoId()).map(t -> t.getNombre()).orElse("CAMIONETA")
-                : "CAMIONETA";
-        String tipoVehiculo = Stream.of(tipoActivoNombre, marca, modelo)
-                .filter(s -> s != null && !s.isBlank())
-                .collect(Collectors.joining(" "));
-
-        // 2. Obtener salidas en el rango
+        // 1. Obtener salidas en el rango (con o sin activoId)
         List<SalidaVehicular> salidas = new ArrayList<>(salidaRepository.findForReporte(
                 search, activoId, null, null, instantDesde, instantHasta
         ));
         // Orden cronológico ascendente (por fecha o createdAt)
         salidas.sort(Comparator.comparing(s -> s.getFecha() != null ? s.getFecha() : s.getCreatedAt()));
+
+        // 2. Resolver vehículos involucrados y atributos (placas, modelos, etc.)
+        Set<UUID> allActivoIds = salidas.stream()
+                .map(SalidaVehicular::getActivoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (activoId != null) {
+            allActivoIds.add(activoId);
+        }
+
+        Map<UUID, ActivoEntity> activosMap = allActivoIds.isEmpty()
+                ? Collections.emptyMap()
+                : activoRepository.findAllById(allActivoIds).stream().collect(Collectors.toMap(ActivoEntity::getId, a -> a));
+        Map<UUID, Map<String, String>> atributosMap = obtenerAtributosVehiculosBatch(allActivoIds);
+
+        Map<UUID, String> placasPorActivo = new HashMap<>();
+        for (UUID actId : allActivoIds) {
+            Map<String, String> attrs = atributosMap.getOrDefault(actId, Collections.emptyMap());
+            String pl = attrs.get("PLACA");
+            if (pl == null || pl.isBlank()) {
+                ActivoEntity act = activosMap.get(actId);
+                if (act != null) {
+                    pl = extractPlacaFromDescripcion(act.getDescripcion());
+                }
+            }
+            placasPorActivo.put(actId, (pl != null && !pl.isBlank()) ? pl : "S/P");
+        }
+
+        String tipoVehiculo;
+        String placaPrincipal;
+
+        if (activoId != null) {
+            ActivoEntity activo = activosMap.get(activoId);
+            Map<String, String> attrs = atributosMap.getOrDefault(activoId, Collections.emptyMap());
+            placaPrincipal = placasPorActivo.getOrDefault(activoId, "-");
+            String marca = attrs.getOrDefault("MARCA", "");
+            String modelo = attrs.getOrDefault("MODELO", "");
+            String tipoActivoNombre = (activo != null && activo.getTipoActivoId() != null)
+                    ? tipoActivoRepository.findById(activo.getTipoActivoId()).map(t -> t.getNombre()).orElse("CAMIONETA")
+                    : "CAMIONETA";
+            tipoVehiculo = Stream.of(tipoActivoNombre, marca, modelo)
+                    .filter(s -> s != null && !s.isBlank())
+                    .collect(Collectors.joining(" "));
+            if (tipoVehiculo.isBlank() && activo != null) {
+                tipoVehiculo = activo.getNombre();
+            }
+        } else {
+            tipoVehiculo = "TODOS LOS VEHÍCULOS (CONSOLIDADO)";
+            placaPrincipal = "TODAS LAS PLACAS";
+        }
 
         // 3. Obtener eventos de las salidas para kmSalida y kmLlegada
         List<UUID> salidaIds = salidas.stream().map(SalidaVehicular::getId).toList();
@@ -497,10 +525,32 @@ public class SalidaVehicularReporteService {
         Map<UUID, List<SalidaVehicularEvento>> eventosPorSalida = eventos.stream()
                 .collect(Collectors.groupingBy(SalidaVehicularEvento::getSalidaVehicularId));
 
-        // 4. Obtener cargas de combustible del vehículo
-        List<CargaCombustibleEntity> cargasCombustible = (fechaDesde != null && fechaHasta != null)
-                ? cargaCombustibleRepository.findByActivoIdAndFechaCargaBetween(activoId, fechaDesde, fechaHasta)
-                : cargaCombustibleRepository.findByActivoIdOrderByFechaCargaDesc(activoId);
+        // 4. Obtener cargas de combustible del período de forma segura y tipada
+        List<CargaCombustibleEntity> cargasCombustible = new ArrayList<>();
+        if (activoId != null) {
+            if (fechaDesde != null && fechaHasta != null) {
+                cargasCombustible.addAll(cargaCombustibleRepository.findByActivoIdAndFechaCargaBetween(activoId, fechaDesde, fechaHasta));
+            } else {
+                cargasCombustible.addAll(cargaCombustibleRepository.findByActivoIdOrderByFechaCargaDesc(activoId));
+            }
+        } else {
+            if (fechaDesde != null && fechaHasta != null) {
+                cargasCombustible.addAll(cargaCombustibleRepository.findByFechaCargaBetweenOrderByFechaCargaAsc(fechaDesde, fechaHasta));
+            } else {
+                cargasCombustible.addAll(cargaCombustibleRepository.findAll());
+            }
+        }
+
+        if (!salidaIds.isEmpty()) {
+            List<CargaCombustibleEntity> cargasPorSalidaIds = cargaCombustibleRepository.findBySalidaVehicularIdIn(salidaIds);
+            Set<UUID> cargaIdsExistentes = cargasCombustible.stream().map(CargaCombustibleEntity::getId).collect(Collectors.toSet());
+            for (CargaCombustibleEntity c : cargasPorSalidaIds) {
+                if (!cargaIdsExistentes.contains(c.getId())) {
+                    cargasCombustible.add(c);
+                    cargaIdsExistentes.add(c.getId());
+                }
+            }
+        }
 
         Map<UUID, List<CargaCombustibleEntity>> cargasPorSalida = cargasCombustible.stream()
                 .filter(c -> c.getSalidaVehicularId() != null)
@@ -568,7 +618,16 @@ public class SalidaVehicularReporteService {
             }
 
             // Combustible
-            List<CargaCombustibleEntity> cargas = cargasPorSalida.getOrDefault(s.getId(), Collections.emptyList());
+            List<CargaCombustibleEntity> cargas = new ArrayList<>(cargasPorSalida.getOrDefault(s.getId(), Collections.emptyList()));
+            if (cargas.isEmpty() && s.getActivoId() != null && fechaInst != null) {
+                LocalDate salidaDate = fechaInst.atZone(ZoneId.of("America/La_Paz")).toLocalDate();
+                cargas.addAll(cargasCombustible.stream()
+                        .filter(c -> c.getSalidaVehicularId() == null
+                                && s.getActivoId().equals(c.getActivoId())
+                                && c.getFechaCarga() != null
+                                && c.getFechaCarga().toLocalDate().isEqual(salidaDate))
+                        .toList());
+            }
             String combustibleTexto = "-";
             if (!cargas.isEmpty()) {
                 BigDecimal sumLitros = cargas.stream()
@@ -589,11 +648,19 @@ public class SalidaVehicularReporteService {
                 conductorPrincipal = conductor;
             }
 
+            String descActividad = s.getDescripcionActividad() != null ? s.getDescripcionActividad() : "-";
+            if (activoId == null && s.getActivoId() != null) {
+                String placaItem = placasPorActivo.getOrDefault(s.getActivoId(), "");
+                if (!placaItem.isBlank() && !placaItem.equals("S/P")) {
+                    descActividad = "[" + placaItem + "] " + descActividad;
+                }
+            }
+
             dataSourceList.add(BitacoraSalidaItemReporteDto.builder()
                     .id(s.getId())
                     .dia(dia)
                     .fecha(fechaStr)
-                    .descripcionActividad(s.getDescripcionActividad() != null ? s.getDescripcionActividad() : "-")
+                    .descripcionActividad(descActividad)
                     .kmSalida(kmSalida)
                     .kmLlegada(kmLlegada)
                     .kmRecorrido(kmRecorrido)
@@ -625,9 +692,9 @@ public class SalidaVehicularReporteService {
         parameters.put("TITULO_REPORTE", "BITACORA DE VEHICULOS");
         parameters.put("FORMULARIO_CODIGO", "GA-IN7-04");
         parameters.put("FORMULARIO_VERSION", "01");
-        parameters.put("VEHICULO_TIPO", tipoVehiculo != null && !tipoVehiculo.isBlank() ? tipoVehiculo : activo.getNombre());
-        parameters.put("VEHICULO_PLACA", placa != null && !placa.isBlank() ? placa : "-");
-        parameters.put("RESPONSABLE_VEH", conductorPrincipal != null ? conductorPrincipal : "-");
+        parameters.put("VEHICULO_TIPO", tipoVehiculo != null && !tipoVehiculo.isBlank() ? tipoVehiculo : "TODOS LOS VEHÍCULOS");
+        parameters.put("VEHICULO_PLACA", placaPrincipal != null && !placaPrincipal.isBlank() ? placaPrincipal : "-");
+        parameters.put("RESPONSABLE_VEH", conductorPrincipal != null ? conductorPrincipal : (activoId == null ? "VARIOS" : "-"));
         parameters.put("UBICACION", "CORANI");
         parameters.put("ANIO", String.valueOf(anio));
         parameters.put("MES", mes);

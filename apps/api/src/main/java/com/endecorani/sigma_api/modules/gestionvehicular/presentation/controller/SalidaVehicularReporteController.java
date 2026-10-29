@@ -105,18 +105,22 @@ public class SalidaVehicularReporteController {
     @GetMapping(value = "/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @Operation(summary = "Descargar reporte oficial en PDF de la bitácora de salidas vehiculares en formato ENDE CORANI")
     public ResponseEntity<byte[]> reporteBitacoraPdf(
-            @RequestParam UUID activoId,
+            @RequestParam(required = false) UUID activoId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta,
             @RequestParam(required = false) String search
     ) {
         byte[] pdfBytes = reporteService.generarReporteBitacoraPdf(activoId, fechaDesde, fechaHasta, search);
 
+        String filename = (activoId != null)
+                ? "bitacora-salidas-vehiculares-" + activoId + ".pdf"
+                : "bitacora-salidas-vehiculares-todas.pdf";
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDisposition(
                 ContentDisposition.inline()
-                        .filename("bitacora-salidas-vehiculares-" + activoId + ".pdf")
+                        .filename(filename)
                         .build()
         );
         headers.setContentLength(pdfBytes.length);

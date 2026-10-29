@@ -261,6 +261,30 @@ export function ReporteVehiculoCombobox({
           </Button>
         </div>
 
+        {/* Opción rápida: Todos los vehículos (Reporte Consolidado) */}
+        {!search.trim() && (
+          <button
+            type="button"
+            onClick={() => {
+              onValueChange("", null)
+              setSearch("")
+            }}
+            className="flex items-center gap-2.5 px-2.5 py-2 mx-1 my-1 rounded-lg text-xs font-medium text-foreground hover:bg-primary/10 hover:text-primary transition-colors text-left cursor-pointer border border-dashed border-border hover:border-primary/40 bg-muted/20"
+          >
+            <div className="size-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Car className="size-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold block truncate">
+                Todos los vehículos (Reporte Consolidado)
+              </span>
+              <span className="block text-[10.5px] text-muted-foreground truncate font-normal">
+                Mostrar salidas de cualquier vehículo con registros en el período
+              </span>
+            </div>
+          </button>
+        )}
+
         <ComboboxEmpty className="py-6 text-xs text-muted-foreground text-center">
           {activosQuery.isLoading
             ? "Buscando vehículos..."

@@ -18,6 +18,8 @@ export interface FilaReporteBitacoraSalida {
   conductorNombre: string
   observaciones: string
   estado: string
+  vehiculoPlaca?: string | null
+  vehiculoCodigo?: string | null
 }
 
 export interface ReporteBitacoraVehicularTableProps {
@@ -278,9 +280,16 @@ export function ReporteBitacoraVehicularTable({
                       <div className="line-clamp-2" title={fila.descripcionActividad}>
                         {fila.descripcionActividad}
                       </div>
-                      <span className="text-[10px] text-muted-foreground font-mono print:hidden">
-                        Folio: {fila.numero}
-                      </span>
+                      <div className="flex items-center gap-1.5 mt-0.5 print:hidden">
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          Folio: {fila.numero}
+                        </span>
+                        {fila.vehiculoPlaca && (
+                          <span className="text-[9.5px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1 rounded">
+                            {fila.vehiculoPlaca}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* KM. SALIDA */}
