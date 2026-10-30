@@ -460,17 +460,18 @@ public class SolicitudMantenimientoService {
                     "Debe seleccionar un aprobador");
         }
 
-        Empleado aprobador = empleadoRepository.findById(aprobadorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Empleado", aprobadorId));
+        final UUID finalAprobadorId = aprobadorId;
+        Empleado aprobador = empleadoRepository.findById(finalAprobadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Empleado", finalAprobadorId));
         solicitud.setAprobador(aprobador);
 
-        if (request.responsableId() != null) {
+        if (request != null && request.responsableId() != null) {
             Empleado responsable = empleadoRepository.findById(request.responsableId())
                     .orElseThrow(() -> new ResourceNotFoundException("Empleado responsable", request.responsableId()));
             solicitud.setResponsable(responsable);
         }
 
-        if (request.supervisorId() != null) {
+        if (request != null && request.supervisorId() != null) {
             Empleado supervisor = empleadoRepository.findById(request.supervisorId())
                     .orElseThrow(() -> new ResourceNotFoundException("Empleado supervisor", request.supervisorId()));
             solicitud.setSupervisor(supervisor);
@@ -483,7 +484,7 @@ public class SolicitudMantenimientoService {
         }
         variables.put("aprobadorId", aprobadorId.toString());
 
-        if (request.responsableId() != null) {
+        if (request != null && request.responsableId() != null) {
             variables.put("responsableId", request.responsableId().toString());
         }
 
