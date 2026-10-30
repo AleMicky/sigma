@@ -10,6 +10,10 @@ export const routes = {
     catalogo: "/activos/catalogo",
     consultaDocumentos: "/activos/consulta-documentos",
     disponibilidad: "/activos/disponibilidad",
+    incidentes: {
+      root: "/activos/incidentes",
+      detail: (id: string) => `/activos/incidentes/${id}`,
+    },
     detail: (activoId: string) => `/activos/catalogo/${activoId}`,
     editar: (activoId: string) =>
       `/activos/registro-activo/${activoId}/editar`,
