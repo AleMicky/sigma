@@ -11,6 +11,7 @@ import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repos
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoValorRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.*;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.*;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.EnviarSolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.SolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ProgramacionMantenimientoCriterioMapper;
