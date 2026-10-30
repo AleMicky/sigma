@@ -3,7 +3,7 @@ import type { PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
 import { solicitudVehicularEndpoints } from "./solicitud-vehicular.endpoints"
-import type { SolicitudVehicularListFilters } from "./solicitud-vehicular.keys"
+import type { ReporteSolicitudesFilters, SolicitudVehicularListFilters } from "./solicitud-vehicular.keys"
 
 export type SolicitudVehicularTipoInfo = {
   id: string
@@ -206,4 +206,130 @@ export const completarWorkflowSolicitudVehicular = (
     solicitudVehicularEndpoints.workflowComplete(id),
     payload
   )
+}
+
+export type ReporteSolicitudItem = {
+  id: string
+  numero: string
+  fechaSolicitud?: string | null
+  fechaSalida: string
+  fechaRetornoEstimada: string
+  cantidadPasajeros: number
+  motivo: string
+  justificacion?: string | null
+  destino: string
+  observacion?: string | null
+  estado: string
+  solicitanteId?: string | null
+  solicitanteCodigo?: string | null
+  solicitanteNombre?: string | null
+  solicitanteCargo?: string | null
+  solicitanteArea?: string | null
+  tipoSolicitudId?: string | null
+  tipoSolicitudCodigo?: string | null
+  tipoSolicitudNombre?: string | null
+  asignacionId?: string | null
+  fechaAsignacion?: string | null
+  asignadoPorNombre?: string | null
+  observacionAsignacion?: string | null
+  activoId?: string | null
+  activoCodigo?: string | null
+  activoNombre?: string | null
+  activoPlaca?: string | null
+  activoMarca?: string | null
+  activoModelo?: string | null
+  activoTipo?: string | null
+  conductorId?: string | null
+  conductorEmpleadoId?: string | null
+  conductorNombre?: string | null
+  conductorLicencia?: string | null
+  conductorCategoria?: string | null
+}
+
+export type ReporteSolicitudesGeneralResponse = {
+  totalSolicitudes: number
+  solicitudesBorrador: number
+  solicitudesPendientes: number
+  solicitudesAsignadas: number
+  solicitudesEnCurso: number
+  solicitudesFinalizadas: number
+  solicitudesRechazadas: number
+  totalPasajeros: number
+  items: ReporteSolicitudItem[]
+}
+
+export type DescargarReporteSolicitudesPdfParams = {
+  fechaDesde?: string
+  fechaHasta?: string
+  activoId?: string
+  solicitanteId?: string
+  conductorId?: string
+  tipoSolicitudVehicularId?: string
+  estado?: string
+  search?: string
+}
+
+export const getReporteSolicitudesVehiculares = (
+  params?: ReporteSolicitudesFilters
+): Promise<ReporteSolicitudesGeneralResponse> => {
+  return http.get<ReporteSolicitudesGeneralResponse>(
+    solicitudVehicularEndpoints.reportes.general,
+    { params }
+  )
+}
+
+export const descargarReporteSolicitudesPdf = async (
+  params: DescargarReporteSolicitudesPdfParams
+): Promise<void> => {
+  const queryParams: Record<string, string> = {}
+  if (params.fechaDesde) queryParams.fechaDesde = `${params.fechaDesde}T00:00:00`
+  if (params.fechaHasta) queryParams.fechaHasta = `${params.fechaHasta}T23:59:59`
+  if (params.activoId?.trim()) queryParams.activoId = params.activoId.trim()
+  if (params.solicitanteId?.trim()) queryParams.solicitanteId = params.solicitanteId.trim()
+  if (params.conductorId?.trim()) queryParams.conductorId = params.conductorId.trim()
+  if (params.tipoSolicitudVehicularId?.trim()) queryParams.tipoSolicitudVehicularId = params.tipoSolicitudVehicularId.trim()
+  if (params.estado?.trim()) queryParams.estado = params.estado.trim()
+  if (params.search?.trim()) queryParams.search = params.search.trim()
+
+  const blob = await http.get<Blob>(solicitudVehicularEndpoints.reportes.pdf, {
+    params: queryParams,
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `reporte-solicitudes-${params.fechaDesde ?? "inicio"}_${params.fechaHasta ?? "fin"}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+
+export const abrirReporteSolicitudesPdf = async (
+  params: DescargarReporteSolicitudesPdfParams
+): Promise<void> => {
+  const queryParams: Record<string, string> = {}
+  if (params.fechaDesde) queryParams.fechaDesde = `${params.fechaDesde}T00:00:00`
+  if (params.fechaHasta) queryParams.fechaHasta = `${params.fechaHasta}T23:59:59`
+  if (params.activoId?.trim()) queryParams.activoId = params.activoId.trim()
+  if (params.solicitanteId?.trim()) queryParams.solicitanteId = params.solicitanteId.trim()
+  if (params.conductorId?.trim()) queryParams.conductorId = params.conductorId.trim()
+  if (params.tipoSolicitudVehicularId?.trim()) queryParams.tipoSolicitudVehicularId = params.tipoSolicitudVehicularId.trim()
+  if (params.estado?.trim()) queryParams.estado = params.estado.trim()
+  if (params.search?.trim()) queryParams.search = params.search.trim()
+
+  const blob = await http.get<Blob>(solicitudVehicularEndpoints.reportes.pdf, {
+    params: queryParams,
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+
+  const url = window.URL.createObjectURL(blob)
+  window.open(url, "_blank")
 }

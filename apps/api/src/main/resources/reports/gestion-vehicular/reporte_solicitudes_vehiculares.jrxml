@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport name="reporte_solicitudes_vehiculares" language="java" orientation="Landscape" pageWidth="792" pageHeight="612" columnWidth="752" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="d0000001-0000-4000-a000-000000000001">
+	<parameter name="LOGO_EMPRESA" class="java.lang.Object"/>
+	<parameter name="TITULO_REPORTE" class="java.lang.String"/>
+	<parameter name="FORMULARIO_CODIGO" class="java.lang.String"/>
+	<parameter name="FORMULARIO_VERSION" class="java.lang.String"/>
+	<parameter name="PERIODO_TEXTO" class="java.lang.String"/>
+	<parameter name="FILTRO_VEHICULO" class="java.lang.String"/>
+	<parameter name="FILTRO_ESTADO" class="java.lang.String"/>
+	<parameter name="TOTAL_SOLICITUDES" class="java.lang.String"/>
+	<parameter name="TOTAL_ASIGNADAS" class="java.lang.String"/>
+	<parameter name="TOTAL_PASAJEROS" class="java.lang.String"/>
+
+	<field name="numero" class="java.lang.String"/>
+	<field name="fechaSolicitud" class="java.lang.String"/>
+	<field name="fechaSalida" class="java.lang.String"/>
+	<field name="fechaRetorno" class="java.lang.String"/>
+	<field name="solicitante" class="java.lang.String"/>
+	<field name="tipoSolicitud" class="java.lang.String"/>
+	<field name="destinoMotivo" class="java.lang.String"/>
+	<field name="pasajeros" class="java.lang.Integer"/>
+	<field name="vehiculo" class="java.lang.String"/>
+	<field name="conductor" class="java.lang.String"/>
+	<field name="estado" class="java.lang.String"/>
+	<field name="asignadoPor" class="java.lang.String"/>
+
+	<title height="92">
+		<!-- Cabecera Institucional Superior -->
+		<element kind="rectangle" x="0" y="0" width="752" height="52" backcolor="#FFFFFF" mode="Opaque" uuid="d0000001-0000-4000-a000-000000000002">
+			<pen lineWidth="0.75" lineColor="#1E293B"/>
+		</element>
+
+		<!-- Logo Empresa -->
+		<element kind="image" x="6" y="5" width="130" height="42" scaleImage="RetainShape" hImageAlign="Left" vImageAlign="Middle" uuid="d0000001-0000-4000-a000-000000000003">
+			<expression><![CDATA[$P{LOGO_EMPRESA}]]></expression>
+		</element>
+
+		<!-- Título Central del Reporte -->
+		<element kind="staticText" x="140" y="4" width="460" height="12" forecolor="#64748B" fontName="SansSerif" fontSize="8" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000004">
+			<text><![CDATA[SISTEMA DE GESTIÓN VEHICULAR]]></text>
+		</element>
+		<element kind="textField" x="140" y="16" width="460" height="20" forecolor="#0F172A" fontName="SansSerif" fontSize="12" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000005">
+			<expression><![CDATA[$P{TITULO_REPORTE} != null ? $P{TITULO_REPORTE} : "REPORTE DE SOLICITUDES Y ASIGNACIONES VEHICULARES"]]></expression>
+		</element>
+		<element kind="staticText" x="140" y="36" width="460" height="12" forecolor="#0284C7" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000006">
+			<text><![CDATA[ENDE CORANI S.A. - CONTROL OPERATIVO Y LOGÍSTICA DE TRANSPORTE]]></text>
+		</element>
+
+		<!-- Cuadro Superior Derecho: Código y Versión -->
+		<element kind="rectangle" x="605" y="4" width="142" height="44" backcolor="#F8FAFC" mode="Opaque" uuid="d0000001-0000-4000-a000-000000000007">
+			<pen lineWidth="0.5" lineColor="#64748B"/>
+		</element>
+		<element kind="staticText" x="612" y="8" width="50" height="16" forecolor="#475569" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000008">
+			<text><![CDATA[Código:]]></text>
+		</element>
+		<element kind="textField" x="662" y="8" width="80" height="16" forecolor="#0F172A" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000009">
+			<expression><![CDATA[$P{FORMULARIO_CODIGO} != null ? $P{FORMULARIO_CODIGO} : "GV-REP-01"]]></expression>
+		</element>
+		<element kind="staticText" x="612" y="24" width="50" height="16" forecolor="#475569" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000010">
+			<text><![CDATA[Versión:]]></text>
+		</element>
+		<element kind="textField" x="662" y="24" width="80" height="16" forecolor="#0F172A" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000011">
+			<expression><![CDATA[$P{FORMULARIO_VERSION} != null ? $P{FORMULARIO_VERSION} : "01"]]></expression>
+		</element>
+
+		<!-- Sub-barra con Filtros y Parámetros del Reporte -->
+		<element kind="rectangle" x="0" y="56" width="752" height="32" backcolor="#F8FAFC" mode="Opaque" uuid="d0000001-0000-4000-a000-000000000012">
+			<pen lineWidth="0.75" lineColor="#1E293B"/>
+		</element>
+
+		<!-- PERIODO (x: 0, w: 220) -->
+		<element kind="staticText" x="6" y="58" width="210" height="10" forecolor="#475569" fontName="SansSerif" fontSize="6" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000013">
+			<text><![CDATA[PERÍODO CONSULTADO:]]></text>
+		</element>
+		<element kind="textField" x="6" y="68" width="210" height="16" forecolor="#0F172A" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000014">
+			<expression><![CDATA[$P{PERIODO_TEXTO} != null ? $P{PERIODO_TEXTO} : "TODOS LOS REGISTROS"]]></expression>
+		</element>
+		<element kind="line" x="220" y="56" width="0" height="32" uuid="d0000001-0000-4000-a000-000000000015">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- VEHICULO (x: 220, w: 200) -->
+		<element kind="staticText" x="226" y="58" width="190" height="10" forecolor="#475569" fontName="SansSerif" fontSize="6" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000016">
+			<text><![CDATA[VEHÍCULO ASIGNADO / FILTRO:]]></text>
+		</element>
+		<element kind="textField" x="226" y="68" width="190" height="16" forecolor="#0284C7" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000017">
+			<expression><![CDATA[$P{FILTRO_VEHICULO} != null ? $P{FILTRO_VEHICULO} : "TODOS LOS VEHÍCULOS"]]></expression>
+		</element>
+		<element kind="line" x="420" y="56" width="0" height="32" uuid="d0000001-0000-4000-a000-000000000018">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- ESTADO (x: 420, w: 140) -->
+		<element kind="staticText" x="426" y="58" width="130" height="10" forecolor="#475569" fontName="SansSerif" fontSize="6" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000019">
+			<text><![CDATA[ESTADO:]]></text>
+		</element>
+		<element kind="textField" x="426" y="68" width="130" height="16" forecolor="#0F172A" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000020">
+			<expression><![CDATA[$P{FILTRO_ESTADO} != null ? $P{FILTRO_ESTADO} : "TODOS"]]></expression>
+		</element>
+		<element kind="line" x="560" y="56" width="0" height="32" uuid="d0000001-0000-4000-a000-000000000021">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- TOTAL SOLICITUDES (x: 560, w: 96) -->
+		<element kind="staticText" x="566" y="58" width="86" height="10" forecolor="#475569" fontName="SansSerif" fontSize="6" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000022">
+			<text><![CDATA[TOTAL SOLICITUDES:]]></text>
+		</element>
+		<element kind="textField" x="566" y="68" width="86" height="16" forecolor="#0F172A" fontName="SansSerif" fontSize="9" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000023">
+			<expression><![CDATA[$P{TOTAL_SOLICITUDES} != null ? $P{TOTAL_SOLICITUDES} : "0"]]></expression>
+		</element>
+		<element kind="line" x="656" y="56" width="0" height="32" uuid="d0000001-0000-4000-a000-000000000024">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- TOTAL ASIGNADAS (x: 656, w: 96) -->
+		<element kind="staticText" x="662" y="58" width="86" height="10" forecolor="#475569" fontName="SansSerif" fontSize="6" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000025">
+			<text><![CDATA[ASIGNADAS / EN CURSO:]]></text>
+		</element>
+		<element kind="textField" x="662" y="68" width="86" height="16" forecolor="#0284C7" fontName="SansSerif" fontSize="9" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000026">
+			<expression><![CDATA[$P{TOTAL_ASIGNADAS} != null ? $P{TOTAL_ASIGNADAS} : "0"]]></expression>
+		</element>
+	</title>
+
+	<!-- Encabezados de Columnas de la Tabla -->
+	<columnHeader height="24">
+		<element kind="rectangle" x="0" y="0" width="752" height="24" backcolor="#E2E8F0" mode="Opaque" uuid="d0000001-0000-4000-a000-000000000030">
+			<pen lineWidth="0.75" lineColor="#1E293B"/>
+		</element>
+
+		<!-- NRO / FOLIO (w: 65) -->
+		<element kind="staticText" x="2" y="0" width="63" height="24" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000031">
+			<text><![CDATA[Nº SOLICITUD]]></text>
+		</element>
+		<element kind="line" x="67" y="0" width="0" height="24" uuid="d0000001-0000-4000-a000-000000000032">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- FECHA SALIDA (w: 58) -->
+		<element kind="staticText" x="69" y="0" width="56" height="24" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000033">
+			<text><![CDATA[F. SALIDA]]></text>
+		</element>
+		<element kind="line" x="127" y="0" width="0" height="24" uuid="d0000001-0000-4000-a000-000000000034">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- SOLICITANTE / ÁREA (w: 120) -->
+		<element kind="staticText" x="130" y="0" width="114" height="24" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Left" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000035">
+			<text><![CDATA[SOLICITANTE / ÁREA]]></text>
+		</element>
+		<element kind="line" x="247" y="0" width="0" height="24" uuid="d0000001-0000-4000-a000-000000000036">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- TIPO / MOTIVO Y DESTINO (w: 155) -->
+		<element kind="staticText" x="250" y="0" width="149" height="24" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Left" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000037">
+			<text><![CDATA[DESTINO / MOTIVO]]></text>
+		</element>
+		<element kind="line" x="402" y="0" width="0" height="24" uuid="d0000001-0000-4000-a000-000000000038">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- PASAJEROS (w: 28) -->
+		<element kind="staticText" x="404" y="0" width="24" height="24" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000039">
+			<text><![CDATA[PAS.]]></text>
+		</element>
+		<element kind="line" x="430" y="0" width="0" height="24" uuid="d0000001-0000-4000-a000-000000000040">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- VEHÍCULO ASIGNADO (w: 105) -->
+		<element kind="staticText" x="433" y="0" width="99" height="24" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Left" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000041">
+			<text><![CDATA[VEHÍCULO ASIGNADO]]></text>
+		</element>
+		<element kind="line" x="535" y="0" width="0" height="24" uuid="d0000001-0000-4000-a000-000000000042">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- CONDUCTOR ASIGNADO (w: 110) -->
+		<element kind="staticText" x="538" y="0" width="104" height="24" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Left" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000043">
+			<text><![CDATA[CONDUCTOR ASIGNADO]]></text>
+		</element>
+		<element kind="line" x="645" y="0" width="0" height="24" uuid="d0000001-0000-4000-a000-000000000044">
+			<pen lineWidth="0.5" lineColor="#94A3B8"/>
+		</element>
+
+		<!-- ESTADO (w: 107) -->
+		<element kind="staticText" x="648" y="0" width="102" height="24" forecolor="#0F172A" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000045">
+			<text><![CDATA[ESTADO / ASIGNACIÓN]]></text>
+		</element>
+	</columnHeader>
+
+	<!-- Filas de Datos (Detail) -->
+	<detail>
+		<band height="20">
+			<element kind="rectangle" x="0" y="0" width="752" height="20" backcolor="#FFFFFF" mode="Opaque" uuid="d0000001-0000-4000-a000-000000000046">
+				<pen lineWidth="0.5" lineColor="#CBD5E1"/>
+			</element>
+
+			<!-- Nº SOLICITUD -->
+			<element kind="textField" x="2" y="0" width="63" height="20" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000047">
+				<expression><![CDATA[$F{numero} != null ? $F{numero} : "-"]]></expression>
+			</element>
+			<element kind="line" x="67" y="0" width="0" height="20" uuid="d0000001-0000-4000-a000-000000000048">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- FECHA SALIDA -->
+			<element kind="textField" x="69" y="0" width="56" height="20" fontName="SansSerif" fontSize="7" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000049">
+				<expression><![CDATA[$F{fechaSalida} != null ? $F{fechaSalida} : "-"]]></expression>
+			</element>
+			<element kind="line" x="127" y="0" width="0" height="20" uuid="d0000001-0000-4000-a000-000000000050">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- SOLICITANTE / ÁREA -->
+			<element kind="textField" x="130" y="0" width="114" height="20" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000051">
+				<expression><![CDATA[$F{solicitante} != null ? $F{solicitante} : "-"]]></expression>
+			</element>
+			<element kind="line" x="247" y="0" width="0" height="20" uuid="d0000001-0000-4000-a000-000000000052">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- DESTINO / MOTIVO -->
+			<element kind="textField" x="250" y="0" width="149" height="20" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000053">
+				<expression><![CDATA[$F{destinoMotivo} != null ? $F{destinoMotivo} : "-"]]></expression>
+			</element>
+			<element kind="line" x="402" y="0" width="0" height="20" uuid="d0000001-0000-4000-a000-000000000054">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- PASAJEROS -->
+			<element kind="textField" x="404" y="0" width="24" height="20" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000055">
+				<expression><![CDATA[$F{pasajeros} != null ? String.valueOf($F{pasajeros}) : "0"]]></expression>
+			</element>
+			<element kind="line" x="430" y="0" width="0" height="20" uuid="d0000001-0000-4000-a000-000000000056">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- VEHÍCULO ASIGNADO -->
+			<element kind="textField" x="433" y="0" width="99" height="20" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000057">
+				<expression><![CDATA[$F{vehiculo} != null ? $F{vehiculo} : "PENDIENTE"]]></expression>
+			</element>
+			<element kind="line" x="535" y="0" width="0" height="20" uuid="d0000001-0000-4000-a000-000000000058">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- CONDUCTOR ASIGNADO -->
+			<element kind="textField" x="538" y="0" width="104" height="20" fontName="SansSerif" fontSize="7" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000059">
+				<expression><![CDATA[$F{conductor} != null ? $F{conductor} : "PENDIENTE"]]></expression>
+			</element>
+			<element kind="line" x="645" y="0" width="0" height="20" uuid="d0000001-0000-4000-a000-000000000060">
+				<pen lineWidth="0.5" lineColor="#E2E8F0"/>
+			</element>
+
+			<!-- ESTADO / ASIGNACIÓN -->
+			<element kind="textField" x="648" y="0" width="102" height="20" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000061">
+				<expression><![CDATA[$F{estado} != null ? $F{estado} : "-"]]></expression>
+			</element>
+		</band>
+	</detail>
+
+	<!-- Pie de Página, Totales y Firmas Oficiales -->
+	<summary height="78">
+		<!-- Bloque Totales -->
+		<element kind="rectangle" x="0" y="2" width="752" height="20" backcolor="#F1F5F9" mode="Opaque" uuid="d0000001-0000-4000-a000-000000000062">
+			<pen lineWidth="0.75" lineColor="#1E293B"/>
+		</element>
+		<element kind="staticText" x="8" y="2" width="238" height="20" forecolor="#0F172A" fontName="SansSerif" fontSize="8" bold="true" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000063">
+			<text><![CDATA[RESUMEN TOTALES DEL REPORTE:]]></text>
+		</element>
+		<element kind="textField" x="250" y="2" width="150" height="20" forecolor="#0284C7" fontName="SansSerif" fontSize="8" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000064">
+			<expression><![CDATA["Total: " + ($P{TOTAL_SOLICITUDES} != null ? $P{TOTAL_SOLICITUDES} : "0") + " Solicitudes"]]></expression>
+		</element>
+		<element kind="textField" x="404" y="2" width="130" height="20" forecolor="#16A34A" fontName="SansSerif" fontSize="8" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000065">
+			<expression><![CDATA["Pasajeros: " + ($P{TOTAL_PASAJEROS} != null ? $P{TOTAL_PASAJEROS} : "0")]]></expression>
+		</element>
+		<element kind="textField" x="538" y="2" width="206" height="20" forecolor="#475569" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Right" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000066">
+			<expression><![CDATA["Asignadas: " + ($P{TOTAL_ASIGNADAS} != null ? $P{TOTAL_ASIGNADAS} : "0") + "  |  ENDE CORANI S.A."]]></expression>
+		</element>
+
+		<!-- Firmas Institucionales (Pie de Página) -->
+		<element kind="line" x="40" y="60" width="180" height="0" uuid="d0000001-0000-4000-a000-000000000067">
+			<pen lineWidth="0.5" lineColor="#64748B"/>
+		</element>
+		<element kind="staticText" x="40" y="62" width="180" height="12" forecolor="#475569" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000068">
+			<text><![CDATA[SOLICITANTE / INTERESADO]]></text>
+		</element>
+
+		<element kind="line" x="286" y="60" width="180" height="0" uuid="d0000001-0000-4000-a000-000000000069">
+			<pen lineWidth="0.5" lineColor="#64748B"/>
+		</element>
+		<element kind="staticText" x="286" y="62" width="180" height="12" forecolor="#475569" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000070">
+			<text><![CDATA[RESPONSABLE DE ASIGNACIÓN]]></text>
+		</element>
+
+		<element kind="line" x="532" y="60" width="180" height="0" uuid="d0000001-0000-4000-a000-000000000071">
+			<pen lineWidth="0.5" lineColor="#64748B"/>
+		</element>
+		<element kind="staticText" x="532" y="62" width="180" height="12" forecolor="#475569" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="d0000001-0000-4000-a000-000000000072">
+			<text><![CDATA[VO.BO. ADMINISTRACIÓN / CONTROL]]></text>
+		</element>
+	</summary>
+</jasperReport>
+

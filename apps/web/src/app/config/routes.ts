@@ -139,6 +139,7 @@ export const routes = {
       consumoCombustible: "/gestion-vehicular/reportes/consumo-combustible",
       historialViajes: "/gestion-vehicular/reportes/historial-viajes",
       salidasVehiculares: "/gestion-vehicular/reportes/salidas-vehiculares",
+      solicitudesVehiculares: "/gestion-vehicular/reportes/solicitudes-vehiculares",
     },
   },
 } as const
