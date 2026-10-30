@@ -6,6 +6,10 @@ export const programacionMantenimientoEndpoints = {
   delete: (id: string) => `/programaciones-mantenimiento/${id}`,
   byPlanActivo: (planActivoId: string) =>
     `/programaciones-mantenimiento/plan-activo/${planActivoId}`,
+  byActivo: (activoId: string) =>
+    `/programaciones-mantenimiento/activo/${activoId}`,
+  evaluarPorActivo: (activoId: string) =>
+    `/programaciones-mantenimiento/activo/${activoId}/evaluar`,
   activar: (id: string) => `/programaciones-mantenimiento/${id}/activar`,
   desactivar: (id: string) => `/programaciones-mantenimiento/${id}/desactivar`,
   evaluar: (id: string) => `/programaciones-mantenimiento/${id}/evaluar`,

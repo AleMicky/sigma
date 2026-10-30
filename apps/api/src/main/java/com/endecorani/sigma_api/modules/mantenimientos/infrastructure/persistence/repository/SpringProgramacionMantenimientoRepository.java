@@ -39,14 +39,14 @@ public interface SpringProgramacionMantenimientoRepository
             LEFT JOIN p.planMantenimientoActivo pma
             LEFT JOIN pma.activo a
             LEFT JOIN pma.planMantenimiento pm
-            WHERE (:planMantenimientoActivoId IS NULL OR p.planMantenimientoActivoId = :planMantenimientoActivoId)
-              AND (:activoId IS NULL OR pma.activoId = :activoId)
-              AND (:activo IS NULL OR p.activo = :activo)
-              AND (:q IS NULL OR (
-                    LOWER(a.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
-                    LOWER(a.nombre) LIKE LOWER(CONCAT('%', :q, '%')) OR
-                    LOWER(pm.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
-                    LOWER(pm.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+            WHERE (CAST(:planMantenimientoActivoId AS UUID) IS NULL OR p.planMantenimientoActivoId = :planMantenimientoActivoId)
+              AND (CAST(:activoId AS UUID) IS NULL OR pma.activoId = :activoId)
+              AND (CAST(:activo AS Boolean) IS NULL OR p.activo = :activo)
+              AND (CAST(:q AS String) IS NULL OR (
+                    LOWER(a.codigo) LIKE LOWER(CONCAT('%', CAST(:q AS String), '%')) OR
+                    LOWER(a.nombre) LIKE LOWER(CONCAT('%', CAST(:q AS String), '%')) OR
+                    LOWER(pm.codigo) LIKE LOWER(CONCAT('%', CAST(:q AS String), '%')) OR
+                    LOWER(pm.nombre) LIKE LOWER(CONCAT('%', CAST(:q AS String), '%'))
               ))
         """,
         countQuery = """
@@ -55,14 +55,14 @@ public interface SpringProgramacionMantenimientoRepository
             LEFT JOIN p.planMantenimientoActivo pma
             LEFT JOIN pma.activo a
             LEFT JOIN pma.planMantenimiento pm
-            WHERE (:planMantenimientoActivoId IS NULL OR p.planMantenimientoActivoId = :planMantenimientoActivoId)
-              AND (:activoId IS NULL OR pma.activoId = :activoId)
-              AND (:activo IS NULL OR p.activo = :activo)
-              AND (:q IS NULL OR (
-                    LOWER(a.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
-                    LOWER(a.nombre) LIKE LOWER(CONCAT('%', :q, '%')) OR
-                    LOWER(pm.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
-                    LOWER(pm.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+            WHERE (CAST(:planMantenimientoActivoId AS UUID) IS NULL OR p.planMantenimientoActivoId = :planMantenimientoActivoId)
+              AND (CAST(:activoId AS UUID) IS NULL OR pma.activoId = :activoId)
+              AND (CAST(:activo AS Boolean) IS NULL OR p.activo = :activo)
+              AND (CAST(:q AS String) IS NULL OR (
+                    LOWER(a.codigo) LIKE LOWER(CONCAT('%', CAST(:q AS String), '%')) OR
+                    LOWER(a.nombre) LIKE LOWER(CONCAT('%', CAST(:q AS String), '%')) OR
+                    LOWER(pm.codigo) LIKE LOWER(CONCAT('%', CAST(:q AS String), '%')) OR
+                    LOWER(pm.nombre) LIKE LOWER(CONCAT('%', CAST(:q AS String), '%'))
               ))
         """
     )

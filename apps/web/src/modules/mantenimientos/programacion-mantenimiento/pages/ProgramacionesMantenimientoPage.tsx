@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import {
+  AlertTriangle,
   CalendarClock,
   ClipboardList,
   Clock,
@@ -33,7 +34,7 @@ export function ProgramacionesMantenimientoPage() {
   const [programacionAEvaluar, setProgramacionAEvaluar] = useState<ProgramacionMantenimiento | null>(null)
   const [evaluarIndividualOpen, setEvaluarIndividualOpen] = useState(false)
 
-  const { data: pageData, isLoading, refetch, isRefetching } = useProgramaciones({
+  const { data: pageData, isLoading, isError, error, refetch, isRefetching } = useProgramaciones({
     activo: filtroEstado === "todos" ? undefined : filtroEstado === "activos",
     q: searchTerm.trim() || undefined,
     pageSize: 100,
@@ -176,6 +177,27 @@ export function ProgramacionesMantenimientoPage() {
             : "Matriz ejecutiva con estado de alertas preventivas, exportación Excel e impresión oficial"}
         </p>
       </div>
+
+      {/* Alerta si falla la consulta */}
+      {isError && (
+        <div className="flex items-center justify-between p-4 rounded-2xl border border-destructive/30 bg-destructive/10 text-destructive text-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="size-4 shrink-0" />
+            <span>
+              Ocurrió un error al cargar las programaciones de mantenimiento:{" "}
+              {(error as any)?.message || "Error del servidor"}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => refetch()}
+            className="h-8 text-xs cursor-pointer border-destructive/30 hover:bg-destructive/10 text-destructive"
+          >
+            Reintentar
+          </Button>
+        </div>
+      )}
 
       {/* Contenido según la vista seleccionada */}
       {vistaActiva === "tarjetas" ? (

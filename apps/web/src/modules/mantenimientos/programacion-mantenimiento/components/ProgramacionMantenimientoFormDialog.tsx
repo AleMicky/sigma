@@ -6,8 +6,8 @@ import {
   Clock,
   Gauge,
   Hourglass,
-  Plus,
-  Trash2,
+  Layers,
+  Sparkles,
 } from "lucide-react"
 import {
   Dialog,
@@ -38,18 +38,10 @@ import {
 import { useProgramaciones } from "../api/programacion-mantenimiento.queries"
 import type {
   ProgramacionMantenimiento,
-  TipoCriterioMantenimiento,
+  ProgramacionMantenimientoCriterioPayload,
 } from "../api/programacion-mantenimiento.service"
 
-interface CriterioItemState {
-  id?: string
-  tipoCriterio: TipoCriterioMantenimiento
-  intervaloDias: number | null
-  intervaloUso: number | null
-  proximaFecha: string
-  proximoValorUso: number | null
-  activo: boolean
-}
+type ModoControl = "KILOMETRAJE" | "TIEMPO" | "HORAS_USO" | "COMBINADO"
 
 interface ProgramacionMantenimientoFormDialogProps {
   open: boolean
@@ -75,11 +67,22 @@ export function ProgramacionMantenimientoFormDialog({
   const createMutation = useCreateProgramacion()
   const updateMutation = useUpdateProgramacion(programacionToEdit?.id)
 
+  const [modo, setModo] = useState<ModoControl>("KILOMETRAJE")
   const [activo, setActivo] = useState(true)
-  const [criterios, setCriterios] = useState<CriterioItemState[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [selectedAsignacion, setSelectedAsignacion] = useState<PlanMantenimientoActivo | null>(null)
 
+  // Campos de Control y Telemetría
+  const [kmInicial, setKmInicial] = useState<number | "">("")
+  const [kmIntervalo, setKmIntervalo] = useState<number | "">(5000)
+
+  const [diasIntervalo, setDiasIntervalo] = useState<number | "">(90)
+  const [fechaBase, setFechaBase] = useState<string>("")
+
+  const [horasInicial, setHorasInicial] = useState<number | "">("")
+  const [horasIntervalo, setHorasIntervalo] = useState<number | "">(250)
+
+  // Cargar asignaciones disponibles
   const asignacionesQuery = useQuery({
     ...planMantenimientoActivoQueries.listPaginado({ page: 0, size: 200, activo: true }),
     enabled: open && !isEditing && !planMantenimientoActivoId,
@@ -88,552 +91,568 @@ export function ProgramacionMantenimientoFormDialog({
 
   const { data: programacionesData } = useProgramaciones({ activo: true, pageSize: 200 })
   const occupiedPlanActivoIds = useMemo(
-    () => new Set(programacionesData?.content.map((p) => p.planMantenimientoActivoId)),
+    () => new Set(programacionesData?.content?.map((p) => p.planMantenimientoActivoId) ?? []),
     [programacionesData],
   )
   const isSelectedOcupada = Boolean(
     !isEditing && selectedAsignacion && occupiedPlanActivoIds.has(selectedAsignacion.id),
   )
 
+  // Inicialización del formulario al abrir
   useEffect(() => {
     if (open) {
       setFormError(null)
       setSelectedAsignacion(null)
+      const today = new Date().toISOString().split("T")[0]
+      setFechaBase(today)
+
       if (programacionToEdit) {
         setActivo(programacionToEdit.activo)
-        setCriterios(
-          programacionToEdit.criterios.map((c) => ({
-            id: c.id,
-            tipoCriterio: c.tipoCriterio,
-            intervaloDias: c.intervaloDias ?? null,
-            intervaloUso: c.intervaloUso ?? null,
-            proximaFecha: c.proximaFecha ?? "",
-            proximoValorUso: c.proximoValorUso ?? null,
-            activo: c.activo,
-          })),
-        )
+        const criterios = programacionToEdit.criterios ?? []
+        const hasKm = criterios.some((c) => c.tipoCriterio === "KILOMETRAJE")
+        const hasTiempo = criterios.some((c) => c.tipoCriterio === "TIEMPO")
+        const hasHoras = criterios.some((c) => c.tipoCriterio === "HORAS_USO")
+
+        if (hasKm && hasTiempo) {
+          setModo("COMBINADO")
+        } else if (hasKm) {
+          setModo("KILOMETRAJE")
+        } else if (hasHoras) {
+          setModo("HORAS_USO")
+        } else {
+          setModo("TIEMPO")
+        }
+
+        const critKm = criterios.find((c) => c.tipoCriterio === "KILOMETRAJE")
+        if (critKm) {
+          setKmIntervalo(critKm.intervaloUso ?? 5000)
+          setKmInicial(critKm.valorActualUso ?? "")
+        }
+
+        const critTiempo = criterios.find((c) => c.tipoCriterio === "TIEMPO")
+        if (critTiempo) {
+          setDiasIntervalo(critTiempo.intervaloDias ?? 90)
+        }
+
+        const critHoras = criterios.find((c) => c.tipoCriterio === "HORAS_USO")
+        if (critHoras) {
+          setHorasIntervalo(critHoras.intervaloUso ?? 250)
+          setHorasInicial(critHoras.valorActualUso ?? "")
+        }
       } else {
         setActivo(true)
-        setCriterios([
-          {
-            tipoCriterio: "TIEMPO",
-            intervaloDias: 90,
-            intervaloUso: null,
-            proximaFecha: "",
-            proximoValorUso: null,
-            activo: true,
-          },
-        ])
+        setModo("KILOMETRAJE")
+        setKmInicial("")
+        setKmIntervalo(5000)
+        setDiasIntervalo(90)
+        setHorasInicial("")
+        setHorasIntervalo(250)
       }
     }
   }, [open, programacionToEdit])
 
-  const selectedTypes = criterios.map((c) => c.tipoCriterio)
+  // Cálculos en tiempo real
+  const proximoKmLimite = useMemo(() => {
+    const base = Number(kmInicial) || 0
+    const int = Number(kmIntervalo) || 0
+    return base + int
+  }, [kmInicial, kmIntervalo])
 
-  function handleAddCriterio(tipo: TipoCriterioMantenimiento) {
-    if (selectedTypes.includes(tipo)) return
-    if (tipo === "TIEMPO") {
-      setCriterios((prev) => [
-        ...prev,
-        {
-          tipoCriterio: "TIEMPO",
-          intervaloDias: 90,
-          intervaloUso: null,
-          proximaFecha: "",
-          proximoValorUso: null,
-          activo: true,
-        },
-      ])
-    } else if (tipo === "KILOMETRAJE") {
-      setCriterios((prev) => [
-        ...prev,
-        {
-          tipoCriterio: "KILOMETRAJE",
-          intervaloDias: null,
-          intervaloUso: 5000,
-          proximaFecha: "",
-          proximoValorUso: 5000,
-          activo: true,
-        },
-      ])
-    } else if (tipo === "HORAS_USO") {
-      setCriterios((prev) => [
-        ...prev,
-        {
-          tipoCriterio: "HORAS_USO",
-          intervaloDias: null,
-          intervaloUso: 250,
-          proximaFecha: "",
-          proximoValorUso: 250,
-          activo: true,
-        },
-      ])
-    }
-  }
+  const proximaFechaCalculada = useMemo(() => {
+    const base = fechaBase ? new Date(fechaBase) : new Date()
+    const dias = Number(diasIntervalo) || 0
+    if (dias <= 0) return ""
+    const target = new Date(base.getTime() + dias * 24 * 60 * 60 * 1000)
+    return target.toISOString().split("T")[0]
+  }, [fechaBase, diasIntervalo])
 
-  function handleRemoveCriterio(index: number) {
-    setCriterios((prev) => prev.filter((_, i) => i !== index))
-  }
+  const proximoHorasLimite = useMemo(() => {
+    const base = Number(horasInicial) || 0
+    const int = Number(horasIntervalo) || 0
+    return base + int
+  }, [horasInicial, horasIntervalo])
 
-  function handleUpdateCriterio(index: number, patch: Partial<CriterioItemState>) {
-    setCriterios((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, ...patch } : item)),
-    )
-  }
+  // Identificar el planActivoId efectivo
+  const effectivePlanActivoId = planMantenimientoActivoId ?? selectedAsignacion?.id
+
+  // Identificar nombres mostrados
+  const displayPlanNombre =
+    planNombre ??
+    programacionToEdit?.planActivo?.planNombre ??
+    selectedAsignacion?.plan?.nombre ??
+    "Plan de Mantenimiento"
+
+  const displayActivoNombre =
+    activoNombre ??
+    programacionToEdit?.planActivo?.activoNombre ??
+    selectedAsignacion?.activo?.nombre ??
+    "Activo"
+
+  const displayTipoActivo =
+    tipoActivoNombre ??
+    programacionToEdit?.planActivo?.tipoActivoNombre ??
+    selectedAsignacion?.activo?.tipoActivoNombre ??
+    selectedAsignacion?.plan?.tipoActivoNombre
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFormError(null)
 
-    if (criterios.length === 0) {
-      setFormError("Debe incluir al menos un criterio de mantenimiento.")
+    if (!isEditing && !effectivePlanActivoId) {
+      setFormError("Debe seleccionar una asignación de activo al plan de mantenimiento.")
       return
     }
 
-    const hasActive = criterios.some((c) => c.activo)
-    if (!hasActive) {
-      setFormError("Regla 1: Cada programación debe tener al menos un criterio activo.")
+    if (isSelectedOcupada) {
+      setFormError("Este activo ya cuenta con una programación preventiva activa.")
       return
     }
 
-    // Regla 2: Sin duplicados
-    const tipos = criterios.map((c) => c.tipoCriterio)
-    if (new Set(tipos).size !== tipos.length) {
-      setFormError("Regla 2: No se permiten criterios duplicados del mismo tipo.")
-      return
-    }
+    const payloadCriterios: ProgramacionMantenimientoCriterioPayload[] = []
 
-    for (const crit of criterios) {
-      if (crit.tipoCriterio === "TIEMPO") {
-        if (!crit.intervaloDias || crit.intervaloDias <= 0) {
-          setFormError("El intervalo en días para el criterio por tiempo debe ser mayor a 0.")
-          return
-        }
-      } else {
-        if (!crit.intervaloUso || crit.intervaloUso <= 0) {
-          setFormError(`El intervalo de uso para el criterio ${crit.tipoCriterio} debe ser mayor a 0.`)
-          return
-        }
+    if (modo === "KILOMETRAJE" || modo === "COMBINADO") {
+      const int = Number(kmIntervalo)
+      if (!int || int <= 0) {
+        setFormError("El intervalo de kilometraje debe ser mayor a 0.")
+        return
       }
+      payloadCriterios.push({
+        tipoCriterio: "KILOMETRAJE",
+        intervaloUso: int,
+        proximoValorUso: proximoKmLimite,
+        activo: true,
+      })
+    }
+
+    if (modo === "TIEMPO" || modo === "COMBINADO") {
+      const d = Number(diasIntervalo)
+      if (!d || d <= 0) {
+        setFormError("El intervalo en días debe ser mayor a 0.")
+        return
+      }
+      payloadCriterios.push({
+        tipoCriterio: "TIEMPO",
+        intervaloDias: d,
+        proximaFecha: proximaFechaCalculada,
+        activo: true,
+      })
+    }
+
+    if (modo === "HORAS_USO") {
+      const h = Number(horasIntervalo)
+      if (!h || h <= 0) {
+        setFormError("El intervalo de horas de uso debe ser mayor a 0.")
+        return
+      }
+      payloadCriterios.push({
+        tipoCriterio: "HORAS_USO",
+        intervaloUso: h,
+        proximoValorUso: proximoHorasLimite,
+        activo: true,
+      })
+    }
+
+    if (payloadCriterios.length === 0) {
+      setFormError("Debe configurar al menos un criterio de monitoreo preventivo.")
+      return
     }
 
     try {
-      if (isEditing) {
+      if (isEditing && programacionToEdit) {
         await updateMutation.mutateAsync({
-          id: programacionToEdit!.id,
+          id: programacionToEdit.id,
           payload: {
             activo,
-            criterios: criterios.map((c) => ({
-              id: c.id,
-              tipoCriterio: c.tipoCriterio,
-              intervaloDias: c.tipoCriterio === "TIEMPO" ? c.intervaloDias : null,
-              intervaloUso: c.tipoCriterio !== "TIEMPO" ? c.intervaloUso : null,
-              proximaFecha: c.tipoCriterio === "TIEMPO" ? (c.proximaFecha || null) : null,
-              proximoValorUso: c.tipoCriterio !== "TIEMPO" ? c.proximoValorUso : null,
-              activo: c.activo,
-            })),
+            kilometrajeInicial: kmInicial !== "" ? Number(kmInicial) : null,
+            horasUsoInicial: horasInicial !== "" ? Number(horasInicial) : null,
+            criterios: payloadCriterios,
           },
         })
       } else {
-        const targetPlanActivoId = planMantenimientoActivoId || selectedAsignacion?.id || ""
-        if (!targetPlanActivoId) {
-          setFormError("Debe seleccionar la asignación del activo al plan de mantenimiento.")
-          return
-        }
-        if (isSelectedOcupada) {
-          setFormError("Ya existe una programación activa para este activo y plan. Puedes editar la existente desde la lista.")
-          return
-        }
         await createMutation.mutateAsync({
-          planMantenimientoActivoId: targetPlanActivoId,
+          planMantenimientoActivoId: effectivePlanActivoId!,
           activo,
-          criterios: criterios.map((c) => ({
-            tipoCriterio: c.tipoCriterio,
-            intervaloDias: c.tipoCriterio === "TIEMPO" ? c.intervaloDias : null,
-            intervaloUso: c.tipoCriterio !== "TIEMPO" ? c.intervaloUso : null,
-            proximaFecha: c.tipoCriterio === "TIEMPO" ? (c.proximaFecha || null) : null,
-            proximoValorUso: c.tipoCriterio !== "TIEMPO" ? c.proximoValorUso : null,
-            activo: c.activo,
-          })),
+          kilometrajeInicial: kmInicial !== "" ? Number(kmInicial) : null,
+          horasUsoInicial: horasInicial !== "" ? Number(horasInicial) : null,
+          criterios: payloadCriterios,
         })
       }
       onOpenChange(false)
-    } catch (err: unknown) {
-      const errorObj = err as { response?: { data?: { message?: string } }; message?: string }
-      const message = errorObj?.response?.data?.message || errorObj?.message || "Error al procesar la programación"
-      setFormError(message)
+    } catch (err: any) {
+      setFormError(
+        err?.response?.data?.message || err?.message || "Ocurrió un error al guardar la programación.",
+      )
     }
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending
 
-  const effectiveActivoNombre = activoNombre || (selectedAsignacion?.activo ? `${selectedAsignacion.activo.codigo} - ${selectedAsignacion.activo.nombre}` : null)
-  const effectivePlanNombre = planNombre || (selectedAsignacion?.plan ? `${selectedAsignacion.plan.codigo} - ${selectedAsignacion.plan.nombre}` : null)
-  const effectiveTipoActivoNombre = tipoActivoNombre || selectedAsignacion?.activo?.tipoActivoNombre || selectedAsignacion?.plan?.tipoActivoNombre
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto border-border/80 bg-background shadow-2xl">
         <DialogHeader>
-          <div className="flex items-center gap-2 text-primary">
-            <CalendarClock className="size-5" />
-            <DialogTitle className="text-lg font-bold">
-              {isEditing ? "Editar Programación de Mantenimiento" : "Nueva Programación de Mantenimiento"}
-            </DialogTitle>
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              <CalendarClock className="size-4.5" />
+            </span>
+            <div>
+              <DialogTitle className="text-base font-bold text-foreground">
+                {isEditing ? "Editar Programación Preventiva" : "Configurar Mantenimiento Preventivo"}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Defina la modalidad de disparo automático por odómetro, calendario u horómetro.
+              </DialogDescription>
+            </div>
           </div>
-          <DialogDescription className="text-xs">
-            Configure los criterios preventivos (tiempo, odómetro u horómetro) asociados al activo asignado al plan.
-          </DialogDescription>
         </DialogHeader>
 
-        {/* Selector de Asignación Plan-Activo cuando se crea desde la lista global */}
-        {!isEditing && !planMantenimientoActivoId && (
-          <div className="space-y-1.5 rounded-xl border border-border/70 bg-card p-3 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold text-foreground">
-                Asignación Plan - Activo <span className="text-destructive">*</span>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+          {formError && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+              <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+              <p className="leading-relaxed font-medium">{formError}</p>
+            </div>
+          )}
+
+          {/* Tarjeta del Activo y Plan Asignado */}
+          {planMantenimientoActivoId || isEditing ? (
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-3 flex items-center justify-between text-xs">
+              <div className="space-y-0.5">
+                <span className="text-[10.5px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Activo Vinculado
+                </span>
+                <p className="font-bold text-foreground">{displayActivoNombre}</p>
+                <p className="text-[11.5px] text-muted-foreground">
+                  Plan: <span className="font-medium text-foreground">{displayPlanNombre}</span>
+                  {displayTipoActivo && ` • ${displayTipoActivo}`}
+                </p>
+              </div>
+              <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-700 bg-emerald-500/10">
+                Plan Activo
+              </Badge>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Layers className="size-3.5 text-muted-foreground" />
+                Seleccione el Activo y Plan de Mantenimiento <span className="text-destructive">*</span>
               </Label>
-              {selectedAsignacion && (
-                <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
-                  Asignación seleccionada
-                </Badge>
-              )}
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Seleccione el activo vinculado al plan preventivo sobre el cual se establecerá la programación.
-            </p>
-            <Combobox
-              value={selectedAsignacion}
-              onValueChange={(val: PlanMantenimientoActivo | null) => {
-                setSelectedAsignacion(val)
-                setFormError(null)
-              }}
-              itemToStringLabel={(item: PlanMantenimientoActivo) =>
-                item
-                  ? `${item.activo?.codigo ?? ""} - ${item.activo?.nombre ?? ""} (Plan: ${item.plan?.nombre ?? ""})`
-                  : ""
-              }
-            >
-              <ComboboxInput placeholder="Buscar por código de activo, nombre o plan..." className="h-9 text-xs" />
-              <ComboboxContent>
-                <ComboboxEmpty>
-                  {asignacionesQuery.isLoading ? "Cargando asignaciones..." : "No se encontraron asignaciones de activos a planes"}
-                </ComboboxEmpty>
-                <ComboboxList>
-                  {asignaciones.map((item) => {
-                    const isOcupada = occupiedPlanActivoIds.has(item.id)
-                    return (
-                      <ComboboxItem key={item.id} value={item}>
-                        <div className="flex flex-col py-0.5">
-                          <div className="flex items-center gap-1.5 font-medium text-foreground">
-                            <span>{item.activo?.codigo} - {item.activo?.nombre}</span>
-                            {item.activo?.tipoActivoNombre && (
-                              <Badge variant="outline" className="text-[9.5px] px-1.5 py-0 h-4">
-                                {item.activo.tipoActivoNombre}
-                              </Badge>
-                            )}
-                            {isOcupada && (
-                              <Badge variant="outline" className="text-[9.5px] px-1.5 py-0 h-4 border-amber-500/30 text-amber-600 bg-amber-500/10">
-                                Ya programado
-                              </Badge>
-                            )}
-                          </div>
-                          <span className="text-[11px] text-muted-foreground">
-                            Plan: <strong className="text-foreground/80">{item.plan?.codigo} - {item.plan?.nombre}</strong>
-                          </span>
-                          {item.responsable && (
-                            <span className="text-[10px] text-muted-foreground">
-                              Responsable: {item.responsable.nombreCompleto}
+              <Combobox
+                value={selectedAsignacion}
+                onValueChange={(val) => setSelectedAsignacion(val)}
+              >
+                <ComboboxInput
+                  placeholder="Buscar activo por código, nombre o plan..."
+                  className="rounded-xl border-border/80 h-9 text-xs"
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty className="text-xs p-3 text-muted-foreground">
+                    {asignacionesQuery.isLoading
+                      ? "Cargando activos asignados a planes..."
+                      : "No hay asignaciones de activos disponibles sin programación."}
+                  </ComboboxEmpty>
+                  <ComboboxList>
+                    {asignaciones.map((asig) => {
+                      const ocupada = occupiedPlanActivoIds.has(asig.id)
+                      return (
+                        <ComboboxItem
+                          key={asig.id}
+                          value={asig}
+                          disabled={ocupada}
+                          className="cursor-pointer text-xs py-2"
+                        >
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-foreground">
+                                {asig.activo?.codigo}
+                              </span>
+                              <span className="text-muted-foreground truncate">
+                                — {asig.activo?.nombre}
+                              </span>
+                              {ocupada && (
+                                <Badge variant="secondary" className="text-[9px] py-0 px-1 ml-auto">
+                                  Ya programado
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-muted-foreground">
+                              Plan: {asig.plan?.nombre} ({asig.plan?.codigo})
                             </span>
-                          )}
-                        </div>
-                      </ComboboxItem>
-                    )
-                  })}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
+                          </div>
+                        </ComboboxItem>
+                      )
+                    })}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
+          )}
 
-            {isSelectedOcupada && (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-[11px] text-amber-700 dark:text-amber-300 space-y-1">
-                <div className="font-semibold flex items-center gap-1.5">
-                  <AlertTriangle className="size-3.5 text-amber-500 shrink-0" />
-                  <span>Este activo ya cuenta con una programación activa</span>
+          {/* Selector de Modalidad Visual */}
+          <div className="space-y-2 pt-1">
+            <Label className="text-xs font-bold text-foreground">
+              Modalidad de Control Preventivo
+            </Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => setModo("KILOMETRAJE")}
+                className={`p-2.5 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  modo === "KILOMETRAJE"
+                    ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300 shadow-xs"
+                    : "border-border/70 hover:bg-muted/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Gauge className="size-4 text-amber-500" />
+                <span>Por Kilometraje</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModo("TIEMPO")}
+                className={`p-2.5 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  modo === "TIEMPO"
+                    ? "border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-300 shadow-xs"
+                    : "border-border/70 hover:bg-muted/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Clock className="size-4 text-blue-500" />
+                <span>Por Calendario</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModo("HORAS_USO")}
+                className={`p-2.5 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  modo === "HORAS_USO"
+                    ? "border-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-300 shadow-xs"
+                    : "border-border/70 hover:bg-muted/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Hourglass className="size-4 text-purple-500" />
+                <span>Por Horas Uso</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModo("COMBINADO")}
+                className={`p-2.5 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  modo === "COMBINADO"
+                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 shadow-xs"
+                    : "border-border/70 hover:bg-muted/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Sparkles className="size-4 text-emerald-500" />
+                <span>Km + Tiempo</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Formulario según la Modalidad Seleccionada */}
+          <div className="space-y-4 rounded-2xl border border-border/70 p-4 bg-muted/10">
+            {/* Sección Kilometraje */}
+            {(modo === "KILOMETRAJE" || modo === "COMBINADO") && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                  <Gauge className="size-3.5 text-amber-500" />
+                  <span>Configuración por Odómetro (Kilometraje)</span>
                 </div>
-                <p className="text-muted-foreground text-[10.5px]">
-                  No se permite crear programaciones duplicadas para el mismo activo y plan. Para modificar sus criterios (tiempo, odómetro u horómetro), edita la programación existente desde la tabla principal.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* Info del Activo y Plan */}
-        {(effectiveActivoNombre || effectivePlanNombre) && (
-          <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-xs space-y-1">
-            <div className="flex items-center justify-between font-semibold text-foreground">
-              <span>{effectiveActivoNombre}</span>
-              {effectiveTipoActivoNombre && (
-                <Badge variant="outline" className="text-[10px]">
-                  {effectiveTipoActivoNombre}
-                </Badge>
-              )}
-            </div>
-            {effectivePlanNombre && (
-              <div className="text-muted-foreground text-[11px]">
-                Plan: <span className="text-foreground font-medium">{effectivePlanNombre}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4 py-1 text-xs">
-          {/* Criterios de Programación */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-xs font-bold text-foreground">
-                  Criterios de Mantenimiento
-                </Label>
-                <p className="text-[11px] text-muted-foreground">
-                  Cada programación debe tener al menos un criterio activo (Regla 1).
-                </p>
-              </div>
-
-              {/* Botones para agregar criterios */}
-              <div className="flex items-center gap-1.5">
-                {!selectedTypes.includes("TIEMPO") && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleAddCriterio("TIEMPO")}
-                    className="h-7 text-[11px] gap-1 cursor-pointer"
-                  >
-                    <Plus className="size-3" />
-                    <Clock className="size-3 text-blue-500" />
-                    <span>Tiempo</span>
-                  </Button>
-                )}
-                {!selectedTypes.includes("KILOMETRAJE") && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleAddCriterio("KILOMETRAJE")}
-                    className="h-7 text-[11px] gap-1 cursor-pointer"
-                  >
-                    <Plus className="size-3" />
-                    <Gauge className="size-3 text-amber-500" />
-                    <span>Kilometraje</span>
-                  </Button>
-                )}
-                {!selectedTypes.includes("HORAS_USO") && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleAddCriterio("HORAS_USO")}
-                    className="h-7 text-[11px] gap-1 cursor-pointer"
-                  >
-                    <Plus className="size-3" />
-                    <Hourglass className="size-3 text-purple-500" />
-                    <span>Horas Uso</span>
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {formError && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-2 text-destructive text-[11px] font-medium">
-                {formError}
-              </div>
-            )}
-
-            {/* Tarjetas de Criterios */}
-            <div className="space-y-2.5">
-              {criterios.map((crit, index) => {
-                const tipo = crit.tipoCriterio
-
-                return (
-                  <div
-                    key={crit.id ?? `${tipo}-${index}`}
-                    className={`rounded-xl border p-3.5 space-y-3 transition-all ${
-                      crit.activo
-                        ? "border-border/70 bg-card shadow-xs"
-                        : "border-border/40 bg-muted/20 opacity-70"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
-                          {index + 1}
-                        </span>
-                        <div className="flex items-center gap-1.5 font-bold text-xs">
-                          {tipo === "TIEMPO" && <Clock className="size-4 text-blue-500" />}
-                          {tipo === "KILOMETRAJE" && <Gauge className="size-4 text-amber-500" />}
-                          {tipo === "HORAS_USO" && <Hourglass className="size-4 text-purple-500" />}
-                          <span>Criterio: {tipo}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <label className="flex items-center gap-1.5 cursor-pointer text-[11px]">
-                          <input
-                            type="checkbox"
-                            checked={crit.activo}
-                            onChange={(e) => handleUpdateCriterio(index, { activo: e.target.checked })}
-                            className="rounded border-border text-primary size-3.5"
-                          />
-                          <span>{crit.activo ? "Activo" : "Inactivo"}</span>
-                        </label>
-
-                        {criterios.length > 1 && (
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleRemoveCriterio(index)}
-                            className="size-7 text-destructive hover:bg-destructive/10 cursor-pointer"
-                            title="Eliminar este criterio"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Inputs según tipo */}
-                    {tipo === "TIEMPO" && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <div>
-                          <Label className="text-[11.5px] font-medium">
-                            Intervalo en días <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder="Ej: 90"
-                            value={crit.intervaloDias ?? ""}
-                            onChange={(e) =>
-                              handleUpdateCriterio(index, {
-                                intervaloDias: e.target.value ? Number(e.target.value) : null,
-                              })
-                            }
-                            className="h-8 text-xs mt-1"
-                          />
-                          <p className="text-[10.5px] text-muted-foreground mt-0.5">
-                            Frecuencia cada cuántos días se repite.
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="text-[11.5px] font-medium">Próxima Fecha de Mantenimiento</Label>
-                          <Input
-                            type="date"
-                            value={crit.proximaFecha}
-                            onChange={(e) =>
-                              handleUpdateCriterio(index, {
-                                proximaFecha: e.target.value,
-                              })
-                            }
-                            className="h-8 text-xs mt-1"
-                          />
-                          <p className="text-[10.5px] text-muted-foreground mt-0.5">
-                            Opcional: Si se deja vacío, se calcula automáticamente.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {tipo === "KILOMETRAJE" && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <div>
-                          <Label className="text-[11.5px] font-medium">
-                            Intervalo de Kilometraje (km) <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder="Ej: 5000"
-                            value={crit.intervaloUso ?? ""}
-                            onChange={(e) =>
-                              handleUpdateCriterio(index, {
-                                intervaloUso: e.target.value ? Number(e.target.value) : null,
-                              })
-                            }
-                            className="h-8 text-xs mt-1"
-                          />
-                          <p className="text-[10.5px] text-muted-foreground mt-0.5">
-                            Cada cuántos kilómetros debe realizarse.
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="text-[11.5px] font-medium">Próximo Kilometraje Límite</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="Ej: 15000"
-                            value={crit.proximoValorUso ?? ""}
-                            onChange={(e) =>
-                              handleUpdateCriterio(index, {
-                                proximoValorUso: e.target.value ? Number(e.target.value) : null,
-                              })
-                            }
-                            className="h-8 text-xs mt-1"
-                          />
-                          <p className="text-[10.5px] text-muted-foreground mt-0.5">
-                            Odómetro exacto en el que se disparará el aviso.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {tipo === "HORAS_USO" && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <div>
-                          <Label className="text-[11.5px] font-medium">
-                            Intervalo de Horas de Uso (hrs) <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder="Ej: 250"
-                            value={crit.intervaloUso ?? ""}
-                            onChange={(e) =>
-                              handleUpdateCriterio(index, {
-                                intervaloUso: e.target.value ? Number(e.target.value) : null,
-                              })
-                            }
-                            className="h-8 text-xs mt-1"
-                          />
-                          <p className="text-[10.5px] text-muted-foreground mt-0.5">
-                            Cada cuántas horas de trabajo del horómetro.
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="text-[11.5px] font-medium">Próximo Horómetro Límite</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="Ej: 1500"
-                            value={crit.proximoValorUso ?? ""}
-                            onChange={(e) =>
-                              handleUpdateCriterio(index, {
-                                proximoValorUso: e.target.value ? Number(e.target.value) : null,
-                              })
-                            }
-                            className="h-8 text-xs mt-1"
-                          />
-                          <p className="text-[10.5px] text-muted-foreground mt-0.5">
-                            Horómetro exacto en el que se disparará el aviso.
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-[11.5px] font-medium text-foreground">
+                      Kilometraje Inicial / Actual (km)
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Ej: 45000"
+                      value={kmInicial}
+                      onChange={(e) => setKmInicial(e.target.value ? Number(e.target.value) : "")}
+                      className="h-9 text-xs rounded-xl"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Odómetro actual registrado en el activo.
+                    </p>
                   </div>
-                )
-              })}
-            </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[11.5px] font-medium text-foreground">
+                      Intervalo de Servicio (km) <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      required
+                      placeholder="Ej: 5000"
+                      value={kmIntervalo}
+                      onChange={(e) => setKmIntervalo(e.target.value ? Number(e.target.value) : "")}
+                      className="h-9 text-xs rounded-xl"
+                    />
+                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                      {[5000, 10000, 15000, 20000].map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setKmIntervalo(v)}
+                          className="px-2 py-0.5 text-[10px] rounded-md bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer font-mono"
+                        >
+                          +{v.toLocaleString()} km
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Banner de Cálculo en Vivo de Kilometraje */}
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-medium">Próximo Aviso de Mantenimiento:</span>
+                  <div className="flex items-center gap-1.5 font-mono font-bold text-amber-700 dark:text-amber-300">
+                    <span>{proximoKmLimite.toLocaleString()} km</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      ({Number(kmInicial) || 0} + {Number(kmIntervalo) || 0})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Separador si es combinado */}
+            {modo === "COMBINADO" && <div className="border-t border-border/60" />}
+
+            {/* Sección Tiempo / Calendario */}
+            {(modo === "TIEMPO" || modo === "COMBINADO") && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                  <Clock className="size-3.5 text-blue-500" />
+                  <span>Configuración por Calendario (Días / Meses)</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-[11.5px] font-medium text-foreground">
+                      Fecha Base de Inicio
+                    </Label>
+                    <Input
+                      type="date"
+                      value={fechaBase}
+                      onChange={(e) => setFechaBase(e.target.value)}
+                      className="h-9 text-xs rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[11.5px] font-medium text-foreground">
+                      Frecuencia en Días <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      required
+                      placeholder="Ej: 90"
+                      value={diasIntervalo}
+                      onChange={(e) => setDiasIntervalo(e.target.value ? Number(e.target.value) : "")}
+                      className="h-9 text-xs rounded-xl"
+                    />
+                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                      {[
+                        { d: 30, label: "1 mes" },
+                        { d: 90, label: "3 meses" },
+                        { d: 180, label: "6 meses" },
+                        { d: 365, label: "1 año" },
+                      ].map((item) => (
+                        <button
+                          key={item.d}
+                          type="button"
+                          onClick={() => setDiasIntervalo(item.d)}
+                          className="px-2 py-0.5 text-[10px] rounded-md bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Banner de Cálculo en Vivo de Fecha */}
+                <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-medium">Próxima Fecha Límite:</span>
+                  <div className="flex items-center gap-1.5 font-mono font-bold text-blue-700 dark:text-blue-300">
+                    <span>{proximaFechaCalculada || "-"}</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      (+{Number(diasIntervalo) || 0} días)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Sección Horas de Uso */}
+            {modo === "HORAS_USO" && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                  <Hourglass className="size-3.5 text-purple-500" />
+                  <span>Configuración por Horómetro (Horas de Uso)</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-[11.5px] font-medium text-foreground">
+                      Horas Iniciales / Horómetro Actual
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Ej: 1200"
+                      value={horasInicial}
+                      onChange={(e) => setHorasInicial(e.target.value ? Number(e.target.value) : "")}
+                      className="h-9 text-xs rounded-xl"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Lectura actual del horómetro de la máquina.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[11.5px] font-medium text-foreground">
+                      Intervalo de Horas <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      required
+                      placeholder="Ej: 250"
+                      value={horasIntervalo}
+                      onChange={(e) => setHorasIntervalo(e.target.value ? Number(e.target.value) : "")}
+                      className="h-9 text-xs rounded-xl"
+                    />
+                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                      {[100, 250, 500, 1000].map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setHorasIntervalo(v)}
+                          className="px-2 py-0.5 text-[10px] rounded-md bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer font-mono"
+                        >
+                          +{v} hrs
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Banner de Cálculo en Vivo de Horómetro */}
+                <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-3 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-medium">Próximo Aviso por Horómetro:</span>
+                  <div className="flex items-center gap-1.5 font-mono font-bold text-purple-700 dark:text-purple-300">
+                    <span>{proximoHorasLimite.toLocaleString()} hrs</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      ({Number(horasInicial) || 0} + {Number(horasIntervalo) || 0})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-border/50">
@@ -642,7 +661,7 @@ export function ProgramacionMantenimientoFormDialog({
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="h-8 text-xs cursor-pointer"
+              className="rounded-xl h-8 text-xs cursor-pointer"
             >
               Cancelar
             </Button>
@@ -650,9 +669,15 @@ export function ProgramacionMantenimientoFormDialog({
               type="submit"
               size="sm"
               disabled={isPending || isSelectedOcupada}
-              className="h-8 text-xs gap-1.5 cursor-pointer"
+              className="rounded-xl h-8 text-xs gap-1.5 cursor-pointer font-semibold"
             >
-              <span>{isPending ? "Guardando..." : isEditing ? "Actualizar Programación" : "Guardar Programación"}</span>
+              <span>
+                {isPending
+                  ? "Guardando..."
+                  : isEditing
+                  ? "Actualizar Programación"
+                  : "Guardar y Activar Programación"}
+              </span>
             </Button>
           </DialogFooter>
         </form>

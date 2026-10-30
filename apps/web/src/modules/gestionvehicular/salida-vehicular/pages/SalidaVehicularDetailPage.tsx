@@ -55,6 +55,7 @@ import { RegistrarBitacoraModal } from "../components/RegistrarBitacoraModal"
 import { SalidaCargaCombustibleDialog } from "../components/SalidaCargaCombustibleDialog"
 import { SalidaVehicularRouteMap } from "../components/SalidaVehicularRouteMap"
 import { SalidaVehicularStatusBadge } from "../components/SalidaVehicularStatusBadge"
+import { VehiculoPreventivoWidget } from "../components/VehiculoPreventivoWidget"
 import { getSalidaNextActionConfig } from "../components/salida-action.utils"
 
 interface SalidaVehicularDetailPageProps {
@@ -756,6 +757,9 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
                     Código de Activo Fijo: {salida.activoCodigo ?? "N/A"}
                   </p>
                 </div>
+
+                {/* Telemetría y Mantenimiento Preventivo del Vehículo */}
+                <VehiculoPreventivoWidget activoId={salida.activoId} />
 
                 {/* Datos Conductor */}
                 <div className="p-3 rounded-xl bg-muted/20 border border-border/50 space-y-2">

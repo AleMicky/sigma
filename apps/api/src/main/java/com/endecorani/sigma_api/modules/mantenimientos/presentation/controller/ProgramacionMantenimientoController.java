@@ -199,4 +199,27 @@ public class ProgramacionMantenimientoController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(service.obtenerHistorial(id)));
     }
+
+    @GetMapping("/activo/{activoId}")
+    @Operation(
+            summary = "Obtener programaciones preventivas de un activo",
+            description = "Retorna las programaciones de mantenimiento preventivo configuradas para el activo especificado"
+    )
+    public ResponseEntity<ApiResponse<List<ProgramacionMantenimientoResponse>>> getByActivoId(
+            @PathVariable UUID activoId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(service.findByActivoId(activoId)));
+    }
+
+    @PostMapping("/activo/{activoId}/evaluar")
+    @Operation(
+            summary = "Evaluar programaciones preventivas de un activo",
+            description = "Evalúa automáticamente todas las programaciones activas del activo según su odómetro/horómetro actual"
+    )
+    public ResponseEntity<ApiResponse<List<EvaluacionProgramacionResponse>>> evaluarPorActivo(
+            @PathVariable UUID activoId
+    ) {
+        List<EvaluacionProgramacionResponse> response = service.evaluarPorActivo(activoId);
+        return ResponseEntity.ok(ApiResponse.success("Evaluación de activo completada", response));
+    }
 }

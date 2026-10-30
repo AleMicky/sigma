@@ -48,13 +48,23 @@ public class ProgramacionMantenimientoEventListener {
         log.info("Actualizando telemetría de odómetro de activo {} a {} km (fuente: {})",
                 event.activoId(), event.kilometraje(), event.origen());
         try {
+            // 1. Sincronizar lectura en telemetría del activo
             programacionMantenimientoService.actualizarTelemetriaActivo(
                     event.activoId(),
                     BigDecimal.valueOf(event.kilometraje()),
                     null
             );
+
+            // 2. Evaluar automáticamente el cumplimiento de criterios preventivos por kilometraje
+            var evaluaciones = programacionMantenimientoService.evaluarPorActivo(event.activoId());
+            for (var eval : evaluaciones) {
+                if (eval != null && Boolean.TRUE.equals(eval.cumpleCondicion())) {
+                    log.warn("¡ALERTA PREVENTIVA! Vehículo/Activo {} superó el límite programado ({}). Solicitud asociada: {}",
+                            event.activoId(), eval.motivoDisparo(), eval.solicitudNumero());
+                }
+            }
         } catch (Exception e) {
-            log.error("Error al sincronizar kilometraje para activo {}: {}", event.activoId(), e.getMessage(), e);
+            log.error("Error al sincronizar kilometraje o evaluar preventivo para activo {}: {}", event.activoId(), e.getMessage(), e);
         }
     }
 

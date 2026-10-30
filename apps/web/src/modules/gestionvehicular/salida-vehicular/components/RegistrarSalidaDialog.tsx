@@ -33,6 +33,7 @@ import { cn } from "@/shared/lib/utils"
 
 import { useRegistrarSalidaMutation } from "../api/salida-vehicular.mutations"
 import type { SalidaVehicular } from "../api/salida-vehicular.types"
+import { VehiculoPreventivoWidget } from "./VehiculoPreventivoWidget"
 import {
   defaultRegistrarSalidaValues,
   getLocalCurrentIsoString,
@@ -247,6 +248,12 @@ export function RegistrarSalidaDialog({
                             {currentActivo.descripcion}
                           </p>
                         )}
+                        {/* Estado Preventivo en la selección de vehículo */}
+                        <VehiculoPreventivoWidget
+                          activoId={currentActivo.id}
+                          variant="inline"
+                          className="mt-1"
+                        />
                       </div>
                     </div>
                     <Button

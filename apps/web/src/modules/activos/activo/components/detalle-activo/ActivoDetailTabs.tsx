@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   FileCheck,
   History,
   Layers,
@@ -85,6 +86,20 @@ export function ActivoDetailTabs({
       >
         <UserCheck className="size-3.5" />
         <span>Asignación</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onTabChange("preventivo")}
+        className={cn(
+          "flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+          activeTab === "preventivo"
+            ? "bg-primary/10 text-primary border-b-2 border-primary"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+        )}
+      >
+        <CalendarClock className="size-3.5 text-amber-500" />
+        <span>Mantenimiento Preventivo</span>
       </button>
 
       <button

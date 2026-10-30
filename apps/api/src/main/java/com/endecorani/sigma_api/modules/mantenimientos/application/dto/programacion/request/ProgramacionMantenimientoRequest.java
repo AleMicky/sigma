@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,6 +14,10 @@ public record ProgramacionMantenimientoRequest(
 
         @JsonAlias({"activo", "estadoActivo"})
         Boolean estadoActivo,
+
+        BigDecimal kilometrajeInicial,
+
+        BigDecimal horasUsoInicial,
 
         @Valid
         List<ProgramacionMantenimientoCriterioRequest> criterios

@@ -106,11 +106,15 @@ export type ProgramacionMantenimientoCriterioPayload = {
 export type ProgramacionMantenimientoPayload = {
   planMantenimientoActivoId: string
   activo?: boolean
+  kilometrajeInicial?: number | null
+  horasUsoInicial?: number | null
   criterios: ProgramacionMantenimientoCriterioPayload[]
 }
 
 export type ProgramacionMantenimientoUpdatePayload = {
   activo?: boolean
+  kilometrajeInicial?: number | null
+  horasUsoInicial?: number | null
   criterios?: ProgramacionMantenimientoCriterioPayload[]
 }
 
@@ -173,6 +177,22 @@ export async function getProgramacionesByPlanActivo(
 ): Promise<ProgramacionMantenimiento[]> {
   return http.get<ProgramacionMantenimiento[]>(
     programacionMantenimientoEndpoints.byPlanActivo(planActivoId),
+  )
+}
+
+export async function getProgramacionesByActivo(
+  activoId: string,
+): Promise<ProgramacionMantenimiento[]> {
+  return http.get<ProgramacionMantenimiento[]>(
+    programacionMantenimientoEndpoints.byActivo(activoId),
+  )
+}
+
+export async function evaluarPorActivo(
+  activoId: string,
+): Promise<EvaluacionProgramacionResponse[]> {
+  return http.post<EvaluacionProgramacionResponse[]>(
+    programacionMantenimientoEndpoints.evaluarPorActivo(activoId),
   )
 }
 

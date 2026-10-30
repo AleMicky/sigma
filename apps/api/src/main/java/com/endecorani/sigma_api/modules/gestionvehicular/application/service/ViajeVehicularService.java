@@ -240,6 +240,20 @@ public class ViajeVehicularService {
         }
 
         ViajeVehicular guardado = repository.save(viaje);
+
+        // Notificar telemetría de odómetro de salida del vehículo si corresponde
+        if (dto.kilometrajeSalida() != null && viaje.getAsignacionVehicularId() != null && eventPublisher != null) {
+            asignacionVehicularRepository.findById(viaje.getAsignacionVehicularId()).ifPresent(asig -> {
+                if (asig.getActivoId() != null) {
+                    eventPublisher.publishEvent(new com.endecorani.sigma_api.modules.gestionvehicular.domain.event.VehiculoKilometrajeRegistradoEvent(
+                            asig.getActivoId(),
+                            dto.kilometrajeSalida(),
+                            "VIAJE_VEHICULAR_SALIDA"
+                    ));
+                }
+            });
+        }
+
         return toResponse(guardado);
     }
 
