@@ -9,8 +9,11 @@ import java.util.List;
 import java.util.UUID;
 
 public record ProgramacionMantenimientoRequest(
-        @NotNull(message = "La asignación del activo al plan es obligatoria (planMantenimientoActivoId)")
         UUID planMantenimientoActivoId,
+
+        UUID activoId,
+
+        UUID planMantenimientoId,
 
         @JsonAlias({"activo", "estadoActivo"})
         Boolean estadoActivo,

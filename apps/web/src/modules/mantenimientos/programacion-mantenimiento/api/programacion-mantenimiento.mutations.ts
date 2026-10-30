@@ -7,6 +7,7 @@ import {
   completarMantenimiento,
   createCriterio,
   createProgramacion,
+  crearPorTipoActivo,
   deleteCriterio,
   deleteProgramacion,
   desactivarCriterio,
@@ -20,6 +21,7 @@ import {
   type ProgramacionMantenimientoCriterioPayload,
   type ProgramacionMantenimientoPayload,
   type ProgramacionMantenimientoUpdatePayload,
+  type ProgramacionTipoActivoBatchPayload,
 } from "./programacion-mantenimiento.service"
 
 export function useCreateProgramacion() {
@@ -32,6 +34,21 @@ export function useCreateProgramacion() {
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? "Error al crear la programación de mantenimiento"
+      toast.error(msg)
+    },
+  })
+}
+
+export function useCrearPorTipoActivo() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: ProgramacionTipoActivoBatchPayload) => crearPorTipoActivo(payload),
+    onSuccess: (res) => {
+      toast.success(res?.mensaje ?? "Programaciones preventivas aplicadas al tipo de activo")
+      queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? "Error al aplicar programación por tipo de activo"
       toast.error(msg)
     },
   })
