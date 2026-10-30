@@ -149,3 +149,112 @@ export async function abrirBitacoraVehicularPdf(
   const url = window.URL.createObjectURL(blob)
   window.open(url, "_blank")
 }
+
+// ============================================================================
+// BITÁCORA CONSOLIDADA (Salidas vehiculares + Solicitudes vehiculares)
+// ============================================================================
+
+export type BitacoraConsolidadaOrigen = "SALIDA" | "SOLICITUD"
+
+export interface BitacoraConsolidadaItem {
+  id: string
+  origen: BitacoraConsolidadaOrigen
+  numero: string
+  fecha?: string | null
+  dia?: number | null
+  fechaFormateada?: string | null
+  descripcionActividad?: string | null
+  kmSalida?: number | null
+  kmLlegada?: number | null
+  kmRecorrido?: number | null
+  combustibleTexto?: string | null
+  combustibleLitros?: number | null
+  combustibleFactura?: string | null
+  conductorNombre?: string | null
+  observaciones?: string | null
+  estado?: string | null
+  activoId?: string | null
+  vehiculoPlaca?: string | null
+  vehiculoCodigo?: string | null
+}
+
+export interface BitacoraConsolidadaReporte {
+  totalRegistros: number
+  totalSalidas: number
+  totalSolicitudes: number
+  totalKmRecorridos?: number | null
+  totalLitrosCombustible?: number | null
+  items: BitacoraConsolidadaItem[]
+}
+
+export interface BitacoraConsolidadaFiltros {
+  activoId?: string | null
+  fechaInicio: string
+  fechaFin: string
+  search?: string | null
+}
+
+function buildConsolidadoParams(filtros: BitacoraConsolidadaFiltros): Record<string, string> {
+  const params: Record<string, string> = {
+    fechaInicio: filtros.fechaInicio,
+    fechaFin: filtros.fechaFin,
+  }
+  if (filtros.activoId?.trim()) {
+    params.activoId = filtros.activoId.trim()
+  }
+  if (filtros.search?.trim()) {
+    params.search = filtros.search.trim()
+  }
+  return params
+}
+
+/**
+ * Consulta la bitácora consolidada: bitácora de salidas + solicitudes vehiculares.
+ */
+export async function getBitacoraConsolidada(
+  filtros: BitacoraConsolidadaFiltros
+): Promise<BitacoraConsolidadaReporte> {
+  return http.get<BitacoraConsolidadaReporte>(bitacoraEndpoints.consolidado, {
+    params: buildConsolidadoParams(filtros),
+  })
+}
+
+async function fetchBitacoraConsolidadaPdf(filtros: BitacoraConsolidadaFiltros): Promise<Blob> {
+  return http.get<Blob>(bitacoraEndpoints.consolidadoPdf, {
+    params: buildConsolidadoParams(filtros),
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+}
+
+/**
+ * Descarga el PDF oficial GA-IN7-04 de la bitácora consolidada.
+ */
+export async function descargarBitacoraConsolidadaPdf(
+  filtros: BitacoraConsolidadaFiltros,
+  placa?: string | null
+): Promise<void> {
+  const blob = await fetchBitacoraConsolidadaPdf(filtros)
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const cleanPlaca = placa ? placa.replace(/[^a-zA-Z0-9-]/g, "") : "flota-completa"
+  a.download = `bitacora-vehicular-${cleanPlaca || "flota-completa"}-${filtros.fechaInicio}_${filtros.fechaFin}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+
+/**
+ * Abre en una nueva pestaña el PDF oficial GA-IN7-04 de la bitácora consolidada.
+ */
+export async function abrirBitacoraConsolidadaPdf(
+  filtros: BitacoraConsolidadaFiltros
+): Promise<void> {
+  const blob = await fetchBitacoraConsolidadaPdf(filtros)
+  const url = window.URL.createObjectURL(blob)
+  window.open(url, "_blank")
+}
