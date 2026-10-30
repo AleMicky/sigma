@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             targetNamespace="http://endecorani.com/sigma/incidentes">
+
+  <process id="procesoIncidentesActivos" name="Gestión de incidentes de activos" isExecutable="true">
+    <startEvent id="inicio" name="Incidente registrado"/>
+    <sequenceFlow id="f_inicio_revision" sourceRef="inicio" targetRef="revision"/>
+
+    <userTask id="revision" name="Revisar incidente"
+              flowable:candidateGroups="responsable_activos"
+              flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="aprobado" name="¿Admitir incidente?" type="boolean" required="true" writable="true"/>
+        <flowable:formProperty id="observacionRevision" name="Observación de revisión" type="string" required="false" writable="true"/>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="f_revision_decision" sourceRef="revision" targetRef="decisionRevision"/>
+    <exclusiveGateway id="decisionRevision" name="¿Incidente admitido?"/>
+    <sequenceFlow id="f_revision_rechazado" sourceRef="decisionRevision" targetRef="finRechazado">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${aprobado == false}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f_revision_atencion" sourceRef="decisionRevision" targetRef="atencion">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${aprobado == true}]]></conditionExpression>
+    </sequenceFlow>
+
+    <userTask id="atencion" name="Atender incidente"
+              flowable:candidateGroups="responsable_activos,tecnicos"
+              flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="detalleAtencion" name="Detalle de atención" type="string" required="true" writable="true"/>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="f_atencion_validacion" sourceRef="atencion" targetRef="validacion"/>
+
+    <userTask id="validacion" name="Validar solución"
+              flowable:candidateGroups="responsable_activos"
+              flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="solucionAprobada" name="¿Solución aprobada?" type="boolean" required="true" writable="true"/>
+        <flowable:formProperty id="observacionValidacion" name="Observación de validación" type="string" required="false" writable="true"/>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="f_validacion_decision" sourceRef="validacion" targetRef="decisionValidacion"/>
+    <exclusiveGateway id="decisionValidacion" name="¿Solución aprobada?"/>
+    <sequenceFlow id="f_retrabajo" sourceRef="decisionValidacion" targetRef="atencion">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${solucionAprobada == false}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f_cierre" sourceRef="decisionValidacion" targetRef="cierre">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${solucionAprobada == true}]]></conditionExpression>
+    </sequenceFlow>
+
+    <userTask id="cierre" name="Cerrar incidente"
+              flowable:candidateGroups="responsable_activos"
+              flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="observacionCierre" name="Observación de cierre" type="string" required="false" writable="true"/>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="f_fin_cerrado" sourceRef="cierre" targetRef="finCerrado"/>
+    <endEvent id="finCerrado" name="Incidente cerrado"/>
+    <endEvent id="finRechazado" name="Incidente rechazado"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_incidente">
+    <bpmndi:BPMNPlane id="BPMNPlane_incidente" bpmnElement="procesoIncidentesActivos">
+      <bpmndi:BPMNShape id="shape_inicio" bpmnElement="inicio"><dc:Bounds x="80" y="210" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_revision" bpmnElement="revision"><dc:Bounds x="170" y="188" width="130" height="80"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_decisionRevision" bpmnElement="decisionRevision"><dc:Bounds x="350" y="203" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_finRechazado" bpmnElement="finRechazado"><dc:Bounds x="357" y="350" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_atencion" bpmnElement="atencion"><dc:Bounds x="460" y="188" width="130" height="80"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_validacion" bpmnElement="validacion"><dc:Bounds x="650" y="188" width="130" height="80"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_decisionValidacion" bpmnElement="decisionValidacion"><dc:Bounds x="830" y="203" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_cierre" bpmnElement="cierre"><dc:Bounds x="940" y="188" width="130" height="80"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_finCerrado" bpmnElement="finCerrado"><dc:Bounds x="1130" y="210" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="edge_f_inicio_revision" bpmnElement="f_inicio_revision"><di:waypoint x="116" y="228"/><di:waypoint x="170" y="228"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_f_revision_decision" bpmnElement="f_revision_decision"><di:waypoint x="300" y="228"/><di:waypoint x="350" y="228"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_f_revision_rechazado" bpmnElement="f_revision_rechazado"><di:waypoint x="375" y="253"/><di:waypoint x="375" y="350"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_f_revision_atencion" bpmnElement="f_revision_atencion"><di:waypoint x="400" y="228"/><di:waypoint x="460" y="228"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_f_atencion_validacion" bpmnElement="f_atencion_validacion"><di:waypoint x="590" y="228"/><di:waypoint x="650" y="228"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_f_validacion_decision" bpmnElement="f_validacion_decision"><di:waypoint x="780" y="228"/><di:waypoint x="830" y="228"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_f_retrabajo" bpmnElement="f_retrabajo"><di:waypoint x="855" y="253"/><di:waypoint x="855" y="310"/><di:waypoint x="525" y="310"/><di:waypoint x="525" y="268"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_f_cierre" bpmnElement="f_cierre"><di:waypoint x="880" y="228"/><di:waypoint x="940" y="228"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_f_fin_cerrado" bpmnElement="f_fin_cerrado"><di:waypoint x="1070" y="228"/><di:waypoint x="1130" y="228"/></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

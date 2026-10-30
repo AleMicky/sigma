@@ -100,9 +100,24 @@ export type CargaCombustibleListFilters = {
 export const listCargasCombustible = (
   filters?: CargaCombustibleListFilters
 ): Promise<PageResponse<CargaCombustible>> => {
+  const params: Record<string, unknown> = { ...filters }
+  if (
+    typeof params.fechaDesde === "string" &&
+    params.fechaDesde.trim() &&
+    !params.fechaDesde.includes("T")
+  ) {
+    params.fechaDesde = `${params.fechaDesde.trim()}T00:00:00`
+  }
+  if (
+    typeof params.fechaHasta === "string" &&
+    params.fechaHasta.trim() &&
+    !params.fechaHasta.includes("T")
+  ) {
+    params.fechaHasta = `${params.fechaHasta.trim()}T23:59:59`
+  }
   return http.get<PageResponse<CargaCombustible>>(
     cargaCombustibleEndpoints.root,
-    { params: filters }
+    { params }
   )
 }
 

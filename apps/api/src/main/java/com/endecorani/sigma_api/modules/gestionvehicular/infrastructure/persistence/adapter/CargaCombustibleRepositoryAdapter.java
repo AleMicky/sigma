@@ -39,8 +39,11 @@ public class CargaCombustibleRepositoryAdapter implements CargaCombustibleReposi
             LocalDateTime fechaHasta,
             Pageable pageable
     ) {
+        String searchPattern = (search != null && !search.isBlank())
+                ? "%" + search.toLowerCase().trim() + "%"
+                : null;
         return springRepository.searchWithFilters(
-                search,
+                searchPattern,
                 activoId,
                 viajeVehicularId,
                 salidaVehicularId,
@@ -63,8 +66,11 @@ public class CargaCombustibleRepositoryAdapter implements CargaCombustibleReposi
             LocalDateTime fechaDesde,
             LocalDateTime fechaHasta
     ) {
+        String searchPattern = (search != null && !search.isBlank())
+                ? "%" + search.toLowerCase().trim() + "%"
+                : null;
         return springRepository.findForExport(
-                search,
+                searchPattern,
                 activoId,
                 viajeVehicularId,
                 salidaVehicularId,

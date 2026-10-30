@@ -79,8 +79,8 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
           AND (:activoId IS NULL OR a.activoId = :activoId)
           AND (:conductorId IS NULL OR a.conductorId = :conductorId)
           AND (:estado IS NULL OR v.estado = :estado)
-          AND (:fechaDesde IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) >= :fechaDesde)
-          AND (:fechaHasta IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) <= :fechaHasta)
+          AND (CAST(:fechaDesde AS java.time.LocalDateTime) IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) >= :fechaDesde)
+          AND (CAST(:fechaHasta AS java.time.LocalDateTime) IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) <= :fechaHasta)
     """)
     Page<ViajeVehicularEntity> searchWithFilters(
             @Param("search") String search,
@@ -119,8 +119,8 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
           AND (:activoId IS NULL OR a.activoId = :activoId)
           AND (:conductorId IS NULL OR a.conductorId = :conductorId)
           AND (:estado IS NULL OR v.estado = :estado)
-          AND (:fechaDesde IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) >= :fechaDesde)
-          AND (:fechaHasta IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) <= :fechaHasta)
+          AND (CAST(:fechaDesde AS java.time.LocalDateTime) IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) >= :fechaDesde)
+          AND (CAST(:fechaHasta AS java.time.LocalDateTime) IS NULL OR COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) <= :fechaHasta)
         ORDER BY COALESCE(v.fechaSalidaReal, a.fechaAsignacion, s.fechaSalida) DESC
     """)
     List<ViajeVehicularEntity> findHistorialForExport(
