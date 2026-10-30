@@ -6,4 +6,8 @@ export const solicitudVehicularEndpoints = {
   conAdjuntos: "/solicitudes-vehiculares/con-adjuntos",
   enviar: (id: string) => `/solicitudes-vehiculares/${id}/enviar`,
   workflowComplete: (id: string) => `/solicitudes-vehiculares/${id}/workflow/complete`,
+  reportes: {
+    general: "/reportes/solicitudes-vehiculares",
+    pdf: "/reportes/solicitudes-vehiculares/pdf",
+  },
 }

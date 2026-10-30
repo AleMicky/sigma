@@ -13,14 +13,12 @@ import {
 import { toast } from "sonner"
 
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
-import { cargaCombustibleQueries } from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.queries"
-import type { CargaCombustible } from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.service"
-import { salidaVehicularQueries } from "@/modules/gestionvehicular/salida-vehicular/api/salida-vehicular.queries"
+import { bitacoraQueries } from "@/modules/gestionvehicular/bitacora/api/bitacora.queries"
 import {
-  descargarReporteSalidasBitacoraPdf,
-  abrirReporteSalidasBitacoraPdf,
-} from "@/modules/gestionvehicular/salida-vehicular/api/salida-vehicular.service"
-import type { SalidaVehicular } from "@/modules/gestionvehicular/salida-vehicular/api/salida-vehicular.types"
+  abrirBitacoraConsolidadaPdf,
+  descargarBitacoraConsolidadaPdf,
+  type BitacoraConsolidadaItem,
+} from "@/modules/gestionvehicular/bitacora/api/bitacora.service"
 import {
   ReporteBitacoraVehicularTable,
   type FilaReporteBitacoraSalida,
@@ -83,40 +81,6 @@ function formatPeriodoMesAnio(fechaDesdeStr: string, fechaHastaStr: string): { m
   }
 }
 
-function extractPlacaFromText(descripcion?: string | null): string | null {
-  if (!descripcion) return null
-  try {
-    const match = descripcion.match(
-      /PLACA[:\s#-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)*)/i
-    )
-    if (match && match[1]) {
-      const clean = match[1].replace(/[,.;-]+$/, "").trim()
-      if (clean.length >= 2 && clean.length <= 20) {
-        return clean
-      }
-    }
-    return null
-  } catch {
-    return null
-  }
-}
-
-function toLocalDateStr(dateInput?: string | null): string {
-  if (!dateInput) return ""
-  try {
-    const d = new Date(dateInput)
-    if (Number.isNaN(d.getTime())) {
-      return dateInput.slice(0, 10)
-    }
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, "0")
-    const day = String(d.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  } catch {
-    return (dateInput || "").slice(0, 10)
-  }
-}
-
 export function BitacoraVehicularPage() {
   // Filtros de entrada
   const [activoId, setActivoId] = useState<string>("")
@@ -137,28 +101,23 @@ export function BitacoraVehicularPage() {
     fechaHasta: getFechaActual(),
   }))
 
-  // Consulta 1: Reporte general de salidas vehiculares (soporta activoId opcional para traer todo)
+  // Consulta 1: Bitácora consolidada desde el backend
+  //   - Fuente A: Bitácora de salidas vehiculares (SalidaVehicular + eventos de odómetro)
+  //   - Fuente B: Solicitudes vehiculares (SolicitudVehicular → AsignacionVehicular → ViajeVehicular)
+  //   El combustible ya viene asociado a cada fila desde la API.
   const reporteQuery = useQuery({
-    ...salidaVehicularQueries.reporteGeneral({
-      activoId: filtrosActivos?.activoId || undefined,
-      fechaDesde: filtrosActivos?.fechaDesde ? `${filtrosActivos.fechaDesde}T00:00:00` : undefined,
-      fechaHasta: filtrosActivos?.fechaHasta ? `${filtrosActivos.fechaHasta}T23:59:59` : undefined,
-    }),
-    enabled: Boolean(filtrosActivos?.fechaDesde && filtrosActivos?.fechaHasta),
+    ...bitacoraQueries.consolidado(
+      filtrosActivos?.fechaDesde && filtrosActivos?.fechaHasta
+        ? {
+            activoId: filtrosActivos.activoId || undefined,
+            fechaInicio: filtrosActivos.fechaDesde,
+            fechaFin: filtrosActivos.fechaHasta,
+          }
+        : null
+    ),
   })
 
-  // Consulta 2: Cargas de combustible (soporta activoId opcional para traer todo)
-  const cargasQuery = useQuery({
-    ...cargaCombustibleQueries.list({
-      activoId: filtrosActivos?.activoId || undefined,
-      fechaDesde: filtrosActivos?.fechaDesde ? `${filtrosActivos.fechaDesde}T00:00:00` : undefined,
-      fechaHasta: filtrosActivos?.fechaHasta ? `${filtrosActivos.fechaHasta}T23:59:59` : undefined,
-      size: 500,
-    }),
-    enabled: Boolean(filtrosActivos?.fechaDesde && filtrosActivos?.fechaHasta),
-  })
-
-  // Consulta 3: Datos detallados del activo/vehículo (solo si hay vehículo específico)
+  // Consulta 2: Datos detallados del activo/vehículo (solo si hay vehículo específico)
   const activoDetailQuery = useQuery({
     ...activoQueries.detail(filtrosActivos?.activoId ?? ""),
     enabled: Boolean(filtrosActivos?.activoId),
@@ -205,152 +164,48 @@ export function BitacoraVehicularPage() {
     }
   }, [filtrosActivos?.activoId, activoDetailQuery.data, placaSeleccionada, vehiculoMeta])
 
-  // Transformar salidas y asociar odómetros y combustible
+  // Mapear filas de la API (salidas + solicitudes) al formato oficial de la planilla
   const { filas, totalesMetricas } = useMemo(() => {
-    const rawSalidas: SalidaVehicular[] = reporteQuery.data?.items ?? []
-    const cargas: CargaCombustible[] = cargasQuery.data?.content ?? []
-    const isMultiVehiculo = !filtrosActivos?.activoId
+    const items: BitacoraConsolidadaItem[] = reporteQuery.data?.items ?? []
 
-    // Indexar cargas por salidaVehicularId directo y agrupar cargas no vinculadas directamente
-    const cargasPorSalidaId = new Map<string, CargaCombustible[]>()
-    const cargasSinSalida: CargaCombustible[] = []
+    const rows: FilaReporteBitacoraSalida[] = items.map((item) => {
+      const fecha = item.fecha ?? ""
+      const fechaObj = new Date(fecha)
+      const fechaValida = !Number.isNaN(fechaObj.getTime())
+      const dia = item.dia ?? (fechaValida ? fechaObj.getDate() : 1)
+      const fechaFormateada =
+        item.fechaFormateada ||
+        (fechaValida
+          ? fechaObj.toLocaleDateString("es-BO", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            })
+          : "-")
 
-    for (const c of cargas) {
-      const sId = c.salidaVehicularId || c.salidaVehicular?.id
-      if (sId) {
-        const arr = cargasPorSalidaId.get(sId) ?? []
-        arr.push(c)
-        cargasPorSalidaId.set(sId, arr)
-      } else {
-        cargasSinSalida.push(c)
-      }
-    }
-
-    // Ordenar salidas cronológicamente antes de procesar
-    const sortedSalidas = [...rawSalidas].sort(
-      (a, b) =>
-        new Date(a.fecha || a.createdAt).getTime() -
-        new Date(b.fecha || b.createdAt).getTime()
-    )
-
-    // Control para no duplicar cargas sin salida asignada en múltiples salidas del mismo día
-    const cargasSinSalidaUsadas = new Set<string>()
-
-    // Formatear filas
-    const rows: FilaReporteBitacoraSalida[] = sortedSalidas.map((salida) => {
-      const fechaObj = new Date(salida.fecha || salida.createdAt)
-      const dia = !Number.isNaN(fechaObj.getDate()) ? fechaObj.getDate() : 1
-      const fechaFormateada = !Number.isNaN(fechaObj.getTime())
-        ? fechaObj.toLocaleDateString("es-BO", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          })
-        : "-"
-
-      // Odómetro de eventos
-      const kmEvents = (salida.eventos ?? [])
-        .filter((e) => typeof e.kilometraje === "number" && !Number.isNaN(e.kilometraje))
-        .sort(
-          (a, b) =>
-            new Date(a.fechaHora || a.createdAt).getTime() -
-            new Date(b.fechaHora || b.createdAt).getTime()
-        )
-
-      const salidaEvent = kmEvents.find((e) =>
-        (e.tipoEvento ?? "").toUpperCase().includes("SALIDA")
-      )
-      const llegadaEvent = [...kmEvents]
-        .reverse()
-        .find((e) => (e.tipoEvento ?? "").toUpperCase().includes("LLEGADA"))
-
-      const kmSalida =
-        salidaEvent?.kilometraje != null
-          ? Number(salidaEvent.kilometraje)
-          : kmEvents.length > 0 && kmEvents[0].kilometraje != null
-            ? Number(kmEvents[0].kilometraje)
-            : null
-
-      const kmLlegada =
-        llegadaEvent?.kilometraje != null
-          ? Number(llegadaEvent.kilometraje)
-          : kmEvents.length > 1 && kmEvents[kmEvents.length - 1].kilometraje != null
-            ? Number(kmEvents[kmEvents.length - 1].kilometraje)
-            : null
-
-      const kmRecorrido =
-        kmSalida != null && kmLlegada != null && kmLlegada >= kmSalida
-          ? kmLlegada - kmSalida
+      const litros =
+        item.combustibleLitros != null && !Number.isNaN(Number(item.combustibleLitros))
+          ? Number(item.combustibleLitros)
           : null
 
-      // Combustible relacionado a la salida:
-      // 1. Cargas explícitamente vinculadas a esta salida
-      let matchingCargas = [...(cargasPorSalidaId.get(salida.id) ?? [])]
-
-      // 2. Si no tiene cargas directas, buscar cargas sin salida asignada que coincidan en vehículo y fecha local
-      if (matchingCargas.length === 0) {
-        const salidaDateLocal = toLocalDateStr(salida.fecha || salida.createdAt)
-        const candidatas = cargasSinSalida.filter((c) => {
-          if (cargasSinSalidaUsadas.has(c.id)) return false
-          const cargaDateLocal = toLocalDateStr(c.fechaCarga)
-          if (!salidaDateLocal || !cargaDateLocal || salidaDateLocal !== cargaDateLocal) {
-            return false
-          }
-          if (salida.activoId && c.activoId) {
-            return c.activoId === salida.activoId
-          }
-          return !isMultiVehiculo
-        })
-
-        if (candidatas.length > 0) {
-          matchingCargas = candidatas
-          for (const cand of candidatas) {
-            cargasSinSalidaUsadas.add(cand.id)
-          }
-        }
-      }
-
-      let combustibleTexto = "-"
-      let totalLitros: number | null = null
-      let facturas: string[] = []
-
-      if (matchingCargas.length > 0) {
-        totalLitros = matchingCargas.reduce(
-          (acc, c) => acc + (Number(c.litros) || 0),
-          0
-        )
-        facturas = matchingCargas
-          .map((c) => c.numeroFactura?.trim())
-          .filter(Boolean) as string[]
-
-        const facStr = facturas.length > 0 ? ` / ${facturas.join(", ")}` : ""
-        combustibleTexto = `${totalLitros} lts${facStr}`
-      }
-
-      // Placa identificada del vehículo
-      const placaVehiculo =
-        extractPlacaFromText(salida.activoDescripcion) ||
-        salida.activoCodigo ||
-        null
-
       return {
-        id: salida.id,
-        numero: salida.numero,
-        fecha: salida.fecha || salida.createdAt,
+        id: item.id,
+        numero: item.numero || "-",
+        fecha,
         dia,
         fechaFormateada,
-        descripcionActividad: salida.descripcionActividad || "-",
-        kmSalida,
-        kmLlegada,
-        kmRecorrido,
-        combustibleTexto,
-        combustibleLitros: totalLitros,
-        combustibleFactura: facturas.length > 0 ? facturas.join(", ") : null,
-        conductorNombre: salida.empleadoNombre || "-",
-        observaciones: salida.observaciones || "-",
-        estado: salida.estado,
-        vehiculoPlaca: placaVehiculo,
-        vehiculoCodigo: salida.activoCodigo || null,
+        descripcionActividad: item.descripcionActividad || "-",
+        kmSalida: item.kmSalida != null ? Number(item.kmSalida) : null,
+        kmLlegada: item.kmLlegada != null ? Number(item.kmLlegada) : null,
+        kmRecorrido: item.kmRecorrido != null ? Number(item.kmRecorrido) : null,
+        combustibleTexto: item.combustibleTexto || "-",
+        combustibleLitros: litros,
+        combustibleFactura: item.combustibleFactura || null,
+        conductorNombre: item.conductorNombre || "-",
+        observaciones: item.observaciones || "-",
+        estado: item.estado || "",
+        vehiculoPlaca: item.vehiculoPlaca || item.vehiculoCodigo || null,
+        vehiculoCodigo: item.vehiculoCodigo || null,
       }
     })
 
@@ -393,7 +248,7 @@ export function BitacoraVehicularPage() {
         promedioKmPorSalida,
       },
     }
-  }, [cargasQuery.data?.content, filtrosActivos?.activoId, reporteQuery.data?.items, searchQuery])
+  }, [reporteQuery.data?.items, searchQuery])
 
   // Manejo de cambio de vehículo
   const handleActivoChange = (
@@ -431,7 +286,6 @@ export function BitacoraVehicularPage() {
       fechaHasta,
     })
     void reporteQuery.refetch()
-    void cargasQuery.refetch()
     if (activoId) {
       void activoDetailQuery.refetch()
     }
@@ -455,13 +309,15 @@ export function BitacoraVehicularPage() {
     try {
       setIsPdfLoading(true)
       toast.info("Generando reporte oficial en PDF desde el servidor...")
-      await descargarReporteSalidasBitacoraPdf({
-        activoId: filtrosActivos.activoId || undefined,
-        fechaDesde: filtrosActivos.fechaDesde,
-        fechaHasta: filtrosActivos.fechaHasta,
-        search: searchQuery || undefined,
-        placa: filtrosActivos.activoId ? datosVehiculo.placa : "todos",
-      })
+      await descargarBitacoraConsolidadaPdf(
+        {
+          activoId: filtrosActivos.activoId || undefined,
+          fechaInicio: filtrosActivos.fechaDesde,
+          fechaFin: filtrosActivos.fechaHasta,
+          search: searchQuery || undefined,
+        },
+        filtrosActivos.activoId ? datosVehiculo.placa : "todos"
+      )
       toast.success("Reporte oficial en PDF generado y descargado exitosamente.")
     } catch (err: unknown) {
       const message =
@@ -484,12 +340,11 @@ export function BitacoraVehicularPage() {
     try {
       setIsPdfLoading(true)
       toast.info("Abriendo reporte en PDF desde el servidor...")
-      await abrirReporteSalidasBitacoraPdf({
+      await abrirBitacoraConsolidadaPdf({
         activoId: filtrosActivos.activoId || undefined,
-        fechaDesde: filtrosActivos.fechaDesde,
-        fechaHasta: filtrosActivos.fechaHasta,
+        fechaInicio: filtrosActivos.fechaDesde,
+        fechaFin: filtrosActivos.fechaHasta,
         search: searchQuery || undefined,
-        placa: filtrosActivos.activoId ? datosVehiculo.placa : "todos",
       })
     } catch (err: unknown) {
       const message =
@@ -571,10 +426,8 @@ export function BitacoraVehicularPage() {
 
   const isLoading =
     reporteQuery.isLoading ||
-    cargasQuery.isLoading ||
     activoDetailQuery.isLoading ||
-    reporteQuery.isFetching ||
-    cargasQuery.isFetching
+    reporteQuery.isFetching
 
   return (
     <PageShell size="full" padding="compact" layout="scroll" className="space-y-3 pb-10">
@@ -692,7 +545,7 @@ export function BitacoraVehicularPage() {
       {/* ========================================================= */}
       {/* 4. ESTADO DE ERROR                                        */}
       {/* ========================================================= */}
-      {(reporteQuery.error || cargasQuery.error) && (
+      {reporteQuery.error && (
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive print:hidden flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 shrink-0" />
@@ -701,9 +554,7 @@ export function BitacoraVehicularPage() {
               <p className="text-xs text-destructive/90">
                 {reporteQuery.error instanceof Error
                   ? reporteQuery.error.message
-                  : cargasQuery.error instanceof Error
-                    ? `Error al cargar combustible: ${cargasQuery.error.message}`
-                    : "No se pudo obtener la información desde el servidor."}
+                  : "No se pudo obtener la información desde el servidor."}
               </p>
             </div>
           </div>
@@ -712,7 +563,6 @@ export function BitacoraVehicularPage() {
             size="sm"
             onClick={() => {
               void reporteQuery.refetch()
-              void cargasQuery.refetch()
             }}
             className="gap-1.5 ml-4 text-xs h-8 cursor-pointer"
           >

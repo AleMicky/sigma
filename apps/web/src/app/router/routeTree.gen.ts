@@ -101,6 +101,7 @@ import { Route as DashboardGestionVehicularReportesBitacoraIndexRouteImport } fr
 import { Route as DashboardGestionVehicularReportesConsumoCombustibleIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/reportes/consumo-combustible/index'
 import { Route as DashboardGestionVehicularReportesHistorialViajesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/reportes/historial-viajes/index'
 import { Route as DashboardGestionVehicularReportesSalidasVehicularesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/reportes/salidas-vehiculares/index'
+import { Route as DashboardGestionVehicularReportesSolicitudesVehicularesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/reportes/solicitudes-vehiculares/index'
 import { Route as DashboardGestionVehicularSolicitudesSolicitudIdEditarRouteImport } from './../../routes/_dashboard/gestion-vehicular/solicitudes/$solicitudId/editar'
 import { Route as DashboardInventariosTiposInsumoTipoInsumoIdIndexRouteImport } from './../../routes/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/index'
 import { Route as DashboardInventariosTiposInsumoTipoInsumoIdAtributosRouteImport } from './../../routes/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/atributos'
@@ -652,6 +653,14 @@ const DashboardGestionVehicularReportesSalidasVehicularesIndexRoute =
     path: '/reportes/salidas-vehiculares/',
     getParentRoute: () => DashboardGestionVehicularRouteRoute,
   } as any)
+const DashboardGestionVehicularReportesSolicitudesVehicularesIndexRoute =
+  DashboardGestionVehicularReportesSolicitudesVehicularesIndexRouteImport.update(
+    {
+      id: '/reportes/solicitudes-vehiculares/',
+      path: '/reportes/solicitudes-vehiculares/',
+      getParentRoute: () => DashboardGestionVehicularRouteRoute,
+    } as any,
+  )
 const DashboardGestionVehicularSolicitudesSolicitudIdEditarRoute =
   DashboardGestionVehicularSolicitudesSolicitudIdEditarRouteImport.update({
     id: '/solicitudes/$solicitudId/editar',
@@ -772,6 +781,7 @@ export interface FileRoutesByFullPath {
   '/gestion-vehicular/reportes/consumo-combustible/': typeof DashboardGestionVehicularReportesConsumoCombustibleIndexRoute
   '/gestion-vehicular/reportes/historial-viajes/': typeof DashboardGestionVehicularReportesHistorialViajesIndexRoute
   '/gestion-vehicular/reportes/salidas-vehiculares/': typeof DashboardGestionVehicularReportesSalidasVehicularesIndexRoute
+  '/gestion-vehicular/reportes/solicitudes-vehiculares/': typeof DashboardGestionVehicularReportesSolicitudesVehicularesIndexRoute
   '/inventarios/tipos-insumo/$tipoInsumoId/': typeof DashboardInventariosTiposInsumoTipoInsumoIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -854,6 +864,7 @@ export interface FileRoutesByTo {
   '/gestion-vehicular/reportes/consumo-combustible': typeof DashboardGestionVehicularReportesConsumoCombustibleIndexRoute
   '/gestion-vehicular/reportes/historial-viajes': typeof DashboardGestionVehicularReportesHistorialViajesIndexRoute
   '/gestion-vehicular/reportes/salidas-vehiculares': typeof DashboardGestionVehicularReportesSalidasVehicularesIndexRoute
+  '/gestion-vehicular/reportes/solicitudes-vehiculares': typeof DashboardGestionVehicularReportesSolicitudesVehicularesIndexRoute
   '/inventarios/tipos-insumo/$tipoInsumoId': typeof DashboardInventariosTiposInsumoTipoInsumoIdIndexRoute
 }
 export interface FileRoutesById {
@@ -953,6 +964,7 @@ export interface FileRoutesById {
   '/_dashboard/gestion-vehicular/reportes/consumo-combustible/': typeof DashboardGestionVehicularReportesConsumoCombustibleIndexRoute
   '/_dashboard/gestion-vehicular/reportes/historial-viajes/': typeof DashboardGestionVehicularReportesHistorialViajesIndexRoute
   '/_dashboard/gestion-vehicular/reportes/salidas-vehiculares/': typeof DashboardGestionVehicularReportesSalidasVehicularesIndexRoute
+  '/_dashboard/gestion-vehicular/reportes/solicitudes-vehiculares/': typeof DashboardGestionVehicularReportesSolicitudesVehicularesIndexRoute
   '/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/': typeof DashboardInventariosTiposInsumoTipoInsumoIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -1052,6 +1064,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/reportes/consumo-combustible/'
     | '/gestion-vehicular/reportes/historial-viajes/'
     | '/gestion-vehicular/reportes/salidas-vehiculares/'
+    | '/gestion-vehicular/reportes/solicitudes-vehiculares/'
     | '/inventarios/tipos-insumo/$tipoInsumoId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1134,6 +1147,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/reportes/consumo-combustible'
     | '/gestion-vehicular/reportes/historial-viajes'
     | '/gestion-vehicular/reportes/salidas-vehiculares'
+    | '/gestion-vehicular/reportes/solicitudes-vehiculares'
     | '/inventarios/tipos-insumo/$tipoInsumoId'
   id:
     | '__root__'
@@ -1232,6 +1246,7 @@ export interface FileRouteTypes {
     | '/_dashboard/gestion-vehicular/reportes/consumo-combustible/'
     | '/_dashboard/gestion-vehicular/reportes/historial-viajes/'
     | '/_dashboard/gestion-vehicular/reportes/salidas-vehiculares/'
+    | '/_dashboard/gestion-vehicular/reportes/solicitudes-vehiculares/'
     | '/_dashboard/inventarios/tipos-insumo/$tipoInsumoId/'
   fileRoutesById: FileRoutesById
 }
@@ -1886,6 +1901,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardGestionVehicularReportesSalidasVehicularesIndexRouteImport
       parentRoute: typeof DashboardGestionVehicularRouteRoute
     }
+    '/_dashboard/gestion-vehicular/reportes/solicitudes-vehiculares/': {
+      id: '/_dashboard/gestion-vehicular/reportes/solicitudes-vehiculares/'
+      path: '/reportes/solicitudes-vehiculares'
+      fullPath: '/gestion-vehicular/reportes/solicitudes-vehiculares/'
+      preLoaderRoute: typeof DashboardGestionVehicularReportesSolicitudesVehicularesIndexRouteImport
+      parentRoute: typeof DashboardGestionVehicularRouteRoute
+    }
     '/_dashboard/gestion-vehicular/solicitudes/$solicitudId/editar': {
       id: '/_dashboard/gestion-vehicular/solicitudes/$solicitudId/editar'
       path: '/solicitudes/$solicitudId/editar'
@@ -1992,6 +2014,7 @@ interface DashboardGestionVehicularRouteRouteChildren {
   DashboardGestionVehicularReportesConsumoCombustibleIndexRoute: typeof DashboardGestionVehicularReportesConsumoCombustibleIndexRoute
   DashboardGestionVehicularReportesHistorialViajesIndexRoute: typeof DashboardGestionVehicularReportesHistorialViajesIndexRoute
   DashboardGestionVehicularReportesSalidasVehicularesIndexRoute: typeof DashboardGestionVehicularReportesSalidasVehicularesIndexRoute
+  DashboardGestionVehicularReportesSolicitudesVehicularesIndexRoute: typeof DashboardGestionVehicularReportesSolicitudesVehicularesIndexRoute
 }
 
 const DashboardGestionVehicularRouteRouteChildren: DashboardGestionVehicularRouteRouteChildren =
@@ -2035,6 +2058,8 @@ const DashboardGestionVehicularRouteRouteChildren: DashboardGestionVehicularRout
       DashboardGestionVehicularReportesHistorialViajesIndexRoute,
     DashboardGestionVehicularReportesSalidasVehicularesIndexRoute:
       DashboardGestionVehicularReportesSalidasVehicularesIndexRoute,
+    DashboardGestionVehicularReportesSolicitudesVehicularesIndexRoute:
+      DashboardGestionVehicularReportesSolicitudesVehicularesIndexRoute,
   }
 
 const DashboardGestionVehicularRouteRouteWithChildren =

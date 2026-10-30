@@ -62,6 +62,7 @@ export const PATH_TITLES: Record<string, string> = {
   "/gestion-vehicular/reportes/consumo-combustible": "Consumo de Combustible",
   "/gestion-vehicular/reportes/historial-viajes": "Historial de Viajes",
   "/gestion-vehicular/reportes/salidas-vehiculares": "Reporte de Salidas Vehiculares",
+  "/gestion-vehicular/reportes/solicitudes-vehiculares": "Reporte de Solicitudes Vehiculares",
   "/gestion-vehicular/controles-activos/nuevo": "Control de Activo Vehicular",
   "/organizacion": "Organización",
   "/organizacion/empleados": "Empleados",

@@ -11,6 +11,17 @@ export type SolicitudVehicularListFilters = PageParams & {
   interfaz?: string
 }
 
+export type ReporteSolicitudesFilters = {
+  search?: string
+  activoId?: string
+  solicitanteId?: string
+  conductorId?: string
+  tipoSolicitudVehicularId?: string
+  estado?: string
+  fechaDesde?: string
+  fechaHasta?: string
+}
+
 export const solicitudVehicularKeys = {
   ...createResourceKeys<
     "solicitudes-vehiculares",
@@ -18,4 +29,9 @@ export const solicitudVehicularKeys = {
   >("solicitudes-vehiculares"),
   calendario: (filters?: Record<string, unknown>) =>
     ["solicitudes-vehiculares", "calendario", filters] as const,
+  reportes: {
+    all: ["reportes-solicitudes-vehiculares"] as const,
+    general: (filters?: ReporteSolicitudesFilters) =>
+      ["reportes-solicitudes-vehiculares", "general", filters] as const,
+  },
 }

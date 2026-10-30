@@ -2,6 +2,8 @@ package com.endecorani.sigma_api.modules.gestionvehicular.presentation.controlle
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.bitacora.response.BitacoraVehicularReporteResponse;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.bitacora.response.BitacoraConsolidadaReporteResponse;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.service.BitacoraConsolidadaService;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.service.BitacoraVehicularService;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
@@ -34,6 +36,42 @@ import java.util.UUID;
 public class BitacoraVehicularController {
 
     private final BitacoraVehicularService service;
+    private final BitacoraConsolidadaService consolidadaService;
+
+    @GetMapping("/consolidado")
+    @Operation(summary = "Bitácora consolidada (salidas vehiculares + solicitudes vehiculares) por rango de fechas y vehículo opcional")
+    public ResponseEntity<ApiResponse<BitacoraConsolidadaReporteResponse>> consultarBitacoraConsolidada(
+            @RequestParam(required = false) UUID activoId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(consolidadaService.generarReporte(activoId, fechaInicio, fechaFin, search))
+        );
+    }
+
+    @GetMapping(value = "/consolidado/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "PDF oficial GA-IN7-04 de la bitácora consolidada (salidas + solicitudes vehiculares)")
+    public ResponseEntity<byte[]> descargarBitacoraConsolidadaPdf(
+            @RequestParam(required = false) UUID activoId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+            @RequestParam(required = false) String search
+    ) {
+        byte[] pdfBytes = consolidadaService.generarReportePdf(activoId, fechaInicio, fechaFin, search);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition.inline()
+                        .filename("bitacora-vehicular-" + (activoId != null ? activoId : "todos") + "-" + fechaInicio + ".pdf")
+                        .build()
+        );
+        headers.setContentLength(pdfBytes.length);
+
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+    }
 
     @GetMapping
     @Operation(summary = "Consultar reporte de bitácora vehicular por vehículo y rango de fechas")

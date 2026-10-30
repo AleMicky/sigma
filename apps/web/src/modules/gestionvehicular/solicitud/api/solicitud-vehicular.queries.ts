@@ -2,9 +2,11 @@ import { queryOptions } from "@tanstack/react-query"
 
 import {
   solicitudVehicularKeys,
+  type ReporteSolicitudesFilters,
   type SolicitudVehicularListFilters,
 } from "./solicitud-vehicular.keys"
 import {
+  getReporteSolicitudesVehiculares,
   getSolicitudVehicular,
   listSolicitudesVehiculares,
   listSolicitudesVehicularesCalendario,
@@ -25,6 +27,12 @@ export const solicitudVehicularQueries = {
           ...(normalizedEstado && { estado: normalizedEstado }),
         })
       },
+    }),
+
+  reporteGeneral: (filters?: ReporteSolicitudesFilters) =>
+    queryOptions({
+      queryKey: solicitudVehicularKeys.reportes.general(filters),
+      queryFn: () => getReporteSolicitudesVehiculares(filters),
     }),
 
   calendario: (filters?: SolicitudVehicularCalendarioFilters) =>

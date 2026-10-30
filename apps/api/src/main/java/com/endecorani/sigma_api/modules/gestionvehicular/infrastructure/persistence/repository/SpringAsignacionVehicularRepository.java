@@ -14,6 +14,8 @@ public interface SpringAsignacionVehicularRepository extends JpaRepository<Asign
 
     List<AsignacionVehicularEntity> findBySolicitudVehicularId(UUID solicitudVehicularId);
 
+    List<AsignacionVehicularEntity> findBySolicitudVehicularIdIn(java.util.Collection<UUID> solicitudVehicularIds);
+
     List<AsignacionVehicularEntity> findByActivoId(UUID activoId);
 
     List<AsignacionVehicularEntity> findByConductorId(UUID conductorId);

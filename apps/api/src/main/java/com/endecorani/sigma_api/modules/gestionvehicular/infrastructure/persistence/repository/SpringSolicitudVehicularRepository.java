@@ -104,4 +104,41 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
             @Param("hasFechaFin") boolean hasFechaFin,
             @Param("fechaFin") java.time.LocalDateTime fechaFin
     );
+
+    @Query("""
+        SELECT DISTINCT s
+        FROM SolicitudVehicularEntity s
+        LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.TipoSolicitudVehicularEntity tsv ON s.tipoSolicitudVehicularId = tsv.id
+        LEFT JOIN com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity ve ON s.solicitanteId = ve.empleadoId
+        LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.AsignacionVehicularEntity a ON a.solicitudVehicularId = s.id
+        LEFT JOIN com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity act ON (s.activoId = act.id OR a.activoId = act.id)
+        WHERE (:search IS NULL OR :search = ''
+            OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(tsv.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(tsv.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(ve.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%')))
+          AND (:estado IS NULL OR :estado = '' OR UPPER(s.estado) = UPPER(:estado))
+          AND (:tipoSolicitudVehicularId IS NULL OR s.tipoSolicitudVehicularId = :tipoSolicitudVehicularId)
+          AND (:solicitanteId IS NULL OR s.solicitanteId = :solicitanteId)
+          AND (:conductorId IS NULL OR s.conductorAsignadoId = :conductorId OR a.conductorId = :conductorId)
+          AND (:activoId IS NULL OR s.activoId = :activoId OR a.activoId = :activoId)
+          AND (CAST(:fechaDesde AS java.time.LocalDateTime) IS NULL OR s.fechaSalida >= :fechaDesde)
+          AND (CAST(:fechaHasta AS java.time.LocalDateTime) IS NULL OR s.fechaSalida <= :fechaHasta)
+        ORDER BY s.fechaSalida DESC
+    """)
+    java.util.List<SolicitudVehicularEntity> findForReporte(
+            @Param("search") String search,
+            @Param("activoId") UUID activoId,
+            @Param("solicitanteId") UUID solicitanteId,
+            @Param("conductorId") UUID conductorId,
+            @Param("tipoSolicitudVehicularId") UUID tipoSolicitudVehicularId,
+            @Param("estado") String estado,
+            @Param("fechaDesde") java.time.LocalDateTime fechaDesde,
+            @Param("fechaHasta") java.time.LocalDateTime fechaHasta
+    );
 }
