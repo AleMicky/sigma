@@ -18,7 +18,11 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.Progra
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ProgramacionMantenimientoHistorialMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ProgramacionMantenimientoMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.enums.TipoCriterioMantenimiento;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimientoAplicacion;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ChecklistItem;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.PlanMantenimiento;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.model.PlanMantenimientoActividad;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.PlanMantenimientoActivo;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ProgramacionMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ProgramacionMantenimientoCriterio;
@@ -79,6 +83,9 @@ public class ProgramacionMantenimientoService {
     private final ProgramacionMantenimientoCriterioMapper criterioMapper;
     private final ProgramacionMantenimientoHistorialMapper historialMapper;
     private final ProgramacionSeguimientoExcelService excelService;
+    private final PlanMantenimientoActividadRepository planMantenimientoActividadRepository;
+    private final ActividadMantenimientoAplicacionRepository actividadMantenimientoAplicacionRepository;
+    private final ActividadMantenimientoRepository actividadMantenimientoRepository;
 
     @org.springframework.beans.factory.annotation.Autowired
     @Lazy
@@ -631,18 +638,61 @@ public class ProgramacionMantenimientoService {
                     activo.getCodigo() + " - " + activo.getNombre() + "').");
         }
 
+        // Recopilar actividades y tareas definidas en el plan de mantenimiento
+        List<String> tareasNombres = new ArrayList<>();
+        StringBuilder detalleTareas = new StringBuilder();
+        if (planMantenimientoActividadRepository != null && plan.getId() != null) {
+            List<PlanMantenimientoActividad> actividadesPlan =
+                    planMantenimientoActividadRepository.findByPlanMantenimientoId(plan.getId());
+            if (actividadesPlan != null && !actividadesPlan.isEmpty()) {
+                detalleTareas.append("\n\nTareas y Actividades Programadas del Plan:\n");
+                int idx = 1;
+                for (PlanMantenimientoActividad actPlan : actividadesPlan) {
+                    if (actPlan.getActividadMantenimientoAplicacionId() == null) continue;
+                    Optional<ActividadMantenimientoAplicacion> appOpt = actividadMantenimientoAplicacionRepository.findById(actPlan.getActividadMantenimientoAplicacionId());
+                    if (appOpt.isEmpty()) continue;
+                    ActividadMantenimientoAplicacion app = appOpt.get();
+                    String actNombre = null;
+                    if (app.getActividadMantenimientoId() != null) {
+                        ActividadMantenimiento actInfo = actividadMantenimientoRepository.findById(app.getActividadMantenimientoId()).orElse(null);
+                        if (actInfo != null) {
+                            actNombre = actInfo.getNombre();
+                        }
+                    }
+                    if (actNombre == null || actNombre.isBlank()) {
+                        actNombre = "Actividad #" + idx;
+                    }
+                    tareasNombres.add(actNombre);
+                    detalleTareas.append(idx++).append(". ").append(actNombre);
+                    if (app.getChecklist() != null && !app.getChecklist().isEmpty()) {
+                        detalleTareas.append(" (Checklist: ");
+                        for (int c = 0; c < app.getChecklist().size(); c++) {
+                            if (c > 0) detalleTareas.append(", ");
+                            detalleTareas.append(app.getChecklist().get(c).getNombre());
+                        }
+                        detalleTareas.append(")");
+                    }
+                    detalleTareas.append("\n");
+                }
+            }
+        }
+        if (tareasNombres.isEmpty()) {
+            tareasNombres.add("Mantenimiento preventivo programado");
+        }
+
         String titulo = "Mantenimiento Preventivo: " + plan.getNombre() + " (" + activo.getCodigo() + ")";
         String descripcion = "Solicitud automática generada por programación de mantenimiento preventiva.\n"
                 + "Plan de Mantenimiento: " + plan.getCodigo() + " - " + plan.getNombre() + ".\n"
                 + "Activo: " + activo.getCodigo() + " - " + activo.getNombre() + ".\n"
                 + "Disparador: Criterio " + criterioDisparador.getTipoCriterio() + ".\n"
                 + "Detalle: " + motivoDisparo + ".\n"
-                + "Valores registrados al momento del disparo: " + valorDisparador + ".";
+                + "Valores registrados al momento del disparo: " + valorDisparador + "."
+                + detalleTareas.toString();
 
         SolicitudMantenimientoRequest solRequest = new SolicitudMantenimientoRequest(
                 activo.getId(),
                 tipoMantenimientoId,
-                List.of("Mantenimiento preventivo programado"),
+                tareasNombres,
                 prioridadId,
                 solicitanteId,
                 titulo,
@@ -652,24 +702,7 @@ public class ProgramacionMantenimientoService {
 
         SolicitudMantenimientoResponse solResponse = solicitudMantenimientoService.create(solRequest);
 
-        // Promover automáticamente la solicitud preventiva a estado SOLICITADO para ingresar al flujo de aprobación
-        try {
-            UUID aprobador = planActivo.getResponsableId() != null ? planActivo.getResponsableId() : solicitanteId;
-            solicitudMantenimientoService.enviar(
-                    solResponse.id(),
-                    new EnviarSolicitudMantenimientoRequest(
-                            aprobador,
-                            planActivo.getResponsableId(),
-                            planActivo.getResponsableId()
-                    )
-            );
-            log.info("Solicitud preventiva {} promovida automáticamente a SOLICITADO", solResponse.numero());
-        } catch (Exception e) {
-            log.warn("Solicitud preventiva {} creada en BORRADOR (no se pudo auto-enviar a aprobación: {})",
-                    solResponse.numero(), e.getMessage());
-        }
-
-        // Regla 6: Conservar el historial de los valores que provocaron cada mantenimiento
+        // Regla 6: Conservar el historial de los valores que provocaron cada mantenimiento antes de promover
         StringBuilder snapshot = new StringBuilder();
         for (ProgramacionMantenimientoCriterio c : criteriosActivos) {
             snapshot.append("[").append(c.getTipoCriterio()).append("]: ");
@@ -694,6 +727,23 @@ public class ProgramacionMantenimientoService {
                 .build();
 
         historialRepository.save(historial);
+
+        // Promover automáticamente la solicitud preventiva a estado SOLICITADO para ingresar al flujo de aprobación
+        try {
+            UUID aprobador = planActivo.getResponsableId() != null ? planActivo.getResponsableId() : solicitanteId;
+            solicitudMantenimientoService.enviar(
+                    solResponse.id(),
+                    new EnviarSolicitudMantenimientoRequest(
+                            aprobador,
+                            planActivo.getResponsableId(),
+                            planActivo.getResponsableId()
+                    )
+            );
+            log.info("Solicitud preventiva {} promovida automáticamente a SOLICITADO", solResponse.numero());
+        } catch (Exception e) {
+            log.warn("Solicitud preventiva {} creada en BORRADOR (no se pudo auto-enviar a aprobación: {})",
+                    solResponse.numero(), e.getMessage());
+        }
 
         return new EvaluacionProgramacionResponse(
                 id,

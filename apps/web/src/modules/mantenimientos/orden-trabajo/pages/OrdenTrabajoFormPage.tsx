@@ -155,6 +155,39 @@ export function OrdenTrabajoFormPage({
       solicitud?.tipoMantenimiento?.nombre?.toLowerCase().includes("correctiv"),
     )
 
+  // Auto-cargar actividades y tareas del plan preventivo si la solicitud es preventiva y aún no hay actividades
+  useEffect(() => {
+    if (solicitudMantenimientoId && !isCorrectivo && actividades.length === 0 && !isLoadingSugeridas) {
+      let isCancelled = false
+      getActividadesSugeridas(solicitudMantenimientoId)
+        .then((sugeridas) => {
+          if (isCancelled || !sugeridas || sugeridas.length === 0) return
+          setActividades((prev) => {
+            if (prev.length > 0) return prev
+            return sugeridas.map((sug) => {
+              let desc = sug.nombre
+              if (sug.checklist && sug.checklist.length > 0) {
+                desc += ` [Checklist: ${sug.checklist.map((c) => c.nombre).join(", ")}]`
+              }
+              return {
+                id: generateId(),
+                actividadMantenimientoId: sug.actividadMantenimientoId || null,
+                descripcion: desc,
+                realizado: false,
+                observacion: sug.descripcion || "",
+              }
+            })
+          })
+        })
+        .catch(() => {
+          // Si no tiene plan asociado, se omite silenciosamente
+        })
+      return () => {
+        isCancelled = true
+      }
+    }
+  }, [solicitudMantenimientoId, isCorrectivo, actividades.length, isLoadingSugeridas])
+
   const createMutation = useCreateOrdenTrabajoWithActividades()
 
   // Handler for adding an activity row manually
