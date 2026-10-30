@@ -21,6 +21,5 @@ public class ProgramacionMantenimiento extends AuditableModel {
     private Boolean activo = true;
 
     @Builder.Default
-    private List<ProgramacionMantenimientoCriterio> criterios =
-            new ArrayList<>();
+    private List<ProgramacionMantenimientoCriterio> criterios = new ArrayList<>();
 }
