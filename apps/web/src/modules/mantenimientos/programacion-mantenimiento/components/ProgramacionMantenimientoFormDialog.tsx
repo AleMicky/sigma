@@ -130,6 +130,20 @@ export function ProgramacionMantenimientoFormDialog({
   })
   const planesDisponibles = planesQuery.data?.content ?? []
 
+  const selectedPlan = useMemo(() => {
+    return planesDisponibles.find((p) => p.id === selectedPlanId)
+  }, [planesDisponibles, selectedPlanId])
+
+  // Pre-filtrar activos disponibles si se seleccionó un plan con tipo de activo específico
+  const filteredActivosDisponibles = useMemo(() => {
+    if (selectedPlan?.tipoActivoId) {
+      return activosDisponibles.filter(
+        (a) => (a.tipoActivoId ?? a.tipoActivo?.id) === selectedPlan.tipoActivoId,
+      )
+    }
+    return activosDisponibles
+  }, [activosDisponibles, selectedPlan])
+
   // Inicialización al abrir
   useEffect(() => {
     if (open) {
@@ -218,6 +232,10 @@ export function ProgramacionMantenimientoFormDialog({
     e.preventDefault()
     setFormError(null)
 
+    const existingKmCrit = programacionToEdit?.criterios?.find((c) => c.tipoCriterio === "KILOMETRAJE")
+    const existingTiempoCrit = programacionToEdit?.criterios?.find((c) => c.tipoCriterio === "TIEMPO")
+    const existingHorasCrit = programacionToEdit?.criterios?.find((c) => c.tipoCriterio === "HORAS_USO")
+
     const payloadCriterios: ProgramacionMantenimientoCriterioPayload[] = []
 
     if (modo === "KILOMETRAJE" || modo === "COMBINADO") {
@@ -227,6 +245,7 @@ export function ProgramacionMantenimientoFormDialog({
         return
       }
       payloadCriterios.push({
+        id: isEditing ? existingKmCrit?.id : undefined,
         tipoCriterio: "KILOMETRAJE",
         intervaloUso: int,
         proximoValorUso: proximoKmLimite > 0 ? proximoKmLimite : null,
@@ -241,6 +260,7 @@ export function ProgramacionMantenimientoFormDialog({
         return
       }
       payloadCriterios.push({
+        id: isEditing ? existingTiempoCrit?.id : undefined,
         tipoCriterio: "TIEMPO",
         intervaloDias: d,
         proximaFecha: proximaFechaCalculada || null,
@@ -255,6 +275,7 @@ export function ProgramacionMantenimientoFormDialog({
         return
       }
       payloadCriterios.push({
+        id: isEditing ? existingHorasCrit?.id : undefined,
         tipoCriterio: "HORAS_USO",
         intervaloUso: h,
         proximoValorUso: proximoHorasLimite > 0 ? proximoHorasLimite : null,
@@ -504,7 +525,7 @@ export function ProgramacionMantenimientoFormDialog({
                           <SelectValue placeholder="Seleccione un activo o vehículo..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {activosDisponibles.map((a) => (
+                          {filteredActivosDisponibles.map((a) => (
                             <SelectItem key={a.id} value={a.id} className="text-xs">
                               {a.codigo} — {a.nombre}
                               {a.tipoActivo?.nombre ? ` (${a.tipoActivo.nombre})` : ""}

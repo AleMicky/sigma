@@ -93,6 +93,7 @@ public class OrdenTrabajoService {
     private final PlanMantenimientoActividadRepository planMantenimientoActividadRepository;
     private final ActividadMantenimientoAplicacionRepository actividadMantenimientoAplicacionRepository;
     private final ActividadMantenimientoRepository actividadMantenimientoRepository;
+    private final ProgramacionMantenimientoService programacionMantenimientoService;
 
     @Transactional(readOnly = true)
     public PageResponse<OrdenTrabajoResponse> findAll(PageRequestDto pageRequest) {
@@ -431,6 +432,13 @@ public class OrdenTrabajoService {
         }
 
         OrdenTrabajo guardado = repository.save(ordenTrabajo);
+        if (dto.kilometrajeFinal() != null || dto.horasUsoFinal() != null) {
+            programacionMantenimientoService.actualizarTelemetriaActivo(
+                    guardado.getActivoId(),
+                    dto.kilometrajeFinal(),
+                    dto.horasUsoFinal()
+            );
+        }
         return mapper.toResponse(guardado);
     }
 
@@ -471,6 +479,13 @@ public class OrdenTrabajoService {
         }
 
         OrdenTrabajo actualizado = repository.save(actual);
+        if (dto.kilometrajeFinal() != null || dto.horasUsoFinal() != null) {
+            programacionMantenimientoService.actualizarTelemetriaActivo(
+                    actualizado.getActivoId(),
+                    dto.kilometrajeFinal(),
+                    dto.horasUsoFinal()
+            );
+        }
         return mapper.toResponse(actualizado);
     }
 
