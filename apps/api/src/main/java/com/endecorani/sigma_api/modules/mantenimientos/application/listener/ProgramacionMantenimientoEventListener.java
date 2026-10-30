@@ -58,7 +58,7 @@ public class ProgramacionMantenimientoEventListener {
             // 2. Evaluar automáticamente el cumplimiento de criterios preventivos por kilometraje
             var evaluaciones = programacionMantenimientoService.evaluarPorActivo(event.activoId());
             for (var eval : evaluaciones) {
-                if (eval != null && Boolean.TRUE.equals(eval.cumpleCondicion())) {
+                if (eval != null && eval.cumpleCriterio()) {
                     log.warn("¡ALERTA PREVENTIVA! Vehículo/Activo {} superó el límite programado ({}). Solicitud asociada: {}",
                             event.activoId(), eval.motivoDisparo(), eval.solicitudNumero());
                 }
