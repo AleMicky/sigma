@@ -8,6 +8,7 @@ import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repos
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoValorRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.EvaluarProgramacionRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.EvaluacionProgramacionResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response.SolicitudMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ProgramacionMantenimientoCriterioMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ProgramacionMantenimientoHistorialMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ProgramacionMantenimientoMapper;
@@ -244,7 +245,7 @@ class ProgramacionMantenimientoServiceTest {
         EvaluacionProgramacionResponse resp = service.evaluarProgramacion(progId, request);
         assertThat(resp.cumpleCriterio()).isTrue();
         assertThat(resp.solicitudGenerada()).isTrue();
-        assertThat(resp.solicitudId()).isEqualTo(solicitudId);
+        assertThat(resp.solicitudMantenimientoId()).isEqualTo(solicitudId);
         assertThat(resp.solicitudNumero()).isEqualTo("SOL-2026-001");
 
         // Verifica que se haya guardado en el historial y enviado para aprobación
