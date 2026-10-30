@@ -102,6 +102,22 @@ function extractPlacaFromText(descripcion?: string | null): string | null {
   }
 }
 
+function toLocalDateStr(dateInput?: string | null): string {
+  if (!dateInput) return ""
+  try {
+    const d = new Date(dateInput)
+    if (Number.isNaN(d.getTime())) {
+      return dateInput.slice(0, 10)
+    }
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, "0")
+    const day = String(d.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  } catch {
+    return (dateInput || "").slice(0, 10)
+  }
+}
+
 export const ReportesSalidasVehicularesPage = () => {
   // Filtros de entrada
   const [activoId, setActivoId] = useState<string>("")
@@ -136,8 +152,8 @@ export const ReportesSalidasVehicularesPage = () => {
   const cargasQuery = useQuery({
     ...cargaCombustibleQueries.list({
       activoId: filtrosActivos?.activoId || undefined,
-      fechaDesde: filtrosActivos?.fechaDesde,
-      fechaHasta: filtrosActivos?.fechaHasta,
+      fechaDesde: filtrosActivos?.fechaDesde ? `${filtrosActivos.fechaDesde}T00:00:00` : undefined,
+      fechaHasta: filtrosActivos?.fechaHasta ? `${filtrosActivos.fechaHasta}T23:59:59` : undefined,
       size: 500,
     }),
     enabled: Boolean(filtrosActivos?.fechaDesde && filtrosActivos?.fechaHasta),
@@ -196,8 +212,33 @@ export const ReportesSalidasVehicularesPage = () => {
     const cargas: CargaCombustible[] = cargasQuery.data?.content ?? []
     const isMultiVehiculo = !filtrosActivos?.activoId
 
+    // Indexar cargas por salidaVehicularId directo y agrupar cargas no vinculadas directamente
+    const cargasPorSalidaId = new Map<string, CargaCombustible[]>()
+    const cargasSinSalida: CargaCombustible[] = []
+
+    for (const c of cargas) {
+      const sId = c.salidaVehicularId || c.salidaVehicular?.id
+      if (sId) {
+        const arr = cargasPorSalidaId.get(sId) ?? []
+        arr.push(c)
+        cargasPorSalidaId.set(sId, arr)
+      } else {
+        cargasSinSalida.push(c)
+      }
+    }
+
+    // Ordenar salidas cronológicamente antes de procesar
+    const sortedSalidas = [...rawSalidas].sort(
+      (a, b) =>
+        new Date(a.fecha || a.createdAt).getTime() -
+        new Date(b.fecha || b.createdAt).getTime()
+    )
+
+    // Control para no duplicar cargas sin salida asignada en múltiples salidas del mismo día
+    const cargasSinSalidaUsadas = new Set<string>()
+
     // Formatear filas
-    const rows: FilaReporteBitacoraSalida[] = rawSalidas.map((salida) => {
+    const rows: FilaReporteBitacoraSalida[] = sortedSalidas.map((salida) => {
       const fechaObj = new Date(salida.fecha || salida.createdAt)
       const dia = !Number.isNaN(fechaObj.getDate()) ? fechaObj.getDate() : 1
       const fechaFormateada = !Number.isNaN(fechaObj.getTime())
@@ -243,24 +284,32 @@ export const ReportesSalidasVehicularesPage = () => {
           ? kmLlegada - kmSalida
           : null
 
-      // Combustible relacionado a la salida
-      const salidaDateStr = (salida.fecha || salida.createdAt || "").slice(0, 10)
-      const matchingCargas = cargas.filter((c) => {
-        if (c.salidaVehicularId === salida.id) return true
-        if (isMultiVehiculo) {
-          return (
-            c.activoId === salida.activoId &&
-            Boolean(salidaDateStr) &&
-            Boolean(c.fechaCarga) &&
-            c.fechaCarga.slice(0, 10) === salidaDateStr
-          )
+      // Combustible relacionado a la salida:
+      // 1. Cargas explícitamente vinculadas a esta salida
+      let matchingCargas = [...(cargasPorSalidaId.get(salida.id) ?? [])]
+
+      // 2. Si no tiene cargas directas, buscar cargas sin salida asignada que coincidan en vehículo y fecha local
+      if (matchingCargas.length === 0) {
+        const salidaDateLocal = toLocalDateStr(salida.fecha || salida.createdAt)
+        const candidatas = cargasSinSalida.filter((c) => {
+          if (cargasSinSalidaUsadas.has(c.id)) return false
+          const cargaDateLocal = toLocalDateStr(c.fechaCarga)
+          if (!salidaDateLocal || !cargaDateLocal || salidaDateLocal !== cargaDateLocal) {
+            return false
+          }
+          if (salida.activoId && c.activoId) {
+            return c.activoId === salida.activoId
+          }
+          return !isMultiVehiculo
+        })
+
+        if (candidatas.length > 0) {
+          matchingCargas = candidatas
+          for (const cand of candidatas) {
+            cargasSinSalidaUsadas.add(cand.id)
+          }
         }
-        return (
-          Boolean(salidaDateStr) &&
-          Boolean(c.fechaCarga) &&
-          c.fechaCarga.slice(0, 10) === salidaDateStr
-        )
-      })
+      }
 
       let combustibleTexto = "-"
       let totalLitros: number | null = null
@@ -272,11 +321,11 @@ export const ReportesSalidasVehicularesPage = () => {
           0
         )
         facturas = matchingCargas
-          .map((c) => c.numeroFactura)
+          .map((c) => c.numeroFactura?.trim())
           .filter(Boolean) as string[]
 
-        const facStr = facturas.length > 0 ? facturas.join(", ") : "-"
-        combustibleTexto = `${totalLitros} lts / ${facStr}`
+        const facStr = facturas.length > 0 ? ` / ${facturas.join(", ")}` : ""
+        combustibleTexto = `${totalLitros} lts${facStr}`
       }
 
       // Placa identificada del vehículo
@@ -644,23 +693,28 @@ export const ReportesSalidasVehicularesPage = () => {
       {/* ========================================================= */}
       {/* 4. ESTADO DE ERROR                                        */}
       {/* ========================================================= */}
-      {reporteQuery.error && (
+      {(reporteQuery.error || cargasQuery.error) && (
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive print:hidden flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <div>
-              <p className="font-semibold text-sm">Error al consultar el reporte de salidas</p>
+              <p className="font-semibold text-sm">Error al consultar los datos del reporte</p>
               <p className="text-xs text-destructive/90">
                 {reporteQuery.error instanceof Error
                   ? reporteQuery.error.message
-                  : "No se pudo obtener la información desde el servidor."}
+                  : cargasQuery.error instanceof Error
+                    ? `Error al cargar combustible: ${cargasQuery.error.message}`
+                    : "No se pudo obtener la información desde el servidor."}
               </p>
             </div>
           </div>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => void reporteQuery.refetch()}
+            onClick={() => {
+              void reporteQuery.refetch()
+              void cargasQuery.refetch()
+            }}
             className="gap-1.5 ml-4 text-xs h-8 cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5" />

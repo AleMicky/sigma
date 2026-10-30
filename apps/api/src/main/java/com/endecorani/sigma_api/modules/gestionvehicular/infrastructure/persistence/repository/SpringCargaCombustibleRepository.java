@@ -41,15 +41,15 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
           AND (:salidaVehicularId IS NULL OR c.salidaVehicularId = :salidaVehicularId)
           AND (:insumoId IS NULL OR c.insumoId = :insumoId)
           AND (:empleadoId IS NULL OR c.empleadoId = :empleadoId)
-          AND (:fechaDesde IS NULL OR c.fechaCarga >= :fechaDesde)
-          AND (:fechaHasta IS NULL OR c.fechaCarga <= :fechaHasta)
+          AND (CAST(:fechaDesde AS java.time.LocalDateTime) IS NULL OR c.fechaCarga >= :fechaDesde)
+          AND (CAST(:fechaHasta AS java.time.LocalDateTime) IS NULL OR c.fechaCarga <= :fechaHasta)
           AND (
-            CAST(:search AS string) IS NULL OR :search = ''
-            OR LOWER(c.numeroFactura) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
-            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
-            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
-            OR LOWER(ins.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
-            OR LOWER(ins.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            :search IS NULL
+            OR LOWER(c.numeroFactura) LIKE :search
+            OR LOWER(act.codigo) LIKE :search
+            OR LOWER(act.nombre) LIKE :search
+            OR LOWER(ins.codigo) LIKE :search
+            OR LOWER(ins.nombre) LIKE :search
           )
         ORDER BY c.fechaCarga DESC
     """)
@@ -75,15 +75,15 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
           AND (:salidaVehicularId IS NULL OR c.salidaVehicularId = :salidaVehicularId)
           AND (:insumoId IS NULL OR c.insumoId = :insumoId)
           AND (:empleadoId IS NULL OR c.empleadoId = :empleadoId)
-          AND (:fechaDesde IS NULL OR c.fechaCarga >= :fechaDesde)
-          AND (:fechaHasta IS NULL OR c.fechaCarga <= :fechaHasta)
+          AND (CAST(:fechaDesde AS java.time.LocalDateTime) IS NULL OR c.fechaCarga >= :fechaDesde)
+          AND (CAST(:fechaHasta AS java.time.LocalDateTime) IS NULL OR c.fechaCarga <= :fechaHasta)
           AND (
-            CAST(:search AS string) IS NULL OR :search = ''
-            OR LOWER(c.numeroFactura) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
-            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
-            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
-            OR LOWER(ins.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
-            OR LOWER(ins.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            :search IS NULL
+            OR LOWER(c.numeroFactura) LIKE :search
+            OR LOWER(act.codigo) LIKE :search
+            OR LOWER(act.nombre) LIKE :search
+            OR LOWER(ins.codigo) LIKE :search
+            OR LOWER(ins.nombre) LIKE :search
           )
         ORDER BY c.fechaCarga DESC
     """)

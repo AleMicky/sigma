@@ -23,7 +23,7 @@ public record PageRequestDto(
         )
         @Max(
                 value = ApiConstants.MAX_PAGE_SIZE,
-                message = "El tamaño máximo permitido es 100"
+                message = "El tamaño máximo permitido es 500"
         )
         Integer size,
         String sortBy,
