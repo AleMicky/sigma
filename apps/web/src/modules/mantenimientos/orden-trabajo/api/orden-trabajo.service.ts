@@ -50,6 +50,8 @@ export type OrdenTrabajoPayload = {
   responsableId: string
   fechaInicio?: string | null
   fechaFin?: string | null
+  kilometrajeFinal?: number | null
+  horasUsoFinal?: number | null
   diagnostico?: string | null
   trabajoRealizado?: string | null
   observacion?: string | null

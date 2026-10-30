@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Calendar, FileText, Loader2, Save, Wrench } from "lucide-react"
+import { Calendar, FileText, Gauge, Hourglass, Loader2, Save, Wrench } from "lucide-react"
 
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { Button } from "@/shared/components/ui/button"
@@ -54,6 +54,8 @@ export function OrdenTrabajoFormDialog({
   const [responsableId, setResponsableId] = useState<string>("")
   const [fechaInicio, setFechaInicio] = useState<string>("")
   const [fechaFin, setFechaFin] = useState<string>("")
+  const [kilometrajeFinal, setKilometrajeFinal] = useState<string>("")
+  const [horasUsoFinal, setHorasUsoFinal] = useState<string>("")
   const [diagnostico, setDiagnostico] = useState<string>("")
   const [trabajoRealizado, setTrabajoRealizado] = useState<string>("")
   const [observacion, setObservacion] = useState<string>("")
@@ -70,6 +72,8 @@ export function OrdenTrabajoFormDialog({
         setFechaFin(
           ordenTrabajo.fechaFin ? ordenTrabajo.fechaFin.slice(0, 16) : "",
         )
+        setKilometrajeFinal("")
+        setHorasUsoFinal("")
         setDiagnostico(ordenTrabajo.diagnostico || "")
         setTrabajoRealizado(ordenTrabajo.trabajoRealizado || "")
         setObservacion(ordenTrabajo.observacion || "")
@@ -82,6 +86,8 @@ export function OrdenTrabajoFormDialog({
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
         setFechaInicio(now.toISOString().slice(0, 16))
         setFechaFin("")
+        setKilometrajeFinal("")
+        setHorasUsoFinal("")
         setDiagnostico("")
         setTrabajoRealizado("")
         setObservacion("")
@@ -104,6 +110,8 @@ export function OrdenTrabajoFormDialog({
       responsableId,
       fechaInicio: fechaInicio ? `${fechaInicio}:00` : null,
       fechaFin: fechaFin ? `${fechaFin}:00` : null,
+      kilometrajeFinal: kilometrajeFinal ? Number(kilometrajeFinal) : null,
+      horasUsoFinal: horasUsoFinal ? Number(horasUsoFinal) : null,
       diagnostico: diagnostico.trim() || null,
       trabajoRealizado: trabajoRealizado.trim() || null,
       observacion: observacion.trim() || null,
@@ -216,6 +224,51 @@ export function OrdenTrabajoFormDialog({
                 onChange={(e) => setFechaFin(e.target.value)}
                 className="h-8.5 text-xs"
               />
+            </div>
+          </div>
+
+          {/* Telemetría Final al Concluir Trabajo */}
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Gauge className="size-3.5 text-amber-500" />
+                <span>Telemetría al Concluir Servicio (Opcional)</span>
+              </Label>
+              <span className="text-[10.5px] text-muted-foreground">
+                Sincroniza el odómetro u horómetro del activo
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="kmFinal" className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                  <Gauge className="size-3 text-amber-500" />
+                  <span>Odómetro Final (km)</span>
+                </Label>
+                <Input
+                  id="kmFinal"
+                  type="number"
+                  placeholder="Ej: 15450"
+                  value={kilometrajeFinal}
+                  onChange={(e) => setKilometrajeFinal(e.target.value)}
+                  className="h-8 text-xs font-mono"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="horasFinal" className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                  <Hourglass className="size-3 text-purple-500" />
+                  <span>Horómetro Final (hrs)</span>
+                </Label>
+                <Input
+                  id="horasFinal"
+                  type="number"
+                  placeholder="Ej: 1250"
+                  value={horasUsoFinal}
+                  onChange={(e) => setHorasUsoFinal(e.target.value)}
+                  className="h-8 text-xs font-mono"
+                />
+              </div>
             </div>
           </div>
 

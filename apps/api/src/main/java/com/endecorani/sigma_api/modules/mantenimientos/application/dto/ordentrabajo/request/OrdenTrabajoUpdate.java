@@ -31,6 +31,10 @@ public record OrdenTrabajoUpdate(
         @Size(max = 2000, message = "La observación no puede superar los 2000 caracteres")
         String observacion,
 
+        java.math.BigDecimal kilometrajeFinal,
+
+        java.math.BigDecimal horasUsoFinal,
+
         @Valid
         List<OrdenTrabajoActividadUpdate> actividades,
 

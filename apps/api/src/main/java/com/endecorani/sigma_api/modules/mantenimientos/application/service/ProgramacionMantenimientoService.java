@@ -89,6 +89,7 @@ public class ProgramacionMantenimientoService {
                     PlanMantenimientoActivo nueva = new PlanMantenimientoActivo();
                     nueva.setActivoId(request.activoId());
                     nueva.setPlanMantenimientoId(request.planMantenimientoId());
+                    nueva.setResponsableId(obtenerEmpleadoIdActual());
                     nueva.setFechaInicio(LocalDate.now());
                     nueva.setActivo(true);
                     return planMantenimientoActivoRepository.save(nueva);
@@ -319,6 +320,7 @@ public class ProgramacionMantenimientoService {
                         PlanMantenimientoActivo nuevo = new PlanMantenimientoActivo();
                         nuevo.setActivoId(a.getId());
                         nuevo.setPlanMantenimientoId(request.planMantenimientoId());
+                        nuevo.setResponsableId(obtenerEmpleadoIdActual());
                         nuevo.setFechaInicio(LocalDate.now());
                         nuevo.setActivo(true);
                         return planMantenimientoActivoRepository.save(nuevo);
@@ -596,10 +598,30 @@ public class ProgramacionMantenimientoService {
         if (solicitanteId == null) {
             solicitanteId = obtenerEmpleadoIdActual();
         }
+        if (solicitanteId == null && planActivo.getCreatedById() != null) {
+            solicitanteId = usuarioRepository.findById(planActivo.getCreatedById())
+                    .map(Usuario::getPersonaId)
+                    .flatMap(empleadoRepository::findFirstByPersonaId)
+                    .map(Empleado::getId)
+                    .orElse(null);
+        }
+        if (solicitanteId == null && programacion.getCreatedById() != null) {
+            solicitanteId = usuarioRepository.findById(programacion.getCreatedById())
+                    .map(Usuario::getPersonaId)
+                    .flatMap(empleadoRepository::findFirstByPersonaId)
+                    .map(Empleado::getId)
+                    .orElse(null);
+        }
+        if (solicitanteId == null) {
+            solicitanteId = empleadoRepository.findAll(Pageable.ofSize(1)).stream()
+                    .findFirst()
+                    .map(Empleado::getId)
+                    .orElse(null);
+        }
         if (solicitanteId == null) {
             throw new BusinessException("SOLICITANTE_NO_ASIGNADO",
-                    "No se puede generar la solicitud automática: el activo asignado al plan ('" +
-                    activo.getCodigo() + " - " + activo.getNombre() + "') no tiene un empleado responsable asignado como solicitante.");
+                    "No se puede generar la solicitud automática: no se encontró un empleado responsable o disponible para el activo ('" +
+                    activo.getCodigo() + " - " + activo.getNombre() + "').");
         }
 
         String titulo = "Mantenimiento Preventivo: " + plan.getNombre() + " (" + activo.getCodigo() + ")";
@@ -622,6 +644,23 @@ public class ProgramacionMantenimientoService {
         );
 
         SolicitudMantenimientoResponse solResponse = solicitudMantenimientoService.create(solRequest);
+
+        // Promover automáticamente la solicitud preventiva a estado SOLICITADO para ingresar al flujo de aprobación
+        try {
+            UUID aprobador = planActivo.getResponsableId() != null ? planActivo.getResponsableId() : solicitanteId;
+            solicitudMantenimientoService.enviar(
+                    solResponse.id(),
+                    new EnviarSolicitudMantenimientoRequest(
+                            aprobador,
+                            planActivo.getResponsableId(),
+                            planActivo.getResponsableId()
+                    )
+            );
+            log.info("Solicitud preventiva {} promovida automáticamente a SOLICITADO", solResponse.numero());
+        } catch (Exception e) {
+            log.warn("Solicitud preventiva {} creada en BORRADOR (no se pudo auto-enviar a aprobación: {})",
+                    solResponse.numero(), e.getMessage());
+        }
 
         // Regla 6: Conservar el historial de los valores que provocaron cada mantenimiento
         StringBuilder snapshot = new StringBuilder();

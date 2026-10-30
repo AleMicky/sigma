@@ -163,4 +163,92 @@ class ProgramacionMantenimientoServiceTest {
         assertThat(resp.cumpleCriterio()).isFalse();
         assertThat(resp.solicitudGenerada()).isFalse();
     }
+
+    @Test
+    @DisplayName("evaluarProgramacion debe disparar solicitud, usar fallback de solicitante y auto-enviar a SOLICITADO")
+    void evaluarProgramacionDisparaSolicitudYAutoEnvia() {
+        UUID progId = UUID.randomUUID();
+        UUID pmaId = UUID.randomUUID();
+        UUID activoId = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+        UUID solicitanteFallbackId = UUID.randomUUID();
+        UUID tipoMantId = UUID.randomUUID();
+        UUID prioridadId = UUID.randomUUID();
+        UUID solicitudId = UUID.randomUUID();
+
+        ProgramacionMantenimiento prog = new ProgramacionMantenimiento();
+        prog.setId(progId);
+        prog.setPlanMantenimientoActivoId(pmaId);
+        prog.setActivo(true);
+
+        PlanMantenimientoActivo pma = new PlanMantenimientoActivo();
+        pma.setId(pmaId);
+        pma.setActivoId(activoId);
+        pma.setPlanMantenimientoId(planId);
+        pma.setActivo(true);
+        pma.setResponsableId(null); // Sin responsable para probar fallback
+
+        Activo activo = new Activo();
+        activo.setId(activoId);
+        activo.setCodigo("ACT-01");
+        activo.setNombre("Camioneta Hilux");
+
+        PlanMantenimiento plan = new PlanMantenimiento();
+        plan.setId(planId);
+        plan.setCodigo("PLAN-01");
+        plan.setNombre("Plan 50k");
+
+        ProgramacionMantenimientoCriterio criterio = new ProgramacionMantenimientoCriterio();
+        criterio.setTipoCriterio(TipoCriterioMantenimiento.KILOMETRAJE);
+        criterio.setProximoValorUso(new BigDecimal("50000"));
+        criterio.setIntervaloUso(new BigDecimal("5000"));
+        criterio.setActivo(true);
+
+        when(repository.findByIdWithLock(progId)).thenReturn(Optional.of(prog));
+        when(planMantenimientoActivoRepository.findById(pmaId)).thenReturn(Optional.of(pma));
+        when(activoRepository.findById(activoId)).thenReturn(Optional.of(activo));
+        when(planMantenimientoRepository.findById(planId)).thenReturn(Optional.of(plan));
+        when(criterioRepository.findByProgramacionMantenimientoIdAndActivoTrue(progId)).thenReturn(List.of(criterio));
+        when(historialRepository.findFirstPendingByProgramacionMantenimientoId(progId)).thenReturn(Optional.empty());
+
+        TipoMantenimientoEntity tipoMant = new TipoMantenimientoEntity();
+        tipoMant.setId(tipoMantId);
+        when(springTipoMantenimientoRepository.findByCodigoIgnoreCase("PREVENTIVO")).thenReturn(Optional.of(tipoMant));
+
+        var prioridadEntity = new com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.PrioridadEntity();
+        prioridadEntity.setId(prioridadId);
+        when(springPrioridadRepository.findFirstByPorDefectoTrue()).thenReturn(Optional.of(prioridadEntity));
+
+        // Fallback de empleado
+        com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado emp =
+                new com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado();
+        emp.setId(solicitanteFallbackId);
+        when(empleadoRepository.findAll(org.springframework.data.domain.Pageable.ofSize(1)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(emp)));
+
+        SolicitudMantenimientoResponse solResp = new SolicitudMantenimientoResponse(
+                solicitudId,
+                "SOL-2026-001",
+                null, null, List.of(), null, null, "Titulo", "Desc",
+                null, null, null, null, null, null, null, null, "BORRADOR", List.of(), null
+        );
+        when(solicitudMantenimientoService.create(any())).thenReturn(solResp);
+
+        EvaluarProgramacionRequest request = new EvaluarProgramacionRequest(
+                LocalDate.now(),
+                new BigDecimal("50000"), // Cumple límite
+                null,
+                false
+        );
+
+        EvaluacionProgramacionResponse resp = service.evaluarProgramacion(progId, request);
+        assertThat(resp.cumpleCriterio()).isTrue();
+        assertThat(resp.solicitudGenerada()).isTrue();
+        assertThat(resp.solicitudId()).isEqualTo(solicitudId);
+        assertThat(resp.solicitudNumero()).isEqualTo("SOL-2026-001");
+
+        // Verifica que se haya guardado en el historial y enviado para aprobación
+        verify(historialRepository, times(1)).save(any());
+        verify(solicitudMantenimientoService, times(1)).enviar(eq(solicitudId), any());
+    }
 }
