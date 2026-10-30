@@ -4,6 +4,7 @@ export type TabType =
   | "accesorios"
   | "asignacion"
   | "historial"
+  | "preventivo"
 
 export interface DocumentoItem {
   id: string

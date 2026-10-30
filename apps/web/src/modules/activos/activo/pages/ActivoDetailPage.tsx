@@ -32,6 +32,7 @@ import {
   ActivoDetailTabs,
   ActivoDocumentosTab,
   ActivoHistorialTab,
+  ActivoMantenimientoPreventivoTab,
   ActivoImagePreviewModal,
   ActivoInfoTab,
   type TabType,
@@ -259,6 +260,10 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
 
         {activeTab === "asignacion" && (
           <ActivoAsignacionTab activo={activo} ubicacion={ubicacion} />
+        )}
+
+        {activeTab === "preventivo" && (
+          <ActivoMantenimientoPreventivoTab activo={activo} tipoActivo={tipoActivo} />
         )}
 
         {activeTab === "historial" && (

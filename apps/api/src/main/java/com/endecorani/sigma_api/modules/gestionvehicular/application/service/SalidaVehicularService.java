@@ -35,6 +35,7 @@ import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -82,6 +83,7 @@ public class SalidaVehicularService {
     private final UsuarioRepository usuarioRepository;
     private final EmpleadoRepository empleadoRepository;
     private final SecurityUtils securityUtils;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ==========================================
     // 1. Gestión de Salidas Vehiculares
@@ -383,6 +385,19 @@ public class SalidaVehicularService {
                 .observacion(request != null ? request.observacion() : null)
                 .build();
         eventoRepository.save(evento);
+
+        // Notificar telemetría de odómetro y evaluar preventivo si se registró kilometraje
+        if (request != null && request.kilometraje() != null && salida.getActivoId() != null && eventPublisher != null) {
+            try {
+                eventPublisher.publishEvent(new com.endecorani.sigma_api.modules.gestionvehicular.domain.event.VehiculoKilometrajeRegistradoEvent(
+                        salida.getActivoId(),
+                        request.kilometraje().longValue(),
+                        "SALIDA_VEHICULAR_" + (tipoEvento != null ? tipoEvento : actionValue)
+                ));
+            } catch (Exception ex) {
+                log.warn("Error al emitir evento de telemetría para salida vehicular {}: {}", salida.getId(), ex.getMessage());
+            }
+        }
 
         // Registrar automáticamente la entrada en bitácora vehicular con geolocalización y odómetro del hito
         String descripcionBitacora = construirDescripcionBitacoraAutomatica(salida, tipoEvento, actionValue, request);

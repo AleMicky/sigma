@@ -120,6 +120,14 @@ public class ProgramacionMantenimientoService {
             criterioService.validarCapacidadActivo(activo, c.tipoCriterio());
         }
 
+        // Actualizar telemetría inicial del activo si viene proporcionada
+        if (request.kilometrajeInicial() != null || request.horasUsoInicial() != null) {
+            actualizarTelemetriaActivo(activo.getId(), request.kilometrajeInicial(), request.horasUsoInicial());
+        }
+
+        BigDecimal kmActual = request.kilometrajeInicial() != null ? request.kilometrajeInicial() : obtenerKilometrajeActual(activo.getId());
+        BigDecimal horasActual = request.horasUsoInicial() != null ? request.horasUsoInicial() : obtenerHorasUsoActual(activo.getId());
+
         // Guardar la cabecera de la programación
         ProgramacionMantenimiento domain = mapper.toDomain(request);
         ProgramacionMantenimiento saved = repository.save(domain);
@@ -129,6 +137,24 @@ public class ProgramacionMantenimientoService {
         for (ProgramacionMantenimientoCriterioRequest cReq : request.criterios()) {
             ProgramacionMantenimientoCriterio cDomain = criterioMapper.toDomain(cReq);
             cDomain.setProgramacionMantenimientoId(saved.getId());
+
+            // Auto-calcular proximoValorUso o proximaFecha si no fueron enviados explícitamente
+            if (cReq.tipoCriterio() == TipoCriterioMantenimiento.KILOMETRAJE) {
+                if (cDomain.getProximoValorUso() == null && cDomain.getIntervaloUso() != null) {
+                    BigDecimal base = kmActual != null ? kmActual : BigDecimal.ZERO;
+                    cDomain.setProximoValorUso(base.add(cDomain.getIntervaloUso()));
+                }
+            } else if (cReq.tipoCriterio() == TipoCriterioMantenimiento.HORAS_USO) {
+                if (cDomain.getProximoValorUso() == null && cDomain.getIntervaloUso() != null) {
+                    BigDecimal base = horasActual != null ? horasActual : BigDecimal.ZERO;
+                    cDomain.setProximoValorUso(base.add(cDomain.getIntervaloUso()));
+                }
+            } else if (cReq.tipoCriterio() == TipoCriterioMantenimiento.TIEMPO) {
+                if (cDomain.getProximaFecha() == null && cDomain.getIntervaloDias() != null) {
+                    cDomain.setProximaFecha(LocalDate.now().plusDays(cDomain.getIntervaloDias()));
+                }
+            }
+
             criteriosGuardados.add(criterioRepository.save(cDomain));
         }
 
@@ -148,6 +174,13 @@ public class ProgramacionMantenimientoService {
 
         Activo activo = activoRepository.findById(planActivo.getActivoId())
                 .orElseThrow(() -> new ResourceNotFoundException("Activo no encontrado"));
+
+        if (request.kilometrajeInicial() != null || request.horasUsoInicial() != null) {
+            actualizarTelemetriaActivo(activo.getId(), request.kilometrajeInicial(), request.horasUsoInicial());
+        }
+
+        BigDecimal kmActual = request.kilometrajeInicial() != null ? request.kilometrajeInicial() : obtenerKilometrajeActual(activo.getId());
+        BigDecimal horasActual = request.horasUsoInicial() != null ? request.horasUsoInicial() : obtenerHorasUsoActual(activo.getId());
 
         if (request.activo() != null) {
             if (Boolean.TRUE.equals(request.activo()) &&
@@ -183,19 +216,34 @@ public class ProgramacionMantenimientoService {
             Set<UUID> idsEnRequest = new HashSet<>();
 
             for (ProgramacionMantenimientoCriterioRequest cReq : request.criterios()) {
+                BigDecimal nextVal = cReq.proximoValorUso();
+                LocalDate nextDate = cReq.proximaFecha();
+
+                if (cReq.tipoCriterio() == TipoCriterioMantenimiento.KILOMETRAJE && nextVal == null && cReq.intervaloUso() != null) {
+                    BigDecimal base = kmActual != null ? kmActual : BigDecimal.ZERO;
+                    nextVal = base.add(cReq.intervaloUso());
+                } else if (cReq.tipoCriterio() == TipoCriterioMantenimiento.HORAS_USO && nextVal == null && cReq.intervaloUso() != null) {
+                    BigDecimal base = horasActual != null ? horasActual : BigDecimal.ZERO;
+                    nextVal = base.add(cReq.intervaloUso());
+                } else if (cReq.tipoCriterio() == TipoCriterioMantenimiento.TIEMPO && nextDate == null && cReq.intervaloDias() != null) {
+                    nextDate = LocalDate.now().plusDays(cReq.intervaloDias());
+                }
+
                 if (cReq.id() != null && mapExistentes.containsKey(cReq.id())) {
                     ProgramacionMantenimientoCriterio exist = mapExistentes.get(cReq.id());
                     exist.setTipoCriterio(cReq.tipoCriterio());
                     exist.setIntervaloDias(cReq.intervaloDias());
                     exist.setIntervaloUso(cReq.intervaloUso());
-                    exist.setProximaFecha(cReq.proximaFecha());
-                    exist.setProximoValorUso(cReq.proximoValorUso());
+                    exist.setProximaFecha(nextDate);
+                    exist.setProximoValorUso(nextVal);
                     exist.setActivo(cReq.activo());
                     nuevosCriterios.add(criterioRepository.save(exist));
                     idsEnRequest.add(cReq.id());
                 } else {
                     ProgramacionMantenimientoCriterio cDomain = criterioMapper.toDomain(cReq);
                     cDomain.setProgramacionMantenimientoId(id);
+                    cDomain.setProximoValorUso(nextVal);
+                    cDomain.setProximaFecha(nextDate);
                     nuevosCriterios.add(criterioRepository.save(cDomain));
                 }
             }
@@ -918,5 +966,54 @@ public class ProgramacionMantenimientoService {
                 .collect(Collectors.toList());
 
         return mapper.toResponse(domain, planActivoInfo, criteriosResponse);
+    }
+
+    /**
+     * Evalúa todas las programaciones preventivas activas asociadas a un activo específico.
+     * Genera automáticamente la solicitud de mantenimiento si se alcanza el umbral de odómetro/fecha/horas.
+     */
+    @Transactional
+    public List<EvaluacionProgramacionResponse> evaluarPorActivo(UUID activoId) {
+        if (activoId == null) {
+            return Collections.emptyList();
+        }
+
+        List<PlanMantenimientoActivo> planes = planMantenimientoActivoRepository.findByActivoId(activoId);
+        List<EvaluacionProgramacionResponse> resultados = new ArrayList<>();
+
+        for (PlanMantenimientoActivo pma : planes) {
+            if (Boolean.TRUE.equals(pma.getActivo())) {
+                repository.findByPlanMantenimientoActivoIdAndActivoTrue(pma.getId())
+                        .ifPresent(prog -> {
+                            try {
+                                log.info("Evaluando automáticamente programación preventiva {} para activo {}",
+                                        prog.getId(), activoId);
+                                resultados.add(evaluarProgramacion(prog.getId(), null));
+                            } catch (Exception e) {
+                                log.error("Error al evaluar programación preventiva {} para activo {}: {}",
+                                        prog.getId(), activoId, e.getMessage());
+                            }
+                        });
+            }
+        }
+
+        return resultados;
+    }
+
+    /**
+     * Obtiene las programaciones de mantenimiento preventivo asociadas a un activo.
+     */
+    @Transactional(readOnly = true)
+    public List<ProgramacionMantenimientoResponse> findByActivoId(UUID activoId) {
+        if (activoId == null) {
+            return Collections.emptyList();
+        }
+        List<PlanMantenimientoActivo> planes = planMantenimientoActivoRepository.findByActivoId(activoId);
+        List<ProgramacionMantenimientoResponse> responses = new ArrayList<>();
+        for (PlanMantenimientoActivo pma : planes) {
+            repository.findByPlanMantenimientoActivoId(pma.getId())
+                    .forEach(prog -> responses.add(toEnrichedResponse(prog)));
+        }
+        return responses;
     }
 }

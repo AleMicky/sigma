@@ -5,6 +5,7 @@ import {
   getProgramacion,
   getProgramaciones,
   getProgramacionesByPlanActivo,
+  getProgramacionesByActivo,
   type ListProgramacionesParams,
 } from "./programacion-mantenimiento.service"
 
@@ -28,6 +29,14 @@ export function useProgramacionesByPlanActivo(planActivoId?: string) {
     queryKey: programacionMantenimientoKeys.byPlanActivo(planActivoId ?? ""),
     queryFn: () => getProgramacionesByPlanActivo(planActivoId!),
     enabled: Boolean(planActivoId),
+  })
+}
+
+export function useProgramacionesByActivo(activoId?: string) {
+  return useQuery({
+    queryKey: programacionMantenimientoKeys.byActivo(activoId ?? ""),
+    queryFn: () => getProgramacionesByActivo(activoId!),
+    enabled: Boolean(activoId),
   })
 }
 

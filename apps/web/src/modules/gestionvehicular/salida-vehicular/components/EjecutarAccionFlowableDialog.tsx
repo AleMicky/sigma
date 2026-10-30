@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
+  CalendarClock,
   Car,
   CheckCircle2,
   FileText,
@@ -12,6 +13,8 @@ import {
   RefreshCw,
   User,
 } from "lucide-react"
+
+import { useProgramacionesByActivo } from "@/modules/mantenimientos/programacion-mantenimiento/api/programacion-mantenimiento.queries"
 
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -86,6 +89,30 @@ export function EjecutarAccionFlowableDialog({
     )
     return salidaEvent?.kilometraje ?? null
   }, [salida?.eventos])
+
+  const preventivoQuery = useProgramacionesByActivo(salida?.activoId ?? undefined)
+  const activeProgram = useMemo(
+    () => (preventivoQuery.data ?? []).find((p) => p.activo),
+    [preventivoQuery.data]
+  )
+  const kmCriterion = useMemo(
+    () =>
+      (activeProgram?.criterios ?? []).find(
+        (c) => c.activo && c.tipoCriterio === "KILOMETRAJE"
+      ),
+    [activeProgram?.criterios]
+  )
+
+  const numKm = useMemo(() => {
+    if (!kilometraje) return null
+    const n = Number(kilometraje)
+    return Number.isNaN(n) ? null : n
+  }, [kilometraje])
+
+  const isReachingPreventivo = useMemo(() => {
+    if (numKm === null || kmCriterion?.proximoValorUso == null) return false
+    return numKm >= kmCriterion.proximoValorUso
+  }, [numKm, kmCriterion?.proximoValorUso])
 
   const nextAction = getSalidaNextActionConfig(
     currentTask?.name ?? (hasSalidaEvent ? "LLEGADA" : salida?.estado),
@@ -369,6 +396,56 @@ export function EjecutarAccionFlowableDialog({
                       Debe ser igual o mayor a los {kilometrajeSalida} km registrados en la salida.
                     </p>
                   )
+                )}
+
+                {/* Aviso preventivo integrado con el odómetro ingresado */}
+                {kmCriterion && (
+                  <div
+                    className={cn(
+                      "p-2.5 rounded-lg border text-xs space-y-1 transition-colors",
+                      isReachingPreventivo
+                        ? "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-300"
+                        : "bg-muted/30 border-border/50 text-muted-foreground"
+                    )}
+                  >
+                    <div className="flex items-center justify-between font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <CalendarClock
+                          className={cn(
+                            "size-3.5",
+                            isReachingPreventivo
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-primary"
+                          )}
+                        />
+                        {isReachingPreventivo
+                          ? "Alcanzará Límite Preventivo"
+                          : "Control Preventivo Activo"}
+                      </span>
+                      <span className="font-mono font-bold text-[11px]">
+                        Límite: {kmCriterion.proximoValorUso?.toLocaleString() ?? "N/A"} km
+                      </span>
+                    </div>
+                    {isReachingPreventivo ? (
+                      <p className="text-[10.5px] leading-tight text-amber-800 dark:text-amber-300">
+                        Al confirmar este kilometraje ({numKm?.toLocaleString()} km), se actualizará la telemetría del activo y el sistema disparará la evaluación preventiva automáticamente.
+                      </p>
+                    ) : kmCriterion.proximoValorUso && (kmCriterion.valorActualUso || numKm) ? (
+                      <div className="flex items-center justify-between text-[10.5px]">
+                        <span>
+                          Margen restante:{" "}
+                          {(
+                            kmCriterion.proximoValorUso -
+                            (numKm || kmCriterion.valorActualUso || 0)
+                          ).toLocaleString()}{" "}
+                          km
+                        </span>
+                        <span>
+                          Actual: {(numKm || kmCriterion.valorActualUso || 0).toLocaleString()} km
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
                 )}
               </div>
 
