@@ -1,6 +1,7 @@
 export const programacionMantenimientoEndpoints = {
   list: "/programaciones-mantenimiento",
   create: "/programaciones-mantenimiento",
+  porTipoActivo: "/programaciones-mantenimiento/por-tipo-activo",
   detail: (id: string) => `/programaciones-mantenimiento/${id}`,
   update: (id: string) => `/programaciones-mantenimiento/${id}`,
   delete: (id: string) => `/programaciones-mantenimiento/${id}`,

@@ -77,19 +77,42 @@ public class ProgramacionMantenimientoService {
     private final ProgramacionMantenimientoHistorialMapper historialMapper;
     private final ProgramacionSeguimientoExcelService excelService;
 
+    private UUID resolverOCrearPlanActivo(ProgramacionMantenimientoRequest request) {
+        if (request.activoId() == null || request.planMantenimientoId() == null) {
+            throw new BusinessException("Debe especificar la asignación (planMantenimientoActivoId) o indicar el activo y el plan de mantenimiento.");
+        }
+        List<PlanMantenimientoActivo> asignaciones = planMantenimientoActivoRepository.findByActivoId(request.activoId());
+        PlanMantenimientoActivo pma = asignaciones.stream()
+                .filter(a -> Boolean.TRUE.equals(a.getActivo()) && request.planMantenimientoId().equals(a.getPlanMantenimientoId()))
+                .findFirst()
+                .orElseGet(() -> {
+                    PlanMantenimientoActivo nueva = new PlanMantenimientoActivo();
+                    nueva.setActivoId(request.activoId());
+                    nueva.setPlanMantenimientoId(request.planMantenimientoId());
+                    nueva.setFechaInicio(LocalDate.now());
+                    nueva.setActivo(true);
+                    return planMantenimientoActivoRepository.save(nueva);
+                });
+        return pma.getId();
+    }
+
     @Transactional
     public ProgramacionMantenimientoResponse create(ProgramacionMantenimientoRequest request) {
-        log.info("Creando programación de mantenimiento para planActivo: {}", request.planMantenimientoActivoId());
+        final UUID planActivoId = request.planMantenimientoActivoId() != null
+                ? request.planMantenimientoActivoId()
+                : resolverOCrearPlanActivo(request);
 
-        PlanMantenimientoActivo planActivo = planMantenimientoActivoRepository.findById(request.planMantenimientoActivoId())
-                .orElseThrow(() -> new ResourceNotFoundException("Asignación de activo al plan no encontrada: " + request.planMantenimientoActivoId()));
+        log.info("Creando programación de mantenimiento para planActivo: {}", planActivoId);
+
+        PlanMantenimientoActivo planActivo = planMantenimientoActivoRepository.findById(planActivoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Asignación de activo al plan no encontrada: " + planActivoId));
 
         Activo activo = activoRepository.findById(planActivo.getActivoId())
                 .orElseThrow(() -> new ResourceNotFoundException("Activo no encontrado: " + planActivo.getActivoId()));
 
         // Evitar múltiples programaciones activas para la misma asignación de activo
         if (Boolean.TRUE.equals(request.activo()) &&
-                repository.existsByPlanMantenimientoActivoIdAndActivoTrue(request.planMantenimientoActivoId())) {
+                repository.existsByPlanMantenimientoActivoIdAndActivoTrue(planActivoId)) {
             throw new ConflictException("Ya existe una programación de mantenimiento activa para esta asignación del activo al plan.");
         }
 
@@ -130,6 +153,7 @@ public class ProgramacionMantenimientoService {
 
         // Guardar la cabecera de la programación
         ProgramacionMantenimiento domain = mapper.toDomain(request);
+        domain.setPlanMantenimientoActivoId(planActivoId);
         ProgramacionMantenimiento saved = repository.save(domain);
 
         // Guardar los criterios asociados
@@ -259,6 +283,78 @@ public class ProgramacionMantenimientoService {
 
         ProgramacionMantenimiento saved = repository.save(programacion);
         return toEnrichedResponse(saved);
+    }
+
+    /**
+     * Aplica la programación preventiva a todos los activos pertenecientes a un tipo de activo en lote.
+     */
+    @Transactional
+    public BatchProgramacionTipoResponse crearPorTipoActivo(ProgramacionTipoActivoBatchRequest request) {
+        log.info("Creando programación preventiva masiva por tipo de activo: tipoActivoId={}, planId={}",
+                request.tipoActivoId(), request.planMantenimientoId());
+
+        if (request.criterios() == null || request.criterios().isEmpty()) {
+            throw new BusinessException("Debe configurar al menos un criterio para la programación.");
+        }
+
+        PlanMantenimiento plan = planMantenimientoRepository.findById(request.planMantenimientoId())
+                .orElseThrow(() -> new ResourceNotFoundException("Plan de mantenimiento no encontrado: " + request.planMantenimientoId()));
+
+        Page<Activo> activosPage = activoRepository.findByTipoActivoId(request.tipoActivoId(), Pageable.unpaged());
+        List<Activo> activos = activosPage.getContent();
+        if (activos.isEmpty()) {
+            throw new BusinessException("No se encontraron activos asociados al tipo de activo seleccionado.");
+        }
+
+        int creados = 0;
+        int actualizados = 0;
+
+        for (Activo a : activos) {
+            // Asignar al plan si no está asignado
+            List<PlanMantenimientoActivo> asigs = planMantenimientoActivoRepository.findByActivoId(a.getId());
+            PlanMantenimientoActivo pma = asigs.stream()
+                    .filter(x -> Boolean.TRUE.equals(x.getActivo()) && request.planMantenimientoId().equals(x.getPlanMantenimientoId()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        PlanMantenimientoActivo nuevo = new PlanMantenimientoActivo();
+                        nuevo.setActivoId(a.getId());
+                        nuevo.setPlanMantenimientoId(request.planMantenimientoId());
+                        nuevo.setFechaInicio(LocalDate.now());
+                        nuevo.setActivo(true);
+                        return planMantenimientoActivoRepository.save(nuevo);
+                    });
+
+            Optional<ProgramacionMantenimiento> existProg = repository.findByPlanMantenimientoActivoIdAndActivoTrue(pma.getId());
+            if (existProg.isPresent()) {
+                ProgramacionMantenimientoUpdate updateDto = new ProgramacionMantenimientoUpdate(
+                        true,
+                        null,
+                        null,
+                        request.criterios()
+                );
+                update(existProg.get().getId(), updateDto);
+                actualizados++;
+            } else {
+                ProgramacionMantenimientoRequest req = new ProgramacionMantenimientoRequest(
+                        pma.getId(),
+                        a.getId(),
+                        request.planMantenimientoId(),
+                        true,
+                        null,
+                        null,
+                        request.criterios()
+                );
+                create(req);
+                creados++;
+            }
+        }
+
+        return new BatchProgramacionTipoResponse(
+                creados,
+                actualizados,
+                activos.size(),
+                "Programación preventiva aplicada exitosamente a " + activos.size() + " activos (" + creados + " nuevas, " + actualizados + " actualizadas)."
+        );
     }
 
     @Transactional

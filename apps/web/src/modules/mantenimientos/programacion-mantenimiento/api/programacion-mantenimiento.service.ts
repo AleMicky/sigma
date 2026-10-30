@@ -104,11 +104,27 @@ export type ProgramacionMantenimientoCriterioPayload = {
 }
 
 export type ProgramacionMantenimientoPayload = {
-  planMantenimientoActivoId: string
+  planMantenimientoActivoId?: string
+  activoId?: string
+  planMantenimientoId?: string
   activo?: boolean
   kilometrajeInicial?: number | null
   horasUsoInicial?: number | null
   criterios: ProgramacionMantenimientoCriterioPayload[]
+}
+
+export type ProgramacionTipoActivoBatchPayload = {
+  tipoActivoId: string
+  planMantenimientoId: string
+  estadoActivo?: boolean
+  criterios: ProgramacionMantenimientoCriterioPayload[]
+}
+
+export type BatchProgramacionTipoResponse = {
+  creados: number
+  actualizados: number
+  totalProcesados: number
+  mensaje: string
 }
 
 export type ProgramacionMantenimientoUpdatePayload = {
@@ -201,6 +217,15 @@ export async function createProgramacion(
 ): Promise<ProgramacionMantenimiento> {
   return http.post<ProgramacionMantenimiento>(
     programacionMantenimientoEndpoints.create,
+    payload,
+  )
+}
+
+export async function crearPorTipoActivo(
+  payload: ProgramacionTipoActivoBatchPayload,
+): Promise<BatchProgramacionTipoResponse> {
+  return http.post<BatchProgramacionTipoResponse>(
+    programacionMantenimientoEndpoints.porTipoActivo,
     payload,
   )
 }

@@ -185,9 +185,14 @@ export function ActivoMantenimientoPreventivoTab({
           open={formDialogOpen}
           onOpenChange={(open) => {
             setFormDialogOpen(open)
-            if (!open) refetchProg()
+            if (!open) {
+              refetchProg()
+              asignacionesQuery.refetch()
+            }
           }}
           planMantenimientoActivoId={undefined}
+          activoId={activo.id}
+          tipoActivoId={activo.tipoActivo?.id ?? activo.tipoActivoId}
           activoNombre={activo.nombre}
           tipoActivoNombre={tipoActivo?.nombre}
         />
@@ -580,10 +585,15 @@ export function ActivoMantenimientoPreventivoTab({
         open={formDialogOpen}
         onOpenChange={(open) => {
           setFormDialogOpen(open)
-          if (!open) refetchProg()
+          if (!open) {
+            refetchProg()
+            asignacionesQuery.refetch()
+          }
         }}
         programacionToEdit={programacion}
         planMantenimientoActivoId={programacion?.planMantenimientoActivoId ?? asignacionActiva?.id}
+        activoId={activo.id}
+        tipoActivoId={activo.tipoActivo?.id ?? activo.tipoActivoId}
         planNombre={programacion?.planActivo?.planNombre ?? asignacionActiva?.plan?.nombre}
         activoNombre={activo.nombre}
         tipoActivoNombre={tipoActivo?.nombre}

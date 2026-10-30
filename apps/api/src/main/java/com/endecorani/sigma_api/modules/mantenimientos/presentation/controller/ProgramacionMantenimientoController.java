@@ -5,7 +5,9 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programac
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.EvaluarProgramacionRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ProgramacionMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ProgramacionMantenimientoUpdate;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ProgramacionTipoActivoBatchRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.BatchEvaluacionProgramacionResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.BatchProgramacionTipoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.EvaluacionProgramacionResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.ProgramacionMantenimientoHistorialResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.ProgramacionMantenimientoResponse;
@@ -55,6 +57,20 @@ public class ProgramacionMantenimientoController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Programación de mantenimiento creada correctamente", response));
+    }
+
+    @PostMapping("/por-tipo-activo")
+    @Operation(
+            summary = "Crear o actualizar programaciones preventivas en lote por Tipo de Activo",
+            description = "Aplica la programación preventiva a todos los activos pertenecientes al tipo de activo indicado, auto-asignando el plan si es necesario."
+    )
+    public ResponseEntity<ApiResponse<BatchProgramacionTipoResponse>> crearPorTipoActivo(
+            @Valid @RequestBody ProgramacionTipoActivoBatchRequest request
+    ) {
+        BatchProgramacionTipoResponse response = service.crearPorTipoActivo(request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response.mensaje(), response));
     }
 
     @PutMapping("/{id}")
