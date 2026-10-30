@@ -23,7 +23,7 @@ INSERT INTO seguridad.menus (
     updated_by
 )
 VALUES (
-    'e0000000-0000-4000-a000-000000000035',
+    'e0000000-0000-4000-a000-000000000036',
     (SELECT id FROM seguridad.menus WHERE codigo IN ('MOD_ACTIVOS', 'MENU_ACTIVOS') LIMIT 1),
     'MENU_ACTIVOS_INCIDENTES',
     'Gestión de Incidentes',
@@ -34,7 +34,7 @@ VALUES (
     NULL,
     'Registro y seguimiento de incidentes, siniestros y flujo de atención de activos',
     TRUE,
-    4,
+    6,
     TRUE,
     NOW(),
     NOW(),
