@@ -712,6 +712,7 @@ public class ProgramacionMantenimientoService {
      * Evalúa todas las programaciones de mantenimiento activas en lote.
      * Útil para ejecución manual por el planificador o invocación masiva.
      */
+    @Transactional(readOnly = true)
     public BatchEvaluacionProgramacionResponse evaluarTodas() {
         log.info("Iniciando evaluación en lote de todas las programaciones activas");
         List<ProgramacionMantenimiento> activas = repository.findByActivoTrue();

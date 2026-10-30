@@ -22,6 +22,7 @@ public interface SpringProgramacionMantenimientoRepository
 
     List<ProgramacionMantenimientoEntity> findByPlanMantenimientoActivoId(UUID planMantenimientoActivoId);
 
+    @Query("SELECT DISTINCT p FROM ProgramacionMantenimientoEntity p LEFT JOIN FETCH p.criterios WHERE p.activo = true")
     List<ProgramacionMantenimientoEntity> findByActivoTrue();
 
     Optional<ProgramacionMantenimientoEntity> findByPlanMantenimientoActivoIdAndActivoTrue(UUID planMantenimientoActivoId);
