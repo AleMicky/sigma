@@ -45,7 +45,7 @@ public class ProgramacionMantenimientoPersistenceMapper {
         }
 
         List<ProgramacionMantenimientoCriterio> criteriosDomain = new ArrayList<>();
-        if (entity.getCriterios() != null) {
+        if (entity.getCriterios() != null && org.hibernate.Hibernate.isInitialized(entity.getCriterios())) {
             criteriosDomain = entity.getCriterios().stream()
                     .map(criterioMapper::toDomain)
                     .collect(Collectors.toList());
