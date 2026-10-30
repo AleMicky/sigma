@@ -331,10 +331,12 @@ public class WorkflowApplicationService {
                                 return false;
                             }
 
-                            return action.value()
-                                    .equalsIgnoreCase(
-                                            value.toString()
-                                    );
+                            String actVal = action.value() != null ? action.value().trim().toUpperCase() : "";
+                            String reqVal = value.toString().trim().toUpperCase();
+
+                            return actVal.equalsIgnoreCase(reqVal)
+                                    || actVal.contains(reqVal)
+                                    || reqVal.contains(actVal);
                         });
 
         if (!accionValida) {

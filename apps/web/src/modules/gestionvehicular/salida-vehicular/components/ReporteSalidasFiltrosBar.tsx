@@ -29,6 +29,7 @@ export interface VehiculoMetaInfo {
   marca?: string | null
   modelo?: string | null
   tipoVehiculo?: string | null
+  descripcion?: string | null
 }
 
 export interface ReporteSalidasFiltrosBarProps {
@@ -197,6 +198,7 @@ export function ReporteSalidasFiltrosBar({
                     marca: item.marca,
                     modelo: item.modelo,
                     tipoVehiculo: item.tipoVehiculo,
+                    descripcion: item.descripcion,
                   })
                 } else {
                   onActivoChange("", null, null)

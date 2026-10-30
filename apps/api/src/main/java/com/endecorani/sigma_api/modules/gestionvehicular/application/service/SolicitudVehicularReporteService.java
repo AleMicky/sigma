@@ -43,7 +43,10 @@ import java.util.stream.Collectors;
 public class SolicitudVehicularReporteService {
 
     private static final String REPORTE_SOLICITUDES_PATH = "reports/gestion-vehicular/reporte_solicitudes_vehiculares.jrxml";
-    private static final Pattern PLACA_PATTERN = Pattern.compile("PLACA[:\\s#-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)*)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PLACA_PATTERN = Pattern.compile(
+            "PLACA(?:\\s*(?:N[°o.]+|NRO\\.?|NUM\\.?|#))?[:\\s#.-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)?)(?:\\s+(?:CHASIS|MOTOR|COLOR|MARCA|MODELO|AÑO|ANIO|TIPO)|[,;.]|\\s*$)",
+            Pattern.CASE_INSENSITIVE
+    );
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter DATE_ONLY_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -405,7 +408,10 @@ public class SolicitudVehicularReporteService {
         if (descripcion == null || descripcion.isBlank()) return null;
         Matcher m = PLACA_PATTERN.matcher(descripcion);
         if (m.find()) {
-            return m.group(1).trim();
+            String clean = m.group(1).replaceAll("[,.;-]+$", "").trim();
+            if (!clean.equalsIgnoreCase("NO") && !clean.equalsIgnoreCase("NRO") && clean.length() >= 2) {
+                return clean;
+            }
         }
         return null;
     }
