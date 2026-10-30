@@ -230,7 +230,7 @@ export function ReporteSolicitudesFiltrosBar({
               <Filter className="h-3.5 w-3.5 text-primary" />
               Estado
             </Label>
-            <Select value={estado} onValueChange={onEstadoChange}>
+            <Select value={estado} onValueChange={(val) => onEstadoChange(val ?? "TODOS")}>
               <SelectTrigger id="filtro-reporte-estado" className="h-8.5 text-xs">
                 <SelectValue placeholder="Todos los estados" />
               </SelectTrigger>

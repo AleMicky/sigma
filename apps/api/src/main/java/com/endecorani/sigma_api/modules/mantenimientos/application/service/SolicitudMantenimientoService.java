@@ -500,6 +500,8 @@ public class SolicitudMantenimientoService {
                     variables);
             solicitud.setProcessInstanceId(processInstanceId);
         } else {
+            variables.putIfAbsent("action", "ENVIAR");
+            variables.putIfAbsent("accion", "ENVIAR");
             CompleteWorkflowTaskRequest taskRequest = new CompleteWorkflowTaskRequest(variables);
             workflowApplicationService.completarTarea(
                     solicitud.getProcessInstanceId(),

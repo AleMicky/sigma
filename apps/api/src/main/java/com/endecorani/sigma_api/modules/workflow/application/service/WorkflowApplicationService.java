@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -87,8 +88,8 @@ public class WorkflowApplicationService {
 
         Map<String, Object> variables =
                 request != null && request.variables() != null
-                        ? request.variables()
-                        : Collections.emptyMap();
+                        ? new HashMap<>(request.variables())
+                        : new HashMap<>();
 
         validarVariables(
                 variables,
@@ -264,6 +265,11 @@ public class WorkflowApplicationService {
         variables.add("detalle");
 
         // Compatibilidad con variables estándar de asignación e ids comunes
+        variables.add("solicitudId");
+        variables.add("solicitudMantenimientoId");
+        variables.add("ordenTrabajoId");
+        variables.add("incidenteId");
+        variables.add("controlActivoId");
         variables.add("accion");
         variables.add("accionId");
         variables.add("kilometraje");
@@ -326,12 +332,20 @@ public class WorkflowApplicationService {
                             }
 
                             return action.value()
-                                    .equals(
+                                    .equalsIgnoreCase(
                                             value.toString()
                                     );
                         });
 
         if (!accionValida) {
+            // Si no se envió la variable de acción y la tarea solo tiene una acción directa, auto-asignarla
+            if (tarea.actions().size() == 1) {
+                WorkflowActionResponse unica = tarea.actions().getFirst();
+                variables.put(unica.variable(), unica.value());
+                variables.put("action", unica.value());
+                return;
+            }
+
             throw new IllegalArgumentException(
                     "La acción enviada no es válida para la tarea actual"
             );
