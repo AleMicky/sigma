@@ -37,7 +37,10 @@ import java.util.stream.Collectors;
 public class BitacoraVehicularService {
 
     private static final String REPORTE_BITACORA_PATH = "reports/gestion-vehicular/bitacora_vehicular.jrxml";
-    private static final Pattern PLACA_PATTERN = Pattern.compile("PLACA[:\\s#-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)*)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PLACA_PATTERN = Pattern.compile(
+            "PLACA(?:\\s*(?:N[°o.]+|NRO\\.?|NUM\\.?|#))?[:\\s#.-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)?)(?:\\s+(?:CHASIS|MOTOR|COLOR|MARCA|MODELO|AÑO|ANIO|TIPO)|[,;.]|\\s*$)",
+            Pattern.CASE_INSENSITIVE
+    );
 
     private final SpringActivoRepository activoRepository;
     private final SpringTipoActivoRepository tipoActivoRepository;
@@ -406,7 +409,10 @@ public class BitacoraVehicularService {
         if (placa == null && activo.getDescripcion() != null) {
             Matcher matcher = PLACA_PATTERN.matcher(activo.getDescripcion());
             if (matcher.find()) {
-                placa = matcher.group(1).trim();
+                String clean = matcher.group(1).replaceAll("[,.;-]+$", "").trim();
+                if (!clean.equalsIgnoreCase("NO") && !clean.equalsIgnoreCase("NRO") && clean.length() >= 2) {
+                    placa = clean;
+                }
             }
         }
 

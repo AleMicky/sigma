@@ -135,24 +135,48 @@ export function BitacoraVehicularPage() {
     }
 
     const act = activoDetailQuery.data
-    const placa =
+    const desc = vehiculoMeta?.descripcion || (act as { descripcion?: string })?.descripcion || ""
+
+    let placa =
       placaSeleccionada ||
       vehiculoMeta?.placa ||
       (act as { placa?: string })?.placa ||
       "S/P"
 
+    // Salvaguarda si la placa seleccionada o cargada quedó como "NO" o "S/P"
+    if (placa === "NO" || placa === "S/P") {
+      const matchPlaca = desc.match(
+        /PLACA(?:\s*(?:N[°o.]+|NRO\.?|NUM\.?|#))?[:\s#.-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)?)(?:\s+(?:CHASIS|MOTOR|COLOR|MARCA|MODELO|AÑO|ANIO|TIPO)|[,;.]|\s*$)/i
+      )
+      if (matchPlaca && matchPlaca[1]) {
+        const clean = matchPlaca[1].replace(/[,.;-]+$/, "").trim()
+        if (clean.length >= 2 && !clean.toUpperCase().startsWith("NO")) {
+          placa = clean
+        }
+      }
+    }
+
     const marca = vehiculoMeta?.marca || (act as { marca?: string })?.marca || ""
     const modelo = vehiculoMeta?.modelo || (act as { modelo?: string })?.modelo || ""
-    const tipo =
+    let tipo =
       vehiculoMeta?.tipoVehiculo ||
       (act as { tipoActivo?: { nombre?: string } })?.tipoActivo?.nombre ||
       "CAMIONETA"
 
+    if (tipo.toUpperCase() === "VEHÍCULO" || tipo.toUpperCase() === "VEHICULO") {
+      const matchTipo = desc.match(
+        /^(CAMIONETA|VAGONETA|AUTOMÓVIL|AUTOMOVIL|AUTO|MINIBUS|CAMIÓN|CAMION|MOTOCICLETA|MOTO)\b/i
+      )
+      if (matchTipo && matchTipo[1]) {
+        tipo = matchTipo[1].toUpperCase()
+      }
+    }
+
     const tipoVehiculoCompuesto = [tipo, marca, modelo].filter(Boolean).join(" ").trim() || "CAMIONETA TOYOTA HILUX"
     const responsable =
       (act as { responsable?: { nombreCompleto?: string } })?.responsable?.nombreCompleto ||
-      vehiculoMeta?.nombre ||
-      ""
+      (act as { custodio?: { nombreCompleto?: string } })?.custodio?.nombreCompleto ||
+      "-"
     const ubicacion =
       (act as { ubicacion?: { nombre?: string } })?.ubicacion?.nombre || "CORANI"
 

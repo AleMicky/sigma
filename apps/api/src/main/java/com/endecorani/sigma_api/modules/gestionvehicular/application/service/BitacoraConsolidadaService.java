@@ -55,7 +55,10 @@ public class BitacoraConsolidadaService {
     public static final String ORIGEN_SOLICITUD = "SOLICITUD";
 
     private static final String REPORTE_BITACORA_SALIDAS_PATH = "reports/gestion-vehicular/bitacora_salidas_vehiculares.jrxml";
-    private static final Pattern PLACA_PATTERN = Pattern.compile("PLACA[:\\s#-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)*)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PLACA_PATTERN = Pattern.compile(
+            "PLACA(?:\\s*(?:N[°o.]+|NRO\\.?|NUM\\.?|#))?[:\\s#.-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)?)(?:\\s+(?:CHASIS|MOTOR|COLOR|MARCA|MODELO|AÑO|ANIO|TIPO)|[,;.]|\\s*$)",
+            Pattern.CASE_INSENSITIVE
+    );
     private static final ZoneId ZONA = ZoneId.of("America/La_Paz");
     private static final DateTimeFormatter FECHA_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -98,8 +101,8 @@ public class BitacoraConsolidadaService {
         );
 
         // ---------- Fuente 2: Solicitudes vehiculares (vía viajes) ----------
-        List<ViajeVehicularEntity> viajes = viajeVehicularRepository.findHistorialForExport(
-                searchNorm, null, null, activoId, null, null, desdeLocal, hastaLocal
+        List<ViajeVehicularEntity> viajes = viajeVehicularRepository.findBitacoraViajes(
+                activoId, desdeLocal, hastaLocal, null
         );
 
         Set<UUID> asignacionIds = viajes.stream()
@@ -109,7 +112,7 @@ public class BitacoraConsolidadaService {
         Map<UUID, AsignacionVehicularEntity> asignacionMap = asignacionIds.isEmpty()
                 ? Collections.emptyMap()
                 : asignacionVehicularRepository.findAllById(asignacionIds).stream()
-                .collect(Collectors.toMap(AsignacionVehicularEntity::getId, a -> a));
+                .collect(Collectors.toMap(AsignacionVehicularEntity::getId, a -> a, (a, b) -> a));
 
         Set<UUID> solicitudIds = asignacionMap.values().stream()
                 .map(AsignacionVehicularEntity::getSolicitudVehicularId)
@@ -118,7 +121,22 @@ public class BitacoraConsolidadaService {
         Map<UUID, SolicitudVehicularEntity> solicitudMap = solicitudIds.isEmpty()
                 ? Collections.emptyMap()
                 : solicitudVehicularRepository.findAllById(solicitudIds).stream()
-                .collect(Collectors.toMap(SolicitudVehicularEntity::getId, s -> s));
+                .collect(Collectors.toMap(SolicitudVehicularEntity::getId, s -> s, (a, b) -> a));
+
+        // Filtrado por searchNorm si fue provisto
+        if (searchNorm != null) {
+            String q = searchNorm.toLowerCase(Locale.ROOT);
+            viajes = viajes.stream().filter(v -> {
+                AsignacionVehicularEntity a = asignacionMap.get(v.getAsignacionVehicularId());
+                SolicitudVehicularEntity s = a != null ? solicitudMap.get(a.getSolicitudVehicularId()) : null;
+                String desc = s != null ? ((s.getMotivo() != null ? s.getMotivo() : "") + " " + (s.getDestino() != null ? s.getDestino() : "")) : "";
+                String obs = v.getObservacion() != null ? v.getObservacion() : "";
+                String num = s != null && s.getNumero() != null ? s.getNumero() : "";
+                return desc.toLowerCase(Locale.ROOT).contains(q)
+                        || obs.toLowerCase(Locale.ROOT).contains(q)
+                        || num.toLowerCase(Locale.ROOT).contains(q);
+            }).toList();
+        }
 
         Set<UUID> conductorIds = asignacionMap.values().stream()
                 .map(AsignacionVehicularEntity::getConductorId)
@@ -127,7 +145,7 @@ public class BitacoraConsolidadaService {
         Map<UUID, ConductorEntity> conductorMap = conductorIds.isEmpty()
                 ? Collections.emptyMap()
                 : conductorRepository.findAllById(conductorIds).stream()
-                .collect(Collectors.toMap(ConductorEntity::getId, c -> c));
+                .collect(Collectors.toMap(ConductorEntity::getId, c -> c, (a, b) -> a));
 
         // ---------- Vehículos (placas / códigos) ----------
         Set<UUID> activoIds = new HashSet<>();
@@ -138,7 +156,7 @@ public class BitacoraConsolidadaService {
         Map<UUID, ActivoEntity> activosMap = activoIds.isEmpty()
                 ? Collections.emptyMap()
                 : activoRepository.findAllById(activoIds).stream()
-                .collect(Collectors.toMap(ActivoEntity::getId, a -> a));
+                .collect(Collectors.toMap(ActivoEntity::getId, a -> a, (a, b) -> a));
         Map<UUID, Map<String, String>> atributosMap = obtenerAtributosVehiculosBatch(activoIds);
         Map<UUID, String> placasPorActivo = resolverPlacas(activoIds, activosMap, atributosMap);
 
@@ -576,10 +594,15 @@ public class BitacoraConsolidadaService {
             return Collections.emptyMap();
         }
 
-        Set<UUID> attrIds = valores.stream().map(ActivoAtributoValorEntity::getActivoAtributoId).collect(Collectors.toSet());
-        Map<UUID, String> attrCodigos = activoAtributoRepository.findAllById(attrIds).stream()
+        Set<UUID> attrIds = valores.stream()
+                .map(ActivoAtributoValorEntity::getActivoAtributoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, String> attrCodigos = attrIds.isEmpty()
+                ? Collections.emptyMap()
+                : activoAtributoRepository.findAllById(attrIds).stream()
                 .filter(a -> a.getCodigo() != null)
-                .collect(Collectors.toMap(ActivoAtributoEntity::getId, a -> a.getCodigo().toUpperCase(Locale.ROOT)));
+                .collect(Collectors.toMap(ActivoAtributoEntity::getId, a -> a.getCodigo().toUpperCase(Locale.ROOT), (a, b) -> a));
 
         Map<UUID, Map<String, String>> result = new HashMap<>();
         for (ActivoAtributoValorEntity v : valores) {
@@ -594,7 +617,13 @@ public class BitacoraConsolidadaService {
     private String extractPlacaFromDescripcion(String descripcion) {
         if (descripcion == null || descripcion.isBlank()) return null;
         Matcher m = PLACA_PATTERN.matcher(descripcion);
-        return m.find() ? m.group(1).trim() : null;
+        if (m.find()) {
+            String clean = m.group(1).replaceAll("[,.;-]+$", "").trim();
+            if (!clean.equalsIgnoreCase("NO") && !clean.equalsIgnoreCase("NRO") && clean.length() >= 2) {
+                return clean;
+            }
+        }
+        return null;
     }
 }
 

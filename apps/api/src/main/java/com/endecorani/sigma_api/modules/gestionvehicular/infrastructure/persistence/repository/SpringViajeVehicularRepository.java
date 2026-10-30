@@ -138,7 +138,7 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
         SELECT v
         FROM ViajeVehicularEntity v
         JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.AsignacionVehicularEntity a ON v.asignacionVehicularId = a.id
-        WHERE a.activoId = :activoId
+        WHERE (:activoId IS NULL OR a.activoId = :activoId)
           AND (:conductorId IS NULL OR a.conductorId = :conductorId)
           AND (
             (v.fechaSalidaReal IS NOT NULL AND v.fechaSalidaReal >= :fechaDesde AND v.fechaSalidaReal <= :fechaHasta)

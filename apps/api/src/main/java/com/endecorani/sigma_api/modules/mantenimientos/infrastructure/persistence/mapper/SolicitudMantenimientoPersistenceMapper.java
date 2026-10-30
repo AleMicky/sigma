@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class SolicitudMantenimientoPersistenceMapper {
 
     private static final Pattern PLACA_PATTERN = Pattern.compile(
-            "PLACA[:\\s#-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)*)",
+            "PLACA(?:\\s*(?:N[°o.]+|NRO\\.?|NUM\\.?|#))?[:\\s#.-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)?)(?:\\s+(?:CHASIS|MOTOR|COLOR|MARCA|MODELO|AÑO|ANIO|TIPO)|[,;.]|\\s*$)",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -113,7 +113,10 @@ public class SolicitudMantenimientoPersistenceMapper {
         if (entity.getDescripcion() != null && !entity.getDescripcion().isBlank()) {
             Matcher matcher = PLACA_PATTERN.matcher(entity.getDescripcion());
             if (matcher.find()) {
-                placa = matcher.group(1).trim();
+                String clean = matcher.group(1).replaceAll("[,.;-]+$", "").trim();
+                if (!clean.equalsIgnoreCase("NO") && !clean.equalsIgnoreCase("NRO") && clean.length() >= 2) {
+                    placa = clean;
+                }
             }
         }
         return Activo.builder()

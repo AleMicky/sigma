@@ -45,7 +45,10 @@ import java.util.stream.Stream;
 public class SalidaVehicularReporteService {
 
     private static final String REPORTE_BITACORA_SALIDAS_PATH = "reports/gestion-vehicular/bitacora_salidas_vehiculares.jrxml";
-    private static final Pattern PLACA_PATTERN = Pattern.compile("PLACA[:\\s#-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)*)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PLACA_PATTERN = Pattern.compile(
+            "PLACA(?:\\s*(?:N[°o.]+|NRO\\.?|NUM\\.?|#))?[:\\s#.-]+([0-9A-Za-z]+(?:[\\s-][0-9A-Za-z]+)?)(?:\\s+(?:CHASIS|MOTOR|COLOR|MARCA|MODELO|AÑO|ANIO|TIPO)|[,;.]|\\s*$)",
+            Pattern.CASE_INSENSITIVE
+    );
 
     private final SalidaVehicularRepository salidaRepository;
     private final SalidaVehicularEventoRepository eventoRepository;
@@ -710,7 +713,10 @@ public class SalidaVehicularReporteService {
         if (descripcion == null || descripcion.isBlank()) return null;
         Matcher m = PLACA_PATTERN.matcher(descripcion);
         if (m.find()) {
-            return m.group(1).trim();
+            String clean = m.group(1).replaceAll("[,.;-]+$", "").trim();
+            if (!clean.equalsIgnoreCase("NO") && !clean.equalsIgnoreCase("NRO") && clean.length() >= 2) {
+                return clean;
+            }
         }
         return null;
     }
