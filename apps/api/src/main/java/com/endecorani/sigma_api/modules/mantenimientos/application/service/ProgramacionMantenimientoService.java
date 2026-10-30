@@ -40,9 +40,11 @@ import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -77,6 +79,10 @@ public class ProgramacionMantenimientoService {
     private final ProgramacionMantenimientoCriterioMapper criterioMapper;
     private final ProgramacionMantenimientoHistorialMapper historialMapper;
     private final ProgramacionSeguimientoExcelService excelService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @Lazy
+    private ProgramacionMantenimientoService self;
 
     private UUID resolverOCrearPlanActivo(ProgramacionMantenimientoRequest request) {
         if (request.activoId() == null || request.planMantenimientoId() == null) {
@@ -453,7 +459,7 @@ public class ProgramacionMantenimientoService {
      * Regla 4: Cuando se cumpla cualquier criterio, generar una sola solicitud para esa ejecución.
      * Regla 6: Conservar el historial de los valores que provocaron cada mantenimiento.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public EvaluacionProgramacionResponse evaluarProgramacion(UUID id, EvaluarProgramacionRequest request) {
         log.info("Evaluando programación de mantenimiento: {}", id);
 
@@ -706,7 +712,6 @@ public class ProgramacionMantenimientoService {
      * Evalúa todas las programaciones de mantenimiento activas en lote.
      * Útil para ejecución manual por el planificador o invocación masiva.
      */
-    @Transactional
     public BatchEvaluacionProgramacionResponse evaluarTodas() {
         log.info("Iniciando evaluación en lote de todas las programaciones activas");
         List<ProgramacionMantenimiento> activas = repository.findByActivoTrue();
@@ -716,10 +721,11 @@ public class ProgramacionMantenimientoService {
         int cumplieronCriterio = 0;
         int errores = 0;
         List<EvaluacionProgramacionResponse> resultados = new ArrayList<>();
+        ProgramacionMantenimientoService executor = self != null ? self : this;
 
         for (ProgramacionMantenimiento prog : activas) {
             try {
-                EvaluacionProgramacionResponse resp = evaluarProgramacion(prog.getId(), null);
+                EvaluacionProgramacionResponse resp = executor.evaluarProgramacion(prog.getId(), null);
                 resultados.add(resp);
                 if (resp.solicitudGenerada()) {
                     solicitudesGeneradas++;
@@ -1108,7 +1114,6 @@ public class ProgramacionMantenimientoService {
      * Evalúa todas las programaciones preventivas activas asociadas a un activo específico.
      * Genera automáticamente la solicitud de mantenimiento si se alcanza el umbral de odómetro/fecha/horas.
      */
-    @Transactional
     public List<EvaluacionProgramacionResponse> evaluarPorActivo(UUID activoId) {
         if (activoId == null) {
             return Collections.emptyList();
@@ -1116,6 +1121,7 @@ public class ProgramacionMantenimientoService {
 
         List<PlanMantenimientoActivo> planes = planMantenimientoActivoRepository.findByActivoId(activoId);
         List<EvaluacionProgramacionResponse> resultados = new ArrayList<>();
+        ProgramacionMantenimientoService executor = self != null ? self : this;
 
         for (PlanMantenimientoActivo pma : planes) {
             if (Boolean.TRUE.equals(pma.getActivo())) {
@@ -1124,7 +1130,7 @@ public class ProgramacionMantenimientoService {
                             try {
                                 log.info("Evaluando automáticamente programación preventiva {} para activo {}",
                                         prog.getId(), activoId);
-                                resultados.add(evaluarProgramacion(prog.getId(), null));
+                                resultados.add(executor.evaluarProgramacion(prog.getId(), null));
                             } catch (Exception e) {
                                 log.error("Error al evaluar programación preventiva {} para activo {}: {}",
                                         prog.getId(), activoId, e.getMessage());
