@@ -3,6 +3,7 @@ import { AlertCircle, ClipboardCheck, Inbox, RefreshCw } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
+import type { PageResponse } from "@/shared/types/api.types"
 import { EmptyState } from "@/shared/components/empty-state"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
@@ -12,6 +13,8 @@ import {
   WorkflowHistoryDialog,
   WorkflowListView,
   useWorkflowActionTarget,
+  type WorkflowAction,
+  type WorkflowField,
 } from "@/modules/workflow"
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
@@ -37,6 +40,144 @@ type EstadoFiltro =
   | "TRABAJO_REALIZADO"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
+const SKELETON_KEYS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"] as const
+
+type SupervisorSolicitudesContentProps = {
+  isLoading: boolean
+  isFetching: boolean
+  isError: boolean
+  error: unknown
+  pageData?: PageResponse<SolicitudMantenimiento>
+  solicitudes: SolicitudMantenimiento[]
+  selectedEstado: EstadoFiltro
+  debouncedSearch: string
+  onRefresh: () => void
+  onClearSearch: () => void
+  onPageChange: (page: number) => void
+  onViewDetail: (solicitud: SolicitudMantenimiento) => void
+  onRegistrarControlActivo: (solicitud: SolicitudMantenimiento) => void
+  onGestionarOrdenTrabajo: (solicitud: SolicitudMantenimiento) => void
+  onActionSelect: (
+    solicitud: SolicitudMantenimiento,
+    action: WorkflowAction,
+    taskName?: string,
+    fields?: WorkflowField[],
+  ) => void
+  onTraceability: (solicitud: SolicitudMantenimiento) => void
+}
+
+function SupervisorSolicitudesContent({
+  isLoading,
+  isFetching,
+  isError,
+  error,
+  pageData,
+  solicitudes,
+  selectedEstado,
+  debouncedSearch,
+  onRefresh,
+  onClearSearch,
+  onPageChange,
+  onViewDetail,
+  onRegistrarControlActivo,
+  onGestionarOrdenTrabajo,
+  onActionSelect,
+  onTraceability,
+}: Readonly<SupervisorSolicitudesContentProps>) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {SKELETON_KEYS.map((key) => (
+          <SolicitudListItemSkeleton key={key} />
+        ))}
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-6">
+        <EmptyState
+          icon={<AlertCircle className="size-8 text-destructive" />}
+          title="Error al consultar las solicitudes para supervisión"
+          description={getErrorMessage(error)}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRefresh}
+              className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
+            >
+              <RefreshCw className="size-3.5" />
+              <span>Reintentar</span>
+            </Button>
+          }
+        />
+      </div>
+    )
+  }
+
+  if (solicitudes.length === 0) {
+    const emptyDescription = debouncedSearch
+      ? `No se encontraron resultados para "${debouncedSearch}". Prueba con otro término de búsqueda.`
+      : `No tienes solicitudes de supervisión en estado "${selectedEstado.replaceAll("_", " ")}".`
+
+    return (
+      <div className="flex flex-1 items-center justify-center p-6">
+        <EmptyState
+          icon={<Inbox className="size-8 text-muted-foreground/60" />}
+          title="No hay solicitudes en este estado"
+          description={emptyDescription}
+          action={
+            debouncedSearch ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onClearSearch}
+                className="mt-2 text-xs font-medium cursor-pointer"
+              >
+                Limpiar búsqueda
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
+    )
+  }
+
+  const showPagination = Boolean(
+    pageData && (pageData.totalElements > 10 || pageData.totalPages > 1),
+  )
+
+  return (
+    <div className="space-y-2.5">
+      <div className={cn(isFetching && "opacity-75 transition-opacity duration-200")}>
+        <WorkflowListView>
+          {solicitudes.map((solicitud) => (
+            <SolicitudListItem
+              key={solicitud.id}
+              solicitud={solicitud}
+              onViewDetail={onViewDetail}
+              onSelect={onViewDetail}
+              onRegistrarControlActivo={onRegistrarControlActivo}
+              onGestionarOrdenTrabajo={onGestionarOrdenTrabajo}
+              onActionSelect={onActionSelect}
+              onTraceability={onTraceability}
+            />
+          ))}
+        </WorkflowListView>
+      </div>
+
+      {showPagination && pageData && (
+        <Pagination
+          page={pageData}
+          onPageChange={onPageChange}
+          className="border-t pt-1.5 shrink-0 text-xs"
+        />
+      )}
+    </div>
+  )
+}
 
 export function SupervisorMantenimientoPage() {
   const [selectedEstado, setSelectedEstado] = useState<EstadoFiltro>("EN_REVISION")
@@ -136,89 +277,24 @@ export function SupervisorMantenimientoPage() {
           </div>
         )}
 
-        {query.isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <SolicitudListItemSkeleton key={index} />
-            ))}
-          </div>
-        ) : query.isError ? (
-          <div className="flex flex-1 items-center justify-center p-6">
-            <EmptyState
-              icon={<AlertCircle className="size-8 text-destructive" />}
-              title="Error al consultar las solicitudes para supervisión"
-              description={getErrorMessage(query.error)}
-              action={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="mt-2 gap-1.5 text-xs font-medium cursor-pointer"
-                >
-                  <RefreshCw className="size-3.5" />
-                  <span>Reintentar</span>
-                </Button>
-              }
-            />
-          </div>
-        ) : solicitudes.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center p-6">
-            <EmptyState
-              icon={<Inbox className="size-8 text-muted-foreground/60" />}
-              title="No hay solicitudes en este estado"
-              description={
-                search.debouncedSearch
-                  ? `No se encontraron resultados para "${search.debouncedSearch}". Prueba con otro término de búsqueda.`
-                  : `No tienes solicitudes de supervisión en estado "${selectedEstado.replace(/_/g, " ")}".`
-              }
-              action={
-                search.debouncedSearch ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => search.setSearch("")}
-                    className="mt-2 text-xs font-medium cursor-pointer"
-                  >
-                    Limpiar búsqueda
-                  </Button>
-                ) : undefined
-              }
-            />
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {/* Contenedor de items */}
-            <div
-              className={cn(
-                query.isFetching && !query.isLoading && "opacity-75 transition-opacity duration-200",
-              )}
-            >
-              <WorkflowListView>
-                {solicitudes.map((solicitud) => (
-                  <SolicitudListItem
-                    key={solicitud.id}
-                    solicitud={solicitud}
-                    onViewDetail={setDetailItem}
-                    onSelect={setDetailItem}
-                    onRegistrarControlActivo={setControlActivoItem}
-                    onGestionarOrdenTrabajo={setOrdenTrabajoItem}
-                    onActionSelect={openAction}
-                    onTraceability={setTraceabilityItem}
-                  />
-                ))}
-              </WorkflowListView>
-            </div>
-
-            {/* Paginación: solo cuando hay más de 10 registros o más de 1 página */}
-            {query.data && (query.data.totalElements > 10 || query.data.totalPages > 1) && (
-              <Pagination
-                page={query.data}
-                onPageChange={search.setPage}
-                className="border-t pt-1.5 shrink-0 text-xs"
-              />
-            )}
-          </div>
-        )}
+        <SupervisorSolicitudesContent
+          isLoading={query.isLoading}
+          isFetching={query.isFetching}
+          isError={query.isError}
+          error={query.error}
+          pageData={query.data}
+          solicitudes={solicitudes}
+          selectedEstado={selectedEstado}
+          debouncedSearch={search.debouncedSearch}
+          onRefresh={handleRefresh}
+          onClearSearch={() => search.setSearch("")}
+          onPageChange={search.setPage}
+          onViewDetail={setDetailItem}
+          onRegistrarControlActivo={setControlActivoItem}
+          onGestionarOrdenTrabajo={setOrdenTrabajoItem}
+          onActionSelect={openAction}
+          onTraceability={setTraceabilityItem}
+        />
       </div>
 
       {/* Modal de Detalle Completo de Solicitud */}

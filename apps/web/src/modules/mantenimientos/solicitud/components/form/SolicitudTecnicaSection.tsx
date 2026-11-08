@@ -12,6 +12,7 @@ import { useSolicitudFormContext } from "../../context/solicitud-form.context"
 export function SolicitudTecnicaSection() {
   const {
     form,
+    solicitud,
     isEditing,
     selectedFiles,
     isDragging,
@@ -40,8 +41,7 @@ export function SolicitudTecnicaSection() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-start">
         {/* Activo / Ubicación */}
         <form.Field name="activoId">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -63,6 +63,8 @@ export function SolicitudTecnicaSection() {
                   aria-invalid={isInvalid}
                   placeholder="Buscar activo por código, nombre, ubicación o placa..."
                   className="w-full text-xs sm:text-sm"
+                  forSolicitudMantenimiento
+                  excludeSolicitudId={solicitud?.id}
                 />
 
                 {isInvalid && (
@@ -75,8 +77,7 @@ export function SolicitudTecnicaSection() {
 
         {/* Fecha y Hora de Solicitud */}
         <form.Field name="fechaSolicitud">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -108,8 +109,7 @@ export function SolicitudTecnicaSection() {
 
       {/* Descripción Detallada */}
       <form.Field name="descripcion">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(field: any) => {
+        {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
 

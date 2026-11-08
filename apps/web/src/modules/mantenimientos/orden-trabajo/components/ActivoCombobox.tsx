@@ -1,6 +1,15 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Box, ChevronLeft, ChevronRight, Loader2, MapPin, RefreshCw, X } from "lucide-react"
+import {
+  AlertTriangle,
+  Box,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  MapPin,
+  RefreshCw,
+  X,
+} from "lucide-react"
 
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
@@ -27,27 +36,205 @@ export type ActivoComboboxProps = {
   name?: string
   "aria-invalid"?: boolean
   pageSize?: number
+  forSolicitudMantenimiento?: boolean
+  excludeSolicitudId?: string
 }
 
-function extractPlaca(activo?: Activo | null): string | null {
-  try {
-    if (!activo || typeof activo !== "object") return null
-    if (!activo.descripcion || typeof activo.descripcion !== "string") return null
+const PLACA_PREFIX_REGEX = /\bPLACA\b[\s:°.#-]*(?:(?:NRO|NUM|NO)[\s:°.#-]*)?/i
+const PLACA_VALUE_REGEX = /^([A-Za-z0-9]{2,15}(?:-[A-Za-z0-9]{1,10})?)/
 
-    // Matches "PLACA 5202TGB", "PLACA: 6333-SYX", "PLACA NO.4688HPD", "PLACA-123", etc.
-    const match = activo.descripcion.match(
-      /PLACA(?:\s*(?:N[°o.]+|NRO\.?|NUM\.?|#))?[:\s#.-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)?)(?:\s+(?:CHASIS|MOTOR|COLOR|MARCA|MODELO|AÑO|ANIO|TIPO)|[,;.]|\s*$)/i,
-    )
-    if (match && match[1]) {
-      const clean = match[1].replace(/[,.;-]+$/, "").trim()
-      if (clean.length >= 2 && clean.length <= 20 && !clean.toUpperCase().startsWith("NO") && clean.toUpperCase() !== "NRO") {
-        return clean
-      }
-    }
-    return null
-  } catch {
+function extractPlaca(activo?: Activo | null): string | null {
+  if (!activo?.descripcion || typeof activo.descripcion !== "string") {
     return null
   }
+
+  // Matches "PLACA 5202TGB", "PLACA: 6333-SYX", "PLACA NO.4688HPD", "PLACA-123", etc.
+  const prefixMatch = PLACA_PREFIX_REGEX.exec(activo.descripcion)
+  if (!prefixMatch) return null
+
+  const rest = activo.descripcion.slice(prefixMatch.index + prefixMatch[0].length)
+  const valueMatch = PLACA_VALUE_REGEX.exec(rest)
+
+  return valueMatch?.[1] ?? null
+}
+
+type SelectedActivoCardProps = {
+  activo: Activo
+  placa: string | null
+  disabled: boolean
+  ariaInvalid?: boolean
+  className?: string
+  onClear: () => void
+}
+
+function SelectedActivoCard({
+  activo,
+  placa,
+  disabled,
+  ariaInvalid,
+  className,
+  onClear,
+}: Readonly<SelectedActivoCardProps>) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-2.5 sm:gap-3 rounded-xl border border-border/80 bg-muted/20 p-2 sm:p-2.5 shadow-2xs hover:border-primary/40 hover:bg-muted/30 transition-all min-h-12",
+        ariaInvalid && "border-destructive ring-1 ring-destructive/20",
+        className?.replace(/\bh-\S+/g, ""),
+      )}
+    >
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+        <div className="relative size-9 sm:size-10 shrink-0 overflow-hidden rounded-lg border border-border bg-background flex items-center justify-center shadow-xs">
+          {activo.urlImagen ? (
+            <AuthenticatedImage
+              src={activo.urlImagen}
+              alt={activo.nombre}
+              className="size-full object-cover"
+              fallback={<Box className="size-4.5 text-muted-foreground/60" />}
+            />
+          ) : (
+            <Box className="size-4.5 text-muted-foreground/60" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+              {activo.codigo}
+            </code>
+            <span className="font-semibold text-xs text-foreground truncate">
+              {activo.nombre}
+            </span>
+            {placa ? (
+              <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
+                Placa: {placa}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
+            <div className="flex items-center gap-1 truncate">
+              <MapPin className="size-3 text-primary shrink-0" />
+              <span className="truncate font-medium">
+                {activo.ubicacion?.nombre || "Sin ubicación"}
+              </span>
+            </div>
+            {activo.tipoActivo?.nombre ? (
+              <>
+                <span className="text-muted-foreground/40">•</span>
+                <span className="text-[10px] bg-background border border-border/60 px-1.5 py-0.2 rounded shrink-0">
+                  {activo.tipoActivo.nombre}
+                </span>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {!disabled && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          onClick={onClear}
+          className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg shrink-0 cursor-pointer transition-colors"
+          title="Cambiar activo seleccionado"
+        >
+          <X className="size-3.5" />
+          <span className="sr-only">Remover</span>
+        </Button>
+      )}
+    </div>
+  )
+}
+
+type ActivoComboboxListItemProps = {
+  item: Activo
+  forSolicitudMantenimiento: boolean
+}
+
+function ActivoComboboxListItem({
+  item,
+  forSolicitudMantenimiento,
+}: Readonly<ActivoComboboxListItemProps>) {
+  const placa = extractPlaca(item)
+  const isBlocked =
+    forSolicitudMantenimiento && Boolean(item.enProcesoMantenimiento)
+  const estadoLabel = item.solicitudActivaEstado
+    ? item.solicitudActivaEstado.replaceAll("_", " ").toUpperCase()
+    : "EN REVISIÓN"
+
+  return (
+    <ComboboxItem
+      key={item.id}
+      value={item}
+      disabled={isBlocked}
+      className={cn(
+        "text-xs py-2.5 px-3 transition-colors",
+        isBlocked
+          ? "opacity-60 cursor-not-allowed bg-muted/25 data-disabled:pointer-events-none"
+          : "cursor-pointer hover:bg-accent/60",
+      )}
+    >
+      <div className="flex items-center gap-3 w-full min-w-0">
+        <div className="relative size-10 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/50 flex items-center justify-center">
+          {item.urlImagen ? (
+            <AuthenticatedImage
+              src={item.urlImagen}
+              alt={item.nombre}
+              className="size-full object-cover"
+              fallback={<Box className="size-5 text-muted-foreground/60" />}
+            />
+          ) : (
+            <Box className="size-5 text-muted-foreground/60" />
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0 space-y-0.5">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+              {item.codigo}
+            </code>
+            <span className="font-semibold text-foreground truncate text-xs">
+              {item.nombre}
+            </span>
+            {placa ? (
+              <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
+                Placa: {placa}
+              </span>
+            ) : null}
+            {isBlocked ? (
+              <span
+                className="inline-flex items-center gap-1 text-[10px] font-semibold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded shrink-0"
+                title={`Este activo ya tiene una solicitud en proceso (${item.solicitudActivaNumero ?? ""} - ${estadoLabel})`}
+              >
+                <AlertTriangle className="size-2.5 shrink-0" />
+                <span>
+                  En proceso{item.solicitudActivaNumero ? ` (${item.solicitudActivaNumero})` : ""}:{" "}
+                  {estadoLabel}
+                </span>
+              </span>
+            ) : null}
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
+            <MapPin className="size-3 text-primary/80 shrink-0" />
+            <span className="truncate">
+              {item.ubicacion?.nombre || "Sin ubicación"}
+            </span>
+            {item.tipoActivo?.nombre ? (
+              <>
+                <span className="text-muted-foreground/40">•</span>
+                <span className="truncate text-muted-foreground/80">
+                  {item.tipoActivo.nombre}
+                </span>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </ComboboxItem>
+  )
 }
 
 export function ActivoCombobox({
@@ -61,12 +248,27 @@ export function ActivoCombobox({
   name,
   "aria-invalid": ariaInvalid,
   pageSize = 7,
-}: ActivoComboboxProps) {
+  forSolicitudMantenimiento = false,
+  excludeSolicitudId,
+}: Readonly<ActivoComboboxProps>) {
   const [page, setPage] = React.useState(0)
 
-  const query = useQuery({
-    ...activoQueries.list({ page, size: pageSize, sortBy: "codigo", direction: "ASC" }),
-  })
+  const listQueryOptions = forSolicitudMantenimiento
+    ? activoQueries.paraSolicitud({
+        page,
+        size: pageSize,
+        sortBy: "codigo",
+        direction: "ASC",
+        solicitudIdExcluir: excludeSolicitudId,
+      })
+    : activoQueries.list({
+        page,
+        size: pageSize,
+        sortBy: "codigo",
+        direction: "ASC",
+      })
+
+  const query = useQuery(listQueryOptions)
 
   // Consulta individual si hay un valor seleccionado que quizás no esté en la página actual
   const singleQuery = useQuery({
@@ -102,77 +304,14 @@ export function ActivoCombobox({
 
   if (selectedActivo) {
     return (
-      <div
-        className={cn(
-          "flex items-center justify-between gap-2.5 sm:gap-3 rounded-xl border border-border/80 bg-muted/20 p-2 sm:p-2.5 shadow-2xs hover:border-primary/40 hover:bg-muted/30 transition-all min-h-12",
-          ariaInvalid && "border-destructive ring-1 ring-destructive/20",
-          className?.replace(/\bh-\S+/g, ""),
-        )}
-      >
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-          {/* Foto / Miniatura */}
-          <div className="relative size-9 sm:size-10 shrink-0 overflow-hidden rounded-lg border border-border bg-background flex items-center justify-center shadow-xs">
-            {selectedActivo.urlImagen ? (
-              <AuthenticatedImage
-                src={selectedActivo.urlImagen}
-                alt={selectedActivo.nombre}
-                className="size-full object-cover"
-                fallback={<Box className="size-4.5 text-muted-foreground/60" />}
-              />
-            ) : (
-              <Box className="size-4.5 text-muted-foreground/60" />
-            )}
-          </div>
-
-          {/* Datos del Activo */}
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-              <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                {selectedActivo.codigo}
-              </code>
-              <span className="font-semibold text-xs text-foreground truncate">
-                {selectedActivo.nombre}
-              </span>
-              {selectedPlaca ? (
-                <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
-                  Placa: {selectedPlaca}
-                </span>
-              ) : null}
-            </div>
-
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate">
-              <div className="flex items-center gap-1 truncate">
-                <MapPin className="size-3 text-primary shrink-0" />
-                <span className="truncate font-medium">
-                  {selectedActivo.ubicacion?.nombre || "Sin ubicación"}
-                </span>
-              </div>
-              {selectedActivo.tipoActivo?.nombre ? (
-                <>
-                  <span className="text-muted-foreground/40">•</span>
-                  <span className="text-[10px] bg-background border border-border/60 px-1.5 py-0.2 rounded shrink-0">
-                    {selectedActivo.tipoActivo.nombre}
-                  </span>
-                </>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        {!disabled && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => onValueChange?.("", null)}
-            className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg shrink-0 cursor-pointer transition-colors"
-            title="Cambiar activo seleccionado"
-          >
-            <X className="size-3.5" />
-            <span className="sr-only">Remover</span>
-          </Button>
-        )}
-      </div>
+      <SelectedActivoCard
+        activo={selectedActivo}
+        placa={selectedPlaca}
+        disabled={disabled}
+        ariaInvalid={ariaInvalid}
+        className={className}
+        onClear={() => onValueChange?.("", null)}
+      />
     )
   }
 
@@ -187,6 +326,9 @@ export function ActivoCombobox({
       itemToStringValue={(item: Activo) => item?.id ?? ""}
       value={null}
       onValueChange={(val: Activo | null) => {
+        if (forSolicitudMantenimiento && val?.enProcesoMantenimiento) {
+          return
+        }
         onValueChange?.(val?.id ?? "", val)
       }}
       disabled={disabled || query.isLoading}
@@ -233,65 +375,13 @@ export function ActivoCombobox({
         </ComboboxEmpty>
 
         <ComboboxList className="max-h-52 overflow-y-auto overscroll-contain pr-1 py-1">
-          {(item: Activo) => {
-            const placa = extractPlaca(item)
-
-            return (
-              <ComboboxItem
-                key={item.id}
-                value={item}
-                className="text-xs py-2.5 px-3 cursor-pointer hover:bg-accent/60 transition-colors"
-              >
-                <div className="flex items-center gap-3 w-full min-w-0">
-                  {/* Miniatura de la Foto */}
-                  <div className="relative size-10 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/50 flex items-center justify-center">
-                    {item.urlImagen ? (
-                      <AuthenticatedImage
-                        src={item.urlImagen}
-                        alt={item.nombre}
-                        className="size-full object-cover"
-                        fallback={<Box className="size-5 text-muted-foreground/60" />}
-                      />
-                    ) : (
-                      <Box className="size-5 text-muted-foreground/60" />
-                    )}
-                  </div>
-
-                  {/* Información del Activo */}
-                  <div className="flex-1 min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                      <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                        {item.codigo}
-                      </code>
-                      <span className="font-semibold text-foreground truncate text-xs">
-                        {item.nombre}
-                      </span>
-                      {placa ? (
-                        <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
-                          Placa: {placa}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
-                      <MapPin className="size-3 text-primary/80 shrink-0" />
-                      <span className="truncate">
-                        {item.ubicacion?.nombre || "Sin ubicación"}
-                      </span>
-                      {item.tipoActivo?.nombre ? (
-                        <>
-                          <span className="text-muted-foreground/40">•</span>
-                          <span className="truncate text-muted-foreground/80">
-                            {item.tipoActivo.nombre}
-                          </span>
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              </ComboboxItem>
-            )
-          }}
+          {(item: Activo) => (
+            <ActivoComboboxListItem
+              key={item.id}
+              item={item}
+              forSolicitudMantenimiento={forSolicitudMantenimiento}
+            />
+          )}
         </ComboboxList>
 
         {/* Footer con controles de paginación */}

@@ -44,6 +44,9 @@ export type Activo = AuditableEntity & {
   fechaAdquisicion: string | null
   urlImagen: string | null
   activo: boolean
+  enProcesoMantenimiento?: boolean | null
+  solicitudActivaNumero?: string | null
+  solicitudActivaEstado?: string | null
 }
 
 export type ActivoPayload = {
@@ -113,6 +116,21 @@ export type ActivoDisponibilidadParams = PageParams & {
   categoriaId?: string
   ubicacionId?: string
   activo?: boolean
+}
+
+export type ActivoParaSolicitudParams = PageParams & {
+  q?: string
+  tipoActivoId?: string
+  solicitudIdExcluir?: string
+}
+
+export function listActivosParaSolicitud(
+  params?: ActivoParaSolicitudParams,
+): Promise<import("@/shared/types/api.types").PageResponse<Activo>> {
+  return http.get<import("@/shared/types/api.types").PageResponse<Activo>>(
+    "/solicitudes-mantenimiento/activos",
+    { params },
+  )
 }
 
 export function listActivosDisponibilidad(

@@ -26,4 +26,16 @@ public interface SolicitudMantenimientoRepository {
     SolicitudMantenimientoResumenProjection obtenerResumen(UUID solicitanteId, UUID aprobadorId, UUID supervisorId, UUID responsableId);
     
     Page<SolicitudMantenimiento> findAll(com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.SolicitudMantenimientoSearchCriteria criteria, Pageable pageable);
+
+    java.util.List<SolicitudMantenimiento> findActivasByActivoIds(
+            java.util.Collection<UUID> activoIds,
+            java.util.Collection<String> estadosActivos,
+            UUID excluirId
+    );
+
+    boolean existsActivaByActivoId(
+            UUID activoId,
+            java.util.Collection<String> estadosActivos,
+            UUID excluirId
+    );
 }
