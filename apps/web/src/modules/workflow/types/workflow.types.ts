@@ -20,6 +20,7 @@ export type WorkflowField = {
   component?: string
   source?: string
   url?: string
+  valueField?: string
   params?: Record<string, string>
 }
 
