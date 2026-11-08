@@ -8,7 +8,6 @@ import {
   Edit2,
   FileCheck,
   FileText,
-  FolderTree,
   Info,
   MapPin,
   Plus,
@@ -27,7 +26,6 @@ import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.s
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 import { isApiError } from "@/shared/api"
 import { AuditInfo } from "@/shared/components/audit-info"
-import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
   Combobox,
@@ -71,7 +69,6 @@ type ActivoInfoTabProps = {
 export function ActivoInfoTab({
   activo,
   tipoActivo,
-  categoria,
   ubicacion,
   ubicaciones = [],
   documentos,
@@ -327,24 +324,6 @@ export function ActivoInfoTab({
                     </div>
                   </div>
 
-                  {/* Categoría */}
-                  <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Categoría de Activo
-                    </span>
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <FolderTree className="size-3.5 text-primary shrink-0" />
-                      <span className="text-xs font-semibold text-foreground truncate">
-                        {categoria?.nombre || "General"}
-                      </span>
-                      {categoria?.codigo && (
-                        <Badge variant="secondary" className="font-mono text-[9px] px-1 py-0">
-                          {categoria.codigo}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Tipo de Activo */}
                   <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -389,38 +368,6 @@ export function ActivoInfoTab({
                           : "No registrada"}
                       </span>
                     </div>
-                  </div>
-
-                  {/* Alta en el Sistema */}
-                  <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Fecha de Registro
-                    </span>
-                    <span className="text-xs font-medium text-foreground">
-                      {activo.createdAt
-                        ? new Date(activo.createdAt).toLocaleDateString("es-ES", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })
-                        : "Reciente"}
-                    </span>
-                  </div>
-
-                  {/* Última Modificación */}
-                  <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Última Modificación
-                    </span>
-                    <span className="text-xs font-medium text-foreground">
-                      {activo.updatedAt
-                        ? new Date(activo.updatedAt).toLocaleDateString("es-ES", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })
-                        : "Sin cambios"}
-                    </span>
                   </div>
                 </div>
 
