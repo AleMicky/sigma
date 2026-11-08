@@ -26,6 +26,7 @@ import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
 import { solicitudQueries } from "@/modules/mantenimientos/solicitud/api/solicitud.queries"
 import { getPrioridadBadgeStyles } from "@/modules/mantenimientos/solicitud/lib/solicitud.utils"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
+import { getErrorMessage } from "@/shared/api"
 import { PageShell } from "@/shared/components/page-shell"
 import { Button } from "@/shared/components/ui/button"
 import { Card } from "@/shared/components/ui/card"
@@ -43,6 +44,7 @@ import {
   type ImportedChecklistItem,
 } from "../components/ChecklistTemplateSelectDialog"
 import { SolicitudAsignadaCombobox } from "../components/SolicitudAsignadaCombobox"
+import { ordenTrabajoFormSchema } from "../schemas/orden-trabajo.schema"
 
 export type ActividadFormItem = {
   id: string // local client id
@@ -62,7 +64,7 @@ export function OrdenTrabajoFormPage({
   solicitudId: propSolicitudId,
   activoId: propActivoId,
   responsableId: propResponsableId,
-}: OrdenTrabajoFormPageProps) {
+}: Readonly<OrdenTrabajoFormPageProps>) {
   const navigate = useNavigate()
 
   const searchParams = (useSearch({ strict: false }) ?? {}) as {
@@ -84,7 +86,11 @@ export function OrdenTrabajoFormPage({
   const [responsableId, setResponsableId] = useState<string>(
     initialResponsableId,
   )
-  const [fechaInicio, setFechaInicio] = useState<string>("")
+  const [fechaInicio, setFechaInicio] = useState<string>(() => {
+    const now = new Date()
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+    return now.toISOString().slice(0, 16)
+  })
   const [fechaFin, setFechaFin] = useState<string>("")
   const [diagnostico, setDiagnostico] = useState<string>("")
   const [observacion, setObservacion] = useState<string>("")
@@ -96,32 +102,8 @@ export function OrdenTrabajoFormPage({
   const [isChecklistDialogOpen, setIsChecklistDialogOpen] = useState(false)
   const [isLoadingSugeridas, setIsLoadingSugeridas] = useState(false)
 
-  // Set default initial date
-  useEffect(() => {
-    const now = new Date()
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-    setFechaInicio(now.toISOString().slice(0, 16))
-  }, [])
-
-  // Sync initial query params if provided
-  useEffect(() => {
-    if (initialSolicitudId && !solicitudMantenimientoId) {
-      setSolicitudMantenimientoId(initialSolicitudId)
-    }
-    if (initialActivoId && !activoId) {
-      setActivoId(initialActivoId)
-    }
-    if (initialResponsableId && !responsableId) {
-      setResponsableId(initialResponsableId)
-    }
-  }, [
-    initialSolicitudId,
-    initialActivoId,
-    initialResponsableId,
-    solicitudMantenimientoId,
-    activoId,
-    responsableId,
-  ])
+  // Errores de validación de Zod
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   // Queries for contextual data
   const solicitudQuery = useQuery({
@@ -130,22 +112,13 @@ export function OrdenTrabajoFormPage({
   })
   const solicitud = solicitudQuery.data
 
-  // When solicitud loads, auto-populate activoId and responsableId if not set
-  useEffect(() => {
-    if (solicitud?.activo?.id && !activoId) {
-      setActivoId(solicitud.activo.id)
-    }
-    if (solicitud?.responsable?.id && !responsableId) {
-      setResponsableId(solicitud.responsable.id)
-    }
-    if (solicitud?.descripcion && !diagnostico) {
-      setDiagnostico(solicitud.descripcion)
-    }
-  }, [solicitud, activoId, responsableId, diagnostico])
+  const effectiveActivoId = activoId || solicitud?.activo?.id || ""
+  const effectiveResponsableId = responsableId || solicitud?.responsable?.id || ""
+  const effectiveDiagnostico = diagnostico || solicitud?.descripcion || ""
 
   const activoDetailQuery = useQuery({
-    ...activoQueries.detail(activoId || solicitud?.activo?.id || ""),
-    enabled: Boolean(activoId || solicitud?.activo?.id),
+    ...activoQueries.detail(effectiveActivoId),
+    enabled: Boolean(effectiveActivoId),
   })
   const activo = activoDetailQuery.data
 
@@ -200,6 +173,13 @@ export function OrdenTrabajoFormPage({
       observacion: "",
     }
     setActividades((prev) => [...prev, newItem])
+    if (formErrors.actividades) {
+      setFormErrors((prev) => {
+        const next = { ...prev }
+        delete next.actividades
+        return next
+      })
+    }
   }
 
   async function handleCargarDelPlan() {
@@ -233,9 +213,16 @@ export function OrdenTrabajoFormPage({
       }
 
       setActividades((prev) => [...prev, ...nuevasActividades])
+      if (formErrors.actividades) {
+        setFormErrors((prev) => {
+          const next = { ...prev }
+          delete next.actividades
+          return next
+        })
+      }
       toast.success(`Se cargaron ${nuevasActividades.length} actividad(es) desde el plan preventivo`)
-    } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Error al consultar actividades del plan"
+    } catch (err: unknown) {
+      const msg = getErrorMessage(err) || "Error al consultar actividades del plan"
       toast.error(msg)
     } finally {
       setIsLoadingSugeridas(false)
@@ -252,6 +239,13 @@ export function OrdenTrabajoFormPage({
       observacion: item.observacion || "",
     }))
     setActividades((prev) => [...prev, ...newItems])
+    if (formErrors.actividades) {
+      setFormErrors((prev) => {
+        const next = { ...prev }
+        delete next.actividades
+        return next
+      })
+    }
     toast.success(
       `${newItems.length} ${newItems.length === 1 ? "tarea importada" : "tareas importadas"} desde el checklist`,
     )
@@ -271,31 +265,61 @@ export function OrdenTrabajoFormPage({
   }
 
   const isValid = Boolean(
-    solicitudMantenimientoId && (activoId || solicitud?.activo?.id) && responsableId,
+    solicitudMantenimientoId &&
+      effectiveActivoId &&
+      effectiveResponsableId &&
+      fechaInicio &&
+      fechaFin &&
+      actividades.length > 0,
   )
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!isValid || createMutation.isPending) return
+    if (createMutation.isPending) return
 
-    // Validar actividades
-    const invalidAct = actividades.find((a) => !a.descripcion.trim())
-    if (invalidAct) {
-      toast.error("Por favor completa la descripción de todas las actividades agregadas")
+    const validationResult = ordenTrabajoFormSchema.safeParse({
+      solicitudMantenimientoId,
+      activoId: effectiveActivoId,
+      responsableId: effectiveResponsableId,
+      fechaInicio,
+      fechaFin,
+      diagnostico: effectiveDiagnostico,
+      observacion,
+      actividades,
+    })
+
+    if (!validationResult.success) {
+      const nextErrors: Record<string, string> = {}
+      for (const issue of validationResult.error.issues) {
+        const fieldName = String(issue.path[0] ?? "general")
+        if (!nextErrors[fieldName]) {
+          nextErrors[fieldName] = issue.message
+        }
+      }
+      setFormErrors(nextErrors)
+
+      const firstError = validationResult.error.issues[0]?.message
+      if (firstError) {
+        toast.error(firstError)
+      }
       return
     }
 
+    setFormErrors({})
+
+    const validData = validationResult.data
+
     const payload: OrdenTrabajoPayload = {
-      solicitudMantenimientoId,
-      activoId: activoId || solicitud?.activo?.id || "",
-      responsableId,
-      fechaInicio: fechaInicio ? `${fechaInicio}:00` : null,
-      fechaFin: fechaFin ? `${fechaFin}:00` : null,
-      diagnostico: diagnostico.trim() || null,
-      observacion: observacion.trim() || null,
+      solicitudMantenimientoId: validData.solicitudMantenimientoId,
+      activoId: validData.activoId,
+      responsableId: validData.responsableId,
+      fechaInicio: `${validData.fechaInicio}:00`,
+      fechaFin: `${validData.fechaFin}:00`,
+      diagnostico: validData.diagnostico || null,
+      observacion: validData.observacion || null,
     }
 
-    const actPayloads = actividades.map((a) => ({
+    const actPayloads = validData.actividades.map((a) => ({
       actividadMantenimientoId: a.actividadMantenimientoId || null,
       descripcion: a.descripcion.trim(),
       realizado: false,
@@ -450,7 +474,7 @@ export function OrdenTrabajoFormPage({
                   Activo Principal <span className="text-destructive">*</span>
                 </Label>
                 <ActivoCombobox
-                  value={activoId || solicitud?.activo?.id || ""}
+                  value={effectiveActivoId}
                   onValueChange={(val) => setActivoId(val)}
                   disabled={Boolean(solicitud?.activo?.id)}
                   className="h-8 text-xs"
@@ -479,7 +503,7 @@ export function OrdenTrabajoFormPage({
                 <span className="text-destructive">*</span>
               </Label>
               <EmpleadoCombobox
-                value={responsableId}
+                value={effectiveResponsableId}
                 onValueChange={(val) => setResponsableId(val)}
                 placeholder="Seleccionar técnico..."
                 className="h-8 text-xs"
@@ -491,14 +515,31 @@ export function OrdenTrabajoFormPage({
               <Label htmlFor="fechaInicio" className="text-[11px] font-semibold text-foreground flex items-center gap-1">
                 <Calendar className="size-3 text-muted-foreground" />
                 <span>Fecha Inicio Estimada</span>
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="fechaInicio"
                 type="datetime-local"
                 value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-                className="h-8 text-xs font-medium bg-background"
+                onChange={(e) => {
+                  setFechaInicio(e.target.value)
+                  if (formErrors.fechaInicio) {
+                    setFormErrors((prev) => {
+                      const next = { ...prev }
+                      delete next.fechaInicio
+                      return next
+                    })
+                  }
+                }}
+                aria-invalid={Boolean(formErrors.fechaInicio)}
+                className={cn(
+                  "h-8 text-xs font-medium bg-background",
+                  formErrors.fechaInicio && "border-destructive ring-1 ring-destructive/20",
+                )}
               />
+              {formErrors.fechaInicio && (
+                <p className="text-[10px] text-destructive font-medium">{formErrors.fechaInicio}</p>
+              )}
             </div>
 
             {/* Fecha Fin Estimada */}
@@ -506,14 +547,31 @@ export function OrdenTrabajoFormPage({
               <Label htmlFor="fechaFin" className="text-[11px] font-semibold text-foreground flex items-center gap-1">
                 <Clock className="size-3 text-muted-foreground" />
                 <span>Fecha Fin Estimada</span>
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="fechaFin"
                 type="datetime-local"
                 value={fechaFin}
-                onChange={(e) => setFechaFin(e.target.value)}
-                className="h-8 text-xs font-medium bg-background"
+                onChange={(e) => {
+                  setFechaFin(e.target.value)
+                  if (formErrors.fechaFin) {
+                    setFormErrors((prev) => {
+                      const next = { ...prev }
+                      delete next.fechaFin
+                      return next
+                    })
+                  }
+                }}
+                aria-invalid={Boolean(formErrors.fechaFin)}
+                className={cn(
+                  "h-8 text-xs font-medium bg-background",
+                  formErrors.fechaFin && "border-destructive ring-1 ring-destructive/20",
+                )}
               />
+              {formErrors.fechaFin && (
+                <p className="text-[10px] text-destructive font-medium">{formErrors.fechaFin}</p>
+              )}
             </div>
           </div>
 
@@ -553,13 +611,19 @@ export function OrdenTrabajoFormPage({
         </Card>
 
         {/* Tareas / Actividades a Realizar */}
-        <Card className="p-2.5 sm:p-3 shadow-2xs space-y-2.5">
+        <Card
+          className={cn(
+            "p-2.5 sm:p-3 shadow-2xs space-y-2.5",
+            formErrors.actividades && "border-destructive ring-1 ring-destructive/20",
+          )}
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-1.5">
             <div className="flex items-center gap-1.5">
               <CheckSquare className="size-3.5 text-primary" />
               <h2 className="font-heading text-xs sm:text-[13px] font-bold text-foreground">
                 Planificación de Actividades / Tareas
               </h2>
+              <span className="text-destructive font-bold text-xs">*</span>
               <span className="text-xs text-muted-foreground font-medium">
                 ({actividades.length} {actividades.length === 1 ? "tarea" : "tareas"})
               </span>
@@ -751,6 +815,12 @@ export function OrdenTrabajoFormPage({
                 </div>
               ))}
             </div>
+          )}
+
+          {formErrors.actividades && (
+            <p className="text-xs text-destructive font-medium px-1 pt-1">
+              {formErrors.actividades}
+            </p>
           )}
         </Card>
 
