@@ -7,7 +7,9 @@ import {
   getActivo,
   listActivos,
   listActivosDisponibilidad,
+  listActivosParaSolicitud,
   type ActivoDisponibilidadParams,
+  type ActivoParaSolicitudParams,
 } from "./activo.service"
 
 export const activoQueries = {
@@ -17,6 +19,17 @@ export const activoQueries = {
       queryFn: () => {
         const q = filters?.q?.trim()
         return listActivos(q ? { ...filters, q } : { ...filters, q: undefined })
+      },
+    }),
+
+  paraSolicitud: (params?: ActivoParaSolicitudParams) =>
+    queryOptions({
+      queryKey: ["activos", "para-solicitud", params] as const,
+      queryFn: () => {
+        const q = params?.q?.trim()
+        return listActivosParaSolicitud(
+          q ? { ...params, q } : { ...params, q: undefined },
+        )
       },
     }),
 

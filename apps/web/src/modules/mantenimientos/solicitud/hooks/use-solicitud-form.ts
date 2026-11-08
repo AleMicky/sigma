@@ -90,7 +90,12 @@ export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
 
   // 4. Catálogo: Activos
   const activosQuery = useQuery(
-    activoQueries.list({ size: 100, sortBy: "nombre", direction: "ASC" }),
+    activoQueries.paraSolicitud({
+      size: 100,
+      sortBy: "nombre",
+      direction: "ASC",
+      solicitudIdExcluir: solicitudId,
+    }),
   )
   const activos = useMemo(
     () => activosQuery.data?.content ?? [],

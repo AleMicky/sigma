@@ -1,5 +1,8 @@
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
 
+const PLACA_PREFIX_REGEX = /\bPLACA\b[\s:°.#-]*(?:(?:NRO|NUM|NO)[\s:°.#-]*)?/i
+const PLACA_VALUE_REGEX = /^([A-Za-z0-9]{2,15}(?:-[A-Za-z0-9]{1,10})?)/
+
 /**
  * Extrae la placa de circulación desde el campo directo, descripción o texto de un activo.
  */
@@ -10,29 +13,22 @@ export function extractPlaca(
       })
     | null,
 ): string | null {
-  try {
-    if (!activo || typeof activo !== "object") return null
-    if (activo.placa && typeof activo.placa === "string" && activo.placa.trim().length > 0) {
-      return activo.placa.trim()
-    }
-
-    const textToScan = [activo.descripcion, activo.nombre].filter(Boolean).join(" ")
-    if (!textToScan) return null
-
-    // Coincide con formatos como "PLACA 5202TGB", "PLACA: 6333-SYX", "PLACA NO.4688HPD", "PLACA-123", etc.
-    const match = textToScan.match(
-      /PLACA(?:\s*(?:N[°o.]+|NRO\.?|NUM\.?|#))?[:\s#.-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)?)(?:\s+(?:CHASIS|MOTOR|COLOR|MARCA|MODELO|AÑO|ANIO|TIPO)|[,;.]|\s*$)/i,
-    )
-    if (match && match[1]) {
-      const clean = match[1].replace(/[,.;-]+$/, "").trim()
-      if (clean.length >= 2 && clean.length <= 20 && !clean.toUpperCase().startsWith("NO") && clean.toUpperCase() !== "NRO") {
-        return clean
-      }
-    }
-    return null
-  } catch {
-    return null
+  if (!activo || typeof activo !== "object") return null
+  if (typeof activo.placa === "string" && activo.placa.trim().length > 0) {
+    return activo.placa.trim()
   }
+
+  const textToScan = [activo.descripcion, activo.nombre].filter(Boolean).join(" ")
+  if (!textToScan) return null
+
+  // Coincide con formatos como "PLACA 5202TGB", "PLACA: 6333-SYX", "PLACA NO.4688HPD", "PLACA-123", etc.
+  const prefixMatch = PLACA_PREFIX_REGEX.exec(textToScan)
+  if (!prefixMatch) return null
+
+  const rest = textToScan.slice(prefixMatch.index + prefixMatch[0].length)
+  const valueMatch = PLACA_VALUE_REGEX.exec(rest)
+
+  return valueMatch?.[1] ?? null
 }
 
 /**

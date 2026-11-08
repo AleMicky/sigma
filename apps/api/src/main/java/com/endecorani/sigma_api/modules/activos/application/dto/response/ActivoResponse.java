@@ -21,8 +21,27 @@ public record ActivoResponse(
         LocalDate fechaAdquisicion,
         String urlImagen,
         Boolean activo,
-        AuditoriaResponse auditoria
+        AuditoriaResponse auditoria,
+        Boolean enProcesoMantenimiento,
+        String solicitudActivaNumero,
+        String solicitudActivaEstado
 ) {
+    public ActivoResponse(
+            UUID id,
+            String codigo,
+            String nombre,
+            String descripcion,
+            TipoActivoInfo tipoActivo,
+            UbicacionInfo ubicacion,
+            EstadoOperativoInfo estadoOperativo,
+            LocalDate fechaAdquisicion,
+            String urlImagen,
+            Boolean activo,
+            AuditoriaResponse auditoria
+    ) {
+        this(id, codigo, nombre, descripcion, tipoActivo, ubicacion, estadoOperativo, fechaAdquisicion, urlImagen, activo, auditoria, false, null, null);
+    }
+
     public ActivoResponse(
             UUID id,
             String codigo,
@@ -35,7 +54,26 @@ public record ActivoResponse(
             Boolean activo,
             AuditoriaResponse auditoria
     ) {
-        this(id, codigo, nombre, descripcion, tipoActivo, ubicacion, null, fechaAdquisicion, urlImagen, activo, auditoria);
+        this(id, codigo, nombre, descripcion, tipoActivo, ubicacion, null, fechaAdquisicion, urlImagen, activo, auditoria, false, null, null);
+    }
+
+    public ActivoResponse withSolicitudActiva(Boolean enProceso, String numero, String estado) {
+        return new ActivoResponse(
+                id,
+                codigo,
+                nombre,
+                descripcion,
+                tipoActivo,
+                ubicacion,
+                estadoOperativo,
+                fechaAdquisicion,
+                urlImagen,
+                activo,
+                auditoria,
+                enProceso,
+                numero,
+                estado
+        );
     }
 
     public record TipoActivoInfo(

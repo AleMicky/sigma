@@ -163,6 +163,87 @@ public class SolicitudMantenimientoService {
     public static final String ESTADO_BPMN_TRABAJO_REALIZADO = "TRABAJO_REALIZADO";
     public static final String ESTADO_BPMN_FINALIZADO = "FINALIZADO";
 
+    public static final List<String> ESTADOS_SOLICITUD_EN_PROCESO = List.of(
+            ESTADO_BPMN_SOLICITADO,
+            ESTADO_BPMN_OBSERVADO,
+            ESTADO_BPMN_ASIGNADO,
+            ESTADO_BPMN_EN_MANTENIMIENTO,
+            ESTADO_BPMN_EN_REVISION,
+            ESTADO_BPMN_OBSERVADO_MANTENIMIENTO,
+            ESTADO_BPMN_VALIDADO
+    );
+
+    @Transactional(readOnly = true)
+    public PageResponse<com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse> listarActivosParaSolicitud(
+            String q,
+            UUID tipoActivoId,
+            UUID solicitudIdExcluir,
+            PageRequestDto pageRequest) {
+        PageResponse<com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse> page =
+                activoService.findAll(q, tipoActivoId, true, pageRequest);
+
+        if (page.content() == null || page.content().isEmpty()) {
+            return page;
+        }
+
+        Set<UUID> activoIds = page.content().stream()
+                .map(com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse::id)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<SolicitudMantenimiento> solicitudesActivas = repository.findActivasByActivoIds(
+                activoIds,
+                ESTADOS_SOLICITUD_EN_PROCESO,
+                solicitudIdExcluir
+        );
+
+        Map<UUID, SolicitudMantenimiento> activaPorActivoMap = new HashMap<>();
+        for (SolicitudMantenimiento sm : solicitudesActivas) {
+            if (sm.getActivo() != null && sm.getActivo().getId() != null) {
+                activaPorActivoMap.putIfAbsent(sm.getActivo().getId(), sm);
+            }
+        }
+
+        List<com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse> enrichedContent =
+                page.content().stream()
+                        .map(activo -> {
+                            SolicitudMantenimiento smActiva = activaPorActivoMap.get(activo.id());
+                            if (smActiva != null) {
+                                return activo.withSolicitudActiva(true, smActiva.getNumero(), smActiva.getEstado());
+                            }
+                            return activo.withSolicitudActiva(false, null, null);
+                        })
+                        .toList();
+
+        return new PageResponse<>(
+                enrichedContent,
+                page.page(),
+                page.size(),
+                page.totalElements(),
+                page.totalPages(),
+                page.first(),
+                page.last(),
+                page.empty()
+        );
+    }
+
+    private void validarActivoSinSolicitudEnProceso(UUID activoId, UUID solicitudIdExcluir) {
+        if (activoId == null) {
+            return;
+        }
+        boolean existeActiva = repository.existsActivaByActivoId(
+                activoId,
+                ESTADOS_SOLICITUD_EN_PROCESO,
+                solicitudIdExcluir
+        );
+        if (existeActiva) {
+            throw new ConflictException(
+                    "ACTIVO_CON_SOLICITUD_EN_PROCESO",
+                    "El activo seleccionado ya tiene una solicitud de mantenimiento en proceso de revisión o ejecución y no puede solaparse."
+            );
+        }
+    }
+
     public static List<String> resolverEstados(String estado) {
         return resolverEstados(estado, null);
     }
@@ -342,6 +423,8 @@ public class SolicitudMantenimientoService {
     }
 
     private SolicitudMantenimientoResponse createInternal(SolicitudMantenimientoRequest dto, List<MultipartFile> files) {
+        validarActivoSinSolicitudEnProceso(dto.activoId(), null);
+
         String numero = correlativoService.generar(CorrelativoCodigo.SOLICITUD_MANTENIMIENTO,
                 LocalDateTime.now().getYear());
 
@@ -414,6 +497,8 @@ public class SolicitudMantenimientoService {
                     "Solo se pueden editar solicitudes en estado BORRADOR u OBSERVADO");
         }
 
+        validarActivoSinSolicitudEnProceso(dto.activoId(), id);
+
         mapper.updateDomainFromRequest(dto, actual);
 
         SolicitudMantenimiento actualizado = repository.save(actual);
@@ -429,6 +514,10 @@ public class SolicitudMantenimientoService {
             throw new ConflictException(
                     "SOLICITUD_ESTADO_INVALIDO",
                     "Solo se puede enviar una solicitud en estado BORRADOR");
+        }
+
+        if (solicitud.getActivo() != null) {
+            validarActivoSinSolicitudEnProceso(solicitud.getActivo().getId(), id);
         }
 
         String estadoAnterior = solicitud.getEstado();
@@ -571,6 +660,10 @@ public class SolicitudMantenimientoService {
         }
 
         String estadoAnterior = solicitud.getEstado();
+
+        if ("borradorSolicitud".equalsIgnoreCase(tareaActual.taskDefinitionKey()) && solicitud.getActivo() != null) {
+            validarActivoSinSolicitudEnProceso(solicitud.getActivo().getId(), solicitudId);
+        }
 
         Map<String, Object> effectiveVariables = new HashMap<>();
         if (request != null && request.variables() != null) {

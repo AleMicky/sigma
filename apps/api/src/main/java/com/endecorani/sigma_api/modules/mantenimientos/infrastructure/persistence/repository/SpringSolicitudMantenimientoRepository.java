@@ -175,8 +175,35 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
             @Param("hasResponsable") boolean hasResponsable, @Param("responsableId") UUID responsableId
     );
 
+    @Query("""
+            SELECT s
+            FROM SolicitudMantenimientoEntity s
+            LEFT JOIN FETCH s.activo activo
+            WHERE activo.id IN :activoIds
+              AND UPPER(s.estado) IN :estadosActivos
+              AND (:hasExcluir = false OR s.id <> :excluirId)
+            ORDER BY s.fechaSolicitud DESC
+            """)
+    java.util.List<SolicitudMantenimientoEntity> findActivasByActivoIds(
+            @Param("activoIds") java.util.Collection<UUID> activoIds,
+            @Param("estadosActivos") java.util.Collection<String> estadosActivos,
+            @Param("hasExcluir") boolean hasExcluir,
+            @Param("excluirId") UUID excluirId
+    );
 
-
-    
+    @Query("""
+            SELECT count(s) > 0
+            FROM SolicitudMantenimientoEntity s
+            LEFT JOIN s.activo activo
+            WHERE activo.id = :activoId
+              AND UPPER(s.estado) IN :estadosActivos
+              AND (:hasExcluir = false OR s.id <> :excluirId)
+            """)
+    boolean existsActivaByActivoId(
+            @Param("activoId") UUID activoId,
+            @Param("estadosActivos") java.util.Collection<String> estadosActivos,
+            @Param("hasExcluir") boolean hasExcluir,
+            @Param("excluirId") UUID excluirId
+    );
 
 }

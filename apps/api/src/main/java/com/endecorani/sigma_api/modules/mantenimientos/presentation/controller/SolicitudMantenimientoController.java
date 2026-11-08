@@ -52,6 +52,21 @@ public class SolicitudMantenimientoController {
                 return ResponseEntity.ok(ApiResponse.success(service.obtenerResumen(interfaz)));
         }
 
+        @GetMapping("/activos")
+        @Operation(summary = "Listar activos para solicitud de mantenimiento indicando si tienen una solicitud en proceso (evitar solapamiento)")
+        public ResponseEntity<ApiResponse<PageResponse<com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse>>> listarActivosParaSolicitud(
+                        @RequestParam(required = false) String q,
+                        @RequestParam(required = false) UUID tipoActivoId,
+                        @RequestParam(required = false) UUID solicitudIdExcluir,
+                        @Valid @ModelAttribute PageRequestDto pageRequest) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(service.listarActivosParaSolicitud(
+                                                q,
+                                                tipoActivoId,
+                                                solicitudIdExcluir,
+                                                pageRequest)));
+        }
+
         @PostMapping
         @Operation(summary = "Registrar una solicitud de mantenimiento")
         public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> create(

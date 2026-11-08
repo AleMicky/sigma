@@ -93,6 +93,40 @@ public class SolicitudMantenimientoRepositoryAdapter implements SolicitudManteni
         ).map(mapper::toDomain);
     }
 
+    @Override
+    public java.util.List<SolicitudMantenimiento> findActivasByActivoIds(
+            java.util.Collection<UUID> activoIds,
+            java.util.Collection<String> estadosActivos,
+            UUID excluirId
+    ) {
+        if (activoIds == null || activoIds.isEmpty() || estadosActivos == null || estadosActivos.isEmpty()) {
+            return java.util.List.of();
+        }
+        return springRepository.findActivasByActivoIds(
+                activoIds,
+                estadosActivos,
+                hasId(excluirId),
+                idOrDefault(excluirId)
+        ).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public boolean existsActivaByActivoId(
+            UUID activoId,
+            java.util.Collection<String> estadosActivos,
+            UUID excluirId
+    ) {
+        if (activoId == null || estadosActivos == null || estadosActivos.isEmpty()) {
+            return false;
+        }
+        return springRepository.existsActivaByActivoId(
+                activoId,
+                estadosActivos,
+                hasId(excluirId),
+                idOrDefault(excluirId)
+        );
+    }
+
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
