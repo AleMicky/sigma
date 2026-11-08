@@ -163,6 +163,7 @@ public class BpmnDefinitionParser {
                 String component = getAttributeValue(formProperty, "sigma:component", "component");
                 String source = getAttributeValue(formProperty, "sigma:source", "source");
                 String url = resolveVariables(getAttributeValue(formProperty, "sigma:url", "url"), contextVariables);
+                String valueField = getAttributeValue(formProperty, "sigma:valueField", "valueField");
                 String paramsStr = resolveVariables(getAttributeValue(formProperty, "sigma:params", "params"), contextVariables);
                 Map<String, String> params = parseParams(paramsStr);
 
@@ -178,6 +179,7 @@ public class BpmnDefinitionParser {
                         .component(component)
                         .source(source)
                         .url(url)
+                        .valueField(valueField)
                         .params(params)
                         .options(options.isEmpty() ? null : options)
                         .build());

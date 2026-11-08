@@ -11,7 +11,9 @@ import {
 } from "lucide-react"
 
 import { actividadAplicacionQueries } from "@/modules/mantenimientos/actividad/api/actividad-aplicacion.queries"
+import type { ActividadAplicacion } from "@/modules/mantenimientos/actividad/api/actividad-aplicacion.service"
 import { checklistItemQueries } from "@/modules/mantenimientos/actividad/api/checklist-item.queries"
+import type { ChecklistItem } from "@/modules/mantenimientos/actividad/api/checklist-item.service"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -46,7 +48,7 @@ export function ChecklistTemplateSelectDialog({
   tipoActivoId,
   tipoActivoNombre,
   onImport,
-}: ChecklistTemplateSelectDialogProps) {
+}: Readonly<ChecklistTemplateSelectDialogProps>) {
   const [selectedActividadId, setSelectedActividadId] = useState<string>("")
   const [selectedAplicacionId, setSelectedAplicacionId] = useState<string>("")
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set())
@@ -56,7 +58,10 @@ export function ChecklistTemplateSelectDialog({
     ...actividadAplicacionQueries.byActividad(selectedActividadId, { size: 100 }),
     enabled: open && Boolean(selectedActividadId),
   })
-  const aplicaciones = aplicacionesQuery.data?.content ?? []
+  const aplicaciones = useMemo(
+    () => aplicacionesQuery.data?.content ?? [],
+    [aplicacionesQuery.data?.content],
+  )
 
   // Auto-seleccionar aplicación si coincide con el tipo de activo o si solo hay una
   const activeAplicacion = useMemo(() => {
@@ -81,7 +86,10 @@ export function ChecklistTemplateSelectDialog({
     enabled: open && Boolean(effectiveAplicacionId),
   })
 
-  const checklistItems = checklistItemsQuery.data ?? []
+  const checklistItems = useMemo(
+    () => checklistItemsQuery.data ?? [],
+    [checklistItemsQuery.data],
+  )
 
   // Auto-seleccionar todos los ítems cuando se cargan nuevos ítems
   const handleSelectAll = () => {
@@ -187,42 +195,13 @@ export function ChecklistTemplateSelectDialog({
                 )}
               </div>
 
-              {!selectedActividadId ? (
-                <div className="h-7.5 flex items-center px-2 text-[11px] text-muted-foreground/60 border rounded-lg bg-background">
-                  Elige una actividad...
-                </div>
-              ) : aplicacionesQuery.isLoading ? (
-                <div className="h-7.5 flex items-center gap-1.5 px-2 text-[11px] text-muted-foreground border rounded-lg bg-background">
-                  <Loader2 className="size-2.5 animate-spin text-primary" />
-                  <span>Cargando...</span>
-                </div>
-              ) : aplicaciones.length === 0 ? (
-                <div className="h-7.5 flex items-center px-2 text-[11px] text-muted-foreground italic border rounded-lg bg-background">
-                  Sin perfiles
-                </div>
-              ) : (
-                <div className="flex gap-1 overflow-x-auto py-0.5 scrollbar-none">
-                  {aplicaciones.map((ap) => {
-                    const isSelected = ap.id === effectiveAplicacionId
-                    return (
-                      <button
-                        key={ap.id}
-                        type="button"
-                        onClick={() => handleAplicacionChange(ap.id)}
-                        className={cn(
-                          "h-6.5 px-2 rounded-md border text-[11px] font-semibold shrink-0 transition-all cursor-pointer truncate max-w-[140px]",
-                          isSelected
-                            ? "bg-sky-600 text-white border-sky-600 shadow-2xs"
-                            : "bg-background border-border text-foreground hover:bg-muted",
-                        )}
-                        title={ap.tipoActivo?.nombre || "General"}
-                      >
-                        {ap.tipoActivo?.nombre || "General"}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+              <PerfilesSelector
+                selectedActividadId={selectedActividadId}
+                isLoading={aplicacionesQuery.isLoading}
+                aplicaciones={aplicaciones}
+                effectiveAplicacionId={effectiveAplicacionId}
+                onSelectAplicacion={handleAplicacionChange}
+              />
             </div>
           </div>
 
@@ -248,61 +227,12 @@ export function ChecklistTemplateSelectDialog({
                 )}
               </div>
 
-              {checklistItemsQuery.isLoading ? (
-                <div className="flex items-center justify-center py-4 gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="size-3.5 animate-spin text-primary" />
-                  <span>Cargando tareas...</span>
-                </div>
-              ) : checklistItems.length === 0 ? (
-                <div className="rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground bg-muted/5">
-                  No hay tareas registradas en el checklist.
-                </div>
-              ) : (
-                <div className="rounded-xl border divide-y overflow-hidden max-h-48 overflow-y-auto bg-card shadow-2xs">
-                  {checklistItems.map((item, idx) => {
-                    const isChecked =
-                      selectedItemIds.size === 0 || selectedItemIds.has(item.id)
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => toggleItem(item.id)}
-                        className={cn(
-                          "py-1.5 px-2.5 text-xs flex items-center gap-2 transition-colors cursor-pointer select-none",
-                          isChecked
-                            ? "bg-sky-500/5 hover:bg-sky-500/10"
-                            : "opacity-45 hover:opacity-100",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "flex size-3.5 shrink-0 items-center justify-center rounded border transition-colors",
-                            isChecked
-                              ? "bg-sky-600 border-sky-600 text-white"
-                              : "border-muted-foreground/40 bg-background",
-                          )}
-                        >
-                          {isChecked && <Check className="size-2.5 stroke-[3]" />}
-                        </div>
-
-                        <span className="font-mono text-[9.5px] font-bold text-muted-foreground w-4 shrink-0">
-                          #{item.orden || idx + 1}
-                        </span>
-
-                        <div className="min-w-0 flex-1 leading-tight">
-                          <span className="font-semibold text-foreground truncate block text-xs">
-                            {item.nombre}
-                          </span>
-                          {item.descripcion && (
-                            <span className="text-[10px] text-muted-foreground truncate block">
-                              {item.descripcion}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+              <ChecklistItemsList
+                isLoading={checklistItemsQuery.isLoading}
+                items={checklistItems}
+                selectedItemIds={selectedItemIds}
+                onToggleItem={toggleItem}
+              />
             </div>
           ) : (
             <div className="p-3 text-center text-[11px] text-muted-foreground border border-dashed rounded-xl bg-muted/5">
@@ -335,5 +265,149 @@ export function ChecklistTemplateSelectDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+type PerfilesSelectorProps = {
+  selectedActividadId: string
+  isLoading: boolean
+  aplicaciones: ActividadAplicacion[]
+  effectiveAplicacionId: string
+  onSelectAplicacion: (id: string) => void
+}
+
+function PerfilesSelector({
+  selectedActividadId,
+  isLoading,
+  aplicaciones,
+  effectiveAplicacionId,
+  onSelectAplicacion,
+}: Readonly<PerfilesSelectorProps>) {
+  if (!selectedActividadId) {
+    return (
+      <div className="h-7.5 flex items-center px-2 text-[11px] text-muted-foreground/60 border rounded-lg bg-background">
+        Elige una actividad...
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="h-7.5 flex items-center gap-1.5 px-2 text-[11px] text-muted-foreground border rounded-lg bg-background">
+        <Loader2 className="size-2.5 animate-spin text-primary" />
+        <span>Cargando...</span>
+      </div>
+    )
+  }
+
+  if (aplicaciones.length === 0) {
+    return (
+      <div className="h-7.5 flex items-center px-2 text-[11px] text-muted-foreground italic border rounded-lg bg-background">
+        Sin perfiles
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex gap-1 overflow-x-auto py-0.5 scrollbar-none">
+      {aplicaciones.map((ap) => {
+        const isSelected = ap.id === effectiveAplicacionId
+        return (
+          <button
+            key={ap.id}
+            type="button"
+            onClick={() => onSelectAplicacion(ap.id)}
+            className={cn(
+              "h-6.5 px-2 rounded-md border text-[11px] font-semibold shrink-0 transition-all cursor-pointer truncate max-w-[140px]",
+              isSelected
+                ? "bg-sky-600 text-white border-sky-600 shadow-2xs"
+                : "bg-background border-border text-foreground hover:bg-muted",
+            )}
+            title={ap.tipoActivo?.nombre || "General"}
+          >
+            {ap.tipoActivo?.nombre || "General"}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+type ChecklistItemsListProps = {
+  isLoading: boolean
+  items: ChecklistItem[]
+  selectedItemIds: Set<string>
+  onToggleItem: (id: string) => void
+}
+
+function ChecklistItemsList({
+  isLoading,
+  items,
+  selectedItemIds,
+  onToggleItem,
+}: Readonly<ChecklistItemsListProps>) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-4 gap-2 text-xs text-muted-foreground">
+        <Loader2 className="size-3.5 animate-spin text-primary" />
+        <span>Cargando tareas...</span>
+      </div>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground bg-muted/5">
+        No hay tareas registradas en el checklist.
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border divide-y overflow-hidden max-h-48 overflow-y-auto bg-card shadow-2xs">
+      {items.map((item, idx) => {
+        const isChecked =
+          selectedItemIds.size === 0 || selectedItemIds.has(item.id)
+        return (
+          <button
+            type="button"
+            key={item.id}
+            onClick={() => onToggleItem(item.id)}
+            className={cn(
+              "w-full text-left py-1.5 px-2.5 text-xs flex items-center gap-2 transition-colors cursor-pointer select-none",
+              isChecked
+                ? "bg-sky-500/5 hover:bg-sky-500/10"
+                : "opacity-45 hover:opacity-100",
+            )}
+          >
+            <div
+              className={cn(
+                "flex size-3.5 shrink-0 items-center justify-center rounded border transition-colors",
+                isChecked
+                  ? "bg-sky-600 border-sky-600 text-white"
+                  : "border-muted-foreground/40 bg-background",
+              )}
+            >
+              {isChecked && <Check className="size-2.5 stroke-[3]" />}
+            </div>
+
+            <span className="font-mono text-[9.5px] font-bold text-muted-foreground w-4 shrink-0">
+              #{item.orden || idx + 1}
+            </span>
+
+            <div className="min-w-0 flex-1 leading-tight">
+              <span className="font-semibold text-foreground truncate block text-xs">
+                {item.nombre}
+              </span>
+              {item.descripcion && (
+                <span className="text-[10px] text-muted-foreground truncate block">
+                  {item.descripcion}
+                </span>
+              )}
+            </div>
+          </button>
+        )
+      })}
+    </div>
   )
 }

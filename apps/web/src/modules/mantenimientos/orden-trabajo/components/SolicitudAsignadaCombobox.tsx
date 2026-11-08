@@ -40,7 +40,7 @@ export function SolicitudAsignadaCombobox({
   id,
   name,
   "aria-invalid": ariaInvalid,
-}: SolicitudAsignadaComboboxProps) {
+}: Readonly<SolicitudAsignadaComboboxProps>) {
   const query = useQuery(
     solicitudQueries.list({ size: 100, sortBy: "createdAt", direction: "DESC" }),
   )

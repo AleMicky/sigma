@@ -41,7 +41,7 @@
       flowable:assignee="${aprobadorId}"
       flowable:formFieldValidation="true">
       <extensionElements>
-        <!-- LISTADO DE RESPONSABLES (DEPENDIENTES DEL APROBADOR) -->
+        <!-- LISTADO DE RESPONSABLES (CONDUCTORES) -->
         <flowable:formProperty
           id="responsableId"
           name="Responsable de mantenimiento"
@@ -51,7 +51,8 @@
           xmlns:sigma="http://endecorani.com/sigma/workflow"
           sigma:component="select"
           sigma:source="rest"
-          sigma:url="/api/v1/grupos-aprobadores/aprobadores/${aprobadorId}/dependientes/select">
+          sigma:url="/api/v1/conductores"
+          sigma:valueField="empleadoId">
         </flowable:formProperty>
 
         <!-- COMENTARIO -->

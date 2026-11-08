@@ -45,7 +45,7 @@ export function OrdenTrabajoEvidenciaDialog({
   actividadNombre,
   evidenciaToReplace,
   onSuccess,
-}: OrdenTrabajoEvidenciaDialogProps) {
+}: Readonly<OrdenTrabajoEvidenciaDialogProps>) {
   const isReplacing = Boolean(evidenciaToReplace?.id)
 
   const uploadMutation = useCreateOrdenTrabajoActividadEvidencia()
@@ -99,6 +99,83 @@ export function OrdenTrabajoEvidenciaDialog({
     })
     evidenciasQuery.refetch()
     onSuccess?.()
+  }
+
+  const renderEvidenciasList = () => {
+    if (evidenciasQuery.isLoading) {
+      return (
+        <div className="flex items-center justify-center py-6 gap-2 text-xs text-muted-foreground">
+          <Loader2 className="size-4 animate-spin text-amber-600" />
+          <span>Cargando fotografías...</span>
+        </div>
+      )
+    }
+
+    if (evidencias.length === 0) {
+      return (
+        <div className="p-4 text-center border border-dashed rounded-xl text-xs text-muted-foreground bg-muted/5">
+          No hay fotografías ni comprobantes adjuntos en esta tarea todavía.
+        </div>
+      )
+    }
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {evidencias.map((ev) => (
+          <div
+            key={ev.id}
+            className="group relative rounded-xl border bg-card overflow-hidden shadow-2xs hover:border-border transition-all flex flex-col"
+          >
+            {/* Preview Image or File */}
+            <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
+              {ev.url && (ev.url.match(/\.(jpeg|jpg|gif|png|webp)/i) || !ev.url.includes(".")) ? (
+                <img
+                  src={ev.url}
+                  alt={ev.nombreArchivo}
+                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-1 text-muted-foreground p-2 text-center">
+                  <ImageIcon className="size-6 text-amber-600" />
+                  <span className="text-[10px] font-medium truncate max-w-[140px]">
+                    {ev.nombreArchivo}
+                  </span>
+                </div>
+              )}
+
+              {/* Overlay action buttons */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                {ev.url && (
+                  <a
+                    href={ev.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex size-7 items-center justify-center rounded-lg bg-white/90 text-foreground hover:bg-white transition-colors"
+                    title="Ver en pantalla completa"
+                  >
+                    <ExternalLink className="size-3.5" />
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteEvidencia(ev.id)}
+                  className="inline-flex size-7 items-center justify-center rounded-lg bg-red-600/90 text-white hover:bg-red-600 transition-colors cursor-pointer"
+                  title="Eliminar evidencia"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-2 text-xs flex items-center justify-between gap-1 border-t bg-card">
+              <span className="truncate font-medium text-[11px] text-foreground">
+                {ev.nombreArchivo}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -174,72 +251,7 @@ export function OrdenTrabajoEvidenciaDialog({
               </h4>
             </div>
 
-            {evidenciasQuery.isLoading ? (
-              <div className="flex items-center justify-center py-6 gap-2 text-xs text-muted-foreground">
-                <Loader2 className="size-4 animate-spin text-amber-600" />
-                <span>Cargando fotografías...</span>
-              </div>
-            ) : evidencias.length === 0 ? (
-              <div className="p-4 text-center border border-dashed rounded-xl text-xs text-muted-foreground bg-muted/5">
-                No hay fotografías ni comprobantes adjuntos en esta tarea todavía.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {evidencias.map((ev) => (
-                  <div
-                    key={ev.id}
-                    className="group relative rounded-xl border bg-card overflow-hidden shadow-2xs hover:border-border transition-all flex flex-col"
-                  >
-                    {/* Preview Image or File */}
-                    <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
-                      {ev.url && (ev.url.match(/\.(jpeg|jpg|gif|png|webp)/i) || !ev.url.includes(".")) ? (
-                        <img
-                          src={ev.url}
-                          alt={ev.nombreArchivo}
-                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center gap-1 text-muted-foreground p-2 text-center">
-                          <ImageIcon className="size-6 text-amber-600" />
-                          <span className="text-[10px] font-medium truncate max-w-[140px]">
-                            {ev.nombreArchivo}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Overlay action buttons */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        {ev.url && (
-                          <a
-                            href={ev.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex size-7 items-center justify-center rounded-lg bg-white/90 text-foreground hover:bg-white transition-colors"
-                            title="Ver en pantalla completa"
-                          >
-                            <ExternalLink className="size-3.5" />
-                          </a>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteEvidencia(ev.id)}
-                          className="inline-flex size-7 items-center justify-center rounded-lg bg-red-600/90 text-white hover:bg-red-600 transition-colors cursor-pointer"
-                          title="Eliminar evidencia"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="p-2 text-xs flex items-center justify-between gap-1 border-t bg-card">
-                      <span className="truncate font-medium text-[11px] text-foreground">
-                        {ev.nombreArchivo}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {renderEvidenciasList()}
           </div>
         </div>
 

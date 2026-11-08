@@ -6,6 +6,7 @@ import { routeTree } from "./routeTree.gen"
 
 export const router = createRouter({
   routeTree,
+  trailingSlash: "never",
   context: {
     queryClient,
     auth: undefined!,

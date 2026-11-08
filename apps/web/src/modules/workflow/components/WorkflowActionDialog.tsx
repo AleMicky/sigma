@@ -704,6 +704,8 @@ export function WorkflowDynamicFieldRenderer({
           url={field.url}
           params={field.params}
           value={stringValue}
+          fieldId={field.id}
+          valueField={field.valueField}
           onValueChange={(val) => onChange(val ?? "")}
           placeholder={field.placeholder || `Seleccionar ${fieldName.toLowerCase()}...`}
         />

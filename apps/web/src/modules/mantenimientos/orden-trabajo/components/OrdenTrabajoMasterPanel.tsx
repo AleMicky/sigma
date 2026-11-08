@@ -53,11 +53,11 @@ export function OrdenTrabajoMasterPanel({
   onSearchChange,
   onSelect,
   onPageChange,
-}: OrdenTrabajoMasterPanelProps) {
+}: Readonly<OrdenTrabajoMasterPanelProps>) {
   const [internalSearch, setInternalSearch] = useState(search)
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>("todos")
 
-  function handleSearchSubmit(e: React.FormEvent) {
+  function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     onSearchChange(internalSearch)
   }
@@ -104,6 +104,118 @@ export function OrdenTrabajoMasterPanel({
       return true
     })
   }, [solicitudes, activeFilterTab])
+
+  const renderListContent = () => {
+    if (isLoading) {
+      return (
+        <ListSkeleton rows={5} rowClassName="h-22 rounded-xl" className="space-y-2" />
+      )
+    }
+
+    if (errorMessage) {
+      return (
+        <div className="p-6 text-center text-xs text-destructive bg-destructive/5 rounded-xl border border-destructive/20 m-2">
+          <p className="font-semibold">Error al cargar datos</p>
+          <p className="text-[11px] mt-1 text-muted-foreground">{errorMessage}</p>
+        </div>
+      )
+    }
+
+    if (filteredSolicitudes.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground border border-dashed rounded-xl m-1">
+          <ClipboardList className="size-8 mb-2 opacity-40 text-sky-600" />
+          <p className="text-xs font-semibold text-foreground">Sin solicitudes</p>
+          <p className="text-[11px] text-muted-foreground max-w-[200px] mt-0.5">
+            {search
+              ? "No hay resultados para la búsqueda ingresada"
+              : "No se encontraron solicitudes en este filtro"}
+          </p>
+        </div>
+      )
+    }
+
+    return filteredSolicitudes.map((sol) => {
+      const isSelected = sol.id === selectedId
+      const prioridadNivel = sol.prioridad?.nivel ?? 1
+      const badgeStyle = getPrioridadBadgeStyles(prioridadNivel)
+      const estadoFormatted = formatEstadoLabel(sol.estado)
+
+      return (
+        <button
+          key={sol.id}
+          type="button"
+          onClick={() => onSelect(sol.id)}
+          className={cn(
+            "w-full text-left rounded-xl border p-3 transition-all text-xs cursor-pointer select-none relative group",
+            "hover:shadow-xs focus:outline-hidden",
+            isSelected
+              ? "border-sky-500 bg-sky-50/80 dark:bg-sky-950/30 shadow-xs ring-1 ring-sky-500/40"
+              : "border-border/70 bg-card hover:bg-accent/40 hover:border-border",
+          )}
+        >
+          {/* Active Indicator bar */}
+          {isSelected && (
+            <div className="absolute left-0 top-2.5 bottom-2.5 w-1 bg-sky-600 rounded-r-full" />
+          )}
+
+          {/* Header row */}
+          <div className="flex items-center justify-between gap-1.5 mb-1.5 pl-0.5">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-mono font-bold text-foreground text-xs tracking-tight">
+                {sol.numero}
+              </span>
+              {sol.prioridad && (
+                <Badge
+                  variant="secondary"
+                  className={cn("text-[9px] px-1.5 py-0 font-semibold uppercase tracking-wider", badgeStyle)}
+                >
+                  {sol.prioridad.nombre}
+                </Badge>
+              )}
+            </div>
+            <Badge
+              variant={getEstadoBadgeVariant(sol.estado)}
+              className="text-[9.5px] px-2 py-0 shrink-0 font-semibold shadow-2xs"
+            >
+              {estadoFormatted}
+            </Badge>
+          </div>
+
+          {/* Titulo */}
+          <p className="font-semibold text-foreground text-xs line-clamp-1 mb-1.5 pl-0.5">
+            {sol.titulo}
+          </p>
+
+          {/* Activo & Info */}
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate mb-2 pl-0.5">
+            <div className="size-4 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+              <Wrench className="size-2.5" />
+            </div>
+            <span className="truncate font-medium text-foreground/80">
+              {sol.activo?.codigo} - {sol.activo?.nombre}
+            </span>
+          </div>
+
+          {/* Footer metadata */}
+          <div className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground/80 pt-1.5 border-t border-border/50 pl-0.5">
+            <span className="flex items-center gap-1 truncate max-w-[55%]">
+              <User className="size-2.5 shrink-0 text-muted-foreground/70" />
+              <span className="truncate">
+                {sol.solicitante?.nombreCompleto || sol.solicitante?.nombre || "Sin solicitante"}
+              </span>
+            </span>
+            {sol.fechaSolicitud && (
+              <span className="flex items-center gap-1 shrink-0 font-mono">
+                <Calendar className="size-2.5 text-muted-foreground/70" />
+                <span>{sol.fechaSolicitud.slice(0, 10)}</span>
+              </span>
+            )}
+          </div>
+        </button>
+      )
+    })
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col border-r bg-card/40">
@@ -197,105 +309,7 @@ export function OrdenTrabajoMasterPanel({
           isFetching && !isLoading && "opacity-75 transition-opacity duration-200",
         )}
       >
-        {isLoading ? (
-          <ListSkeleton rows={5} rowClassName="h-22 rounded-xl" className="space-y-2" />
-        ) : errorMessage ? (
-          <div className="p-6 text-center text-xs text-destructive bg-destructive/5 rounded-xl border border-destructive/20 m-2">
-            <p className="font-semibold">Error al cargar datos</p>
-            <p className="text-[11px] mt-1 text-muted-foreground">{errorMessage}</p>
-          </div>
-        ) : filteredSolicitudes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground border border-dashed rounded-xl m-1">
-            <ClipboardList className="size-8 mb-2 opacity-40 text-sky-600" />
-            <p className="text-xs font-semibold text-foreground">Sin solicitudes</p>
-            <p className="text-[11px] text-muted-foreground max-w-[200px] mt-0.5">
-              {search
-                ? "No hay resultados para la búsqueda ingresada"
-                : "No se encontraron solicitudes en este filtro"}
-            </p>
-          </div>
-        ) : (
-          filteredSolicitudes.map((sol) => {
-            const isSelected = sol.id === selectedId
-            const prioridadNivel = sol.prioridad?.nivel ?? 1
-            const badgeStyle = getPrioridadBadgeStyles(prioridadNivel)
-            const estadoFormatted = formatEstadoLabel(sol.estado)
-
-            return (
-              <button
-                key={sol.id}
-                type="button"
-                onClick={() => onSelect(sol.id)}
-                className={cn(
-                  "w-full text-left rounded-xl border p-3 transition-all text-xs cursor-pointer select-none relative group",
-                  "hover:shadow-xs focus:outline-hidden",
-                  isSelected
-                    ? "border-sky-500 bg-sky-50/80 dark:bg-sky-950/30 shadow-xs ring-1 ring-sky-500/40"
-                    : "border-border/70 bg-card hover:bg-accent/40 hover:border-border",
-                )}
-              >
-                {/* Active Indicator bar */}
-                {isSelected && (
-                  <div className="absolute left-0 top-2.5 bottom-2.5 w-1 bg-sky-600 rounded-r-full" />
-                )}
-
-                {/* Header row */}
-                <div className="flex items-center justify-between gap-1.5 mb-1.5 pl-0.5">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="font-mono font-bold text-foreground text-xs tracking-tight">
-                      {sol.numero}
-                    </span>
-                    {sol.prioridad && (
-                      <Badge
-                        variant="secondary"
-                        className={cn("text-[9px] px-1.5 py-0 font-semibold uppercase tracking-wider", badgeStyle)}
-                      >
-                        {sol.prioridad.nombre}
-                      </Badge>
-                    )}
-                  </div>
-                  <Badge
-                    variant={getEstadoBadgeVariant(sol.estado)}
-                    className="text-[9.5px] px-2 py-0 shrink-0 font-semibold shadow-2xs"
-                  >
-                    {estadoFormatted}
-                  </Badge>
-                </div>
-
-                {/* Titulo */}
-                <p className="font-semibold text-foreground text-xs line-clamp-1 mb-1.5 pl-0.5">
-                  {sol.titulo}
-                </p>
-
-                {/* Activo & Info */}
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate mb-2 pl-0.5">
-                  <div className="size-4 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-                    <Wrench className="size-2.5" />
-                  </div>
-                  <span className="truncate font-medium text-foreground/80">
-                    {sol.activo?.codigo} - {sol.activo?.nombre}
-                  </span>
-                </div>
-
-                {/* Footer metadata */}
-                <div className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground/80 pt-1.5 border-t border-border/50 pl-0.5">
-                  <span className="flex items-center gap-1 truncate max-w-[55%]">
-                    <User className="size-2.5 shrink-0 text-muted-foreground/70" />
-                    <span className="truncate">
-                      {sol.solicitante?.nombreCompleto || sol.solicitante?.nombre || "Sin solicitante"}
-                    </span>
-                  </span>
-                  {sol.fechaSolicitud && (
-                    <span className="flex items-center gap-1 shrink-0 font-mono">
-                      <Calendar className="size-2.5 text-muted-foreground/70" />
-                      <span>{sol.fechaSolicitud.slice(0, 10)}</span>
-                    </span>
-                  )}
-                </div>
-              </button>
-            )
-          })
-        )}
+        {renderListContent()}
       </div>
 
       {/* Pagination */}

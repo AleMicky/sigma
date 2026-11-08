@@ -25,6 +25,7 @@ public class WorkflowFieldResponse {
     private String component;
     private String source;
     private String url;
+    private String valueField;
     private Map<String, String> params;
 
     public String id() {

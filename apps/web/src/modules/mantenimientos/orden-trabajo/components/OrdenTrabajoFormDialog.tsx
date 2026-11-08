@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Calendar, FileText, Gauge, Hourglass, Loader2, Save, Wrench } from "lucide-react"
 
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
@@ -42,94 +42,8 @@ export function OrdenTrabajoFormDialog({
   initialSolicitudId,
   initialActivoId,
   onSuccess,
-}: OrdenTrabajoFormDialogProps) {
+}: Readonly<OrdenTrabajoFormDialogProps>) {
   const isEditing = Boolean(ordenTrabajo?.id)
-
-  const createMutation = useCreateOrdenTrabajo()
-  const updateMutation = useUpdateOrdenTrabajo()
-
-  const [solicitudMantenimientoId, setSolicitudMantenimientoId] =
-    useState<string>("")
-  const [activoId, setActivoId] = useState<string>("")
-  const [responsableId, setResponsableId] = useState<string>("")
-  const [fechaInicio, setFechaInicio] = useState<string>("")
-  const [fechaFin, setFechaFin] = useState<string>("")
-  const [kilometrajeFinal, setKilometrajeFinal] = useState<string>("")
-  const [horasUsoFinal, setHorasUsoFinal] = useState<string>("")
-  const [diagnostico, setDiagnostico] = useState<string>("")
-  const [trabajoRealizado, setTrabajoRealizado] = useState<string>("")
-  const [observacion, setObservacion] = useState<string>("")
-
-  useEffect(() => {
-    if (open) {
-      if (ordenTrabajo) {
-        setSolicitudMantenimientoId(ordenTrabajo.solicitudMantenimientoId || "")
-        setActivoId(ordenTrabajo.activo?.id || "")
-        setResponsableId(ordenTrabajo.responsable?.id || "")
-        setFechaInicio(
-          ordenTrabajo.fechaInicio ? ordenTrabajo.fechaInicio.slice(0, 16) : "",
-        )
-        setFechaFin(
-          ordenTrabajo.fechaFin ? ordenTrabajo.fechaFin.slice(0, 16) : "",
-        )
-        setKilometrajeFinal("")
-        setHorasUsoFinal("")
-        setDiagnostico(ordenTrabajo.diagnostico || "")
-        setTrabajoRealizado(ordenTrabajo.trabajoRealizado || "")
-        setObservacion(ordenTrabajo.observacion || "")
-      } else {
-        setSolicitudMantenimientoId(initialSolicitudId || "")
-        setActivoId(initialActivoId || "")
-        setResponsableId("")
-        // Default start date to now
-        const now = new Date()
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-        setFechaInicio(now.toISOString().slice(0, 16))
-        setFechaFin("")
-        setKilometrajeFinal("")
-        setHorasUsoFinal("")
-        setDiagnostico("")
-        setTrabajoRealizado("")
-        setObservacion("")
-      }
-    }
-  }, [open, ordenTrabajo, initialSolicitudId, initialActivoId])
-
-  const isSubmitting = createMutation.isPending || updateMutation.isPending
-  const isValid = Boolean(
-    solicitudMantenimientoId && activoId && responsableId,
-  )
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!isValid || isSubmitting) return
-
-    const payload: OrdenTrabajoPayload = {
-      solicitudMantenimientoId,
-      activoId,
-      responsableId,
-      fechaInicio: fechaInicio ? `${fechaInicio}:00` : null,
-      fechaFin: fechaFin ? `${fechaFin}:00` : null,
-      kilometrajeFinal: kilometrajeFinal ? Number(kilometrajeFinal) : null,
-      horasUsoFinal: horasUsoFinal ? Number(horasUsoFinal) : null,
-      diagnostico: diagnostico.trim() || null,
-      trabajoRealizado: trabajoRealizado.trim() || null,
-      observacion: observacion.trim() || null,
-    }
-
-    if (isEditing && ordenTrabajo?.id) {
-      const result = await updateMutation.mutateAsync({
-        id: ordenTrabajo.id,
-        payload,
-      })
-      onSuccess?.(result)
-      onOpenChange(false)
-    } else {
-      const result = await createMutation.mutateAsync(payload)
-      onSuccess?.(result)
-      onOpenChange(false)
-    }
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,7 +68,114 @@ export function OrdenTrabajoFormDialog({
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        {open && (
+          <OrdenTrabajoForm
+            key={ordenTrabajo?.id ?? (initialSolicitudId ?? "new")}
+            ordenTrabajo={ordenTrabajo}
+            initialSolicitudId={initialSolicitudId}
+            initialActivoId={initialActivoId}
+            isEditing={isEditing}
+            onCancel={() => onOpenChange(false)}
+            onSuccess={(result) => {
+              onSuccess?.(result)
+              onOpenChange(false)
+            }}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+type OrdenTrabajoFormProps = {
+  ordenTrabajo?: OrdenTrabajo | null
+  initialSolicitudId?: string
+  initialActivoId?: string
+  isEditing: boolean
+  onCancel: () => void
+  onSuccess: (ot: OrdenTrabajo) => void
+}
+
+function OrdenTrabajoForm({
+  ordenTrabajo,
+  initialSolicitudId,
+  initialActivoId,
+  isEditing,
+  onCancel,
+  onSuccess,
+}: Readonly<OrdenTrabajoFormProps>) {
+  const createMutation = useCreateOrdenTrabajo()
+  const updateMutation = useUpdateOrdenTrabajo()
+
+  const [solicitudMantenimientoId, setSolicitudMantenimientoId] =
+    useState<string>(
+      ordenTrabajo?.solicitudMantenimientoId || initialSolicitudId || "",
+    )
+  const [activoId, setActivoId] = useState<string>(
+    ordenTrabajo?.activo?.id || initialActivoId || "",
+  )
+  const [responsableId, setResponsableId] = useState<string>(
+    ordenTrabajo?.responsable?.id || "",
+  )
+  const [fechaInicio, setFechaInicio] = useState<string>(() => {
+    if (ordenTrabajo?.fechaInicio) {
+      return ordenTrabajo.fechaInicio.slice(0, 16)
+    }
+    const now = new Date()
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+    return now.toISOString().slice(0, 16)
+  })
+  const [fechaFin, setFechaFin] = useState<string>(
+    ordenTrabajo?.fechaFin ? ordenTrabajo.fechaFin.slice(0, 16) : "",
+  )
+  const [kilometrajeFinal, setKilometrajeFinal] = useState<string>("")
+  const [horasUsoFinal, setHorasUsoFinal] = useState<string>("")
+  const [diagnostico, setDiagnostico] = useState<string>(
+    ordenTrabajo?.diagnostico || "",
+  )
+  const [trabajoRealizado, setTrabajoRealizado] = useState<string>(
+    ordenTrabajo?.trabajoRealizado || "",
+  )
+  const [observacion, setObservacion] = useState<string>(
+    ordenTrabajo?.observacion || "",
+  )
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending
+  const isValid = Boolean(
+    solicitudMantenimientoId && activoId && responsableId,
+  )
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!isValid || isSubmitting) return
+
+    const payload: OrdenTrabajoPayload = {
+      solicitudMantenimientoId,
+      activoId,
+      responsableId,
+      fechaInicio: fechaInicio ? `${fechaInicio}:00` : null,
+      fechaFin: fechaFin ? `${fechaFin}:00` : null,
+      kilometrajeFinal: kilometrajeFinal ? Number(kilometrajeFinal) : null,
+      horasUsoFinal: horasUsoFinal ? Number(horasUsoFinal) : null,
+      diagnostico: diagnostico.trim() || null,
+      trabajoRealizado: trabajoRealizado.trim() || null,
+      observacion: observacion.trim() || null,
+    }
+
+    if (isEditing && ordenTrabajo?.id) {
+      const result = await updateMutation.mutateAsync({
+        id: ordenTrabajo.id,
+        payload,
+      })
+      onSuccess(result)
+    } else {
+      const result = await createMutation.mutateAsync(payload)
+      onSuccess(result)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {/* Solicitud & Activo */}
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -325,7 +346,7 @@ export function OrdenTrabajoFormDialog({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => onOpenChange(false)}
+              onClick={onCancel}
               disabled={isSubmitting}
               className="h-8 text-xs"
             >
@@ -351,7 +372,5 @@ export function OrdenTrabajoFormDialog({
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
   )
 }

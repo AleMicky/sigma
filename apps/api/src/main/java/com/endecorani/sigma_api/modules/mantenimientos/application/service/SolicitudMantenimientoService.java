@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -91,6 +92,7 @@ public class SolicitudMantenimientoService {
     private final com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService jasperReportService;
     private final ActivoService activoService;
     private final ApplicationEventPublisher eventPublisher;
+    private final org.springframework.jdbc.core.simple.JdbcClient jdbcClient;
 
     private record InterfazFiltros(UUID solicitanteId, UUID aprobadorId, UUID supervisorId, UUID responsableId) {}
 
@@ -718,8 +720,18 @@ public class SolicitudMantenimientoService {
                 Object responsableIdObj = request.variables().get("responsableId");
                 if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
                     try {
-                        empleadoRepository.findById(UUID.fromString(responsableIdObj.toString().trim()))
-                                .ifPresent(solicitud::setResponsable);
+                        UUID targetId = UUID.fromString(responsableIdObj.toString().trim());
+                        Optional<Empleado> empleadoOpt = empleadoRepository.findById(targetId);
+                        if (empleadoOpt.isPresent()) {
+                            solicitud.setResponsable(empleadoOpt.get());
+                        } else {
+                            jdbcClient.sql("SELECT empleado_id FROM gestion_vehicular.conductores WHERE id = :conductorId LIMIT 1")
+                                    .param("conductorId", targetId)
+                                    .query(UUID.class)
+                                    .optional()
+                                    .flatMap(empleadoRepository::findById)
+                                    .ifPresent(solicitud::setResponsable);
+                        }
                     } catch (Exception e) {
                         log.warn("No se pudo asignar responsableId={} en solicitud {}: {}", responsableIdObj, solicitudId, e.getMessage());
                     }

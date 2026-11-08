@@ -34,7 +34,7 @@ export function OrdenTrabajoAdjuntoDialog({
   ordenTrabajoId,
   adjuntoToReplace,
   onSuccess,
-}: OrdenTrabajoAdjuntoDialogProps) {
+}: Readonly<OrdenTrabajoAdjuntoDialogProps>) {
   const isReplacing = Boolean(adjuntoToReplace?.id)
 
   const uploadMutation = useCreateOrdenTrabajoAdjunto()
@@ -46,7 +46,7 @@ export function OrdenTrabajoAdjuntoDialog({
   const isSubmitting = uploadMutation.isPending || replaceMutation.isPending
   const isValid = Boolean(file && ordenTrabajoId)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!isValid || !file || isSubmitting) return
 

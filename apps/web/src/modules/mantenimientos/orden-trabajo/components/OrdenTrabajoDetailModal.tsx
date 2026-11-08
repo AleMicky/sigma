@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
+import { openOrDownloadProtectedFile } from "@/shared/api"
 import { cn } from "@/shared/lib/utils"
 
 import { solicitudQueries } from "@/modules/mantenimientos/solicitud/api/solicitud.queries"
@@ -74,7 +75,7 @@ export function OrdenTrabajoDetailModal({
   open,
   onOpenChange,
   onUpdated,
-}: OrdenTrabajoDetailModalProps) {
+}: Readonly<OrdenTrabajoDetailModalProps>) {
   const [activeTab, setActiveTab] = useState<string>("actividades")
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false)
@@ -96,6 +97,26 @@ export function OrdenTrabajoDetailModal({
     actividadNombre?: string
     evidenciaToReplace?: OrdenTrabajoActividadEvidencia | null
   }>({ open: false, actividadId: "" })
+  const [openingFileId, setOpeningFileId] = useState<string | null>(null)
+
+  async function handleOpenFile(
+    fileId: string,
+    url: string,
+    fileName: string,
+    mimeType?: string | null,
+  ) {
+    try {
+      setOpeningFileId(fileId)
+      const action = await openOrDownloadProtectedFile(url, fileName, mimeType)
+      if (action === "downloaded") {
+        toast.success(`Descargando: ${fileName}`)
+      }
+    } catch {
+      toast.error("No se pudo cargar o descargar el archivo")
+    } finally {
+      setOpeningFileId(null)
+    }
+  }
 
   // Si se pasa solicitudId y no ordenTrabajo, consultar la OT directamente
   const otsForSolicitudQuery = useQuery({
@@ -200,55 +221,61 @@ export function OrdenTrabajoDetailModal({
       await downloadOrdenTrabajoReportePdf(currentOT.id, currentOT.numero)
       toast.success("Reporte PDF de Orden de Trabajo descargado exitosamente")
     } catch (error) {
+      console.error("Error al generar el reporte PDF:", error)
       toast.error("Error al generar el reporte PDF de la orden de trabajo")
     } finally {
       setIsGeneratingPdf(false)
     }
   }
 
-  return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl">
-          {isInitialLoading ? (
-            <div className="flex flex-col items-center justify-center p-12 gap-2.5 text-muted-foreground">
-              <Loader2 className="size-6 animate-spin text-sky-600" />
-              <p className="text-xs font-semibold">Cargando orden de trabajo...</p>
-            </div>
-          ) : !currentOT ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center gap-2.5">
-              <div className="size-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
-                <Wrench className="size-5" />
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-sm font-bold text-foreground">
-                  Sin Orden de Trabajo
-                </p>
-                <p className="text-[11px] text-muted-foreground max-w-sm">
-                  Esta solicitud no tiene una orden de trabajo asociada aún.
-                </p>
-              </div>
-              {solicitudId && !isReadOnly && (
-                <Link
-                  to="/mantenimientos/ordenes-trabajo/nuevo"
-                  search={{ solicitudId }}
-                  onClick={() => onOpenChange(false)}
-                >
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="h-7.5 gap-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer mt-1 shadow-xs"
-                  >
-                    <Plus className="size-3" />
-                    <span>Crear Orden de Trabajo</span>
-                  </Button>
-                </Link>
-              )}
-            </div>
-          ) : (
-            <>
-              {/* Header */}
-              <DialogHeader className="px-5 py-3 border-b shrink-0 bg-muted/20">
+  const renderDialogBody = () => {
+    if (isInitialLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 gap-2.5 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin text-sky-600" />
+          <p className="text-xs font-semibold">Cargando orden de trabajo...</p>
+        </div>
+      )
+    }
+
+    if (!currentOT) {
+      return (
+        <div className="flex flex-col items-center justify-center p-8 text-center gap-2.5">
+          <div className="size-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
+            <Wrench className="size-5" />
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-sm font-bold text-foreground">
+              Sin Orden de Trabajo
+            </p>
+            <p className="text-[11px] text-muted-foreground max-w-sm">
+              Esta solicitud no tiene una orden de trabajo asociada aún.
+            </p>
+          </div>
+          {solicitudId && !isReadOnly && (
+            <Link
+              to="/mantenimientos/ordenes-trabajo/nuevo"
+              search={{ solicitudId }}
+              onClick={() => onOpenChange(false)}
+            >
+              <Button
+                type="button"
+                size="sm"
+                className="h-7.5 gap-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer mt-1 shadow-xs"
+              >
+                <Plus className="size-3" />
+                <span>Crear Orden de Trabajo</span>
+              </Button>
+            </Link>
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <>
+        {/* Header */}
+        <DialogHeader className="px-5 py-3 border-b shrink-0 bg-muted/20">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5 min-w-0">
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
@@ -651,15 +678,26 @@ export function OrdenTrabajoDetailModal({
 
                           <div className="flex items-center gap-0.5 shrink-0">
                             {adj.url && (
-                              <a
-                                href={adj.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex size-5.5 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleOpenFile(
+                                    adj.id,
+                                    adj.url,
+                                    adj.nombreArchivo,
+                                    adj.tipoMime,
+                                  )
+                                }
+                                disabled={openingFileId === adj.id}
+                                className="inline-flex size-5.5 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer disabled:opacity-50"
                                 title="Descargar / Ver archivo"
                               >
-                                <Eye className="size-3" />
-                              </a>
+                                {openingFileId === adj.id ? (
+                                  <Loader2 className="size-3 animate-spin" />
+                                ) : (
+                                  <Eye className="size-3" />
+                                )}
+                              </button>
                             )}
                             {!isReadOnly && (
                               <>
@@ -699,7 +737,14 @@ export function OrdenTrabajoDetailModal({
                 </TabsContent>
               </Tabs>
             </>
-          )}
+    )
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl">
+          {renderDialogBody()}
         </DialogContent>
       </Dialog>
 
@@ -782,6 +827,25 @@ function ActividadItemCard({
     ordenTrabajoQueries.evidenciasList(actividad.id),
   )
   const evidencias = evidenciasQuery.data?.content ?? []
+  const [openingEvId, setOpeningEvId] = useState<string | null>(null)
+
+  async function handleOpenEvidencia(ev: OrdenTrabajoActividadEvidencia) {
+    try {
+      setOpeningEvId(ev.id)
+      const action = await openOrDownloadProtectedFile(
+        ev.url,
+        ev.nombreArchivo,
+        ev.tipoMime,
+      )
+      if (action === "downloaded") {
+        toast.success(`Descargando: ${ev.nombreArchivo}`)
+      }
+    } catch {
+      toast.error("No se pudo cargar la evidencia")
+    } finally {
+      setOpeningEvId(null)
+    }
+  }
 
   return (
     <div
@@ -913,15 +977,19 @@ function ActividadItemCard({
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
                   {ev.url && (
-                    <a
-                      href={ev.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="size-4.5 inline-flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEvidencia(ev)}
+                      disabled={openingEvId === ev.id}
+                      className="size-4.5 inline-flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-50"
                       title="Ver evidencia"
                     >
-                      <Eye className="size-2.5" />
-                    </a>
+                      {openingEvId === ev.id ? (
+                        <Loader2 className="size-2.5 animate-spin" />
+                      ) : (
+                        <Eye className="size-2.5" />
+                      )}
+                    </button>
                   )}
                   {!isReadOnly && (
                     <>

@@ -9,6 +9,8 @@ export type { HttpClient } from "./http";
 
 export {
     fetchAuthenticatedBlob,
+    isBrowserViewable,
+    openOrDownloadProtectedFile,
     toApiRelativePath,
     uploadImage,
 } from "./files";

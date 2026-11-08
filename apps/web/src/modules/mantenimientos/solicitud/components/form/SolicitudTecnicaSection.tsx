@@ -1,6 +1,9 @@
-import { Clock, FileText, ImageIcon, Paperclip, Wrench, X } from "lucide-react"
+import { useState } from "react"
+import { Clock, FileText, ImageIcon, Loader2, Paperclip, Wrench, X } from "lucide-react"
+import { toast } from "sonner"
 
 import { ActivoCombobox } from "@/modules/mantenimientos/orden-trabajo/components/ActivoCombobox"
+import { openOrDownloadProtectedFile } from "@/shared/api"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
 import { Button } from "@/shared/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
@@ -23,6 +26,26 @@ export function SolicitudTecnicaSection() {
     existingAdjuntos,
     registerActivo,
   } = useSolicitudFormContext()
+
+  const [openingFileId, setOpeningFileId] = useState<string | null>(null)
+
+  async function handleOpenExistingAdjunto(id: string, url: string, nombreArchivo: string, tipoContenido?: string | null) {
+    try {
+      setOpeningFileId(id)
+      const action = await openOrDownloadProtectedFile(
+        url,
+        nombreArchivo,
+        tipoContenido,
+      )
+      if (action === "downloaded") {
+        toast.success(`Descargando: ${nombreArchivo}`)
+      }
+    } catch {
+      toast.error("No se pudo cargar o descargar el archivo")
+    } finally {
+      setOpeningFileId(null)
+    }
+  }
 
   return (
     <div className="p-4 sm:p-5 md:p-6 space-y-4">
@@ -251,14 +274,24 @@ export function SolicitudTecnicaSection() {
                 >
                   <div className="flex items-center gap-2 truncate min-w-0">
                     <FileText className="size-3.5 text-muted-foreground shrink-0" />
-                    <a
-                      href={adj.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium text-primary hover:underline truncate text-[11.5px]"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleOpenExistingAdjunto(
+                          adj.id,
+                          adj.url,
+                          adj.nombreArchivo,
+                          adj.tipoContenido,
+                        )
+                      }
+                      disabled={openingFileId === adj.id}
+                      className="font-medium text-primary hover:underline truncate text-[11.5px] cursor-pointer disabled:opacity-50 text-left inline-flex items-center gap-1.5"
                     >
-                      {adj.nombreArchivo}
-                    </a>
+                      <span>{adj.nombreArchivo}</span>
+                      {openingFileId === adj.id && (
+                        <Loader2 className="size-3 animate-spin shrink-0" />
+                      )}
+                    </button>
                   </div>
                 </div>
               ))}

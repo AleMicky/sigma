@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
+import { openOrDownloadProtectedFile } from "@/shared/api"
 import { cn } from "@/shared/lib/utils"
 import { WorkflowStatusBadge } from "@/modules/workflow/components/WorkflowStatusBadge"
 import { solicitudQueries } from "../api/solicitud.queries"
@@ -74,6 +75,25 @@ export function SolicitudDetailModal({
   const [activeTab, setActiveTab] = useState<string>("general")
   const [copied, setCopied] = useState(false)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+  const [openingFileId, setOpeningFileId] = useState<string | null>(null)
+
+  async function handleOpenFile(adj: SolicitudAdjunto) {
+    try {
+      setOpeningFileId(adj.id)
+      const action = await openOrDownloadProtectedFile(
+        adj.url,
+        adj.nombreArchivo,
+        adj.tipoContenido,
+      )
+      if (action === "downloaded") {
+        toast.success(`Descargando: ${adj.nombreArchivo}`)
+      }
+    } catch {
+      toast.error("No se pudo cargar o descargar el archivo")
+    } finally {
+      setOpeningFileId(null)
+    }
+  }
 
   const targetId = solicitud?.id || solicitudId || ""
 
@@ -589,15 +609,19 @@ export function SolicitudDetailModal({
                           </div>
 
                           {adj.url && (
-                            <a
-                              href={adj.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background hover:bg-muted text-foreground transition-all cursor-pointer shadow-2xs hover:border-primary/50"
+                            <button
+                              type="button"
+                              onClick={() => handleOpenFile(adj)}
+                              disabled={openingFileId === adj.id}
+                              className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background hover:bg-muted text-foreground transition-all cursor-pointer shadow-2xs hover:border-primary/50 disabled:opacity-50"
                               title="Ver / Descargar archivo"
                             >
-                              <Eye className="size-4 text-muted-foreground" />
-                            </a>
+                              {openingFileId === adj.id ? (
+                                <Loader2 className="size-4 animate-spin text-primary" />
+                              ) : (
+                                <Eye className="size-4 text-muted-foreground" />
+                              )}
+                            </button>
                           )}
                         </div>
                       )
