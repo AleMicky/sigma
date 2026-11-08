@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
+import { openOrDownloadProtectedFile } from "@/shared/api"
 import { cn } from "@/shared/lib/utils"
 
 import { solicitudQueries } from "@/modules/mantenimientos/solicitud/api/solicitud.queries"
@@ -96,6 +97,26 @@ export function OrdenTrabajoDetailModal({
     actividadNombre?: string
     evidenciaToReplace?: OrdenTrabajoActividadEvidencia | null
   }>({ open: false, actividadId: "" })
+  const [openingFileId, setOpeningFileId] = useState<string | null>(null)
+
+  async function handleOpenFile(
+    fileId: string,
+    url: string,
+    fileName: string,
+    mimeType?: string | null,
+  ) {
+    try {
+      setOpeningFileId(fileId)
+      const action = await openOrDownloadProtectedFile(url, fileName, mimeType)
+      if (action === "downloaded") {
+        toast.success(`Descargando: ${fileName}`)
+      }
+    } catch {
+      toast.error("No se pudo cargar o descargar el archivo")
+    } finally {
+      setOpeningFileId(null)
+    }
+  }
 
   // Si se pasa solicitudId y no ordenTrabajo, consultar la OT directamente
   const otsForSolicitudQuery = useQuery({
@@ -651,15 +672,26 @@ export function OrdenTrabajoDetailModal({
 
                           <div className="flex items-center gap-0.5 shrink-0">
                             {adj.url && (
-                              <a
-                                href={adj.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex size-5.5 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleOpenFile(
+                                    adj.id,
+                                    adj.url,
+                                    adj.nombreArchivo,
+                                    adj.tipoMime,
+                                  )
+                                }
+                                disabled={openingFileId === adj.id}
+                                className="inline-flex size-5.5 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer disabled:opacity-50"
                                 title="Descargar / Ver archivo"
                               >
-                                <Eye className="size-3" />
-                              </a>
+                                {openingFileId === adj.id ? (
+                                  <Loader2 className="size-3 animate-spin" />
+                                ) : (
+                                  <Eye className="size-3" />
+                                )}
+                              </button>
                             )}
                             {!isReadOnly && (
                               <>
@@ -782,6 +814,25 @@ function ActividadItemCard({
     ordenTrabajoQueries.evidenciasList(actividad.id),
   )
   const evidencias = evidenciasQuery.data?.content ?? []
+  const [openingEvId, setOpeningEvId] = useState<string | null>(null)
+
+  async function handleOpenEvidencia(ev: OrdenTrabajoActividadEvidencia) {
+    try {
+      setOpeningEvId(ev.id)
+      const action = await openOrDownloadProtectedFile(
+        ev.url,
+        ev.nombreArchivo,
+        ev.tipoMime,
+      )
+      if (action === "downloaded") {
+        toast.success(`Descargando: ${ev.nombreArchivo}`)
+      }
+    } catch {
+      toast.error("No se pudo cargar la evidencia")
+    } finally {
+      setOpeningEvId(null)
+    }
+  }
 
   return (
     <div
@@ -913,15 +964,19 @@ function ActividadItemCard({
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
                   {ev.url && (
-                    <a
-                      href={ev.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="size-4.5 inline-flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEvidencia(ev)}
+                      disabled={openingEvId === ev.id}
+                      className="size-4.5 inline-flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-50"
                       title="Ver evidencia"
                     >
-                      <Eye className="size-2.5" />
-                    </a>
+                      {openingEvId === ev.id ? (
+                        <Loader2 className="size-2.5 animate-spin" />
+                      ) : (
+                        <Eye className="size-2.5" />
+                      )}
+                    </button>
                   )}
                   {!isReadOnly && (
                     <>

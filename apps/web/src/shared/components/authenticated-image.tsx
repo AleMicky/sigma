@@ -38,6 +38,10 @@ export function AuthenticatedImage({
     void fetchAuthenticatedBlob(src)
       .then((blob) => {
         if (cancelled) return
+        if (blob.type && !blob.type.startsWith("image/")) {
+          setFailed(true)
+          return
+        }
         createdUrl = URL.createObjectURL(blob)
         setObjectUrl(createdUrl)
       })
@@ -75,6 +79,9 @@ export function AuthenticatedImage({
       src={objectUrl}
       alt={alt}
       className={cn("object-cover", className)}
+      onError={() => {
+        setFailed(true)
+      }}
     />
   )
 }

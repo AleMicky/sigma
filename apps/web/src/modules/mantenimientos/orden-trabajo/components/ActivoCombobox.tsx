@@ -253,22 +253,28 @@ export function ActivoCombobox({
 }: Readonly<ActivoComboboxProps>) {
   const [page, setPage] = React.useState(0)
 
-  const listQueryOptions = forSolicitudMantenimiento
-    ? activoQueries.paraSolicitud({
-        page,
-        size: pageSize,
-        sortBy: "codigo",
-        direction: "ASC",
-        solicitudIdExcluir: excludeSolicitudId,
-      })
-    : activoQueries.list({
-        page,
-        size: pageSize,
-        sortBy: "codigo",
-        direction: "ASC",
-      })
+  const paraSolicitudQuery = useQuery({
+    ...activoQueries.paraSolicitud({
+      page,
+      size: pageSize,
+      sortBy: "codigo",
+      direction: "ASC",
+      solicitudIdExcluir: excludeSolicitudId,
+    }),
+    enabled: forSolicitudMantenimiento,
+  })
 
-  const query = useQuery(listQueryOptions)
+  const standardListQuery = useQuery({
+    ...activoQueries.list({
+      page,
+      size: pageSize,
+      sortBy: "codigo",
+      direction: "ASC",
+    }),
+    enabled: !forSolicitudMantenimiento,
+  })
+
+  const query = forSolicitudMantenimiento ? paraSolicitudQuery : standardListQuery
 
   // Consulta individual si hay un valor seleccionado que quizás no esté en la página actual
   const singleQuery = useQuery({
