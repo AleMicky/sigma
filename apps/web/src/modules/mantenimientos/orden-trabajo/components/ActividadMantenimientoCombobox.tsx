@@ -40,7 +40,7 @@ export function ActividadMantenimientoCombobox({
   id,
   name,
   "aria-invalid": ariaInvalid,
-}: ActividadMantenimientoComboboxProps) {
+}: Readonly<ActividadMantenimientoComboboxProps>) {
   const query = useQuery({
     ...actividadQueries.list({ size: 100, sortBy: "codigo", direction: "ASC" }),
   })

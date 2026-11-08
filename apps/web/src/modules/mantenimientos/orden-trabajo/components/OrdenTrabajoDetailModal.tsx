@@ -75,7 +75,7 @@ export function OrdenTrabajoDetailModal({
   open,
   onOpenChange,
   onUpdated,
-}: OrdenTrabajoDetailModalProps) {
+}: Readonly<OrdenTrabajoDetailModalProps>) {
   const [activeTab, setActiveTab] = useState<string>("actividades")
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false)
@@ -221,55 +221,61 @@ export function OrdenTrabajoDetailModal({
       await downloadOrdenTrabajoReportePdf(currentOT.id, currentOT.numero)
       toast.success("Reporte PDF de Orden de Trabajo descargado exitosamente")
     } catch (error) {
+      console.error("Error al generar el reporte PDF:", error)
       toast.error("Error al generar el reporte PDF de la orden de trabajo")
     } finally {
       setIsGeneratingPdf(false)
     }
   }
 
-  return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl">
-          {isInitialLoading ? (
-            <div className="flex flex-col items-center justify-center p-12 gap-2.5 text-muted-foreground">
-              <Loader2 className="size-6 animate-spin text-sky-600" />
-              <p className="text-xs font-semibold">Cargando orden de trabajo...</p>
-            </div>
-          ) : !currentOT ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center gap-2.5">
-              <div className="size-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
-                <Wrench className="size-5" />
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-sm font-bold text-foreground">
-                  Sin Orden de Trabajo
-                </p>
-                <p className="text-[11px] text-muted-foreground max-w-sm">
-                  Esta solicitud no tiene una orden de trabajo asociada aún.
-                </p>
-              </div>
-              {solicitudId && !isReadOnly && (
-                <Link
-                  to="/mantenimientos/ordenes-trabajo/nuevo"
-                  search={{ solicitudId }}
-                  onClick={() => onOpenChange(false)}
-                >
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="h-7.5 gap-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer mt-1 shadow-xs"
-                  >
-                    <Plus className="size-3" />
-                    <span>Crear Orden de Trabajo</span>
-                  </Button>
-                </Link>
-              )}
-            </div>
-          ) : (
-            <>
-              {/* Header */}
-              <DialogHeader className="px-5 py-3 border-b shrink-0 bg-muted/20">
+  const renderDialogBody = () => {
+    if (isInitialLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 gap-2.5 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin text-sky-600" />
+          <p className="text-xs font-semibold">Cargando orden de trabajo...</p>
+        </div>
+      )
+    }
+
+    if (!currentOT) {
+      return (
+        <div className="flex flex-col items-center justify-center p-8 text-center gap-2.5">
+          <div className="size-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
+            <Wrench className="size-5" />
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-sm font-bold text-foreground">
+              Sin Orden de Trabajo
+            </p>
+            <p className="text-[11px] text-muted-foreground max-w-sm">
+              Esta solicitud no tiene una orden de trabajo asociada aún.
+            </p>
+          </div>
+          {solicitudId && !isReadOnly && (
+            <Link
+              to="/mantenimientos/ordenes-trabajo/nuevo"
+              search={{ solicitudId }}
+              onClick={() => onOpenChange(false)}
+            >
+              <Button
+                type="button"
+                size="sm"
+                className="h-7.5 gap-1.5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg cursor-pointer mt-1 shadow-xs"
+              >
+                <Plus className="size-3" />
+                <span>Crear Orden de Trabajo</span>
+              </Button>
+            </Link>
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <>
+        {/* Header */}
+        <DialogHeader className="px-5 py-3 border-b shrink-0 bg-muted/20">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5 min-w-0">
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
@@ -731,7 +737,14 @@ export function OrdenTrabajoDetailModal({
                 </TabsContent>
               </Tabs>
             </>
-          )}
+    )
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl">
+          {renderDialogBody()}
         </DialogContent>
       </Dialog>
 
