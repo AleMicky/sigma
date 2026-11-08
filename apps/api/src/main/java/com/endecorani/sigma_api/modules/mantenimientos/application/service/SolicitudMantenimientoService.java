@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -720,7 +721,7 @@ public class SolicitudMantenimientoService {
                 if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
                     try {
                         UUID targetId = UUID.fromString(responsableIdObj.toString().trim());
-                        Optional<EmpleadoEntity> empleadoOpt = empleadoRepository.findById(targetId);
+                        Optional<Empleado> empleadoOpt = empleadoRepository.findById(targetId);
                         if (empleadoOpt.isPresent()) {
                             solicitud.setResponsable(empleadoOpt.get());
                         } else {
