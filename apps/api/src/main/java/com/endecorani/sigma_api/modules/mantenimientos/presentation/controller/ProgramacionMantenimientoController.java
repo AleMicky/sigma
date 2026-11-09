@@ -31,10 +31,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({
-        ApiConstants.API_V1 + "/programaciones-mantenimiento",
-        ApiConstants.API_V1 + "/programacion-mantenimiento"
-})
+@RequestMapping(ApiConstants.API_V1 + "/programaciones-mantenimiento")
 @RequiredArgsConstructor
 @Tag(
         name = "Programaciones de Mantenimiento",

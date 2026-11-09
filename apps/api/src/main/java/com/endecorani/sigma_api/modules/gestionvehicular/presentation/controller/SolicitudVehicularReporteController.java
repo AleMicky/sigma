@@ -24,10 +24,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({
-        "/api/reportes/solicitudes-vehiculares",
-        ApiConstants.API_V1 + "/reportes/solicitudes-vehiculares"
-})
+@RequestMapping(ApiConstants.API_V1 + "/reportes/solicitudes-vehiculares")
 @RequiredArgsConstructor
 @Tag(
         name = "Reportes de Solicitudes Vehiculares",

@@ -19,10 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({
-        "/api/incidentes/{id}/evidencias",
-        ApiConstants.API_V1 + "/incidentes/{id}/evidencias"
-})
+@RequestMapping(ApiConstants.API_V1 + "/incidentes/{id}/evidencias")
 @RequiredArgsConstructor
 @Tag(
         name = "Evidencias de Incidentes",

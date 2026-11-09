@@ -20,10 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({
-        ApiConstants.API_V1 + "/actividades-mantenimiento-aplicaciones",
-        ApiConstants.API_V1 + "/actividad-mantenimiento-aplicaciones"
-})
+@RequestMapping(ApiConstants.API_V1 + "/actividad-mantenimiento-aplicaciones")
 @RequiredArgsConstructor
 @Tag(
         name = "Aplicaciones de Actividades de Mantenimiento",
