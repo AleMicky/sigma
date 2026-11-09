@@ -7,6 +7,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.plan.resp
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.PlanMantenimientoService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.application.pagination.SearchPageRequestDto;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,16 +35,13 @@ public class PlanMantenimientoController {
     private final PlanMantenimientoService service;
 
     @GetMapping
-    @Operation(summary = "Listar planes de mantenimiento con paginación, filtro por tipo de activo y búsqueda opcional")
+    @Operation(summary = "Listar planes de mantenimiento con paginación, filtro por tipo de activo y búsqueda opcional (search o q)")
     public ResponseEntity<ApiResponse<PageResponse<PlanMantenimientoResponse>>> listar(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String q,
             @RequestParam(required = false) UUID tipoActivoId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
+            @Valid @ModelAttribute SearchPageRequestDto pageRequest
     ) {
-        String searchTerm = (search != null && !search.isBlank()) ? search : q;
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(searchTerm, tipoActivoId, pageRequest))
+                ApiResponse.success(service.listar(pageRequest.getSearchTerm(), tipoActivoId, pageRequest.toPageRequest()))
         );
     }
 

@@ -7,6 +7,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.ActividadMantenimientoService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.application.pagination.SearchPageRequestDto;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,15 +35,12 @@ public class ActividadMantenimientoController {
     private final ActividadMantenimientoService service;
 
     @GetMapping
-    @Operation(summary = "Listar actividades de mantenimiento con paginación y búsqueda opcional")
+    @Operation(summary = "Listar actividades de mantenimiento con paginación y búsqueda opcional (search o q)")
     public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoResponse>>> listar(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String q,
-            @Valid @ModelAttribute PageRequestDto pageRequest
+            @Valid @ModelAttribute SearchPageRequestDto pageRequest
     ) {
-        String searchTerm = (search != null && !search.isBlank()) ? search : q;
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(searchTerm, pageRequest))
+                ApiResponse.success(service.listar(pageRequest.getSearchTerm(), pageRequest.toPageRequest()))
         );
     }
 

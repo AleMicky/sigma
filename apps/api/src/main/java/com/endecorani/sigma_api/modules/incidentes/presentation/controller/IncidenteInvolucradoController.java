@@ -78,7 +78,7 @@ public class IncidenteInvolucradoController {
     ) {
         service.eliminar(id, involucradoId);
         return ResponseEntity.ok(
-                ApiResponse.success("Involucrado eliminado exitosamente", null)
+                ApiResponse.success("Involucrado eliminado exitosamente")
         );
     }
 }

@@ -64,4 +64,12 @@ public record PageRequestDto(
                 Sort.by(direction, sortBy)
         );
     }
+
+    public SearchPageRequestDto withSearch(String search) {
+        return new SearchPageRequestDto(this, search);
+    }
+
+    public SearchPageRequestDto withSearch(String search, String q) {
+        return new SearchPageRequestDto(this, search, q);
+    }
 }

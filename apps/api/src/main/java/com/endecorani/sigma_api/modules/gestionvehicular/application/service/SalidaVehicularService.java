@@ -25,10 +25,13 @@ import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
 import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowActionResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowExecutionResult;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowHistoryResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowVariablesCustomizerContext;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
+import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowEntitySupport;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -75,6 +78,7 @@ public class SalidaVehicularService {
     private final SalidaVehicularEventoRepository eventoRepository;
     private final BitacoraVehicularRepository bitacoraRepository;
     private final WorkflowApplicationService workflowApplicationService;
+    private final WorkflowEntitySupport workflowEntitySupport;
     private final CorrelativoService correlativoService;
     private final SpringActivoRepository activoRepository;
     private final SpringActivoAtributoRepository activoAtributoRepository;
@@ -285,11 +289,7 @@ public class SalidaVehicularService {
         SalidaVehicular salida = salidaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
 
-        if (salida.getProcessInstanceId() == null) {
-            throw new BusinessException("La salida vehicular no tiene un proceso Flowable asociado");
-        }
-
-        return workflowApplicationService.obtenerTareaActual(salida.getProcessInstanceId());
+        return workflowEntitySupport.obtenerTareaActual(salida.getProcessInstanceId(), "La salida vehicular");
     }
 
     @Transactional(readOnly = true)
@@ -297,11 +297,7 @@ public class SalidaVehicularService {
         SalidaVehicular salida = salidaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
 
-        if (salida.getProcessInstanceId() == null) {
-            throw new BusinessException("La salida vehicular no tiene un proceso Flowable asociado");
-        }
-
-        return workflowApplicationService.obtenerAccionesDisponibles(salida.getProcessInstanceId());
+        return workflowEntitySupport.obtenerAcciones(salida.getProcessInstanceId(), "La salida vehicular");
     }
 
     @Transactional
@@ -309,63 +305,18 @@ public class SalidaVehicularService {
         SalidaVehicular salida = salidaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
 
-        if (salida.getProcessInstanceId() == null) {
-            throw new BusinessException("La salida vehicular no tiene un proceso Flowable activo");
-        }
-
-        WorkflowTaskActionsResponse tareaActual = workflowApplicationService.obtenerAccionesDisponibles(salida.getProcessInstanceId());
-        if (tareaActual == null || tareaActual.taskId() == null) {
-            throw new BusinessException("El proceso Flowable no tiene una tarea activa pendiente para ejecutar acciones");
-        }
-
-        // Buscar acción coincidente
-        WorkflowActionResponse matchingAction = null;
-        if (tareaActual.actions() != null) {
-            matchingAction = tareaActual.actions().stream()
-                    .filter(a -> a.value().equalsIgnoreCase(accionId)
-                            || a.name().equalsIgnoreCase(accionId)
-                            || accionId.equalsIgnoreCase(a.value().replaceAll("[^A-Za-z0-9]", "_"))
-                            || accionId.equalsIgnoreCase(a.value().replaceAll("_", "-")))
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        if (matchingAction == null && tareaActual.actions() != null && !tareaActual.actions().isEmpty()) {
-            matchingAction = tareaActual.actions().getFirst();
-        }
-
-        Map<String, Object> effectiveVariables = new HashMap<>();
-        if (request != null && request.variables() != null) {
-            effectiveVariables.putAll(request.variables());
-        }
-
-        String actionValue = matchingAction != null ? matchingAction.value() : accionId.toUpperCase();
-        String actionVar = matchingAction != null ? matchingAction.variable() : "action";
-
-        effectiveVariables.put(actionVar, actionValue);
-        effectiveVariables.put("action", actionValue);
-        effectiveVariables.put("accion", actionValue);
-
-        if (request != null) {
-            if (request.kilometraje() != null) {
-                effectiveVariables.put("kilometraje", request.kilometraje().longValue());
-            }
-            if (request.latitud() != null) {
-                effectiveVariables.put("latitud", request.latitud().toString());
-            }
-            if (request.longitud() != null) {
-                effectiveVariables.put("longitud", request.longitud().toString());
-            }
-            if (request.observacion() != null && !request.observacion().isBlank()) {
-                effectiveVariables.put("observacion", request.observacion().trim());
-                effectiveVariables.put("comentario", request.observacion().trim());
-            }
-        }
-
-        CompleteWorkflowTaskRequest taskRequest = new CompleteWorkflowTaskRequest(effectiveVariables);
-        WorkflowTaskActionsResponse resultado = workflowApplicationService.completarTarea(
-                salida.getProcessInstanceId(), taskRequest
+        WorkflowExecutionResult execResult = workflowEntitySupport.ejecutarAccion(
+                salida.getProcessInstanceId(),
+                "La salida vehicular",
+                accionId,
+                request != null ? request.variables() : null,
+                ctx -> mapearVariablesSalida(ctx, request)
         );
+
+        WorkflowTaskActionsResponse tareaActual = execResult.tareaPrevia();
+        WorkflowActionResponse matchingAction = execResult.matchingAction();
+        String actionValue = execResult.actionValue();
+        WorkflowTaskActionsResponse resultado = execResult.siguienteTarea();
 
         // Registrar automáticamente el evento correspondiente en salidas_vehiculares_eventos
         UUID empleadoId = obtenerEmpleadoIdActual();
@@ -415,7 +366,7 @@ public class SalidaVehicularService {
         // Actualizar estado de la salida:
         // - Si completó todas las tareas BPMN (LLEGADA fue la tarea final), el estado final es LLEGADA
         // - Si acaba de completar la primera tarea (SALIDA), permanece en SALIDA en espera de registrar LLEGADA
-        if (resultado == null || resultado.taskId() == null) {
+        if (execResult.procesoFinalizado()) {
             salida.setEstado(ESTADO_LLEGADA);
         } else {
             salida.setEstado(ESTADO_SALIDA);
@@ -425,16 +376,32 @@ public class SalidaVehicularService {
         return toResponse(actualizada);
     }
 
+    private void mapearVariablesSalida(WorkflowVariablesCustomizerContext ctx, EjecutarAccionSalidaRequest request) {
+        if (request == null) {
+            return;
+        }
+        Map<String, Object> vars = ctx.effectiveVariables();
+        if (request.kilometraje() != null) {
+            vars.put("kilometraje", request.kilometraje().longValue());
+        }
+        if (request.latitud() != null) {
+            vars.put("latitud", request.latitud().toString());
+        }
+        if (request.longitud() != null) {
+            vars.put("longitud", request.longitud().toString());
+        }
+        if (request.observacion() != null && !request.observacion().isBlank()) {
+            vars.put("observacion", request.observacion().trim());
+            vars.put("comentario", request.observacion().trim());
+        }
+    }
+
     @Transactional(readOnly = true)
     public WorkflowHistoryResponse obtenerHistorialProceso(UUID id) {
         SalidaVehicular salida = salidaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
 
-        if (salida.getProcessInstanceId() == null) {
-            throw new BusinessException("La salida vehicular no tiene un proceso Flowable asociado");
-        }
-
-        return workflowApplicationService.obtenerHistorial(salida.getProcessInstanceId());
+        return workflowEntitySupport.obtenerHistorial(salida.getProcessInstanceId(), "La salida vehicular");
     }
 
     // ==========================================
