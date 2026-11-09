@@ -42,7 +42,11 @@ type ActivoDetailPageProps = {
   activoId: string
 }
 
-export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
+function handlePrint() {
+  window.print()
+}
+
+export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) {
   const [activeTab, setActiveTab] = useState<TabType>("informacion")
   const [isEditing, setIsEditing] = useState(false)
   const [isAddDocOpen, setIsAddDocOpen] = useState(false)
@@ -109,12 +113,8 @@ export function ActivoDetailPage({ activoId }: ActivoDetailPageProps) {
 
   function copyCode() {
     if (!activo?.codigo) return
-    navigator.clipboard.writeText(activo.codigo)
+    void navigator.clipboard.writeText(activo.codigo)
     toast.success("Código copiado al portapapeles")
-  }
-
-  function handlePrint() {
-    window.print()
   }
 
   function handleToggleEdit(editing: boolean) {

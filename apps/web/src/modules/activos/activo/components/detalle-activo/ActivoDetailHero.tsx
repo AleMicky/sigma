@@ -38,7 +38,7 @@ export function ActivoDetailHero({
   onOpenImageModal,
   onOpenAddDocument,
   onCambiarEstado,
-}: ActivoDetailHeroProps) {
+}: Readonly<ActivoDetailHeroProps>) {
   return (
     <div
       className="relative flex flex-col md:flex-row items-stretch gap-4 p-4 sm:p-5 rounded-2xl border border-border/80 bg-card shadow-xs overflow-hidden"
@@ -137,16 +137,14 @@ export function ActivoDetailHero({
               ) : null}
 
               <span
-                className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border shadow-2xs ${
-                  activo.activo
-                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                    : "bg-destructive/15 text-destructive border-destructive/30"
-                }`}
+                className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border shadow-2xs ${activo.activo
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                  : "bg-destructive/15 text-destructive border-destructive/30"
+                  }`}
               >
                 <span
-                  className={`size-2 rounded-full ${
-                    activo.activo ? "bg-emerald-500 animate-pulse" : "bg-destructive"
-                  }`}
+                  className={`size-2 rounded-full ${activo.activo ? "bg-emerald-500 animate-pulse" : "bg-destructive"
+                    }`}
                 />
                 {activo.activo ? "Habilitado" : "Inactivo"}
               </span>
@@ -158,10 +156,7 @@ export function ActivoDetailHero({
             <h2 className="text-base sm:text-lg font-bold text-foreground truncate">
               {activo.nombre}
             </h2>
-            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-              {activo.descripcion ||
-                "Activo catalogado y verificado en el sistema integral de gestión."}
-            </p>
+
           </div>
         </div>
 

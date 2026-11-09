@@ -25,7 +25,7 @@ export function ActivoDetailHeader({
   onRefresh,
   isRefreshing,
   queries,
-}: ActivoDetailHeaderProps) {
+}: Readonly<ActivoDetailHeaderProps>) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
       <div className="flex items-center gap-2">

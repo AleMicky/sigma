@@ -23,7 +23,7 @@ export function ActivoDetailTabs({
   onTabChange,
   documentosCount,
   accesoriosCount,
-}: ActivoDetailTabsProps) {
+}: Readonly<ActivoDetailTabsProps>) {
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border/70 pt-1 pb-1 no-scrollbar">
       <button
