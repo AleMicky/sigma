@@ -22,10 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({
-        ApiConstants.API_V1 + "/checklist-items",
-        ApiConstants.API_V1 + "/checklist-item"
-})
+@RequestMapping(ApiConstants.API_V1 + "/checklist-items")
 @RequiredArgsConstructor
 @Tag(
         name = "Ítems de Checklist",

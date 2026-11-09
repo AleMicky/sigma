@@ -20,10 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({
-        ApiConstants.API_V1 + "/programacion-mantenimiento-criterios",
-        ApiConstants.API_V1 + "/programaciones-mantenimiento-criterios"
-})
+@RequestMapping(ApiConstants.API_V1 + "/programacion-mantenimiento-criterios")
 @RequiredArgsConstructor
 @Tag(
         name = "Criterios de Programación de Mantenimiento",
