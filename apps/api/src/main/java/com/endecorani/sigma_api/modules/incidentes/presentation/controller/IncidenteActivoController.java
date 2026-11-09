@@ -12,6 +12,7 @@ import com.endecorani.sigma_api.modules.workflow.application.dto.response.Workfl
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.application.pagination.SearchPageRequestDto;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,17 +57,23 @@ public class IncidenteActivoController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar incidentes con paginación y filtros")
+    @Operation(summary = "Listar incidentes con paginación y filtros (búsqueda por search o q)")
     public ResponseEntity<ApiResponse<PageResponse<IncidenteActivoResponse>>> listar(
-            @RequestParam(required = false) String search,
             @RequestParam(required = false) String tipoIncidente,
             @RequestParam(required = false) String prioridad,
             @RequestParam(required = false) String estado,
             @RequestParam(required = false) UUID activoId,
-            @Valid @ModelAttribute PageRequestDto pageRequest
+            @Valid @ModelAttribute SearchPageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(search, tipoIncidente, prioridad, estado, activoId, pageRequest))
+                ApiResponse.success(service.listar(
+                        pageRequest.getSearchTerm(),
+                        tipoIncidente,
+                        prioridad,
+                        estado,
+                        activoId,
+                        pageRequest.toPageRequest()
+                ))
         );
     }
 

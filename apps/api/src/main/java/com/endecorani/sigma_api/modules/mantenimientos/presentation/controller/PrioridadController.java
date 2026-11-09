@@ -7,6 +7,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.prioridad
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.PrioridadService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.application.pagination.SearchPageRequestDto;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,13 +34,12 @@ public class PrioridadController {
     private final PrioridadService service;
 
     @GetMapping
-    @Operation(summary = "Listar prioridades con paginación y búsqueda opcional")
+    @Operation(summary = "Listar prioridades con paginación y búsqueda opcional (search o q)")
     public ResponseEntity<ApiResponse<PageResponse<PrioridadResponse>>> listar(
-            @RequestParam(required = false) String search,
-            @Valid @ModelAttribute PageRequestDto pageRequest
+            @Valid @ModelAttribute SearchPageRequestDto pageRequest
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(service.listar(search, pageRequest))
+                ApiResponse.success(service.listar(pageRequest.getSearchTerm(), pageRequest.toPageRequest()))
         );
     }
 

@@ -11,10 +11,13 @@ import com.endecorani.sigma_api.modules.incidentes.domain.model.IncidenteActivo;
 import com.endecorani.sigma_api.modules.incidentes.domain.repository.IncidenteActivoRepository;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowActionResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowExecutionResult;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowHistoryResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
+import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowVariablesCustomizerContext;
 import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApplicationService;
+import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowEntitySupport;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -58,6 +61,7 @@ public class IncidenteActivoService {
     private final ActivoRepository activoRepository;
     private final IncidenteActivoMapper mapper;
     private final WorkflowApplicationService workflowApplicationService;
+    private final WorkflowEntitySupport workflowEntitySupport;
 
     // ==========================================
     // 1. Operaciones Principales del Incidente
@@ -202,11 +206,7 @@ public class IncidenteActivoService {
         IncidenteActivo incidente = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Incidente", id));
 
-        if (incidente.getProcessInstanceId() == null) {
-            throw new BusinessException("El incidente no tiene un proceso Flowable asociado");
-        }
-
-        return workflowApplicationService.obtenerTareaActual(incidente.getProcessInstanceId());
+        return workflowEntitySupport.obtenerTareaActual(incidente.getProcessInstanceId(), "El incidente");
     }
 
     @Transactional(readOnly = true)
@@ -214,11 +214,7 @@ public class IncidenteActivoService {
         IncidenteActivo incidente = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Incidente", id));
 
-        if (incidente.getProcessInstanceId() == null) {
-            throw new BusinessException("El incidente no tiene un proceso Flowable asociado");
-        }
-
-        return workflowApplicationService.obtenerAccionesDisponibles(incidente.getProcessInstanceId());
+        return workflowEntitySupport.obtenerAcciones(incidente.getProcessInstanceId(), "El incidente");
     }
 
     @Transactional
@@ -226,119 +222,102 @@ public class IncidenteActivoService {
         IncidenteActivo incidente = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Incidente", id));
 
-        if (incidente.getProcessInstanceId() == null) {
-            throw new BusinessException("El incidente no tiene un proceso Flowable activo");
-        }
-
-        WorkflowTaskActionsResponse tareaActual = workflowApplicationService.obtenerAccionesDisponibles(incidente.getProcessInstanceId());
-        if (tareaActual == null || tareaActual.taskId() == null) {
-            throw new BusinessException("El proceso Flowable no tiene una tarea activa pendiente para ejecutar acciones");
-        }
-
-        // Buscar acción coincidente
-        WorkflowActionResponse matchingAction = null;
-        if (tareaActual.actions() != null) {
-            matchingAction = tareaActual.actions().stream()
-                    .filter(a -> a.value().equalsIgnoreCase(accionId)
-                            || a.name().equalsIgnoreCase(accionId)
-                            || accionId.equalsIgnoreCase(a.value().replaceAll("[^A-Za-z0-9]", "_"))
-                            || accionId.equalsIgnoreCase(a.value().replaceAll("_", "-")))
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        if (matchingAction == null && tareaActual.actions() != null && !tareaActual.actions().isEmpty()) {
-            matchingAction = tareaActual.actions().getFirst();
-        }
-
-        Map<String, Object> effectiveVariables = new HashMap<>();
-        if (request != null && request.variables() != null) {
-            effectiveVariables.putAll(request.variables());
-        }
-
-        String actionValue = matchingAction != null ? matchingAction.value() : accionId.toUpperCase();
-        String actionVar = matchingAction != null ? matchingAction.variable() : "action";
-
-        effectiveVariables.put(actionVar, actionValue);
-        effectiveVariables.put("action", actionValue);
-        effectiveVariables.put("accion", actionValue);
-
-        // Mapear variables form properties del BPMN procesoIncidentesActivos
-        String taskKey = tareaActual.taskDefinitionKey() != null ? tareaActual.taskDefinitionKey().toLowerCase() : "";
-        if (request != null) {
-            if ("revision".equals(taskKey)) {
-                if (request.aprobado() != null) {
-                    effectiveVariables.put("aprobado", request.aprobado());
-                } else if ("RECHAZAR".equalsIgnoreCase(actionValue) || "NO".equalsIgnoreCase(actionValue)) {
-                    effectiveVariables.put("aprobado", false);
-                } else {
-                    effectiveVariables.put("aprobado", true);
-                }
-                if (request.observacionRevision() != null) {
-                    effectiveVariables.put("observacionRevision", request.observacionRevision().trim());
-                } else if (request.observacion() != null) {
-                    effectiveVariables.put("observacionRevision", request.observacion().trim());
-                }
-            } else if ("atencion".equals(taskKey)) {
-                if (request.detalleAtencion() != null) {
-                    effectiveVariables.put("detalleAtencion", request.detalleAtencion().trim());
-                } else if (request.observacion() != null) {
-                    effectiveVariables.put("detalleAtencion", request.observacion().trim());
-                } else {
-                    effectiveVariables.put("detalleAtencion", "Atención registrada");
-                }
-            } else if ("validacion".equals(taskKey)) {
-                if (request.solucionAprobada() != null) {
-                    effectiveVariables.put("solucionAprobada", request.solucionAprobada());
-                } else if ("RECHAZAR".equalsIgnoreCase(actionValue) || "RETRABAJO".equalsIgnoreCase(actionValue) || "NO".equalsIgnoreCase(actionValue)) {
-                    effectiveVariables.put("solucionAprobada", false);
-                } else {
-                    effectiveVariables.put("solucionAprobada", true);
-                }
-                if (request.observacionValidacion() != null) {
-                    effectiveVariables.put("observacionValidacion", request.observacionValidacion().trim());
-                } else if (request.observacion() != null) {
-                    effectiveVariables.put("observacionValidacion", request.observacion().trim());
-                }
-            } else if ("cierre".equals(taskKey)) {
-                if (request.observacionCierre() != null) {
-                    effectiveVariables.put("observacionCierre", request.observacionCierre().trim());
-                } else if (request.observacion() != null) {
-                    effectiveVariables.put("observacionCierre", request.observacion().trim());
-                }
-            }
-        }
-
-        CompleteWorkflowTaskRequest taskRequest = new CompleteWorkflowTaskRequest(effectiveVariables);
-        WorkflowTaskActionsResponse resultado = workflowApplicationService.completarTarea(
-                incidente.getProcessInstanceId(), taskRequest
+        WorkflowExecutionResult execResult = workflowEntitySupport.ejecutarAccion(
+                incidente.getProcessInstanceId(),
+                "El incidente",
+                accionId,
+                request != null ? request.variables() : null,
+                ctx -> mapearVariablesIncidente(ctx, request)
         );
 
         // Sincronizar estado del incidente según la siguiente tarea o finalización del proceso
-        if (resultado == null || resultado.taskId() == null) {
-            // Proceso finalizado
-            if ("revision".equals(taskKey) && Boolean.FALSE.equals(effectiveVariables.get("aprobado"))) {
+        actualizarEstadoIncidente(incidente, execResult);
+
+        IncidenteActivo actualizada = repository.save(incidente);
+        return mapper.toResponse(actualizada);
+    }
+
+    private void mapearVariablesIncidente(
+            WorkflowVariablesCustomizerContext ctx,
+            EjecutarAccionIncidenteRequest request
+    ) {
+        if (request == null) {
+            return;
+        }
+
+        String taskKey = ctx.taskDefinitionKey();
+        String actionValue = ctx.actionValue();
+        Map<String, Object> vars = ctx.effectiveVariables();
+
+        if ("revision".equals(taskKey)) {
+            if (request.aprobado() != null) {
+                vars.put("aprobado", request.aprobado());
+            } else if ("RECHAZAR".equalsIgnoreCase(actionValue) || "NO".equalsIgnoreCase(actionValue)) {
+                vars.put("aprobado", false);
+            } else {
+                vars.put("aprobado", true);
+            }
+            if (request.observacionRevision() != null) {
+                vars.put("observacionRevision", request.observacionRevision().trim());
+            } else if (request.observacion() != null) {
+                vars.put("observacionRevision", request.observacion().trim());
+            }
+        } else if ("atencion".equals(taskKey)) {
+            if (request.detalleAtencion() != null) {
+                vars.put("detalleAtencion", request.detalleAtencion().trim());
+            } else if (request.observacion() != null) {
+                vars.put("detalleAtencion", request.observacion().trim());
+            } else {
+                vars.put("detalleAtencion", "Atención registrada");
+            }
+        } else if ("validacion".equals(taskKey)) {
+            if (request.solucionAprobada() != null) {
+                vars.put("solucionAprobada", request.solucionAprobada());
+            } else if ("RECHAZAR".equalsIgnoreCase(actionValue) || "RETRABAJO".equalsIgnoreCase(actionValue) || "NO".equalsIgnoreCase(actionValue)) {
+                vars.put("solucionAprobada", false);
+            } else {
+                vars.put("solucionAprobada", true);
+            }
+            if (request.observacionValidacion() != null) {
+                vars.put("observacionValidacion", request.observacionValidacion().trim());
+            } else if (request.observacion() != null) {
+                vars.put("observacionValidacion", request.observacion().trim());
+            }
+        } else if ("cierre".equals(taskKey)) {
+            if (request.observacionCierre() != null) {
+                vars.put("observacionCierre", request.observacionCierre().trim());
+            } else if (request.observacion() != null) {
+                vars.put("observacionCierre", request.observacion().trim());
+            }
+        }
+    }
+
+    private void actualizarEstadoIncidente(IncidenteActivo incidente, WorkflowExecutionResult execResult) {
+        if (execResult.procesoFinalizado()) {
+            String taskKey = execResult.tareaPrevia() != null && execResult.tareaPrevia().taskDefinitionKey() != null
+                    ? execResult.tareaPrevia().taskDefinitionKey().toLowerCase()
+                    : "";
+            if ("revision".equals(taskKey) && Boolean.FALSE.equals(execResult.effectiveVariables().get("aprobado"))) {
                 incidente.setEstado(ESTADO_RECHAZADO);
             } else {
                 incidente.setEstado(ESTADO_CERRADO);
             }
         } else {
-            String nextTaskKey = resultado.taskDefinitionKey() != null ? resultado.taskDefinitionKey().toLowerCase() : "";
+            String nextTaskKey = execResult.siguienteTaskDefinitionKey() != null
+                    ? execResult.siguienteTaskDefinitionKey().toLowerCase()
+                    : "";
             switch (nextTaskKey) {
                 case "revision" -> incidente.setEstado(ESTADO_REVISION);
                 case "atencion" -> incidente.setEstado(ESTADO_EN_ATENCION);
                 case "validacion" -> incidente.setEstado(ESTADO_VALIDACION);
                 case "cierre" -> incidente.setEstado(ESTADO_EN_CIERRE);
                 default -> {
-                    if (resultado.taskName() != null && !resultado.taskName().isBlank()) {
-                        incidente.setEstado(resultado.taskName().toUpperCase().replace(" ", "_"));
+                    if (execResult.siguienteTarea().taskName() != null && !execResult.siguienteTarea().taskName().isBlank()) {
+                        incidente.setEstado(execResult.siguienteTarea().taskName().toUpperCase().replace(" ", "_"));
                     }
                 }
             }
         }
-
-        IncidenteActivo actualizada = repository.save(incidente);
-        return mapper.toResponse(actualizada);
     }
 
     @Transactional(readOnly = true)
@@ -346,10 +325,6 @@ public class IncidenteActivoService {
         IncidenteActivo incidente = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Incidente", id));
 
-        if (incidente.getProcessInstanceId() == null) {
-            throw new BusinessException("El incidente no tiene un proceso Flowable asociado");
-        }
-
-        return workflowApplicationService.obtenerHistorial(incidente.getProcessInstanceId());
+        return workflowEntitySupport.obtenerHistorial(incidente.getProcessInstanceId(), "El incidente");
     }
 }

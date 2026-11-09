@@ -73,7 +73,7 @@ public class IncidenteEvidenciaController {
     ) {
         service.eliminar(id, evidenciaId);
         return ResponseEntity.ok(
-                ApiResponse.success("Evidencia eliminada exitosamente", null)
+                ApiResponse.success("Evidencia eliminada exitosamente")
         );
     }
 }
