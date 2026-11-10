@@ -5,17 +5,16 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad.request.ActividadMantenimientoUpdate;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad.response.ActividadMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.ActividadMantenimientoService;
-import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
+import com.endecorani.sigma_api.shared.application.crud.ExtendedCrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.pagination.SearchPageRequestDto;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
+import com.endecorani.sigma_api.shared.presentation.controller.AbstractExtendedCrudController;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,28 +29,38 @@ import java.util.UUID;
         description = "Administración del catálogo de actividades técnicas de mantenimiento"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-public class ActividadMantenimientoController {
+public class ActividadMantenimientoController extends AbstractExtendedCrudController<
+        ActividadMantenimientoRequest,
+        ActividadMantenimientoUpdate,
+        ActividadMantenimientoResponse,
+        UUID
+        > {
 
     private final ActividadMantenimientoService service;
 
-    @GetMapping
-    @Operation(summary = "Listar actividades de mantenimiento con paginación y búsqueda opcional (search o q)")
-    public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoResponse>>> listar(
-            @Valid @ModelAttribute SearchPageRequestDto pageRequest
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(service.listar(pageRequest.getSearchTerm(), pageRequest.toPageRequest()))
-        );
+    @Override
+    protected ExtendedCrudService<ActividadMantenimientoRequest, ActividadMantenimientoUpdate, ActividadMantenimientoResponse, UUID> service() {
+        return service;
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Obtener una actividad de mantenimiento por ID")
-    public ResponseEntity<ApiResponse<ActividadMantenimientoResponse>> findById(
-            @PathVariable UUID id
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.success(service.findById(id))
-        );
+    @Override
+    protected String createdMessage() {
+        return "Actividad de mantenimiento creada correctamente";
+    }
+
+    @Override
+    protected String updatedMessage() {
+        return "Actividad de mantenimiento actualizada correctamente";
+    }
+
+    @Override
+    protected String deletedMessage() {
+        return "Actividad de mantenimiento eliminada correctamente";
+    }
+
+    @Override
+    protected PageResponse<ActividadMantenimientoResponse> listResponse(SearchPageRequestDto pageRequest) {
+        return service.listar(pageRequest.getSearchTerm(), pageRequest.toPageRequest());
     }
 
     @GetMapping("/codigo/{codigo}")
@@ -71,40 +80,6 @@ public class ActividadMantenimientoController {
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(service.findByTipoActivoId(tipoActivoId))
-        );
-    }
-
-    @PostMapping
-    @Operation(summary = "Crear una nueva actividad de mantenimiento")
-    public ResponseEntity<ApiResponse<ActividadMantenimientoResponse>> create(
-            @Valid @RequestBody ActividadMantenimientoRequest request
-    ) {
-        ActividadMantenimientoResponse response = service.create(request);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Actividad de mantenimiento creada correctamente", response));
-    }
-
-    @PutMapping("/{id}")
-    @Operation(summary = "Actualizar una actividad de mantenimiento existente")
-    public ResponseEntity<ApiResponse<ActividadMantenimientoResponse>> update(
-            @PathVariable UUID id,
-            @Valid @RequestBody ActividadMantenimientoUpdate request
-    ) {
-        ActividadMantenimientoResponse response = service.update(id, request);
-        return ResponseEntity.ok(
-                ApiResponse.success("Actividad de mantenimiento actualizada correctamente", response)
-        );
-    }
-
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar una actividad de mantenimiento")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable UUID id
-    ) {
-        service.delete(id);
-        return ResponseEntity.ok(
-                ApiResponse.success("Actividad de mantenimiento eliminada correctamente")
         );
     }
 }
