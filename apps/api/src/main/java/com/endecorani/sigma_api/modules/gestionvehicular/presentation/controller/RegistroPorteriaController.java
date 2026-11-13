@@ -9,6 +9,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.service.Reg
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.application.pagination.SearchPageRequestDto;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,12 +17,17 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 
@@ -84,19 +90,79 @@ public class RegistroPorteriaController {
             + "(administrador: todos, con filtro opcional areaId; otros roles: solo su área/sección)")
     public ResponseEntity<ApiResponse<PageResponse<RegistroPorteriaResponse>>> listar(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) UUID empleadoId,
             @RequestParam(required = false) UUID activoId,
             @RequestParam(required = false) UUID areaId,
             @RequestParam(required = false) EstadoRegistroPorteria estado,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant fechaDesde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant fechaHasta,
-            @Valid @ModelAttribute PageRequestDto pageRequest
+            @RequestParam(required = false) String fechaDesde,
+            @RequestParam(required = false) String fechaHasta,
+            @Valid @ModelAttribute SearchPageRequestDto pageRequest
     ) {
+        String searchTerm = (search != null && !search.isBlank())
+                ? search.trim()
+                : (q != null && !q.isBlank() ? q.trim() : (pageRequest != null ? pageRequest.getSearchTerm() : null));
+
+        Instant parsedFechaDesde = parseFechaDesde(fechaDesde);
+        Instant parsedFechaHasta = parseFechaHasta(fechaHasta);
+
+        PageRequestDto effectivePageRequest = pageRequest != null
+                ? pageRequest.toPageRequest()
+                : new PageRequestDto();
+
         return ResponseEntity.ok(
                 ApiResponse.success(service.listar(
-                        search, empleadoId, activoId, areaId, estado, fechaDesde, fechaHasta, pageRequest
+                        searchTerm, empleadoId, activoId, areaId, estado, parsedFechaDesde, parsedFechaHasta, effectivePageRequest
                 ))
         );
+    }
+
+    private Instant parseFechaDesde(String str) {
+        if (str == null || str.isBlank()) {
+            return null;
+        }
+        String s = str.trim();
+        try {
+            return Instant.parse(s);
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return OffsetDateTime.parse(s).toInstant();
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return LocalDateTime.parse(s).atZone(ZoneId.systemDefault()).toInstant();
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return LocalDate.parse(s).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        } catch (DateTimeParseException ignored) {
+        }
+        return null;
+    }
+
+    private Instant parseFechaHasta(String str) {
+        if (str == null || str.isBlank()) {
+            return null;
+        }
+        String s = str.trim();
+        try {
+            return Instant.parse(s);
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return OffsetDateTime.parse(s).toInstant();
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return LocalDateTime.parse(s).atZone(ZoneId.systemDefault()).toInstant();
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return LocalDate.parse(s).atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
+        } catch (DateTimeParseException ignored) {
+        }
+        return null;
     }
 
     @GetMapping("/{id}")
