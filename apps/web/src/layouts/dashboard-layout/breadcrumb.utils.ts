@@ -68,6 +68,7 @@ export const SEGMENT_LABELS: Record<string, string> = {
   flotas: "Flotas",
   "mis-viajes": "Mis Viajes",
   "calendario-reservas": "Calendario de Reservas",
+  porteria: "Control de Portería",
   "tipos-solicitud": "Tipos de Solicitud",
   "solicitudes-vehiculares": "Solicitudes Vehiculares",
   bitacora: "Bitácora",

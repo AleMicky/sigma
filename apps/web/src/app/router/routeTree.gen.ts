@@ -57,6 +57,7 @@ import { Route as DashboardGestionVehicularConfiguracionesIndexRouteImport } fro
 import { Route as DashboardGestionVehicularControlesActivosNuevoRouteImport } from './../../routes/_dashboard/gestion-vehicular/controles-activos/nuevo'
 import { Route as DashboardGestionVehicularDashboardGestionVehicularIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/dashboard-gestion-vehicular/index'
 import { Route as DashboardGestionVehicularMisViajesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/mis-viajes/index'
+import { Route as DashboardGestionVehicularPorteriaIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/porteria/index'
 import { Route as DashboardGestionVehicularReportesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/reportes/index'
 import { Route as DashboardGestionVehicularSalidasIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/salidas/index'
 import { Route as DashboardGestionVehicularSalidasSalidaIdRouteImport } from './../../routes/_dashboard/gestion-vehicular/salidas/$salidaId'
@@ -386,6 +387,12 @@ const DashboardGestionVehicularMisViajesIndexRoute =
   DashboardGestionVehicularMisViajesIndexRouteImport.update({
     id: '/mis-viajes/',
     path: '/mis-viajes/',
+    getParentRoute: () => DashboardGestionVehicularRouteRoute,
+  } as any)
+const DashboardGestionVehicularPorteriaIndexRoute =
+  DashboardGestionVehicularPorteriaIndexRouteImport.update({
+    id: '/porteria/',
+    path: '/porteria/',
     getParentRoute: () => DashboardGestionVehicularRouteRoute,
   } as any)
 const DashboardGestionVehicularReportesIndexRoute =
@@ -755,6 +762,7 @@ export interface FileRoutesByFullPath {
   '/gestion-vehicular/configuraciones/': typeof DashboardGestionVehicularConfiguracionesIndexRoute
   '/gestion-vehicular/dashboard-gestion-vehicular/': typeof DashboardGestionVehicularDashboardGestionVehicularIndexRoute
   '/gestion-vehicular/mis-viajes/': typeof DashboardGestionVehicularMisViajesIndexRoute
+  '/gestion-vehicular/porteria/': typeof DashboardGestionVehicularPorteriaIndexRoute
   '/gestion-vehicular/reportes/': typeof DashboardGestionVehicularReportesIndexRoute
   '/gestion-vehicular/salidas/': typeof DashboardGestionVehicularSalidasIndexRoute
   '/gestion-vehicular/solicitudes/': typeof DashboardGestionVehicularSolicitudesIndexRoute
@@ -838,6 +846,7 @@ export interface FileRoutesByTo {
   '/gestion-vehicular/configuraciones': typeof DashboardGestionVehicularConfiguracionesIndexRoute
   '/gestion-vehicular/dashboard-gestion-vehicular': typeof DashboardGestionVehicularDashboardGestionVehicularIndexRoute
   '/gestion-vehicular/mis-viajes': typeof DashboardGestionVehicularMisViajesIndexRoute
+  '/gestion-vehicular/porteria': typeof DashboardGestionVehicularPorteriaIndexRoute
   '/gestion-vehicular/reportes': typeof DashboardGestionVehicularReportesIndexRoute
   '/gestion-vehicular/salidas': typeof DashboardGestionVehicularSalidasIndexRoute
   '/gestion-vehicular/solicitudes': typeof DashboardGestionVehicularSolicitudesIndexRoute
@@ -940,6 +949,7 @@ export interface FileRoutesById {
   '/_dashboard/gestion-vehicular/configuraciones/': typeof DashboardGestionVehicularConfiguracionesIndexRoute
   '/_dashboard/gestion-vehicular/dashboard-gestion-vehicular/': typeof DashboardGestionVehicularDashboardGestionVehicularIndexRoute
   '/_dashboard/gestion-vehicular/mis-viajes/': typeof DashboardGestionVehicularMisViajesIndexRoute
+  '/_dashboard/gestion-vehicular/porteria/': typeof DashboardGestionVehicularPorteriaIndexRoute
   '/_dashboard/gestion-vehicular/reportes/': typeof DashboardGestionVehicularReportesIndexRoute
   '/_dashboard/gestion-vehicular/salidas/': typeof DashboardGestionVehicularSalidasIndexRoute
   '/_dashboard/gestion-vehicular/solicitudes/': typeof DashboardGestionVehicularSolicitudesIndexRoute
@@ -1042,6 +1052,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/configuraciones/'
     | '/gestion-vehicular/dashboard-gestion-vehicular/'
     | '/gestion-vehicular/mis-viajes/'
+    | '/gestion-vehicular/porteria/'
     | '/gestion-vehicular/reportes/'
     | '/gestion-vehicular/salidas/'
     | '/gestion-vehicular/solicitudes/'
@@ -1125,6 +1136,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/configuraciones'
     | '/gestion-vehicular/dashboard-gestion-vehicular'
     | '/gestion-vehicular/mis-viajes'
+    | '/gestion-vehicular/porteria'
     | '/gestion-vehicular/reportes'
     | '/gestion-vehicular/salidas'
     | '/gestion-vehicular/solicitudes'
@@ -1226,6 +1238,7 @@ export interface FileRouteTypes {
     | '/_dashboard/gestion-vehicular/configuraciones/'
     | '/_dashboard/gestion-vehicular/dashboard-gestion-vehicular/'
     | '/_dashboard/gestion-vehicular/mis-viajes/'
+    | '/_dashboard/gestion-vehicular/porteria/'
     | '/_dashboard/gestion-vehicular/reportes/'
     | '/_dashboard/gestion-vehicular/salidas/'
     | '/_dashboard/gestion-vehicular/solicitudes/'
@@ -1613,6 +1626,13 @@ declare module '@tanstack/react-router' {
       path: '/mis-viajes'
       fullPath: '/gestion-vehicular/mis-viajes/'
       preLoaderRoute: typeof DashboardGestionVehicularMisViajesIndexRouteImport
+      parentRoute: typeof DashboardGestionVehicularRouteRoute
+    }
+    '/_dashboard/gestion-vehicular/porteria/': {
+      id: '/_dashboard/gestion-vehicular/porteria/'
+      path: '/porteria'
+      fullPath: '/gestion-vehicular/porteria/'
+      preLoaderRoute: typeof DashboardGestionVehicularPorteriaIndexRouteImport
       parentRoute: typeof DashboardGestionVehicularRouteRoute
     }
     '/_dashboard/gestion-vehicular/reportes/': {
@@ -2039,6 +2059,7 @@ interface DashboardGestionVehicularRouteRouteChildren {
   DashboardGestionVehicularConfiguracionesIndexRoute: typeof DashboardGestionVehicularConfiguracionesIndexRoute
   DashboardGestionVehicularDashboardGestionVehicularIndexRoute: typeof DashboardGestionVehicularDashboardGestionVehicularIndexRoute
   DashboardGestionVehicularMisViajesIndexRoute: typeof DashboardGestionVehicularMisViajesIndexRoute
+  DashboardGestionVehicularPorteriaIndexRoute: typeof DashboardGestionVehicularPorteriaIndexRoute
   DashboardGestionVehicularReportesIndexRoute: typeof DashboardGestionVehicularReportesIndexRoute
   DashboardGestionVehicularSalidasIndexRoute: typeof DashboardGestionVehicularSalidasIndexRoute
   DashboardGestionVehicularSolicitudesIndexRoute: typeof DashboardGestionVehicularSolicitudesIndexRoute
@@ -2072,6 +2093,8 @@ const DashboardGestionVehicularRouteRouteChildren: DashboardGestionVehicularRout
       DashboardGestionVehicularDashboardGestionVehicularIndexRoute,
     DashboardGestionVehicularMisViajesIndexRoute:
       DashboardGestionVehicularMisViajesIndexRoute,
+    DashboardGestionVehicularPorteriaIndexRoute:
+      DashboardGestionVehicularPorteriaIndexRoute,
     DashboardGestionVehicularReportesIndexRoute:
       DashboardGestionVehicularReportesIndexRoute,
     DashboardGestionVehicularSalidasIndexRoute:
