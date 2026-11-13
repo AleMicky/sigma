@@ -69,6 +69,7 @@ export interface PorteriaFiltros extends PageParams {
   search?: string
   empleadoId?: string
   activoId?: string
+  areaId?: string
   estado?: EstadoRegistroPorteria
   fechaDesde?: string
   fechaHasta?: string
