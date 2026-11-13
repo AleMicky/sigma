@@ -22,6 +22,11 @@ export interface RegistroPorteria {
   esExterno?: boolean
   personaExterna?: string | null
   placaExterna?: string | null
+  origenUbicacionId?: string | null
+  origenUbicacionNombre?: string | null
+  destinoUbicacionId?: string | null
+  destinoUbicacionNombre?: string | null
+  destinoOtro?: string | null
   guardiaSalidaId: string | null
   guardiaSalidaNombre: string | null
   guardiaLlegadaId: string | null
@@ -49,6 +54,9 @@ export interface RegistrarSalidaPorteriaRequest {
   esExterno?: boolean
   personaExterna?: string | null
   placaExterna?: string | null
+  origenUbicacionId?: string | null
+  destinoUbicacionId?: string | null
+  destinoOtro?: string | null
   fechaHoraSalida?: string
   salidaVehicularId?: string | null
   observacionSalida?: string | null

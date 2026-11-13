@@ -4,13 +4,20 @@ import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPo
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteriaActivo;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.RegistroPorteriaActivoEntity;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.RegistroPorteriaEntity;
+import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.entity.UbicacionEntity;
+import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.repository.SpringUbicacionRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 public class RegistroPorteriaPersistenceMapper {
+
+    private final SpringUbicacionRepository ubicacionRepository;
 
     public RegistroPorteria toDomain(RegistroPorteriaEntity entity) {
         if (entity == null) {
@@ -22,6 +29,11 @@ public class RegistroPorteriaPersistenceMapper {
                         .map(this::toActivoDomain)
                         .toList();
 
+        UUID origenId = entity.getOrigen() != null ? entity.getOrigen().getId() : null;
+        String origenNombre = entity.getOrigen() != null ? entity.getOrigen().getNombre() : null;
+        UUID destinoId = entity.getDestino() != null ? entity.getDestino().getId() : null;
+        String destinoNombre = entity.getDestino() != null ? entity.getDestino().getNombre() : null;
+
         return RegistroPorteria.builder()
                 .id(entity.getId())
                 .numero(entity.getNumero())
@@ -29,6 +41,11 @@ public class RegistroPorteriaPersistenceMapper {
                 .esExterno(entity.getEsExterno())
                 .personaExterna(entity.getPersonaExterna())
                 .placaExterna(entity.getPlacaExterna())
+                .origenUbicacionId(origenId)
+                .origenUbicacionNombre(origenNombre)
+                .destinoUbicacionId(destinoId)
+                .destinoUbicacionNombre(destinoNombre)
+                .destinoOtro(entity.getDestinoOtro())
                 .guardiaSalidaId(entity.getGuardiaSalidaId())
                 .guardiaLlegadaId(entity.getGuardiaLlegadaId())
                 .salidaVehicularId(entity.getSalidaVehicularId())
@@ -51,6 +68,13 @@ public class RegistroPorteriaPersistenceMapper {
         if (domain == null) {
             return null;
         }
+        UbicacionEntity origen = domain.getOrigenUbicacionId() != null
+                ? ubicacionRepository.findById(domain.getOrigenUbicacionId()).orElse(null)
+                : null;
+        UbicacionEntity destino = domain.getDestinoUbicacionId() != null
+                ? ubicacionRepository.findById(domain.getDestinoUbicacionId()).orElse(null)
+                : null;
+
         RegistroPorteriaEntity entity = RegistroPorteriaEntity.builder()
                 .id(domain.getId())
                 .numero(domain.getNumero())
@@ -58,6 +82,9 @@ public class RegistroPorteriaPersistenceMapper {
                 .esExterno(Boolean.TRUE.equals(domain.getEsExterno()))
                 .personaExterna(domain.getPersonaExterna())
                 .placaExterna(domain.getPlacaExterna())
+                .origen(origen)
+                .destino(destino)
+                .destinoOtro(domain.getDestinoOtro())
                 .guardiaSalidaId(domain.getGuardiaSalidaId())
                 .guardiaLlegadaId(domain.getGuardiaLlegadaId())
                 .salidaVehicularId(domain.getSalidaVehicularId())
@@ -124,4 +151,3 @@ public class RegistroPorteriaPersistenceMapper {
                 .build();
     }
 }
-

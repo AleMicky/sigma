@@ -15,6 +15,12 @@ public record RegistrarSalidaPorteriaRequest(
 
         String placaExterna,
 
+        UUID origenUbicacionId,
+
+        UUID destinoUbicacionId,
+
+        String destinoOtro,
+
         Instant fechaHoraSalida,
 
         UUID salidaVehicularId,

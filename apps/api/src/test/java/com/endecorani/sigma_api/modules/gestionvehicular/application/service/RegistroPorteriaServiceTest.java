@@ -19,6 +19,7 @@ import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
+import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.repository.SpringUbicacionRepository;
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
 import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
@@ -52,6 +53,8 @@ class RegistroPorteriaServiceTest {
     private SpringVEmpleadoRepository vempleadoRepository;
     @Mock
     private EmpleadoRepository empleadoRepository;
+    @Mock
+    private SpringUbicacionRepository ubicacionRepository;
     @Mock
     private UsuarioRepository usuarioRepository;
     @Mock
@@ -107,6 +110,9 @@ class RegistroPorteriaServiceTest {
                 false,
                 null,
                 null,
+                null,
+                null,
+                null,
                 Instant.now(),
                 null,
                 "Salida a campo",
@@ -136,6 +142,9 @@ class RegistroPorteriaServiceTest {
         RegistrarSalidaPorteriaRequest request = new RegistrarSalidaPorteriaRequest(
                 empleadoId,
                 false,
+                null,
+                null,
+                null,
                 null,
                 null,
                 Instant.now(),
@@ -246,6 +255,9 @@ class RegistroPorteriaServiceTest {
                 true,
                 "Pedro Visitante",
                 "9876-ABC",
+                null,
+                null,
+                "Campamento Minero",
                 Instant.now(),
                 null,
                 "Visita técnica externa",

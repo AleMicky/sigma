@@ -8,6 +8,7 @@ import {
   History,
   LogIn,
   LogOut,
+  MapPin,
   MessageSquareText,
   Package,
   RefreshCw,
@@ -222,6 +223,21 @@ function ActivosChips({ registro }: { registro: RegistroPorteria }) {
   )
 }
 
+function RutaBadge({ registro }: { registro: RegistroPorteria }) {
+  const origen = registro.origenUbicacionNombre
+  const destino = registro.destinoUbicacionNombre || registro.destinoOtro
+  if (!origen && !destino) return null
+
+  return (
+    <div className="inline-flex items-center gap-1.5 rounded-md border border-sky-500/30 bg-sky-500/5 px-2 py-0.5 text-xs text-sky-700 dark:text-sky-300">
+      <MapPin className="size-3 shrink-0" />
+      <span className="font-medium">{origen ?? "Origen sin especificar"}</span>
+      <ArrowRight className="size-3 shrink-0 text-muted-foreground" />
+      <span className="font-medium">{destino ?? "Destino sin especificar"}</span>
+    </div>
+  )
+}
+
 function StatCard({
   label,
   value,
@@ -359,6 +375,8 @@ function AfueraItem({
               </span>
             )}
           </div>
+
+          <RutaBadge registro={registro} />
 
           <ActivosChips registro={registro} />
 
@@ -500,6 +518,8 @@ function HistorialItem({ registro }: { registro: RegistroPorteria }) {
             </span>
           )}
         </div>
+
+        <RutaBadge registro={registro} />
 
         <ActivosChips registro={registro} />
 

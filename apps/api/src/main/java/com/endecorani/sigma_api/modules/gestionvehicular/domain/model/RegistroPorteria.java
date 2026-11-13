@@ -26,6 +26,11 @@ public class RegistroPorteria extends AuditableModel {
     private Boolean esExterno;
     private String personaExterna;
     private String placaExterna;
+    private UUID origenUbicacionId;
+    private String origenUbicacionNombre;
+    private UUID destinoUbicacionId;
+    private String destinoUbicacionNombre;
+    private String destinoOtro;
     private UUID guardiaSalidaId;
     private UUID guardiaLlegadaId;
     private UUID salidaVehicularId;

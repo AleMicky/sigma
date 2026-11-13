@@ -6,6 +6,8 @@ import {
   Car,
   Clock,
   Loader2,
+  MapPin,
+  Navigation,
   PenLine,
   Search,
   UserCheck,
@@ -15,6 +17,8 @@ import {
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
+import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
+import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 import {
   FormDialog,
   FormDialogSubmit,
@@ -150,6 +154,84 @@ function ActivoSelector({
   )
 }
 
+function UbicacionSelector({
+  value,
+  onChange,
+  placeholder = "Buscar ubicación...",
+}: {
+  value: Ubicacion | null
+  onChange: (ubicacion: Ubicacion | null) => void
+  placeholder?: string
+}) {
+  const [search, setSearch] = useState("")
+  const debouncedSearch = useDebouncedValue(search, 300)
+
+  const ubicacionesQuery = useQuery(
+    ubicacionQueries.list({
+      page: 0,
+      size: 30,
+      q: debouncedSearch || undefined,
+    })
+  )
+
+  const ubicaciones = ubicacionesQuery.data?.content ?? []
+
+  return (
+    <Combobox
+      items={ubicaciones}
+      value={value}
+      onValueChange={(item: Ubicacion | null) => onChange(item ?? null)}
+      itemToStringLabel={(item: Ubicacion) =>
+        item ? `${item.codigo} - ${item.nombre}` : ""
+      }
+      isItemEqualToValue={(a: Ubicacion, b: Ubicacion) => a.id === b.id}
+    >
+      <ComboboxInput
+        placeholder={placeholder}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        showClear={Boolean(value)}
+      />
+      <ComboboxContent>
+        <ComboboxList>
+          {ubicacionesQuery.isLoading ? (
+            <div className="flex items-center justify-center py-4 text-xs text-muted-foreground">
+              <Loader2 className="mr-2 size-3.5 animate-spin" />
+              Buscando ubicaciones...
+            </div>
+          ) : (
+            <>
+              <ComboboxEmpty>
+                <div className="flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground">
+                  <Search className="size-3.5" />
+                  Sin resultados
+                </div>
+              </ComboboxEmpty>
+              {ubicaciones.map((ubi) => (
+                <ComboboxItem key={ubi.id} value={ubi}>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {ubi.codigo}
+                      </span>{" "}
+                      {ubi.nombre}
+                    </span>
+                    {ubi.tipo && (
+                      <span className="text-[11px] text-muted-foreground capitalize">
+                        {ubi.tipo.toLowerCase()}
+                      </span>
+                    )}
+                  </div>
+                </ComboboxItem>
+              ))}
+            </>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  )
+}
+
 function ModoToggle({
   value,
   onChange,
@@ -215,6 +297,12 @@ export function RegistrarSalidaPorteriaDialog({
   const [personaExterna, setPersonaExterna] = useState("")
   const [placaExterna, setPlacaExterna] = useState("")
 
+  // Ruta (Origen y Destino)
+  const [origenUbicacion, setOrigenUbicacion] = useState<Ubicacion | null>(null)
+  const [destinoUbicacion, setDestinoUbicacion] = useState<Ubicacion | null>(null)
+  const [usarDestinoOtro, setUsarDestinoOtro] = useState(false)
+  const [destinoOtro, setDestinoOtro] = useState("")
+
   // General
   const [fechaHoraSalida, setFechaHoraSalida] = useState(() =>
     getLocalDateTimeInputValue()
@@ -231,6 +319,10 @@ export function RegistrarSalidaPorteriaDialog({
       setItemDescripcion("")
       setPersonaExterna("")
       setPlacaExterna("")
+      setOrigenUbicacion(null)
+      setDestinoUbicacion(null)
+      setUsarDestinoOtro(false)
+      setDestinoOtro("")
       setFechaHoraSalida(getLocalDateTimeInputValue())
       setObservacionSalida("")
       setFormError(null)
@@ -268,6 +360,9 @@ export function RegistrarSalidaPorteriaDialog({
       await mutation.mutateAsync({
         esExterno: false,
         empleadoId: funcionarioId,
+        origenUbicacionId: origenUbicacion?.id,
+        destinoUbicacionId: usarDestinoOtro ? undefined : destinoUbicacion?.id,
+        destinoOtro: usarDestinoOtro ? (destinoOtro.trim() || undefined) : undefined,
         fechaHoraSalida: fechaHoraSalida
           ? new Date(fechaHoraSalida).toISOString()
           : undefined,
@@ -295,6 +390,9 @@ export function RegistrarSalidaPorteriaDialog({
         esExterno: true,
         personaExterna: personaExterna.trim(),
         placaExterna: placaExterna.trim().toUpperCase(),
+        origenUbicacionId: origenUbicacion?.id,
+        destinoUbicacionId: usarDestinoOtro ? undefined : destinoUbicacion?.id,
+        destinoOtro: usarDestinoOtro ? (destinoOtro.trim() || undefined) : undefined,
         fechaHoraSalida: fechaHoraSalida
           ? new Date(fechaHoraSalida).toISOString()
           : undefined,
@@ -342,8 +440,8 @@ export function RegistrarSalidaPorteriaDialog({
             </p>
             <p className="text-xs text-muted-foreground">
               {tipoRegistro === "interno"
-                ? "Funcionario de la mina / institucional"
-                : "Persona externa / contratista / visita"}
+                ? "Personal / funcionario interno"
+                : "Persona o visita externa"}
             </p>
           </div>
           <div
@@ -363,7 +461,7 @@ export function RegistrarSalidaPorteriaDialog({
               )}
             >
               <UserRound className="size-3.5" />
-              Interno (Mina)
+              Interno
             </button>
             <button
               type="button"
@@ -378,7 +476,7 @@ export function RegistrarSalidaPorteriaDialog({
               )}
             >
               <Building2 className="size-3.5" />
-              Externo / Visita
+              Externo
             </button>
           </div>
         </div>
@@ -532,10 +630,69 @@ export function RegistrarSalidaPorteriaDialog({
           )}
         </section>
 
-        {/* Paso 3: Observaciones */}
+        {/* Paso 3: Ruta (Origen y Destino) */}
         <section className="space-y-3">
           <SectionTitle
             step={3}
+            title="Ruta (Origen y Destino)"
+            description="Opcional. Punto de partida y destino del vehículo o persona."
+          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel>
+                <MapPin className="size-3.5 text-muted-foreground" />
+                Origen
+              </FieldLabel>
+              <UbicacionSelector
+                value={origenUbicacion}
+                onChange={setOrigenUbicacion}
+                placeholder="Seleccionar origen..."
+              />
+            </Field>
+
+            <Field>
+              <div className="flex items-center justify-between">
+                <FieldLabel>
+                  <Navigation className="size-3.5 text-muted-foreground" />
+                  Destino
+                </FieldLabel>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !usarDestinoOtro
+                    setUsarDestinoOtro(next)
+                    if (next) {
+                      setDestinoUbicacion(null)
+                    } else {
+                      setDestinoOtro("")
+                    }
+                  }}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  {usarDestinoOtro ? "Elegir del catálogo" : "Otro destino..."}
+                </button>
+              </div>
+              {usarDestinoOtro ? (
+                <Input
+                  placeholder="Ej. Cochabamba / Taller externo..."
+                  value={destinoOtro}
+                  onChange={(e) => setDestinoOtro(e.target.value)}
+                />
+              ) : (
+                <UbicacionSelector
+                  value={destinoUbicacion}
+                  onChange={setDestinoUbicacion}
+                  placeholder="Seleccionar destino..."
+                />
+              )}
+            </Field>
+          </div>
+        </section>
+
+        {/* Paso 4: Observaciones */}
+        <section className="space-y-3">
+          <SectionTitle
+            step={4}
             title="Observaciones"
             description="Opcional. Motivo de la salida o detalle adicional."
           />
