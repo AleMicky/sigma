@@ -217,7 +217,7 @@ export function PorteriaPage() {
         <TabsContent value="afuera" className="mt-4">
           {afueraList.length === 0 ? (
             <EmptyState
-              icon={CheckCircle2}
+              icon={<CheckCircle2 className="size-5.5 text-muted-foreground/80" />}
               title="No hay salidas pendientes de retorno"
               description="Todos los empleados y activos han retornado o aún no se registraron salidas."
             />
@@ -290,7 +290,7 @@ export function PorteriaPage() {
             <Select
               value={estadoFiltro}
               onValueChange={(val) => {
-                setEstadoFiltro(val)
+                setEstadoFiltro(val ?? "ALL")
                 setPage(0)
               }}
             >
@@ -308,7 +308,7 @@ export function PorteriaPage() {
 
           {historialList.length === 0 ? (
             <EmptyState
-              icon={ShieldCheck}
+              icon={<ShieldCheck className="size-5.5 text-muted-foreground/80" />}
               title="Sin registros en el historial"
               description="No se encontraron registros con los filtros actuales."
             />
@@ -363,9 +363,7 @@ export function PorteriaPage() {
 
               {historialPage && historialPage.totalPages > 1 && (
                 <Pagination
-                  page={page}
-                  totalPages={historialPage.totalPages}
-                  totalElements={historialPage.totalElements}
+                  page={historialPage}
                   onPageChange={setPage}
                 />
               )}

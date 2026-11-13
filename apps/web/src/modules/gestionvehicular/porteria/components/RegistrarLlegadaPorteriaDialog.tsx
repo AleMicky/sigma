@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react"
 
-import { FormDialog, RequiredFieldLabel } from "@/shared/components/form-dialog"
-import { Checkbox } from "@/shared/components/ui/checkbox"
+import {
+  FormDialog,
+  FormDialogSubmit,
+  RequiredFieldLabel,
+} from "@/shared/components/form-dialog"
 import { Field, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
@@ -67,9 +70,7 @@ export function RegistrarLlegadaPorteriaDialog({
     )
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const handleSubmit = async () => {
     const isoLlegada = fechaHoraLlegada
       ? new Date(fechaHoraLlegada).toISOString()
       : undefined
@@ -97,9 +98,15 @@ export function RegistrarLlegadaPorteriaDialog({
       title={`Registrar Llegada - ${registro.numero}`}
       description={`Empleado: ${registro.empleadoNombre ?? registro.empleadoId}`}
       onSubmit={handleSubmit}
-      submitLabel="Confirmar Llegada"
-      isSubmitting={mutation.isPending}
-      maxWidth="xl"
+      size="md"
+      footer={
+        <FormDialogSubmit
+          canSubmit={Boolean(fechaHoraLlegada)}
+          isSubmitting={mutation.isPending}
+          label="Confirmar Llegada"
+          submittingLabel="Confirmando…"
+        />
+      }
     >
       <div className="space-y-4">
         <Field>
@@ -122,10 +129,14 @@ export function RegistrarLlegadaPorteriaDialog({
               >
                 <div className="flex items-center justify-between gap-3">
                   <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium">
-                    <Checkbox
+                    <input
+                      type="checkbox"
+                      className="size-4 rounded border-input accent-primary"
                       checked={item.retornado}
-                      onCheckedChange={(checked) =>
-                        updateItem(item.itemId, { retornado: Boolean(checked) })
+                      onChange={(e) =>
+                        updateItem(item.itemId, {
+                          retornado: e.target.checked,
+                        })
                       }
                     />
                     <span>

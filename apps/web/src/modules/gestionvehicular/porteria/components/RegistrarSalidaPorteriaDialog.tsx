@@ -5,7 +5,11 @@ import { Loader2, Plus, Search, Trash2 } from "lucide-react"
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
-import { FormDialog, RequiredFieldLabel } from "@/shared/components/form-dialog"
+import {
+  FormDialog,
+  FormDialogSubmit,
+  RequiredFieldLabel,
+} from "@/shared/components/form-dialog"
 import { Button } from "@/shared/components/ui/button"
 import {
   Combobox,
@@ -177,8 +181,7 @@ export function RegistrarSalidaPorteriaDialog({
     )
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     setFormError(null)
 
     if (!empleadoId) {
@@ -221,18 +224,19 @@ export function RegistrarSalidaPorteriaDialog({
       onOpenChange={onOpenChange}
       title="Registrar Salida en Portería"
       description="Anote el empleado, hora de salida y los activos o ítems que retira."
+      formError={formError}
       onSubmit={handleSubmit}
-      submitLabel="Registrar Salida"
-      isSubmitting={mutation.isPending}
-      maxWidth="2xl"
+      size="lg"
+      footer={
+        <FormDialogSubmit
+          canSubmit={Boolean(empleadoId)}
+          isSubmitting={mutation.isPending}
+          label="Registrar Salida"
+          submittingLabel="Registrando…"
+        />
+      }
     >
       <div className="space-y-4">
-        {formError && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {formError}
-          </div>
-        )}
-
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field>
             <RequiredFieldLabel>Empleado</RequiredFieldLabel>

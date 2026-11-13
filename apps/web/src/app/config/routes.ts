@@ -124,6 +124,7 @@ export const routes = {
     salidaDetalle: (id: string) => `/gestion-vehicular/salidas/${id}`,
     misViajes: "/gestion-vehicular/mis-viajes",
     calendarioReservas: "/gestion-vehicular/calendario-reservas",
+    porteria: "/gestion-vehicular/porteria",
     controlesActivos: {
       nuevo: "/gestion-vehicular/controles-activos/nuevo",
     },

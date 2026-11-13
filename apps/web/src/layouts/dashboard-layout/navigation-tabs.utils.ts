@@ -55,6 +55,7 @@ export const PATH_TITLES: Record<string, string> = {
   "/gestion-vehicular/salidas": "Salidas Vehiculares",
   "/gestion-vehicular/mis-viajes": "Mis Viajes",
   "/gestion-vehicular/calendario-reservas": "Calendario de Reservas",
+  "/gestion-vehicular/porteria": "Control de Portería",
   "/gestion-vehicular/configuraciones/conductores": "Conductores",
   "/gestion-vehicular/configuraciones/flotas": "Flotas Vehiculares",
   "/gestion-vehicular/configuraciones/tipos-solicitud": "Tipos de Solicitud",
