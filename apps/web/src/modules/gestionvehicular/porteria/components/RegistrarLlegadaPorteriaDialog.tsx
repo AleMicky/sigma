@@ -49,7 +49,7 @@ export function RegistrarLlegadaPorteriaDialog({
       setFechaHoraLlegada(getLocalDateTimeInputValue())
       setObservacionLlegada("")
       setItems(
-        registro.activos.map((a) => ({
+        (registro.activos ?? []).map((a) => ({
           itemId: a.id,
           label: a.activoNombre
             ? `${a.activoCodigo ?? ""} - ${a.activoNombre}`

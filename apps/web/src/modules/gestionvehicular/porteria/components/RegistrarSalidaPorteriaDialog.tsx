@@ -23,6 +23,7 @@ import { Field, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
+import { generateId } from "@/shared/lib/utils"
 
 import { useRegistrarSalidaPorteriaMutation } from "../api/porteria.mutations"
 
@@ -129,9 +130,9 @@ export function RegistrarSalidaPorteriaDialog({
     getLocalDateTimeInputValue()
   )
   const [observacionSalida, setObservacionSalida] = useState("")
-  const [items, setItems] = useState<ActivoRowState[]>([
+  const [items, setItems] = useState<ActivoRowState[]>(() => [
     {
-      key: crypto.randomUUID(),
+      key: generateId(),
       activoId: "",
       descripcionItem: "",
       cantidad: 1,
@@ -147,7 +148,7 @@ export function RegistrarSalidaPorteriaDialog({
       setObservacionSalida("")
       setItems([
         {
-          key: crypto.randomUUID(),
+          key: generateId(),
           activoId: "",
           descripcionItem: "",
           cantidad: 1,
@@ -162,7 +163,7 @@ export function RegistrarSalidaPorteriaDialog({
     setItems((prev) => [
       ...prev,
       {
-        key: crypto.randomUUID(),
+        key: generateId(),
         activoId: "",
         descripcionItem: "",
         cantidad: 1,
