@@ -21,6 +21,8 @@ import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
+import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.entity.UbicacionEntity;
+import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.repository.SpringUbicacionRepository;
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
 import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -60,6 +62,7 @@ public class RegistroPorteriaService {
     private final SpringActivoRepository activoRepository;
     private final SpringVEmpleadoRepository vempleadoRepository;
     private final EmpleadoRepository empleadoRepository;
+    private final SpringUbicacionRepository ubicacionRepository;
     private final UsuarioRepository usuarioRepository;
     private final CorrelativoService correlativoService;
     private final SecurityUtils securityUtils;
@@ -89,6 +92,16 @@ public class RegistroPorteriaService {
         if (request.salidaVehicularId() != null
                 && salidaVehicularRepository.findById(request.salidaVehicularId()).isEmpty()) {
             throw new ResourceNotFoundException("Salida Vehicular", request.salidaVehicularId());
+        }
+
+        if (request.origenUbicacionId() != null
+                && !ubicacionRepository.existsById(request.origenUbicacionId())) {
+            throw new ResourceNotFoundException("Ubicación de origen", request.origenUbicacionId());
+        }
+
+        if (request.destinoUbicacionId() != null
+                && !ubicacionRepository.existsById(request.destinoUbicacionId())) {
+            throw new ResourceNotFoundException("Ubicación de destino", request.destinoUbicacionId());
         }
 
         List<RegistroPorteriaActivo> items;
@@ -123,6 +136,9 @@ public class RegistroPorteriaService {
                 .esExterno(esExterno)
                 .personaExterna(personaExterna)
                 .placaExterna(placaExterna != null ? placaExterna.toUpperCase() : null)
+                .origenUbicacionId(request.origenUbicacionId())
+                .destinoUbicacionId(request.destinoUbicacionId())
+                .destinoOtro(trimToNull(request.destinoOtro()))
                 .empleadoId(esExterno ? null : request.empleadoId())
                 .guardiaSalidaId(obtenerEmpleadoIdActual())
                 .salidaVehicularId(request.salidaVehicularId())
@@ -364,11 +380,14 @@ public class RegistroPorteriaService {
 
         Set<UUID> empleadoIds = new HashSet<>();
         Set<UUID> activoIds = new HashSet<>();
+        Set<UUID> ubicacionIds = new HashSet<>();
 
         for (RegistroPorteria r : registros) {
             if (r.getEmpleadoId() != null) empleadoIds.add(r.getEmpleadoId());
             if (r.getGuardiaSalidaId() != null) empleadoIds.add(r.getGuardiaSalidaId());
             if (r.getGuardiaLlegadaId() != null) empleadoIds.add(r.getGuardiaLlegadaId());
+            if (r.getOrigenUbicacionId() != null) ubicacionIds.add(r.getOrigenUbicacionId());
+            if (r.getDestinoUbicacionId() != null) ubicacionIds.add(r.getDestinoUbicacionId());
             if (r.getActivos() != null) {
                 for (RegistroPorteriaActivo a : r.getActivos()) {
                     if (a.getActivoId() != null) activoIds.add(a.getActivoId());
@@ -394,15 +413,25 @@ public class RegistroPorteriaService {
                                 (a, b) -> a
                         ));
 
+        Map<UUID, String> ubicacionesMap = ubicacionIds.isEmpty()
+                ? Collections.emptyMap()
+                : ubicacionRepository.findAllById(ubicacionIds).stream()
+                        .collect(Collectors.toMap(
+                                UbicacionEntity::getId,
+                                UbicacionEntity::getNombre,
+                                (a, b) -> a
+                        ));
+
         return registros.stream()
-                .map(r -> mapToResponse(r, empleadosMap, activosMap))
+                .map(r -> mapToResponse(r, empleadosMap, activosMap, ubicacionesMap))
                 .toList();
     }
 
     private RegistroPorteriaResponse mapToResponse(
             RegistroPorteria r,
             Map<UUID, String> empleadosMap,
-            Map<UUID, ActivoEntity> activosMap
+            Map<UUID, ActivoEntity> activosMap,
+            Map<UUID, String> ubicacionesMap
     ) {
         List<RegistroPorteriaActivoResponse> activosResp = r.getActivos() == null
                 ? List.of()
@@ -429,12 +458,25 @@ public class RegistroPorteriaService {
                         ? r.getPersonaExterna()
                         : null);
 
+        String origenNombre = r.getOrigenUbicacionNombre() != null
+                ? r.getOrigenUbicacionNombre()
+                : (r.getOrigenUbicacionId() != null ? ubicacionesMap.get(r.getOrigenUbicacionId()) : null);
+
+        String destinoNombre = r.getDestinoUbicacionNombre() != null
+                ? r.getDestinoUbicacionNombre()
+                : (r.getDestinoUbicacionId() != null ? ubicacionesMap.get(r.getDestinoUbicacionId()) : null);
+
         return new RegistroPorteriaResponse(
                 r.getId(),
                 r.getNumero(),
                 r.getEsExterno(),
                 r.getPersonaExterna(),
                 r.getPlacaExterna(),
+                r.getOrigenUbicacionId(),
+                origenNombre,
+                r.getDestinoUbicacionId(),
+                destinoNombre,
+                r.getDestinoOtro(),
                 r.getEmpleadoId(),
                 empleadoNombre,
                 r.getGuardiaSalidaId(),

@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity;
 
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
+import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.entity.UbicacionEntity;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -51,6 +52,17 @@ public class RegistroPorteriaEntity extends BaseEntity {
 
     @Column(name = "placa_externa", length = 50)
     private String placaExterna;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "origen_ubicacion_id")
+    private UbicacionEntity origen;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "destino_ubicacion_id")
+    private UbicacionEntity destino;
+
+    @Column(name = "destino_otro", length = 250)
+    private String destinoOtro;
 
     @Column(name = "guardia_salida_id")
     private UUID guardiaSalidaId;
