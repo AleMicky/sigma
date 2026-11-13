@@ -6,6 +6,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.actividad
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ActividadMantenimientoMapper;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ActividadMantenimientoRepository;
+import com.endecorani.sigma_api.shared.application.crud.ExtendedCrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
@@ -24,7 +25,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ActividadMantenimientoService {
+public class ActividadMantenimientoService implements ExtendedCrudService<
+        ActividadMantenimientoRequest,
+        ActividadMantenimientoUpdate,
+        ActividadMantenimientoResponse,
+        UUID
+        > {
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -37,6 +43,7 @@ public class ActividadMantenimientoService {
     private final ActividadMantenimientoRepository repository;
     private final ActividadMantenimientoMapper mapper;
 
+    @Override
     @Transactional(readOnly = true)
     public PageResponse<ActividadMantenimientoResponse> findAll(PageRequestDto pageRequest) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
@@ -59,6 +66,7 @@ public class ActividadMantenimientoService {
         return PageResponse.from(resultado, mapper::toResponse);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public ActividadMantenimientoResponse findById(UUID id) {
         ActividadMantenimiento actividad = obtenerPorId(id);
@@ -79,6 +87,7 @@ public class ActividadMantenimientoService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     @Transactional
     public ActividadMantenimientoResponse create(ActividadMantenimientoRequest dto) {
         if (repository.existsByCodigoIgnoreCase(dto.codigo())) {
@@ -126,6 +135,7 @@ public class ActividadMantenimientoService {
         return mapper.toResponse(actualizado);
     }
 
+    @Override
     @Transactional
     public ActividadMantenimientoResponse update(UUID id, ActividadMantenimientoUpdate dto) {
         ActividadMantenimiento actual = obtenerPorId(id);
@@ -151,6 +161,7 @@ public class ActividadMantenimientoService {
         return mapper.toResponse(actualizado);
     }
 
+    @Override
     @Transactional
     public void delete(UUID id) {
         obtenerPorId(id);

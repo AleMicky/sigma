@@ -3,7 +3,7 @@ package com.endecorani.sigma_api.shared.application.crud;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 
-public interface CrudService<REQ, RES, ID> {
+public interface CrudService<REQ, RES, ID> extends ExtendedCrudService<REQ, REQ, RES, ID> {
 
     RES create(REQ request);
 

@@ -9,4 +9,5 @@ public final class CorrelativoCodigo {
     public static final String ACTIVO = "ACTIVO";
     public static final String SOLICITUD_VEHICULAR = "SOLICITUD_VEHICULAR";
     public static final String SALIDA_VEHICULAR = "SALIDA_VEHICULAR";
+    public static final String REGISTRO_PORTERIA = "REGISTRO_PORTERIA";
 }
