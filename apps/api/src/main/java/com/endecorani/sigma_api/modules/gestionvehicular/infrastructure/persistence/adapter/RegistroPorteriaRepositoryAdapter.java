@@ -114,6 +114,8 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
 
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("numero")), pattern),
+                        cb.like(cb.lower(cb.coalesce(root.get("personaExterna"), "")), pattern),
+                        cb.like(cb.lower(cb.coalesce(root.get("placaExterna"), "")), pattern),
                         cb.like(cb.lower(cb.coalesce(root.get("observacionSalida"), "")), pattern),
                         cb.like(cb.lower(cb.coalesce(root.get("observacionLlegada"), "")), pattern),
                         root.get("empleadoId").in(subEmp),

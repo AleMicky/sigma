@@ -104,6 +104,9 @@ class RegistroPorteriaServiceTest {
 
         RegistrarSalidaPorteriaRequest request = new RegistrarSalidaPorteriaRequest(
                 empleadoId,
+                false,
+                null,
+                null,
                 Instant.now(),
                 null,
                 "Salida a campo",
@@ -132,6 +135,9 @@ class RegistroPorteriaServiceTest {
 
         RegistrarSalidaPorteriaRequest request = new RegistrarSalidaPorteriaRequest(
                 empleadoId,
+                false,
+                null,
+                null,
                 Instant.now(),
                 null,
                 null,
@@ -206,6 +212,55 @@ class RegistroPorteriaServiceTest {
         );
 
         assertThrows(BusinessException.class, () -> service.registrarLlegada(registroId, request));
+    }
+
+    @Test
+    void registrarSalida_externo_conPersonaYPlaca_debeGuardarCorrectamente() {
+        UUID guardiaUserId = UUID.randomUUID();
+        UUID guardiaPersonaId = UUID.randomUUID();
+        UUID guardiaEmpleadoId = UUID.randomUUID();
+
+        when(securityUtils.getCurrentUserId()).thenReturn(Optional.of(guardiaUserId));
+        when(usuarioRepository.findById(guardiaUserId))
+                .thenReturn(Optional.of(Usuario.builder().id(guardiaUserId).personaId(guardiaPersonaId).build()));
+        when(empleadoRepository.findFirstByPersonaId(guardiaPersonaId))
+                .thenReturn(Optional.of(Empleado.builder().id(guardiaEmpleadoId).build()));
+
+        when(correlativoService.generar(eq(CorrelativoCodigo.REGISTRO_PORTERIA), any(Integer.class)))
+                .thenReturn("PRT-2026-0002");
+
+        when(repository.save(any(RegistroPorteria.class))).thenAnswer(inv -> {
+            RegistroPorteria r = inv.getArgument(0);
+            r.setId(UUID.randomUUID());
+            r.getActivos().forEach(a -> a.setId(UUID.randomUUID()));
+            return r;
+        });
+
+        VEmpleadoEntity guardia = new VEmpleadoEntity();
+        guardia.setEmpleadoId(guardiaEmpleadoId);
+        guardia.setNombreCompleto("Carlos Guardia");
+        when(vempleadoRepository.findAllById(any())).thenReturn(List.of(guardia));
+
+        RegistrarSalidaPorteriaRequest request = new RegistrarSalidaPorteriaRequest(
+                null,
+                true,
+                "Pedro Visitante",
+                "9876-ABC",
+                Instant.now(),
+                null,
+                "Visita técnica externa",
+                null
+        );
+
+        RegistroPorteriaResponse response = service.registrarSalida(request);
+
+        assertNotNull(response.id());
+        assertTrue(response.esExterno());
+        assertEquals("Pedro Visitante", response.personaExterna());
+        assertEquals("9876-ABC", response.placaExterna());
+        assertEquals("Pedro Visitante", response.empleadoNombre());
+        assertEquals(1, response.activos().size());
+        assertTrue(response.activos().get(0).descripcionItem().contains("9876-ABC"));
     }
 }
 

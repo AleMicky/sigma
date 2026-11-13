@@ -9,6 +9,9 @@ import java.util.UUID;
 public record RegistroPorteriaResponse(
         UUID id,
         String numero,
+        Boolean esExterno,
+        String personaExterna,
+        String placaExterna,
         UUID empleadoId,
         String empleadoNombre,
         UUID guardiaSalidaId,

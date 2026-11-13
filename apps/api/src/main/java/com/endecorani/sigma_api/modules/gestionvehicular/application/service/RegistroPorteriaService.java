@@ -66,8 +66,24 @@ public class RegistroPorteriaService {
 
     @Transactional
     public RegistroPorteriaResponse registrarSalida(RegistrarSalidaPorteriaRequest request) {
-        if (!vempleadoRepository.existsById(request.empleadoId())) {
-            throw new ResourceNotFoundException("Empleado", request.empleadoId());
+        boolean esExterno = Boolean.TRUE.equals(request.esExterno());
+        String personaExterna = trimToNull(request.personaExterna());
+        String placaExterna = trimToNull(request.placaExterna());
+
+        if (esExterno) {
+            if (personaExterna == null) {
+                throw new BusinessException("El nombre de la persona externa es obligatorio.");
+            }
+            if (placaExterna == null) {
+                throw new BusinessException("La placa del vehículo externo es obligatoria.");
+            }
+        } else {
+            if (request.empleadoId() == null) {
+                throw new BusinessException("El funcionario que sale es obligatorio.");
+            }
+            if (!vempleadoRepository.existsById(request.empleadoId())) {
+                throw new ResourceNotFoundException("Empleado", request.empleadoId());
+            }
         }
 
         if (request.salidaVehicularId() != null
@@ -75,7 +91,23 @@ public class RegistroPorteriaService {
             throw new ResourceNotFoundException("Salida Vehicular", request.salidaVehicularId());
         }
 
-        List<RegistroPorteriaActivo> items = construirItemsSalida(request.activos());
+        List<RegistroPorteriaActivo> items;
+        if (esExterno) {
+            if (request.activos() != null && !request.activos().isEmpty()) {
+                items = construirItemsSalida(request.activos());
+            } else {
+                items = List.of(RegistroPorteriaActivo.builder()
+                        .descripcionItem("Vehículo externo - Placa: " + placaExterna.toUpperCase())
+                        .cantidad(1)
+                        .observacionSalida(trimToNull(request.observacionSalida()))
+                        .build());
+            }
+        } else {
+            if (request.activos() == null || request.activos().isEmpty()) {
+                throw new BusinessException("Debe registrar el vehículo o ítem que retira.");
+            }
+            items = construirItemsSalida(request.activos());
+        }
 
         Instant fechaSalida = request.fechaHoraSalida() != null
                 ? request.fechaHoraSalida()
@@ -88,7 +120,10 @@ public class RegistroPorteriaService {
 
         RegistroPorteria registro = RegistroPorteria.builder()
                 .numero(numero)
-                .empleadoId(request.empleadoId())
+                .esExterno(esExterno)
+                .personaExterna(personaExterna)
+                .placaExterna(placaExterna != null ? placaExterna.toUpperCase() : null)
+                .empleadoId(esExterno ? null : request.empleadoId())
                 .guardiaSalidaId(obtenerEmpleadoIdActual())
                 .salidaVehicularId(request.salidaVehicularId())
                 .fechaHoraSalida(fechaSalida)
@@ -388,11 +423,20 @@ public class RegistroPorteriaService {
                         })
                         .toList();
 
+        String empleadoNombre = r.getEmpleadoId() != null
+                ? empleadosMap.get(r.getEmpleadoId())
+                : (Boolean.TRUE.equals(r.getEsExterno()) && r.getPersonaExterna() != null
+                        ? r.getPersonaExterna()
+                        : null);
+
         return new RegistroPorteriaResponse(
                 r.getId(),
                 r.getNumero(),
+                r.getEsExterno(),
+                r.getPersonaExterna(),
+                r.getPlacaExterna(),
                 r.getEmpleadoId(),
-                empleadosMap.get(r.getEmpleadoId()),
+                empleadoNombre,
                 r.getGuardiaSalidaId(),
                 r.getGuardiaSalidaId() != null ? empleadosMap.get(r.getGuardiaSalidaId()) : null,
                 r.getGuardiaLlegadaId(),
