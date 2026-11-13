@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegi
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.RegistroPorteriaEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -28,5 +29,9 @@ public interface SpringRegistroPorteriaRepository extends
     @Override
     @EntityGraph(attributePaths = "activos")
     Page<RegistroPorteriaEntity> findAll(@Nullable Specification<RegistroPorteriaEntity> spec, Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = "activos")
+    List<RegistroPorteriaEntity> findAll(@Nullable Specification<RegistroPorteriaEntity> spec, Sort sort);
 }
 

@@ -29,6 +29,7 @@ import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -155,7 +156,11 @@ public class RegistroPorteriaService {
 
     @Transactional(readOnly = true)
     public List<RegistroPorteriaResponse> listarAfuera() {
-        List<RegistroPorteria> registros = repository.findAfuera();
+        AlcanceArea alcance = resolverAlcance(null);
+        if (alcance.sinAcceso()) {
+            return List.of();
+        }
+        List<RegistroPorteria> registros = repository.findAfuera(alcance.areaId());
         return toResponseList(registros);
     }
 
@@ -164,14 +169,21 @@ public class RegistroPorteriaService {
             String search,
             UUID empleadoId,
             UUID activoId,
+            UUID areaId,
             EstadoRegistroPorteria estado,
             Instant fechaDesde,
             Instant fechaHasta,
             PageRequestDto pageRequest
     ) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+
+        AlcanceArea alcance = resolverAlcance(areaId);
+        if (alcance.sinAcceso()) {
+            return PageResponse.of(List.of(), new PageImpl<>(List.of(), pageable, 0));
+        }
+
         Page<RegistroPorteria> page = repository.findAll(
-                search, empleadoId, activoId, estado, fechaDesde, fechaHasta, pageable
+                search, empleadoId, activoId, alcance.areaId(), estado, fechaDesde, fechaHasta, pageable
         );
         List<RegistroPorteriaResponse> content = toResponseList(page.getContent());
         return PageResponse.of(content, page);
@@ -181,7 +193,67 @@ public class RegistroPorteriaService {
     public RegistroPorteriaResponse obtenerPorId(UUID id) {
         RegistroPorteria registro = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Registro de Portería", id));
+
+        AlcanceArea alcance = resolverAlcance(null);
+        if (alcance.sinAcceso() || !perteneceAlArea(registro, alcance.areaId())) {
+            throw new ResourceNotFoundException("Registro de Portería", id);
+        }
         return toResponse(registro);
+    }
+
+    /**
+     * Determina el área (sección) a la que se restringe la consulta.
+     * <ul>
+     *     <li>Administrador: ve todo; opcionalmente puede filtrar por {@code areaSolicitada}.</li>
+     *     <li>Otro rol: se fuerza el área del funcionario autenticado. Si el usuario no tiene
+     *     un empleado/área asociado, no tiene acceso a ningún registro.</li>
+     * </ul>
+     */
+    private AlcanceArea resolverAlcance(UUID areaSolicitada) {
+        if (securityUtils.isAdmin()) {
+            return new AlcanceArea(areaSolicitada, false);
+        }
+        UUID areaActual = obtenerAreaIdActual();
+        return areaActual == null
+                ? new AlcanceArea(null, true)
+                : new AlcanceArea(areaActual, false);
+    }
+
+    private boolean perteneceAlArea(RegistroPorteria registro, UUID areaId) {
+        if (areaId == null) {
+            return true;
+        }
+        List<UUID> ids = new ArrayList<>(3);
+        if (registro.getEmpleadoId() != null) ids.add(registro.getEmpleadoId());
+        if (registro.getGuardiaSalidaId() != null) ids.add(registro.getGuardiaSalidaId());
+        if (registro.getGuardiaLlegadaId() != null) ids.add(registro.getGuardiaLlegadaId());
+
+        if (ids.isEmpty()) {
+            return false;
+        }
+        return empleadoRepository.findAllById(ids).stream()
+                .map(Empleado::getAreaId)
+                .anyMatch(areaId::equals);
+    }
+
+    private UUID obtenerAreaIdActual() {
+        try {
+            return securityUtils.getCurrentUserId()
+                    .flatMap(usuarioRepository::findById)
+                    .map(Usuario::getPersonaId)
+                    .flatMap(empleadoRepository::findFirstByPersonaId)
+                    .map(Empleado::getAreaId)
+                    .orElse(null);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    /**
+     * @param areaId    área a filtrar ({@code null} = sin restricción).
+     * @param sinAcceso {@code true} si el usuario no debe ver ningún registro.
+     */
+    private record AlcanceArea(UUID areaId, boolean sinAcceso) {
     }
 
     private List<RegistroPorteriaActivo> construirItemsSalida(List<RegistroPorteriaActivoSalidaRequest> requests) {

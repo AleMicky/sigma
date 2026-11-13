@@ -16,12 +16,21 @@ public interface RegistroPorteriaRepository {
 
     Optional<RegistroPorteria> findById(UUID id);
 
-    List<RegistroPorteria> findAfuera();
+    /**
+     * Lista los registros en estado AFUERA.
+     *
+     * @param areaId si no es {@code null}, restringe a funcionarios de esa área (sección).
+     */
+    List<RegistroPorteria> findAfuera(UUID areaId);
 
+    /**
+     * @param areaId si no es {@code null}, restringe a funcionarios de esa área (sección).
+     */
     Page<RegistroPorteria> findAll(
             String search,
             UUID empleadoId,
             UUID activoId,
+            UUID areaId,
             EstadoRegistroPorteria estado,
             Instant fechaDesde,
             Instant fechaHasta,
