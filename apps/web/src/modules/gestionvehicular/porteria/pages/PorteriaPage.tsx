@@ -11,10 +11,12 @@ import {
   MessageSquareText,
   Package,
   RefreshCw,
+  RotateCcw,
   Search,
   ShieldCheck,
   Timer,
   UserRound,
+  X,
   XCircle,
 } from "lucide-react"
 
@@ -507,6 +509,8 @@ export function PorteriaPage() {
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const [estadoFiltro, setEstadoFiltro] = useState<string>("ALL")
+  const [fechaDesde, setFechaDesde] = useState("")
+  const [fechaHasta, setFechaHasta] = useState("")
   const [page, setPage] = useState(0)
 
   const [salidaOpen, setSalidaOpen] = useState(false)
@@ -524,8 +528,32 @@ export function PorteriaPage() {
         estadoFiltro !== "ALL"
           ? (estadoFiltro as EstadoRegistroPorteria)
           : undefined,
+      fechaDesde: fechaDesde || undefined,
+      fechaHasta: fechaHasta || undefined,
     })
   )
+
+  const hasActiveHistorialFilters = Boolean(
+    search.trim() ||
+      (estadoFiltro && estadoFiltro !== "ALL") ||
+      fechaDesde ||
+      fechaHasta
+  )
+
+  const handleClearHistorialFilters = () => {
+    setSearch("")
+    setEstadoFiltro("ALL")
+    setFechaDesde("")
+    setFechaHasta("")
+    setPage(0)
+  }
+
+  const handleFiltrarHoy = () => {
+    const today = new Date().toISOString().split("T")[0]
+    setFechaDesde(today)
+    setFechaHasta(today)
+    setPage(0)
+  }
 
   const anularMutation = useAnularRegistroPorteriaMutation()
 
@@ -547,6 +575,7 @@ export function PorteriaPage() {
         r.numero,
         r.empleadoNombre,
         r.guardiaSalidaNombre,
+        r.observacionSalida,
         ...(r.activos ?? []).flatMap((a) => [
           a.activoCodigo,
           a.activoNombre,
@@ -683,11 +712,21 @@ export function PorteriaPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="pl-9"
-                placeholder="Filtrar por funcionario, número, guardia o activo..."
+                className="pl-9 pr-8"
+                placeholder="Filtrar por funcionario, número, guardia, activo u observación..."
                 value={afueraSearch}
                 onChange={(e) => setAfueraSearch(e.target.value)}
               />
+              {afueraSearch && (
+                <button
+                  type="button"
+                  onClick={() => setAfueraSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  title="Limpiar filtro"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
             </div>
           )}
 
@@ -712,6 +751,16 @@ export function PorteriaPage() {
               icon={<Search className="size-5.5 text-muted-foreground/80" />}
               title="Sin coincidencias"
               description={`Ningún registro coincide con "${afueraSearch}".`}
+              action={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setAfueraSearch("")}
+                >
+                  <RotateCcw className="mr-1.5 size-3.5" />
+                  Limpiar búsqueda
+                </Button>
+              }
             />
           ) : (
             <ul className="space-y-3">
@@ -731,36 +780,102 @@ export function PorteriaPage() {
 
         {/* ── Historial ── */}
         <TabsContent value="historial" className="mt-4 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="Buscar por número u observación..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
+          <div className="space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9 pr-8"
+                  placeholder="Buscar por funcionario, número, guardia, activo u observación..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value)
+                    setPage(0)
+                  }}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("")
+                      setPage(0)
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    title="Limpiar búsqueda"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
+              <Select
+                value={estadoFiltro}
+                onValueChange={(val) => {
+                  setEstadoFiltro(val ?? "ALL")
                   setPage(0)
                 }}
-              />
+              >
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todos los estados</SelectItem>
+                  <SelectItem value="AFUERA">Afuera</SelectItem>
+                  <SelectItem value="COMPLETADO">Completado</SelectItem>
+                  <SelectItem value="ANULADO">Anulado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select
-              value={estadoFiltro}
-              onValueChange={(val) => {
-                setEstadoFiltro(val ?? "ALL")
-                setPage(0)
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todos los estados</SelectItem>
-                <SelectItem value="AFUERA">Afuera</SelectItem>
-                <SelectItem value="COMPLETADO">Completado</SelectItem>
-                <SelectItem value="ANULADO">Anulado</SelectItem>
-              </SelectContent>
-            </Select>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span>Desde:</span>
+                <Input
+                  type="date"
+                  className="h-8 w-36 text-xs"
+                  value={fechaDesde}
+                  onChange={(e) => {
+                    setFechaDesde(e.target.value)
+                    setPage(0)
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span>Hasta:</span>
+                <Input
+                  type="date"
+                  className="h-8 w-36 text-xs"
+                  value={fechaHasta}
+                  onChange={(e) => {
+                    setFechaHasta(e.target.value)
+                    setPage(0)
+                  }}
+                />
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 px-2.5 text-xs"
+                onClick={handleFiltrarHoy}
+              >
+                Hoy
+              </Button>
+
+              {hasActiveHistorialFilters && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={handleClearHistorialFilters}
+                >
+                  <RotateCcw className="mr-1.5 size-3.5" />
+                  Restablecer filtros
+                </Button>
+              )}
+            </div>
           </div>
 
           {historialQuery.isLoading ? (
@@ -768,9 +883,35 @@ export function PorteriaPage() {
           ) : historialList.length === 0 ? (
             <EmptyState
               bordered
-              icon={<ShieldCheck className="size-5.5 text-muted-foreground/80" />}
-              title="Sin registros en el historial"
-              description="No se encontraron registros con los filtros actuales."
+              icon={
+                hasActiveHistorialFilters ? (
+                  <Search className="size-5.5 text-muted-foreground/80" />
+                ) : (
+                  <ShieldCheck className="size-5.5 text-muted-foreground/80" />
+                )
+              }
+              title={
+                hasActiveHistorialFilters
+                  ? "Sin coincidencias en el historial"
+                  : "Sin registros en el historial"
+              }
+              description={
+                hasActiveHistorialFilters
+                  ? "No se encontraron registros que coincidan con los filtros aplicados."
+                  : "No se encontraron registros con los filtros actuales."
+              }
+              action={
+                hasActiveHistorialFilters ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleClearHistorialFilters}
+                  >
+                    <RotateCcw className="mr-1.5 size-3.5" />
+                    Restablecer filtros
+                  </Button>
+                ) : undefined
+              }
             />
           ) : (
             <>

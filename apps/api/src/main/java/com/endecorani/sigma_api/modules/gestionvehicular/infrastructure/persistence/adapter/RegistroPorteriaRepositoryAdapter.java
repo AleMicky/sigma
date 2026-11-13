@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.adapter;
 
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.RegistroPorteriaRepository;
@@ -8,6 +9,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persiste
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.mapper.RegistroPorteriaPersistenceMapper;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.repository.SpringRegistroPorteriaRepository;
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.EmpleadoEntity;
+import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Join;
@@ -83,10 +85,41 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
 
             if (search != null && !search.isBlank()) {
                 String pattern = "%" + search.trim().toLowerCase() + "%";
+
+                Subquery<UUID> subEmp = query.subquery(UUID.class);
+                Root<VEmpleadoEntity> vemp = subEmp.from(VEmpleadoEntity.class);
+                subEmp.select(vemp.get("empleadoId"))
+                        .where(cb.or(
+                                cb.like(cb.lower(cb.coalesce(vemp.get("nombreCompleto"), "")), pattern),
+                                cb.like(cb.lower(cb.coalesce(vemp.get("codigo"), "")), pattern)
+                        ));
+
+                Subquery<UUID> subActivo = query.subquery(UUID.class);
+                Root<ActivoEntity> act = subActivo.from(ActivoEntity.class);
+                subActivo.select(act.get("id"))
+                        .where(cb.or(
+                                cb.like(cb.lower(cb.coalesce(act.get("codigo"), "")), pattern),
+                                cb.like(cb.lower(cb.coalesce(act.get("nombre"), "")), pattern)
+                        ));
+
+                Subquery<UUID> subItem = query.subquery(UUID.class);
+                Root<RegistroPorteriaActivoEntity> item = subItem.from(RegistroPorteriaActivoEntity.class);
+                subItem.select(item.get("registroPorteriaId"))
+                        .where(cb.or(
+                                cb.like(cb.lower(cb.coalesce(item.get("descripcionItem"), "")), pattern),
+                                cb.like(cb.lower(cb.coalesce(item.get("observacionSalida"), "")), pattern),
+                                cb.like(cb.lower(cb.coalesce(item.get("observacionLlegada"), "")), pattern),
+                                item.get("activoId").in(subActivo)
+                        ));
+
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("numero")), pattern),
                         cb.like(cb.lower(cb.coalesce(root.get("observacionSalida"), "")), pattern),
-                        cb.like(cb.lower(cb.coalesce(root.get("observacionLlegada"), "")), pattern)
+                        cb.like(cb.lower(cb.coalesce(root.get("observacionLlegada"), "")), pattern),
+                        root.get("empleadoId").in(subEmp),
+                        root.get("guardiaSalidaId").in(subEmp),
+                        root.get("guardiaLlegadaId").in(subEmp),
+                        root.get("id").in(subItem)
                 ));
             }
             if (empleadoId != null) {
@@ -96,9 +129,11 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
                 predicates.add(empleadoPerteneceAArea(root, query, cb, areaId));
             }
             if (activoId != null) {
-                query.distinct(true);
-                Join<RegistroPorteriaEntity, RegistroPorteriaActivoEntity> join = root.join("activos", JoinType.INNER);
-                predicates.add(cb.equal(join.get("activoId"), activoId));
+                Subquery<UUID> subAct = query.subquery(UUID.class);
+                Root<RegistroPorteriaActivoEntity> actItemRoot = subAct.from(RegistroPorteriaActivoEntity.class);
+                subAct.select(actItemRoot.get("registroPorteriaId"))
+                        .where(cb.equal(actItemRoot.get("activoId"), activoId));
+                predicates.add(root.get("id").in(subAct));
             }
             if (estado != null) {
                 predicates.add(cb.equal(root.get("estado"), estado));

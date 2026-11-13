@@ -1,3 +1,7 @@
+# Aplicación móvil
+apps/sigma-mobile/
+**/sigma-mobile/
+
 # Variables de entorno (mantener *.example)
 .env
 .env.*
