@@ -322,11 +322,26 @@ function AfueraItem({
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h3 className="truncate font-semibold">
-              {registro.empleadoNombre ?? registro.empleadoId}
+              {registro.esExterno
+                ? registro.personaExterna ?? registro.empleadoNombre ?? "Externo"
+                : registro.empleadoNombre ?? registro.empleadoId}
             </h3>
             <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
               {registro.numero}
             </span>
+            {registro.esExterno && (
+              <Badge
+                variant="outline"
+                className="border-purple-500/40 bg-purple-500/10 text-[10px] font-semibold text-purple-700 dark:text-purple-300"
+              >
+                Externo
+              </Badge>
+            )}
+            {registro.placaExterna && (
+              <span className="rounded border border-purple-500/30 bg-purple-500/5 px-1.5 py-0.5 font-mono text-[11px] font-bold text-purple-700 dark:text-purple-300">
+                Placa: {registro.placaExterna}
+              </span>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -423,11 +438,26 @@ function HistorialItem({ registro }: { registro: RegistroPorteria }) {
               registro.estado === "ANULADO" && "line-through"
             )}
           >
-            {registro.empleadoNombre ?? registro.empleadoId}
+            {registro.esExterno
+              ? registro.personaExterna ?? registro.empleadoNombre ?? "Externo"
+              : registro.empleadoNombre ?? registro.empleadoId}
           </h3>
           <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
             {registro.numero}
           </span>
+          {registro.esExterno && (
+            <Badge
+              variant="outline"
+              className="border-purple-500/40 bg-purple-500/10 text-[10px] font-semibold text-purple-700 dark:text-purple-300"
+            >
+              Externo
+            </Badge>
+          )}
+          {registro.placaExterna && (
+            <span className="rounded border border-purple-500/30 bg-purple-500/5 px-1.5 py-0.5 font-mono text-[11px] font-bold text-purple-700 dark:text-purple-300">
+              Placa: {registro.placaExterna}
+            </span>
+          )}
           <EstadoBadge estado={registro.estado} />
         </div>
 

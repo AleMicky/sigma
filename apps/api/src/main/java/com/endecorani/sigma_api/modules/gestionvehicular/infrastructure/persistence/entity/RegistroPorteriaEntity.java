@@ -39,8 +39,18 @@ public class RegistroPorteriaEntity extends BaseEntity {
     @Column(name = "numero", nullable = false, unique = true, length = 30)
     private String numero;
 
-    @Column(name = "empleado_id", nullable = false)
+    @Column(name = "empleado_id")
     private UUID empleadoId;
+
+    @Builder.Default
+    @Column(name = "es_externo", nullable = false)
+    private Boolean esExterno = false;
+
+    @Column(name = "persona_externa", length = 200)
+    private String personaExterna;
+
+    @Column(name = "placa_externa", length = 50)
+    private String placaExterna;
 
     @Column(name = "guardia_salida_id")
     private UUID guardiaSalidaId;

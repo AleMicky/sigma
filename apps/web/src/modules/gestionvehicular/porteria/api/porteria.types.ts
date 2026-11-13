@@ -17,8 +17,11 @@ export interface RegistroPorteriaActivo {
 export interface RegistroPorteria {
   id: string
   numero: string
-  empleadoId: string
+  empleadoId: string | null
   empleadoNombre: string | null
+  esExterno?: boolean
+  personaExterna?: string | null
+  placaExterna?: string | null
   guardiaSalidaId: string | null
   guardiaSalidaNombre: string | null
   guardiaLlegadaId: string | null
@@ -42,7 +45,10 @@ export interface RegistroPorteriaActivoSalidaRequest {
 }
 
 export interface RegistrarSalidaPorteriaRequest {
-  empleadoId: string
+  empleadoId?: string | null
+  esExterno?: boolean
+  personaExterna?: string | null
+  placaExterna?: string | null
   fechaHoraSalida?: string
   salidaVehicularId?: string | null
   observacionSalida?: string | null
