@@ -607,7 +607,7 @@ export function PorteriaPage() {
               Control de Portería
             </h1>
             <p className="text-sm text-muted-foreground">
-              Registro rápido de salida y llegada de empleados con activos.
+              Registro rápido de salida y llegada de funcionarios con activos.
             </p>
           </div>
         </div>
@@ -684,7 +684,7 @@ export function PorteriaPage() {
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-9"
-                placeholder="Filtrar por empleado, número, guardia o activo..."
+                placeholder="Filtrar por funcionario, número, guardia o activo..."
                 value={afueraSearch}
                 onChange={(e) => setAfueraSearch(e.target.value)}
               />
@@ -698,7 +698,7 @@ export function PorteriaPage() {
               bordered
               icon={<CheckCircle2 className="size-5.5 text-emerald-500" />}
               title="No hay salidas pendientes de retorno"
-              description="Todos los empleados y activos han retornado o aún no se registraron salidas."
+              description="Todos los funcionarios y activos han retornado o aún no se registraron salidas."
               action={
                 <Button size="sm" onClick={() => setSalidaOpen(true)}>
                   <LogOut className="mr-1.5 size-4" />
