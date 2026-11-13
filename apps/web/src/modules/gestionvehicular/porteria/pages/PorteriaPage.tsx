@@ -109,9 +109,11 @@ export function PorteriaPage() {
 
   const anularMutation = useAnularRegistroPorteriaMutation()
 
-  const afueraList = afueraQuery.data ?? []
+  const afueraList = Array.isArray(afueraQuery.data) ? afueraQuery.data : []
   const historialPage = historialQuery.data
-  const historialList = historialPage?.content ?? []
+  const historialList = Array.isArray(historialPage?.content)
+    ? historialPage.content
+    : []
 
   const handleAnular = (registro: RegistroPorteria) => {
     if (!window.confirm(`¿Anular el registro ${registro.numero}?`)) return
@@ -120,7 +122,7 @@ export function PorteriaPage() {
 
   const renderActivos = (registro: RegistroPorteria) => (
     <div className="flex flex-wrap gap-1.5">
-      {registro.activos.map((item) => {
+      {(registro.activos ?? []).map((item) => {
         const label = item.activoNombre
           ? `${item.activoCodigo ?? ""} ${item.activoNombre}`.trim()
           : item.descripcionItem || "Ítem"
@@ -141,7 +143,7 @@ export function PorteriaPage() {
   )
 
   return (
-    <PageShell className="space-y-6">
+    <PageShell layout="scroll" className="space-y-6 pb-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600">
