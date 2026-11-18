@@ -2,21 +2,22 @@ import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
+  BookOpen,
   CheckCircle2,
   Clock,
+  Loader2,
   Package,
+  Printer,
   RefreshCw,
-  ShieldCheck,
   Timer,
   Users,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageShell } from "@/shared/components/page-shell"
-import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
-import { Skeleton } from "@/shared/components/ui/skeleton"
+import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 
 import { porteriaQueries } from "../api/porteria.queries"
 import {
@@ -28,26 +29,8 @@ import type {
   EstadoRegistroPorteria,
   ReporteBitacoraPorteriaFiltros,
 } from "../api/porteria.types"
-import {
-  ReporteBitacoraPorteriaFiltrosBar,
-  type VehiculoPorteriaMetaInfo,
-} from "../components/ReporteBitacoraPorteriaFiltrosBar"
+import { ReporteBitacoraPorteriaFiltrosBar } from "../components/ReporteBitacoraPorteriaFiltrosBar"
 import { ReporteBitacoraPorteriaTable } from "../components/ReporteBitacoraPorteriaTable"
-
-const MESES = [
-  "ENERO",
-  "FEBRERO",
-  "MARZO",
-  "ABRIL",
-  "MAYO",
-  "JUNIO",
-  "JULIO",
-  "AGOSTO",
-  "SEPTIEMBRE",
-  "OCTUBRE",
-  "NOVIEMBRE",
-  "DICIEMBRE",
-]
 
 function getPrimerDiaMes(): string {
   const now = new Date()
@@ -64,103 +47,50 @@ function getFechaActual(): string {
   return `${year}-${month}-${day}`
 }
 
-function formatPeriodoMesAnio(
-  fechaDesdeStr: string,
-  fechaHastaStr: string
-): { mes: string; anio: number } {
-  try {
-    const dDesde = new Date(`${fechaDesdeStr}T00:00:00`)
-    const dHasta = new Date(`${fechaHastaStr}T00:00:00`)
-    const anio = dDesde.getFullYear() || new Date().getFullYear()
-
-    if (dDesde.getMonth() === dHasta.getMonth()) {
-      return { mes: MESES[dDesde.getMonth()] || "ACTUAL", anio }
-    }
-    return {
-      mes: `${MESES[dDesde.getMonth()] || ""} - ${MESES[dHasta.getMonth()] || ""}`,
-      anio,
-    }
-  } catch {
-    return { mes: "ACTUAL", anio: new Date().getFullYear() }
-  }
-}
-
 export function ReporteBitacoraPorteriaPage() {
-  // Filtros en barra
+  // Filtros interactivos en tiempo real
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const debouncedSearch = useDebouncedValue(searchQuery, 300)
+  const [empleadoId, setEmpleadoId] = useState<string>("")
   const [activoId, setActivoId] = useState<string>("")
-  const [placaSeleccionada, setPlacaSeleccionada] = useState<string | null>(null)
-  const [vehiculoMeta, setVehiculoMeta] = useState<VehiculoPorteriaMetaInfo | null>(
-    null
-  )
   const [fechaDesde, setFechaDesde] = useState<string>(getPrimerDiaMes())
   const [fechaHasta, setFechaHasta] = useState<string>(getFechaActual())
   const [estado, setEstado] = useState<string>("TODOS")
   const [tipoPase, setTipoPase] = useState<string>("TODOS")
-  const [searchQuery, setSearchQuery] = useState<string>("")
 
-  // Filtros aplicados a la consulta
-  const [filtrosActivos, setFiltrosActivos] = useState<{
-    activoId: string
-    fechaDesde: string
-    fechaHasta: string
-    estado: string
-    tipoPase: string
-  } | null>(() => ({
-    activoId: "",
-    fechaDesde: getPrimerDiaMes(),
-    fechaHasta: getFechaActual(),
-    estado: "TODOS",
-    tipoPase: "TODOS",
-  }))
-
-  const apiParams = useMemo<ReporteBitacoraPorteriaFiltros | undefined>(() => {
-    if (!filtrosActivos) return undefined
+  const apiParams = useMemo<ReporteBitacoraPorteriaFiltros>(() => {
     return {
-      activoId: filtrosActivos.activoId || undefined,
+      empleadoId: empleadoId || undefined,
+      activoId: activoId || undefined,
       estado:
-        filtrosActivos.estado !== "TODOS"
-          ? (filtrosActivos.estado as EstadoRegistroPorteria)
-          : undefined,
+        estado !== "TODOS" ? (estado as EstadoRegistroPorteria) : undefined,
       esExterno:
-        filtrosActivos.tipoPase === "EXTERNO"
+        tipoPase === "EXTERNO"
           ? true
-          : filtrosActivos.tipoPase === "INTERNO"
+          : tipoPase === "INTERNO"
             ? false
             : undefined,
-      fechaDesde: filtrosActivos.fechaDesde || undefined,
-      fechaHasta: filtrosActivos.fechaHasta || undefined,
+      fechaDesde: fechaDesde || undefined,
+      fechaHasta: fechaHasta || undefined,
     }
-  }, [filtrosActivos])
+  }, [empleadoId, activoId, estado, tipoPase, fechaDesde, fechaHasta])
 
-  const reporteQuery = useQuery({
-    ...porteriaQueries.reporte(apiParams),
-    enabled: Boolean(filtrosActivos?.fechaDesde && filtrosActivos?.fechaHasta),
-  })
+  const reporteQuery = useQuery(porteriaQueries.reporte(apiParams))
 
-  const handleActivoChange = (
-    id: string,
-    placa?: string | null,
-    meta?: VehiculoPorteriaMetaInfo | null
-  ) => {
-    setActivoId(id)
-    setPlacaSeleccionada(placa ?? null)
-    setVehiculoMeta(meta ?? null)
-
-    if (fechaDesde && fechaHasta && fechaDesde <= fechaHasta) {
-      setFiltrosActivos((prev) => ({
-        activoId: id,
-        fechaDesde: prev?.fechaDesde ?? fechaDesde,
-        fechaHasta: prev?.fechaHasta ?? fechaHasta,
-        estado: prev?.estado ?? estado,
-        tipoPase: prev?.tipoPase ?? tipoPase,
-      }))
-    }
+  const handleLimpiarFiltros = () => {
+    setSearchQuery("")
+    setEmpleadoId("")
+    setActivoId("")
+    setEstado("TODOS")
+    setTipoPase("TODOS")
+    setFechaDesde(getPrimerDiaMes())
+    setFechaHasta(getFechaActual())
   }
 
-  // Filtrado rápido en memoria y cálculo de métricas
+  // Filtrado instantáneo por texto y métricas dinámicas
   const { filas, metricas } = useMemo(() => {
     const rawItems: BitacoraPorteriaItem[] = reporteQuery.data?.items ?? []
-    const q = searchQuery.trim().toLowerCase()
+    const q = debouncedSearch.trim().toLowerCase()
 
     const filtered = q
       ? rawItems.filter((item) =>
@@ -236,86 +166,50 @@ export function ReporteBitacoraPorteriaPage() {
         promedioMin,
       },
     }
-  }, [reporteQuery.data?.items, searchQuery])
-
-  const handleConsultar = () => {
-    if (!fechaDesde || !fechaHasta) {
-      toast.error("Debe especificar las fechas de inicio y fin.")
-      return
-    }
-    if (fechaDesde > fechaHasta) {
-      toast.error("La fecha de inicio no puede ser posterior a la fecha de fin.")
-      return
-    }
-
-    setFiltrosActivos({
-      activoId,
-      fechaDesde,
-      fechaHasta,
-      estado,
-      tipoPase,
-    })
-    void reporteQuery.refetch()
-    toast.success("Bitácora de portería consultada.")
-  }
+  }, [reporteQuery.data?.items, debouncedSearch])
 
   const [isPdfLoading, setIsPdfLoading] = useState(false)
 
-  const handleDescargarPdf = async () => {
-    if (!filtrosActivos?.fechaDesde || !filtrosActivos?.fechaHasta) {
-      toast.error("Seleccione un rango de fechas para generar el reporte.")
-      return
-    }
-
+  // Imprimir Reporte Oficial en PDF (abre en nueva pestaña listo para imprimir)
+  const handleImprimirReporte = async () => {
     try {
       setIsPdfLoading(true)
-      toast.info("Generando reporte oficial en PDF desde el servidor...")
-      await descargarReporteBitacoraPorteriaPdf({
-        ...apiParams,
-        search: searchQuery.trim() || undefined,
-      })
-      toast.success("Reporte oficial en PDF descargado exitosamente.")
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Error al generar el PDF en el servidor"
-      toast.error(`No se pudo generar el PDF: ${message}`)
-    } finally {
-      setIsPdfLoading(false)
-    }
-  }
-
-  const handleAbrirPdf = async () => {
-    if (!filtrosActivos?.fechaDesde || !filtrosActivos?.fechaHasta) {
-      toast.error("Seleccione un rango de fechas.")
-      return
-    }
-
-    try {
-      setIsPdfLoading(true)
-      toast.info("Abriendo reporte en PDF desde el servidor...")
+      toast.info("Generando reporte de bitácora para imprimir...")
       await abrirReporteBitacoraPorteriaPdf({
         ...apiParams,
         search: searchQuery.trim() || undefined,
       })
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Error al abrir el PDF"
-      toast.error(`No se pudo abrir el PDF: ${message}`)
+        err instanceof Error ? err.message : "Error al generar el reporte PDF"
+      toast.error(`No se pudo abrir el reporte: ${message}`)
     } finally {
       setIsPdfLoading(false)
     }
   }
 
-  const handleImprimir = () => {
-    if (filas.length === 0) {
-      toast.info("No hay registros en el reporte para imprimir.")
-      return
+  // Descargar PDF Oficial
+  const handleDescargarPdf = async () => {
+    try {
+      setIsPdfLoading(true)
+      toast.info("Descargando reporte PDF...")
+      await descargarReporteBitacoraPorteriaPdf({
+        ...apiParams,
+        search: searchQuery.trim() || undefined,
+      })
+      toast.success("Reporte PDF descargado correctamente.")
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Error al descargar el PDF en el servidor"
+      toast.error(`No se pudo descargar el PDF: ${message}`)
+    } finally {
+      setIsPdfLoading(false)
     }
-    window.print()
   }
 
+  // Exportar a Excel (CSV UTF-8)
   const handleExportarCsv = () => {
     if (filas.length === 0) {
       toast.info("No hay datos para exportar.")
@@ -327,7 +221,7 @@ export function ReporteBitacoraPorteriaPage() {
       "DIA_SEMANA",
       "FECHA",
       "NRO_FOLIO",
-      "TIPO_REGISTRO",
+      "TIPO_PASE",
       "HORA_SALIDA",
       "HORA_LLEGADA",
       "DURACION",
@@ -385,34 +279,13 @@ export function ReporteBitacoraPorteriaPage() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
-    link.download = `bitacora-porteria-${fechaDesde}_${fechaHasta}.csv`
+    link.download = `bitacora-porteria-${fechaDesde || "inicio"}_${fechaHasta || "fin"}.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
     toast.success("Archivo Excel (CSV) descargado.")
   }
-
-  const activoTexto = useMemo(() => {
-    if (!filtrosActivos?.activoId) {
-      return "TODOS LOS VEHÍCULOS Y ACTIVOS"
-    }
-    if (placaSeleccionada) {
-      return `PLACA: ${placaSeleccionada} ${vehiculoMeta?.modelo ? `(${vehiculoMeta.modelo})` : ""}`
-    }
-    return vehiculoMeta?.nombre || "ACTIVO SELECCIONADO"
-  }, [filtrosActivos?.activoId, placaSeleccionada, vehiculoMeta])
-
-  const tipoTexto = useMemo(() => {
-    if (filtrosActivos?.tipoPase === "INTERNO") return "SOLO PERSONAL INTERNO"
-    if (filtrosActivos?.tipoPase === "EXTERNO") return "SOLO VISITAS / EXTERNOS"
-    return "INTERNOS Y EXTERNOS"
-  }, [filtrosActivos?.tipoPase])
-
-  const { mes, anio } = useMemo(
-    () => formatPeriodoMesAnio(fechaDesde, fechaHasta),
-    [fechaDesde, fechaHasta]
-  )
 
   const isLoading = reporteQuery.isLoading || reporteQuery.isFetching
 
@@ -421,131 +294,142 @@ export function ReporteBitacoraPorteriaPage() {
       size="full"
       padding="compact"
       layout="scroll"
-      className="space-y-3 pb-10"
+      className="space-y-4 pb-8"
     >
-      {/* ========================================================= */}
-      {/* 1. ENCABEZADO DE LA PÁGINA (Oculto al imprimir)           */}
-      {/* ========================================================= */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2.5 print:hidden">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shadow-2xs">
-            <ShieldCheck className="h-4.5 w-4.5" />
+      {/* 1. Encabezado de la Interfaz con Botón de Imprimir Reporte */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shadow-xs">
+            <BookOpen className="h-5 w-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg font-bold tracking-tight text-foreground">
-                Reporte de Bitácora de Control de Portería
-              </h1>
-              <Badge
-                variant="outline"
-                className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 font-semibold py-0"
-              >
-                Formulario Oficial GV-PRT-01
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              ENDE CORANI • Registro cronológico completo de salidas, llegadas, personal interno/externo, rutas, guardias y retorno de activos
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              Bitácora de Portería
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Consulta interactiva y filtrado de salidas, llegadas, personal interno, visitas externas, rutas y activos
             </p>
           </div>
         </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void reporteQuery.refetch()}
+            disabled={isLoading}
+            className="h-8 text-xs gap-1.5 cursor-pointer"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`}
+            />
+            Actualizar
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleImprimirReporte}
+            disabled={isPdfLoading}
+            className="h-8 text-xs gap-1.5 font-medium cursor-pointer"
+          >
+            {isPdfLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Printer className="h-3.5 w-3.5" />
+            )}
+            Imprimir Reporte
+          </Button>
+        </div>
       </div>
 
-      {/* ========================================================= */}
-      {/* 2. BARRA DE FILTROS (Oculto al imprimir)                  */}
-      {/* ========================================================= */}
-      <ReporteBitacoraPorteriaFiltrosBar
-        activoId={activoId}
-        onActivoChange={handleActivoChange}
-        fechaDesde={fechaDesde}
-        onFechaDesdeChange={setFechaDesde}
-        fechaHasta={fechaHasta}
-        onFechaHastaChange={setFechaHasta}
-        estado={estado}
-        onEstadoChange={setEstado}
-        tipoPase={tipoPase}
-        onTipoPaseChange={setTipoPase}
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
-        onConsultar={handleConsultar}
-        onDescargarPdf={handleDescargarPdf}
-        onAbrirPdf={handleAbrirPdf}
-        onImprimir={handleImprimir}
-        onExportarCsv={handleExportarCsv}
-        isLoading={isLoading}
-        isPdfLoading={isPdfLoading}
-        hasData={filas.length > 0}
-        totalItems={metricas.total}
-        placaSeleccionada={placaSeleccionada}
-      />
-
-      {/* ========================================================= */}
-      {/* 3. RESUMEN DE MÉTRICAS RÁPIDAS (Oculto al imprimir)       */}
-      {/* ========================================================= */}
-      {filtrosActivos && !isLoading && filas.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 print:hidden">
-          {/* Total Registros */}
-          <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
-            <div className="p-1.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0">
-              <ShieldCheck className="h-4 w-4" />
+      {/* 2. Tarjetas de Métricas Resumen */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <Card className="border-border/60 shadow-2xs">
+          <CardContent className="p-3.5 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0">
+              <BookOpen className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <span className="text-[9.5px] uppercase font-bold text-muted-foreground block tracking-wider leading-none">
-                Total Movimientos
+              <span className="text-[10px] uppercase font-bold text-muted-foreground block tracking-wider">
+                Total Registros
               </span>
-              <p className="text-base font-bold text-foreground leading-tight mt-0.5">
+              <p className="text-lg font-bold text-foreground leading-tight">
                 {metricas.total}
               </p>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Internos vs Externos */}
-          <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
-            <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
+        <Card className="border-border/60 shadow-2xs">
+          <CardContent className="p-3.5 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
               <Users className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <span className="text-[9.5px] uppercase font-bold text-muted-foreground block tracking-wider leading-none">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground block tracking-wider">
                 Internos / Externos
               </span>
-              <p className="text-base font-bold text-foreground leading-tight mt-0.5">
+              <p className="text-lg font-bold text-foreground leading-tight">
                 {metricas.internos}{" "}
-                <span className="text-xs font-normal text-muted-foreground">/</span>{" "}
+                <span className="text-xs font-normal text-muted-foreground">
+                  /
+                </span>{" "}
                 <span className="text-purple-600 dark:text-purple-400">
                   {metricas.externos}
                 </span>
               </p>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Completados */}
-          <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
-            <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+        <Card className="border-border/60 shadow-2xs">
+          <CardContent className="p-3.5 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+              <Clock className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground block tracking-wider">
+                Afuera Ahora
+              </span>
+              <p className="text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight">
+                {metricas.afuera}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60 shadow-2xs">
+          <CardContent className="p-3.5 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <span className="text-[9.5px] uppercase font-bold text-muted-foreground block tracking-wider leading-none">
-                Completados / Afuera
+              <span className="text-[10px] uppercase font-bold text-muted-foreground block tracking-wider">
+                Completados
               </span>
-              <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 leading-tight mt-0.5">
-                {metricas.completados}{" "}
-                <span className="text-xs font-normal text-muted-foreground">/</span>{" "}
-                <span className="text-amber-600 dark:text-amber-400">
-                  {metricas.afuera}
-                </span>
+              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
+                {metricas.completados}
               </p>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Activos Movilizados */}
-          <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
-            <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
-              <Package className="h-4 w-4" />
+        <Card className="border-border/60 shadow-2xs col-span-2 sm:col-span-1">
+          <CardContent className="p-3.5 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
+              {metricas.promedioMin > 0 ? (
+                <Timer className="h-4 w-4" />
+              ) : (
+                <Package className="h-4 w-4" />
+              )}
             </div>
             <div className="min-w-0">
-              <span className="text-[9.5px] uppercase font-bold text-muted-foreground block tracking-wider leading-none">
-                Activos / Ítems
+              <span className="text-[10px] uppercase font-bold text-muted-foreground block tracking-wider">
+                Activos Movilizados
               </span>
-              <p className="text-base font-bold text-foreground leading-tight mt-0.5">
+              <p className="text-lg font-bold text-foreground leading-tight">
                 {metricas.totalActivos}
                 {metricas.activosNoRetornados > 0 && (
                   <span className="ml-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
@@ -554,35 +438,43 @@ export function ReporteBitacoraPorteriaPage() {
                 )}
               </p>
             </div>
-          </div>
+          </CardContent>
+        </Card>
+      </div>
 
-          {/* Tiempo Promedio */}
-          <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
-            <div className="p-1.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
-              <Timer className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[9.5px] uppercase font-bold text-muted-foreground block tracking-wider leading-none">
-                Tiempo Promedio
-              </span>
-              <p className="text-base font-bold text-foreground leading-tight mt-0.5">
-                {metricas.promedioMin > 0 ? `${metricas.promedioMin} min` : "—"}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 3. Barra Interactiva de Filtros */}
+      <ReporteBitacoraPorteriaFiltrosBar
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        empleadoId={empleadoId}
+        onEmpleadoChange={setEmpleadoId}
+        activoId={activoId}
+        onActivoChange={(id) => setActivoId(id)}
+        fechaDesde={fechaDesde}
+        onFechaDesdeChange={setFechaDesde}
+        fechaHasta={fechaHasta}
+        onFechaHastaChange={setFechaHasta}
+        estado={estado}
+        onEstadoChange={setEstado}
+        tipoPase={tipoPase}
+        onTipoPaseChange={setTipoPase}
+        onLimpiarFiltros={handleLimpiarFiltros}
+        onImprimirReporte={handleImprimirReporte}
+        onDescargarPdf={handleDescargarPdf}
+        onExportarCsv={handleExportarCsv}
+        isLoading={isLoading}
+        isPdfLoading={isPdfLoading}
+        hasData={filas.length > 0}
+      />
 
-      {/* ========================================================= */}
-      {/* 4. ESTADO DE ERROR                                        */}
-      {/* ========================================================= */}
+      {/* 4. Estado de Error */}
       {reporteQuery.error && (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive print:hidden flex items-center justify-between">
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <div>
               <p className="font-semibold text-sm">
-                Error al consultar la bitácora de portería
+                Error al cargar la bitácora de portería
               </p>
               <p className="text-xs text-destructive/90">
                 {reporteQuery.error instanceof Error
@@ -603,95 +495,8 @@ export function ReporteBitacoraPorteriaPage() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* 5. ESTADO DE CARGA                                        */}
-      {/* ========================================================= */}
-      {isLoading && (
-        <div className="space-y-3 print:hidden">
-          <Skeleton className="h-24 w-full rounded-xl" />
-          <Skeleton className="h-72 w-full rounded-xl" />
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* 6. ESTADO INICIAL (Sin filtros aplicados)                 */}
-      {/* ========================================================= */}
-      {!filtrosActivos && !isLoading && (
-        <Card className="border-dashed border-2 border-border/80 bg-muted/10 print:hidden">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
-            <div className="p-3.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400">
-              <Clock className="h-8 w-8" />
-            </div>
-            <div className="max-w-md space-y-1">
-              <h3 className="font-bold text-sm text-foreground">
-                Seleccione Rango de Fechas y Filtros
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Utilice la barra superior para elegir el período a consultar y opcionalmente filtrar por vehículo, estado o tipo de pase. A continuación presione{" "}
-                <strong>Consultar</strong>.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ========================================================= */}
-      {/* 7. PLANILLA OFICIAL DE BITÁCORA (Imprimible y visible)    */}
-      {/* ========================================================= */}
-      {filtrosActivos && !isLoading && (
-        <div id="bitacora-porteria-imprimible" className="space-y-4">
-          <ReporteBitacoraPorteriaTable
-            filas={filas}
-            activoTexto={activoTexto}
-            tipoTexto={tipoTexto}
-            estadoTexto={filtrosActivos.estado}
-            ubicacion="CORANI"
-            anio={anio}
-            mes={mes}
-            periodoTexto={`${filtrosActivos.fechaDesde} al ${filtrosActivos.fechaHasta}`}
-          />
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* ESTILOS DE IMPRESIÓN OFICIAL LANDSCAPE                    */}
-      {/* ========================================================= */}
-      <style>{`
-        @media print {
-          @page {
-            size: landscape;
-            margin: 6mm 8mm;
-          }
-          body {
-            background: white !important;
-            color: black !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          aside,
-          nav,
-          header,
-          .print\\:hidden {
-            display: none !important;
-          }
-          .bitacora-reporte-hoja {
-            border: 1px solid #1e293b !important;
-            box-shadow: none !important;
-            width: 100% !important;
-            page-break-after: avoid;
-          }
-          table {
-            border-collapse: collapse !important;
-            width: 100% !important;
-          }
-          th, td {
-            border-color: #334155 !important;
-          }
-          tr {
-            page-break-inside: avoid !important;
-          }
-        }
-      `}</style>
+      {/* 5. Tabla Interactiva de Bitácora con Paginación y Modal de Detalle */}
+      <ReporteBitacoraPorteriaTable filas={filas} isLoading={isLoading} />
     </PageShell>
   )
 }

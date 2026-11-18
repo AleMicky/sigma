@@ -2,24 +2,17 @@ import {
   Building2,
   Calendar,
   Car,
-  CheckCircle2,
-  ExternalLink,
   FileDown,
   FileSpreadsheet,
   Filter,
   Loader2,
   Printer,
-  RefreshCw,
   Search,
-  Sparkles,
+  UserRound,
   X,
 } from "lucide-react"
 
-import {
-  ReporteVehiculoCombobox,
-  type ReporteVehiculoItemData,
-} from "../../salida-vehicular/components/ReporteVehiculoCombobox"
-import { Badge } from "@/shared/components/ui/badge"
+import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
@@ -32,6 +25,11 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select"
 
+import {
+  ReporteVehiculoCombobox,
+  type ReporteVehiculoItemData,
+} from "../../salida-vehicular/components/ReporteVehiculoCombobox"
+
 export interface VehiculoPorteriaMetaInfo {
   nombre?: string
   placa?: string | null
@@ -41,6 +39,10 @@ export interface VehiculoPorteriaMetaInfo {
 }
 
 export interface ReporteBitacoraPorteriaFiltrosBarProps {
+  searchQuery: string
+  onSearchQueryChange: (q: string) => void
+  empleadoId: string
+  onEmpleadoChange: (id: string) => void
   activoId: string
   onActivoChange: (
     id: string,
@@ -55,34 +57,33 @@ export interface ReporteBitacoraPorteriaFiltrosBarProps {
   onEstadoChange: (estado: string) => void
   tipoPase: string
   onTipoPaseChange: (tipo: string) => void
-  searchQuery: string
-  onSearchQueryChange: (q: string) => void
-  onConsultar: () => void
+  onLimpiarFiltros: () => void
+  onImprimirReporte: () => void
   onDescargarPdf: () => void
-  onAbrirPdf?: () => void
-  onImprimir: () => void
   onExportarCsv: () => void
   isLoading?: boolean
   isPdfLoading?: boolean
   hasData?: boolean
-  totalItems?: number
-  placaSeleccionada?: string | null
 }
 
 export const ESTADOS_PORTERIA = [
-  { value: "TODOS", label: "Todos los Estados" },
-  { value: "AFUERA", label: "Afuera (En curso)" },
-  { value: "COMPLETADO", label: "Completado (Retornó)" },
-  { value: "ANULADO", label: "Anulado" },
+  { value: "TODOS", label: "Todos los estados" },
+  { value: "AFUERA", label: "● Afuera (En curso)" },
+  { value: "COMPLETADO", label: "● Completado (Retornó)" },
+  { value: "ANULADO", label: "● Anulado" },
 ]
 
 export const TIPOS_PASE_PORTERIA = [
-  { value: "TODOS", label: "Internos y Externos" },
-  { value: "INTERNO", label: "Solo Personal Interno" },
-  { value: "EXTERNO", label: "Solo Visitas / Externos" },
+  { value: "TODOS", label: "Todos (Internos y Externos)" },
+  { value: "INTERNO", label: "Personal Interno" },
+  { value: "EXTERNO", label: "Visitas / Externos" },
 ]
 
 export function ReporteBitacoraPorteriaFiltrosBar({
+  searchQuery,
+  onSearchQueryChange,
+  empleadoId,
+  onEmpleadoChange,
   activoId,
   onActivoChange,
   fechaDesde,
@@ -93,18 +94,12 @@ export function ReporteBitacoraPorteriaFiltrosBar({
   onEstadoChange,
   tipoPase,
   onTipoPaseChange,
-  searchQuery,
-  onSearchQueryChange,
-  onConsultar,
+  onLimpiarFiltros,
+  onImprimirReporte,
   onDescargarPdf,
-  onAbrirPdf,
-  onImprimir,
   onExportarCsv,
-  isLoading = false,
   isPdfLoading = false,
   hasData = false,
-  totalItems,
-  placaSeleccionada,
 }: Readonly<ReporteBitacoraPorteriaFiltrosBarProps>) {
   const setHoy = () => {
     const today = new Date().toISOString().split("T")[0]
@@ -162,18 +157,160 @@ export function ReporteBitacoraPorteriaFiltrosBar({
     onActivoChange(id, item?.placa ?? null, meta)
   }
 
+  const hasActiveFilters = Boolean(
+    searchQuery.trim() ||
+      empleadoId ||
+      activoId ||
+      estado !== "TODOS" ||
+      tipoPase !== "TODOS" ||
+      fechaDesde ||
+      fechaHasta
+  )
+
   return (
-    <Card className="border-border/60 shadow-2xs print:hidden">
-      <CardContent className="p-3 sm:p-4 space-y-3">
-        {/* FILA 1: Vehículo + Fechas + Tipo Pase + Estado + Acciones */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 items-end">
-          {/* 1. Selector de Vehículo / Activo */}
-          <div className="lg:col-span-3 space-y-1">
-            <div className="flex items-center justify-between">
-              <Label
-                htmlFor="filtro-porteria-activo"
-                className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5"
+    <Card className="border-border/60 shadow-xs print:hidden">
+      <CardContent className="p-4 sm:p-5 space-y-4">
+        {/* Cabecera de la barra de filtros + Botones de Impresión y Exportación */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+              <Filter className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">
+                Filtros de Búsqueda de Bitácora
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Filtre en tiempo real por funcionario, vehículo/activo, tipo de pase, estado y rango de fechas
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {hasActiveFilters && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onLimpiarFiltros}
+                className="h-8 text-xs text-muted-foreground hover:text-foreground gap-1"
               >
+                <X className="h-3.5 w-3.5" />
+                Limpiar filtros
+              </Button>
+            )}
+
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              onClick={onImprimirReporte}
+              disabled={isPdfLoading}
+              className="h-8 text-xs gap-1.5 font-medium cursor-pointer shadow-2xs"
+              title="Generar e imprimir el reporte oficial de bitácora en PDF"
+            >
+              {isPdfLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Printer className="h-3.5 w-3.5" />
+              )}
+              Imprimir Reporte
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onDescargarPdf}
+              disabled={isPdfLoading}
+              className="h-8 text-xs gap-1.5 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/10 cursor-pointer"
+              title="Descargar archivo PDF del reporte"
+            >
+              {isPdfLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <FileDown className="h-3.5 w-3.5" />
+              )}
+              Descargar PDF
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onExportarCsv}
+              disabled={!hasData}
+              className="h-8 text-xs gap-1.5 border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+              title="Exportar tabla filtrada a Excel (CSV)"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+              Exportar Excel
+            </Button>
+          </div>
+        </div>
+
+        {/* Fila 1 de Filtros: Búsqueda rápida, Funcionario, Vehículo/Activo */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Búsqueda general */}
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="search-bitacora-porteria"
+              className="text-xs font-medium text-foreground flex items-center gap-1.5"
+            >
+              <Search className="h-3.5 w-3.5 text-muted-foreground" />
+              Búsqueda rápida
+            </Label>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                id="search-bitacora-porteria"
+                type="text"
+                placeholder="Nº folio, persona, placa, activo, destino, guardia..."
+                value={searchQuery}
+                onChange={(e) => onSearchQueryChange(e.target.value)}
+                className="pl-8 pr-7 h-9 text-xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onSearchQueryChange("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Funcionario */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                <UserRound className="h-3.5 w-3.5 text-primary" />
+                Funcionario
+              </Label>
+              {empleadoId && (
+                <button
+                  type="button"
+                  onClick={() => onEmpleadoChange("")}
+                  className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5"
+                >
+                  <X className="h-2.5 w-2.5" />
+                  Todos
+                </button>
+              )}
+            </div>
+            <EmpleadoCombobox
+              value={empleadoId}
+              onValueChange={(val) => onEmpleadoChange(val || "")}
+              placeholder="Todos los funcionarios..."
+            />
+          </div>
+
+          {/* Vehículo / Activo */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium text-foreground flex items-center gap-1.5">
                 <Car className="h-3.5 w-3.5 text-primary" />
                 Vehículo / Activo
               </Label>
@@ -181,8 +318,7 @@ export function ReporteBitacoraPorteriaFiltrosBar({
                 <button
                   type="button"
                   onClick={() => onActivoChange("", null, null)}
-                  className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5 cursor-pointer"
-                  title="Ver todos los vehículos y activos"
+                  className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5"
                 >
                   <X className="h-2.5 w-2.5" />
                   Todos
@@ -190,65 +326,28 @@ export function ReporteBitacoraPorteriaFiltrosBar({
               )}
             </div>
             <ReporteVehiculoCombobox
-              id="filtro-porteria-activo"
               value={activoId}
               onValueChange={handleVehiculoSelect}
               placeholder="Todos los vehículos / activos..."
-              className="h-8.5 text-xs w-full"
+              className="h-9 text-xs w-full"
             />
           </div>
+        </div>
 
-          {/* 2. Fecha Desde */}
-          <div className="lg:col-span-2 space-y-1">
-            <Label
-              htmlFor="filtro-porteria-fecha-desde"
-              className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5"
-            >
-              <Calendar className="h-3.5 w-3.5 text-primary" />
-              Salida Desde
-            </Label>
-            <Input
-              id="filtro-porteria-fecha-desde"
-              type="date"
-              value={fechaDesde}
-              onChange={(e) => onFechaDesdeChange(e.target.value)}
-              className="h-8.5 text-xs font-mono"
-            />
-          </div>
-
-          {/* 3. Fecha Hasta */}
-          <div className="lg:col-span-2 space-y-1">
-            <Label
-              htmlFor="filtro-porteria-fecha-hasta"
-              className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5"
-            >
-              <Calendar className="h-3.5 w-3.5 text-primary" />
-              Salida Hasta
-            </Label>
-            <Input
-              id="filtro-porteria-fecha-hasta"
-              type="date"
-              value={fechaHasta}
-              onChange={(e) => onFechaHastaChange(e.target.value)}
-              className="h-8.5 text-xs font-mono"
-            />
-          </div>
-
-          {/* 4. Tipo de Pase (Interno / Externo) */}
-          <div className="lg:col-span-1 space-y-1">
-            <Label
-              htmlFor="filtro-porteria-tipo"
-              className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1"
-            >
-              <Building2 className="h-3.5 w-3.5 text-primary" />
-              Tipo
+        {/* Fila 2 de Filtros: Tipo de Pase, Estado, Fecha Desde, Fecha Hasta */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Tipo de Pase */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+              Tipo de Pase
             </Label>
             <Select
               value={tipoPase}
               onValueChange={(val) => onTipoPaseChange(val ?? "TODOS")}
             >
-              <SelectTrigger id="filtro-porteria-tipo" className="h-8.5 text-xs">
-                <SelectValue placeholder="Todos" />
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Todos los tipos" />
               </SelectTrigger>
               <SelectContent>
                 {TIPOS_PASE_PORTERIA.map((t) => (
@@ -260,21 +359,18 @@ export function ReporteBitacoraPorteriaFiltrosBar({
             </Select>
           </div>
 
-          {/* 5. Estado */}
-          <div className="lg:col-span-1 space-y-1">
-            <Label
-              htmlFor="filtro-porteria-estado"
-              className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1"
-            >
-              <Filter className="h-3.5 w-3.5 text-primary" />
-              Estado
+          {/* Estado */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+              Estado del Registro
             </Label>
             <Select
               value={estado}
               onValueChange={(val) => onEstadoChange(val ?? "TODOS")}
             >
-              <SelectTrigger id="filtro-porteria-estado" className="h-8.5 text-xs">
-                <SelectValue placeholder="Todos" />
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Todos los estados" />
               </SelectTrigger>
               <SelectContent>
                 {ESTADOS_PORTERIA.map((est) => (
@@ -286,179 +382,94 @@ export function ReporteBitacoraPorteriaFiltrosBar({
             </Select>
           </div>
 
-          {/* 6. Botones de Consulta y Exportación */}
-          <div className="lg:col-span-3 flex items-center gap-1.5 flex-wrap justify-end">
-            <Button
-              type="button"
-              size="sm"
-              onClick={onConsultar}
-              disabled={isLoading || !fechaDesde || !fechaHasta}
-              className="gap-1.5 text-xs h-8.5 flex-1 sm:flex-none cursor-pointer font-medium"
+          {/* Fecha Desde */}
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="filtro-porteria-desde"
+              className="text-xs font-medium text-foreground flex items-center gap-1.5"
             >
-              {isLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
-              Consultar
-            </Button>
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              Fecha Desde
+            </Label>
+            <Input
+              id="filtro-porteria-desde"
+              type="date"
+              value={fechaDesde}
+              onChange={(e) => onFechaDesdeChange(e.target.value)}
+              className="h-9 text-xs font-mono"
+            />
+          </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onDescargarPdf}
-              disabled={!hasData || isPdfLoading}
-              className="gap-1 text-xs h-8.5 px-2.5 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 border-rose-500/30 cursor-pointer"
-              title="Descargar PDF Oficial de Bitácora de Portería"
+          {/* Fecha Hasta */}
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="filtro-porteria-hasta"
+              className="text-xs font-medium text-foreground flex items-center gap-1.5"
             >
-              {isPdfLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <FileDown className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden xl:inline">PDF</span>
-            </Button>
-
-            {onAbrirPdf && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onAbrirPdf}
-                disabled={!hasData || isPdfLoading}
-                className="gap-1 text-xs h-8.5 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
-                title="Abrir PDF oficial en pestaña nueva"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </Button>
-            )}
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onImprimir}
-              disabled={!hasData}
-              className="gap-1 text-xs h-8.5 px-2.5 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 border-sky-500/30 cursor-pointer"
-              title="Imprimir planilla oficial de bitácora"
-            >
-              <Printer className="h-3.5 w-3.5" />
-              <span className="hidden xl:inline">Imprimir</span>
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onExportarCsv}
-              disabled={!hasData}
-              className="gap-1 text-xs h-8.5 px-2.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/30 cursor-pointer"
-              title="Exportar bitácora a Excel (CSV con UTF-8)"
-            >
-              <FileSpreadsheet className="h-3.5 w-3.5" />
-              <span className="hidden xl:inline">Excel</span>
-            </Button>
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              Fecha Hasta
+            </Label>
+            <Input
+              id="filtro-porteria-hasta"
+              type="date"
+              value={fechaHasta}
+              onChange={(e) => onFechaHastaChange(e.target.value)}
+              className="h-9 text-xs font-mono"
+            />
           </div>
         </div>
 
-        {/* FILA 2: Presets de rango rápido + Búsqueda textual */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1 border-t border-border/40">
-          {/* Presets rápidos */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-            <span className="text-[10.5px] text-muted-foreground font-medium mr-1 shrink-0 flex items-center gap-1">
-              <Sparkles className="h-3 w-3 text-amber-500" />
-              Período:
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={setHoy}
-              className="text-[10px] h-6 px-2 text-muted-foreground hover:text-foreground"
-            >
-              Hoy
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={setMesActual}
-              className="text-[10px] h-6 px-2 text-muted-foreground hover:text-foreground"
-            >
-              Este Mes
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={setMesAnterior}
-              className="text-[10px] h-6 px-2 text-muted-foreground hover:text-foreground"
-            >
-              Mes Anterior
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={setUltimos30Dias}
-              className="text-[10px] h-6 px-2 text-muted-foreground hover:text-foreground"
-            >
-              Últimos 30 días
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={setAnioActual}
-              className="text-[10px] h-6 px-2 text-muted-foreground hover:text-foreground"
-            >
-              Todo el Año
-            </Button>
-          </div>
-
-          {/* Búsqueda textual sobre los resultados */}
-          <div className="flex items-center gap-2">
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Buscar por folio, funcionario, placa, activo, destino, guardia..."
-                value={searchQuery}
-                onChange={(e) => onSearchQueryChange(e.target.value)}
-                className="h-7 text-xs pl-8 pr-6 w-full"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => onSearchQueryChange("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-            {totalItems != null && totalItems > 0 && (
-              <Badge
-                variant="secondary"
-                className="text-[10px] font-mono h-6 px-2 shrink-0 bg-primary/10 text-primary border-primary/20"
-              >
-                {totalItems} reg.
-              </Badge>
-            )}
-          </div>
+        {/* Atajos rápidos de período */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+          <span className="text-[11px] font-medium mr-1 text-foreground/80">
+            Períodos rápidos:
+          </span>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={setHoy}
+            className="h-6 px-2.5 text-[11px] rounded-full cursor-pointer"
+          >
+            Hoy
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={setMesActual}
+            className="h-6 px-2.5 text-[11px] rounded-full cursor-pointer"
+          >
+            Este Mes
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={setMesAnterior}
+            className="h-6 px-2.5 text-[11px] rounded-full cursor-pointer"
+          >
+            Mes Anterior
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={setUltimos30Dias}
+            className="h-6 px-2.5 text-[11px] rounded-full cursor-pointer"
+          >
+            Últimos 30 días
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={setAnioActual}
+            className="h-6 px-2.5 text-[11px] rounded-full cursor-pointer"
+          >
+            Todo el Año
+          </Button>
         </div>
-
-        {/* Indicador de filtro activo si se seleccionó vehículo */}
-        {activoId && placaSeleccionada && (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground bg-muted/40 p-1.5 px-2.5 rounded-md border border-border/50">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-            <span>
-              Filtrando registros de portería asociados al vehículo/activo:{" "}
-              <strong className="text-foreground">{placaSeleccionada}</strong>
-            </span>
-          </div>
-        )}
       </CardContent>
     </Card>
   )
