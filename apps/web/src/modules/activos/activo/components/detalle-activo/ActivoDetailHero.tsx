@@ -1,7 +1,6 @@
 import type { ComponentType } from "react"
 import {
   Activity,
-  Copy,
   Edit2,
   FilePlus,
   ImageIcon,
@@ -21,7 +20,7 @@ type ActivoDetailHeroProps = {
   icon: ComponentType<{ className?: string }>
   isEditing?: boolean
   onToggleEdit?: (editing: boolean) => void
-  onCopyCode: () => void
+  onCopyCode?: () => void
   onOpenImageModal: () => void
   onOpenAddDocument: () => void
   onCambiarEstado?: () => void
@@ -34,7 +33,6 @@ export function ActivoDetailHero({
   icon: Icon,
   isEditing = false,
   onToggleEdit,
-  onCopyCode,
   onOpenImageModal,
   onOpenAddDocument,
   onCambiarEstado,
@@ -84,24 +82,18 @@ export function ActivoDetailHero({
       {/* Center/Right: Title, Subtitle, Status, and Action Buttons */}
       <div className="flex flex-1 flex-col justify-between gap-3 min-w-0">
         <div className="flex flex-col gap-1.5">
-          {/* Top Row: Icon + Code + Status Badge */}
+          {/* Top Row: Icon + Name + Status Badge */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <span
-                className="flex size-7 items-center justify-center rounded-lg text-white shadow-xs"
+                className="flex size-7 shrink-0 items-center justify-center rounded-lg text-white shadow-xs"
                 style={{ backgroundColor: color }}
               >
                 <Icon className="size-4" />
               </span>
-              <button
-                type="button"
-                onClick={onCopyCode}
-                className="group inline-flex items-center gap-1.5 font-heading text-xl sm:text-2xl font-black tracking-tight text-foreground hover:text-primary transition-colors cursor-pointer"
-                title="Click para copiar código"
-              >
-                <span>{activo.codigo}</span>
-                <Copy className="size-3.5 text-muted-foreground opacity-50 group-hover:opacity-100" />
-              </button>
+              <h2 className="font-heading text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+                {activo.nombre}
+              </h2>
             </div>
 
             <div className="flex items-center gap-2">
@@ -149,14 +141,6 @@ export function ActivoDetailHero({
                 {activo.activo ? "Habilitado" : "Inactivo"}
               </span>
             </div>
-          </div>
-
-          {/* Subtitle / Asset Details */}
-          <div className="flex flex-col">
-            <h2 className="text-base sm:text-lg font-bold text-foreground truncate">
-              {activo.nombre}
-            </h2>
-
           </div>
         </div>
 

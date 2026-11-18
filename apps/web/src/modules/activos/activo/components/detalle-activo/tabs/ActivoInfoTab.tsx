@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   Calendar,
   Check,
-  Copy,
   Edit2,
   FileCheck,
   FileText,
@@ -181,11 +180,6 @@ export function ActivoInfoTab({
     }
   }
 
-  function copyText(text: string, label: string) {
-    navigator.clipboard.writeText(text)
-    toast.success(`${label} copiado al portapapeles`)
-  }
-
   return (
     <>
       <form onSubmit={handleTriggerSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
@@ -269,26 +263,6 @@ export function ActivoInfoTab({
             {!isEditing ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
-                  {/* Código */}
-                  <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Código Institucional
-                    </span>
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="font-mono text-xs font-bold text-foreground">
-                        {activo.codigo}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => copyText(activo.codigo, "Código")}
-                        className="text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100 p-0.5 cursor-pointer"
-                        title="Copiar código"
-                      >
-                        <Copy className="size-3" />
-                      </button>
-                    </div>
-                  </div>
-
                   {/* Nombre */}
                   <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -385,28 +359,8 @@ export function ActivoInfoTab({
               /* EDIT MODE - ULTRA COMPACT INLINE FORM FIELDS */
               <div className="flex flex-col gap-3 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-                  {/* Código Field (col-span-4) */}
-                  <div className="flex flex-col gap-1 sm:col-span-4">
-                    <Label className="text-[11px] font-semibold flex items-center justify-between">
-                      <span>Código <span className="text-destructive">*</span></span>
-                      <span className="text-[10px] text-muted-foreground font-normal">Identificador</span>
-                    </Label>
-                    <Input
-                      value={formData.codigo}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          codigo: e.target.value.toUpperCase().replace(/\s+/g, "_"),
-                        }))
-                      }
-                      placeholder="EJ: ACT-001"
-                      className="font-mono uppercase h-8 text-xs font-bold"
-                      required
-                    />
-                  </div>
-
-                  {/* Nombre Field (col-span-8) */}
-                  <div className="flex flex-col gap-1 sm:col-span-8">
+                  {/* Nombre Field (col-span-12) */}
+                  <div className="flex flex-col gap-1 sm:col-span-12">
                     <Label className="text-[11px] font-semibold flex items-center justify-between">
                       <span>Nombre del Activo <span className="text-destructive">*</span></span>
                       <span className="text-[10px] text-muted-foreground font-normal">Denominación oficial</span>
@@ -695,11 +649,7 @@ export function ActivoInfoTab({
             </DialogTitle>
             <DialogDescription className="text-xs leading-relaxed pt-1">
               Estás a punto de guardar los cambios para el activo{" "}
-              <strong className="text-foreground">{formData.nombre}</strong> (
-              <span className="font-mono text-foreground font-semibold">
-                {formData.codigo}
-              </span>
-              ). Se actualizarán sus datos generales y especificaciones técnicas.
+              <strong className="text-foreground">{formData.nombre}</strong>. Se actualizarán sus datos generales y especificaciones técnicas.
             </DialogDescription>
           </DialogHeader>
 

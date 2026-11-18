@@ -65,8 +65,7 @@ export function ActivoHistorialTab({
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Se dio de alta formalmente el activo{" "}
-              <strong className="text-foreground">"{activo.nombre}"</strong> con código{" "}
-              <code className="text-xs font-mono font-bold text-foreground">[{activo.codigo}]</code>{" "}
+              <strong className="text-foreground">"{activo.nombre}"</strong>{" "}
               bajo el tipo "{tipoActivo?.nombre || "General"}".
             </p>
           </div>

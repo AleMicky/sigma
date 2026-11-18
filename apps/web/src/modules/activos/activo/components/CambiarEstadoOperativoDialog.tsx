@@ -79,9 +79,6 @@ function CambiarEstadoOperativoForm({
           <p className="font-semibold text-foreground truncate">
             {activo.nombre}
           </p>
-          <code className="text-[10px] font-mono text-muted-foreground">
-            {activo.codigo}
-          </code>
         </div>
         {activo.estadoOperativo && (
           <span
