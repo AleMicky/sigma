@@ -243,7 +243,7 @@ export function ActivoMantenimientoPreventivoTab({
             </div>
 
             <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-              <span>Activo: <strong>{activo.codigo}</strong> — {activo.nombre}</span>
+              <span>Activo: <strong>{activo.nombre}</strong></span>
               {tipoActivo && (
                 <>
                   <span>•</span>

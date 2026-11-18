@@ -7,7 +7,8 @@ import { Button } from "@/shared/components/ui/button"
 
 type ActivoDetailHeaderProps = {
   activoId: string
-  codigo: string
+  codigo?: string
+  nombre?: string
   isEditing?: boolean
   onToggleEdit?: (editing: boolean) => void
   onPrint: () => void
@@ -18,7 +19,7 @@ type ActivoDetailHeaderProps = {
 
 export function ActivoDetailHeader({
   activoId: _activoId,
-  codigo,
+  nombre,
   isEditing = false,
   onToggleEdit,
   onPrint,
@@ -46,10 +47,14 @@ export function ActivoDetailHeader({
           >
             Catálogo
           </Link>
-          <span className="text-muted-foreground/40">/</span>
-          <span className="text-xs font-bold text-foreground font-mono truncate">
-            {codigo}
-          </span>
+          {nombre && (
+            <>
+              <span className="text-muted-foreground/40">/</span>
+              <span className="text-xs font-bold text-foreground truncate">
+                {nombre}
+              </span>
+            </>
+          )}
         </div>
       </div>
 

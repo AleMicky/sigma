@@ -491,11 +491,7 @@ export function ActivoAsignacionTab({
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Ingreso inicial con código patrimonial{" "}
-                  <span className="font-mono text-foreground font-semibold">
-                    {activo.codigo}
-                  </span>{" "}
-                  en sede {ubicacion?.nombre || "Principal"}.
+                  Ingreso inicial en sede {ubicacion?.nombre || "Principal"}.
                 </p>
               </div>
             </div>
@@ -508,7 +504,7 @@ export function ActivoAsignacionTab({
         open={modalOpen}
         onOpenChange={setModalOpen}
         activoId={activo.id}
-        activoCodigo={activo.codigo}
+        activoNombre={activo.nombre}
         mode={modalMode}
         asignacionToEdit={selectedAsignacion}
       />
@@ -525,7 +521,7 @@ export function ActivoAsignacionTab({
             <AlertDialogTitle>¿Eliminar registro de asignación?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs leading-relaxed">
               Esta acción eliminará el registro de custodia y su historial asociado del activo{" "}
-              <strong className="text-foreground">{activo.codigo}</strong>. Esta acción no se puede deshacer.
+              <strong className="text-foreground">{activo.nombre}</strong>. Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -44,7 +44,6 @@ export function ActivoAccesorioFormModal({
   open,
   onOpenChange,
   activoId,
-  activoCodigo,
   activoNombre,
   categoriaId,
   itemToEdit,
@@ -166,10 +165,9 @@ export function ActivoAccesorioFormModal({
                     : "Asignar Accesorio al Activo"}
                 </DialogTitle>
                 <DialogDescription className="text-xs">
-                  {activoCodigo ? (
+                  {activoNombre ? (
                     <span>
-                      Activo: <strong className="text-foreground">{activoCodigo}</strong>
-                      {activoNombre ? ` - ${activoNombre}` : ""}
+                      Activo: <strong className="text-foreground">{activoNombre}</strong>
                     </span>
                   ) : (
                     "Vincula un accesorio o periférico a este activo."

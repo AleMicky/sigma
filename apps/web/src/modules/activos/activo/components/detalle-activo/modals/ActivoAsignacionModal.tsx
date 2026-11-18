@@ -32,7 +32,8 @@ type ActivoAsignacionModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   activoId: string
-  activoCodigo: string
+  activoCodigo?: string
+  activoNombre?: string
   mode?: ModalMode
   asignacionToEdit?: ActivoAsignacion | null
 }
@@ -64,7 +65,7 @@ export function ActivoAsignacionModal({
   open,
   onOpenChange,
   activoId,
-  activoCodigo,
+  activoNombre,
   mode = "create",
   asignacionToEdit,
 }: ActivoAsignacionModalProps) {
@@ -201,11 +202,16 @@ export function ActivoAsignacionModal({
             )}
           </DialogTitle>
           <DialogDescription>
-            Activo:{" "}
-            <span className="font-mono font-bold text-foreground">
-              {activoCodigo}
-            </span>
-            . Selecciona el área y el funcionario custodio responsable.
+            {activoNombre ? (
+              <>
+                Activo:{" "}
+                <span className="font-bold text-foreground">
+                  {activoNombre}
+                </span>
+                .{" "}
+              </>
+            ) : null}
+            Selecciona el área y el funcionario custodio responsable.
           </DialogDescription>
         </DialogHeader>
 

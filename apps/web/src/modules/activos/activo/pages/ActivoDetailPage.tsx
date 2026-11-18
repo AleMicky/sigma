@@ -2,7 +2,6 @@ import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft } from "lucide-react"
-import { toast } from "sonner"
 
 import { routes } from "@/app/config/routes"
 import { activoAccesorioQueries } from "@/modules/activos/activo-accesorio/api/activo-accesorio.queries"
@@ -111,12 +110,6 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
   )
   const accesorios = accesoriosQuery.data?.content ?? []
 
-  function copyCode() {
-    if (!activo?.codigo) return
-    void navigator.clipboard.writeText(activo.codigo)
-    toast.success("Código copiado al portapapeles")
-  }
-
   function handleToggleEdit(editing: boolean) {
     if (editing) {
       setActiveTab("informacion")
@@ -180,7 +173,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
       <header className="flex shrink-0 flex-col gap-2.5 border-b py-2.5 sm:py-3">
         <ActivoDetailHeader
           activoId={activo.id}
-          codigo={activo.codigo}
+          nombre={activo.nombre}
           isEditing={isEditing}
           onToggleEdit={handleToggleEdit}
           onPrint={handlePrint}
@@ -203,7 +196,6 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
           icon={Icon}
           isEditing={isEditing}
           onToggleEdit={handleToggleEdit}
-          onCopyCode={copyCode}
           onOpenImageModal={() => setIsImageModalOpen(true)}
           onOpenAddDocument={() => {
             setActiveTab("documentacion")
@@ -250,7 +242,6 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
         {activeTab === "accesorios" && (
           <ActivoAccesoriosTab
             activoId={activo.id}
-            activoCodigo={activo.codigo}
             activoNombre={activo.nombre}
             tipoActivoId={activo.tipoActivoId}
             onOpenAddAccesorio={handleOpenAddAccesorio}
@@ -282,7 +273,6 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
           if (!open) setEditingDocumento(null)
         }}
         activoId={activo.id}
-        activoCodigo={activo.codigo}
         itemToEdit={editingDocumento}
       />
 
@@ -290,7 +280,6 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
         open={isAddAccesorioOpen}
         onOpenChange={setIsAddAccesorioOpen}
         activoId={activo.id}
-        activoCodigo={activo.codigo}
         activoNombre={activo.nombre}
         categoriaId={activo.tipoActivo?.categoriaId ?? tipoActivo?.categoriaId}
         itemToEdit={editingAccesorio}

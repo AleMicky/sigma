@@ -54,7 +54,7 @@ type ActivoAddDocumentModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   activoId: string
-  activoCodigo: string
+  activoCodigo?: string
   itemToEdit?: ActivoDocumento | null
 }
 
@@ -343,12 +343,14 @@ export function ActivoAddDocumentModal({
                   : "Asocia pólizas, certificaciones o actas"}
               </DialogDescription>
             </div>
-            <Badge
-              variant="outline"
-              className="font-mono text-[9px] font-bold bg-background border-border/80 px-1.5 py-0 shrink-0"
-            >
-              {activoCodigo}
-            </Badge>
+            {activoCodigo && (
+              <Badge
+                variant="outline"
+                className="font-mono text-[9px] font-bold bg-background border-border/80 px-1.5 py-0 shrink-0"
+              >
+                {activoCodigo}
+              </Badge>
+            )}
           </div>
         </DialogHeader>
 
