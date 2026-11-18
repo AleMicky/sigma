@@ -27,6 +27,21 @@ public interface SalidaVehicularRepository {
             Pageable pageable
     );
 
+    default Page<SalidaVehicular> searchWithFilters(
+            String search,
+            UUID activoId,
+            UUID empleadoId,
+            UUID areaId,
+            UUID createdById,
+            boolean unirPorOr,
+            String estado,
+            Instant fechaDesde,
+            Instant fechaHasta,
+            Pageable pageable
+    ) {
+        return searchWithFilters(search, activoId, empleadoId, estado, fechaDesde, fechaHasta, pageable);
+    }
+
     List<SalidaVehicular> findForReporte(
             String search,
             UUID activoId,
@@ -36,7 +51,25 @@ public interface SalidaVehicularRepository {
             Instant fechaHasta
     );
 
+    default List<SalidaVehicular> findForReporte(
+            String search,
+            UUID activoId,
+            UUID empleadoId,
+            UUID areaId,
+            UUID createdById,
+            boolean unirPorOr,
+            String estado,
+            Instant fechaDesde,
+            Instant fechaHasta
+    ) {
+        return findForReporte(search, activoId, empleadoId, estado, fechaDesde, fechaHasta);
+    }
+
     List<SalidaVehicular> findActivas();
+
+    default List<SalidaVehicular> findActivas(UUID areaId, UUID createdById) {
+        return findActivas();
+    }
 
     Page<SalidaVehicular> findByEmpleadoId(UUID empleadoId, Pageable pageable);
 

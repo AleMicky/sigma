@@ -279,8 +279,8 @@ SALIDA - LLEGADA]]></text>
 		</band>
 	</detail>
 
-	<!-- Pie de Página, Totales y Firmas -->
-	<summary height="78">
+	<!-- Pie de Página y Totales (sin firmas) -->
+	<summary height="26">
 		<element kind="rectangle" x="0" y="2" width="752" height="22" backcolor="#F1F5F9" mode="Opaque" uuid="e0000001-0000-4000-a000-000000000063">
 			<pen lineWidth="0.75" lineColor="#1E293B"/>
 		</element>
@@ -295,28 +295,6 @@ SALIDA - LLEGADA]]></text>
 		</element>
 		<element kind="textField" x="560" y="2" width="184" height="22" forecolor="#475569" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Right" vTextAlign="Middle" uuid="e0000001-0000-4000-a000-000000000067">
 			<expression><![CDATA["Activos/Ítems: " + ($P{TOTAL_ACTIVOS} != null ? $P{TOTAL_ACTIVOS} : "0") + "  |  ENDE CORANI S.A."]]></expression>
-		</element>
-
-		<!-- Firmas Institucionales -->
-		<element kind="line" x="40" y="60" width="180" height="0" uuid="e0000001-0000-4000-a000-000000000068">
-			<pen lineWidth="0.5" lineColor="#64748B"/>
-		</element>
-		<element kind="staticText" x="40" y="62" width="180" height="12" forecolor="#475569" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="e0000001-0000-4000-a000-000000000069">
-			<text><![CDATA[GUARDIA / CONTROL DE PORTERÍA]]></text>
-		</element>
-
-		<element kind="line" x="286" y="60" width="180" height="0" uuid="e0000001-0000-4000-a000-000000000070">
-			<pen lineWidth="0.5" lineColor="#64748B"/>
-		</element>
-		<element kind="staticText" x="286" y="62" width="180" height="12" forecolor="#475569" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="e0000001-0000-4000-a000-000000000071">
-			<text><![CDATA[SUPERVISOR / RESPONSABLE DE ÁREA]]></text>
-		</element>
-
-		<element kind="line" x="532" y="60" width="180" height="0" uuid="e0000001-0000-4000-a000-000000000072">
-			<pen lineWidth="0.5" lineColor="#64748B"/>
-		</element>
-		<element kind="staticText" x="532" y="62" width="180" height="12" forecolor="#475569" fontName="SansSerif" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle" uuid="e0000001-0000-4000-a000-000000000073">
-			<text><![CDATA[VO.BO. ADMINISTRACIÓN Y LOGÍSTICA]]></text>
 		</element>
 	</summary>
 </jasperReport>

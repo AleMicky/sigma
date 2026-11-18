@@ -1,8 +1,49 @@
-import { useMemo } from "react"
-import { ArrowRight, MapPin, Package } from "lucide-react"
+import { useMemo, useState } from "react"
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Eye,
+  Inbox,
+  LogIn,
+  LogOut,
+  MapPin,
+  MessageSquareText,
+  Package,
+  ShieldCheck,
+  Timer,
+  UserRound,
+  XCircle,
+} from "lucide-react"
 
-import logoEndeCorani from "@/assets/logo-ende-corani.png"
 import { Badge } from "@/shared/components/ui/badge"
+import { Button } from "@/shared/components/ui/button"
+import { Card } from "@/shared/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
+import { Skeleton } from "@/shared/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/shared/components/ui/table"
 import { cn } from "@/shared/lib/utils"
 
 import type {
@@ -12,60 +53,86 @@ import type {
 
 export interface ReporteBitacoraPorteriaTableProps {
   filas: BitacoraPorteriaItem[]
-  activoTexto?: string
-  tipoTexto?: string
-  estadoTexto?: string
-  ubicacion?: string
-  anio: string | number
-  mes: string
-  periodoTexto?: string
+  isLoading?: boolean
   className?: string
 }
 
-function getEstadoBadgeClass(estado?: EstadoRegistroPorteria | string | null): string {
+function getEstadoBadge(estado?: EstadoRegistroPorteria | string | null) {
   const est = (estado ?? "").toUpperCase()
   if (est === "AFUERA") {
-    return "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30"
+    return (
+      <Badge
+        variant="outline"
+        className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 text-[10.5px] font-medium gap-1"
+      >
+        <Clock className="h-3 w-3" />
+        Afuera
+      </Badge>
+    )
   }
   if (est === "COMPLETADO") {
-    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+    return (
+      <Badge
+        variant="outline"
+        className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[10.5px] font-medium gap-1"
+      >
+        <CheckCircle2 className="h-3 w-3" />
+        Completado
+      </Badge>
+    )
   }
   if (est === "ANULADO") {
-    return "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30"
+    return (
+      <Badge
+        variant="outline"
+        className="bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30 text-[10.5px] font-medium gap-1"
+      >
+        <XCircle className="h-3 w-3" />
+        Anulado
+      </Badge>
+    )
   }
-  return "bg-muted text-muted-foreground border-border"
+  return (
+    <Badge variant="outline" className="text-[10.5px]">
+      {estado || "-"}
+    </Badge>
+  )
 }
 
 export function ReporteBitacoraPorteriaTable({
   filas,
-  activoTexto = "TODOS LOS VEHÍCULOS Y ACTIVOS",
-  tipoTexto = "INTERNOS Y EXTERNOS",
-  estadoTexto = "TODOS",
-  ubicacion = "CORANI",
-  anio,
-  mes,
-  periodoTexto,
+  isLoading = false,
   className,
 }: Readonly<ReporteBitacoraPorteriaTableProps>) {
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageSize, setPageSize] = useState(20)
+  const [selectedItem, setSelectedItem] = useState<BitacoraPorteriaItem | null>(
+    null
+  )
+
+  const totalElements = filas.length
+  const totalPages = Math.max(1, Math.ceil(totalElements / pageSize))
+  const safePage = Math.min(currentPage, totalPages - 1)
+
+  const pageItems = useMemo(() => {
+    const start = safePage * pageSize
+    return filas.slice(start, start + pageSize)
+  }, [filas, safePage, pageSize])
+
   const totales = useMemo(() => {
     let internos = 0
     let externos = 0
     let afuera = 0
     let completados = 0
-    let anulados = 0
     let totalActivos = 0
     let activosNoRetornados = 0
 
     for (const f of filas) {
-      if (f.esExterno) {
-        externos++
-      } else {
-        internos++
-      }
+      if (f.esExterno) externos++
+      else internos++
 
       if (f.estado === "AFUERA") afuera++
       else if (f.estado === "COMPLETADO") completados++
-      else if (f.estado === "ANULADO") anulados++
 
       totalActivos += f.totalActivos ?? (f.activos?.length || 0)
       activosNoRetornados += f.activosPendientesRetorno ?? 0
@@ -77,380 +144,260 @@ export function ReporteBitacoraPorteriaTable({
       externos,
       afuera,
       completados,
-      anulados,
       totalActivos,
       activosNoRetornados,
     }
   }, [filas])
 
   return (
-    <div
-      className={cn(
-        "bitacora-reporte-hoja w-full bg-white dark:bg-card text-foreground border border-slate-700/80 dark:border-border rounded-lg shadow-sm overflow-hidden text-xs",
-        className
-      )}
-    >
-      {/* ========================================================= */}
-      {/* 1. ENCABEZADO OFICIAL ENDE CORANI (Estilo Bitácora)       */}
-      {/* ========================================================= */}
-      <div className="border-b border-slate-700/80 dark:border-border p-2.5 sm:p-3 bg-slate-50/50 dark:bg-muted/20">
-        <div className="grid grid-cols-12 gap-2 sm:gap-3 items-center">
-          {/* Logo Empresa Izquierda */}
-          <div className="col-span-3 flex items-center justify-start">
-            <img
-              src={logoEndeCorani}
-              alt="ENDE CORANI"
-              className="h-8 sm:h-10 w-auto object-contain"
-            />
-          </div>
+    <>
+      <Card
+        className={cn(
+          "border-border/60 shadow-xs overflow-hidden",
+          className
+        )}
+      >
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-16 text-center font-semibold">
+                  Día / Fecha
+                </TableHead>
+                <TableHead className="w-[120px] font-semibold">
+                  Nº Folio / Pase
+                </TableHead>
+                <TableHead className="min-w-[140px] font-semibold">
+                  Salida / Llegada
+                </TableHead>
+                <TableHead className="min-w-[190px] font-semibold">
+                  Funcionario / Persona
+                </TableHead>
+                <TableHead className="min-w-[230px] font-semibold">
+                  Vehículo / Activos Retirados
+                </TableHead>
+                <TableHead className="min-w-[160px] font-semibold">
+                  Origen → Destino
+                </TableHead>
+                <TableHead className="min-w-[145px] font-semibold">
+                  Guardia Portería
+                </TableHead>
+                <TableHead className="w-[115px] text-center font-semibold">
+                  Estado
+                </TableHead>
+                <TableHead className="min-w-[170px] font-semibold">
+                  Observaciones
+                </TableHead>
+                <TableHead className="w-16 text-center font-semibold print:hidden">
+                  Detalle
+                </TableHead>
+              </TableRow>
+            </TableHeader>
 
-          {/* Título Central */}
-          <div className="col-span-6 text-center space-y-0.5">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
-              FORMULARIO DE CONTROL Y REGISTRO
-            </span>
-            <h1 className="text-sm sm:text-lg font-black uppercase tracking-wide text-foreground leading-tight">
-              BITÁCORA DE CONTROL DE PORTERÍA
-            </h1>
-            <span className="text-[9px] font-semibold text-primary block tracking-wide">
-              ENDE CORANI S.A. • SISTEMA INTEGRADO DE GESTIÓN VEHICULAR Y PORTERÍA
-            </span>
-          </div>
-
-          {/* Metadatos Documentales Derecha */}
-          <div className="col-span-3 flex flex-col items-end justify-center">
-            <div className="border border-slate-400 dark:border-border rounded px-2.5 py-1 text-right text-[9.5px] font-semibold bg-white dark:bg-background/80 shadow-2xs space-y-0.5">
-              <div>
-                <span className="text-muted-foreground">Código: </span>
-                <span className="font-mono text-foreground font-bold">GV-PRT-01</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Versión: </span>
-                <span className="font-mono text-foreground font-bold">01</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Sub-barra de Metadatos de la Bitácora */}
-        <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-12 border border-slate-700/80 dark:border-border rounded overflow-hidden text-[10.5px]">
-          {/* VEHÍCULO / ACTIVO */}
-          <div className="col-span-2 sm:col-span-1 lg:col-span-3 p-1.5 sm:p-2 border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-border bg-white dark:bg-card">
-            <span className="font-bold text-muted-foreground uppercase text-[9px] block">
-              VEHÍCULO / ACTIVO:
-            </span>
-            <span className="font-semibold text-foreground uppercase block mt-0.5 leading-snug break-words">
-              {activoTexto}
-            </span>
-          </div>
-
-          {/* PERSONAL / TIPO DE PASE */}
-          <div className="col-span-1 sm:col-span-1 lg:col-span-3 p-1.5 sm:p-2 border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-border bg-white dark:bg-card">
-            <span className="font-bold text-muted-foreground uppercase text-[9px] block">
-              TIPO DE REGISTRO:
-            </span>
-            <span className="font-semibold text-primary uppercase block mt-0.5 leading-tight break-words">
-              {tipoTexto}
-            </span>
-          </div>
-
-          {/* PERÍODO */}
-          <div className="col-span-1 sm:col-span-1 lg:col-span-2 p-1.5 sm:p-2 border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-border bg-white dark:bg-card">
-            <span className="font-bold text-muted-foreground uppercase text-[9px] block">
-              PERÍODO CONSULTADO:
-            </span>
-            <span className="font-medium text-foreground block mt-0.5 leading-snug break-words">
-              {periodoTexto || "TODOS LOS REGISTROS"}
-            </span>
-          </div>
-
-          {/* ESTADO */}
-          <div className="col-span-1 sm:col-span-1 lg:col-span-1 p-1.5 sm:p-2 border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-border bg-white dark:bg-card text-center">
-            <span className="font-bold text-muted-foreground uppercase text-[9px] block">
-              ESTADO:
-            </span>
-            <span className="font-semibold text-foreground uppercase block mt-0.5">
-              {estadoTexto}
-            </span>
-          </div>
-
-          {/* UBIC. */}
-          <div className="col-span-1 sm:col-span-1 lg:col-span-1 p-1.5 sm:p-2 border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-border bg-white dark:bg-card text-center">
-            <span className="font-bold text-muted-foreground uppercase text-[9px] block">
-              UBIC.:
-            </span>
-            <span className="font-semibold text-foreground uppercase block mt-0.5">
-              {ubicacion}
-            </span>
-          </div>
-
-          {/* AÑO */}
-          <div className="col-span-1 sm:col-span-1 lg:col-span-1 p-1.5 sm:p-2 border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-border bg-white dark:bg-card text-center">
-            <span className="font-bold text-muted-foreground uppercase text-[9px] block">
-              AÑO:
-            </span>
-            <span className="font-mono font-bold text-foreground block mt-0.5">
-              {anio}
-            </span>
-          </div>
-
-          {/* MES */}
-          <div className="col-span-1 sm:col-span-1 lg:col-span-1 p-1.5 sm:p-2 bg-white dark:bg-card text-center">
-            <span className="font-bold text-muted-foreground uppercase text-[9px] block">
-              MES:
-            </span>
-            <span className="font-bold text-primary uppercase block mt-0.5">
-              {mes}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* 2. TABLA OFICIAL DE BITÁCORA DE PORTERÍA                  */}
-      {/* ========================================================= */}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left text-[11px] select-text">
-          <thead>
-            <tr className="bg-slate-100 dark:bg-muted/80 text-foreground border-b-2 border-slate-700/80 dark:border-border font-bold uppercase tracking-wider text-center text-[10px]">
-              {/* DÍA */}
-              <th
-                scope="col"
-                className="px-1.5 py-2 border-r border-slate-300 dark:border-border w-11 text-center"
-              >
-                DÍA
-              </th>
-
-              {/* Nº FOLIO */}
-              <th
-                scope="col"
-                className="px-2 py-2 border-r border-slate-300 dark:border-border min-w-[95px] text-center"
-              >
-                Nº FOLIO / TIPO
-              </th>
-
-              {/* HORA SALIDA / LLEGADA / TIEMPO */}
-              <th
-                scope="col"
-                className="px-2 py-2 border-r border-slate-300 dark:border-border min-w-[125px] text-center"
-              >
-                SALIDA / LLEGADA
-              </th>
-
-              {/* FUNCIONARIO / PERSONA */}
-              <th
-                scope="col"
-                className="px-2.5 py-2 border-r border-slate-300 dark:border-border min-w-[160px] text-left"
-              >
-                FUNCIONARIO / PERSONA
-              </th>
-
-              {/* VEHÍCULO / ACTIVOS RETIRADOS */}
-              <th
-                scope="col"
-                className="px-2.5 py-2 border-r border-slate-300 dark:border-border min-w-[210px] text-left"
-              >
-                VEHÍCULO / ACTIVOS RETIRADOS
-              </th>
-
-              {/* ORIGEN -> DESTINO (RUTA) */}
-              <th
-                scope="col"
-                className="px-2.5 py-2 border-r border-slate-300 dark:border-border min-w-[140px] text-left"
-              >
-                ORIGEN / DESTINO
-              </th>
-
-              {/* GUARDIA DE PORTERÍA */}
-              <th
-                scope="col"
-                className="px-2.5 py-2 border-r border-slate-300 dark:border-border min-w-[130px] text-left"
-              >
-                GUARDIA PORTERÍA
-              </th>
-
-              {/* ESTADO */}
-              <th
-                scope="col"
-                className="px-2 py-2 border-r border-slate-300 dark:border-border min-w-[95px] text-center"
-              >
-                ESTADO
-              </th>
-
-              {/* OBSERVACIONES */}
-              <th
-                scope="col"
-                className="px-2.5 py-2 min-w-[170px] text-left"
-              >
-                OBSERVACIONES / NOVEDADES
-              </th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-slate-300 dark:divide-border text-foreground font-sans">
-            {filas.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={9}
-                  className="px-4 py-8 text-center text-muted-foreground"
-                >
-                  <div className="flex flex-col items-center justify-center gap-1.5 py-3">
-                    <p className="font-semibold text-xs sm:text-sm">
-                      No se encontraron registros de portería para los filtros seleccionados
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Ajuste el rango de fechas, estado o filtro de búsqueda.
-                    </p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              filas.map((fila, index) => {
-                const isEven = index % 2 === 0
-                return (
-                  <tr
+            <TableBody className="text-xs divide-y divide-border/40">
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={`skeleton-porteria-${i}`}>
+                    <TableCell>
+                      <Skeleton className="h-8 w-12 mx-auto" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-28" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-36" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-44" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-28" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-20 mx-auto" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-7 w-7 mx-auto" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : pageItems.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="h-48 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                      <div className="p-3 rounded-full bg-muted/60">
+                        <Inbox className="h-6 w-6 stroke-[1.5]" />
+                      </div>
+                      <p className="font-medium text-sm text-foreground">
+                        No se encontraron registros en la bitácora de portería
+                      </p>
+                      <p className="text-xs max-w-sm">
+                        Ajuste los filtros de búsqueda, funcionario, vehículo o rango de fechas.
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                pageItems.map((fila) => (
+                  <TableRow
                     key={fila.id}
                     className={cn(
-                      "hover:bg-slate-50/80 dark:hover:bg-muted/40 transition-colors",
-                      isEven
-                        ? "bg-white dark:bg-card"
-                        : "bg-slate-50/40 dark:bg-muted/15",
-                      fila.estado === "ANULADO" && "opacity-75"
+                      "hover:bg-muted/35 transition-colors cursor-pointer",
+                      fila.estado === "ANULADO" && "opacity-70"
                     )}
+                    onClick={() => setSelectedItem(fila)}
                   >
-                    {/* 1. DÍA */}
-                    <td className="px-1.5 py-1.5 border-r border-slate-300 dark:border-border text-center font-bold text-foreground">
-                      <span className="text-xs sm:text-sm">
-                        {fila.dia ?? "-"}
-                      </span>
-                      {fila.diaSemana && (
-                        <span className="block text-[8.5px] uppercase text-primary font-semibold">
-                          {fila.diaSemana}
+                    {/* 1. Día / Fecha */}
+                    <TableCell className="text-center">
+                      <div className="flex flex-col items-center">
+                        <span className="text-sm font-bold text-foreground leading-tight">
+                          {fila.dia ?? "-"}
                         </span>
-                      )}
-                      {fila.fechaFormateada && (
-                        <span className="block text-[8.5px] text-muted-foreground font-mono font-normal">
-                          {fila.fechaFormateada}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* 2. Nº FOLIO / TIPO */}
-                    <td className="px-2 py-1.5 border-r border-slate-300 dark:border-border text-center">
-                      <div className="font-mono font-bold text-foreground text-[10.5px]">
-                        {fila.numero}
-                      </div>
-                      <div className="mt-0.5 flex items-center justify-center gap-1 flex-wrap">
-                        {fila.esExterno ? (
-                          <span className="inline-block rounded border border-purple-500/40 bg-purple-500/10 px-1.5 py-0 text-[8.5px] font-bold uppercase text-purple-700 dark:text-purple-300">
-                            Externo
-                          </span>
-                        ) : (
-                          <span className="inline-block rounded border border-sky-500/30 bg-sky-500/10 px-1.5 py-0 text-[8.5px] font-semibold uppercase text-sky-700 dark:text-sky-300">
-                            Interno
+                        {fila.diaSemana && (
+                          <span className="text-[9.5px] font-semibold uppercase text-primary">
+                            {fila.diaSemana}
                           </span>
                         )}
-                      </div>
-                      {fila.salidaVehicularNumero && (
-                        <div className="text-[8.5px] text-muted-foreground font-mono mt-0.5">
-                          Sal: {fila.salidaVehicularNumero}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* 3. HORA SALIDA / LLEGADA / TIEMPO */}
-                    <td className="px-2 py-1.5 border-r border-slate-300 dark:border-border text-center font-mono text-[10px]">
-                      <div className="flex items-center justify-center gap-1">
-                        <span className="font-bold text-amber-700 dark:text-amber-400">
-                          {fila.horaSalidaFormateada || "-"}
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          {fila.fechaFormateada || "-"}
                         </span>
-                        <ArrowRight className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
-                        <span
-                          className={cn(
-                            "font-bold",
-                            fila.horaLlegadaFormateada
-                              ? "text-emerald-700 dark:text-emerald-400"
-                              : "text-muted-foreground italic font-sans text-[9px]"
+                      </div>
+                    </TableCell>
+
+                    {/* 2. Nº Folio / Tipo */}
+                    <TableCell>
+                      <div className="space-y-1">
+                        <span className="font-mono font-bold text-foreground block">
+                          {fila.numero}
+                        </span>
+                        {fila.esExterno ? (
+                          <Badge
+                            variant="outline"
+                            className="border-purple-500/40 bg-purple-500/10 text-[9.5px] px-1.5 py-0 font-semibold text-purple-700 dark:text-purple-300"
+                          >
+                            Externo
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="border-sky-500/30 bg-sky-500/10 text-[9.5px] px-1.5 py-0 font-semibold text-sky-700 dark:text-sky-300"
+                          >
+                            Interno
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    {/* 3. Hora Salida / Llegada */}
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 font-mono text-xs">
+                          <span className="inline-flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400">
+                            <LogOut className="h-3 w-3" />
+                            {fila.horaSalidaFormateada || "-"}
+                          </span>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                          {fila.horaLlegadaFormateada ? (
+                            <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                              <LogIn className="h-3 w-3" />
+                              {fila.horaLlegadaFormateada}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-sans italic text-muted-foreground">
+                              {fila.estado === "ANULADO" ? "Sin llegada" : "En curso"}
+                            </span>
                           )}
-                        >
-                          {fila.horaLlegadaFormateada ||
-                            (fila.estado === "ANULADO" ? "Anulado" : "Afuera")}
-                        </span>
-                      </div>
-                      {fila.duracionTexto && fila.duracionTexto !== "-" && (
-                        <div className="mt-0.5 inline-block rounded bg-slate-100 dark:bg-muted px-1.5 py-0.5 text-[9px] font-sans font-semibold text-muted-foreground">
-                          ⏱ {fila.duracionTexto}
                         </div>
-                      )}
-                    </td>
+                        {fila.duracionTexto && fila.duracionTexto !== "-" && (
+                          <div className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                            <Timer className="h-2.5 w-2.5" />
+                            {fila.duracionTexto}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
 
-                    {/* 4. FUNCIONARIO / PERSONA */}
-                    <td className="px-2.5 py-1.5 border-r border-slate-300 dark:border-border">
-                      <div className="font-semibold text-foreground leading-snug">
-                        {fila.empleadoNombre || fila.personaExterna || "-"}
-                      </div>
-                      {!fila.esExterno && (fila.empleadoArea || fila.empleadoCargo) && (
-                        <div className="text-[9.5px] text-muted-foreground leading-tight mt-0.5">
-                          {[fila.empleadoArea, fila.empleadoCargo]
-                            .filter(Boolean)
-                            .join(" • ")}
-                        </div>
-                      )}
-                      {!fila.esExterno && fila.empleadoCodigo && (
-                        <div className="text-[9px] font-mono text-muted-foreground">
-                          Cód: {fila.empleadoCodigo}
-                        </div>
-                      )}
-                      {fila.esExterno && fila.placaExterna && (
-                        <div className="mt-0.5">
-                          <span className="inline-block rounded border border-purple-500/30 bg-purple-500/5 px-1.5 py-0 font-mono text-[9.5px] font-bold text-purple-700 dark:text-purple-300">
-                            Placa: {fila.placaExterna}
+                    {/* 4. Funcionario / Persona */}
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        <div className="font-semibold text-foreground flex items-center gap-1.5">
+                          <UserRound className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span>
+                            {fila.empleadoNombre || fila.personaExterna || "-"}
                           </span>
                         </div>
-                      )}
-                    </td>
+                        {!fila.esExterno &&
+                          (fila.empleadoArea || fila.empleadoCargo) && (
+                            <p className="text-[10.5px] text-muted-foreground pl-5">
+                              {[fila.empleadoArea, fila.empleadoCargo]
+                                .filter(Boolean)
+                                .join(" • ")}
+                            </p>
+                          )}
+                        {!fila.esExterno && fila.empleadoCodigo && (
+                          <p className="text-[10px] font-mono text-muted-foreground pl-5">
+                            Cód: {fila.empleadoCodigo}
+                          </p>
+                        )}
+                        {fila.esExterno && fila.placaExterna && (
+                          <div className="pl-5 pt-0.5">
+                            <span className="rounded border border-purple-500/30 bg-purple-500/5 px-1.5 py-0.5 font-mono text-[10px] font-bold text-purple-700 dark:text-purple-300">
+                              Placa: {fila.placaExterna}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
 
-                    {/* 5. VEHÍCULO / ACTIVOS RETIRADOS */}
-                    <td className="px-2.5 py-1.5 border-r border-slate-300 dark:border-border">
+                    {/* 5. Vehículo / Activos Retirados */}
+                    <TableCell>
                       {fila.activos && fila.activos.length > 0 ? (
-                        <div className="space-y-1">
+                        <div className="flex flex-wrap gap-1">
                           {fila.activos.map((act) => {
                             const label = act.activoNombre
-                              ? `${act.activoCodigo ? `[${act.activoCodigo}] ` : ""}${act.activoNombre}`
+                              ? `${act.activoCodigo ? `${act.activoCodigo} · ` : ""}${act.activoNombre}`
                               : act.descripcionItem || "Ítem"
                             const noRetorno = act.retornado === false
                             return (
-                              <div
+                              <span
                                 key={act.id}
                                 className={cn(
-                                  "flex items-start gap-1 text-[10px] leading-snug",
-                                  noRetorno &&
-                                    "text-rose-600 dark:text-rose-400 font-semibold"
+                                  "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px]",
+                                  noRetorno
+                                    ? "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300 font-medium"
+                                    : "border-border bg-muted/50 text-foreground/90"
                                 )}
                               >
-                                <Package className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />
-                                <div className="min-w-0 flex-1">
-                                  <span>{label}</span>
-                                  {act.cantidad > 1 && (
-                                    <span className="ml-1 font-mono font-bold">
-                                      ×{act.cantidad}
-                                    </span>
-                                  )}
-                                  {noRetorno && (
-                                    <span className="ml-1 rounded bg-rose-500/15 px-1 py-0 text-[8.5px] font-bold uppercase text-rose-700 dark:text-rose-300">
-                                      No retornó
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                                <Package className="h-3 w-3 shrink-0 text-muted-foreground" />
+                                <span className="max-w-[200px] truncate">
+                                  {label}
+                                </span>
+                                {act.cantidad > 1 && (
+                                  <span className="font-mono font-bold">
+                                    ×{act.cantidad}
+                                  </span>
+                                )}
+                                {noRetorno && (
+                                  <span className="text-[9.5px] font-bold uppercase">
+                                    · No retornó
+                                  </span>
+                                )}
+                              </span>
                             )
                           })}
                           {fila.vehiculoPlaca && (
-                            <div className="pt-0.5">
-                              <span className="text-[9px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0 rounded">
-                                Placa: {fila.vehiculoPlaca}
-                              </span>
-                            </div>
+                            <span className="inline-flex items-center rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-800 dark:text-amber-300">
+                              Placa: {fila.vehiculoPlaca}
+                            </span>
                           )}
                         </div>
                       ) : (
@@ -458,155 +405,429 @@ export function ReporteBitacoraPorteriaTable({
                           {fila.activosResumen || "-"}
                         </span>
                       )}
-                    </td>
+                    </TableCell>
 
-                    {/* 6. ORIGEN -> DESTINO */}
-                    <td className="px-2.5 py-1.5 border-r border-slate-300 dark:border-border text-[10px]">
+                    {/* 6. Origen -> Destino */}
+                    <TableCell>
                       {fila.rutaTexto && fila.rutaTexto !== "-" ? (
-                        <div className="flex items-start gap-1 leading-snug">
-                          <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-sky-600 dark:text-sky-400" />
-                          <span className="font-medium text-foreground">
-                            {fila.rutaTexto}
-                          </span>
+                        <div className="inline-flex items-center gap-1.5 rounded-md border border-sky-500/30 bg-sky-500/5 px-2 py-0.5 text-[11px] text-sky-700 dark:text-sky-300">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="font-medium">{fila.rutaTexto}</span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
-                    </td>
+                    </TableCell>
 
-                    {/* 7. GUARDIA PORTERÍA */}
-                    <td className="px-2.5 py-1.5 border-r border-slate-300 dark:border-border text-[10px] leading-snug">
-                      <div>
-                        <span className="text-[9px] font-semibold uppercase text-muted-foreground">
-                          Sal:{" "}
-                        </span>
-                        <span className="font-medium text-foreground">
-                          {fila.guardiaSalidaNombre || "-"}
-                        </span>
-                      </div>
-                      {fila.guardiaLlegadaNombre && (
-                        <div className="mt-0.5">
-                          <span className="text-[9px] font-semibold uppercase text-muted-foreground">
-                            Lleg:{" "}
+                    {/* 7. Guardia Portería */}
+                    <TableCell>
+                      <div className="space-y-0.5 text-[11px]">
+                        <div className="flex items-center gap-1">
+                          <ShieldCheck className="h-3 w-3 text-amber-600 shrink-0" />
+                          <span className="text-muted-foreground text-[10px]">
+                            Sal:
                           </span>
-                          <span className="font-medium text-foreground">
-                            {fila.guardiaLlegadaNombre}
+                          <span className="font-medium text-foreground truncate max-w-[120px]">
+                            {fila.guardiaSalidaNombre || "-"}
                           </span>
                         </div>
-                      )}
-                    </td>
-
-                    {/* 8. ESTADO */}
-                    <td className="px-2 py-1.5 border-r border-slate-300 dark:border-border text-center">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[9px] px-1.5 py-0 font-semibold uppercase",
-                          getEstadoBadgeClass(fila.estado)
+                        {fila.guardiaLlegadaNombre && (
+                          <div className="flex items-center gap-1">
+                            <ShieldCheck className="h-3 w-3 text-emerald-600 shrink-0" />
+                            <span className="text-muted-foreground text-[10px]">
+                              Lleg:
+                            </span>
+                            <span className="font-medium text-foreground truncate max-w-[120px]">
+                              {fila.guardiaLlegadaNombre}
+                            </span>
+                          </div>
                         )}
-                      >
-                        {fila.estado}
-                      </Badge>
-                    </td>
+                      </div>
+                    </TableCell>
 
-                    {/* 9. OBSERVACIONES / NOVEDADES */}
-                    <td className="px-2.5 py-1.5 text-[10px] leading-snug whitespace-normal break-words">
+                    {/* 8. Estado */}
+                    <TableCell className="text-center">
+                      {getEstadoBadge(fila.estado)}
+                    </TableCell>
+
+                    {/* 9. Observaciones */}
+                    <TableCell className="max-w-[200px]">
                       {fila.observacionesConsolidadas &&
                       fila.observacionesConsolidadas !== "-" ? (
-                        <span>{fila.observacionesConsolidadas}</span>
+                        <p
+                          className="text-[11px] text-muted-foreground line-clamp-2"
+                          title={fila.observacionesConsolidadas}
+                        >
+                          {fila.observacionesConsolidadas}
+                        </p>
                       ) : (
-                        <span className="text-muted-foreground">-</span>
+                        <span className="text-muted-foreground/50">-</span>
                       )}
-                    </td>
-                  </tr>
-                )
-              })
+                    </TableCell>
+
+                    {/* 10. Acción Ver Detalle */}
+                    <TableCell
+                      className="text-center print:hidden"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        onClick={() => setSelectedItem(fila)}
+                        title="Ver detalle completo del registro"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+
+            {/* Pie consolidado de la tabla (sin firmas) */}
+            {filas.length > 0 && (
+              <tfoot>
+                <tr className="bg-muted/60 text-foreground font-semibold border-t border-border/80 text-xs">
+                  <td colSpan={3} className="px-3 py-2.5">
+                    Total filtrado:{" "}
+                    <strong className="text-primary">{totales.total}</strong>{" "}
+                    registros
+                  </td>
+                  <td className="px-3 py-2.5">
+                    Internos:{" "}
+                    <strong className="text-sky-600 dark:text-sky-400">
+                      {totales.internos}
+                    </strong>{" "}
+                    · Externos:{" "}
+                    <strong className="text-purple-600 dark:text-purple-400">
+                      {totales.externos}
+                    </strong>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    Activos/Ítems:{" "}
+                    <strong>{totales.totalActivos}</strong>
+                    {totales.activosNoRetornados > 0 && (
+                      <span className="ml-1.5 text-rose-600 dark:text-rose-400">
+                        ({totales.activosNoRetornados} sin retorno)
+                      </span>
+                    )}
+                  </td>
+                  <td colSpan={5} className="px-3 py-2.5 text-right">
+                    Completados:{" "}
+                    <strong className="text-emerald-600 dark:text-emerald-400">
+                      {totales.completados}
+                    </strong>{" "}
+                    · Afuera:{" "}
+                    <strong className="text-amber-600 dark:text-amber-400">
+                      {totales.afuera}
+                    </strong>
+                  </td>
+                </tr>
+              </tfoot>
             )}
-          </tbody>
+          </Table>
+        </div>
 
-          {/* ========================================================= */}
-          {/* 3. FILA DE TOTALES / RESUMEN INFERIOR                     */}
-          {/* ========================================================= */}
-          {filas.length > 0 && (
-            <tfoot>
-              <tr className="bg-slate-100 dark:bg-muted/80 text-foreground font-bold border-t-2 border-slate-700/80 dark:border-border text-[10.5px]">
-                <td
-                  colSpan={3}
-                  className="px-2.5 py-2 border-r border-slate-300 dark:border-border text-center uppercase tracking-wide"
-                >
-                  TOTALES ({totales.total} registros)
-                </td>
-                <td className="px-2.5 py-2 border-r border-slate-300 dark:border-border text-left">
-                  Internos: <span className="text-sky-600 dark:text-sky-400">{totales.internos}</span>
-                  {" • "}
-                  Externos: <span className="text-purple-600 dark:text-purple-400">{totales.externos}</span>
-                </td>
-                <td className="px-2.5 py-2 border-r border-slate-300 dark:border-border text-left">
-                  {totales.totalActivos} activo(s) / ítem(s) movilizados
-                  {totales.activosNoRetornados > 0 && (
-                    <span className="ml-1 text-rose-600 dark:text-rose-400">
-                      ({totales.activosNoRetornados} sin retorno)
-                    </span>
-                  )}
-                </td>
-                <td
-                  colSpan={2}
-                  className="px-2.5 py-2 border-r border-slate-300 dark:border-border text-center"
-                >
-                  Completados:{" "}
-                  <span className="text-emerald-600 dark:text-emerald-400">
-                    {totales.completados}
-                  </span>{" "}
-                  • Afuera:{" "}
-                  <span className="text-amber-600 dark:text-amber-400">
-                    {totales.afuera}
-                  </span>
-                </td>
-                <td
-                  colSpan={2}
-                  className="px-2.5 py-2 text-right font-mono text-[10px] text-muted-foreground"
-                >
-                  ENDE CORANI S.A. • Bitácora Oficial de Portería
-                </td>
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
+        {/* Barra de Paginación Interactiva */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 border-t border-border/40 bg-muted/20 text-xs text-muted-foreground print:hidden">
+          <div className="flex items-center gap-3">
+            <span>
+              Mostrando{" "}
+              <strong className="text-foreground">
+                {totalElements > 0 ? safePage * pageSize + 1 : 0}
+              </strong>{" "}
+              a{" "}
+              <strong className="text-foreground">
+                {Math.min((safePage + 1) * pageSize, totalElements)}
+              </strong>{" "}
+              de <strong className="text-foreground">{totalElements}</strong>{" "}
+              registros
+            </span>
 
-      {/* ========================================================= */}
-      {/* 4. FIRMAS OFICIALES INSTITUCIONALES                       */}
-      {/* ========================================================= */}
-      <div className="p-4 sm:p-6 pt-10 sm:pt-14 border-t border-slate-200 dark:border-border/60 bg-white dark:bg-card">
-        <div className="grid grid-cols-3 gap-6 sm:gap-12 text-center text-[10.5px]">
-          <div className="space-y-1">
-            <div className="border-t border-slate-400 dark:border-border/80 pt-1.5 mx-auto w-4/5 font-semibold text-foreground">
-              GUARDIA / CONTROL DE PORTERÍA
-            </div>
-            <div className="text-[9.5px] text-muted-foreground">
-              Firma y Aclaración de Turno
+            <div className="flex items-center gap-1.5 pl-3 border-l border-border/50">
+              <span>Por página:</span>
+              <Select
+                value={String(pageSize)}
+                onValueChange={(val) => {
+                  setPageSize(Number(val))
+                  setCurrentPage(0)
+                }}
+              >
+                <SelectTrigger className="h-7 w-16 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div className="space-y-1">
-            <div className="border-t border-slate-400 dark:border-border/80 pt-1.5 mx-auto w-4/5 font-semibold text-foreground">
-              SUPERVISOR / RESPONSABLE DE ÁREA
-            </div>
-            <div className="text-[9.5px] text-muted-foreground">
-              Verificación de Salidas y Activos
-            </div>
-          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+              disabled={safePage <= 0 || isLoading}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
 
-          <div className="space-y-1">
-            <div className="border-t border-slate-400 dark:border-border/80 pt-1.5 mx-auto w-4/5 font-semibold text-foreground">
-              VO.BO. ADMINISTRACIÓN Y LOGÍSTICA
-            </div>
-            <div className="text-[9.5px] text-muted-foreground">
-              Jefatura / Control Patrimonial
-            </div>
+            <span className="px-2 text-xs font-medium text-foreground">
+              Página {totalElements === 0 ? 0 : safePage + 1} de {totalPages}
+            </span>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() =>
+                setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+              }
+              disabled={safePage + 1 >= totalPages || isLoading}
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </Card>
+
+      {/* Modal de Detalle Completo del Registro de Portería */}
+      <Dialog
+        open={Boolean(selectedItem)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedItem(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          {selectedItem && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center justify-between gap-2 pr-6">
+                  <DialogTitle className="flex items-center gap-2 text-base">
+                    <span>Registro de Portería</span>
+                    <span className="font-mono text-sm bg-muted px-2 py-0.5 rounded">
+                      {selectedItem.numero}
+                    </span>
+                  </DialogTitle>
+                  {getEstadoBadge(selectedItem.estado)}
+                </div>
+                <DialogDescription>
+                  Detalle completo del movimiento registrado en bitácora de portería.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 text-xs">
+                {/* Funcionario / Persona */}
+                <div className="rounded-xl border bg-muted/30 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-muted-foreground">
+                      {selectedItem.esExterno
+                        ? "Persona / Visita Externa"
+                        : "Funcionario Interno"}
+                    </span>
+                    {selectedItem.esExterno ? (
+                      <Badge
+                        variant="outline"
+                        className="border-purple-500/40 bg-purple-500/10 text-[10px] text-purple-700 dark:text-purple-300"
+                      >
+                        Externo
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="border-sky-500/30 bg-sky-500/10 text-[10px] text-sky-700 dark:text-sky-300"
+                      >
+                        Interno
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {selectedItem.empleadoNombre ||
+                      selectedItem.personaExterna ||
+                      "-"}
+                  </p>
+                  {!selectedItem.esExterno && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+                      {selectedItem.empleadoCodigo && (
+                        <span>
+                          <strong>Código:</strong> {selectedItem.empleadoCodigo}
+                        </span>
+                      )}
+                      {selectedItem.empleadoArea && (
+                        <span>
+                          <strong>Área:</strong> {selectedItem.empleadoArea}
+                        </span>
+                      )}
+                      {selectedItem.empleadoCargo && (
+                        <span>
+                          <strong>Cargo:</strong> {selectedItem.empleadoCargo}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {selectedItem.placaExterna && (
+                    <div>
+                      <span className="rounded border border-purple-500/30 bg-purple-500/5 px-2 py-0.5 font-mono text-xs font-bold text-purple-700 dark:text-purple-300">
+                        Placa Externa: {selectedItem.placaExterna}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tiempos y Guardias */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3 space-y-1">
+                    <span className="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <LogOut className="h-3.5 w-3.5" />
+                      Salida
+                    </span>
+                    <p className="font-mono font-semibold text-sm">
+                      {selectedItem.fechaFormateada}{" "}
+                      {selectedItem.horaSalidaFormateada}
+                    </p>
+                    <p className="text-muted-foreground">
+                      Guardia:{" "}
+                      <strong className="text-foreground">
+                        {selectedItem.guardiaSalidaNombre || "-"}
+                      </strong>
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border p-3 space-y-1">
+                    <span className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <LogIn className="h-3.5 w-3.5" />
+                      Llegada / Retorno
+                    </span>
+                    <p className="font-mono font-semibold text-sm">
+                      {selectedItem.horaLlegadaFormateada || "Pendiente"}
+                    </p>
+                    <p className="text-muted-foreground">
+                      Guardia:{" "}
+                      <strong className="text-foreground">
+                        {selectedItem.guardiaLlegadaNombre || "-"}
+                      </strong>
+                    </p>
+                    {selectedItem.duracionTexto && (
+                      <p className="text-muted-foreground">
+                        Duración:{" "}
+                        <strong className="text-primary">
+                          {selectedItem.duracionTexto}
+                        </strong>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Ruta */}
+                {selectedItem.rutaTexto && selectedItem.rutaTexto !== "-" && (
+                  <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 flex items-center gap-2 text-sky-700 dark:text-sky-300">
+                    <MapPin className="h-4 w-4 shrink-0" />
+                    <div>
+                      <span className="text-[10px] font-bold uppercase block">
+                        Ruta (Origen → Destino)
+                      </span>
+                      <span className="font-semibold">
+                        {selectedItem.rutaTexto}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Vehículos / Activos */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold uppercase text-muted-foreground flex items-center gap-1.5">
+                    <Package className="h-3.5 w-3.5" />
+                    Vehículos / Activos Registrados (
+                    {selectedItem.activos?.length || 0})
+                  </span>
+                  <div className="space-y-1.5">
+                    {(selectedItem.activos ?? []).map((act) => (
+                      <div
+                        key={act.id}
+                        className="flex items-center justify-between gap-2 rounded-lg border p-2.5"
+                      >
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {act.activoNombre
+                              ? `${act.activoCodigo ? `[${act.activoCodigo}] ` : ""}${act.activoNombre}`
+                              : act.descripcionItem || "Ítem"}
+                            {act.cantidad > 1 && (
+                              <span className="ml-1.5 font-mono font-bold">
+                                ×{act.cantidad}
+                              </span>
+                            )}
+                          </p>
+                          {(act.observacionSalida ||
+                            act.observacionLlegada) && (
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              {[
+                                act.observacionSalida &&
+                                  `Sal: ${act.observacionSalida}`,
+                                act.observacionLlegada &&
+                                  `Lleg: ${act.observacionLlegada}`,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                          )}
+                        </div>
+                        {act.retornado === true && (
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px]"
+                          >
+                            Retornó
+                          </Badge>
+                        )}
+                        {act.retornado === false && (
+                          <Badge
+                            variant="outline"
+                            className="border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300 text-[10px]"
+                          >
+                            No retornó
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Observaciones */}
+                {(selectedItem.observacionSalida ||
+                  selectedItem.observacionLlegada) && (
+                  <div className="rounded-lg border bg-muted/20 p-3 space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
+                      <MessageSquareText className="h-3.5 w-3.5" />
+                      Observaciones
+                    </span>
+                    {selectedItem.observacionSalida && (
+                      <p>
+                        <strong>Salida:</strong>{" "}
+                        {selectedItem.observacionSalida}
+                      </p>
+                    )}
+                    {selectedItem.observacionLlegada && (
+                      <p>
+                        <strong>Llegada:</strong>{" "}
+                        {selectedItem.observacionLlegada}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
