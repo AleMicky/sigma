@@ -80,20 +80,21 @@ public class RegistroPorteriaController {
 
     @GetMapping("/afuera")
     @Operation(summary = "Listar registros que actualmente se encuentran afuera "
-            + "(administrador: todos; otros roles: solo los de su área/sección)")
+            + "(administrador: todos; otros roles: solo los de su área/sección o creados por el usuario)")
     public ResponseEntity<ApiResponse<List<RegistroPorteriaResponse>>> listarAfuera() {
         return ResponseEntity.ok(ApiResponse.success(service.listarAfuera()));
     }
 
     @GetMapping
     @Operation(summary = "Listar historial de registros de portería con paginación y filtros "
-            + "(administrador: todos, con filtro opcional areaId; otros roles: solo su área/sección)")
+            + "(administrador: todos, con filtro opcional areaId/createdById; otros roles: solo su área/sección o creados por el usuario)")
     public ResponseEntity<ApiResponse<PageResponse<RegistroPorteriaResponse>>> listar(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) UUID empleadoId,
             @RequestParam(required = false) UUID activoId,
             @RequestParam(required = false) UUID areaId,
+            @RequestParam(required = false) UUID createdById,
             @RequestParam(required = false) EstadoRegistroPorteria estado,
             @RequestParam(required = false) String fechaDesde,
             @RequestParam(required = false) String fechaHasta,
@@ -112,7 +113,7 @@ public class RegistroPorteriaController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(service.listar(
-                        searchTerm, empleadoId, activoId, areaId, estado, parsedFechaDesde, parsedFechaHasta, effectivePageRequest
+                        searchTerm, empleadoId, activoId, areaId, createdById, estado, parsedFechaDesde, parsedFechaHasta, effectivePageRequest
                 ))
         );
     }
