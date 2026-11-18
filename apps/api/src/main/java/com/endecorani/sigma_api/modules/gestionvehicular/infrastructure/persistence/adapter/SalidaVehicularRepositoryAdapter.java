@@ -45,9 +45,25 @@ public class SalidaVehicularRepositoryAdapter implements SalidaVehicularReposito
             String estado,
             Instant fechaDesde,
             Instant fechaHasta,
-            Pageable pageable
-    ) {
-        return springRepository.searchWithFilters(search, activoId, empleadoId, estado, fechaDesde, fechaHasta, pageable)
+            Pageable pageable) {
+        return searchWithFilters(search, activoId, empleadoId, null, null, false, estado, fechaDesde, fechaHasta,
+                pageable);
+    }
+
+    @Override
+    public Page<SalidaVehicular> searchWithFilters(
+            String search,
+            UUID activoId,
+            UUID empleadoId,
+            UUID areaId,
+            UUID createdById,
+            boolean unirPorOr,
+            String estado,
+            Instant fechaDesde,
+            Instant fechaHasta,
+            Pageable pageable) {
+        return springRepository.searchWithFilters(
+                search, activoId, empleadoId, areaId, createdById, unirPorOr, estado, fechaDesde, fechaHasta, pageable)
                 .map(mapper::toDomain);
     }
 
@@ -58,9 +74,23 @@ public class SalidaVehicularRepositoryAdapter implements SalidaVehicularReposito
             UUID empleadoId,
             String estado,
             Instant fechaDesde,
-            Instant fechaHasta
-    ) {
-        return springRepository.findForReporte(search, activoId, empleadoId, estado, fechaDesde, fechaHasta)
+            Instant fechaHasta) {
+        return findForReporte(search, activoId, empleadoId, null, null, false, estado, fechaDesde, fechaHasta);
+    }
+
+    @Override
+    public List<SalidaVehicular> findForReporte(
+            String search,
+            UUID activoId,
+            UUID empleadoId,
+            UUID areaId,
+            UUID createdById,
+            boolean unirPorOr,
+            String estado,
+            Instant fechaDesde,
+            Instant fechaHasta) {
+        return springRepository.findForReporte(
+                search, activoId, empleadoId, areaId, createdById, unirPorOr, estado, fechaDesde, fechaHasta)
                 .stream()
                 .map(mapper::toDomain)
                 .toList();
@@ -68,7 +98,12 @@ public class SalidaVehicularRepositoryAdapter implements SalidaVehicularReposito
 
     @Override
     public List<SalidaVehicular> findActivas() {
-        return springRepository.findActivas().stream()
+        return findActivas(null, null);
+    }
+
+    @Override
+    public List<SalidaVehicular> findActivas(UUID areaId, UUID createdById) {
+        return springRepository.findActivas(areaId, createdById).stream()
                 .map(mapper::toDomain)
                 .toList();
     }

@@ -39,12 +39,14 @@ public class SalidaVehicularReporteController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) UUID activoId,
             @RequestParam(required = false) UUID empleadoId,
+            @RequestParam(required = false) UUID areaId,
+            @RequestParam(required = false) UUID createdById,
             @RequestParam(required = false) String estado,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success(reporteService.generarReporteGeneral(search, activoId, empleadoId, estado, fechaDesde, fechaHasta))
+                ApiResponse.success(reporteService.generarReporteGeneral(search, activoId, empleadoId, areaId, createdById, estado, fechaDesde, fechaHasta))
         );
     }
 

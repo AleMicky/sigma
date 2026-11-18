@@ -160,26 +160,44 @@ public class SalidaVehicularService {
             LocalDateTime fechaHasta,
             PageRequestDto pageRequest
     ) {
+        return listar(search, activoId, empleadoId, null, null, estado, fechaDesde, fechaHasta, pageRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SalidaVehicularResponse> listar(
+            String search,
+            UUID activoId,
+            UUID empleadoId,
+            UUID areaId,
+            UUID createdById,
+            String estado,
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta,
+            PageRequestDto pageRequest
+    ) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
         Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
 
-        UUID targetEmpleadoId;
-        if (securityUtils.isAdmin()) {
-            targetEmpleadoId = empleadoId;
-        } else {
-            UUID empleadoActual = obtenerEmpleadoIdActual();
-            if (empleadoActual == null) {
-                Page<SalidaVehicular> emptyPage = new org.springframework.data.domain.PageImpl<>(
-                        Collections.emptyList(), pageable, 0
-                );
-                return PageResponse.of(Collections.emptyList(), emptyPage);
-            }
-            targetEmpleadoId = empleadoActual;
+        AlcanceArea alcance = resolverAlcance(areaId, createdById);
+        if (alcance.sinAcceso()) {
+            Page<SalidaVehicular> emptyPage = new org.springframework.data.domain.PageImpl<>(
+                    Collections.emptyList(), pageable, 0
+            );
+            return PageResponse.of(Collections.emptyList(), emptyPage);
         }
 
         Page<SalidaVehicular> page = salidaRepository.searchWithFilters(
-                search, activoId, targetEmpleadoId, estado, instantDesde, instantHasta, pageable
+                search,
+                activoId,
+                empleadoId,
+                alcance.areaId(),
+                alcance.createdById(),
+                alcance.unirPorOr(),
+                estado,
+                instantDesde,
+                instantHasta,
+                pageable
         );
 
         List<SalidaVehicularResponse> responses = mapListToResponse(page.getContent());
@@ -219,7 +237,11 @@ public class SalidaVehicularService {
 
     @Transactional(readOnly = true)
     public List<SalidaVehicularResponse> listarActivas() {
-        List<SalidaVehicular> activas = salidaRepository.findActivas();
+        AlcanceArea alcance = resolverAlcance(null, null);
+        if (alcance.sinAcceso()) {
+            return Collections.emptyList();
+        }
+        List<SalidaVehicular> activas = salidaRepository.findActivas(alcance.areaId(), alcance.createdById());
         return mapListToResponse(activas);
     }
 
@@ -471,6 +493,36 @@ public class SalidaVehicularService {
     // ==========================================
     // Mapeos y Métodos Auxiliares
     // ==========================================
+
+    public record AlcanceArea(UUID areaId, UUID createdById, boolean unirPorOr, boolean sinAcceso) {
+    }
+
+    public AlcanceArea resolverAlcance(UUID areaSolicitada, UUID createdBySolicitado) {
+        if (securityUtils.isAdmin()) {
+            return new AlcanceArea(areaSolicitada, createdBySolicitado, false, false);
+        }
+        UUID userId = securityUtils.getCurrentUserId().orElse(null);
+        UUID areaActual = obtenerAreaIdPorUsuario(userId);
+        if (areaActual == null && userId == null) {
+            return new AlcanceArea(null, null, true, true);
+        }
+        return new AlcanceArea(areaActual, userId, true, false);
+    }
+
+    private UUID obtenerAreaIdPorUsuario(UUID userId) {
+        if (userId == null) {
+            return null;
+        }
+        try {
+            return usuarioRepository.findById(userId)
+                    .map(Usuario::getPersonaId)
+                    .flatMap(empleadoRepository::findFirstByPersonaId)
+                    .map(Empleado::getAreaId)
+                    .orElse(null);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
 
     public UUID obtenerEmpleadoIdActual() {
         try {

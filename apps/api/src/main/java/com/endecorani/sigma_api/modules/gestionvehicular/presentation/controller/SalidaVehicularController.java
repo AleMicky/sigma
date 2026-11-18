@@ -56,6 +56,8 @@ public class SalidaVehicularController {
     public ResponseEntity<ApiResponse<PageResponse<SalidaVehicularResponse>>> listar(
             @RequestParam(required = false) UUID activoId,
             @RequestParam(required = false) UUID empleadoId,
+            @RequestParam(required = false) UUID areaId,
+            @RequestParam(required = false) UUID createdById,
             @RequestParam(required = false) String estado,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta,
@@ -66,6 +68,8 @@ public class SalidaVehicularController {
                         pageRequest.getSearchTerm(),
                         activoId,
                         empleadoId,
+                        areaId,
+                        createdById,
                         estado,
                         fechaDesde,
                         fechaHasta,

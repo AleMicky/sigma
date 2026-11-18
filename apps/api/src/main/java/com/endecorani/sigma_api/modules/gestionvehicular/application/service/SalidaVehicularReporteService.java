@@ -71,11 +71,47 @@ public class SalidaVehicularReporteService {
             LocalDateTime fechaDesde,
             LocalDateTime fechaHasta
     ) {
+        return generarReporteGeneral(search, activoId, empleadoId, null, null, estado, fechaDesde, fechaHasta);
+    }
+
+    @Transactional(readOnly = true)
+    public ReporteSalidasGeneralResponse generarReporteGeneral(
+            String search,
+            UUID activoId,
+            UUID empleadoId,
+            UUID areaId,
+            UUID createdById,
+            String estado,
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta
+    ) {
         Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
         Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
 
+        SalidaVehicularService.AlcanceArea alcance = salidaService != null
+                ? salidaService.resolverAlcance(areaId, createdById)
+                : new SalidaVehicularService.AlcanceArea(areaId, createdById, false, false);
+
+        if (alcance.sinAcceso()) {
+            return ReporteSalidasGeneralResponse.builder()
+                    .totalSalidas(0)
+                    .salidasActivas(0L)
+                    .salidasFinalizadas(0L)
+                    .salidasCanceladas(0L)
+                    .items(Collections.emptyList())
+                    .build();
+        }
+
         List<SalidaVehicular> salidas = salidaRepository.findForReporte(
-                search, activoId, empleadoId, estado, instantDesde, instantHasta
+                search,
+                activoId,
+                empleadoId,
+                alcance.areaId(),
+                alcance.createdById(),
+                alcance.unirPorOr(),
+                estado,
+                instantDesde,
+                instantHasta
         );
 
         long activas = salidas.stream().filter(s -> {
