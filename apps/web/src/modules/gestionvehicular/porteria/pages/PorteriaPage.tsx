@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
 import {
   AlertTriangle,
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   Clock,
   History,
@@ -22,6 +24,7 @@ import {
 } from "lucide-react"
 
 import { appConfig } from "@/app/config"
+import { routes } from "@/app/config/routes"
 import { EmptyState } from "@/shared/components/empty-state"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
@@ -553,6 +556,7 @@ function HistorialItem({ registro }: { registro: RegistroPorteria }) {
 // ───────────────────────── página ─────────────────────────
 
 export function PorteriaPage() {
+  const navigate = useNavigate()
   const now = useNow()
   const [tab, setTab] = useState<"afuera" | "historial">("afuera")
   const [afueraSearch, setAfueraSearch] = useState("")
@@ -691,7 +695,17 @@ export function PorteriaPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              void navigate({ to: routes.gestionVehicular.reportes.porteria })
+            }
+          >
+            <BookOpen className="mr-1.5 size-4 text-sky-600 dark:text-sky-400" />
+            Reporte Bitácora
+          </Button>
           <Button
             variant="outline"
             size="sm"

@@ -3,10 +3,14 @@ import { queryOptions } from "@tanstack/react-query"
 import { porteriaKeys } from "./porteria.keys"
 import {
   getRegistroPorteriaById,
+  getReporteBitacoraPorteria,
   listRegistrosAfuera,
   listRegistrosPorteria,
 } from "./porteria.service"
-import type { PorteriaFiltros } from "./porteria.types"
+import type {
+  PorteriaFiltros,
+  ReporteBitacoraPorteriaFiltros,
+} from "./porteria.types"
 
 export const porteriaQueries = {
   list: (filters?: PorteriaFiltros) =>
@@ -19,6 +23,12 @@ export const porteriaQueries = {
     queryOptions({
       queryKey: porteriaKeys.afuera(),
       queryFn: () => listRegistrosAfuera(),
+    }),
+
+  reporte: (filters?: ReporteBitacoraPorteriaFiltros) =>
+    queryOptions({
+      queryKey: porteriaKeys.reporte(filters),
+      queryFn: () => getReporteBitacoraPorteria(filters),
     }),
 
   detail: (id: string) =>

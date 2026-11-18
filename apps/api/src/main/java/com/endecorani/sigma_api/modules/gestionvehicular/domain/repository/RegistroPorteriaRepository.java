@@ -42,5 +42,22 @@ public interface RegistroPorteriaRepository {
             Instant fechaHasta,
             Pageable pageable
     );
+
+    /**
+     * Lista todos los registros de portería que coincidan con los filtros para el reporte estilo bitácora,
+     * ordenados cronológicamente de forma ascendente por {@code fechaHoraSalida}.
+     */
+    List<RegistroPorteria> findAllForReporte(
+            String search,
+            UUID empleadoId,
+            UUID activoId,
+            UUID areaId,
+            UUID createdById,
+            boolean unirPorOr,
+            Boolean esExterno,
+            EstadoRegistroPorteria estado,
+            Instant fechaDesde,
+            Instant fechaHasta
+    );
 }
 
