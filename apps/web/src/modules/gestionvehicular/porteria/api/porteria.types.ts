@@ -89,3 +89,84 @@ export interface PorteriaFiltros extends PageParams {
   fechaHasta?: string
 }
 
+export interface BitacoraPorteriaItem {
+  id: string
+  numero: string
+  dia?: number | null
+  diaSemana?: string | null
+  fechaFormateada?: string | null
+  horaSalidaFormateada?: string | null
+  horaLlegadaFormateada?: string | null
+  fechaHoraSalida: string
+  fechaHoraLlegada?: string | null
+  duracionMinutos?: number | null
+  duracionTexto?: string | null
+  esExterno?: boolean
+  tipoRegistro?: "INTERNO" | "EXTERNO" | string
+  empleadoId?: string | null
+  empleadoCodigo?: string | null
+  empleadoNombre?: string | null
+  empleadoCargo?: string | null
+  empleadoArea?: string | null
+  personaExterna?: string | null
+  placaExterna?: string | null
+  activoPrincipalId?: string | null
+  vehiculoPlaca?: string | null
+  vehiculoCodigo?: string | null
+  vehiculoNombre?: string | null
+  activosResumen?: string | null
+  totalActivos?: number | null
+  activosRetornados?: number | null
+  activosPendientesRetorno?: number | null
+  activos: RegistroPorteriaActivo[]
+  origenUbicacionId?: string | null
+  origenUbicacionNombre?: string | null
+  destinoUbicacionId?: string | null
+  destinoUbicacionNombre?: string | null
+  destinoOtro?: string | null
+  rutaTexto?: string | null
+  descripcionActividad?: string | null
+  guardiaSalidaId?: string | null
+  guardiaSalidaNombre?: string | null
+  guardiaLlegadaId?: string | null
+  guardiaLlegadaNombre?: string | null
+  salidaVehicularId?: string | null
+  salidaVehicularNumero?: string | null
+  observacionSalida?: string | null
+  observacionLlegada?: string | null
+  observacionesConsolidadas?: string | null
+  estado: EstadoRegistroPorteria
+  createdAt?: string | null
+  updatedAt?: string | null
+  createdBy?: string | null
+  updatedBy?: string | null
+}
+
+export interface ReporteBitacoraPorteriaResponse {
+  periodoTexto: string
+  mes: string
+  anio: number
+  totalRegistros: number
+  totalInternos: number
+  totalExternos: number
+  totalAfuera: number
+  totalCompletados: number
+  totalAnulados: number
+  totalActivosMovilizados: number
+  totalActivosNoRetornados: number
+  duracionPromedioMinutos: number
+  items: BitacoraPorteriaItem[]
+}
+
+export interface ReporteBitacoraPorteriaFiltros {
+  search?: string
+  empleadoId?: string
+  activoId?: string
+  areaId?: string
+  createdById?: string
+  esExterno?: boolean
+  estado?: EstadoRegistroPorteria
+  fechaDesde?: string
+  fechaHasta?: string
+}
+

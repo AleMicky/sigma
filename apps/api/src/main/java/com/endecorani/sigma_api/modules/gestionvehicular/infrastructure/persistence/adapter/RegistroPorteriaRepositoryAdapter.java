@@ -76,13 +76,53 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
             UUID activoId,
             UUID areaId,
             UUID createdById,
-             boolean unirPorOr,
+            boolean unirPorOr,
             EstadoRegistroPorteria estado,
             Instant fechaDesde,
             Instant fechaHasta,
             Pageable pageable
     ) {
-        Specification<RegistroPorteriaEntity> spec = (root, query, cb) -> {
+        Specification<RegistroPorteriaEntity> spec = buildSpec(
+                search, empleadoId, activoId, areaId, createdById, unirPorOr, null, estado, fechaDesde, fechaHasta
+        );
+        return springRepository.findAll(spec, pageable).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<RegistroPorteria> findAllForReporte(
+            String search,
+            UUID empleadoId,
+            UUID activoId,
+            UUID areaId,
+            UUID createdById,
+            boolean unirPorOr,
+            Boolean esExterno,
+            EstadoRegistroPorteria estado,
+            Instant fechaDesde,
+            Instant fechaHasta
+    ) {
+        Specification<RegistroPorteriaEntity> spec = buildSpec(
+                search, empleadoId, activoId, areaId, createdById, unirPorOr, esExterno, estado, fechaDesde, fechaHasta
+        );
+        return springRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "fechaHoraSalida"))
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    private Specification<RegistroPorteriaEntity> buildSpec(
+            String search,
+            UUID empleadoId,
+            UUID activoId,
+            UUID areaId,
+            UUID createdById,
+            boolean unirPorOr,
+            Boolean esExterno,
+            EstadoRegistroPorteria estado,
+            Instant fechaDesde,
+            Instant fechaHasta
+    ) {
+        return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             if (search != null && !search.isBlank()) {
@@ -130,6 +170,9 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
             if (empleadoId != null) {
                 predicates.add(cb.equal(root.get("empleadoId"), empleadoId));
             }
+            if (esExterno != null) {
+                predicates.add(cb.equal(root.get("esExterno"), esExterno));
+            }
             if (areaId != null || createdById != null) {
                 predicates.add(alcancePredicate(root, query, cb, areaId, createdById, unirPorOr));
             }
@@ -152,8 +195,6 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
-
-        return springRepository.findAll(spec, pageable).map(mapper::toDomain);
     }
 
     /**

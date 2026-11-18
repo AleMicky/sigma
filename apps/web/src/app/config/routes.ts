@@ -137,6 +137,7 @@ export const routes = {
     reportes: {
       root: "/gestion-vehicular/reportes",
       bitacora: "/gestion-vehicular/reportes/bitacora",
+      porteria: "/gestion-vehicular/reportes/porteria",
       consumoCombustible: "/gestion-vehicular/reportes/consumo-combustible",
       historialViajes: "/gestion-vehicular/reportes/historial-viajes",
       salidasVehiculares: "/gestion-vehicular/reportes/salidas-vehiculares",

@@ -8,6 +8,8 @@ import type {
   RegistrarLlegadaPorteriaRequest,
   RegistrarSalidaPorteriaRequest,
   RegistroPorteria,
+  ReporteBitacoraPorteriaFiltros,
+  ReporteBitacoraPorteriaResponse,
 } from "./porteria.types"
 
 export const listRegistrosPorteria = (
@@ -24,6 +26,52 @@ export const listRegistrosAfuera = (): Promise<RegistroPorteria[]> => {
 
 export const getRegistroPorteriaById = (id: string): Promise<RegistroPorteria> => {
   return http.get<RegistroPorteria>(porteriaEndpoints.byId(id))
+}
+
+export const getReporteBitacoraPorteria = (
+  params?: ReporteBitacoraPorteriaFiltros
+): Promise<ReporteBitacoraPorteriaResponse> => {
+  return http.get<ReporteBitacoraPorteriaResponse>(porteriaEndpoints.reporte, {
+    params,
+  })
+}
+
+async function fetchReporteBitacoraPorteriaPdf(
+  params?: ReporteBitacoraPorteriaFiltros
+): Promise<Blob> {
+  return http.get<Blob>(porteriaEndpoints.reportePdf, {
+    params,
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  })
+}
+
+export async function descargarReporteBitacoraPorteriaPdf(
+  params?: ReporteBitacoraPorteriaFiltros
+): Promise<void> {
+  const blob = await fetchReporteBitacoraPorteriaPdf(params)
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const rango =
+    params?.fechaDesde && params?.fechaHasta
+      ? `${params.fechaDesde}_${params.fechaHasta}`
+      : "general"
+  a.download = `bitacora-porteria-${rango}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+
+export async function abrirReporteBitacoraPorteriaPdf(
+  params?: ReporteBitacoraPorteriaFiltros
+): Promise<void> {
+  const blob = await fetchReporteBitacoraPorteriaPdf(params)
+  const url = window.URL.createObjectURL(blob)
+  window.open(url, "_blank")
 }
 
 export const registrarSalidaPorteria = (

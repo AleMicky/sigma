@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteri
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistrarLlegadaPorteriaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistrarSalidaPorteriaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.RegistroPorteriaResponse;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.ReporteBitacoraPorteriaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.service.RegistroPorteriaService;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
@@ -17,7 +18,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -83,6 +87,106 @@ public class RegistroPorteriaController {
             + "(administrador: todos; otros roles: solo los de su área/sección o creados por el usuario)")
     public ResponseEntity<ApiResponse<List<RegistroPorteriaResponse>>> listarAfuera() {
         return ResponseEntity.ok(ApiResponse.success(service.listarAfuera()));
+    }
+
+    @GetMapping({"/reporte", "/bitacora"})
+    @Operation(summary = "Reporte completo de todos los datos registrados en portería al estilo de bitácora "
+            + "(ordenado cronológicamente, con métricas consolidadas, ruta, tiempos y detalle de activos)")
+    public ResponseEntity<ApiResponse<ReporteBitacoraPorteriaResponse>> reporteBitacora(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) UUID empleadoId,
+            @RequestParam(required = false) UUID activoId,
+            @RequestParam(required = false) UUID areaId,
+            @RequestParam(required = false) UUID createdById,
+            @RequestParam(required = false) Boolean esExterno,
+            @RequestParam(required = false) EstadoRegistroPorteria estado,
+            @RequestParam(required = false) String fechaDesde,
+            @RequestParam(required = false) String fechaHasta,
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin
+    ) {
+        String searchTerm = (search != null && !search.isBlank())
+                ? search.trim()
+                : (q != null && !q.isBlank() ? q.trim() : null);
+
+        Instant parsedFechaDesde = parseFechaDesde(
+                fechaDesde != null && !fechaDesde.isBlank() ? fechaDesde : fechaInicio
+        );
+        Instant parsedFechaHasta = parseFechaHasta(
+                fechaHasta != null && !fechaHasta.isBlank() ? fechaHasta : fechaFin
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(service.generarReporteBitacora(
+                        searchTerm,
+                        empleadoId,
+                        activoId,
+                        areaId,
+                        createdById,
+                        esExterno,
+                        estado,
+                        parsedFechaDesde,
+                        parsedFechaHasta
+                ))
+        );
+    }
+
+    @GetMapping(value = {"/reporte/pdf", "/bitacora/pdf"}, produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Descargar reporte oficial en PDF de la bitácora de control de portería en formato ENDE CORANI")
+    public ResponseEntity<byte[]> reporteBitacoraPdf(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) UUID empleadoId,
+            @RequestParam(required = false) UUID activoId,
+            @RequestParam(required = false) UUID areaId,
+            @RequestParam(required = false) UUID createdById,
+            @RequestParam(required = false) Boolean esExterno,
+            @RequestParam(required = false) EstadoRegistroPorteria estado,
+            @RequestParam(required = false) String fechaDesde,
+            @RequestParam(required = false) String fechaHasta,
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin
+    ) {
+        String searchTerm = (search != null && !search.isBlank())
+                ? search.trim()
+                : (q != null && !q.isBlank() ? q.trim() : null);
+
+        Instant parsedFechaDesde = parseFechaDesde(
+                fechaDesde != null && !fechaDesde.isBlank() ? fechaDesde : fechaInicio
+        );
+        Instant parsedFechaHasta = parseFechaHasta(
+                fechaHasta != null && !fechaHasta.isBlank() ? fechaHasta : fechaFin
+        );
+
+        byte[] pdfBytes = service.generarReporteBitacoraPdf(
+                searchTerm,
+                empleadoId,
+                activoId,
+                areaId,
+                createdById,
+                esExterno,
+                estado,
+                parsedFechaDesde,
+                parsedFechaHasta
+        );
+
+        String filename = "bitacora-porteria-"
+                + (activoId != null ? activoId : "todos")
+                + "-"
+                + LocalDate.now()
+                + ".pdf";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition.inline()
+                        .filename(filename)
+                        .build()
+        );
+        headers.setContentLength(pdfBytes.length);
+
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 
     @GetMapping

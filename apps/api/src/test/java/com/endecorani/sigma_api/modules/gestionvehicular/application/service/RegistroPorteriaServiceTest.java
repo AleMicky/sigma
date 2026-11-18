@@ -2,12 +2,15 @@ package com.endecorani.sigma_api.modules.gestionvehicular.application.service;
 
 import com.endecorani.sigma_api.config.security.SecurityUtils;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoRepository;
+import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoValorRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistrarLlegadaPorteriaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistrarSalidaPorteriaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistroPorteriaActivoLlegadaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistroPorteriaActivoSalidaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.RegistroPorteriaResponse;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.ReporteBitacoraPorteriaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteriaActivo;
@@ -23,6 +26,7 @@ import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.re
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
 import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -50,6 +54,10 @@ class RegistroPorteriaServiceTest {
     @Mock
     private SpringActivoRepository activoRepository;
     @Mock
+    private SpringActivoAtributoRepository activoAtributoRepository;
+    @Mock
+    private SpringActivoAtributoValorRepository activoAtributoValorRepository;
+    @Mock
     private SpringVEmpleadoRepository vempleadoRepository;
     @Mock
     private EmpleadoRepository empleadoRepository;
@@ -61,6 +69,8 @@ class RegistroPorteriaServiceTest {
     private CorrelativoService correlativoService;
     @Mock
     private SecurityUtils securityUtils;
+    @Mock
+    private JasperReportService jasperReportService;
 
     @InjectMocks
     private RegistroPorteriaService service;
@@ -273,6 +283,118 @@ class RegistroPorteriaServiceTest {
         assertEquals("Pedro Visitante", response.empleadoNombre());
         assertEquals(1, response.activos().size());
         assertTrue(response.activos().get(0).descripcionItem().contains("9876-ABC"));
+    }
+
+    @Test
+    void generarReporteBitacora_debeRetornarTodosLosDatosYMetricasConsolidadas() {
+        UUID empleadoId = UUID.randomUUID();
+        UUID guardiaId = UUID.randomUUID();
+        UUID activoId = UUID.randomUUID();
+        Instant salida1 = Instant.parse("2026-11-18T12:00:00Z");
+        Instant llegada1 = Instant.parse("2026-11-18T14:30:00Z");
+        Instant salida2 = Instant.parse("2026-11-18T15:00:00Z");
+
+        when(securityUtils.isAdmin()).thenReturn(true);
+
+        RegistroPorteria reg1 = RegistroPorteria.builder()
+                .id(UUID.randomUUID())
+                .numero("PRT-2026-0010")
+                .esExterno(false)
+                .empleadoId(empleadoId)
+                .guardiaSalidaId(guardiaId)
+                .guardiaLlegadaId(guardiaId)
+                .origenUbicacionNombre("Planta Corani")
+                .destinoOtro("Subestación Sacaba")
+                .fechaHoraSalida(salida1)
+                .fechaHoraLlegada(llegada1)
+                .estado(EstadoRegistroPorteria.COMPLETADO)
+                .observacionSalida("Inspección técnica")
+                .observacionLlegada("Retorno sin novedad")
+                .activos(List.of(
+                        RegistroPorteriaActivo.builder()
+                                .id(UUID.randomUUID())
+                                .activoId(activoId)
+                                .cantidad(1)
+                                .retornado(true)
+                                .build()
+                ))
+                .build();
+
+        RegistroPorteria reg2 = RegistroPorteria.builder()
+                .id(UUID.randomUUID())
+                .numero("PRT-2026-0011")
+                .esExterno(true)
+                .personaExterna("María Proveedora")
+                .placaExterna("4512-XYZ")
+                .destinoOtro("Almacén Central")
+                .guardiaSalidaId(guardiaId)
+                .fechaHoraSalida(salida2)
+                .estado(EstadoRegistroPorteria.AFUERA)
+                .observacionSalida("Entrega de repuestos")
+                .activos(List.of(
+                        RegistroPorteriaActivo.builder()
+                                .id(UUID.randomUUID())
+                                .descripcionItem("Vehículo externo - Placa: 4512-XYZ")
+                                .cantidad(1)
+                                .build()
+                ))
+                .build();
+
+        when(repository.findAllForReporte(any(), any(), any(), any(), any(), eq(false), any(), any(), any(), any()))
+                .thenReturn(List.of(reg2, reg1));
+
+        VEmpleadoEntity emp = new VEmpleadoEntity();
+        emp.setEmpleadoId(empleadoId);
+        emp.setCodigo("EMP-101");
+        emp.setNombreCompleto("Luis Mamani");
+        emp.setCargo("Ingeniero Eléctrico");
+        emp.setArea("Operaciones");
+
+        VEmpleadoEntity guardia = new VEmpleadoEntity();
+        guardia.setEmpleadoId(guardiaId);
+        guardia.setNombreCompleto("Carlos Guardia");
+
+        when(vempleadoRepository.findAllById(any())).thenReturn(List.of(emp, guardia));
+
+        ActivoEntity activo = new ActivoEntity();
+        activo.setId(activoId);
+        activo.setCodigo("VEH-005");
+        activo.setNombre("Camioneta Toyota Hilux");
+        activo.setDescripcion("CAMIONETA PLACA: 3042-YHB COLOR BLANCO");
+        when(activoRepository.findAllById(any())).thenReturn(List.of(activo));
+        when(activoAtributoValorRepository.findByActivoIdIn(any())).thenReturn(List.of());
+
+        ReporteBitacoraPorteriaResponse reporte = service.generarReporteBitacora(
+                null, null, null, null, null, null, null, salida1, salida2
+        );
+
+        assertEquals(2, reporte.totalRegistros());
+        assertEquals(1L, reporte.totalInternos());
+        assertEquals(1L, reporte.totalExternos());
+        assertEquals(1L, reporte.totalCompletados());
+        assertEquals(1L, reporte.totalAfuera());
+        assertEquals(0L, reporte.totalAnulados());
+        assertEquals(2L, reporte.totalActivosMovilizados());
+        assertEquals(150.0, reporte.duracionPromedioMinutos());
+
+        // Orden cronológico ascendente (reg1 primero, reg2 después)
+        var item1 = reporte.items().get(0);
+        assertEquals("PRT-2026-0010", item1.numero());
+        assertEquals("INTERNO", item1.tipoRegistro());
+        assertEquals("Luis Mamani", item1.empleadoNombre());
+        assertEquals("EMP-101", item1.empleadoCodigo());
+        assertEquals("Operaciones", item1.empleadoArea());
+        assertEquals("3042-YHB", item1.vehiculoPlaca());
+        assertEquals("Planta Corani -> Subestación Sacaba", item1.rutaTexto());
+        assertEquals(150L, item1.duracionMinutos());
+        assertEquals("2h 30m", item1.duracionTexto());
+
+        var item2 = reporte.items().get(1);
+        assertEquals("PRT-2026-0011", item2.numero());
+        assertEquals("EXTERNO", item2.tipoRegistro());
+        assertEquals("María Proveedora", item2.empleadoNombre());
+        assertEquals("4512-XYZ", item2.vehiculoPlaca());
+        assertEquals("En curso", item2.duracionTexto());
     }
 }
 
