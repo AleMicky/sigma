@@ -2,11 +2,7 @@ import {
   Building2,
   Calendar,
   Car,
-  FileDown,
-  FileSpreadsheet,
   Filter,
-  Loader2,
-  Printer,
   Search,
   UserRound,
   X,
@@ -58,12 +54,6 @@ export interface ReporteBitacoraPorteriaFiltrosBarProps {
   tipoPase: string
   onTipoPaseChange: (tipo: string) => void
   onLimpiarFiltros: () => void
-  onImprimirReporte: () => void
-  onDescargarPdf: () => void
-  onExportarCsv: () => void
-  isLoading?: boolean
-  isPdfLoading?: boolean
-  hasData?: boolean
 }
 
 export const ESTADOS_PORTERIA = [
@@ -95,11 +85,6 @@ export function ReporteBitacoraPorteriaFiltrosBar({
   tipoPase,
   onTipoPaseChange,
   onLimpiarFiltros,
-  onImprimirReporte,
-  onDescargarPdf,
-  onExportarCsv,
-  isPdfLoading = false,
-  hasData = false,
 }: Readonly<ReporteBitacoraPorteriaFiltrosBarProps>) {
   const setHoy = () => {
     const today = new Date().toISOString().split("T")[0]
@@ -169,84 +154,30 @@ export function ReporteBitacoraPorteriaFiltrosBar({
 
   return (
     <Card className="border-border/60 shadow-xs print:hidden">
-      <CardContent className="p-4 sm:p-5 space-y-4">
-        {/* Cabecera de la barra de filtros + Botones de Impresión y Exportación */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Filter className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">
-                Filtros de Búsqueda de Bitácora
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Filtre en tiempo real por funcionario, vehículo/activo, tipo de pase, estado y rango de fechas
-              </p>
-            </div>
+      <CardContent className="p-4 space-y-3">
+        {/* Cabecera de filtros */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">
+              Filtros
+            </h2>
+            <span className="hidden md:inline text-xs text-muted-foreground">
+              · Se aplican automáticamente
+            </span>
           </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {hasActiveFilters && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onLimpiarFiltros}
-                className="h-8 text-xs text-muted-foreground hover:text-foreground gap-1"
-              >
-                <X className="h-3.5 w-3.5" />
-                Limpiar filtros
-              </Button>
-            )}
-
+          {hasActiveFilters && (
             <Button
               type="button"
-              variant="default"
+              variant="ghost"
               size="sm"
-              onClick={onImprimirReporte}
-              disabled={isPdfLoading}
-              className="h-8 text-xs gap-1.5 font-medium cursor-pointer shadow-2xs"
-              title="Generar e imprimir el reporte oficial de bitácora en PDF"
+              onClick={onLimpiarFiltros}
+              className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1 cursor-pointer"
             >
-              {isPdfLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Printer className="h-3.5 w-3.5" />
-              )}
-              Imprimir Reporte
+              <X className="h-3.5 w-3.5" />
+              Limpiar filtros
             </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onDescargarPdf}
-              disabled={isPdfLoading}
-              className="h-8 text-xs gap-1.5 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/10 cursor-pointer"
-              title="Descargar archivo PDF del reporte"
-            >
-              {isPdfLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <FileDown className="h-3.5 w-3.5" />
-              )}
-              Descargar PDF
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onExportarCsv}
-              disabled={!hasData}
-              className="h-8 text-xs gap-1.5 border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
-              title="Exportar tabla filtrada a Excel (CSV)"
-            >
-              <FileSpreadsheet className="h-3.5 w-3.5" />
-              Exportar Excel
-            </Button>
-          </div>
+          )}
         </div>
 
         {/* Fila 1 de Filtros: Búsqueda rápida, Funcionario, Vehículo/Activo */}

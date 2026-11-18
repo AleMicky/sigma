@@ -5,6 +5,8 @@ import {
   BookOpen,
   CheckCircle2,
   Clock,
+  FileDown,
+  FileSpreadsheet,
   Loader2,
   Package,
   Printer,
@@ -294,7 +296,7 @@ export function ReporteBitacoraPorteriaPage() {
       size="full"
       padding="compact"
       layout="scroll"
-      className="space-y-4 pb-8"
+      className="gap-4 pb-8 [&>*]:shrink-0"
     >
       {/* 1. Encabezado de la Interfaz con Botón de Imprimir Reporte */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-3">
@@ -312,14 +314,15 @@ export function ReporteBitacoraPorteriaPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap sm:justify-end">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => void reporteQuery.refetch()}
             disabled={isLoading}
-            className="h-8 text-xs gap-1.5 cursor-pointer"
+            className="h-9 text-xs gap-1.5 cursor-pointer"
+            title="Volver a consultar los datos"
           >
             <RefreshCw
               className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`}
@@ -329,17 +332,44 @@ export function ReporteBitacoraPorteriaPage() {
 
           <Button
             type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleExportarCsv}
+            disabled={filas.length === 0}
+            className="h-9 text-xs gap-1.5 cursor-pointer"
+            title="Exportar la tabla filtrada a Excel (CSV)"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+            Excel
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleDescargarPdf}
+            disabled={isPdfLoading}
+            className="h-9 text-xs gap-1.5 cursor-pointer"
+            title="Descargar el reporte en PDF"
+          >
+            <FileDown className="h-3.5 w-3.5 text-rose-600" />
+            PDF
+          </Button>
+
+          <Button
+            type="button"
             size="sm"
             onClick={handleImprimirReporte}
             disabled={isPdfLoading}
-            className="h-8 text-xs gap-1.5 font-medium cursor-pointer"
+            className="h-9 text-xs gap-1.5 font-medium cursor-pointer"
+            title="Abrir el reporte oficial listo para imprimir"
           >
             {isPdfLoading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Printer className="h-3.5 w-3.5" />
             )}
-            Imprimir Reporte
+            Imprimir
           </Button>
         </div>
       </div>
@@ -459,12 +489,6 @@ export function ReporteBitacoraPorteriaPage() {
         tipoPase={tipoPase}
         onTipoPaseChange={setTipoPase}
         onLimpiarFiltros={handleLimpiarFiltros}
-        onImprimirReporte={handleImprimirReporte}
-        onDescargarPdf={handleDescargarPdf}
-        onExportarCsv={handleExportarCsv}
-        isLoading={isLoading}
-        isPdfLoading={isPdfLoading}
-        hasData={filas.length > 0}
       />
 
       {/* 4. Estado de Error */}
