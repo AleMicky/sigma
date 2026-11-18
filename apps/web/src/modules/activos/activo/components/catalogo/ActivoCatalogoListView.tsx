@@ -1,14 +1,10 @@
-import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   Calendar,
-  Check,
-  Copy,
   FileText,
   ImageIcon,
   MapPin,
 } from "lucide-react"
-import { toast } from "sonner"
 
 import { routes } from "@/app/config/routes"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
@@ -140,16 +136,12 @@ interface ActivoCatalogoListItemProps {
   activo: Activo
   tipoActivo?: TipoActivo
   ubicacion?: Ubicacion
-  isCopied: boolean
-  onCopyCode: (e: React.MouseEvent, activo: Activo) => void
 }
 
 function ActivoCatalogoListItem({
   activo,
   tipoActivo,
   ubicacion,
-  isCopied,
-  onCopyCode,
 }: Readonly<ActivoCatalogoListItemProps>) {
   const isActivo = activo.activo !== false
   const tipoColor = tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
@@ -180,7 +172,7 @@ function ActivoCatalogoListItem({
 
           {/* Contenedor de Información Central */}
           <div className="flex flex-col min-w-0 flex-1 gap-2">
-            {/* Fila 1: Título, Código y Tipo */}
+            {/* Fila 1: Título y Tipo */}
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 to={routes.activos.detail(activo.id)}
@@ -188,25 +180,6 @@ function ActivoCatalogoListItem({
               >
                 {activo.nombre}
               </Link>
-
-              {/* Código con botón interactivo de copiado */}
-              <div className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-2 py-0.5 border border-border/60">
-                <code className="font-mono text-[11px] font-bold text-foreground/85">
-                  {activo.codigo}
-                </code>
-                <button
-                  type="button"
-                  onClick={(e) => onCopyCode(e, activo)}
-                  className="inline-flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  title="Copiar código"
-                >
-                  {isCopied ? (
-                    <Check className="size-2.5 text-emerald-500" />
-                  ) : (
-                    <Copy className="size-2.5" />
-                  )}
-                </button>
-              </div>
 
               {/* Badge de Tipo de Activo */}
               {tipoActivo ? (
@@ -300,16 +273,6 @@ export function ActivoCatalogoListView({
   tiposById,
   ubicacionesById,
 }: Readonly<ActivoCatalogoListViewProps>) {
-  const [copiedId, setCopiedId] = useState<string | null>(null)
-
-  function copyCode(e: React.MouseEvent, activo: Activo) {
-    e.stopPropagation()
-    void navigator.clipboard.writeText(activo.codigo)
-    setCopiedId(activo.id)
-    toast.success(`Código "${activo.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
-
   return (
     <div className="w-full rounded-2xl border border-border/80 bg-card divide-y divide-border/40 overflow-hidden shadow-2xs">
       {activos.map((activo) => {
@@ -326,8 +289,6 @@ export function ActivoCatalogoListView({
             activo={activo}
             tipoActivo={tipoActivo}
             ubicacion={ubicacion}
-            isCopied={copiedId === activo.id}
-            onCopyCode={copyCode}
           />
         )
       })}
