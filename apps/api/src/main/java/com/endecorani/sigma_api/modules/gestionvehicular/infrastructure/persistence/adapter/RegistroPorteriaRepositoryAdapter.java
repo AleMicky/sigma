@@ -50,8 +50,8 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
     }
 
     @Override
-    public List<RegistroPorteria> findAfuera(UUID areaId) {
-        if (areaId == null) {
+    public List<RegistroPorteria> findAfuera(UUID areaId, UUID createdById) {
+        if (areaId == null && createdById == null) {
             return springRepository.findByEstadoOrderByFechaHoraSalidaDesc(EstadoRegistroPorteria.AFUERA)
                     .stream()
                     .map(mapper::toDomain)
@@ -60,7 +60,7 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
 
         Specification<RegistroPorteriaEntity> spec = (root, query, cb) -> cb.and(
                 cb.equal(root.get("estado"), EstadoRegistroPorteria.AFUERA),
-                empleadoPerteneceAArea(root, query, cb, areaId)
+                alcancePredicate(root, query, cb, areaId, createdById, true)
         );
 
         return springRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "fechaHoraSalida"))
@@ -75,6 +75,8 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
             UUID empleadoId,
             UUID activoId,
             UUID areaId,
+            UUID createdById,
+             boolean unirPorOr,
             EstadoRegistroPorteria estado,
             Instant fechaDesde,
             Instant fechaHasta,
@@ -128,8 +130,8 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
             if (empleadoId != null) {
                 predicates.add(cb.equal(root.get("empleadoId"), empleadoId));
             }
-            if (areaId != null) {
-                predicates.add(empleadoPerteneceAArea(root, query, cb, areaId));
+            if (areaId != null || createdById != null) {
+                predicates.add(alcancePredicate(root, query, cb, areaId, createdById, unirPorOr));
             }
             if (activoId != null) {
                 Subquery<UUID> subAct = query.subquery(UUID.class);
@@ -152,6 +154,32 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
         };
 
         return springRepository.findAll(spec, pageable).map(mapper::toDomain);
+    }
+
+    /**
+     * Construye el predicado de alcance por sección ({@code areaId}) y/o creador ({@code createdById}).
+     */
+    private Predicate alcancePredicate(
+            Root<RegistroPorteriaEntity> root,
+            CriteriaQuery<?> query,
+            CriteriaBuilder cb,
+            UUID areaId,
+            UUID createdById,
+            boolean unirPorOr
+    ) {
+        List<Predicate> alcanceOptions = new ArrayList<>(2);
+        if (areaId != null) {
+            alcanceOptions.add(empleadoPerteneceAArea(root, query, cb, areaId));
+        }
+        if (createdById != null) {
+            alcanceOptions.add(cb.equal(root.get("createdById"), createdById));
+        }
+        if (alcanceOptions.size() == 1) {
+            return alcanceOptions.get(0);
+        }
+        return unirPorOr
+                ? cb.or(alcanceOptions.toArray(new Predicate[0]))
+                : cb.and(alcanceOptions.toArray(new Predicate[0]));
     }
 
     /**

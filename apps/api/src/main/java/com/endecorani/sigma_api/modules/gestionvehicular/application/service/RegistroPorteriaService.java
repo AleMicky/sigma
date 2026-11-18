@@ -54,8 +54,7 @@ public class RegistroPorteriaService {
             "fechaHoraLlegada",
             "estado",
             "createdAt",
-            "updatedAt"
-    );
+            "updatedAt");
 
     private final RegistroPorteriaRepository repository;
     private final SalidaVehicularRepository salidaVehicularRepository;
@@ -128,8 +127,7 @@ public class RegistroPorteriaService {
 
         String numero = correlativoService.generar(
                 CorrelativoCodigo.REGISTRO_PORTERIA,
-                LocalDate.now().getYear()
-        );
+                LocalDate.now().getYear());
 
         RegistroPorteria registro = RegistroPorteria.builder()
                 .numero(numero)
@@ -160,8 +158,7 @@ public class RegistroPorteriaService {
         if (registro.getEstado() != EstadoRegistroPorteria.AFUERA) {
             throw new BusinessException(
                     "Solo se puede registrar la llegada de un registro en estado AFUERA. Estado actual: "
-                            + registro.getEstado()
-            );
+                            + registro.getEstado());
         }
 
         Instant fechaLlegada = (request != null && request.fechaHoraLlegada() != null)
@@ -192,8 +189,7 @@ public class RegistroPorteriaService {
 
         if (registro.getEstado() != EstadoRegistroPorteria.AFUERA) {
             throw new BusinessException(
-                    "Solo se puede anular un registro en estado AFUERA. Estado actual: " + registro.getEstado()
-            );
+                    "Solo se puede anular un registro en estado AFUERA. Estado actual: " + registro.getEstado());
         }
 
         registro.setEstado(EstadoRegistroPorteria.ANULADO);
@@ -207,11 +203,11 @@ public class RegistroPorteriaService {
 
     @Transactional(readOnly = true)
     public List<RegistroPorteriaResponse> listarAfuera() {
-        AlcanceArea alcance = resolverAlcance(null);
+        AlcanceArea alcance = resolverAlcance(null, null);
         if (alcance.sinAcceso()) {
             return List.of();
         }
-        List<RegistroPorteria> registros = repository.findAfuera(alcance.areaId());
+        List<RegistroPorteria> registros = repository.findAfuera(alcance.areaId(), alcance.createdById());
         return toResponseList(registros);
     }
 
@@ -221,21 +217,29 @@ public class RegistroPorteriaService {
             UUID empleadoId,
             UUID activoId,
             UUID areaId,
+            UUID createdById,
             EstadoRegistroPorteria estado,
             Instant fechaDesde,
             Instant fechaHasta,
-            PageRequestDto pageRequest
-    ) {
+            PageRequestDto pageRequest) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
-        AlcanceArea alcance = resolverAlcance(areaId);
+        AlcanceArea alcance = resolverAlcance(areaId, createdById);
         if (alcance.sinAcceso()) {
             return PageResponse.of(List.of(), new PageImpl<>(List.of(), pageable, 0));
         }
 
         Page<RegistroPorteria> page = repository.findAll(
-                search, empleadoId, activoId, alcance.areaId(), estado, fechaDesde, fechaHasta, pageable
-        );
+                search,
+                empleadoId,
+                activoId,
+                alcance.areaId(),
+                alcance.createdById(),
+                alcance.unirPorOr(),
+                estado,
+                fechaDesde,
+                fechaHasta,
+                pageable);
         List<RegistroPorteriaResponse> content = toResponseList(page.getContent());
         return PageResponse.of(content, page);
     }
@@ -245,29 +249,43 @@ public class RegistroPorteriaService {
         RegistroPorteria registro = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Registro de Portería", id));
 
-        AlcanceArea alcance = resolverAlcance(null);
-        if (alcance.sinAcceso() || !perteneceAlArea(registro, alcance.areaId())) {
+        AlcanceArea alcance = resolverAlcance(null, null);
+        if (alcance.sinAcceso() || !tieneAccesoAlRegistro(registro, alcance)) {
             throw new ResourceNotFoundException("Registro de Portería", id);
         }
         return toResponse(registro);
     }
 
     /**
-     * Determina el área (sección) a la que se restringe la consulta.
+     * Determina el alcance (sección y/o usuario creador) al que se restringe la
+     * consulta.
      * <ul>
-     *     <li>Administrador: ve todo; opcionalmente puede filtrar por {@code areaSolicitada}.</li>
-     *     <li>Otro rol: se fuerza el área del funcionario autenticado. Si el usuario no tiene
-     *     un empleado/área asociado, no tiene acceso a ningún registro.</li>
+     * <li>Administrador: ve todo; opcionalmente puede filtrar por
+     * {@code areaSolicitada} y/o {@code createdBySolicitado}.</li>
+     * <li>Otro rol: se restringe a los registros de su área (sección) o los creados
+     * por él ({@code createdById}).</li>
      * </ul>
      */
-    private AlcanceArea resolverAlcance(UUID areaSolicitada) {
+    private AlcanceArea resolverAlcance(UUID areaSolicitada, UUID createdBySolicitado) {
         if (securityUtils.isAdmin()) {
-            return new AlcanceArea(areaSolicitada, false);
+            return new AlcanceArea(areaSolicitada, createdBySolicitado, false, false);
         }
-        UUID areaActual = obtenerAreaIdActual();
-        return areaActual == null
-                ? new AlcanceArea(null, true)
-                : new AlcanceArea(areaActual, false);
+        UUID userId = securityUtils.getCurrentUserId().orElse(null);
+        UUID areaActual = obtenerAreaIdPorUsuario(userId);
+        if (areaActual == null && userId == null) {
+            return new AlcanceArea(null, null, true, true);
+        }
+        return new AlcanceArea(areaActual, userId, true, false);
+    }
+
+    private boolean tieneAccesoAlRegistro(RegistroPorteria registro, AlcanceArea alcance) {
+        if (alcance.areaId() == null && alcance.createdById() == null) {
+            return true;
+        }
+        if (alcance.createdById() != null && alcance.createdById().equals(registro.getCreatedById())) {
+            return true;
+        }
+        return alcance.areaId() != null && perteneceAlArea(registro, alcance.areaId());
     }
 
     private boolean perteneceAlArea(RegistroPorteria registro, UUID areaId) {
@@ -275,9 +293,12 @@ public class RegistroPorteriaService {
             return true;
         }
         List<UUID> ids = new ArrayList<>(3);
-        if (registro.getEmpleadoId() != null) ids.add(registro.getEmpleadoId());
-        if (registro.getGuardiaSalidaId() != null) ids.add(registro.getGuardiaSalidaId());
-        if (registro.getGuardiaLlegadaId() != null) ids.add(registro.getGuardiaLlegadaId());
+        if (registro.getEmpleadoId() != null)
+            ids.add(registro.getEmpleadoId());
+        if (registro.getGuardiaSalidaId() != null)
+            ids.add(registro.getGuardiaSalidaId());
+        if (registro.getGuardiaLlegadaId() != null)
+            ids.add(registro.getGuardiaLlegadaId());
 
         if (ids.isEmpty()) {
             return false;
@@ -287,10 +308,12 @@ public class RegistroPorteriaService {
                 .anyMatch(areaId::equals);
     }
 
-    private UUID obtenerAreaIdActual() {
+    private UUID obtenerAreaIdPorUsuario(UUID userId) {
+        if (userId == null) {
+            return null;
+        }
         try {
-            return securityUtils.getCurrentUserId()
-                    .flatMap(usuarioRepository::findById)
+            return usuarioRepository.findById(userId)
                     .map(Usuario::getPersonaId)
                     .flatMap(empleadoRepository::findFirstByPersonaId)
                     .map(Empleado::getAreaId)
@@ -301,10 +324,15 @@ public class RegistroPorteriaService {
     }
 
     /**
-     * @param areaId    área a filtrar ({@code null} = sin restricción).
-     * @param sinAcceso {@code true} si el usuario no debe ver ningún registro.
+     * @param areaId      área (sección) a filtrar ({@code null} = sin filtro de
+     *                    área).
+     * @param createdById ID del usuario creador a incluir ({@code null} = sin
+     *                    filtro por creador).
+     * @param unirPorOr   {@code true} para unir {@code areaId} y
+     *                    {@code createdById} con OR (alcance de usuario no-admin).
+     * @param sinAcceso   {@code true} si el usuario no debe ver ningún registro.
      */
-    private record AlcanceArea(UUID areaId, boolean sinAcceso) {
+    private record AlcanceArea(UUID areaId, UUID createdById, boolean unirPorOr, boolean sinAcceso) {
     }
 
     private List<RegistroPorteriaActivo> construirItemsSalida(List<RegistroPorteriaActivoSalidaRequest> requests) {
@@ -355,8 +383,7 @@ public class RegistroPorteriaService {
             RegistroPorteriaActivo item = itemsPorId.get(llegadaItem.itemId());
             if (item == null) {
                 throw new BusinessException(
-                        "El ítem " + llegadaItem.itemId() + " no pertenece al registro de portería."
-                );
+                        "El ítem " + llegadaItem.itemId() + " no pertenece al registro de portería.");
             }
             item.setRetornado(llegadaItem.retornado());
             item.setObservacionLlegada(trimToNull(llegadaItem.observacionLlegada()));
@@ -383,14 +410,20 @@ public class RegistroPorteriaService {
         Set<UUID> ubicacionIds = new HashSet<>();
 
         for (RegistroPorteria r : registros) {
-            if (r.getEmpleadoId() != null) empleadoIds.add(r.getEmpleadoId());
-            if (r.getGuardiaSalidaId() != null) empleadoIds.add(r.getGuardiaSalidaId());
-            if (r.getGuardiaLlegadaId() != null) empleadoIds.add(r.getGuardiaLlegadaId());
-            if (r.getOrigenUbicacionId() != null) ubicacionIds.add(r.getOrigenUbicacionId());
-            if (r.getDestinoUbicacionId() != null) ubicacionIds.add(r.getDestinoUbicacionId());
+            if (r.getEmpleadoId() != null)
+                empleadoIds.add(r.getEmpleadoId());
+            if (r.getGuardiaSalidaId() != null)
+                empleadoIds.add(r.getGuardiaSalidaId());
+            if (r.getGuardiaLlegadaId() != null)
+                empleadoIds.add(r.getGuardiaLlegadaId());
+            if (r.getOrigenUbicacionId() != null)
+                ubicacionIds.add(r.getOrigenUbicacionId());
+            if (r.getDestinoUbicacionId() != null)
+                ubicacionIds.add(r.getDestinoUbicacionId());
             if (r.getActivos() != null) {
                 for (RegistroPorteriaActivo a : r.getActivos()) {
-                    if (a.getActivoId() != null) activoIds.add(a.getActivoId());
+                    if (a.getActivoId() != null)
+                        activoIds.add(a.getActivoId());
                 }
             }
         }
@@ -401,8 +434,7 @@ public class RegistroPorteriaService {
                         .collect(Collectors.toMap(
                                 VEmpleadoEntity::getEmpleadoId,
                                 VEmpleadoEntity::getNombreCompleto,
-                                (a, b) -> a
-                        ));
+                                (a, b) -> a));
 
         Map<UUID, ActivoEntity> activosMap = activoIds.isEmpty()
                 ? Collections.emptyMap()
@@ -410,8 +442,7 @@ public class RegistroPorteriaService {
                         .collect(Collectors.toMap(
                                 ActivoEntity::getId,
                                 Function.identity(),
-                                (a, b) -> a
-                        ));
+                                (a, b) -> a));
 
         Map<UUID, String> ubicacionesMap = ubicacionIds.isEmpty()
                 ? Collections.emptyMap()
@@ -419,8 +450,7 @@ public class RegistroPorteriaService {
                         .collect(Collectors.toMap(
                                 UbicacionEntity::getId,
                                 UbicacionEntity::getNombre,
-                                (a, b) -> a
-                        ));
+                                (a, b) -> a));
 
         return registros.stream()
                 .map(r -> mapToResponse(r, empleadosMap, activosMap, ubicacionesMap))
@@ -431,8 +461,7 @@ public class RegistroPorteriaService {
             RegistroPorteria r,
             Map<UUID, String> empleadosMap,
             Map<UUID, ActivoEntity> activosMap,
-            Map<UUID, String> ubicacionesMap
-    ) {
+            Map<UUID, String> ubicacionesMap) {
         List<RegistroPorteriaActivoResponse> activosResp = r.getActivos() == null
                 ? List.of()
                 : r.getActivos().stream()
@@ -447,8 +476,7 @@ public class RegistroPorteriaService {
                                     a.getCantidad(),
                                     a.getObservacionSalida(),
                                     a.getRetornado(),
-                                    a.getObservacionLlegada()
-                            );
+                                    a.getObservacionLlegada());
                         })
                         .toList();
 
@@ -491,8 +519,7 @@ public class RegistroPorteriaService {
                 r.getObservacionLlegada(),
                 activosResp,
                 r.getCreatedAt(),
-                r.getUpdatedAt()
-        );
+                r.getUpdatedAt());
     }
 
     private UUID obtenerEmpleadoIdActual() {
@@ -516,4 +543,3 @@ public class RegistroPorteriaService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 }
-

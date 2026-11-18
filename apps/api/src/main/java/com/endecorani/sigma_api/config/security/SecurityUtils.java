@@ -42,12 +42,23 @@ public class SecurityUtils {
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return false;
         }
+        String name = auth.getName();
+        if (name != null && name.trim().equalsIgnoreCase("admin")) {
+            return true;
+        }
+        if (auth.getPrincipal() instanceof Jwt jwt) {
+            String pref = jwt.getClaimAsString("preferred_username");
+            if (pref != null && pref.trim().equalsIgnoreCase("admin")) {
+                return true;
+            }
+        }
         return auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .map(String::toUpperCase)
-                .anyMatch(a -> a.equals("ROLE_ADMIN")
-                        || a.equals("ADMIN")
-                        || a.equals("ROLE_ADMINISTRADOR")
+                .map(a -> a.replaceFirst("^(ROLE_|ROL_)", "").trim())
+                .anyMatch(a -> a.equals("ADMIN")
+                        || a.equals("SUPERADMIN")
+                        || a.equals("SUPER_ADMIN")
                         || a.equals("ADMINISTRADOR"));
     }
 
