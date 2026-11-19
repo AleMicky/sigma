@@ -45,6 +45,7 @@ public interface SpringProgramacionMantenimientoRepository
               AND (:activo IS NULL OR p.activo = :activo)
               AND (:q IS NULL OR :q = '' OR (
                     LOWER(a.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
+                    (a.codigoAlternativo IS NOT NULL AND LOWER(a.codigoAlternativo) LIKE LOWER(CONCAT('%', :q, '%'))) OR
                     LOWER(a.nombre) LIKE LOWER(CONCAT('%', :q, '%')) OR
                     LOWER(pm.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
                     LOWER(pm.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
@@ -61,6 +62,7 @@ public interface SpringProgramacionMantenimientoRepository
               AND (:activo IS NULL OR p.activo = :activo)
               AND (:q IS NULL OR :q = '' OR (
                     LOWER(a.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
+                    (a.codigoAlternativo IS NOT NULL AND LOWER(a.codigoAlternativo) LIKE LOWER(CONCAT('%', :q, '%'))) OR
                     LOWER(a.nombre) LIKE LOWER(CONCAT('%', :q, '%')) OR
                     LOWER(pm.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR
                     LOWER(pm.nombre) LIKE LOWER(CONCAT('%', :q, '%'))

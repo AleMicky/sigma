@@ -171,7 +171,7 @@ export function ActivoFilterToolbar({
         <SearchField
           value={searchValue}
           onChange={onSearchChange}
-          placeholder="Buscar por código o nombre del activo…"
+          placeholder="Buscar por código, código alternativo o nombre del activo…"
           aria-label="Buscar activos"
           className="w-full flex-1 min-w-0"
         />

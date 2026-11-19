@@ -66,6 +66,7 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
             OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE LOWER(CONCAT('%', :search, '%')))
             OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
             OR EXISTS (
                 SELECT 1 
@@ -106,6 +107,7 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
             OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE LOWER(CONCAT('%', :search, '%')))
             OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
             OR EXISTS (
                 SELECT 1 

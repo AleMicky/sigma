@@ -32,6 +32,7 @@ public interface SpringAsignacionVehicularRepository extends JpaRepository<Asign
         WHERE (:search IS NULL
             OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE LOWER(CONCAT('%', :search, '%')))
             OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
             OR EXISTS (
                 SELECT 1 

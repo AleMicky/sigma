@@ -102,6 +102,11 @@ function SelectedActivoCard({
             <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
               {activo.codigo}
             </code>
+            {activo.codigoAlternativo ? (
+              <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 border border-border/50 px-1.5 py-0.2 rounded shrink-0">
+                Alt: {activo.codigoAlternativo}
+              </span>
+            ) : null}
             <span className="font-semibold text-xs text-foreground truncate">
               {activo.nombre}
             </span>
@@ -195,6 +200,11 @@ function ActivoComboboxListItem({
             <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
               {item.codigo}
             </code>
+            {item.codigoAlternativo ? (
+              <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 border border-border/50 px-1.5 py-0.2 rounded shrink-0">
+                Alt: {item.codigoAlternativo}
+              </span>
+            ) : null}
             <span className="font-semibold text-foreground truncate text-xs">
               {item.nombre}
             </span>
@@ -241,7 +251,7 @@ export function ActivoCombobox({
   value = "",
   onValueChange,
   onBlur,
-  placeholder = "Buscar activo por código, nombre, ubicación o placa…",
+  placeholder = "Buscar activo por código, código alternativo, nombre, ubicación o placa…",
   disabled = false,
   className,
   id,
@@ -327,7 +337,7 @@ export function ActivoCombobox({
       itemToStringLabel={(item: Activo) => {
         if (!item) return ""
         const placa = extractPlaca(item)
-        return `${item.codigo} ${item.nombre} ${item.ubicacion?.nombre ?? ""} ${item.tipoActivo?.nombre ?? ""} ${placa ? `placa ${placa} ${placa}` : ""} ${item.descripcion ?? ""}`
+        return `${item.codigo} ${item.codigoAlternativo ?? ""} ${item.nombre} ${item.ubicacion?.nombre ?? ""} ${item.tipoActivo?.nombre ?? ""} ${placa ? `placa ${placa} ${placa}` : ""} ${item.descripcion ?? ""}`
       }}
       itemToStringValue={(item: Activo) => item?.id ?? ""}
       value={null}

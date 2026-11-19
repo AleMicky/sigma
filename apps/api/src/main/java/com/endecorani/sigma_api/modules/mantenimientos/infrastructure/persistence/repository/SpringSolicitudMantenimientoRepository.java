@@ -30,6 +30,7 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
            OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(s.estado) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(s.activo.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR (s.activo.codigoAlternativo IS NOT NULL AND LOWER(s.activo.codigoAlternativo) LIKE LOWER(CONCAT('%', :search, '%')))
            OR LOWER(s.activo.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(s.activo.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))
     """,
@@ -41,6 +42,7 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
            OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(s.estado) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(activo.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+           OR (activo.codigoAlternativo IS NOT NULL AND LOWER(activo.codigoAlternativo) LIKE LOWER(CONCAT('%', :search, '%')))
            OR LOWER(activo.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
            OR LOWER(activo.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))
     """)
@@ -96,6 +98,7 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
                OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%'))
                OR (activo IS NOT NULL AND (
                    LOWER(activo.codigo) LIKE LOWER(CONCAT('%', :q, '%'))
+                   OR (activo.codigoAlternativo IS NOT NULL AND LOWER(activo.codigoAlternativo) LIKE LOWER(CONCAT('%', :q, '%')))
                    OR LOWER(activo.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(activo.descripcion) LIKE LOWER(CONCAT('%', :q, '%'))
                )))
@@ -119,6 +122,7 @@ public interface SpringSolicitudMantenimientoRepository extends JpaRepository<So
                OR LOWER(s.titulo) LIKE LOWER(CONCAT('%', :q, '%'))
                OR (activo IS NOT NULL AND (
                    LOWER(activo.codigo) LIKE LOWER(CONCAT('%', :q, '%'))
+                   OR (activo.codigoAlternativo IS NOT NULL AND LOWER(activo.codigoAlternativo) LIKE LOWER(CONCAT('%', :q, '%')))
                    OR LOWER(activo.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(activo.descripcion) LIKE LOWER(CONCAT('%', :q, '%'))
                )))
