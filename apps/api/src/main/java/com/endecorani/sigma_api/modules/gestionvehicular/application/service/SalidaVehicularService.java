@@ -23,7 +23,6 @@ import com.endecorani.sigma_api.modules.parametros.application.service.Correlati
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
 import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
-import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowActionResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowExecutionResult;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowHistoryResponse;
@@ -71,8 +70,7 @@ public class SalidaVehicularService {
             "observaciones",
             "estado",
             "createdAt",
-            "updatedAt"
-    );
+            "updatedAt");
 
     private final SalidaVehicularRepository salidaRepository;
     private final SalidaVehicularEventoRepository eventoRepository;
@@ -103,7 +101,8 @@ public class SalidaVehicularService {
         if (empleadoId == null) {
             empleadoId = obtenerEmpleadoIdActual();
             if (empleadoId == null) {
-                throw new BusinessException("No se pudo identificar al empleado solicitante. Debe especificar empleadoId.");
+                throw new BusinessException(
+                        "No se pudo identificar al empleado solicitante. Debe especificar empleadoId.");
             }
         }
 
@@ -139,7 +138,8 @@ public class SalidaVehicularService {
         }
 
         try {
-            String processInstanceId = workflowApplicationService.iniciar(WORKFLOW_CODIGO, guardada.getId().toString(), variables);
+            String processInstanceId = workflowApplicationService.iniciar(WORKFLOW_CODIGO, guardada.getId().toString(),
+                    variables);
             guardada.setProcessInstanceId(processInstanceId);
             guardada.setEstado(ESTADO_SALIDA);
             guardada = salidaRepository.save(guardada);
@@ -158,8 +158,7 @@ public class SalidaVehicularService {
             String estado,
             LocalDateTime fechaDesde,
             LocalDateTime fechaHasta,
-            PageRequestDto pageRequest
-    ) {
+            PageRequestDto pageRequest) {
         return listar(search, activoId, empleadoId, null, null, estado, fechaDesde, fechaHasta, pageRequest);
     }
 
@@ -173,8 +172,7 @@ public class SalidaVehicularService {
             String estado,
             LocalDateTime fechaDesde,
             LocalDateTime fechaHasta,
-            PageRequestDto pageRequest
-    ) {
+            PageRequestDto pageRequest) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
         Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
@@ -182,8 +180,7 @@ public class SalidaVehicularService {
         AlcanceArea alcance = resolverAlcance(areaId, createdById);
         if (alcance.sinAcceso()) {
             Page<SalidaVehicular> emptyPage = new org.springframework.data.domain.PageImpl<>(
-                    Collections.emptyList(), pageable, 0
-            );
+                    Collections.emptyList(), pageable, 0);
             return PageResponse.of(Collections.emptyList(), emptyPage);
         }
 
@@ -197,8 +194,7 @@ public class SalidaVehicularService {
                 estado,
                 instantDesde,
                 instantHasta,
-                pageable
-        );
+                pageable);
 
         List<SalidaVehicularResponse> responses = mapListToResponse(page.getContent());
         return PageResponse.of(responses, page);
@@ -217,7 +213,8 @@ public class SalidaVehicularService {
                 .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
 
         String estadoActual = salida.getEstado() != null ? salida.getEstado().toUpperCase() : "";
-        if (ESTADO_LLEGADA.equals(estadoActual) || "FINALIZADA".equals(estadoActual) || ESTADO_CANCELADA.equals(estadoActual)) {
+        if (ESTADO_LLEGADA.equals(estadoActual) || "FINALIZADA".equals(estadoActual)
+                || ESTADO_CANCELADA.equals(estadoActual)) {
             throw new BusinessException("No se puede modificar una salida vehicular que ya está en " + estadoActual);
         }
 
@@ -251,8 +248,7 @@ public class SalidaVehicularService {
         UUID empleadoId = obtenerEmpleadoIdActual();
         if (empleadoId == null) {
             Page<SalidaVehicular> emptyPage = new org.springframework.data.domain.PageImpl<>(
-                    Collections.emptyList(), pageable, 0
-            );
+                    Collections.emptyList(), pageable, 0);
             return PageResponse.of(Collections.emptyList(), emptyPage);
         }
 
@@ -267,11 +263,13 @@ public class SalidaVehicularService {
                 .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
 
         String estadoActual = salida.getEstado() != null ? salida.getEstado().toUpperCase() : "";
-        if (ESTADO_LLEGADA.equals(estadoActual) || "FINALIZADA".equals(estadoActual) || ESTADO_CANCELADA.equals(estadoActual)) {
+        if (ESTADO_LLEGADA.equals(estadoActual) || "FINALIZADA".equals(estadoActual)
+                || ESTADO_CANCELADA.equals(estadoActual)) {
             throw new BusinessException("No se puede cancelar una salida vehicular que ya está en " + estadoActual);
         }
 
-        String motivo = request != null && request.motivo() != null ? request.motivo() : "Cancelada a solicitud del usuario";
+        String motivo = request != null && request.motivo() != null ? request.motivo()
+                : "Cancelada a solicitud del usuario";
 
         if (salida.getProcessInstanceId() != null) {
             try {
@@ -332,15 +330,15 @@ public class SalidaVehicularService {
                 "La salida vehicular",
                 accionId,
                 request != null ? request.variables() : null,
-                ctx -> mapearVariablesSalida(ctx, request)
-        );
+                ctx -> mapearVariablesSalida(ctx, request));
 
         WorkflowTaskActionsResponse tareaActual = execResult.tareaPrevia();
         WorkflowActionResponse matchingAction = execResult.matchingAction();
         String actionValue = execResult.actionValue();
         WorkflowTaskActionsResponse resultado = execResult.siguienteTarea();
 
-        // Registrar automáticamente el evento correspondiente en salidas_vehiculares_eventos
+        // Registrar automáticamente el evento correspondiente en
+        // salidas_vehiculares_eventos
         UUID empleadoId = obtenerEmpleadoIdActual();
         if (empleadoId == null) {
             empleadoId = salida.getEmpleadoId();
@@ -359,25 +357,30 @@ public class SalidaVehicularService {
                 .build();
         eventoRepository.save(evento);
 
-        // Notificar telemetría de odómetro y evaluar preventivo si se registró kilometraje
-        if (request != null && request.kilometraje() != null && salida.getActivoId() != null && eventPublisher != null) {
+        // Notificar telemetría de odómetro y evaluar preventivo si se registró
+        // kilometraje
+        if (request != null && request.kilometraje() != null && salida.getActivoId() != null
+                && eventPublisher != null) {
             try {
-                eventPublisher.publishEvent(new com.endecorani.sigma_api.modules.gestionvehicular.domain.event.VehiculoKilometrajeRegistradoEvent(
-                        salida.getActivoId(),
-                        request.kilometraje().longValue(),
-                        "SALIDA_VEHICULAR_" + (tipoEvento != null ? tipoEvento : actionValue)
-                ));
+                eventPublisher.publishEvent(
+                        new com.endecorani.sigma_api.modules.gestionvehicular.domain.event.VehiculoKilometrajeRegistradoEvent(
+                                salida.getActivoId(),
+                                request.kilometraje().longValue(),
+                                "SALIDA_VEHICULAR_" + (tipoEvento != null ? tipoEvento : actionValue)));
             } catch (Exception ex) {
-                log.warn("Error al emitir evento de telemetría para salida vehicular {}: {}", salida.getId(), ex.getMessage());
+                log.warn("Error al emitir evento de telemetría para salida vehicular {}: {}", salida.getId(),
+                        ex.getMessage());
             }
         }
 
-        // Registrar automáticamente la entrada en bitácora vehicular con geolocalización y odómetro del hito
+        // Registrar automáticamente la entrada en bitácora vehicular con
+        // geolocalización y odómetro del hito
         String descripcionBitacora = construirDescripcionBitacoraAutomatica(salida, tipoEvento, actionValue, request);
         BitacoraVehicular bitacora = BitacoraVehicular.builder()
                 .salidaVehicularId(salida.getId())
                 .empleadoId(empleadoId)
-                .tipo(com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoBitacoraVehicular.ACTIVIDAD.name())
+                .tipo(com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoBitacoraVehicular.ACTIVIDAD
+                        .name())
                 .fechaHora(Instant.now())
                 .descripcion(descripcionBitacora)
                 .latitud(request != null ? request.latitud() : null)
@@ -386,8 +389,10 @@ public class SalidaVehicularService {
         bitacoraRepository.save(bitacora);
 
         // Actualizar estado de la salida:
-        // - Si completó todas las tareas BPMN (LLEGADA fue la tarea final), el estado final es LLEGADA
-        // - Si acaba de completar la primera tarea (SALIDA), permanece en SALIDA en espera de registrar LLEGADA
+        // - Si completó todas las tareas BPMN (LLEGADA fue la tarea final), el estado
+        // final es LLEGADA
+        // - Si acaba de completar la primera tarea (SALIDA), permanece en SALIDA en
+        // espera de registrar LLEGADA
         if (execResult.procesoFinalizado()) {
             salida.setEstado(ESTADO_LLEGADA);
         } else {
@@ -502,26 +507,10 @@ public class SalidaVehicularService {
             return new AlcanceArea(areaSolicitada, createdBySolicitado, false, false);
         }
         UUID userId = securityUtils.getCurrentUserId().orElse(null);
-        UUID areaActual = obtenerAreaIdPorUsuario(userId);
-        if (areaActual == null && userId == null) {
-            return new AlcanceArea(null, null, true, true);
-        }
-        return new AlcanceArea(areaActual, userId, true, false);
-    }
-
-    private UUID obtenerAreaIdPorUsuario(UUID userId) {
         if (userId == null) {
-            return null;
+            return new AlcanceArea(null, null, false, true);
         }
-        try {
-            return usuarioRepository.findById(userId)
-                    .map(Usuario::getPersonaId)
-                    .flatMap(empleadoRepository::findFirstByPersonaId)
-                    .map(Empleado::getAreaId)
-                    .orElse(null);
-        } catch (Exception ex) {
-            return null;
-        }
+        return new AlcanceArea(areaSolicitada, userId, false, false);
     }
 
     public UUID obtenerEmpleadoIdActual() {
@@ -563,12 +552,10 @@ public class SalidaVehicularService {
         String empleadoNombre = emp != null ? emp.getNombreCompleto() : null;
 
         List<SalidaVehicularEventoResponse> eventos = mapEventosToResponse(
-                eventoRepository.findBySalidaVehicularId(salida.getId())
-        );
+                eventoRepository.findBySalidaVehicularId(salida.getId()));
 
         List<BitacoraVehicularResponse> bitacoras = mapBitacorasToResponse(
-                bitacoraRepository.findBySalidaVehicularId(salida.getId())
-        );
+                bitacoraRepository.findBySalidaVehicularId(salida.getId()));
 
         return SalidaVehicularResponse.builder()
                 .id(salida.getId())
@@ -611,7 +598,8 @@ public class SalidaVehicularService {
 
         Map<UUID, Map<String, String>> atributosMap = obtenerAtributosVehiculosBatch(activoIds);
 
-        List<SalidaVehicularEvento> todosEventos = eventoRepository.findBySalidaVehicularIdIn(new ArrayList<>(salidaIds));
+        List<SalidaVehicularEvento> todosEventos = eventoRepository
+                .findBySalidaVehicularIdIn(new ArrayList<>(salidaIds));
         Map<UUID, List<SalidaVehicularEventoResponse>> eventosPorSalida = mapEventosToResponse(todosEventos).stream()
                 .collect(Collectors.groupingBy(SalidaVehicularEventoResponse::salidaVehicularId));
 
@@ -710,12 +698,14 @@ public class SalidaVehicularService {
         if (activoIds == null || activoIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        List<ActivoAtributoValorEntity> valores = activoAtributoValorRepository.findByActivoIdIn(new ArrayList<>(activoIds));
+        List<ActivoAtributoValorEntity> valores = activoAtributoValorRepository
+                .findByActivoIdIn(new ArrayList<>(activoIds));
         if (valores.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        Set<UUID> attrIds = valores.stream().map(ActivoAtributoValorEntity::getActivoAtributoId).collect(Collectors.toSet());
+        Set<UUID> attrIds = valores.stream().map(ActivoAtributoValorEntity::getActivoAtributoId)
+                .collect(Collectors.toSet());
         Map<UUID, String> attrCodigos = activoAtributoRepository.findAllById(attrIds).stream()
                 .collect(Collectors.toMap(ActivoAtributoEntity::getId, a -> a.getCodigo().toUpperCase(Locale.ROOT)));
 
@@ -732,8 +722,7 @@ public class SalidaVehicularService {
     private String resolverTipoEvento(
             WorkflowTaskActionsResponse tareaActual,
             WorkflowActionResponse matchingAction,
-            String actionValue
-    ) {
+            String actionValue) {
         String taskKey = tareaActual != null && tareaActual.taskDefinitionKey() != null
                 ? tareaActual.taskDefinitionKey().toUpperCase(Locale.ROOT)
                 : "";
@@ -765,8 +754,7 @@ public class SalidaVehicularService {
             SalidaVehicular salida,
             String tipoEvento,
             String actionValue,
-            EjecutarAccionSalidaRequest request
-    ) {
+            EjecutarAccionSalidaRequest request) {
         String base = (tipoEvento != null && !tipoEvento.isBlank())
                 ? tipoEvento.toUpperCase(Locale.ROOT)
                 : (actionValue != null ? actionValue.toUpperCase(Locale.ROOT) : "");
@@ -794,4 +782,3 @@ public class SalidaVehicularService {
         return desc.toString();
     }
 }
-
