@@ -1,4 +1,4 @@
-import type { ComponentType } from "react"
+import { useMemo, type ComponentType } from "react"
 import {
   Activity,
   Edit2,
@@ -9,13 +9,19 @@ import {
 } from "lucide-react"
 
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
+import type { ActivoAtributo } from "@/modules/activos/activo-atributo/api/activo-atributo.service"
+import type { ActivoAtributoValor } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.service"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Button } from "@/shared/components/ui/button"
 
+const HERO_ATRIBUTO_KEYS = ["MODELO", "MARCA", "COLOR"] as const
+
 type ActivoDetailHeroProps = {
   activo: Activo
   tipoActivo?: TipoActivo | null
+  atributos?: ActivoAtributo[]
+  atributoValores?: ActivoAtributoValor[]
   color: string
   icon: ComponentType<{ className?: string }>
   isEditing?: boolean
@@ -29,6 +35,8 @@ type ActivoDetailHeroProps = {
 export function ActivoDetailHero({
   activo,
   tipoActivo,
+  atributos = [],
+  atributoValores = [],
   color,
   icon: Icon,
   isEditing = false,
@@ -37,6 +45,43 @@ export function ActivoDetailHero({
   onOpenAddDocument,
   onCambiarEstado,
 }: Readonly<ActivoDetailHeroProps>) {
+  const heroAtributos = useMemo(() => {
+    if (atributos.length === 0 || atributoValores.length === 0) return []
+
+    const valoresByAtributoId = new Map<string, string>()
+    for (const item of atributoValores) {
+      const trimmed = item.valor?.trim()
+      if (trimmed) {
+        valoresByAtributoId.set(item.activoAtributoId, trimmed)
+      }
+    }
+
+    const result: Array<{ id: string; label: string; value: string }> = []
+    for (const key of HERO_ATRIBUTO_KEYS) {
+      const attr = atributos.find(
+        (a) =>
+          a.visible !== false &&
+          (a.codigo.trim().toUpperCase() === key ||
+            a.etiqueta.trim().toUpperCase() === key),
+      )
+      if (!attr) continue
+
+      const rawValue = valoresByAtributoId.get(attr.id)
+      if (!rawValue) continue
+
+      const optionLabel = attr.opciones?.find(
+        (opt) => opt.value === rawValue,
+      )?.label
+
+      result.push({
+        id: attr.id,
+        label: attr.etiqueta,
+        value: optionLabel ?? rawValue,
+      })
+    }
+
+    return result
+  }, [atributos, atributoValores])
   return (
     <div
       className="relative flex flex-col md:flex-row items-stretch gap-4 p-4 sm:p-5 rounded-2xl border border-border/80 bg-card shadow-xs overflow-hidden"
@@ -95,10 +140,32 @@ export function ActivoDetailHero({
                 <h2 className="font-heading text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
                   {activo.nombre}
                 </h2>
-                {activo.codigoAlternativo ? (
-                  <span className="text-xs font-mono font-medium text-muted-foreground truncate">
-                    {activo.codigoAlternativo}
-                  </span>
+                {activo.codigoAlternativo || heroAtributos.length > 0 ? (
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {activo.codigoAlternativo ? (
+                      <span className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-background/80 px-2 py-0.5 text-xs shadow-2xs">
+                        <span className="font-medium text-muted-foreground">
+                          Placa:
+                        </span>
+                        <span className="font-mono font-semibold text-foreground">
+                          {activo.codigoAlternativo}
+                        </span>
+                      </span>
+                    ) : null}
+                    {heroAtributos.map((attr) => (
+                      <span
+                        key={attr.id}
+                        className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-background/80 px-2 py-0.5 text-xs shadow-2xs"
+                      >
+                        <span className="font-medium text-muted-foreground">
+                          {attr.label}:
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          {attr.value}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
                 ) : null}
               </div>
             </div>
