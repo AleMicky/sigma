@@ -33,6 +33,7 @@ export type ActivoEstadoOperativoInfo = {
 
 export type Activo = AuditableEntity & {
   codigo: string
+  codigoAlternativo: string | null
   nombre: string
   descripcion: string | null
   tipoActivoId?: string
@@ -51,6 +52,7 @@ export type Activo = AuditableEntity & {
 
 export type ActivoPayload = {
   codigo: string
+  codigoAlternativo?: string | null
   nombre: string
   descripcion?: string | null
   tipoActivoId: string

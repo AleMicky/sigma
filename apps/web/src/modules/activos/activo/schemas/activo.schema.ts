@@ -5,6 +5,9 @@ export const activoSchema = z.object({
     .string()
     .min(2, "El código debe tener al menos 2 caracteres")
     .max(50, "El código no puede superar 50 caracteres"),
+  codigoAlternativo: z
+    .string()
+    .max(50, "El código alternativo no puede superar 50 caracteres"),
   nombre: z
     .string()
     .min(2, "El nombre debe tener al menos 2 caracteres")
@@ -26,6 +29,7 @@ export type ActivoDto = z.infer<typeof activoSchema>
 
 export const defaultActivoValues: ActivoDto = {
   codigo: "",
+  codigoAlternativo: "",
   nombre: "",
   descripcion: "",
   tipoActivoId: "",

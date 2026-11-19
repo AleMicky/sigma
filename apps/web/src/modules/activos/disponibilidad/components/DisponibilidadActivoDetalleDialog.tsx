@@ -56,6 +56,7 @@ export function DisponibilidadActivoDetalleDialog({
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground font-mono">
                   Código: {activo.codigo}
+                  {activo.codigoAlternativo ? ` · Alt: ${activo.codigoAlternativo}` : ""}
                 </DialogDescription>
               </div>
             </div>

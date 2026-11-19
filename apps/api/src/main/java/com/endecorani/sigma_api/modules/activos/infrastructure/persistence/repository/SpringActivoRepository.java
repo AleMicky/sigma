@@ -22,6 +22,7 @@ public interface SpringActivoRepository
                         where activo.tipoActivoId = :tipoActivoId
                           and (
                                lower(activo.codigo) like lower(concat('%', :query, '%'))
+                               or (activo.codigoAlternativo is not null and lower(activo.codigoAlternativo) like lower(concat('%', :query, '%')))
                                or lower(activo.nombre) like lower(concat('%', :query, '%'))
                                or (activo.descripcion is not null and lower(activo.descripcion) like lower(concat('%', :query, '%')))
                           )
@@ -35,6 +36,7 @@ public interface SpringActivoRepository
                         select activo
                         from ActivoEntity activo
                         where lower(activo.codigo) like lower(concat('%', :query, '%'))
+                           or (activo.codigoAlternativo is not null and lower(activo.codigoAlternativo) like lower(concat('%', :query, '%')))
                            or lower(activo.nombre) like lower(concat('%', :query, '%'))
                            or (activo.descripcion is not null and lower(activo.descripcion) like lower(concat('%', :query, '%')))
                         """)
@@ -60,6 +62,7 @@ public interface SpringActivoRepository
                   AND (:activo IS NULL OR a.activo = :activo)
                   AND (
                     LOWER(a.codigo) LIKE LOWER(CONCAT('%', :query, '%'))
+                    OR (a.codigoAlternativo IS NOT NULL AND LOWER(a.codigoAlternativo) LIKE LOWER(CONCAT('%', :query, '%')))
                     OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', :query, '%'))
                     OR (a.descripcion IS NOT NULL AND LOWER(a.descripcion) LIKE LOWER(CONCAT('%', :query, '%')))
                   )
@@ -82,6 +85,7 @@ public interface SpringActivoRepository
                   AND (
                     CAST(:query AS String) IS NULL
                     OR LOWER(a.codigo) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%'))
+                    OR (a.codigoAlternativo IS NOT NULL AND LOWER(a.codigoAlternativo) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%')))
                     OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%'))
                     OR (a.descripcion IS NOT NULL AND LOWER(a.descripcion) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%')))
                   )
@@ -108,6 +112,7 @@ public interface SpringActivoRepository
                   AND (
                     CAST(:query AS String) IS NULL
                     OR LOWER(a.codigo) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%'))
+                    OR (a.codigoAlternativo IS NOT NULL AND LOWER(a.codigoAlternativo) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%')))
                     OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%'))
                     OR (a.descripcion IS NOT NULL AND LOWER(a.descripcion) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%')))
                   )

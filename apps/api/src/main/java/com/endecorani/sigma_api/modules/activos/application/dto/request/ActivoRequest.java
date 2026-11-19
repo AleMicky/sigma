@@ -27,6 +27,16 @@ public record ActivoRequest(
         String codigo,
 
         @Schema(
+                description = "Código alternativo del activo",
+                example = "ALT-VEH-001"
+        )
+        @Size(
+                max = 50,
+                message = "El código alternativo no puede superar los 50 caracteres"
+        )
+        String codigoAlternativo,
+
+        @Schema(
                 description = "Nombre del activo",
                 example = "Toyota Hilux",
                 requiredMode = Schema.RequiredMode.REQUIRED
@@ -89,7 +99,7 @@ public record ActivoRequest(
             UUID ubicacionId,
             LocalDate fechaAdquisicion
     ) {
-        this(codigo, nombre, descripcion, tipoActivoId, ubicacionId, fechaAdquisicion, null, null);
+        this(codigo, null, nombre, descripcion, tipoActivoId, ubicacionId, fechaAdquisicion, null, null);
     }
 
     public ActivoRequest(
@@ -101,6 +111,6 @@ public record ActivoRequest(
             LocalDate fechaAdquisicion,
             Boolean activo
     ) {
-        this(codigo, nombre, descripcion, tipoActivoId, ubicacionId, fechaAdquisicion, activo, null);
+        this(codigo, null, nombre, descripcion, tipoActivoId, ubicacionId, fechaAdquisicion, activo, null);
     }
 }
