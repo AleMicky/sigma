@@ -47,6 +47,7 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
             :search IS NULL
             OR LOWER(c.numeroFactura) LIKE :search
             OR LOWER(act.codigo) LIKE :search
+            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE :search)
             OR LOWER(act.nombre) LIKE :search
             OR LOWER(ins.codigo) LIKE :search
             OR LOWER(ins.nombre) LIKE :search
@@ -81,6 +82,7 @@ public interface SpringCargaCombustibleRepository extends JpaRepository<CargaCom
             :search IS NULL
             OR LOWER(c.numeroFactura) LIKE :search
             OR LOWER(act.codigo) LIKE :search
+            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE :search)
             OR LOWER(act.nombre) LIKE :search
             OR LOWER(ins.codigo) LIKE :search
             OR LOWER(ins.nombre) LIKE :search

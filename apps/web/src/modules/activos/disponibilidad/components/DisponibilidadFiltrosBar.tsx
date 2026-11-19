@@ -171,7 +171,7 @@ export function DisponibilidadFiltrosBar({
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 id="search-activo-disp"
-                placeholder="Código, nombre o descripción..."
+                placeholder="Código, código alternativo, nombre o descripción..."
                 value={search}
                 onChange={(e) => onSearchChange(e.target.value)}
                 className="pl-8 h-9 text-xs"

@@ -121,6 +121,7 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
             OR LOWER(ve.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(ve.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE LOWER(CONCAT('%', :search, '%')))
             OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:estado IS NULL OR :estado = '' OR UPPER(s.estado) = UPPER(:estado))
           AND (:tipoSolicitudVehicularId IS NULL OR s.tipoSolicitudVehicularId = :tipoSolicitudVehicularId)

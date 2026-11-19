@@ -18,7 +18,10 @@ public interface SpringIncidenteActivoRepository extends JpaRepository<Incidente
         WHERE (:search IS NULL OR :search = ''
             OR LOWER(i.tipoIncidente) LIKE LOWER(CONCAT('%', :search, '%'))
             OR LOWER(i.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(COALESCE(i.ubicacion, '')) LIKE LOWER(CONCAT('%', :search, '%')))
+            OR LOWER(COALESCE(i.ubicacion, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(i.activo.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR (i.activo.codigoAlternativo IS NOT NULL AND LOWER(i.activo.codigoAlternativo) LIKE LOWER(CONCAT('%', :search, '%')))
+            OR LOWER(i.activo.nombre) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:tipoIncidente IS NULL OR :tipoIncidente = '' OR UPPER(i.tipoIncidente) = UPPER(:tipoIncidente))
           AND (:prioridad IS NULL OR :prioridad = '' OR UPPER(i.prioridad) = UPPER(:prioridad))
           AND (:estado IS NULL OR :estado = '' OR UPPER(i.estado) = UPPER(:estado))

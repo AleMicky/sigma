@@ -84,7 +84,7 @@ export function ActivoCatalogoToolbar({
         <SearchField
           value={search}
           onChange={onSearchChange}
-          placeholder="Buscar activo por código, nombre o descripción…"
+          placeholder="Buscar activo por código, código alternativo, nombre o descripción…"
           aria-label="Buscar activos"
           className="w-full md:flex-1 min-w-0"
         />

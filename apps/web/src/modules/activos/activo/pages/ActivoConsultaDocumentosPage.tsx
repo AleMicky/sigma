@@ -409,12 +409,12 @@ function ActivoDetailReport({
                   {estadoFilter === ALL_FILTER
                     ? "Todas las vigencias"
                     : estadoFilter === "vigente"
-                    ? "Vigente"
-                    : estadoFilter === "por_vencer"
-                    ? "Por vencer (30d)"
-                    : estadoFilter === "vencido"
-                    ? "Vencido"
-                    : "Permanente"}
+                      ? "Vigente"
+                      : estadoFilter === "por_vencer"
+                        ? "Por vencer (30d)"
+                        : estadoFilter === "vencido"
+                          ? "Vencido"
+                          : "Permanente"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -696,8 +696,8 @@ export function ActivoConsultaDocumentosPage() {
       <MasterDetailLayout
         title={
           masterDetail.isMobile &&
-          masterDetail.mobileShowDetail &&
-          masterDetail.selected
+            masterDetail.mobileShowDetail &&
+            masterDetail.selected
             ? `${masterDetail.selected.nombre} (${masterDetail.selected.codigo})`
             : "Reporte GRS (Documentos)"
         }
@@ -731,8 +731,8 @@ export function ActivoConsultaDocumentosPage() {
             label="Activos en Inventario"
             search={search.search}
             onSearchChange={search.setSearch}
-            searchPlaceholder="Buscar por código o nombre..."
-            searchAriaLabel="Buscar activo por nombre o código"
+            searchPlaceholder="Buscar por código, código alternativo o nombre..."
+            searchAriaLabel="Buscar activo por nombre, código o código alternativo"
           >
             {/* Filter Tipo de Activo inside master panel */}
             <div className="border-b px-3 py-2 bg-muted/15">
@@ -749,7 +749,7 @@ export function ActivoConsultaDocumentosPage() {
                     {tipoActivoId === ALL_FILTER
                       ? "Todos los tipos de activo"
                       : tiposActivo.find((t) => t.id === tipoActivoId)?.nombre ??
-                        "Tipo de Activo"}
+                      "Tipo de Activo"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="max-h-64">

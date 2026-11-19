@@ -141,6 +141,7 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
                 subActivo.select(act.get("id"))
                         .where(cb.or(
                                 cb.like(cb.lower(cb.coalesce(act.get("codigo"), "")), pattern),
+                                cb.like(cb.lower(cb.coalesce(act.get("codigoAlternativo"), "")), pattern),
                                 cb.like(cb.lower(cb.coalesce(act.get("nombre"), "")), pattern)
                         ));
 
