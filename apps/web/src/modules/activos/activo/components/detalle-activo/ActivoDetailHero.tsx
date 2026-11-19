@@ -84,16 +84,23 @@ export function ActivoDetailHero({
         <div className="flex flex-col gap-1.5">
           {/* Top Row: Icon + Name + Status Badge */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-start gap-2.5 min-w-0">
               <span
-                className="flex size-7 shrink-0 items-center justify-center rounded-lg text-white shadow-xs"
+                className="flex size-7 shrink-0 items-center justify-center rounded-lg text-white shadow-xs mt-0.5"
                 style={{ backgroundColor: color }}
               >
                 <Icon className="size-4" />
               </span>
-              <h2 className="font-heading text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
-                {activo.nombre}
-              </h2>
+              <div className="flex flex-col min-w-0">
+                <h2 className="font-heading text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+                  {activo.nombre}
+                </h2>
+                {activo.codigoAlternativo ? (
+                  <span className="text-xs font-mono font-medium text-muted-foreground truncate">
+                    {activo.codigoAlternativo}
+                  </span>
+                ) : null}
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
