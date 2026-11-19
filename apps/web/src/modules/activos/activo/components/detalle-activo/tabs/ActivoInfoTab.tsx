@@ -81,6 +81,7 @@ export function ActivoInfoTab({
   // Form states
   const [formData, setFormData] = useState({
     codigo: activo.codigo,
+    codigoAlternativo: activo.codigoAlternativo ?? "",
     nombre: activo.nombre,
     descripcion: activo.descripcion ?? "",
     ubicacionId: activo.ubicacionId ?? "",
@@ -107,6 +108,7 @@ export function ActivoInfoTab({
   useEffect(() => {
     setFormData({
       codigo: activo.codigo,
+      codigoAlternativo: activo.codigoAlternativo ?? "",
       nombre: activo.nombre,
       descripcion: activo.descripcion ?? "",
       ubicacionId: activo.ubicacionId ?? "",
@@ -118,6 +120,7 @@ export function ActivoInfoTab({
   function handleCancel() {
     setFormData({
       codigo: activo.codigo,
+      codigoAlternativo: activo.codigoAlternativo ?? "",
       nombre: activo.nombre,
       descripcion: activo.descripcion ?? "",
       ubicacionId: activo.ubicacionId ?? "",
@@ -152,6 +155,7 @@ export function ActivoInfoTab({
         id: activo.id,
         payload: {
           codigo: formData.codigo.trim().toUpperCase(),
+          codigoAlternativo: formData.codigoAlternativo.trim() || null,
           nombre: formData.nombre.trim(),
           descripcion: formData.descripcion.trim() || null,
           tipoActivoId: activo.tipoActivo?.id ?? activo.tipoActivoId ?? "",
@@ -273,6 +277,16 @@ export function ActivoInfoTab({
                     </span>
                   </div>
 
+                  {/* Código Alternativo */}
+                  <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Código Alternativo
+                    </span>
+                    <span className="text-xs font-semibold font-mono text-foreground truncate">
+                      {activo.codigoAlternativo || "No registrado"}
+                    </span>
+                  </div>
+
                   {/* Estado del Activo */}
                   <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -359,8 +373,8 @@ export function ActivoInfoTab({
               /* EDIT MODE - ULTRA COMPACT INLINE FORM FIELDS */
               <div className="flex flex-col gap-3 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-                  {/* Nombre Field (col-span-12) */}
-                  <div className="flex flex-col gap-1 sm:col-span-12">
+                  {/* Nombre Field (col-span-8) */}
+                  <div className="flex flex-col gap-1 sm:col-span-8">
                     <Label className="text-[11px] font-semibold flex items-center justify-between">
                       <span>Nombre del Activo <span className="text-destructive">*</span></span>
                       <span className="text-[10px] text-muted-foreground font-normal">Denominación oficial</span>
@@ -373,6 +387,25 @@ export function ActivoInfoTab({
                       placeholder="Nombre o descripción corta del bien"
                       className="h-8 text-xs font-semibold"
                       required
+                    />
+                  </div>
+
+                  {/* Código Alternativo Field (col-span-4) */}
+                  <div className="flex flex-col gap-1 sm:col-span-4">
+                    <Label className="text-[11px] font-semibold">
+                      Código Alternativo
+                    </Label>
+                    <Input
+                      value={formData.codigoAlternativo}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          codigoAlternativo: e.target.value,
+                        }))
+                      }
+                      maxLength={50}
+                      placeholder="Ej. ALT-001 (opcional)"
+                      className="h-8 text-xs font-mono"
                     />
                   </div>
 

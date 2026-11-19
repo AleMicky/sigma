@@ -61,7 +61,7 @@ public class DisponibilidadActivoExcelService {
             Cell titleCell = titleRow.createCell(0);
             titleCell.setCellValue("ENDE CORANI S.A. - REPORTE DE DISPONIBILIDAD Y ESTADOS OPERATIVOS DE ACTIVOS");
             titleCell.setCellStyle(titleStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 9));
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 10));
 
             // Fila 1: Subtítulo
             Row subtitleRow = sheet.createRow(rowIndex++);
@@ -69,7 +69,7 @@ public class DisponibilidadActivoExcelService {
             Cell subtitleCell = subtitleRow.createCell(0);
             subtitleCell.setCellValue("Sistema Integrado de Gestión SIGMA | Generado: " + LocalDateTime.now().format(FECHA_HORA_FORMATTER));
             subtitleCell.setCellStyle(subtitleStyle);
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 9));
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 10));
 
             // Fila 2: Resumen ejecutivo
             long total = activos.size();
@@ -87,7 +87,7 @@ public class DisponibilidadActivoExcelService {
             metaCell.setCellValue(String.format("Total Activos: %d | Disponibles: %d (%.1f%%) | En Mantenimiento: %d | Fuera de Servicio: %d | De Baja: %d",
                     total, (operativos + reserva + enViaje), tasaDisponibilidad, mantenimiento, fueraServicio, deBaja));
             metaCell.setCellStyle(metaStyle);
-            sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 9));
+            sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 10));
 
             // Fila 3: Espacio
             rowIndex++;
@@ -96,6 +96,7 @@ public class DisponibilidadActivoExcelService {
             String[] headers = {
                     "Nº",
                     "Código Activo",
+                    "Código Alternativo",
                     "Nombre del Activo",
                     "Tipo de Activo",
                     "Categoría",
@@ -134,50 +135,55 @@ public class DisponibilidadActivoExcelService {
                 c1.setCellValue(activo.codigo() != null ? activo.codigo() : "");
                 c1.setCellStyle(textCenter);
 
-                // 2: Nombre
+                // 2: Código Alternativo
                 Cell c2 = row.createCell(2);
-                c2.setCellValue(activo.nombre() != null ? activo.nombre() : "");
-                c2.setCellStyle(textLeft);
+                c2.setCellValue(activo.codigoAlternativo() != null ? activo.codigoAlternativo() : "");
+                c2.setCellStyle(textCenter);
 
-                // 3: Tipo
+                // 3: Nombre
                 Cell c3 = row.createCell(3);
-                c3.setCellValue(activo.tipoActivo() != null && activo.tipoActivo().nombre() != null ? activo.tipoActivo().nombre() : "");
+                c3.setCellValue(activo.nombre() != null ? activo.nombre() : "");
                 c3.setCellStyle(textLeft);
 
-                // 4: Categoría
+                // 4: Tipo
                 Cell c4 = row.createCell(4);
+                c4.setCellValue(activo.tipoActivo() != null && activo.tipoActivo().nombre() != null ? activo.tipoActivo().nombre() : "");
+                c4.setCellStyle(textLeft);
+
+                // 5: Categoría
+                Cell c5 = row.createCell(5);
                 String catNombre = "";
                 if (activo.tipoActivo() != null && activo.tipoActivo().categoriaId() != null && categoriaMap != null) {
                     catNombre = categoriaMap.getOrDefault(activo.tipoActivo().categoriaId(), "");
                 }
-                c4.setCellValue(catNombre);
-                c4.setCellStyle(textLeft);
-
-                // 5: Ubicación
-                Cell c5 = row.createCell(5);
-                c5.setCellValue(activo.ubicacion() != null && activo.ubicacion().nombre() != null ? activo.ubicacion().nombre() : "");
+                c5.setCellValue(catNombre);
                 c5.setCellStyle(textLeft);
 
-                // 6: Estado Operativo
+                // 6: Ubicación
                 Cell c6 = row.createCell(6);
-                String estadoStr = activo.estadoOperativo() != null ? activo.estadoOperativo().nombre() : "Sin Estado";
-                c6.setCellValue(estadoStr);
-                c6.setCellStyle(textCenter);
+                c6.setCellValue(activo.ubicacion() != null && activo.ubicacion().nombre() != null ? activo.ubicacion().nombre() : "");
+                c6.setCellStyle(textLeft);
 
-                // 7: Fecha Adquisición
+                // 7: Estado Operativo
                 Cell c7 = row.createCell(7);
-                c7.setCellValue(activo.fechaAdquisicion() != null ? activo.fechaAdquisicion().format(FECHA_FORMATTER) : "");
+                String estadoStr = activo.estadoOperativo() != null ? activo.estadoOperativo().nombre() : "Sin Estado";
+                c7.setCellValue(estadoStr);
                 c7.setCellStyle(textCenter);
 
-                // 8: Estado Registro (Activo/Inactivo)
+                // 8: Fecha Adquisición
                 Cell c8 = row.createCell(8);
-                c8.setCellValue(Boolean.TRUE.equals(activo.activo()) ? "Activo" : "Inactivo");
+                c8.setCellValue(activo.fechaAdquisicion() != null ? activo.fechaAdquisicion().format(FECHA_FORMATTER) : "");
                 c8.setCellStyle(textCenter);
 
-                // 9: Descripción
+                // 9: Estado Registro (Activo/Inactivo)
                 Cell c9 = row.createCell(9);
-                c9.setCellValue(activo.descripcion() != null ? activo.descripcion() : "");
-                c9.setCellStyle(textLeft);
+                c9.setCellValue(Boolean.TRUE.equals(activo.activo()) ? "Activo" : "Inactivo");
+                c9.setCellStyle(textCenter);
+
+                // 10: Descripción
+                Cell c10 = row.createCell(10);
+                c10.setCellValue(activo.descripcion() != null ? activo.descripcion() : "");
+                c10.setCellStyle(textLeft);
             }
 
             // Autoajustar columnas

@@ -15,6 +15,7 @@ public class ActivoPersistenceMapper {
         ActivoEntity entity = new ActivoEntity();
         entity.setId(domain.getId());
         entity.setCodigo(domain.getCodigo());
+        entity.setCodigoAlternativo(domain.getCodigoAlternativo());
         entity.setNombre(domain.getNombre());
         entity.setDescripcion(domain.getDescripcion());
         entity.setTipoActivoId(domain.getTipoActivoId());
@@ -35,6 +36,7 @@ public class ActivoPersistenceMapper {
         return Activo.builder()
                 .id(entity.getId())
                 .codigo(entity.getCodigo())
+                .codigoAlternativo(entity.getCodigoAlternativo())
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
                 .tipoActivoId(entity.getTipoActivoId())

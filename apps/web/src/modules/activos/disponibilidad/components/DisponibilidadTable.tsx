@@ -143,9 +143,19 @@ export function DisponibilidadTable({
 
                       {/* Código */}
                       <TableCell>
-                        <span className="font-mono text-xs font-semibold text-foreground/90 bg-muted/60 px-1.5 py-0.5 rounded">
-                          {activo.codigo}
-                        </span>
+                        <div className="flex flex-col gap-0.5 items-start">
+                          <span className="font-mono text-xs font-semibold text-foreground/90 bg-muted/60 px-1.5 py-0.5 rounded">
+                            {activo.codigo}
+                          </span>
+                          {activo.codigoAlternativo && (
+                            <span
+                              className="font-mono text-[10px] text-muted-foreground"
+                              title="Código alternativo"
+                            >
+                              Alt: {activo.codigoAlternativo}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
 
                       {/* Nombre */}

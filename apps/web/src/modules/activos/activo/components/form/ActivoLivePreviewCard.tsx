@@ -22,6 +22,7 @@ import { cn } from "@/shared/lib/utils"
 
 type ActivoLivePreviewCardProps = {
   codigo?: string
+  codigoAlternativo?: string | null
   nombre?: string
   descripcion?: string | null
   fechaAdquisicion?: string | null
@@ -36,6 +37,7 @@ type ActivoLivePreviewCardProps = {
 
 export function ActivoLivePreviewCard({
   codigo,
+  codigoAlternativo,
   nombre,
   descripcion,
   fechaAdquisicion,
@@ -258,24 +260,34 @@ export function ActivoLivePreviewCard({
           {/* Cuerpo de la Tarjeta */}
           <div className="flex flex-col gap-2.5 p-3.5">
             {/* Fila: Código & Fecha */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-2 py-0.5 border border-border/60">
-                <code className="font-mono text-[11px] font-bold text-foreground tracking-wide">
-                  {codigo || "CÓDIGO"}
-                </code>
-                {codigo ? (
-                  <button
-                    type="button"
-                    onClick={handleCopyCode}
-                    className="inline-flex size-4 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    title="Copiar código"
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-2 py-0.5 border border-border/60">
+                  <code className="font-mono text-[11px] font-bold text-foreground tracking-wide">
+                    {codigo || "CÓDIGO"}
+                  </code>
+                  {codigo ? (
+                    <button
+                      type="button"
+                      onClick={handleCopyCode}
+                      className="inline-flex size-4 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      title="Copiar código"
+                    >
+                      {isCopied ? (
+                        <Check className="size-2.5 text-emerald-500" />
+                      ) : (
+                        <Copy className="size-2.5" />
+                      )}
+                    </button>
+                  ) : null}
+                </div>
+                {codigoAlternativo ? (
+                  <span
+                    className="inline-flex items-center rounded-md bg-muted/40 px-1.5 py-0.5 border border-border/50 font-mono text-[10px] text-muted-foreground"
+                    title="Código alternativo"
                   >
-                    {isCopied ? (
-                      <Check className="size-2.5 text-emerald-500" />
-                    ) : (
-                      <Copy className="size-2.5" />
-                    )}
-                  </button>
+                    Alt: {codigoAlternativo}
+                  </span>
                 ) : null}
               </div>
 
@@ -331,6 +343,12 @@ export function ActivoLivePreviewCard({
                 <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 font-mono text-[10px] font-bold text-foreground border border-border/60">
                   {codigo || "CÓDIGO"}
                 </span>
+
+                {codigoAlternativo ? (
+                  <span className="inline-flex items-center rounded-md bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border/50">
+                    Alt: {codigoAlternativo}
+                  </span>
+                ) : null}
 
                 {selectedTipo ? (
                   <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-muted text-foreground border border-border/60">

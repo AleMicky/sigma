@@ -24,6 +24,9 @@ public class ActivoEntity extends BaseEntity {
     @Column(name = "codigo", nullable = false, length = 50)
     private String codigo;
 
+    @Column(name = "codigo_alternativo", length = 50)
+    private String codigoAlternativo;
+
     @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 

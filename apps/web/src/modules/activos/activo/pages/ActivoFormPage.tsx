@@ -172,6 +172,7 @@ export function ActivoFormPage({
 
       const payload = {
         codigo: value.codigo.trim(),
+        codigoAlternativo: value.codigoAlternativo.trim() || null,
         nombre: value.nombre.trim(),
         descripcion: value.descripcion.trim() || null,
         tipoActivoId: value.tipoActivoId,
@@ -230,6 +231,10 @@ export function ActivoFormPage({
     (state) => state.values.tipoActivoId,
   )
   const codigo = useStore(form.store, (state) => state.values.codigo)
+  const codigoAlternativo = useStore(
+    form.store,
+    (state) => state.values.codigoAlternativo,
+  )
   const nombre = useStore(form.store, (state) => state.values.nombre)
   const ubicacionId = useStore(form.store, (state) => state.values.ubicacionId)
   const estadoOperativoId = useStore(
@@ -332,6 +337,7 @@ export function ActivoFormPage({
     if (!isEditing || !activo) return
 
     form.setFieldValue("codigo", activo.codigo)
+    form.setFieldValue("codigoAlternativo", activo.codigoAlternativo ?? "")
     form.setFieldValue("nombre", activo.nombre)
     form.setFieldValue("descripcion", activo.descripcion ?? "")
     form.setFieldValue("tipoActivoId", activo.tipoActivo?.id ?? activo.tipoActivoId ?? "")
@@ -444,6 +450,7 @@ export function ActivoFormPage({
 
             <ActivoLivePreviewCard
               codigo={codigo}
+              codigoAlternativo={codigoAlternativo}
               nombre={nombre}
               descripcion={descripcion}
               fechaAdquisicion={fechaAdquisicion}

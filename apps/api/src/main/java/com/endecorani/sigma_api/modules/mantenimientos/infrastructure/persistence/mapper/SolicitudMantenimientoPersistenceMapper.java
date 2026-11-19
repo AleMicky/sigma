@@ -122,6 +122,7 @@ public class SolicitudMantenimientoPersistenceMapper {
         return Activo.builder()
                 .id(entity.getId())
                 .codigo(entity.getCodigo())
+                .codigoAlternativo(entity.getCodigoAlternativo())
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
                 .placa(placa)

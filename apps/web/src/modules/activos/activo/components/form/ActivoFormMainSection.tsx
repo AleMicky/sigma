@@ -184,6 +184,33 @@ export function ActivoFormMainSection({
           }}
         </form.Field>
 
+        <form.Field name="codigoAlternativo">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {(field: any) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+
+            return (
+              <Field data-invalid={isInvalid || undefined}>
+                <FieldLabel htmlFor={field.name}>
+                  Código Alternativo
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  aria-invalid={isInvalid}
+                  placeholder="Ej. ALT-001 (opcional)"
+                  className="font-mono text-sm"
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+
         <form.Field name="nombre">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {(field: any) => {

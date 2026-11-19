@@ -13,6 +13,7 @@ import java.util.UUID;
 public record ActivoResponse(
         UUID id,
         String codigo,
+        String codigoAlternativo,
         String nombre,
         String descripcion,
         TipoActivoInfo tipoActivo,
@@ -29,6 +30,7 @@ public record ActivoResponse(
     public ActivoResponse(
             UUID id,
             String codigo,
+            String codigoAlternativo,
             String nombre,
             String descripcion,
             TipoActivoInfo tipoActivo,
@@ -39,7 +41,23 @@ public record ActivoResponse(
             Boolean activo,
             AuditoriaResponse auditoria
     ) {
-        this(id, codigo, nombre, descripcion, tipoActivo, ubicacion, estadoOperativo, fechaAdquisicion, urlImagen, activo, auditoria, false, null, null);
+        this(id, codigo, codigoAlternativo, nombre, descripcion, tipoActivo, ubicacion, estadoOperativo, fechaAdquisicion, urlImagen, activo, auditoria, false, null, null);
+    }
+
+    public ActivoResponse(
+            UUID id,
+            String codigo,
+            String nombre,
+            String descripcion,
+            TipoActivoInfo tipoActivo,
+            UbicacionInfo ubicacion,
+            EstadoOperativoInfo estadoOperativo,
+            LocalDate fechaAdquisicion,
+            String urlImagen,
+            Boolean activo,
+            AuditoriaResponse auditoria
+    ) {
+        this(id, codigo, null, nombre, descripcion, tipoActivo, ubicacion, estadoOperativo, fechaAdquisicion, urlImagen, activo, auditoria, false, null, null);
     }
 
     public ActivoResponse(
@@ -54,13 +72,14 @@ public record ActivoResponse(
             Boolean activo,
             AuditoriaResponse auditoria
     ) {
-        this(id, codigo, nombre, descripcion, tipoActivo, ubicacion, null, fechaAdquisicion, urlImagen, activo, auditoria, false, null, null);
+        this(id, codigo, null, nombre, descripcion, tipoActivo, ubicacion, null, fechaAdquisicion, urlImagen, activo, auditoria, false, null, null);
     }
 
     public ActivoResponse withSolicitudActiva(Boolean enProceso, String numero, String estado) {
         return new ActivoResponse(
                 id,
                 codigo,
+                codigoAlternativo,
                 nombre,
                 descripcion,
                 tipoActivo,

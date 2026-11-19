@@ -208,6 +208,15 @@ export function ActivoListView({
                         </button>
                       </div>
 
+                      {activo.codigoAlternativo ? (
+                        <span
+                          className="inline-flex items-center rounded-md bg-muted/40 px-2 py-0.5 border border-border/50 font-mono text-[10.5px] text-muted-foreground"
+                          title="Código alternativo"
+                        >
+                          Alt: {activo.codigoAlternativo}
+                        </span>
+                      ) : null}
+
                       {/* Badge de Tipo de Activo */}
                       {tipoActivo ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-muted/60 text-foreground border border-border/60">

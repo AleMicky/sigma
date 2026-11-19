@@ -21,6 +21,8 @@ public class Activo extends AuditableModel {
 
     private String codigo;
 
+    private String codigoAlternativo;
+
     private String nombre;
 
     private String descripcion;

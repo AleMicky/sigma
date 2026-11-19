@@ -208,22 +208,32 @@ export function ActivoGridView({
               <div className="flex flex-col flex-1 p-3.5 gap-2">
                 {/* Identification & Date */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-2 py-0.5 border border-border/60">
-                    <code className="font-mono text-[11px] font-bold text-foreground">
-                      {activo.codigo}
-                    </code>
-                    <button
-                      type="button"
-                      onClick={(e) => copyCode(e, activo)}
-                      className="inline-flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                      title="Copiar código"
-                    >
-                      {isCopied ? (
-                        <Check className="size-2.5 text-emerald-500" />
-                      ) : (
-                        <Copy className="size-2.5" />
-                      )}
-                    </button>
+                  <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                    <div className="inline-flex items-center gap-1 rounded-md bg-muted/80 px-2 py-0.5 border border-border/60">
+                      <code className="font-mono text-[11px] font-bold text-foreground">
+                        {activo.codigo}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={(e) => copyCode(e, activo)}
+                        className="inline-flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        title="Copiar código"
+                      >
+                        {isCopied ? (
+                          <Check className="size-2.5 text-emerald-500" />
+                        ) : (
+                          <Copy className="size-2.5" />
+                        )}
+                      </button>
+                    </div>
+                    {activo.codigoAlternativo ? (
+                      <span
+                        className="inline-flex items-center rounded-md bg-muted/40 px-1.5 py-0.5 border border-border/50 font-mono text-[10px] text-muted-foreground truncate max-w-[110px]"
+                        title={`Código alternativo: ${activo.codigoAlternativo}`}
+                      >
+                        Alt: {activo.codigoAlternativo}
+                      </span>
+                    ) : null}
                   </div>
 
                   <Badge

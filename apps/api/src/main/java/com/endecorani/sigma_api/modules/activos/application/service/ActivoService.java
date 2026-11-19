@@ -44,6 +44,7 @@ public class ActivoService {
     private static final String IMAGE_FOLDER = "activos";
     private static final int CODIGO_MIN_LENGTH = 2;
     private static final int CODIGO_MAX_LENGTH = 50;
+    private static final int CODIGO_ALTERNATIVO_MAX_LENGTH = 50;
     private static final int NOMBRE_MIN_LENGTH = 2;
     private static final int NOMBRE_MAX_LENGTH = 100;
     private static final int DESCRIPCION_MAX_LENGTH = 255;
@@ -51,6 +52,7 @@ public class ActivoService {
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
             "codigo",
+            "codigoAlternativo",
             "nombre",
             "tipoActivoId",
             "ubicacionId",
@@ -86,6 +88,7 @@ public class ActivoService {
 
         Activo domain = Activo.builder()
                 .codigo(codigo)
+                .codigoAlternativo(normalizeCodigoAlternativo(request.codigoAlternativo()))
                 .nombre(requireNormalizedNombre(request.nombre()))
                 .descripcion(normalizeDescripcion(request.descripcion()))
                 .tipoActivoId(request.tipoActivoId())
@@ -114,6 +117,7 @@ public class ActivoService {
         }
 
         domain.setCodigo(codigo);
+        domain.setCodigoAlternativo(normalizeCodigoAlternativo(request.codigoAlternativo()));
         domain.setNombre(requireNormalizedNombre(request.nombre()));
         domain.setDescripcion(normalizeDescripcion(request.descripcion()));
         domain.setTipoActivoId(request.tipoActivoId());
@@ -389,6 +393,7 @@ public class ActivoService {
         return new ActivoResponse(
                 domain.getId(),
                 domain.getCodigo(),
+                domain.getCodigoAlternativo(),
                 domain.getNombre(),
                 domain.getDescripcion(),
                 tipoActivoInfo,
@@ -442,6 +447,19 @@ public class ActivoService {
                     "INVALID_ACTIVO_CODIGO",
                     "El código debe tener entre %d y %d caracteres"
                             .formatted(CODIGO_MIN_LENGTH, CODIGO_MAX_LENGTH));
+        }
+
+        return normalized;
+    }
+
+    private String normalizeCodigoAlternativo(String value) {
+        String normalized = StringUtils.normalize(value);
+
+        if (normalized != null && normalized.length() > CODIGO_ALTERNATIVO_MAX_LENGTH) {
+            throw new BusinessException(
+                    "INVALID_ACTIVO_CODIGO_ALTERNATIVO",
+                    "El código alternativo no puede superar los %d caracteres"
+                            .formatted(CODIGO_ALTERNATIVO_MAX_LENGTH));
         }
 
         return normalized;
