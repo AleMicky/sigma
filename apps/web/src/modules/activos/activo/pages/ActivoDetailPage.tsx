@@ -6,6 +6,8 @@ import { ArrowLeft } from "lucide-react"
 import { routes } from "@/app/config/routes"
 import { activoAccesorioQueries } from "@/modules/activos/activo-accesorio/api/activo-accesorio.queries"
 import type { ActivoAccesorio } from "@/modules/activos/activo-accesorio/api/activo-accesorio.service"
+import { activoAtributoQueries } from "@/modules/activos/activo-atributo/api/activo-atributo.queries"
+import { activoAtributoValorQueries } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.queries"
 import { activoDocumentoQueries } from "@/modules/activos/activo-documento/api/activo-documento.queries"
 import type { ActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.service"
 import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.queries"
@@ -59,11 +61,30 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
   const activoQuery = useQuery(activoQueries.detail(activoId))
   const activo = activoQuery.data
 
+  const tipoActivoId = activo?.tipoActivo?.id ?? activo?.tipoActivoId ?? ""
+
   const tipoActivoQuery = useQuery({
-    ...tipoActivoQueries.detail(activo?.tipoActivo?.id ?? activo?.tipoActivoId ?? ""),
-    enabled: Boolean(!activo?.tipoActivo && (activo?.tipoActivo?.id || activo?.tipoActivoId)),
+    ...tipoActivoQueries.detail(tipoActivoId),
+    enabled: Boolean(!activo?.tipoActivo && tipoActivoId),
   })
   const tipoActivo = activo?.tipoActivo ?? tipoActivoQuery.data
+
+  const atributosQuery = useQuery({
+    ...activoAtributoQueries.byTipoActivo(tipoActivoId, {
+      page: 0,
+      size: 100,
+      sortBy: "orden",
+      direction: "ASC",
+    }),
+    enabled: Boolean(tipoActivoId),
+  })
+  const atributos = atributosQuery.data?.content ?? []
+
+  const atributoValoresQuery = useQuery({
+    ...activoAtributoValorQueries.byActivo(activoId),
+    enabled: Boolean(activoId),
+  })
+  const atributoValores = atributoValoresQuery.data?.content ?? []
 
   const categoriaQuery = useQuery({
     ...categoriaQueries.detail(tipoActivo?.categoriaId ?? ""),
@@ -185,6 +206,8 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
             ubicacionesQuery,
             documentosQuery,
             accesoriosQuery,
+            atributosQuery,
+            atributoValoresQuery,
           ]}
         />
 
@@ -192,6 +215,8 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
         <ActivoDetailHero
           activo={activo}
           tipoActivo={tipoActivo}
+          atributos={atributos}
+          atributoValores={atributoValores}
           color={color}
           icon={Icon}
           isEditing={isEditing}
