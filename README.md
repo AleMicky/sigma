@@ -65,7 +65,7 @@ sigma/
 │   │   │   └── config/               Security, CORS, Keycloak, Flowable, OpenAPI, storage, JPA
 │   │   └── src/main/resources/
 │   │       ├── application.yaml
-│   │       ├── db/migration/         159 migraciones Flyway (9 schemas PostgreSQL)
+│   │       ├── db/migration/         163 migraciones Flyway (9 schemas PostgreSQL)
 │   │       ├── processes/            4 procesos BPMN 2.0 (Flowable)
 │   │       └── reports/              Plantillas JasperReports (.jrxml) y recursos gráficos
 │   │
@@ -121,7 +121,7 @@ pnpm --filter web lint      # ESLint
 
 | Módulo | Descripción | Recursos / Endpoints base |
 | :--- | :--- | :--- |
-| `activos` | Activos, tipos de activo, categorías, componentes, accesorios, atributos, asignaciones, estados operativos y documentos | `/api/v1/activos`, `/api/v1/tipos-activo`, `/api/v1/categorias`, `/api/v1/componentes`, `/api/v1/accesorios`, `/api/v1/documentos` |
+| `activos` | Activos, tipos de activo, categorías, componentes, accesorios, atributos, asignaciones, estados operativos y documentos | `/api/v1/activos`, `/api/v1/tipos-activo`, `/api/v1/categorias`, `/api/v1/componentes`, `/api/v1/accesorios`, `/api/v1/activo-documentos` |
 | `incidentes` | Incidentes sobre activos, involucrados y evidencias | `/api/v1/incidentes`, `/api/v1/incidentes-evidencias`, `/api/v1/incidentes-involucrados` |
 | `mantenimientos` | Solicitudes, planes, programaciones preventivas, órdenes de trabajo, actividades, checklists y controles de activos | `/api/v1/solicitudes-mantenimiento`, `/api/v1/ordenes-trabajo`, `/api/v1/planes-mantenimiento`, `/api/v1/controles-activos` |
 | `gestionvehicular` | Flotas, conductores, solicitudes, asignaciones, viajes, salidas, portería, bitácoras, combustible, dashboard y reportes PDF/Excel | `/api/v1/flotas-vehiculares`, `/api/v1/solicitudes-vehiculares`, `/api/v1/salidas-vehiculares`, `/api/v1/registros-porteria`, `/api/v1/controles-activos-vehiculares` |
@@ -152,7 +152,7 @@ pnpm --filter web lint      # ESLint
 
 ## Base de datos
 
-PostgreSQL 16 con **9 schemas** gestionados mediante **159 migraciones Flyway** (`ddl-auto=validate`):
+PostgreSQL 16 con **9 schemas** gestionados mediante **163 migraciones Flyway** (`ddl-auto=validate`):
 
 * `activos` — activos, tipos, categorías, componentes, accesorios, atributos, asignaciones y documentos
 * `incidentes` — incidentes de activos, involucrados y evidencias
