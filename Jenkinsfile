@@ -96,6 +96,9 @@ pipeline {
             when {
                 anyOf {
                     changeset "apps/web/**"
+                    changeset "pnpm-lock.yaml"
+                    changeset "pnpm-workspace.yaml"
+                    changeset ".dockerignore"
                     changeset "compose.prod.yml"
                 }
             }
@@ -117,6 +120,9 @@ pipeline {
             when {
                 anyOf {
                     changeset "apps/web/**"
+                    changeset "pnpm-lock.yaml"
+                    changeset "pnpm-workspace.yaml"
+                    changeset ".dockerignore"
                     changeset "compose.prod.yml"
                 }
             }
@@ -170,6 +176,9 @@ pipeline {
             when {
                 anyOf {
                     changeset "apps/web/**"
+                    changeset "pnpm-lock.yaml"
+                    changeset "pnpm-workspace.yaml"
+                    changeset ".dockerignore"
                     changeset "compose.prod.yml"
                 }
             }

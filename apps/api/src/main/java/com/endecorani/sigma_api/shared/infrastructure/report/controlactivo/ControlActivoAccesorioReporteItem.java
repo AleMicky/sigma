@@ -1,4 +1,4 @@
-package com.endecorani.sigma_api.modules.mantenimientos.application.dto.controlactivo.reporte;
+package com.endecorani.sigma_api.shared.infrastructure.report.controlactivo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ControlActivoAccesorioReporteDto {
+public class ControlActivoAccesorioReporteItem {
     private Integer numero;
     private String codigo;
     private String nombre;

@@ -1,7 +1,7 @@
 package com.endecorani.sigma_api.config.security;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -10,6 +10,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,14 +20,33 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class SecurityUtils {
 
     private static final int MAX_CACHE_SIZE = 1000;
+    private static final Duration DEFAULT_CACHE_TTL = Duration.ofMinutes(5);
+
+    private record CacheEntry(UUID userId, Instant expiresAt) {
+        boolean isExpired(Instant now) {
+            return !now.isBefore(expiresAt);
+        }
+    }
 
     private final JdbcClient jdbcClient;
-    private final Map<String, UUID> keycloakUserCache = new ConcurrentHashMap<>();
-    private final Map<String, UUID> usernameUserCache = new ConcurrentHashMap<>();
+    private final Clock clock;
+    private final Duration cacheTtl;
+    private final Map<String, CacheEntry> keycloakUserCache = new ConcurrentHashMap<>();
+    private final Map<String, CacheEntry> usernameUserCache = new ConcurrentHashMap<>();
+
+    @Autowired
+    public SecurityUtils(JdbcClient jdbcClient) {
+        this(jdbcClient, Clock.systemUTC(), DEFAULT_CACHE_TTL);
+    }
+
+    SecurityUtils(JdbcClient jdbcClient, Clock clock, Duration cacheTtl) {
+        this.jdbcClient = jdbcClient;
+        this.clock = clock;
+        this.cacheTtl = cacheTtl;
+    }
 
     /**
      * Limpia la caché en memoria de resolución de usuarios.
@@ -32,6 +54,18 @@ public class SecurityUtils {
     public void clearCache() {
         keycloakUserCache.clear();
         usernameUserCache.clear();
+    }
+
+    /**
+     * Invalida una entrada específica en caché (útil al modificar o desactivar un usuario).
+     */
+    public void invalidateUser(String keycloakUserId, String username) {
+        if (keycloakUserId != null && !keycloakUserId.isBlank()) {
+            keycloakUserCache.remove(keycloakUserId);
+        }
+        if (username != null && !username.isBlank()) {
+            usernameUserCache.remove(username.toLowerCase());
+        }
     }
 
     /**
@@ -65,7 +99,7 @@ public class SecurityUtils {
     /**
      * Retorna el UUID de UsuarioEntity correspondiente al usuario autenticado actual.
      * Primero intenta resolverlo mediante keycloak_user_id (sub del JWT) o username.
-     * Utiliza JdbcClient y cache en memoria para evitar invocar el EntityManager de JPA
+     * Utiliza JdbcClient y caché en memoria con TTL para evitar invocar el EntityManager de JPA
      * dentro de listeners de ciclo de vida de entidades (lo que causa recursión infinita por auto-flush de Hibernate).
      */
     public Optional<UUID> getCurrentUserId() {
@@ -87,7 +121,7 @@ public class SecurityUtils {
 
         // 1. Buscar por Keycloak User ID (sub)
         if (keycloakUserId != null && !keycloakUserId.isBlank()) {
-            UUID cachedId = keycloakUserCache.get(keycloakUserId);
+            UUID cachedId = getCached(keycloakUserCache, keycloakUserId);
             if (cachedId != null) {
                 return Optional.of(cachedId);
             }
@@ -97,10 +131,7 @@ public class SecurityUtils {
                         .query(UUID.class)
                         .optional();
                 if (userId.isPresent()) {
-                    if (keycloakUserCache.size() >= MAX_CACHE_SIZE) {
-                        keycloakUserCache.clear();
-                    }
-                    keycloakUserCache.put(keycloakUserId, userId.get());
+                    putCached(keycloakUserCache, keycloakUserId, userId.get());
                     return userId;
                 }
             } catch (Exception e) {
@@ -110,7 +141,8 @@ public class SecurityUtils {
 
         // 2. Buscar por Username
         if (username != null && !username.isBlank()) {
-            UUID cachedId = usernameUserCache.get(username.toLowerCase());
+            String normalizedUsername = username.toLowerCase();
+            UUID cachedId = getCached(usernameUserCache, normalizedUsername);
             if (cachedId != null) {
                 return Optional.of(cachedId);
             }
@@ -120,10 +152,7 @@ public class SecurityUtils {
                         .query(UUID.class)
                         .optional();
                 if (userId.isPresent()) {
-                    if (usernameUserCache.size() >= MAX_CACHE_SIZE) {
-                        usernameUserCache.clear();
-                    }
-                    usernameUserCache.put(username.toLowerCase(), userId.get());
+                    putCached(usernameUserCache, normalizedUsername, userId.get());
                     return userId;
                 }
             } catch (Exception e) {
@@ -154,5 +183,28 @@ public class SecurityUtils {
         }
         return auth.getName() != null ? auth.getName() : "Sistema";
     }
-}
 
+    private UUID getCached(Map<String, CacheEntry> cache, String key) {
+        CacheEntry entry = cache.get(key);
+        if (entry == null) {
+            return null;
+        }
+        Instant now = clock.instant();
+        if (entry.isExpired(now)) {
+            cache.remove(key, entry);
+            return null;
+        }
+        return entry.userId();
+    }
+
+    private void putCached(Map<String, CacheEntry> cache, String key, UUID userId) {
+        Instant now = clock.instant();
+        if (cache.size() >= MAX_CACHE_SIZE) {
+            cache.entrySet().removeIf(e -> e.getValue().isExpired(now));
+            if (cache.size() >= MAX_CACHE_SIZE) {
+                cache.clear();
+            }
+        }
+        cache.put(key, new CacheEntry(userId, now.plus(cacheTtl)));
+    }
+}

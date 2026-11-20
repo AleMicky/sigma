@@ -171,7 +171,7 @@ test-api: ## Ejecuta los tests unitarios de la API con Maven
 .PHONY: build-web
 build-web: ## Compila el frontend Web localmente con pnpm
 	@printf "$(YELLOW)Compilando frontend Web...$(RESET)\n"
-	cd apps/web && pnpm install && pnpm build
+	pnpm --filter web install --frozen-lockfile && pnpm --filter web build
 
 .PHONY: clean
 clean: ## Limpia imágenes huérfanas/intermedias de Docker

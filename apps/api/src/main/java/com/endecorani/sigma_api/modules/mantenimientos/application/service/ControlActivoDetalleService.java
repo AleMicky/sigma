@@ -1,7 +1,6 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
-import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.AccesorioEntity;
-import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringAccesorioRepository;
+import com.endecorani.sigma_api.modules.activos.application.service.AccesorioLookupService;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.controlactivo.request.ControlActivoDetalleRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.controlactivo.response.ControlActivoDetalleResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.mapper.ControlActivoMapper;
@@ -41,11 +40,11 @@ public class ControlActivoDetalleService {
     private final ControlActivoDetalleRepository repository;
     private final ControlActivoRepository controlActivoRepository;
     private final ControlActivoMapper mapper;
-    private final SpringAccesorioRepository springAccesorioRepository;
+    private final AccesorioLookupService accesorioLookupService;
 
     @Transactional
     public ControlActivoDetalleResponse create(ControlActivoDetalleRequest request) {
-        if (request.controlActivoId() != null && !controlActivoRepository.findById(request.controlActivoId()).isPresent()) {
+        if (request.controlActivoId() != null && controlActivoRepository.findById(request.controlActivoId()).isEmpty()) {
             throw new ResourceNotFoundException("Control de activo", request.controlActivoId());
         }
 
@@ -57,7 +56,7 @@ public class ControlActivoDetalleService {
     public ControlActivoDetalleResponse update(UUID id, ControlActivoDetalleRequest request) {
         ControlActivoDetalle domain = obtenerPorId(id);
 
-        if (request.controlActivoId() != null && !controlActivoRepository.findById(request.controlActivoId()).isPresent()) {
+        if (request.controlActivoId() != null && controlActivoRepository.findById(request.controlActivoId()).isEmpty()) {
             throw new ResourceNotFoundException("Control de activo", request.controlActivoId());
         }
 
@@ -135,25 +134,24 @@ public class ControlActivoDetalleService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<UUID, ControlActivoDetalleResponse.AccesorioInfo> accesorioMap = Collections.emptyMap();
-        if (!accesorioIds.isEmpty()) {
-            accesorioMap = springAccesorioRepository.findAllById(accesorioIds).stream()
-                    .collect(Collectors.toMap(
-                            AccesorioEntity::getId,
-                            acc -> new ControlActivoDetalleResponse.AccesorioInfo(acc.getId(), acc.getCodigo(), acc.getNombre()),
-                            (a, b) -> a
-                    ));
-        }
+        Map<UUID, AccesorioLookupService.AccesorioResumen> accesorioMap = accesorioLookupService.findMapByIds(accesorioIds);
 
-        final Map<UUID, ControlActivoDetalleResponse.AccesorioInfo> finalMap = accesorioMap;
-        return detalles.stream().map(d -> new ControlActivoDetalleResponse(
-                d.getId(),
-                d.getControlActivoId(),
-                d.getAccesorioId() != null ? finalMap.get(d.getAccesorioId()) : null,
-                d.getCantidadEsperada(),
-                d.getCantidadEncontrada(),
-                d.isConforme(),
-                d.getObservacion()
-        )).collect(Collectors.toList());
+        return detalles.stream().map(d -> {
+            AccesorioLookupService.AccesorioResumen acc = d.getAccesorioId() != null
+                    ? accesorioMap.get(d.getAccesorioId())
+                    : null;
+            ControlActivoDetalleResponse.AccesorioInfo accesorioInfo = acc != null
+                    ? new ControlActivoDetalleResponse.AccesorioInfo(acc.id(), acc.codigo(), acc.nombre())
+                    : null;
+            return new ControlActivoDetalleResponse(
+                    d.getId(),
+                    d.getControlActivoId(),
+                    accesorioInfo,
+                    d.getCantidadEsperada(),
+                    d.getCantidadEncontrada(),
+                    d.isConforme(),
+                    d.getObservacion()
+            );
+        }).collect(Collectors.toList());
     }
 }

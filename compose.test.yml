@@ -61,8 +61,8 @@ services:
   # ── React Frontend ───────────────────────────────────────────
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-https://sigma-test.endecorani.bo}
         VITE_APP_NAME: ${VITE_APP_NAME:-SIGMA}
