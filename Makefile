@@ -56,19 +56,19 @@ init-network: ## Crea la red Docker externa 'infraestructura-network' si no exis
 .PHONY: deploy
 deploy: init-env init-network ## Despliega todo el stack en producción (build + up en background)
 	@printf "$(YELLOW)Desplegando stack de producción SIGMA...$(RESET)\n"
-	$(COMPOSE_PROD) up -d --build
+	$(COMPOSE_PROD) up -d --build --remove-orphans
 	@printf "$(GREEN)Despliegue completado exitosamente.$(RESET)\n"
 
 .PHONY: deploy-api
 deploy-api: init-network ## Reconstruye y despliega únicamente el servicio API en producción
 	@printf "$(YELLOW)Desplegando API en producción...$(RESET)\n"
-	$(COMPOSE_PROD) up -d --build api
+	$(COMPOSE_PROD) up -d --build --remove-orphans api
 	@printf "$(GREEN)API desplegada exitosamente.$(RESET)\n"
 
 .PHONY: deploy-web
 deploy-web: init-network ## Reconstruye y despliega únicamente el frontend Web en producción
 	@printf "$(YELLOW)Desplegando Web en producción...$(RESET)\n"
-	$(COMPOSE_PROD) up -d --build web
+	$(COMPOSE_PROD) up -d --build --remove-orphans web
 	@printf "$(GREEN)Web desplegada exitosamente.$(RESET)\n"
 
 .PHONY: pull-deploy
