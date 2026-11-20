@@ -445,7 +445,7 @@ function AfueraItem({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t pt-3 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3 sm:flex-col sm:flex-nowrap sm:items-end sm:border-t-0 sm:pt-0">
         <div
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums",
@@ -466,7 +466,7 @@ function AfueraItem({
           {formatDuration(mins)} {esEntrada ? "adentro" : "afuera"}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             size="sm"
             variant="ghost"
