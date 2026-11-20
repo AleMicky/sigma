@@ -6,7 +6,6 @@ services:
     build:
       context: ./apps/api
       dockerfile: Dockerfile
-    container_name: sigma-api
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -37,7 +36,9 @@ services:
     volumes:
       - sigma_uploads:/app/uploads
     networks:
-      - infraestructura-network
+      infraestructura-network:
+        aliases:
+          - sigma-api
 
   # ── React Frontend ───────────────────────────────────────────
   web:
@@ -47,13 +48,14 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL}
         VITE_APP_NAME: ${VITE_APP_NAME:-SIGMA}
-    container_name: sigma-web
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
     networks:
-      - infraestructura-network
+      infraestructura-network:
+        aliases:
+          - sigma-web
 
 volumes:
   sigma_uploads:
