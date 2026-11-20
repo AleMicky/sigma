@@ -272,7 +272,7 @@ export function ActivoFormPage({
   const atributosVisibles = useMemo(() => {
     const items = atributosQuery.data?.content ?? []
     return items
-      .filter((atributo) => atributo.visible !== false)
+      .filter((atributo) => atributo.visible === true)
       .slice()
       .sort((a, b) => a.orden - b.orden)
   }, [atributosQuery.data?.content])

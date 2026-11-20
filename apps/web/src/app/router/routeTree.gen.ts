@@ -63,6 +63,8 @@ import { Route as DashboardGestionVehicularSalidasIndexRouteImport } from './../
 import { Route as DashboardGestionVehicularSalidasSalidaIdRouteImport } from './../../routes/_dashboard/gestion-vehicular/salidas/$salidaId'
 import { Route as DashboardGestionVehicularSolicitudesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/solicitudes/index'
 import { Route as DashboardGestionVehicularSolicitudesNuevaRouteImport } from './../../routes/_dashboard/gestion-vehicular/solicitudes/nueva'
+import { Route as DashboardGestionVehicularVehiculosIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/vehiculos/index'
+import { Route as DashboardGestionVehicularVehiculosVehiculoIdRouteImport } from './../../routes/_dashboard/gestion-vehicular/vehiculos/$vehiculoId'
 import { Route as DashboardInventariosInsumoIdEditarRouteImport } from './../../routes/_dashboard/inventarios/$insumoId/editar'
 import { Route as DashboardInventariosCategoriasIndexRouteImport } from './../../routes/_dashboard/inventarios/categorias/index'
 import { Route as DashboardInventariosTiposInsumoIndexRouteImport } from './../../routes/_dashboard/inventarios/tipos-insumo/index'
@@ -426,6 +428,18 @@ const DashboardGestionVehicularSolicitudesNuevaRoute =
     path: '/solicitudes/nueva',
     getParentRoute: () => DashboardGestionVehicularRouteRoute,
   } as any)
+const DashboardGestionVehicularVehiculosIndexRoute =
+  DashboardGestionVehicularVehiculosIndexRouteImport.update({
+    id: '/vehiculos/',
+    path: '/vehiculos/',
+    getParentRoute: () => DashboardGestionVehicularRouteRoute,
+  } as any)
+const DashboardGestionVehicularVehiculosVehiculoIdRoute =
+  DashboardGestionVehicularVehiculosVehiculoIdRouteImport.update({
+    id: '/vehiculos/$vehiculoId',
+    path: '/vehiculos/$vehiculoId',
+    getParentRoute: () => DashboardGestionVehicularRouteRoute,
+  } as any)
 const DashboardInventariosInsumoIdEditarRoute =
   DashboardInventariosInsumoIdEditarRouteImport.update({
     id: '/$insumoId/editar',
@@ -754,6 +768,7 @@ export interface FileRoutesByFullPath {
   '/gestion-vehicular/controles-activos/nuevo': typeof DashboardGestionVehicularControlesActivosNuevoRoute
   '/gestion-vehicular/salidas/$salidaId': typeof DashboardGestionVehicularSalidasSalidaIdRoute
   '/gestion-vehicular/solicitudes/nueva': typeof DashboardGestionVehicularSolicitudesNuevaRoute
+  '/gestion-vehicular/vehiculos/$vehiculoId': typeof DashboardGestionVehicularVehiculosVehiculoIdRoute
   '/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
   '/mantenimientos/controles-activos/nuevo': typeof DashboardMantenimientosControlesActivosNuevoRoute
   '/mantenimientos/ordenes-trabajo/nuevo': typeof DashboardMantenimientosOrdenesTrabajoNuevoRoute
@@ -773,6 +788,7 @@ export interface FileRoutesByFullPath {
   '/gestion-vehicular/reportes/': typeof DashboardGestionVehicularReportesIndexRoute
   '/gestion-vehicular/salidas/': typeof DashboardGestionVehicularSalidasIndexRoute
   '/gestion-vehicular/solicitudes/': typeof DashboardGestionVehicularSolicitudesIndexRoute
+  '/gestion-vehicular/vehiculos/': typeof DashboardGestionVehicularVehiculosIndexRoute
   '/inventarios/categorias/': typeof DashboardInventariosCategoriasIndexRoute
   '/inventarios/tipos-insumo/': typeof DashboardInventariosTiposInsumoIndexRoute
   '/mantenimientos/actividades/': typeof DashboardMantenimientosActividadesIndexRoute
@@ -839,6 +855,7 @@ export interface FileRoutesByTo {
   '/gestion-vehicular/controles-activos/nuevo': typeof DashboardGestionVehicularControlesActivosNuevoRoute
   '/gestion-vehicular/salidas/$salidaId': typeof DashboardGestionVehicularSalidasSalidaIdRoute
   '/gestion-vehicular/solicitudes/nueva': typeof DashboardGestionVehicularSolicitudesNuevaRoute
+  '/gestion-vehicular/vehiculos/$vehiculoId': typeof DashboardGestionVehicularVehiculosVehiculoIdRoute
   '/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
   '/mantenimientos/controles-activos/nuevo': typeof DashboardMantenimientosControlesActivosNuevoRoute
   '/mantenimientos/ordenes-trabajo/nuevo': typeof DashboardMantenimientosOrdenesTrabajoNuevoRoute
@@ -858,6 +875,7 @@ export interface FileRoutesByTo {
   '/gestion-vehicular/reportes': typeof DashboardGestionVehicularReportesIndexRoute
   '/gestion-vehicular/salidas': typeof DashboardGestionVehicularSalidasIndexRoute
   '/gestion-vehicular/solicitudes': typeof DashboardGestionVehicularSolicitudesIndexRoute
+  '/gestion-vehicular/vehiculos': typeof DashboardGestionVehicularVehiculosIndexRoute
   '/inventarios/categorias': typeof DashboardInventariosCategoriasIndexRoute
   '/inventarios/tipos-insumo': typeof DashboardInventariosTiposInsumoIndexRoute
   '/mantenimientos/actividades': typeof DashboardMantenimientosActividadesIndexRoute
@@ -943,6 +961,7 @@ export interface FileRoutesById {
   '/_dashboard/gestion-vehicular/controles-activos/nuevo': typeof DashboardGestionVehicularControlesActivosNuevoRoute
   '/_dashboard/gestion-vehicular/salidas/$salidaId': typeof DashboardGestionVehicularSalidasSalidaIdRoute
   '/_dashboard/gestion-vehicular/solicitudes/nueva': typeof DashboardGestionVehicularSolicitudesNuevaRoute
+  '/_dashboard/gestion-vehicular/vehiculos/$vehiculoId': typeof DashboardGestionVehicularVehiculosVehiculoIdRoute
   '/_dashboard/inventarios/$insumoId/editar': typeof DashboardInventariosInsumoIdEditarRoute
   '/_dashboard/mantenimientos/controles-activos/nuevo': typeof DashboardMantenimientosControlesActivosNuevoRoute
   '/_dashboard/mantenimientos/ordenes-trabajo/nuevo': typeof DashboardMantenimientosOrdenesTrabajoNuevoRoute
@@ -962,6 +981,7 @@ export interface FileRoutesById {
   '/_dashboard/gestion-vehicular/reportes/': typeof DashboardGestionVehicularReportesIndexRoute
   '/_dashboard/gestion-vehicular/salidas/': typeof DashboardGestionVehicularSalidasIndexRoute
   '/_dashboard/gestion-vehicular/solicitudes/': typeof DashboardGestionVehicularSolicitudesIndexRoute
+  '/_dashboard/gestion-vehicular/vehiculos/': typeof DashboardGestionVehicularVehiculosIndexRoute
   '/_dashboard/inventarios/categorias/': typeof DashboardInventariosCategoriasIndexRoute
   '/_dashboard/inventarios/tipos-insumo/': typeof DashboardInventariosTiposInsumoIndexRoute
   '/_dashboard/mantenimientos/actividades/': typeof DashboardMantenimientosActividadesIndexRoute
@@ -1047,6 +1067,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/controles-activos/nuevo'
     | '/gestion-vehicular/salidas/$salidaId'
     | '/gestion-vehicular/solicitudes/nueva'
+    | '/gestion-vehicular/vehiculos/$vehiculoId'
     | '/inventarios/$insumoId/editar'
     | '/mantenimientos/controles-activos/nuevo'
     | '/mantenimientos/ordenes-trabajo/nuevo'
@@ -1066,6 +1087,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/reportes/'
     | '/gestion-vehicular/salidas/'
     | '/gestion-vehicular/solicitudes/'
+    | '/gestion-vehicular/vehiculos/'
     | '/inventarios/categorias/'
     | '/inventarios/tipos-insumo/'
     | '/mantenimientos/actividades/'
@@ -1132,6 +1154,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/controles-activos/nuevo'
     | '/gestion-vehicular/salidas/$salidaId'
     | '/gestion-vehicular/solicitudes/nueva'
+    | '/gestion-vehicular/vehiculos/$vehiculoId'
     | '/inventarios/$insumoId/editar'
     | '/mantenimientos/controles-activos/nuevo'
     | '/mantenimientos/ordenes-trabajo/nuevo'
@@ -1151,6 +1174,7 @@ export interface FileRouteTypes {
     | '/gestion-vehicular/reportes'
     | '/gestion-vehicular/salidas'
     | '/gestion-vehicular/solicitudes'
+    | '/gestion-vehicular/vehiculos'
     | '/inventarios/categorias'
     | '/inventarios/tipos-insumo'
     | '/mantenimientos/actividades'
@@ -1235,6 +1259,7 @@ export interface FileRouteTypes {
     | '/_dashboard/gestion-vehicular/controles-activos/nuevo'
     | '/_dashboard/gestion-vehicular/salidas/$salidaId'
     | '/_dashboard/gestion-vehicular/solicitudes/nueva'
+    | '/_dashboard/gestion-vehicular/vehiculos/$vehiculoId'
     | '/_dashboard/inventarios/$insumoId/editar'
     | '/_dashboard/mantenimientos/controles-activos/nuevo'
     | '/_dashboard/mantenimientos/ordenes-trabajo/nuevo'
@@ -1254,6 +1279,7 @@ export interface FileRouteTypes {
     | '/_dashboard/gestion-vehicular/reportes/'
     | '/_dashboard/gestion-vehicular/salidas/'
     | '/_dashboard/gestion-vehicular/solicitudes/'
+    | '/_dashboard/gestion-vehicular/vehiculos/'
     | '/_dashboard/inventarios/categorias/'
     | '/_dashboard/inventarios/tipos-insumo/'
     | '/_dashboard/mantenimientos/actividades/'
@@ -1683,6 +1709,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardGestionVehicularSolicitudesNuevaRouteImport
       parentRoute: typeof DashboardGestionVehicularRouteRoute
     }
+    '/_dashboard/gestion-vehicular/vehiculos/': {
+      id: '/_dashboard/gestion-vehicular/vehiculos/'
+      path: '/vehiculos'
+      fullPath: '/gestion-vehicular/vehiculos/'
+      preLoaderRoute: typeof DashboardGestionVehicularVehiculosIndexRouteImport
+      parentRoute: typeof DashboardGestionVehicularRouteRoute
+    }
+    '/_dashboard/gestion-vehicular/vehiculos/$vehiculoId': {
+      id: '/_dashboard/gestion-vehicular/vehiculos/$vehiculoId'
+      path: '/vehiculos/$vehiculoId'
+      fullPath: '/gestion-vehicular/vehiculos/$vehiculoId'
+      preLoaderRoute: typeof DashboardGestionVehicularVehiculosVehiculoIdRouteImport
+      parentRoute: typeof DashboardGestionVehicularRouteRoute
+    }
     '/_dashboard/inventarios/$insumoId/editar': {
       id: '/_dashboard/inventarios/$insumoId/editar'
       path: '/$insumoId/editar'
@@ -2074,6 +2114,7 @@ interface DashboardGestionVehicularRouteRouteChildren {
   DashboardGestionVehicularControlesActivosNuevoRoute: typeof DashboardGestionVehicularControlesActivosNuevoRoute
   DashboardGestionVehicularSalidasSalidaIdRoute: typeof DashboardGestionVehicularSalidasSalidaIdRoute
   DashboardGestionVehicularSolicitudesNuevaRoute: typeof DashboardGestionVehicularSolicitudesNuevaRoute
+  DashboardGestionVehicularVehiculosVehiculoIdRoute: typeof DashboardGestionVehicularVehiculosVehiculoIdRoute
   DashboardGestionVehicularAsignacionesIndexRoute: typeof DashboardGestionVehicularAsignacionesIndexRoute
   DashboardGestionVehicularCalendarioReservasIndexRoute: typeof DashboardGestionVehicularCalendarioReservasIndexRoute
   DashboardGestionVehicularConfiguracionesIndexRoute: typeof DashboardGestionVehicularConfiguracionesIndexRoute
@@ -2083,6 +2124,7 @@ interface DashboardGestionVehicularRouteRouteChildren {
   DashboardGestionVehicularReportesIndexRoute: typeof DashboardGestionVehicularReportesIndexRoute
   DashboardGestionVehicularSalidasIndexRoute: typeof DashboardGestionVehicularSalidasIndexRoute
   DashboardGestionVehicularSolicitudesIndexRoute: typeof DashboardGestionVehicularSolicitudesIndexRoute
+  DashboardGestionVehicularVehiculosIndexRoute: typeof DashboardGestionVehicularVehiculosIndexRoute
   DashboardGestionVehicularSolicitudesSolicitudIdEditarRoute: typeof DashboardGestionVehicularSolicitudesSolicitudIdEditarRoute
   DashboardGestionVehicularConfiguracionesConductoresIndexRoute: typeof DashboardGestionVehicularConfiguracionesConductoresIndexRoute
   DashboardGestionVehicularConfiguracionesFlotasIndexRoute: typeof DashboardGestionVehicularConfiguracionesFlotasIndexRoute
@@ -2104,6 +2146,8 @@ const DashboardGestionVehicularRouteRouteChildren: DashboardGestionVehicularRout
       DashboardGestionVehicularSalidasSalidaIdRoute,
     DashboardGestionVehicularSolicitudesNuevaRoute:
       DashboardGestionVehicularSolicitudesNuevaRoute,
+    DashboardGestionVehicularVehiculosVehiculoIdRoute:
+      DashboardGestionVehicularVehiculosVehiculoIdRoute,
     DashboardGestionVehicularAsignacionesIndexRoute:
       DashboardGestionVehicularAsignacionesIndexRoute,
     DashboardGestionVehicularCalendarioReservasIndexRoute:
@@ -2122,6 +2166,8 @@ const DashboardGestionVehicularRouteRouteChildren: DashboardGestionVehicularRout
       DashboardGestionVehicularSalidasIndexRoute,
     DashboardGestionVehicularSolicitudesIndexRoute:
       DashboardGestionVehicularSolicitudesIndexRoute,
+    DashboardGestionVehicularVehiculosIndexRoute:
+      DashboardGestionVehicularVehiculosIndexRoute,
     DashboardGestionVehicularSolicitudesSolicitudIdEditarRoute:
       DashboardGestionVehicularSolicitudesSolicitudIdEditarRoute,
     DashboardGestionVehicularConfiguracionesConductoresIndexRoute:

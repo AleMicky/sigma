@@ -145,7 +145,7 @@ export function ActivoInfoTab({
   const atributosVisibles = useMemo(
     () =>
       atributos
-        .filter((atributo) => atributo.visible !== false)
+        .filter((atributo) => atributo.visible === true)
         .slice()
         .sort((a, b) => a.orden - b.orden),
     [atributos],

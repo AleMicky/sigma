@@ -30,17 +30,21 @@ export function ActivoAtributoValorFields({
   onChange,
   disabled = false,
 }: Readonly<ActivoAtributoValorFieldsProps>) {
-  if (atributos.length === 0) {
+  const atributosVisibles = atributos.filter(
+    (atributo) => atributo.visible === true,
+  )
+
+  if (atributosVisibles.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Este tipo de activo no tiene atributos configurados.
+        Este tipo de activo no tiene atributos visibles configurados.
       </p>
     )
   }
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {atributos.map((atributo) => {
+      {atributosVisibles.map((atributo) => {
         const tipoDato = tiposDatoById.get(atributo.tipoDatoId)
         const codigo = (tipoDato?.codigo ?? "TEXT").toUpperCase()
         const value = valores[atributo.id] ?? ""
