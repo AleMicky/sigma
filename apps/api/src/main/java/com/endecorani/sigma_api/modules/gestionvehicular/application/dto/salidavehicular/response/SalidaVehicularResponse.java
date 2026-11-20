@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.dto.salidavehicular.response;
 
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.vehiculo.response.VehiculoAtributoResponse;
 import lombok.Builder;
 
 import java.time.Instant;
@@ -13,9 +14,11 @@ public record SalidaVehicularResponse(
         UUID activoId,
         String activoCodigo,
         String activoDescripcion,
+        String urlImagen,
         String placa,
         String marca,
         String modelo,
+        List<VehiculoAtributoResponse> atributos,
         UUID empleadoId,
         String empleadoCodigo,
         String empleadoNombre,

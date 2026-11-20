@@ -17,6 +17,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteri
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.RegistroPorteriaActivoResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.RegistroPorteriaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.ReporteBitacoraPorteriaResponse;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.vehiculo.response.VehiculoAtributoResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoMovimientoPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteria;
@@ -727,6 +728,9 @@ public class RegistroPorteriaService {
                                 Function.identity(),
                                 (a, b) -> a));
 
+        Map<UUID, List<VehiculoAtributoResponse>> atributosDetalladosMap =
+                obtenerAtributosDetalladosBatch(activoIds);
+
         Map<UUID, String> ubicacionesMap = ubicacionIds.isEmpty()
                 ? Collections.emptyMap()
                 : ubicacionRepository.findAllById(ubicacionIds).stream()
@@ -736,7 +740,7 @@ public class RegistroPorteriaService {
                                 (a, b) -> a));
 
         return registros.stream()
-                .map(r -> mapToResponse(r, empleadosMap, activosMap, ubicacionesMap))
+                .map(r -> mapToResponse(r, empleadosMap, activosMap, atributosDetalladosMap, ubicacionesMap))
                 .toList();
     }
 
@@ -744,12 +748,17 @@ public class RegistroPorteriaService {
             RegistroPorteria r,
             Map<UUID, String> empleadosMap,
             Map<UUID, ActivoEntity> activosMap,
+            Map<UUID, List<VehiculoAtributoResponse>> atributosDetalladosMap,
             Map<UUID, String> ubicacionesMap) {
         List<RegistroPorteriaActivoResponse> activosResp = r.getActivos() == null
                 ? List.of()
                 : r.getActivos().stream()
                         .map(a -> {
                             ActivoEntity activo = a.getActivoId() != null ? activosMap.get(a.getActivoId()) : null;
+                            List<VehiculoAtributoResponse> attrs = a.getActivoId() != null
+                                    ? atributosDetalladosMap.getOrDefault(a.getActivoId(), List.of())
+                                    : List.of();
+                            String placa = extraerPlacaDeAtributos(attrs, activo, a.getDescripcionItem());
                             return new RegistroPorteriaActivoResponse(
                                     a.getId(),
                                     a.getActivoId(),
@@ -759,7 +768,10 @@ public class RegistroPorteriaService {
                                     a.getCantidad(),
                                     a.getObservacionSalida(),
                                     a.getRetornado(),
-                                    a.getObservacionLlegada());
+                                    a.getObservacionLlegada(),
+                                    activo != null ? activo.getUrlImagen() : null,
+                                    placa,
+                                    attrs);
                         })
                         .toList();
 
@@ -908,6 +920,8 @@ public class RegistroPorteriaService {
                                 (a, b) -> a));
 
         Map<UUID, Map<String, String>> atributosActivosMap = obtenerAtributosActivosBatch(activoIds);
+        Map<UUID, List<VehiculoAtributoResponse>> atributosDetalladosMap =
+                obtenerAtributosDetalladosBatch(activoIds);
 
         Map<UUID, String> ubicacionesMap = (ubicacionIds.isEmpty() || ubicacionRepository == null)
                 ? Collections.emptyMap()
@@ -932,6 +946,7 @@ public class RegistroPorteriaService {
                         empleadosMap,
                         activosMap,
                         atributosActivosMap,
+                        atributosDetalladosMap,
                         ubicacionesMap,
                         salidaNumerosMap))
                 .toList();
@@ -942,6 +957,7 @@ public class RegistroPorteriaService {
             Map<UUID, VEmpleadoEntity> empleadosMap,
             Map<UUID, ActivoEntity> activosMap,
             Map<UUID, Map<String, String>> atributosActivosMap,
+            Map<UUID, List<VehiculoAtributoResponse>> atributosDetalladosMap,
             Map<UUID, String> ubicacionesMap,
             Map<UUID, String> salidaNumerosMap) {
         LocalDateTime salidaLocal = r.getFechaHoraSalida() != null
@@ -1025,6 +1041,9 @@ public class RegistroPorteriaService {
                     pendientes += cant;
                 }
 
+                List<VehiculoAtributoResponse> attrsDetallados = a.getActivoId() != null
+                        ? atributosDetalladosMap.getOrDefault(a.getActivoId(), List.of())
+                        : List.of();
                 activosResp.add(new RegistroPorteriaActivoResponse(
                         a.getId(),
                         a.getActivoId(),
@@ -1034,7 +1053,10 @@ public class RegistroPorteriaService {
                         cant,
                         a.getObservacionSalida(),
                         a.getRetornado(),
-                        a.getObservacionLlegada()));
+                        a.getObservacionLlegada(),
+                        activo != null ? activo.getUrlImagen() : null,
+                        placa,
+                        attrsDetallados));
 
                 StringBuilder parte = new StringBuilder();
                 if (codigo != null && nombre != null) {
@@ -1173,6 +1195,85 @@ public class RegistroPorteriaService {
                 .createdBy(r.getCreatedBy())
                 .updatedBy(r.getUpdatedBy())
                 .build();
+    }
+
+    private Map<UUID, List<VehiculoAtributoResponse>> obtenerAtributosDetalladosBatch(Set<UUID> activoIds) {
+        if (activoIds == null || activoIds.isEmpty()
+                || activoAtributoValorRepository == null || activoAtributoRepository == null) {
+            return Collections.emptyMap();
+        }
+        List<ActivoAtributoValorEntity> valores =
+                activoAtributoValorRepository.findByActivoIdIn(new ArrayList<>(activoIds));
+        if (valores == null || valores.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Set<UUID> attrIds = valores.stream()
+                .map(ActivoAtributoValorEntity::getActivoAtributoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (attrIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, ActivoAtributoEntity> attrMap = activoAtributoRepository.findAllById(attrIds).stream()
+                .collect(Collectors.toMap(ActivoAtributoEntity::getId, Function.identity(), (a, b) -> a));
+
+        Map<UUID, List<VehiculoAtributoResponse>> result = new HashMap<>();
+        for (ActivoAtributoValorEntity v : valores) {
+            ActivoAtributoEntity attr = attrMap.get(v.getActivoAtributoId());
+            if (attr == null || Boolean.FALSE.equals(attr.getVisible())) {
+                continue;
+            }
+            String valorLimpio = v.getValor() != null ? v.getValor().trim() : null;
+            if (valorLimpio == null || valorLimpio.isEmpty()) {
+                continue;
+            }
+            String etiqueta = (attr.getEtiqueta() != null && !attr.getEtiqueta().isBlank())
+                    ? attr.getEtiqueta().trim()
+                    : attr.getCodigo();
+            result.computeIfAbsent(v.getActivoId(), k -> new ArrayList<>())
+                    .add(new VehiculoAtributoResponse(
+                            attr.getId(),
+                            attr.getCodigo(),
+                            etiqueta,
+                            null,
+                            attr.getOrden() != null ? attr.getOrden() : 0,
+                            Boolean.TRUE,
+                            valorLimpio,
+                            valorLimpio));
+        }
+
+        result.values().forEach(list ->
+                list.sort(Comparator.comparingInt(a -> a.orden() != null ? a.orden() : 0)));
+        return result;
+    }
+
+    private String extraerPlacaDeAtributos(
+            List<VehiculoAtributoResponse> attrs,
+            ActivoEntity activo,
+            String descripcionItem) {
+        if (attrs != null) {
+            for (VehiculoAtributoResponse attr : attrs) {
+                String codigo = attr.codigo() != null ? attr.codigo().trim().toUpperCase(Locale.ROOT) : "";
+                String etiqueta = attr.etiqueta() != null ? attr.etiqueta().trim().toUpperCase(Locale.ROOT) : "";
+                if ("PLACA".equals(codigo) || "NRO_PLACA".equals(codigo) || "NUMERO_PLACA".equals(codigo)
+                        || etiqueta.contains("PLACA")) {
+                    String val = attr.valorFormateado() != null ? attr.valorFormateado().trim()
+                            : (attr.valor() != null ? attr.valor().trim() : "");
+                    if (!val.isEmpty()) {
+                        return val;
+                    }
+                }
+            }
+        }
+        if (activo != null) {
+            String fromDesc = extractPlacaFromDescripcion(activo.getDescripcion());
+            if (fromDesc != null && !fromDesc.isBlank()) {
+                return fromDesc;
+            }
+        }
+        return extractPlacaFromDescripcion(descripcionItem);
     }
 
     private Map<UUID, Map<String, String>> obtenerAtributosActivosBatch(Set<UUID> activoIds) {
