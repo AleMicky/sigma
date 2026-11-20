@@ -65,7 +65,7 @@ sigma/
 │   │   │   └── config/               Security, CORS, Keycloak, Flowable, OpenAPI, storage, JPA
 │   │   └── src/main/resources/
 │   │       ├── application.yaml
-│   │       ├── db/migration/         158 migraciones Flyway (9 schemas PostgreSQL)
+│   │       ├── db/migration/         159 migraciones Flyway (9 schemas PostgreSQL)
 │   │       ├── processes/            4 procesos BPMN 2.0 (Flowable)
 │   │       └── reports/              Plantillas JasperReports (.jrxml) y recursos gráficos
 │   │
@@ -152,7 +152,7 @@ pnpm --filter web lint      # ESLint
 
 ## Base de datos
 
-PostgreSQL 16 con **9 schemas** gestionados mediante **158 migraciones Flyway** (`ddl-auto=validate`):
+PostgreSQL 16 con **9 schemas** gestionados mediante **159 migraciones Flyway** (`ddl-auto=validate`):
 
 * `activos` — activos, tipos, categorías, componentes, accesorios, atributos, asignaciones y documentos
 * `incidentes` — incidentes de activos, involucrados y evidencias
