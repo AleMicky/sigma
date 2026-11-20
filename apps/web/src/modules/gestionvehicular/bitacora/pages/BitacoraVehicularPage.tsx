@@ -12,7 +12,11 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
+import { vehiculoQueries } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.queries"
+import {
+  getAtributoValorByCode,
+  getPlacaFromAtributos,
+} from "@/modules/gestionvehicular/vehiculo/lib/vehiculo-atributos.utils"
 import { bitacoraQueries } from "@/modules/gestionvehicular/bitacora/api/bitacora.queries"
 import {
   abrirBitacoraConsolidadaPdf,
@@ -117,9 +121,9 @@ export function BitacoraVehicularPage() {
     ),
   })
 
-  // Consulta 2: Datos detallados del activo/vehículo (solo si hay vehículo específico)
-  const activoDetailQuery = useQuery({
-    ...activoQueries.detail(filtrosActivos?.activoId ?? ""),
+  // Consulta 2: Datos detallados del vehículo (endpoint propio gestionvehicular)
+  const vehiculoDetailQuery = useQuery({
+    ...vehiculoQueries.detail(filtrosActivos?.activoId ?? ""),
     enabled: Boolean(filtrosActivos?.activoId),
   })
 
@@ -134,34 +138,24 @@ export function BitacoraVehicularPage() {
       }
     }
 
-    const act = activoDetailQuery.data
-    const desc = vehiculoMeta?.descripcion || (act as { descripcion?: string })?.descripcion || ""
+    const veh = vehiculoDetailQuery.data
+    const desc = vehiculoMeta?.descripcion || veh?.descripcion || ""
 
-    let placa =
+    const placa =
+      getPlacaFromAtributos(veh ?? { atributos: [] }).valor ||
       placaSeleccionada ||
       vehiculoMeta?.placa ||
-      (act as { placa?: string })?.placa ||
       "S/P"
 
-    // Salvaguarda si la placa seleccionada o cargada quedó como "NO" o "S/P"
-    if (placa === "NO" || placa === "S/P") {
-      const matchPlaca = desc.match(
-        /PLACA(?:\s*(?:N[°o.]+|NRO\.?|NUM\.?|#))?[:\s#.-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)?)(?:\s+(?:CHASIS|MOTOR|COLOR|MARCA|MODELO|AÑO|ANIO|TIPO)|[,;.]|\s*$)/i
-      )
-      if (matchPlaca && matchPlaca[1]) {
-        const clean = matchPlaca[1].replace(/[,.;-]+$/, "").trim()
-        if (clean.length >= 2 && !clean.toUpperCase().startsWith("NO")) {
-          placa = clean
-        }
-      }
-    }
-
-    const marca = vehiculoMeta?.marca || (act as { marca?: string })?.marca || ""
-    const modelo = vehiculoMeta?.modelo || (act as { modelo?: string })?.modelo || ""
+    const marca =
+      getAtributoValorByCode(veh, ["MARCA"]) || vehiculoMeta?.marca || ""
+    const modelo =
+      getAtributoValorByCode(veh, ["MODELO"]) || vehiculoMeta?.modelo || ""
     let tipo =
+      getAtributoValorByCode(veh, ["TIPO_VEHICULO", "TIPO", "CLASE"]) ||
       vehiculoMeta?.tipoVehiculo ||
-      (act as { tipoActivo?: { nombre?: string } })?.tipoActivo?.nombre ||
-      "CAMIONETA"
+      veh?.tipoActivo?.nombre ||
+      "VEHÍCULO"
 
     if (tipo.toUpperCase() === "VEHÍCULO" || tipo.toUpperCase() === "VEHICULO") {
       const matchTipo = desc.match(
@@ -172,13 +166,10 @@ export function BitacoraVehicularPage() {
       }
     }
 
-    const tipoVehiculoCompuesto = [tipo, marca, modelo].filter(Boolean).join(" ").trim() || "CAMIONETA TOYOTA HILUX"
-    const responsable =
-      (act as { responsable?: { nombreCompleto?: string } })?.responsable?.nombreCompleto ||
-      (act as { custodio?: { nombreCompleto?: string } })?.custodio?.nombreCompleto ||
-      "-"
-    const ubicacion =
-      (act as { ubicacion?: { nombre?: string } })?.ubicacion?.nombre || "CORANI"
+    const tipoVehiculoCompuesto =
+      [tipo, marca, modelo].filter(Boolean).join(" ").trim() || "VEHÍCULO"
+    const responsable = vehiculoMeta?.nombre || "-"
+    const ubicacion = veh?.ubicacion?.nombre || "CORANI"
 
     return {
       tipoVehiculo: tipoVehiculoCompuesto,
@@ -186,7 +177,12 @@ export function BitacoraVehicularPage() {
       responsable,
       ubicacion,
     }
-  }, [filtrosActivos?.activoId, activoDetailQuery.data, placaSeleccionada, vehiculoMeta])
+  }, [
+    filtrosActivos?.activoId,
+    vehiculoDetailQuery.data,
+    placaSeleccionada,
+    vehiculoMeta,
+  ])
 
   // Mapear filas de la API (salidas + solicitudes) al formato oficial de la planilla
   const { filas, totalesMetricas } = useMemo(() => {
@@ -311,7 +307,7 @@ export function BitacoraVehicularPage() {
     })
     void reporteQuery.refetch()
     if (activoId) {
-      void activoDetailQuery.refetch()
+      void vehiculoDetailQuery.refetch()
     }
     toast.success(
       activoId
@@ -450,7 +446,7 @@ export function BitacoraVehicularPage() {
 
   const isLoading =
     reporteQuery.isLoading ||
-    activoDetailQuery.isLoading ||
+    vehiculoDetailQuery.isLoading ||
     reporteQuery.isFetching
 
   return (

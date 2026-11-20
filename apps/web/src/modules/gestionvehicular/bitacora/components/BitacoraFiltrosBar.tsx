@@ -14,6 +14,10 @@ import {
   extractPlaca,
   VehiculoResponsableCombobox,
 } from "@/modules/gestionvehicular/asignacion-vehicular/components/VehiculoResponsableCombobox"
+import {
+  getPlacaFromAtributos,
+  getVehiculoTituloDinamico,
+} from "@/modules/gestionvehicular/vehiculo/lib/vehiculo-atributos.utils"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
@@ -151,14 +155,22 @@ export function BitacoraFiltrosBar({
               value={activoId}
               onValueChange={(val, item) => {
                 if (item && "vehiculo" in item && item.vehiculo) {
-                  onActivoChange(val, extractPlaca(item.vehiculo.descripcion), item.vehiculo.nombre)
-                } else if (item && "nombre" in item) {
-                  onActivoChange(val, extractPlaca(item.descripcion), item.nombre)
+                  onActivoChange(
+                    val,
+                    item.vehiculo.placa || extractPlaca(item.vehiculo.descripcion),
+                    item.vehiculo.nombre,
+                  )
+                } else if (item && "atributos" in item) {
+                  onActivoChange(
+                    val,
+                    getPlacaFromAtributos(item).valor,
+                    getVehiculoTituloDinamico(item),
+                  )
                 } else {
                   onActivoChange(val, null, null)
                 }
               }}
-              placeholder="Buscar vehículo por código o placa..."
+              placeholder="Buscar vehículo por placa, marca o modelo..."
             />
           </div>
 

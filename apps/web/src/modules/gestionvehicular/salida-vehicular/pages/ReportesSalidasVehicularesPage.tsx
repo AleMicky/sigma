@@ -12,7 +12,11 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
+import { vehiculoQueries } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.queries"
+import {
+  getAtributoValorByCode,
+  getPlacaFromAtributos,
+} from "@/modules/gestionvehicular/vehiculo/lib/vehiculo-atributos.utils"
 import { cargaCombustibleQueries } from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.queries"
 import type { CargaCombustible } from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.service"
 import { PageShell } from "@/shared/components/page-shell"
@@ -159,9 +163,9 @@ export const ReportesSalidasVehicularesPage = () => {
     enabled: Boolean(filtrosActivos?.fechaDesde && filtrosActivos?.fechaHasta),
   })
 
-  // Consulta 3: Datos detallados del activo/vehículo (solo si hay vehículo específico)
-  const activoDetailQuery = useQuery({
-    ...activoQueries.detail(filtrosActivos?.activoId ?? ""),
+  // Consulta 3: Datos detallados del vehículo (endpoint propio gestionvehicular)
+  const vehiculoDetailQuery = useQuery({
+    ...vehiculoQueries.detail(filtrosActivos?.activoId ?? ""),
     enabled: Boolean(filtrosActivos?.activoId),
   })
 
@@ -176,27 +180,27 @@ export const ReportesSalidasVehicularesPage = () => {
       }
     }
 
-    const act = activoDetailQuery.data
+    const veh = vehiculoDetailQuery.data
     const placa =
+      getPlacaFromAtributos(veh ?? { atributos: [] }).valor ||
       placaSeleccionada ||
       vehiculoMeta?.placa ||
-      (act as { placa?: string })?.placa ||
       "S/P"
 
-    const marca = vehiculoMeta?.marca || (act as { marca?: string })?.marca || ""
-    const modelo = vehiculoMeta?.modelo || (act as { modelo?: string })?.modelo || ""
+    const marca =
+      getAtributoValorByCode(veh, ["MARCA"]) || vehiculoMeta?.marca || ""
+    const modelo =
+      getAtributoValorByCode(veh, ["MODELO"]) || vehiculoMeta?.modelo || ""
     const tipo =
+      getAtributoValorByCode(veh, ["TIPO_VEHICULO", "TIPO", "CLASE"]) ||
       vehiculoMeta?.tipoVehiculo ||
-      (act as { tipoActivo?: { nombre?: string } })?.tipoActivo?.nombre ||
-      "CAMIONETA"
+      veh?.tipoActivo?.nombre ||
+      "VEHÍCULO"
 
-    const tipoVehiculoCompuesto = [tipo, marca, modelo].filter(Boolean).join(" ").trim() || "CAMIONETA TOYOTA HILUX"
-    const responsable =
-      (act as { responsable?: { nombreCompleto?: string } })?.responsable?.nombreCompleto ||
-      vehiculoMeta?.nombre ||
-      ""
-    const ubicacion =
-      (act as { ubicacion?: { nombre?: string } })?.ubicacion?.nombre || "CORANI"
+    const tipoVehiculoCompuesto =
+      [tipo, marca, modelo].filter(Boolean).join(" ").trim() || "VEHÍCULO"
+    const responsable = vehiculoMeta?.nombre || ""
+    const ubicacion = veh?.ubicacion?.nombre || "CORANI"
 
     return {
       tipoVehiculo: tipoVehiculoCompuesto,
@@ -204,7 +208,12 @@ export const ReportesSalidasVehicularesPage = () => {
       responsable,
       ubicacion,
     }
-  }, [filtrosActivos?.activoId, activoDetailQuery.data, placaSeleccionada, vehiculoMeta])
+  }, [
+    filtrosActivos?.activoId,
+    vehiculoDetailQuery.data,
+    placaSeleccionada,
+    vehiculoMeta,
+  ])
 
   // Transformar salidas y asociar odómetros y combustible
   const { filas, totalesMetricas } = useMemo(() => {
@@ -434,7 +443,7 @@ export const ReportesSalidasVehicularesPage = () => {
     void reporteQuery.refetch()
     void cargasQuery.refetch()
     if (activoId) {
-      void activoDetailQuery.refetch()
+      void vehiculoDetailQuery.refetch()
     }
     toast.success(
       activoId
@@ -573,7 +582,7 @@ export const ReportesSalidasVehicularesPage = () => {
   const isLoading =
     reporteQuery.isLoading ||
     cargasQuery.isLoading ||
-    activoDetailQuery.isLoading ||
+    vehiculoDetailQuery.isLoading ||
     reporteQuery.isFetching ||
     cargasQuery.isFetching
 

@@ -1,11 +1,15 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Box, Car, Layers, Loader2, RefreshCw, X } from "lucide-react"
+import { Car, Layers, Loader2, RefreshCw, X } from "lucide-react"
 
-import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
-import type { Activo } from "@/modules/activos/activo/api/activo.service"
 import { flotaQueries } from "@/modules/gestionvehicular/flota-vehicular/api/flota.queries"
 import type { FlotaVehiculo } from "@/modules/gestionvehicular/flota-vehicular/api/flota.service"
+import { vehiculoQueries } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.queries"
+import type { VehiculoCatalogo } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.types"
+import {
+  getPlacaFromAtributos,
+  getVehiculoTituloDinamico,
+} from "@/modules/gestionvehicular/vehiculo/lib/vehiculo-atributos.utils"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -20,7 +24,7 @@ import {
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { cn } from "@/shared/lib/utils"
 
-export type VehiculoResponsableItem = FlotaVehiculo | Activo
+export type VehiculoResponsableItem = FlotaVehiculo | VehiculoCatalogo
 
 export type VehiculoResponsableComboboxProps = {
   value?: string | null
@@ -37,9 +41,7 @@ export type VehiculoResponsableComboboxProps = {
 
 interface SelectedVehicleData {
   id: string
-  codigo: string
-  nombre: string
-  descripcion?: string | null
+  titulo: string
   urlImagen?: string | null
   flotaNombre?: string
   placa: string | null
@@ -55,7 +57,12 @@ export function extractPlaca(descripcion?: string | null): string | null {
     )
     if (match && match[1]) {
       const clean = match[1].replace(/[,.;-]+$/, "").trim()
-      if (clean.length >= 2 && clean.length <= 20 && !clean.toUpperCase().startsWith("NO") && clean.toUpperCase() !== "NRO") {
+      if (
+        clean.length >= 2 &&
+        clean.length <= 20 &&
+        !clean.toUpperCase().startsWith("NO") &&
+        clean.toUpperCase() !== "NRO"
+      ) {
         return clean
       }
     }
@@ -65,11 +72,33 @@ export function extractPlaca(descripcion?: string | null): string | null {
   }
 }
 
+function resolveFlotaVehiculoPlaca(fv: FlotaVehiculo): string | null {
+  const veh = fv.vehiculo
+  if (!veh) return null
+  if (veh.placa?.trim()) return veh.placa.trim()
+  if (veh.atributos) {
+    for (const [key, val] of Object.entries(veh.atributos)) {
+      if (key.toUpperCase().includes("PLACA") && val?.trim()) {
+        return val.trim()
+      }
+    }
+  }
+  return extractPlaca(veh.descripcion)
+}
+
+function resolveFlotaVehiculoTitulo(fv: FlotaVehiculo): string {
+  const veh = fv.vehiculo
+  if (!veh) return "Vehículo"
+  const parts = [veh.marca, veh.modelo].filter((p) => Boolean(p?.trim()))
+  if (parts.length > 0) return parts.join(" · ")
+  return veh.nombre || "Vehículo"
+}
+
 function resolveSelectedVehicle(
   value: string | null | undefined,
   flotaVehiculos: FlotaVehiculo[],
-  generalActivos: Activo[],
-  singleActivo?: Activo | null
+  generalVehiculos: VehiculoCatalogo[],
+  singleVehiculo?: VehiculoCatalogo | null
 ): SelectedVehicleData | null {
   if (!value) return null
 
@@ -77,29 +106,26 @@ function resolveSelectedVehicle(
   if (fv?.vehiculo) {
     return {
       id: fv.activoId,
-      codigo: fv.vehiculo.codigo,
-      nombre: fv.vehiculo.nombre,
-      descripcion: fv.vehiculo.descripcion,
+      titulo: resolveFlotaVehiculoTitulo(fv),
       urlImagen: fv.vehiculo.urlImagen,
       flotaNombre: fv.flota?.nombre,
-      placa: extractPlaca(fv.vehiculo.descripcion),
+      placa: resolveFlotaVehiculoPlaca(fv),
       estadoOperativoNombre: fv.vehiculo.estadoOperativoNombre,
       estadoOperativoColor: fv.vehiculo.estadoOperativoColor,
     }
   }
 
-  const a = singleActivo || generalActivos.find((item) => item.id === value)
-  if (a) {
+  const v = singleVehiculo || generalVehiculos.find((item) => item.id === value)
+  if (v) {
+    const { valor: placa } = getPlacaFromAtributos(v)
     return {
-      id: a.id,
-      codigo: a.codigo,
-      nombre: a.nombre,
-      descripcion: a.descripcion,
-      urlImagen: a.urlImagen,
-      flotaNombre: undefined,
-      placa: extractPlaca(a.descripcion),
-      estadoOperativoNombre: a.estadoOperativo?.nombre,
-      estadoOperativoColor: a.estadoOperativo?.color,
+      id: v.id,
+      titulo: getVehiculoTituloDinamico(v),
+      urlImagen: v.urlImagen,
+      flotaNombre: v.flotas.length > 0 ? v.flotas.map((f) => f.nombre).join(", ") : undefined,
+      placa,
+      estadoOperativoNombre: v.estadoOperativo?.nombre,
+      estadoOperativoColor: v.estadoOperativo?.color,
     }
   }
 
@@ -111,8 +137,11 @@ function filterFlotaVehiculos(items: FlotaVehiculo[], search: string): FlotaVehi
   if (!q) return items
   return items.filter((fv) => {
     const veh = fv.vehiculo
+    const placa = resolveFlotaVehiculoPlaca(fv)?.toLowerCase() ?? ""
+    const titulo = resolveFlotaVehiculoTitulo(fv).toLowerCase()
     return (
-      veh?.codigo?.toLowerCase().includes(q) ||
+      placa.includes(q) ||
+      titulo.includes(q) ||
       veh?.nombre?.toLowerCase().includes(q) ||
       veh?.descripcion?.toLowerCase().includes(q) ||
       fv.flota?.nombre?.toLowerCase().includes(q)
@@ -120,35 +149,25 @@ function filterFlotaVehiculos(items: FlotaVehiculo[], search: string): FlotaVehi
   })
 }
 
-function filterGeneralActivos(items: Activo[], search: string): Activo[] {
-  const q = search.toLowerCase().trim()
-  if (!q) return items
-  return items.filter((a) => {
-    return (
-      a.codigo?.toLowerCase().includes(q) ||
-      a.nombre?.toLowerCase().includes(q) ||
-      a.descripcion?.toLowerCase().includes(q)
-    )
-  })
-}
-
 function getFlotaVehiculoLabel(item: FlotaVehiculo): string {
   if (!item?.vehiculo) return ""
-  const placa = extractPlaca(item.vehiculo.descripcion)
-  const placaSuffix = placa ? `placa ${placa}` : ""
-  return `${item.vehiculo.codigo} ${item.vehiculo.nombre} ${item.flota?.nombre ?? ""} ${placaSuffix} ${item.vehiculo.descripcion ?? ""}`
+  const placa = resolveFlotaVehiculoPlaca(item)
+  const titulo = resolveFlotaVehiculoTitulo(item)
+  return [placa, titulo, item.flota?.nombre].filter(Boolean).join(" ")
 }
 
-function getGeneralActivoLabel(item: Activo): string {
+function getGeneralVehiculoLabel(item: VehiculoCatalogo): string {
   if (!item) return ""
-  const placa = extractPlaca(item.descripcion)
-  const placaSuffix = placa ? `placa ${placa}` : ""
-  return `${item.codigo} ${item.nombre} ${placaSuffix} ${item.descripcion ?? ""}`
+  const { valor: placa } = getPlacaFromAtributos(item)
+  const titulo = getVehiculoTituloDinamico(item)
+  return [placa, titulo].filter(Boolean).join(" ")
 }
 
 function getFlotaEmptyMessage(isLoading: boolean, totalCount: number): string {
   if (isLoading) return "Cargando vehículos..."
-  if (totalCount === 0) return "El empleado seleccionado no tiene vehículos en sus flotas asignadas."
+  if (totalCount === 0) {
+    return "El empleado seleccionado no tiene vehículos en sus flotas asignadas."
+  }
   return "No se encontraron vehículos coincidentes."
 }
 
@@ -180,7 +199,7 @@ function SelectedVehiculoCard({
           {selectedInfo.urlImagen ? (
             <AuthenticatedImage
               src={selectedInfo.urlImagen}
-              alt={selectedInfo.nombre}
+              alt={selectedInfo.titulo}
               className="size-full object-cover"
               fallback={<Car className="size-4.5 text-primary/70" />}
             />
@@ -191,17 +210,16 @@ function SelectedVehiculoCard({
 
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-            <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-              {selectedInfo.codigo}
-            </code>
-            <span className="font-semibold text-xs text-foreground truncate">
-              {selectedInfo.nombre}
-            </span>
-            {selectedInfo.placa && (
-              <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
-                Placa: {selectedInfo.placa}
+            {selectedInfo.placa ? (
+              <span className="inline-flex items-center rounded border-2 border-cyan-600/45 dark:border-cyan-400/45 bg-cyan-500/12 px-1.5 py-0.5 font-mono text-[11px] font-black tracking-wider text-foreground shrink-0 uppercase">
+                {selectedInfo.placa}
               </span>
-            )}
+            ) : null}
+            {selectedInfo.titulo !== selectedInfo.placa ? (
+              <span className="font-semibold text-xs text-foreground truncate">
+                {selectedInfo.titulo}
+              </span>
+            ) : null}
             {selectedInfo.estadoOperativoNombre && (
               <span
                 className="text-[9.5px] font-medium px-1.5 py-0.2 rounded border inline-flex items-center gap-1 shrink-0"
@@ -213,7 +231,9 @@ function SelectedVehiculoCard({
               >
                 <span
                   className="size-1.5 rounded-full"
-                  style={{ backgroundColor: selectedInfo.estadoOperativoColor || "#10b981" }}
+                  style={{
+                    backgroundColor: selectedInfo.estadoOperativoColor || "#10b981",
+                  }}
                 />
                 {selectedInfo.estadoOperativoNombre}
               </span>
@@ -251,7 +271,6 @@ function SelectedVehiculoCard({
 export function isVehiculoDisponible(estadoNombre?: string | null): boolean {
   if (!estadoNombre) return true
   const norm = estadoNombre.trim().toUpperCase()
-  // Si está en viaje, en mantenimiento o fuera de servicio, no está disponible
   if (
     norm.includes("VIAJE") ||
     norm.includes("MANTENIMIENTO") ||
@@ -270,7 +289,8 @@ interface FlotaVehiculoItemRowProps {
 function FlotaVehiculoItemRow({ item }: Readonly<FlotaVehiculoItemRowProps>) {
   const veh = item.vehiculo
   if (!veh) return null
-  const placa = extractPlaca(veh.descripcion)
+  const placa = resolveFlotaVehiculoPlaca(item)
+  const titulo = resolveFlotaVehiculoTitulo(item)
   const disponible = isVehiculoDisponible(veh.estadoOperativoNombre)
 
   return (
@@ -290,7 +310,7 @@ function FlotaVehiculoItemRow({ item }: Readonly<FlotaVehiculoItemRowProps>) {
           {veh.urlImagen ? (
             <AuthenticatedImage
               src={veh.urlImagen}
-              alt={veh.nombre}
+              alt={titulo}
               className="size-full object-cover"
               fallback={<Car className="size-4 text-muted-foreground/60" />}
             />
@@ -301,17 +321,20 @@ function FlotaVehiculoItemRow({ item }: Readonly<FlotaVehiculoItemRowProps>) {
 
         <div className="flex-1 min-w-0 space-y-0.5">
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-            <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-              {veh.codigo}
-            </code>
-            <span className="font-semibold text-foreground truncate text-xs">
-              {veh.nombre}
-            </span>
-            {placa && (
-              <span className="text-[9.5px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
+            {placa ? (
+              <span className="inline-flex items-center rounded border-2 border-cyan-600/45 dark:border-cyan-400/45 bg-cyan-500/12 px-1.5 py-0.2 font-mono text-[11px] font-black tracking-wider text-foreground shrink-0 uppercase">
                 {placa}
               </span>
+            ) : (
+              <span className="text-[10px] italic text-muted-foreground shrink-0">
+                Sin placa
+              </span>
             )}
+            {titulo !== placa ? (
+              <span className="font-semibold text-foreground truncate text-xs">
+                {titulo}
+              </span>
+            ) : null}
             {veh.estadoOperativoNombre && (
               <span
                 className="text-[9px] font-medium px-1.5 py-0.2 rounded border inline-flex items-center gap-1 shrink-0"
@@ -323,7 +346,9 @@ function FlotaVehiculoItemRow({ item }: Readonly<FlotaVehiculoItemRowProps>) {
               >
                 <span
                   className="size-1.5 rounded-full"
-                  style={{ backgroundColor: veh.estadoOperativoColor || "#10b981" }}
+                  style={{
+                    backgroundColor: veh.estadoOperativoColor || "#10b981",
+                  }}
                 />
                 {veh.estadoOperativoNombre}
               </span>
@@ -337,7 +362,10 @@ function FlotaVehiculoItemRow({ item }: Readonly<FlotaVehiculoItemRowProps>) {
 
           {item.flota && (
             <div className="flex items-center gap-1 text-[10.5px] text-muted-foreground truncate">
-              <Badge variant="outline" className="text-[9.5px] px-1.5 py-0 h-4 border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 font-medium">
+              <Badge
+                variant="outline"
+                className="text-[9.5px] px-1.5 py-0 h-4 border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 font-medium"
+              >
                 {item.flota.nombre}
               </Badge>
             </div>
@@ -348,12 +376,13 @@ function FlotaVehiculoItemRow({ item }: Readonly<FlotaVehiculoItemRowProps>) {
   )
 }
 
-interface GeneralActivoItemRowProps {
-  item: Activo
+interface GeneralVehiculoItemRowProps {
+  item: VehiculoCatalogo
 }
 
-function GeneralActivoItemRow({ item }: Readonly<GeneralActivoItemRowProps>) {
-  const placa = extractPlaca(item.descripcion)
+function GeneralVehiculoItemRow({ item }: Readonly<GeneralVehiculoItemRowProps>) {
+  const { valor: placa } = getPlacaFromAtributos(item)
+  const titulo = getVehiculoTituloDinamico(item)
   const disponible = isVehiculoDisponible(item.estadoOperativo?.nombre)
 
   return (
@@ -373,28 +402,31 @@ function GeneralActivoItemRow({ item }: Readonly<GeneralActivoItemRowProps>) {
           {item.urlImagen ? (
             <AuthenticatedImage
               src={item.urlImagen}
-              alt={item.nombre}
+              alt={titulo}
               className="size-full object-cover"
-              fallback={<Box className="size-4 text-muted-foreground/60" />}
+              fallback={<Car className="size-4 text-muted-foreground/60" />}
             />
           ) : (
-            <Box className="size-4 text-muted-foreground/60" />
+            <Car className="size-4 text-muted-foreground/60" />
           )}
         </div>
 
         <div className="flex-1 min-w-0 space-y-0.5">
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-            <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-              {item.codigo}
-            </code>
-            <span className="font-semibold text-foreground truncate text-xs">
-              {item.nombre}
-            </span>
-            {placa && (
-              <span className="text-[9.5px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
+            {placa ? (
+              <span className="inline-flex items-center rounded border-2 border-cyan-600/45 dark:border-cyan-400/45 bg-cyan-500/12 px-1.5 py-0.2 font-mono text-[11px] font-black tracking-wider text-foreground shrink-0 uppercase">
                 {placa}
               </span>
+            ) : (
+              <span className="text-[10px] italic text-muted-foreground shrink-0">
+                Sin placa
+              </span>
             )}
+            {titulo !== placa ? (
+              <span className="font-semibold text-foreground truncate text-xs">
+                {titulo}
+              </span>
+            ) : null}
             {item.estadoOperativo?.nombre && (
               <span
                 className="text-[9px] font-medium px-1.5 py-0.2 rounded border inline-flex items-center gap-1 shrink-0"
@@ -406,7 +438,9 @@ function GeneralActivoItemRow({ item }: Readonly<GeneralActivoItemRowProps>) {
               >
                 <span
                   className="size-1.5 rounded-full"
-                  style={{ backgroundColor: item.estadoOperativo.color || "#10b981" }}
+                  style={{
+                    backgroundColor: item.estadoOperativo.color || "#10b981",
+                  }}
                 />
                 {item.estadoOperativo.nombre}
               </span>
@@ -417,6 +451,14 @@ function GeneralActivoItemRow({ item }: Readonly<GeneralActivoItemRowProps>) {
               </span>
             )}
           </div>
+          {item.flotas.length > 0 ? (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground truncate">
+              <Layers className="size-2.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+              <span className="truncate">
+                {item.flotas.map((f) => f.nombre).join(", ")}
+              </span>
+            </div>
+          ) : null}
         </div>
       </div>
     </ComboboxItem>
@@ -464,7 +506,7 @@ function FlotaVehiculosCombobox({
 
   const placeholderText = isLoading
     ? "Cargando vehículos de las flotas del responsable..."
-    : placeholder || "Seleccionar vehículo de las flotas asignadas..."
+    : placeholder || "Buscar vehículo por placa, marca o modelo..."
 
   return (
     <Combobox
@@ -522,14 +564,16 @@ function FlotaVehiculosCombobox({
         </ComboboxEmpty>
 
         <ComboboxList className="max-h-56 overflow-y-auto overscroll-contain pr-1 py-1">
-          {(item: FlotaVehiculo) => <FlotaVehiculoItemRow key={item.id} item={item} />}
+          {(item: FlotaVehiculo) => (
+            <FlotaVehiculoItemRow key={item.id} item={item} />
+          )}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
   )
 }
 
-interface GeneralActivosComboboxProps {
+interface GeneralVehiculosComboboxProps {
   id?: string
   name?: string
   className?: string
@@ -537,15 +581,15 @@ interface GeneralActivosComboboxProps {
   disabled?: boolean
   ariaInvalid?: boolean
   onBlur?: () => void
-  onValueChange?: (value: string, item?: Activo | null) => void
+  onValueChange?: (value: string, item?: VehiculoCatalogo | null) => void
   onSearchChange: (value: string) => void
-  items: Activo[]
+  items: VehiculoCatalogo[]
   isLoading: boolean
   isFetching: boolean
   onRefresh: () => void
 }
 
-function GeneralActivosCombobox({
+function GeneralVehiculosCombobox({
   id,
   name,
   className,
@@ -559,7 +603,7 @@ function GeneralActivosCombobox({
   isLoading,
   isFetching,
   onRefresh,
-}: Readonly<GeneralActivosComboboxProps>) {
+}: Readonly<GeneralVehiculosComboboxProps>) {
   const handleRefresh = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -568,16 +612,16 @@ function GeneralActivosCombobox({
 
   const placeholderText = isLoading
     ? "Cargando vehículos..."
-    : placeholder || "Buscar vehículo por código o placa..."
+    : placeholder || "Buscar vehículo por placa, marca o modelo..."
 
   return (
     <Combobox
       items={items}
       filter={() => true}
-      itemToStringLabel={getGeneralActivoLabel}
-      itemToStringValue={(item: Activo) => item?.id ?? ""}
+      itemToStringLabel={getGeneralVehiculoLabel}
+      itemToStringValue={(item: VehiculoCatalogo) => item?.id ?? ""}
       value={null}
-      onValueChange={(val: Activo | null) => {
+      onValueChange={(val: VehiculoCatalogo | null) => {
         onValueChange?.(val?.id ?? "", val)
         onSearchChange("")
       }}
@@ -603,7 +647,7 @@ function GeneralActivosCombobox({
       <ComboboxContent className="z-50 w-(--anchor-width) min-w-[min(100vw-2rem,var(--anchor-width))] max-w-[var(--anchor-width)] p-1 rounded-xl shadow-lg border border-border/80 bg-popover overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/50 text-[11px] text-muted-foreground bg-muted/30 select-none">
           <span className="font-medium truncate">
-            {isFetching ? "Actualizando..." : `Vehículos generales (${items.length})`}
+            {isFetching ? "Actualizando..." : `Vehículos (${items.length})`}
           </span>
           <Button
             type="button"
@@ -618,11 +662,15 @@ function GeneralActivosCombobox({
         </div>
 
         <ComboboxEmpty className="py-5 text-xs text-muted-foreground text-center">
-          {isLoading ? "Cargando vehículos..." : "No se encontraron vehículos coincidentes."}
+          {isLoading
+            ? "Cargando vehículos..."
+            : "No se encontraron vehículos coincidentes."}
         </ComboboxEmpty>
 
         <ComboboxList className="max-h-56 overflow-y-auto overscroll-contain pr-1 py-1">
-          {(item: Activo) => <GeneralActivoItemRow key={item.id} item={item} />}
+          {(item: VehiculoCatalogo) => (
+            <GeneralVehiculoItemRow key={item.id} item={item} />
+          )}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
@@ -652,15 +700,21 @@ export function VehiculoResponsableCombobox({
     enabled: hasEmpleado,
   })
 
-  // 2. Consulta de respaldo general si no hay empleado seleccionado
-  const generalActivosQuery = useQuery({
-    ...activoQueries.list({ page: 0, size: 30, sortBy: "codigo", direction: "ASC" }),
+  // 2. Consulta propia de gestión vehicular (solo tipo Vehículo con atributos visibles)
+  const generalVehiculosQuery = useQuery({
+    ...vehiculoQueries.list({
+      page: 0,
+      size: 30,
+      q: debouncedSearch.trim() || undefined,
+      sortBy: "nombre",
+      direction: "ASC",
+    }),
     enabled: !hasEmpleado,
   })
 
-  // 3. Consulta individual si hay un valor seleccionado
-  const singleActivoQuery = useQuery({
-    ...activoQueries.detail(value ?? ""),
+  // 3. Consulta individual propia del vehículo seleccionado
+  const singleVehiculoQuery = useQuery({
+    ...vehiculoQueries.detail(value ?? ""),
     enabled: Boolean(value),
   })
 
@@ -668,9 +722,9 @@ export function VehiculoResponsableCombobox({
     () => flotaVehiculosQuery.data ?? [],
     [flotaVehiculosQuery.data]
   )
-  const rawGeneralActivos = React.useMemo<Activo[]>(
-    () => generalActivosQuery.data?.content ?? [],
-    [generalActivosQuery.data?.content]
+  const rawGeneralVehiculos = React.useMemo<VehiculoCatalogo[]>(
+    () => generalVehiculosQuery.data?.content ?? [],
+    [generalVehiculosQuery.data?.content]
   )
 
   const filteredFlotaVehiculos = React.useMemo(
@@ -678,14 +732,15 @@ export function VehiculoResponsableCombobox({
     [rawFlotaVehiculos, debouncedSearch]
   )
 
-  const filteredGeneralActivos = React.useMemo(
-    () => filterGeneralActivos(rawGeneralActivos, debouncedSearch),
-    [rawGeneralActivos, debouncedSearch]
-  )
-
   const selectedInfo = React.useMemo(
-    () => resolveSelectedVehicle(value, rawFlotaVehiculos, rawGeneralActivos, singleActivoQuery.data),
-    [value, rawFlotaVehiculos, rawGeneralActivos, singleActivoQuery.data]
+    () =>
+      resolveSelectedVehicle(
+        value,
+        rawFlotaVehiculos,
+        rawGeneralVehiculos,
+        singleVehiculoQuery.data
+      ),
+    [value, rawFlotaVehiculos, rawGeneralVehiculos, singleVehiculoQuery.data]
   )
 
   if (selectedInfo) {
@@ -716,13 +771,13 @@ export function VehiculoResponsableCombobox({
         rawCount={rawFlotaVehiculos.length}
         isLoading={flotaVehiculosQuery.isLoading}
         isFetching={flotaVehiculosQuery.isFetching}
-        onRefresh={flotaVehiculosQuery.refetch}
+        onRefresh={() => void flotaVehiculosQuery.refetch()}
       />
     )
   }
 
   return (
-    <GeneralActivosCombobox
+    <GeneralVehiculosCombobox
       id={id}
       name={name}
       className={className}
@@ -732,10 +787,10 @@ export function VehiculoResponsableCombobox({
       onBlur={onBlur}
       onValueChange={onValueChange}
       onSearchChange={setSearch}
-      items={filteredGeneralActivos}
-      isLoading={generalActivosQuery.isLoading}
-      isFetching={generalActivosQuery.isFetching}
-      onRefresh={generalActivosQuery.refetch}
+      items={rawGeneralVehiculos}
+      isLoading={generalVehiculosQuery.isLoading}
+      isFetching={generalVehiculosQuery.isFetching}
+      onRefresh={() => void generalVehiculosQuery.refetch()}
     />
   )
 }

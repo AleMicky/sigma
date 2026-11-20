@@ -55,3 +55,18 @@ export function getVehiculoTituloDinamico(
 
   return vehiculo.tipoActivo?.nombre || "Vehículo"
 }
+
+export function getAtributoValorByCode(
+  vehiculo: Pick<VehiculoCatalogo, "atributos"> | null | undefined,
+  codes: string[],
+): string | null {
+  if (!vehiculo) return null
+  const normalizedCodes = new Set(codes.map((c) => c.trim().toUpperCase()))
+  const visibles = getAtributosVisibles(vehiculo)
+  const found = visibles.find(
+    (attr) =>
+      normalizedCodes.has(attr.codigo.trim().toUpperCase()) ||
+      normalizedCodes.has(attr.etiqueta.trim().toUpperCase()),
+  )
+  return (found?.valorFormateado ?? found?.valor)?.trim() || null
+}

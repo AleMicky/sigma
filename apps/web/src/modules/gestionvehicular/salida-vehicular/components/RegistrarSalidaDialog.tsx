@@ -10,8 +10,12 @@ import {
   X,
 } from "lucide-react"
 
-import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
-import type { Activo } from "@/modules/activos/activo/api/activo.service"
+import { vehiculoQueries } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.queries"
+import type { VehiculoCatalogo } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.types"
+import {
+  getPlacaFromAtributos,
+  getVehiculoTituloDinamico,
+} from "@/modules/gestionvehicular/vehiculo/lib/vehiculo-atributos.utils"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { isApiError } from "@/shared/api"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
@@ -40,12 +44,6 @@ import {
   registrarSalidaSchema,
 } from "../schemas/salida-vehicular.schema"
 
-function getCleanPlaca(desc?: string | null): string | null {
-  if (!desc) return null
-  const match = desc.match(/PLACA[:\s#-]+([A-Z0-9]+)/i)
-  return match ? match[1].trim() : null
-}
-
 interface RegistrarSalidaDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -57,7 +55,8 @@ export function RegistrarSalidaDialog({
   onOpenChange,
   onSuccess,
 }: RegistrarSalidaDialogProps) {
-  const [selectedActivo, setSelectedActivo] = useState<Activo | null>(null)
+  const [selectedVehiculo, setSelectedVehiculo] =
+    useState<VehiculoCatalogo | null>(null)
   const [vehiculoSearch, setVehiculoSearch] = useState("")
   const [vehiculoPage, setVehiculoPage] = useState(0)
   const [formError, setFormError] = useState<string | null>(null)
@@ -105,39 +104,41 @@ export function RegistrarSalidaDialog({
 
   const formActivoId = useStore(form.store, (state) => state.values.activoId)
 
-  // Fetch paginado de vehículos con búsqueda
-  const activosQuery = useQuery(
-    activoQueries.list({
+  // Fetch paginado de vehículos desde el endpoint propio de gestión vehicular
+  const vehiculosQuery = useQuery(
+    vehiculoQueries.list({
       page: vehiculoPage,
       size: 10,
       q: debouncedVehiculoSearch || undefined,
-      sortBy: "codigo",
+      activo: true,
+      sortBy: "nombre",
       direction: "ASC",
     })
   )
 
-  const activos = useMemo(
-    () => activosQuery.data?.content ?? [],
-    [activosQuery.data?.content]
+  const vehiculos = useMemo(
+    () => vehiculosQuery.data?.content ?? [],
+    [vehiculosQuery.data?.content]
   )
-  const totalPages = activosQuery.data?.totalPages ?? 1
-  const totalElements = activosQuery.data?.totalElements ?? activos.length
+  const totalPages = vehiculosQuery.data?.totalPages ?? 1
+  const totalElements = vehiculosQuery.data?.totalElements ?? vehiculos.length
 
-  // Consulta individual si hay un valor seleccionado
-  const singleActivoQuery = useQuery({
-    ...activoQueries.detail(formActivoId),
-    enabled: Boolean(formActivoId && !selectedActivo),
+  const singleVehiculoQuery = useQuery({
+    ...vehiculoQueries.detail(formActivoId),
+    enabled: Boolean(formActivoId && !selectedVehiculo),
   })
 
-  const currentActivo = selectedActivo ?? singleActivoQuery.data ?? null
-  const currentTipo =
-    currentActivo?.tipoActivo?.nombre ??
-    (currentActivo as { tipoActivoNombre?: string } | null)?.tipoActivoNombre ??
-    null
+  const currentVehiculo = selectedVehiculo ?? singleVehiculoQuery.data ?? null
+  const currentPlaca = currentVehiculo
+    ? getPlacaFromAtributos(currentVehiculo).valor
+    : null
+  const currentTitulo = currentVehiculo
+    ? getVehiculoTituloDinamico(currentVehiculo)
+    : ""
 
   const handleReset = useCallback(() => {
     setFormError(null)
-    setSelectedActivo(null)
+    setSelectedVehiculo(null)
     setVehiculoSearch("")
     setVehiculoPage(0)
     form.reset({
@@ -155,7 +156,7 @@ export function RegistrarSalidaDialog({
   const handleVehiculoRefresh = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    activosQuery.refetch()
+    void vehiculosQuery.refetch()
   }
 
   return (
@@ -207,14 +208,14 @@ export function RegistrarSalidaDialog({
                   Vehículo Asignado
                 </RequiredFieldLabel>
 
-                {currentActivo ? (
+                {currentVehiculo ? (
                   <div className="flex items-center justify-between gap-2.5 rounded-xl border border-border/80 bg-background/95 px-3 py-2 min-h-10 shadow-2xs hover:border-primary/40 transition-all">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="relative size-8 rounded-lg border border-border/80 bg-muted/40 overflow-hidden flex items-center justify-center shrink-0">
-                        {currentActivo.urlImagen ? (
+                        {currentVehiculo.urlImagen ? (
                           <AuthenticatedImage
-                            src={currentActivo.urlImagen}
-                            alt={currentActivo.nombre}
+                            src={currentVehiculo.urlImagen}
+                            alt={currentTitulo}
                             className="size-full object-cover"
                             fallback={
                               <Car className="size-4 text-muted-foreground" />
@@ -226,31 +227,44 @@ export function RegistrarSalidaDialog({
                       </div>
                       <div className="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {getCleanPlaca(currentActivo.descripcion) && (
-                            <span className="font-mono text-[10.5px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 shrink-0">
-                              {getCleanPlaca(currentActivo.descripcion)}
+                          {currentPlaca ? (
+                            <span className="font-mono text-[11px] font-black tracking-wider px-1.5 py-0.5 rounded border-2 border-cyan-600/45 dark:border-cyan-400/45 bg-cyan-500/12 text-foreground shrink-0 uppercase">
+                              {currentPlaca}
                             </span>
-                          )}
-                          <span className="font-semibold text-xs text-foreground truncate leading-snug">
-                            {currentActivo.nombre}
-                          </span>
-                          {currentTipo && (
-                            <span className="text-[10px] text-muted-foreground font-medium px-1.5 py-0.2 rounded bg-muted/60 border border-border/50 shrink-0">
-                              {currentTipo}
+                          ) : null}
+                          {currentTitulo !== currentPlaca ? (
+                            <span className="font-semibold text-xs text-foreground truncate leading-snug">
+                              {currentTitulo}
                             </span>
-                          )}
+                          ) : null}
+                          {currentVehiculo.estadoOperativo?.nombre ? (
+                            <span
+                              className="text-[10px] font-medium px-1.5 py-0.2 rounded border inline-flex items-center gap-1 shrink-0"
+                              style={{
+                                backgroundColor: `${currentVehiculo.estadoOperativo.color || "#10b981"}18`,
+                                color: currentVehiculo.estadoOperativo.color || "#10b981",
+                                borderColor: `${currentVehiculo.estadoOperativo.color || "#10b981"}40`,
+                              }}
+                            >
+                              <span
+                                className="size-1.5 rounded-full"
+                                style={{
+                                  backgroundColor:
+                                    currentVehiculo.estadoOperativo.color || "#10b981",
+                                }}
+                              />
+                              {currentVehiculo.estadoOperativo.nombre}
+                            </span>
+                          ) : null}
                         </div>
-                        {currentActivo.descripcion && (
-                          <p
-                            className="text-[11px] text-muted-foreground truncate leading-snug"
-                            title={currentActivo.descripcion}
-                          >
-                            {currentActivo.descripcion}
+                        {currentVehiculo.ubicacion?.nombre ? (
+                          <p className="text-[11px] text-muted-foreground truncate leading-snug">
+                            {currentVehiculo.ubicacion.nombre}
                           </p>
-                        )}
+                        ) : null}
                         {/* Estado Preventivo en la selección de vehículo */}
                         <VehiculoPreventivoWidget
-                          activoId={currentActivo.id}
+                          activoId={currentVehiculo.id}
                           variant="inline"
                           className="mt-1"
                         />
@@ -262,7 +276,7 @@ export function RegistrarSalidaDialog({
                       size="icon-xs"
                       onClick={() => {
                         field.handleChange("")
-                        setSelectedActivo(null)
+                        setSelectedVehiculo(null)
                       }}
                       className="size-6 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md shrink-0 cursor-pointer"
                       title="Cambiar vehículo seleccionado"
@@ -272,19 +286,22 @@ export function RegistrarSalidaDialog({
                   </div>
                 ) : (
                   <Combobox
-                    items={activos}
+                    items={vehiculos}
                     filter={() => true}
-                    itemToStringLabel={(item: Activo) =>
-                      item ? `${item.nombre} ${item.descripcion ?? ""}` : ""
-                    }
-                    itemToStringValue={(item: Activo) => item?.id ?? ""}
+                    itemToStringLabel={(item: VehiculoCatalogo) => {
+                      if (!item) return ""
+                      const { valor: placa } = getPlacaFromAtributos(item)
+                      const titulo = getVehiculoTituloDinamico(item)
+                      return [placa, titulo].filter(Boolean).join(" ")
+                    }}
+                    itemToStringValue={(item: VehiculoCatalogo) => item?.id ?? ""}
                     value={null}
-                    onValueChange={(item: Activo | null) => {
+                    onValueChange={(item: VehiculoCatalogo | null) => {
                       field.handleChange(item?.id ?? "")
-                      setSelectedActivo(item ?? null)
+                      setSelectedVehiculo(item ?? null)
                       setVehiculoSearch("")
                     }}
-                    disabled={activosQuery.isLoading}
+                    disabled={vehiculosQuery.isLoading}
                   >
                     <div className="relative w-full">
                       <ComboboxInput
@@ -294,14 +311,14 @@ export function RegistrarSalidaDialog({
                         onChange={(e) => setVehiculoSearch(e.target.value)}
                         onBlur={field.handleBlur}
                         placeholder={
-                          activosQuery.isLoading && !activosQuery.data
+                          vehiculosQuery.isLoading && !vehiculosQuery.data
                             ? "Cargando vehículos..."
-                            : "Buscar vehículo por nombre o placa..."
+                            : "Buscar vehículo por placa, marca o modelo..."
                         }
                         className="w-full shadow-2xs"
                         aria-invalid={isInvalid}
                       />
-                      {activosQuery.isFetching && (
+                      {vehiculosQuery.isFetching && (
                         <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
                           <Loader2 className="size-4 animate-spin text-muted-foreground" />
                         </div>
@@ -309,10 +326,9 @@ export function RegistrarSalidaDialog({
                     </div>
 
                     <ComboboxContent className="z-50 w-(--anchor-width) min-w-[min(100vw-2rem,var(--anchor-width))] max-w-[var(--anchor-width)] p-1 rounded-xl shadow-lg border border-border/80 bg-popover overflow-hidden flex flex-col">
-                      {/* Header con indicador y botón de recarga */}
                       <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/50 text-[11px] text-muted-foreground bg-muted/30 select-none">
                         <span className="font-medium truncate">
-                          {activosQuery.isFetching
+                          {vehiculosQuery.isFetching
                             ? "Buscando en servidor..."
                             : debouncedVehiculoSearch.trim()
                               ? `Resultados (${totalElements} encontrados)`
@@ -323,43 +339,41 @@ export function RegistrarSalidaDialog({
                           variant="ghost"
                           size="icon-xs"
                           onClick={handleVehiculoRefresh}
-                          disabled={activosQuery.isFetching}
+                          disabled={vehiculosQuery.isFetching}
                           title="Recargar lista de vehículos"
                           className="size-6 text-muted-foreground hover:text-foreground hover:bg-background/80"
                         >
                           <RefreshCw
                             className={cn(
                               "size-3",
-                              activosQuery.isFetching && "animate-spin"
+                              vehiculosQuery.isFetching && "animate-spin"
                             )}
                           />
                         </Button>
                       </div>
 
                       <ComboboxEmpty className="py-5 text-xs text-muted-foreground text-center">
-                        {activosQuery.isLoading
+                        {vehiculosQuery.isLoading
                           ? "Buscando vehículos..."
                           : "No se encontraron vehículos coincidentes."}
                       </ComboboxEmpty>
 
                       <ComboboxList className="max-h-52 overflow-y-auto overscroll-contain pr-1 py-1">
-                        {(item: Activo) => {
-                          const placa = getCleanPlaca(item.descripcion)
-                          const tipo =
-                            item.tipoActivo?.nombre ??
-                            (item as { tipoActivoNombre?: string }).tipoActivoNombre
+                        {(item: VehiculoCatalogo) => {
+                          const { valor: placa } = getPlacaFromAtributos(item)
+                          const titulo = getVehiculoTituloDinamico(item)
                           return (
                             <ComboboxItem
                               key={item.id}
                               value={item}
                               className="cursor-pointer py-2 px-2.5 rounded-lg hover:bg-accent/60 transition-colors"
                             >
-                              <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                                <div className="relative size-8 rounded-lg border border-border/60 bg-muted/40 overflow-hidden flex items-center justify-center shrink-0 mt-0.5">
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                <div className="relative size-8 rounded-lg border border-border/60 bg-muted/40 overflow-hidden flex items-center justify-center shrink-0">
                                   {item.urlImagen ? (
                                     <AuthenticatedImage
                                       src={item.urlImagen}
-                                      alt={item.nombre}
+                                      alt={titulo}
                                       className="size-full object-cover"
                                       fallback={
                                         <Car className="size-4 text-muted-foreground" />
@@ -371,28 +385,45 @@ export function RegistrarSalidaDialog({
                                 </div>
                                 <div className="flex flex-col min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    {placa && (
-                                      <span className="font-mono text-[10px] font-semibold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1 rounded shrink-0">
+                                    {placa ? (
+                                      <span className="font-mono text-[11px] font-black tracking-wider border-2 border-cyan-600/45 dark:border-cyan-400/45 bg-cyan-500/12 text-foreground px-1.5 py-0.2 rounded shrink-0 uppercase">
                                         {placa}
                                       </span>
-                                    )}
-                                    <span className="truncate text-xs font-semibold text-foreground">
-                                      {item.nombre}
-                                    </span>
-                                    {tipo && (
-                                      <span className="text-[9.5px] text-muted-foreground font-medium px-1 py-0.2 rounded bg-muted/60 border border-border/50 shrink-0">
-                                        {tipo}
+                                    ) : (
+                                      <span className="text-[10px] italic text-muted-foreground shrink-0">
+                                        Sin placa
                                       </span>
                                     )}
+                                    {titulo !== placa ? (
+                                      <span className="truncate text-xs font-semibold text-foreground">
+                                        {titulo}
+                                      </span>
+                                    ) : null}
+                                    {item.estadoOperativo?.nombre ? (
+                                      <span
+                                        className="text-[9.5px] font-medium px-1.5 py-0.2 rounded border inline-flex items-center gap-1 shrink-0"
+                                        style={{
+                                          backgroundColor: `${item.estadoOperativo.color || "#10b981"}18`,
+                                          color: item.estadoOperativo.color || "#10b981",
+                                          borderColor: `${item.estadoOperativo.color || "#10b981"}40`,
+                                        }}
+                                      >
+                                        <span
+                                          className="size-1.5 rounded-full"
+                                          style={{
+                                            backgroundColor:
+                                              item.estadoOperativo.color || "#10b981",
+                                          }}
+                                        />
+                                        {item.estadoOperativo.nombre}
+                                      </span>
+                                    ) : null}
                                   </div>
-                                  {item.descripcion && (
-                                    <p
-                                      className="text-[11px] text-muted-foreground truncate mt-0.5 leading-snug"
-                                      title={item.descripcion}
-                                    >
-                                      {item.descripcion}
+                                  {item.ubicacion?.nombre ? (
+                                    <p className="text-[10.5px] text-muted-foreground truncate mt-0.5 leading-snug">
+                                      {item.ubicacion.nombre}
                                     </p>
-                                  )}
+                                  ) : null}
                                 </div>
                               </div>
                             </ComboboxItem>
@@ -400,7 +431,6 @@ export function RegistrarSalidaDialog({
                         }}
                       </ComboboxList>
 
-                      {/* Footer con controles de paginación */}
                       {totalPages > 1 && (
                         <div className="flex items-center justify-between px-2 py-1.5 border-t border-border/50 bg-muted/20 text-[11px] text-muted-foreground select-none">
                           <span className="font-medium tabular-nums">
@@ -416,7 +446,7 @@ export function RegistrarSalidaDialog({
                                 e.stopPropagation()
                                 setVehiculoPage((p) => Math.max(0, p - 1))
                               }}
-                              disabled={vehiculoPage === 0 || activosQuery.isFetching}
+                              disabled={vehiculoPage === 0 || vehiculosQuery.isFetching}
                               className="size-6 text-muted-foreground hover:text-foreground cursor-pointer"
                               title="Página anterior"
                             >
@@ -433,7 +463,7 @@ export function RegistrarSalidaDialog({
                               }}
                               disabled={
                                 vehiculoPage >= totalPages - 1 ||
-                                activosQuery.isFetching
+                                vehiculosQuery.isFetching
                               }
                               className="size-6 text-muted-foreground hover:text-foreground cursor-pointer"
                               title="Página siguiente"
