@@ -15,7 +15,7 @@ export function isPlacaAtributo(attr: VehiculoAtributo): boolean {
 export function getAtributosVisibles(
   vehiculo: Pick<VehiculoCatalogo, "atributos">,
 ): VehiculoAtributo[] {
-  return vehiculo.atributos
+  return (vehiculo.atributos ?? [])
     .filter((attr) => attr.visible === true)
     .slice()
     .sort((a, b) => a.orden - b.orden)
