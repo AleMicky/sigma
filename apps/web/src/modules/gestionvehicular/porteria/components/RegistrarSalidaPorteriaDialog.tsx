@@ -1,17 +1,18 @@
-import { useEffect, useState, type ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
-  Barcode,
   Building2,
   Car,
   Clock,
   Loader2,
   MapPin,
+  Maximize2,
+  Minimize2,
   Navigation,
-  PenLine,
   Search,
   UserCheck,
   UserRound,
+  X,
 } from "lucide-react"
 
 import { vehiculoQueries } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.queries"
@@ -23,6 +24,7 @@ import {
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
+import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import {
   FormDialog,
   FormDialogSubmit,
@@ -46,7 +48,6 @@ import { cn } from "@/shared/lib/utils"
 import { useRegistrarSalidaPorteriaMutation } from "../api/porteria.mutations"
 
 type TipoRegistro = "interno" | "externo"
-type ItemModo = "activo" | "libre"
 
 function getLocalDateTimeInputValue(date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0")
@@ -82,7 +83,7 @@ function SectionTitle({
   )
 }
 
-function ActivoSelector({
+function VehiculoSelector({
   value,
   onChange,
 }: {
@@ -90,13 +91,14 @@ function ActivoSelector({
   onChange: (vehiculo: VehiculoCatalogo | null) => void
 }) {
   const [search, setSearch] = useState("")
+  const [fotoAmpliada, setFotoAmpliada] = useState(false)
   const debouncedSearch = useDebouncedValue(search, 300)
 
   const vehiculosQuery = useQuery(
     vehiculoQueries.list({
       page: 0,
       size: 20,
-      q: debouncedSearch || undefined,
+      q: debouncedSearch.trim() || undefined,
       activo: true,
       sortBy: "nombre",
       direction: "ASC",
@@ -105,76 +107,213 @@ function ActivoSelector({
 
   const vehiculos = vehiculosQuery.data?.content ?? []
 
+  if (value) {
+    const { valor: placa } = getPlacaFromAtributos(value)
+    const titulo = getVehiculoTituloDinamico(value)
+
+    return (
+      <div className="space-y-2.5 rounded-xl border border-border/80 bg-background/95 p-2.5 shadow-2xs transition-all hover:border-primary/40">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            {value.urlImagen ? (
+              <button
+                type="button"
+                onClick={() => setFotoAmpliada((prev) => !prev)}
+                className="group relative flex size-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-border bg-muted/40 transition-all hover:ring-2 hover:ring-primary/40"
+                title={fotoAmpliada ? "Reducir foto" : "Ver foto ampliada"}
+              >
+                <AuthenticatedImage
+                  src={value.urlImagen}
+                  alt={titulo}
+                  className="size-full object-cover"
+                  fallback={<Car className="size-6 text-primary/70" />}
+                />
+                <span className="absolute right-1 bottom-1 flex size-5 items-center justify-center rounded bg-background/85 text-foreground opacity-85 shadow-xs transition-opacity group-hover:opacity-100">
+                  {fotoAmpliada ? (
+                    <Minimize2 className="size-3" />
+                  ) : (
+                    <Maximize2 className="size-3" />
+                  )}
+                </span>
+              </button>
+            ) : (
+              <div className="flex size-16 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40">
+                <Car className="size-6 text-primary/70" />
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {placa ? (
+                  <span className="inline-flex items-center rounded border-2 border-cyan-600/45 bg-cyan-500/12 px-1.5 py-0.5 font-mono text-xs font-black tracking-wider text-foreground uppercase dark:border-cyan-400/45">
+                    {placa}
+                  </span>
+                ) : (
+                  <span className="text-[11px] italic text-muted-foreground">
+                    Sin placa
+                  </span>
+                )}
+                {titulo !== placa ? (
+                  <span className="truncate text-sm font-semibold text-foreground">
+                    {titulo}
+                  </span>
+                ) : null}
+              </div>
+              {value.ubicacion?.nombre ? (
+                <p className="truncate text-xs text-muted-foreground">
+                  {value.ubicacion.nombre}
+                </p>
+              ) : null}
+              {value.urlImagen ? (
+                <button
+                  type="button"
+                  onClick={() => setFotoAmpliada((prev) => !prev)}
+                  className="text-[11px] font-medium text-primary hover:underline"
+                >
+                  {fotoAmpliada ? "Ocultar foto ampliada" : "Ver foto ampliada"}
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => {
+              setFotoAmpliada(false)
+              onChange(null)
+              setSearch("")
+            }}
+            className="size-7 shrink-0 cursor-pointer rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            title="Cambiar vehículo seleccionado"
+          >
+            <X className="size-3.5" />
+            <span className="sr-only">Remover selección</span>
+          </Button>
+        </div>
+
+        {fotoAmpliada && value.urlImagen ? (
+          <div className="overflow-hidden rounded-lg border border-border bg-muted/30">
+            <AuthenticatedImage
+              src={value.urlImagen}
+              alt={titulo}
+              className="max-h-60 w-full object-contain"
+              fallback={
+                <div className="flex h-36 items-center justify-center">
+                  <Car className="size-8 text-muted-foreground/60" />
+                </div>
+              }
+            />
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
   return (
     <Combobox
       items={vehiculos}
       filter={() => true}
-      value={value}
-      onValueChange={(item: VehiculoCatalogo | null) => onChange(item ?? null)}
+      value={null}
+      onValueChange={(item: VehiculoCatalogo | null) => {
+        setFotoAmpliada(false)
+        onChange(item ?? null)
+        setSearch("")
+      }}
       itemToStringLabel={(item: VehiculoCatalogo) => {
         if (!item) return ""
         const { valor: placa } = getPlacaFromAtributos(item)
         const titulo = getVehiculoTituloDinamico(item)
         return [placa, titulo !== placa ? titulo : null].filter(Boolean).join(" - ")
       }}
+      itemToStringValue={(item: VehiculoCatalogo) => item?.id ?? ""}
       isItemEqualToValue={(a: VehiculoCatalogo, b: VehiculoCatalogo) =>
-        a.id === b.id
+        a?.id === b?.id
       }
     >
-      <ComboboxInput
-        placeholder="Buscar vehículo por placa, marca o modelo..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        showClear={Boolean(value)}
-      />
+      <div className="relative w-full">
+        <ComboboxInput
+          placeholder={
+            vehiculosQuery.isLoading && !vehiculosQuery.data
+              ? "Cargando vehículos..."
+              : "Buscar vehículo por placa, marca o modelo..."
+          }
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full"
+        />
+        {vehiculosQuery.isFetching && (
+          <div className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2">
+            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
+      </div>
       <ComboboxContent>
+        <ComboboxEmpty>
+          <div className="flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground">
+            {vehiculosQuery.isLoading ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" />
+                Buscando vehículos...
+              </>
+            ) : (
+              <>
+                <Search className="size-3.5" />
+                Sin resultados
+              </>
+            )}
+          </div>
+        </ComboboxEmpty>
         <ComboboxList>
-          {vehiculosQuery.isLoading ? (
-            <div className="flex items-center justify-center py-4 text-xs text-muted-foreground">
-              <Loader2 className="mr-2 size-3.5 animate-spin" />
-              Buscando vehículos...
-            </div>
-          ) : (
-            <>
-              <ComboboxEmpty>
-                <div className="flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground">
-                  <Search className="size-3.5" />
-                  Sin resultados
-                </div>
-              </ComboboxEmpty>
-              {vehiculos.map((vehiculo) => {
-                const { valor: placa } = getPlacaFromAtributos(vehiculo)
-                const titulo = getVehiculoTituloDinamico(vehiculo)
-                return (
-                  <ComboboxItem key={vehiculo.id} value={vehiculo}>
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {placa ? (
-                          <span className="inline-flex items-center rounded border-2 border-cyan-600/45 dark:border-cyan-400/45 bg-cyan-500/12 px-1.5 py-0.2 font-mono text-[11px] font-black tracking-wider text-foreground uppercase">
-                            {placa}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] italic text-muted-foreground">
-                            Sin placa
-                          </span>
-                        )}
-                        {titulo !== placa ? (
-                          <span className="text-xs font-semibold text-foreground">
-                            {titulo}
-                          </span>
-                        ) : null}
-                      </div>
-                      {vehiculo.ubicacion?.nombre ? (
-                        <span className="line-clamp-1 text-[11px] text-muted-foreground">
-                          {vehiculo.ubicacion.nombre}
+          {(vehiculo: VehiculoCatalogo) => {
+            const { valor: placa } = getPlacaFromAtributos(vehiculo)
+            const titulo = getVehiculoTituloDinamico(vehiculo)
+            return (
+              <ComboboxItem
+                key={vehiculo.id}
+                value={vehiculo}
+                className="cursor-pointer py-2 px-2.5"
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                  <div className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-muted/50">
+                    {vehiculo.urlImagen ? (
+                      <AuthenticatedImage
+                        src={vehiculo.urlImagen}
+                        alt={titulo}
+                        className="size-full object-cover"
+                        fallback={<Car className="size-4 text-muted-foreground/60" />}
+                      />
+                    ) : (
+                      <Car className="size-4 text-muted-foreground/60" />
+                    )}
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {placa ? (
+                        <span className="inline-flex items-center rounded border-2 border-cyan-600/45 bg-cyan-500/12 px-1.5 py-0.2 font-mono text-[11px] font-black tracking-wider text-foreground uppercase dark:border-cyan-400/45">
+                          {placa}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] italic text-muted-foreground">
+                          Sin placa
+                        </span>
+                      )}
+                      {titulo !== placa ? (
+                        <span className="truncate text-xs font-semibold text-foreground">
+                          {titulo}
                         </span>
                       ) : null}
                     </div>
-                  </ComboboxItem>
-                )
-              })}
-            </>
-          )}
+                    {vehiculo.ubicacion?.nombre ? (
+                      <span className="line-clamp-1 text-[11px] text-muted-foreground">
+                        {vehiculo.ubicacion.nombre}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </ComboboxItem>
+            )
+          }}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
@@ -197,107 +336,120 @@ function UbicacionSelector({
     ubicacionQueries.list({
       page: 0,
       size: 30,
-      q: debouncedSearch || undefined,
+      q: debouncedSearch.trim() || undefined,
     })
   )
 
   const ubicaciones = ubicacionesQuery.data?.content ?? []
 
+  if (value) {
+    return (
+      <div className="flex min-h-9 items-center justify-between gap-2 rounded-xl border border-border/80 bg-background/95 px-2.5 py-1.5 shadow-2xs transition-all hover:border-primary/40">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+            <MapPin className="size-3.5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-xs font-semibold text-foreground">
+              {value.nombre}
+            </div>
+            {value.codigo ? (
+              <div className="truncate font-mono text-[10px] text-muted-foreground">
+                {value.codigo}
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          onClick={() => {
+            onChange(null)
+            setSearch("")
+          }}
+          className="size-6 shrink-0 cursor-pointer rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+          title="Cambiar ubicación"
+        >
+          <X className="size-3.5" />
+          <span className="sr-only">Remover selección</span>
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <Combobox
       items={ubicaciones}
-      value={value}
-      onValueChange={(item: Ubicacion | null) => onChange(item ?? null)}
+      filter={() => true}
+      value={null}
+      onValueChange={(item: Ubicacion | null) => {
+        onChange(item ?? null)
+        setSearch("")
+      }}
       itemToStringLabel={(item: Ubicacion) =>
         item ? `${item.codigo} - ${item.nombre}` : ""
       }
-      isItemEqualToValue={(a: Ubicacion, b: Ubicacion) => a.id === b.id}
+      itemToStringValue={(item: Ubicacion) => item?.id ?? ""}
+      isItemEqualToValue={(a: Ubicacion, b: Ubicacion) => a?.id === b?.id}
     >
-      <ComboboxInput
-        placeholder={placeholder}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        showClear={Boolean(value)}
-      />
+      <div className="relative w-full">
+        <ComboboxInput
+          placeholder={
+            ubicacionesQuery.isLoading && !ubicacionesQuery.data
+              ? "Cargando ubicaciones..."
+              : placeholder
+          }
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full"
+        />
+        {ubicacionesQuery.isFetching && (
+          <div className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2">
+            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
+      </div>
       <ComboboxContent>
+        <ComboboxEmpty>
+          <div className="flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground">
+            {ubicacionesQuery.isLoading ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" />
+                Buscando ubicaciones...
+              </>
+            ) : (
+              <>
+                <Search className="size-3.5" />
+                Sin resultados
+              </>
+            )}
+          </div>
+        </ComboboxEmpty>
         <ComboboxList>
-          {ubicacionesQuery.isLoading ? (
-            <div className="flex items-center justify-center py-4 text-xs text-muted-foreground">
-              <Loader2 className="mr-2 size-3.5 animate-spin" />
-              Buscando ubicaciones...
-            </div>
-          ) : (
-            <>
-              <ComboboxEmpty>
-                <div className="flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground">
-                  <Search className="size-3.5" />
-                  Sin resultados
-                </div>
-              </ComboboxEmpty>
-              {ubicaciones.map((ubi) => (
-                <ComboboxItem key={ubi.id} value={ubi}>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {ubi.codigo}
-                      </span>{" "}
-                      {ubi.nombre}
-                    </span>
-                    {ubi.tipo && (
-                      <span className="text-[11px] text-muted-foreground capitalize">
-                        {ubi.tipo.toLowerCase()}
-                      </span>
-                    )}
-                  </div>
-                </ComboboxItem>
-              ))}
-            </>
+          {(ubi: Ubicacion) => (
+            <ComboboxItem
+              key={ubi.id}
+              value={ubi}
+              className="cursor-pointer py-1.5 px-2.5"
+            >
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {ubi.codigo}
+                  </span>{" "}
+                  {ubi.nombre}
+                </span>
+                {ubi.tipo && (
+                  <span className="text-[11px] text-muted-foreground capitalize">
+                    {ubi.tipo.toLowerCase()}
+                  </span>
+                )}
+              </div>
+            </ComboboxItem>
           )}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
-  )
-}
-
-function ModoToggle({
-  value,
-  onChange,
-}: {
-  value: ItemModo
-  onChange: (modo: ItemModo) => void
-}) {
-  const opciones: { value: ItemModo; label: string; icon: typeof Barcode }[] = [
-    { value: "activo", label: "Vehículo / Activo catálogo", icon: Barcode },
-    { value: "libre", label: "Descripción libre / Placa", icon: PenLine },
-  ]
-  return (
-    <div
-      role="radiogroup"
-      className="inline-flex rounded-lg border bg-muted/40 p-0.5"
-    >
-      {opciones.map((op) => {
-        const Icon = op.icon
-        const active = value === op.value
-        return (
-          <button
-            key={op.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(op.value)}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-              active
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Icon className="size-3.5" />
-            {op.label}
-          </button>
-        )
-      })}
-    </div>
   )
 }
 
@@ -315,11 +467,9 @@ export function RegistrarSalidaPorteriaDialog({
   const [tipoRegistro, setTipoRegistro] = useState<TipoRegistro>("interno")
 
   // Interno
-  const [funcionarioId, setFuncionarioId] = useState("")
-  const [itemModo, setItemModo] = useState<ItemModo>("activo")
-  const [activoSeleccionado, setActivoSeleccionado] =
+  const [conductorId, setConductorId] = useState("")
+  const [vehiculoSeleccionado, setVehiculoSeleccionado] =
     useState<VehiculoCatalogo | null>(null)
-  const [itemDescripcion, setItemDescripcion] = useState("")
 
   // Externo
   const [personaExterna, setPersonaExterna] = useState("")
@@ -338,13 +488,13 @@ export function RegistrarSalidaPorteriaDialog({
   const [observacionSalida, setObservacionSalida] = useState("")
   const [formError, setFormError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (prevOpen !== open) {
+    setPrevOpen(open)
     if (open) {
       setTipoRegistro("interno")
-      setFuncionarioId("")
-      setItemModo("activo")
-      setActivoSeleccionado(null)
-      setItemDescripcion("")
+      setConductorId("")
+      setVehiculoSeleccionado(null)
       setPersonaExterna("")
       setPlacaExterna("")
       setOrigenUbicacion(null)
@@ -355,13 +505,9 @@ export function RegistrarSalidaPorteriaDialog({
       setObservacionSalida("")
       setFormError(null)
     }
-  }, [open])
+  }
 
-  const esInternoValido =
-    Boolean(funcionarioId) &&
-    (itemModo === "activo"
-      ? Boolean(activoSeleccionado)
-      : itemDescripcion.trim().length > 0)
+  const esInternoValido = Boolean(conductorId) && Boolean(vehiculoSeleccionado)
 
   const esExternoValido =
     personaExterna.trim().length > 0 && placaExterna.trim().length > 0
@@ -372,22 +518,18 @@ export function RegistrarSalidaPorteriaDialog({
     setFormError(null)
 
     if (tipoRegistro === "interno") {
-      if (!funcionarioId) {
-        setFormError("Debe seleccionar el funcionario que sale.")
+      if (!conductorId) {
+        setFormError("Debe seleccionar el conductor que sale.")
         return
       }
-      if (itemModo === "activo" && !activoSeleccionado) {
-        setFormError("Debe seleccionar el vehículo o activo catalogado.")
-        return
-      }
-      if (itemModo === "libre" && !itemDescripcion.trim()) {
-        setFormError("Debe ingresar la descripción o placa del vehículo/ítem.")
+      if (!vehiculoSeleccionado) {
+        setFormError("Debe seleccionar el vehículo.")
         return
       }
 
       await mutation.mutateAsync({
         esExterno: false,
-        empleadoId: funcionarioId,
+        empleadoId: conductorId,
         origenUbicacionId: origenUbicacion?.id,
         destinoUbicacionId: usarDestinoOtro ? undefined : destinoUbicacion?.id,
         destinoOtro: usarDestinoOtro ? (destinoOtro.trim() || undefined) : undefined,
@@ -397,9 +539,7 @@ export function RegistrarSalidaPorteriaDialog({
         observacionSalida: observacionSalida.trim() || undefined,
         activos: [
           {
-            activoId: itemModo === "activo" ? activoSeleccionado?.id : undefined,
-            descripcionItem:
-              itemModo === "libre" ? itemDescripcion.trim() : undefined,
+            activoId: vehiculoSeleccionado.id,
             cantidad: 1,
           },
         ],
@@ -442,7 +582,7 @@ export function RegistrarSalidaPorteriaDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Registrar salida en portería"
-      description="Control de salida de personal interno y visitas externas."
+      description="Control de salida de conductores internos y visitas externas."
       formError={formError}
       onSubmit={handleSubmit}
       size="lg"
@@ -468,7 +608,7 @@ export function RegistrarSalidaPorteriaDialog({
             </p>
             <p className="text-xs text-muted-foreground">
               {tipoRegistro === "interno"
-                ? "Personal / funcionario interno"
+                ? "Conductor interno"
                 : "Persona o visita externa"}
             </p>
           </div>
@@ -515,12 +655,12 @@ export function RegistrarSalidaPorteriaDialog({
             step={1}
             title={
               tipoRegistro === "interno"
-                ? "¿Quién sale? (Funcionario)"
+                ? "¿Quién sale? (Conductor)"
                 : "¿Quién sale? (Persona externa)"
             }
             description={
               tipoRegistro === "interno"
-                ? "Seleccione el funcionario registrado de la empresa."
+                ? "Seleccione el conductor registrado de la empresa."
                 : "Indique el nombre completo de la persona externa o conductor."
             }
           />
@@ -530,7 +670,7 @@ export function RegistrarSalidaPorteriaDialog({
                 {tipoRegistro === "interno" ? (
                   <>
                     <UserRound className="size-3.5" />
-                    Funcionario
+                    Conductor
                   </>
                 ) : (
                   <>
@@ -541,9 +681,9 @@ export function RegistrarSalidaPorteriaDialog({
               </RequiredFieldLabel>
               {tipoRegistro === "interno" ? (
                 <EmpleadoCombobox
-                  value={funcionarioId}
-                  onValueChange={(val) => setFuncionarioId(val)}
-                  placeholder="Buscar funcionario..."
+                  value={conductorId}
+                  onValueChange={(val) => setConductorId(val)}
+                  placeholder="Buscar conductor..."
                 />
               ) : (
                 <Input
@@ -583,62 +723,30 @@ export function RegistrarSalidaPorteriaDialog({
           </div>
         </section>
 
-        {/* Paso 2: Vehículo / Ítem */}
+        {/* Paso 2: Vehículo */}
         <section className="space-y-3">
           <SectionTitle
             step={2}
-            title={
-              tipoRegistro === "interno"
-                ? "¿Qué vehículo o activo retira?"
-                : "Vehículo externo"
-            }
+            title={tipoRegistro === "interno" ? "Vehículo" : "Vehículo externo"}
             description={
               tipoRegistro === "interno"
-                ? "Seleccione el vehículo institucional del catálogo o ingrese su placa."
+                ? "Seleccione el vehículo que sale."
                 : "Ingrese la placa del vehículo externo."
             }
           />
 
           {tipoRegistro === "interno" ? (
-            <div className="space-y-3 rounded-xl border bg-muted/20 p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted-foreground">
-                  Modalidad de registro:
-                </span>
-                <ModoToggle
-                  value={itemModo}
-                  onChange={(modo) => {
-                    setItemModo(modo)
-                    setActivoSeleccionado(null)
-                    setItemDescripcion("")
-                  }}
+            <div className="rounded-xl border bg-muted/20 p-3">
+              <Field>
+                <RequiredFieldLabel>
+                  <Car className="size-3.5" />
+                  Vehículo
+                </RequiredFieldLabel>
+                <VehiculoSelector
+                  value={vehiculoSeleccionado}
+                  onChange={(vehiculo) => setVehiculoSeleccionado(vehiculo)}
                 />
-              </div>
-
-              {itemModo === "activo" ? (
-                <Field>
-                  <RequiredFieldLabel>
-                    <Car className="size-3.5" />
-                    Vehículo / Activo
-                  </RequiredFieldLabel>
-                  <ActivoSelector
-                    value={activoSeleccionado}
-                    onChange={(activo) => setActivoSeleccionado(activo)}
-                  />
-                </Field>
-              ) : (
-                <Field>
-                  <RequiredFieldLabel>
-                    <PenLine className="size-3.5" />
-                    Descripción o placa del vehículo
-                  </RequiredFieldLabel>
-                  <Input
-                    placeholder="Ej. Camioneta Hilux blanca - Placa 3042-YHB"
-                    value={itemDescripcion}
-                    onChange={(e) => setItemDescripcion(e.target.value)}
-                  />
-                </Field>
-              )}
+              </Field>
             </div>
           ) : (
             <div className="rounded-xl border bg-purple-500/[0.03] border-purple-500/20 p-3">
