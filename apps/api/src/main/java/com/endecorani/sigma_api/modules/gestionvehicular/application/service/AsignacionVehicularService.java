@@ -105,13 +105,11 @@ public class AsignacionVehicularService {
 
                 AsignacionVehicular guardado = repository.save(domain);
 
-                if (dto.solicitudVehicularId() != null) {
-                        solicitudVehicularRepository.findById(dto.solicitudVehicularId()).ifPresent(solicitud -> {
-                                solicitud.setResponsableAsignacionId(dto.asignadoPorId());
-                                solicitud.setConductorAsignadoId(dto.conductorId());
-                                solicitudVehicularRepository.save(solicitud);
-                        });
-                }
+                sincronizarSolicitudVehicular(
+                                dto.solicitudVehicularId(),
+                                dto.asignadoPorId(),
+                                dto.conductorId(),
+                                dto.activoId());
 
                 return toResponse(guardado);
         }
@@ -129,11 +127,7 @@ public class AsignacionVehicularService {
                 if (actual.getSolicitudVehicularId() != null
                                 && dto.solicitudVehicularId() != null
                                 && !actual.getSolicitudVehicularId().equals(dto.solicitudVehicularId())) {
-                        solicitudVehicularRepository.findById(actual.getSolicitudVehicularId()).ifPresent(oldSol -> {
-                                oldSol.setResponsableAsignacionId(null);
-                                oldSol.setConductorAsignadoId(null);
-                                solicitudVehicularRepository.save(oldSol);
-                        });
+                        sincronizarSolicitudVehicular(actual.getSolicitudVehicularId(), null, null, null);
                 }
 
                 LocalDateTime fechaAnterior = actual.getFechaAsignacion();
@@ -147,13 +141,11 @@ public class AsignacionVehicularService {
 
                 AsignacionVehicular actualizado = repository.save(actual);
 
-                if (dto.solicitudVehicularId() != null) {
-                        solicitudVehicularRepository.findById(dto.solicitudVehicularId()).ifPresent(solicitud -> {
-                                solicitud.setResponsableAsignacionId(dto.asignadoPorId());
-                                solicitud.setConductorAsignadoId(dto.conductorId());
-                                solicitudVehicularRepository.save(solicitud);
-                        });
-                }
+                sincronizarSolicitudVehicular(
+                                dto.solicitudVehicularId(),
+                                dto.asignadoPorId(),
+                                dto.conductorId(),
+                                dto.activoId());
 
                 return toResponse(actualizado);
         }
@@ -171,11 +163,7 @@ public class AsignacionVehicularService {
                 if (actual.getSolicitudVehicularId() != null
                                 && dto.solicitudVehicularId() != null
                                 && !actual.getSolicitudVehicularId().equals(dto.solicitudVehicularId())) {
-                        solicitudVehicularRepository.findById(actual.getSolicitudVehicularId()).ifPresent(oldSol -> {
-                                oldSol.setResponsableAsignacionId(null);
-                                oldSol.setConductorAsignadoId(null);
-                                solicitudVehicularRepository.save(oldSol);
-                        });
+                        sincronizarSolicitudVehicular(actual.getSolicitudVehicularId(), null, null, null);
                 }
 
                 LocalDateTime fechaAnterior = actual.getFechaAsignacion();
@@ -189,13 +177,11 @@ public class AsignacionVehicularService {
 
                 AsignacionVehicular actualizado = repository.save(actual);
 
-                if (dto.solicitudVehicularId() != null) {
-                        solicitudVehicularRepository.findById(dto.solicitudVehicularId()).ifPresent(solicitud -> {
-                                solicitud.setResponsableAsignacionId(dto.asignadoPorId());
-                                solicitud.setConductorAsignadoId(dto.conductorId());
-                                solicitudVehicularRepository.save(solicitud);
-                        });
-                }
+                sincronizarSolicitudVehicular(
+                                dto.solicitudVehicularId(),
+                                dto.asignadoPorId(),
+                                dto.conductorId(),
+                                dto.activoId());
 
                 return toResponse(actualizado);
         }
@@ -203,14 +189,24 @@ public class AsignacionVehicularService {
         @Transactional
         public void delete(UUID id) {
                 AsignacionVehicular actual = obtenerPorId(id);
-                if (actual.getSolicitudVehicularId() != null) {
-                        solicitudVehicularRepository.findById(actual.getSolicitudVehicularId()).ifPresent(solicitud -> {
-                                solicitud.setResponsableAsignacionId(null);
-                                solicitud.setConductorAsignadoId(null);
-                                solicitudVehicularRepository.save(solicitud);
-                        });
-                }
+                sincronizarSolicitudVehicular(actual.getSolicitudVehicularId(), null, null, null);
                 repository.deleteById(id);
+        }
+
+        private void sincronizarSolicitudVehicular(
+                        UUID solicitudVehicularId,
+                        UUID responsableAsignacionId,
+                        UUID conductorAsignadoId,
+                        UUID activoId) {
+                if (solicitudVehicularId == null) {
+                        return;
+                }
+                solicitudVehicularRepository.findById(solicitudVehicularId).ifPresent(solicitud -> {
+                        solicitud.setResponsableAsignacionId(responsableAsignacionId);
+                        solicitud.setConductorAsignadoId(conductorAsignadoId);
+                        solicitud.setActivoId(activoId);
+                        solicitudVehicularRepository.save(solicitud);
+                });
         }
 
         @Transactional(readOnly = true)

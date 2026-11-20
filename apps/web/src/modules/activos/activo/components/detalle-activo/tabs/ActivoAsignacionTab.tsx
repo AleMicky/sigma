@@ -115,8 +115,6 @@ export function ActivoAsignacionTab({
         codigo: emp?.codigo,
         area: area ?? undefined,
         cargo: cargo ?? undefined,
-        telefono: null,
-        correo: null,
       }
     }
 
@@ -128,8 +126,6 @@ export function ActivoAsignacionTab({
         codigo: area?.codigo,
         area: area?.nombre,
         cargo: "Custodia por Área / Departamento",
-        telefono: null,
-        correo: null,
       }
     }
 
@@ -139,8 +135,6 @@ export function ActivoAsignacionTab({
       codigo: undefined,
       area: undefined,
       cargo: undefined,
-      telefono: null,
-      correo: null,
     }
   }
 
@@ -491,7 +485,9 @@ export function ActivoAsignacionTab({
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Ingreso inicial en sede {ubicacion?.nombre || "Principal"}.
+                  {ubicacion?.nombre
+                    ? `Ingreso inicial registrado en sede ${ubicacion.nombre}.`
+                    : "Ingreso inicial registrado en el catálogo de activos."}
                 </p>
               </div>
             </div>

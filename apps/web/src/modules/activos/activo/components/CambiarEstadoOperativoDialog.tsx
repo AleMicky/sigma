@@ -163,7 +163,7 @@ function CambiarEstadoOperativoForm({
             id="observacion-estado"
             value={observacion}
             onChange={(e) => setObservacion(e.target.value)}
-            placeholder="Ej. Ingreso a taller por cambio de frenos, salida a comisión..."
+            placeholder="Ej. Motivo del cambio de estado operativo o novedad registrada..."
             className="text-xs min-h-[70px]"
           />
         </Field>

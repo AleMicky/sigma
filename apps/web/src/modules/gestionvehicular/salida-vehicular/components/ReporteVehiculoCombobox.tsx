@@ -9,8 +9,13 @@ import {
   X,
 } from "lucide-react"
 
-import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
-import type { Activo } from "@/modules/activos/activo/api/activo.service"
+import { vehiculoQueries } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.queries"
+import type { VehiculoCatalogo } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.types"
+import {
+  getAtributoValorByCode,
+  getPlacaFromAtributos,
+  getVehiculoTituloDinamico,
+} from "@/modules/gestionvehicular/vehiculo/lib/vehiculo-atributos.utils"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -44,42 +49,25 @@ export interface ReporteVehiculoComboboxProps {
   id?: string
 }
 
-function extractPlaca(descripcion?: string | null): string | null {
-  if (!descripcion) return null
-  try {
-    const match = descripcion.match(
-      /PLACA(?:\s*(?:N[°o.]+|NRO\.?|NUM\.?|#))?[:\s#.-]+([0-9A-Za-z]+(?:[\s-][0-9A-Za-z]+)?)(?:\s+(?:CHASIS|MOTOR|COLOR|MARCA|MODELO|AÑO|ANIO|TIPO)|[,;.]|\s*$)/i
-    )
-    if (match && match[1]) {
-      const clean = match[1].replace(/[,.;-]+$/, "").trim()
-      if (clean.length >= 2 && clean.length <= 20 && !clean.toUpperCase().startsWith("NO") && clean.toUpperCase() !== "NRO") {
-        return clean
-      }
-    }
-    return null
-  } catch {
-    return null
-  }
-}
-
-function mapActivoToVehiculoData(item: Activo): ReporteVehiculoItemData {
-  const placa =
-    (item as { placa?: string }).placa || extractPlaca(item.descripcion)
-
-  const tipo =
+function mapVehiculoToItemData(item: VehiculoCatalogo): ReporteVehiculoItemData {
+  const { valor: placa } = getPlacaFromAtributos(item)
+  const titulo = getVehiculoTituloDinamico(item)
+  const marca = getAtributoValorByCode(item, ["MARCA"])
+  const modelo = getAtributoValorByCode(item, ["MODELO"])
+  const tipoVehiculo =
+    getAtributoValorByCode(item, ["TIPO_VEHICULO", "TIPO", "CLASE"]) ??
     item.tipoActivo?.nombre ??
-    (item as { tipoActivoNombre?: string }).tipoActivoNombre ??
     null
 
   return {
     id: item.id,
     codigo: item.codigo,
-    nombre: item.nombre,
+    nombre: titulo,
     descripcion: item.descripcion,
     placa,
-    marca: (item as { marca?: string }).marca,
-    modelo: (item as { modelo?: string }).modelo,
-    tipoVehiculo: tipo,
+    marca,
+    modelo,
+    tipoVehiculo,
     urlImagen: item.urlImagen,
   }
 }
@@ -87,7 +75,7 @@ function mapActivoToVehiculoData(item: Activo): ReporteVehiculoItemData {
 export function ReporteVehiculoCombobox({
   value = "",
   onValueChange,
-  placeholder = "Buscar vehículo por placa, nombre o código...",
+  placeholder = "Buscar vehículo por placa, marca o modelo...",
   className,
   id = "reporte-vehiculo-combobox",
 }: Readonly<ReporteVehiculoComboboxProps>) {
@@ -95,48 +83,47 @@ export function ReporteVehiculoCombobox({
   const [page, setPage] = React.useState(0)
   const debouncedSearch = useDebouncedValue(search, 250)
 
-  // Consulta de activos/vehículos sin bloqueos de disponibilidad (apto para reportes históricos)
-  const activosQuery = useQuery(
-    activoQueries.list({
+  // Consulta desde el endpoint propio de gestión vehicular (solo tipo Vehículo + atributos visibles)
+  const vehiculosQuery = useQuery(
+    vehiculoQueries.list({
       page,
       size: 50,
       q: debouncedSearch.trim() || undefined,
-      sortBy: "codigo",
+      sortBy: "nombre",
       direction: "ASC",
     })
   )
 
-  // Consulta del activo seleccionado (para mostrar la tarjeta si ya está cargado)
-  const singleActivoQuery = useQuery({
-    ...activoQueries.detail(value ?? ""),
+  const singleVehiculoQuery = useQuery({
+    ...vehiculoQueries.detail(value ?? ""),
     enabled: Boolean(value),
   })
 
-  const activos = React.useMemo<Activo[]>(
-    () => activosQuery.data?.content ?? [],
-    [activosQuery.data?.content]
+  const vehiculos = React.useMemo<VehiculoCatalogo[]>(
+    () => vehiculosQuery.data?.content ?? [],
+    [vehiculosQuery.data?.content]
   )
-  const totalElements = activosQuery.data?.totalElements ?? activos.length
-  const totalPages = activosQuery.data?.totalPages ?? 1
+  const totalElements = vehiculosQuery.data?.totalElements ?? vehiculos.length
+  const totalPages = vehiculosQuery.data?.totalPages ?? 1
 
   const currentSelectedData = React.useMemo<ReporteVehiculoItemData | null>(() => {
     if (!value) return null
-    if (singleActivoQuery.data) {
-      return mapActivoToVehiculoData(singleActivoQuery.data)
+    if (singleVehiculoQuery.data) {
+      return mapVehiculoToItemData(singleVehiculoQuery.data)
     }
-    const found = activos.find((a) => a.id === value)
+    const found = vehiculos.find((v) => v.id === value)
     if (found) {
-      return mapActivoToVehiculoData(found)
+      return mapVehiculoToItemData(found)
     }
     return null
-  }, [value, singleActivoQuery.data, activos])
+  }, [value, singleVehiculoQuery.data, vehiculos])
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
     setPage(0)
   }
 
-  // Si ya hay un vehículo seleccionado, mostrar tarjeta limpia con opción de deseleccionar
+  // Tarjeta limpia del vehículo seleccionado (destacando Placa, sin código de activo)
   if (currentSelectedData) {
     return (
       <div
@@ -161,26 +148,22 @@ export function ReporteVehiculoCombobox({
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-              <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.2 rounded shrink-0">
-                {currentSelectedData.codigo}
-              </code>
-              <span className="font-semibold text-xs text-foreground truncate">
-                {currentSelectedData.nombre}
-              </span>
-              {currentSelectedData.placa && (
-                <span className="text-[10px] font-mono font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded shrink-0">
-                  Placa: {currentSelectedData.placa}
+              {currentSelectedData.placa ? (
+                <span className="inline-flex items-center gap-1 rounded border-2 border-cyan-600/45 dark:border-cyan-400/45 bg-cyan-500/12 px-1.5 py-0.5 font-mono text-[11px] font-black tracking-wider text-foreground shrink-0 uppercase">
+                  {currentSelectedData.placa}
                 </span>
-              )}
+              ) : null}
+              {currentSelectedData.nombre !== currentSelectedData.placa ? (
+                <span className="font-semibold text-xs text-foreground truncate">
+                  {currentSelectedData.nombre}
+                </span>
+              ) : null}
             </div>
-            {currentSelectedData.descripcion && (
-              <p
-                className="text-[10.5px] text-muted-foreground truncate leading-tight mt-0.5"
-                title={currentSelectedData.descripcion}
-              >
-                {currentSelectedData.descripcion}
+            {currentSelectedData.tipoVehiculo ? (
+              <p className="text-[10.5px] text-muted-foreground truncate leading-tight mt-0.5">
+                {currentSelectedData.tipoVehiculo}
               </p>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -201,16 +184,19 @@ export function ReporteVehiculoCombobox({
 
   return (
     <Combobox
-      items={activos}
+      items={vehiculos}
       filter={() => true}
-      itemToStringLabel={(item: Activo) =>
-        item ? `${item.codigo} ${item.nombre} ${item.descripcion ?? ""}` : ""
-      }
-      itemToStringValue={(item: Activo) => item?.id ?? ""}
+      itemToStringLabel={(item: VehiculoCatalogo) => {
+        if (!item) return ""
+        const { valor: placa } = getPlacaFromAtributos(item)
+        const titulo = getVehiculoTituloDinamico(item)
+        return [placa, titulo].filter(Boolean).join(" ")
+      }}
+      itemToStringValue={(item: VehiculoCatalogo) => item?.id ?? ""}
       value={null}
-      onValueChange={(item: Activo | null) => {
+      onValueChange={(item: VehiculoCatalogo | null) => {
         if (item) {
-          onValueChange(item.id, mapActivoToVehiculoData(item))
+          onValueChange(item.id, mapVehiculoToItemData(item))
         } else {
           onValueChange("", null)
         }
@@ -223,13 +209,13 @@ export function ReporteVehiculoCombobox({
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
           placeholder={
-            activosQuery.isLoading && !activosQuery.data
+            vehiculosQuery.isLoading && !vehiculosQuery.data
               ? "Cargando vehículos..."
               : placeholder
           }
           className={cn("w-full h-9 text-xs shadow-2xs pr-8", className)}
         />
-        {activosQuery.isFetching && (
+        {vehiculosQuery.isFetching && (
           <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
             <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
           </div>
@@ -237,10 +223,9 @@ export function ReporteVehiculoCombobox({
       </div>
 
       <ComboboxContent className="z-50 w-(--anchor-width) min-w-[min(100vw-2rem,var(--anchor-width))] max-w-[var(--anchor-width)] p-1 rounded-xl shadow-lg border border-border/80 bg-popover overflow-hidden flex flex-col">
-        {/* Cabecera con conteo y botón de recarga */}
         <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/50 text-[11px] text-muted-foreground bg-muted/30 select-none">
           <span className="font-medium truncate">
-            {activosQuery.isFetching
+            {vehiculosQuery.isFetching
               ? "Buscando en servidor..."
               : debouncedSearch.trim()
                 ? `Resultados (${totalElements} encontrados)`
@@ -250,18 +235,18 @@ export function ReporteVehiculoCombobox({
             type="button"
             variant="ghost"
             size="icon-xs"
-            onClick={() => void activosQuery.refetch()}
-            disabled={activosQuery.isFetching}
+            onClick={() => void vehiculosQuery.refetch()}
+            disabled={vehiculosQuery.isFetching}
             title="Recargar lista de vehículos"
             className="size-6 text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <RefreshCw
-              className={cn("size-3", activosQuery.isFetching && "animate-spin")}
+              className={cn("size-3", vehiculosQuery.isFetching && "animate-spin")}
             />
           </Button>
         </div>
 
-        {/* Opción rápida: Todos los vehículos (Reporte Consolidado) */}
+        {/* Opción rápida: Todos los vehículos */}
         {!search.trim() && (
           <button
             type="button"
@@ -279,25 +264,23 @@ export function ReporteVehiculoCombobox({
                 Todos los vehículos (Reporte Consolidado)
               </span>
               <span className="block text-[10.5px] text-muted-foreground truncate font-normal">
-                Mostrar salidas de cualquier vehículo con registros en el período
+                Mostrar registros de cualquier vehículo en el período
               </span>
             </div>
           </button>
         )}
 
         <ComboboxEmpty className="py-6 text-xs text-muted-foreground text-center">
-          {activosQuery.isLoading
+          {vehiculosQuery.isLoading
             ? "Buscando vehículos..."
             : "No se encontraron vehículos coincidentes."}
         </ComboboxEmpty>
 
         <ComboboxList className="max-h-56 overflow-y-auto overscroll-contain pr-1 py-1">
-          {(item: Activo) => {
-            const placa =
-              (item as { placa?: string }).placa || extractPlaca(item.descripcion)
-            const tipo =
-              item.tipoActivo?.nombre ??
-              (item as { tipoActivoNombre?: string }).tipoActivoNombre
+          {(item: VehiculoCatalogo) => {
+            const { valor: placa } = getPlacaFromAtributos(item)
+            const titulo = getVehiculoTituloDinamico(item)
+            const ubicacion = item.ubicacion?.nombre
 
             return (
               <ComboboxItem
@@ -305,12 +288,12 @@ export function ReporteVehiculoCombobox({
                 value={item}
                 className="cursor-pointer py-2 px-2.5 rounded-lg hover:bg-accent/60 transition-colors"
               >
-                <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                  <div className="relative size-8 rounded-md border border-border/60 bg-muted/40 overflow-hidden flex items-center justify-center shrink-0 mt-0.5">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="relative size-8 rounded-md border border-border/60 bg-muted/40 overflow-hidden flex items-center justify-center shrink-0">
                     {item.urlImagen ? (
                       <AuthenticatedImage
                         src={item.urlImagen}
-                        alt={item.nombre}
+                        alt={titulo}
                         className="size-full object-cover"
                         fallback={<Car className="size-4 text-muted-foreground" />}
                       />
@@ -321,31 +304,26 @@ export function ReporteVehiculoCombobox({
 
                   <div className="flex flex-col min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1 py-0.2 rounded shrink-0">
-                        {item.codigo}
-                      </code>
-                      <span className="truncate text-xs font-semibold text-foreground">
-                        {item.nombre}
-                      </span>
-                      {placa && (
-                        <span className="font-mono text-[9.5px] font-semibold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1 rounded shrink-0">
+                      {placa ? (
+                        <span className="inline-flex items-center rounded border-2 border-cyan-600/45 dark:border-cyan-400/45 bg-cyan-500/12 px-1.5 py-0.2 font-mono text-[11px] font-black tracking-wider text-foreground shrink-0 uppercase">
                           {placa}
                         </span>
-                      )}
-                      {tipo && (
-                        <span className="text-[9px] text-muted-foreground font-medium px-1 rounded bg-muted/60 border border-border/50 shrink-0">
-                          {tipo}
+                      ) : (
+                        <span className="text-[10px] italic text-muted-foreground shrink-0">
+                          Sin placa
                         </span>
                       )}
+                      {titulo !== placa ? (
+                        <span className="truncate text-xs font-semibold text-foreground">
+                          {titulo}
+                        </span>
+                      ) : null}
                     </div>
-                    {item.descripcion && (
-                      <p
-                        className="text-[10.5px] text-muted-foreground truncate mt-0.5 leading-snug"
-                        title={item.descripcion}
-                      >
-                        {item.descripcion}
-                      </p>
-                    )}
+                    {ubicacion ? (
+                      <span className="text-[10.5px] text-muted-foreground truncate mt-0.5 leading-snug">
+                        {ubicacion}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </ComboboxItem>
@@ -353,7 +331,6 @@ export function ReporteVehiculoCombobox({
           }}
         </ComboboxList>
 
-        {/* Paginación si hay más de 1 página */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-2 py-1.5 border-t border-border/50 bg-muted/20 text-[11px] text-muted-foreground select-none">
             <span className="font-medium tabular-nums">
@@ -369,7 +346,7 @@ export function ReporteVehiculoCombobox({
                   e.stopPropagation()
                   setPage((p) => Math.max(0, p - 1))
                 }}
-                disabled={page === 0 || activosQuery.isFetching}
+                disabled={page === 0 || vehiculosQuery.isFetching}
                 className="size-6 text-muted-foreground hover:text-foreground cursor-pointer"
                 title="Página anterior"
               >
@@ -384,7 +361,7 @@ export function ReporteVehiculoCombobox({
                   e.stopPropagation()
                   setPage((p) => Math.min(totalPages - 1, p + 1))
                 }}
-                disabled={page >= totalPages - 1 || activosQuery.isFetching}
+                disabled={page >= totalPages - 1 || vehiculosQuery.isFetching}
                 className="size-6 text-muted-foreground hover:text-foreground cursor-pointer"
                 title="Página siguiente"
               >

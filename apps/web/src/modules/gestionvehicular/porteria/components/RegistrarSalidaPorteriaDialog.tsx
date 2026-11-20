@@ -14,8 +14,12 @@ import {
   UserRound,
 } from "lucide-react"
 
-import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
-import type { Activo } from "@/modules/activos/activo/api/activo.service"
+import { vehiculoQueries } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.queries"
+import type { VehiculoCatalogo } from "@/modules/gestionvehicular/vehiculo/api/vehiculo.types"
+import {
+  getPlacaFromAtributos,
+  getVehiculoTituloDinamico,
+} from "@/modules/gestionvehicular/vehiculo/lib/vehiculo-atributos.utils"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
 import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
@@ -82,44 +86,53 @@ function ActivoSelector({
   value,
   onChange,
 }: {
-  value: Activo | null
-  onChange: (activo: Activo | null) => void
+  value: VehiculoCatalogo | null
+  onChange: (vehiculo: VehiculoCatalogo | null) => void
 }) {
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
 
-  const activosQuery = useQuery(
-    activoQueries.list({
+  const vehiculosQuery = useQuery(
+    vehiculoQueries.list({
       page: 0,
       size: 20,
       q: debouncedSearch || undefined,
+      activo: true,
+      sortBy: "nombre",
+      direction: "ASC",
     })
   )
 
-  const activos = activosQuery.data?.content ?? []
+  const vehiculos = vehiculosQuery.data?.content ?? []
 
   return (
     <Combobox
-      items={activos}
+      items={vehiculos}
+      filter={() => true}
       value={value}
-      onValueChange={(item: Activo | null) => onChange(item ?? null)}
-      itemToStringLabel={(item: Activo) =>
-        item ? `${item.codigo} - ${item.nombre}` : ""
+      onValueChange={(item: VehiculoCatalogo | null) => onChange(item ?? null)}
+      itemToStringLabel={(item: VehiculoCatalogo) => {
+        if (!item) return ""
+        const { valor: placa } = getPlacaFromAtributos(item)
+        const titulo = getVehiculoTituloDinamico(item)
+        return [placa, titulo !== placa ? titulo : null].filter(Boolean).join(" - ")
+      }}
+      isItemEqualToValue={(a: VehiculoCatalogo, b: VehiculoCatalogo) =>
+        a.id === b.id
       }
-      isItemEqualToValue={(a: Activo, b: Activo) => a.id === b.id}
     >
       <ComboboxInput
-        placeholder="Buscar vehículo/activo por código o nombre..."
+        placeholder="Buscar vehículo por placa, marca o modelo..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         showClear={Boolean(value)}
       />
       <ComboboxContent>
         <ComboboxList>
-          {activosQuery.isLoading ? (
+          {vehiculosQuery.isLoading ? (
             <div className="flex items-center justify-center py-4 text-xs text-muted-foreground">
               <Loader2 className="mr-2 size-3.5 animate-spin" />
-              Buscando activos...
+              Buscando vehículos...
             </div>
           ) : (
             <>
@@ -129,23 +142,37 @@ function ActivoSelector({
                   Sin resultados
                 </div>
               </ComboboxEmpty>
-              {activos.map((activo) => (
-                <ComboboxItem key={activo.id} value={activo}>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {activo.codigo}
-                      </span>{" "}
-                      {activo.nombre}
-                    </span>
-                    {activo.descripcion && (
-                      <span className="line-clamp-1 text-xs text-muted-foreground">
-                        {activo.descripcion}
-                      </span>
-                    )}
-                  </div>
-                </ComboboxItem>
-              ))}
+              {vehiculos.map((vehiculo) => {
+                const { valor: placa } = getPlacaFromAtributos(vehiculo)
+                const titulo = getVehiculoTituloDinamico(vehiculo)
+                return (
+                  <ComboboxItem key={vehiculo.id} value={vehiculo}>
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {placa ? (
+                          <span className="inline-flex items-center rounded border-2 border-cyan-600/45 dark:border-cyan-400/45 bg-cyan-500/12 px-1.5 py-0.2 font-mono text-[11px] font-black tracking-wider text-foreground uppercase">
+                            {placa}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] italic text-muted-foreground">
+                            Sin placa
+                          </span>
+                        )}
+                        {titulo !== placa ? (
+                          <span className="text-xs font-semibold text-foreground">
+                            {titulo}
+                          </span>
+                        ) : null}
+                      </div>
+                      {vehiculo.ubicacion?.nombre ? (
+                        <span className="line-clamp-1 text-[11px] text-muted-foreground">
+                          {vehiculo.ubicacion.nombre}
+                        </span>
+                      ) : null}
+                    </div>
+                  </ComboboxItem>
+                )
+              })}
             </>
           )}
         </ComboboxList>
@@ -290,7 +317,8 @@ export function RegistrarSalidaPorteriaDialog({
   // Interno
   const [funcionarioId, setFuncionarioId] = useState("")
   const [itemModo, setItemModo] = useState<ItemModo>("activo")
-  const [activoSeleccionado, setActivoSeleccionado] = useState<Activo | null>(null)
+  const [activoSeleccionado, setActivoSeleccionado] =
+    useState<VehiculoCatalogo | null>(null)
   const [itemDescripcion, setItemDescripcion] = useState("")
 
   // Externo

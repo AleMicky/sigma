@@ -72,10 +72,13 @@ export const GestionVehicularDashboardPage = () => {
     combustibleCostoMesActual: 0,
   }
 
+  const totalSolicitudes =
+    data?.distribucionSolicitudes.reduce((acc, curr) => acc + curr.cantidad, 0) ?? 0
+
   return (
-    <PageShell layout="scroll" padding="default">
-      <div className="space-y-4 pb-8 max-w-[1600px] mx-auto">
-        {/* Header con selectores funcionales de flota, periodo y acciones rápidas */}
+    <PageShell layout="scroll" padding="compact">
+      <div className="space-y-3 pb-5 max-w-[1600px] mx-auto">
+        {/* Header con selectores de flota y periodo */}
         <GestionVehicularDashboardHeader
           meses={meses}
           flotaId={flotaId}
@@ -90,7 +93,7 @@ export const GestionVehicularDashboardPage = () => {
         {/* Manejo de Error en caso de falla de API */}
         {isError && (
           <Card className="border-rose-500/30 bg-rose-500/10 shadow-xs">
-            <CardContent className="p-3 flex items-center justify-between text-xs">
+            <CardContent className="p-2.5 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>
@@ -111,14 +114,14 @@ export const GestionVehicularDashboardPage = () => {
           </Card>
         )}
 
-        {/* 1. KPIs Principales en formato compacto y moderno */}
+        {/* 1. KPIs Principales */}
         <DashboardKpiCards
           kpis={data?.kpis ?? defaultKpis}
           isLoading={isLoading}
         />
 
         {/* 2. Barra de Vistas y Enfoque Temático */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-b border-border/40 pb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-2">
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
@@ -153,53 +156,59 @@ export const GestionVehicularDashboardPage = () => {
           </div>
         </div>
 
-        {/* 3. Secciones dinámicas según la pestaña activa */}
+        {/* 3. Secciones dinámicas en Grid compacto de 2 columnas (sin comprimir tarjetas) */}
 
-        {/* VISTA GENERAL: Muestra todos los bloques organizados */}
+        {/* VISTA GENERAL */}
         {activeTab === "todo" && (
-          <div className="space-y-4">
-            {/* Monitoreo en Vivo de Viajes Activos y Recientes */}
-            <ViajesActivosLiveList
-              viajes={data?.viajesActivosRecientes ?? []}
-              isLoading={isLoading}
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Monitoreo en Vivo a ancho completo */}
+            <div className="lg:col-span-2 min-w-0">
+              <ViajesActivosLiveList
+                viajes={data?.viajesActivosRecientes ?? []}
+                isLoading={isLoading}
+              />
+            </div>
 
-            {/* Tendencias Temporales (Viajes/Km y Combustible) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Tendencias Temporales */}
+            <div className="min-w-0">
               <TendenciaViajesKmChart
                 data={data?.tendenciaViajesYKm ?? []}
                 isLoading={isLoading}
               />
+            </div>
+            <div className="min-w-0">
               <TendenciaCombustibleChart
                 data={data?.tendenciaCombustible ?? []}
                 isLoading={isLoading}
               />
             </div>
 
-            {/* Distribución de Estados (Flota y Solicitudes) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Distribución de Estados */}
+            <div className="min-w-0">
               <FlotaStatusDonutChart
                 data={data?.distribucionFlota ?? []}
                 totalVehiculos={data?.kpis.totalVehiculosFlota ?? 0}
                 vehiculosDisponibles={data?.kpis.vehiculosDisponibles ?? 0}
                 isLoading={isLoading}
               />
+            </div>
+            <div className="min-w-0">
               <SolicitudesStatusChart
                 data={data?.distribucionSolicitudes ?? []}
-                totalSolicitudes={
-                  data?.distribucionSolicitudes.reduce((acc, curr) => acc + curr.cantidad, 0) ?? 0
-                }
+                totalSolicitudes={totalSolicitudes}
                 isLoading={isLoading}
               />
             </div>
 
             {/* Top Vehículos y Alertas de Licencias */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="min-w-0">
               <TopVehiculosSection
                 topKm={data?.topVehiculosRecorrido ?? []}
                 topCombustible={data?.topVehiculosCombustible ?? []}
                 isLoading={isLoading}
               />
+            </div>
+            <div className="min-w-0">
               <AlertasLicenciasCard
                 alertas={data?.alertasLicencias ?? []}
                 isLoading={isLoading}
@@ -210,16 +219,20 @@ export const GestionVehicularDashboardPage = () => {
 
         {/* VISTA VIAJES & RUTAS */}
         {activeTab === "viajes" && (
-          <div className="space-y-4">
-            <ViajesActivosLiveList
-              viajes={data?.viajesActivosRecientes ?? []}
-              isLoading={isLoading}
-            />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="lg:col-span-2 min-w-0">
+              <ViajesActivosLiveList
+                viajes={data?.viajesActivosRecientes ?? []}
+                isLoading={isLoading}
+              />
+            </div>
+            <div className="min-w-0">
               <TendenciaViajesKmChart
                 data={data?.tendenciaViajesYKm ?? []}
                 isLoading={isLoading}
               />
+            </div>
+            <div className="min-w-0">
               <TopVehiculosSection
                 topKm={data?.topVehiculosRecorrido ?? []}
                 topCombustible={data?.topVehiculosCombustible ?? []}
@@ -231,41 +244,47 @@ export const GestionVehicularDashboardPage = () => {
 
         {/* VISTA COMBUSTIBLE */}
         {activeTab === "combustible" && (
-          <div className="space-y-4">
-            <TendenciaCombustibleChart
-              data={data?.tendenciaCombustible ?? []}
-              isLoading={isLoading}
-            />
-            <TopVehiculosSection
-              topKm={data?.topVehiculosRecorrido ?? []}
-              topCombustible={data?.topVehiculosCombustible ?? []}
-              isLoading={isLoading}
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <TendenciaCombustibleChart
+                data={data?.tendenciaCombustible ?? []}
+                isLoading={isLoading}
+              />
+            </div>
+            <div className="min-w-0">
+              <TopVehiculosSection
+                topKm={data?.topVehiculosRecorrido ?? []}
+                topCombustible={data?.topVehiculosCombustible ?? []}
+                isLoading={isLoading}
+              />
+            </div>
           </div>
         )}
 
         {/* VISTA FLOTA & PERSONAL */}
         {activeTab === "flota" && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="min-w-0">
               <FlotaStatusDonutChart
                 data={data?.distribucionFlota ?? []}
                 totalVehiculos={data?.kpis.totalVehiculosFlota ?? 0}
                 vehiculosDisponibles={data?.kpis.vehiculosDisponibles ?? 0}
                 isLoading={isLoading}
               />
+            </div>
+            <div className="min-w-0">
               <SolicitudesStatusChart
                 data={data?.distribucionSolicitudes ?? []}
-                totalSolicitudes={
-                  data?.distribucionSolicitudes.reduce((acc, curr) => acc + curr.cantidad, 0) ?? 0
-                }
+                totalSolicitudes={totalSolicitudes}
                 isLoading={isLoading}
               />
             </div>
-            <AlertasLicenciasCard
-              alertas={data?.alertasLicencias ?? []}
-              isLoading={isLoading}
-            />
+            <div className="lg:col-span-2 min-w-0">
+              <AlertasLicenciasCard
+                alertas={data?.alertasLicencias ?? []}
+                isLoading={isLoading}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -274,4 +293,3 @@ export const GestionVehicularDashboardPage = () => {
 }
 
 export default GestionVehicularDashboardPage
-

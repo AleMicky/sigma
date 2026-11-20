@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { ArrowLeft, Edit2, Printer, X } from "lucide-react"
+import { ArrowLeft, Printer } from "lucide-react"
 
 import { routes } from "@/app/config/routes"
 import { RefreshButton, type QueryLike } from "@/shared/components/refresh-button"
@@ -7,10 +7,7 @@ import { Button } from "@/shared/components/ui/button"
 
 type ActivoDetailHeaderProps = {
   activoId: string
-  codigo?: string
   nombre?: string
-  isEditing?: boolean
-  onToggleEdit?: (editing: boolean) => void
   onPrint: () => void
   onRefresh?: () => void
   isRefreshing?: boolean
@@ -20,8 +17,6 @@ type ActivoDetailHeaderProps = {
 export function ActivoDetailHeader({
   activoId: _activoId,
   nombre,
-  isEditing = false,
-  onToggleEdit,
   onPrint,
   onRefresh,
   isRefreshing,
@@ -29,7 +24,7 @@ export function ActivoDetailHeader({
 }: Readonly<ActivoDetailHeaderProps>) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 min-w-0">
         <Button
           variant="outline"
           size="icon-xs"
@@ -43,7 +38,7 @@ export function ActivoDetailHeader({
         <div className="flex items-center gap-2 min-w-0">
           <Link
             to={routes.activos.catalogo}
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             Catálogo
           </Link>
@@ -76,27 +71,6 @@ export function ActivoDetailHeader({
           <Printer className="size-3.5" />
           <span className="hidden sm:inline">Imprimir Ficha</span>
         </Button>
-
-        {isEditing ? (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onToggleEdit?.(false)}
-            className="h-8 px-3 text-xs font-medium gap-1.5"
-          >
-            <X className="size-3.5" />
-            Salir de Edición
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            onClick={() => onToggleEdit?.(true)}
-            className="h-8 px-3 text-xs font-medium shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
-          >
-            <Edit2 className="size-3.5" />
-            Editar Información
-          </Button>
-        )}
       </div>
     </div>
   )

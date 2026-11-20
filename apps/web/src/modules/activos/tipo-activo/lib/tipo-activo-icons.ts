@@ -1,5 +1,47 @@
 import { createElement } from "react"
-import { icons, Tags, type LucideIcon, type LucideProps } from "lucide-react"
+import {
+  Archive,
+  Armchair,
+  Bike,
+  Boxes,
+  Building2,
+  Bus,
+  Cable,
+  Camera,
+  Car,
+  ClipboardList,
+  Cpu,
+  Factory,
+  FileText,
+  Folder,
+  Forklift,
+  Hammer,
+  HardDrive,
+  HardHat,
+  House,
+  KeyRound,
+  Laptop,
+  Lock,
+  Monitor,
+  Package,
+  Plane,
+  Plug,
+  Printer,
+  Radio,
+  Router,
+  Server,
+  Shield,
+  Ship,
+  Smartphone,
+  Sofa,
+  Tablet,
+  Tags,
+  Truck,
+  Warehouse,
+  Wrench,
+  type LucideIcon,
+  type LucideProps,
+} from "lucide-react"
 
 export const TIPO_ACTIVO_ICON_OPTIONS = [
   "Tags",
@@ -45,6 +87,48 @@ export const TIPO_ACTIVO_ICON_OPTIONS = [
 
 export type TipoActivoIconName = (typeof TIPO_ACTIVO_ICON_OPTIONS)[number]
 
+const TIPO_ACTIVO_ICON_MAP: Record<TipoActivoIconName, LucideIcon> = {
+  Tags,
+  Car,
+  Truck,
+  Bike,
+  Bus,
+  Ship,
+  Plane,
+  Forklift,
+  Laptop,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Printer,
+  Server,
+  Cpu,
+  Router,
+  HardDrive,
+  Building2,
+  Warehouse,
+  Factory,
+  House,
+  Package,
+  Boxes,
+  Archive,
+  Wrench,
+  Hammer,
+  HardHat,
+  Sofa,
+  Armchair,
+  Camera,
+  Radio,
+  Cable,
+  Plug,
+  Shield,
+  KeyRound,
+  Lock,
+  ClipboardList,
+  FileText,
+  Folder,
+}
+
 export function getTipoActivoIcon(
   name: string | null | undefined,
 ): LucideIcon {
@@ -52,7 +136,7 @@ export function getTipoActivoIcon(
     return Tags
   }
 
-  return (icons as Record<string, LucideIcon>)[name] ?? Tags
+  return TIPO_ACTIVO_ICON_MAP[name as TipoActivoIconName] ?? Tags
 }
 
 export interface TipoActivoIconProps extends Omit<LucideProps, "name"> {
@@ -62,5 +146,3 @@ export interface TipoActivoIconProps extends Omit<LucideProps, "name"> {
 export function TipoActivoIcon({ name, ...props }: TipoActivoIconProps) {
   return createElement(getTipoActivoIcon(name), props)
 }
-
-

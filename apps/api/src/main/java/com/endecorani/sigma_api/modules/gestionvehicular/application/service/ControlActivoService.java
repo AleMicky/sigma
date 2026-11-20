@@ -1,11 +1,8 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.service;
 
-import com.endecorani.sigma_api.config.security.SecurityUtils;
+import com.endecorani.sigma_api.modules.activos.application.service.AccesorioLookupService;
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
-import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.AccesorioEntity;
-import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringAccesorioRepository;
-import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.controlactivo.reporte.ControlActivoVehicularAccesorioReporteDto;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.controlactivo.request.ControlActivoRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.controlactivo.request.ControlActivoUpdate;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.controlactivo.response.ControlActivoDetalleResponse;
@@ -21,37 +18,34 @@ import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persiste
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.repository.SpringAsignacionVehicularRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.repository.SpringConductorRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.repository.SpringSolicitudVehicularRepository;
-import com.endecorani.sigma_api.modules.organizacion.domain.model.Empleado;
-import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
-import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.entity.VEmpleadoEntity;
-import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
-import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
-import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
+import com.endecorani.sigma_api.modules.organizacion.application.service.EmpleadoInfoResolver;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
-import com.endecorani.sigma_api.shared.infrastructure.report.BarcodeUtil;
-import com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService;
+import com.endecorani.sigma_api.shared.infrastructure.report.controlactivo.ControlActivoAccesorioReporteItem;
+import com.endecorani.sigma_api.shared.infrastructure.report.controlactivo.ControlActivoActaReportData;
+import com.endecorani.sigma_api.shared.infrastructure.report.controlactivo.ControlActivoActaReportGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service("gestionVehicularControlActivoService")
 @RequiredArgsConstructor
 public class ControlActivoService {
-
-    private static final String REPORTE_CONTROL_ACTIVO_PATH = "reports/controles-activos/acta_control_activo.jrxml";
-    private static final DateTimeFormatter FORMATTER_FECHA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -64,12 +58,9 @@ public class ControlActivoService {
 
     private final ControlActivoRepository repository;
     private final ControlActivoVehicularMapper mapper;
-    private final SpringAccesorioRepository springAccesorioRepository;
-    private final JasperReportService jasperReportService;
-    private final SecurityUtils securityUtils;
-    private final UsuarioRepository usuarioRepository;
-    private final EmpleadoRepository empleadoRepository;
-    private final SpringVEmpleadoRepository springVEmpleadoRepository;
+    private final AccesorioLookupService accesorioLookupService;
+    private final ControlActivoActaReportGenerator actaReportGenerator;
+    private final EmpleadoInfoResolver empleadoInfoResolver;
     private final SpringSolicitudVehicularRepository springSolicitudVehicularRepository;
     private final SpringAsignacionVehicularRepository springAsignacionVehicularRepository;
     private final SpringConductorRepository springConductorRepository;
@@ -162,199 +153,119 @@ public class ControlActivoService {
             throw new ResourceNotFoundException("Control de activo vehicular", id);
         }
 
-        // Consultar solicitud vehicular vinculada
-        SolicitudVehicularEntity solicitud = null;
-        if (control.solicitudVehicularId() != null) {
-            solicitud = springSolicitudVehicularRepository.findById(control.solicitudVehicularId()).orElse(null);
-        }
+        SolicitudVehicularEntity solicitud = control.solicitudVehicularId() != null
+                ? springSolicitudVehicularRepository.findById(control.solicitudVehicularId()).orElse(null)
+                : null;
 
-        // Consultar asignación vehicular vinculada
-        AsignacionVehicularEntity asignacion = null;
-        if (control.asignacionVehicularId() != null) {
-            asignacion = springAsignacionVehicularRepository.findById(control.asignacionVehicularId()).orElse(null);
-        } else if (solicitud != null) {
-            List<AsignacionVehicularEntity> asignaciones = springAsignacionVehicularRepository.findBySolicitudVehicularId(solicitud.getId());
-            if (asignaciones != null && !asignaciones.isEmpty()) {
-                asignacion = asignaciones.getFirst();
-            }
-        }
+        AsignacionVehicularEntity asignacion = resolverAsignacion(control, solicitud);
 
-        // Consultar activo vinculado (vehículo)
         UUID activoId = control.activoId();
         if (activoId == null && asignacion != null) {
             activoId = asignacion.getActivoId();
         }
         Activo activo = activoId != null ? activoRepository.findById(activoId).orElse(null) : null;
 
-        // Determinar títulos según el tipo de control (ENTREGA vs DEVOLUCIÓN)
         boolean isEntrega = control.tipo() == null || control.tipo() == TipoControlActivo.ENTREGA;
-        String tipoActa = isEntrega ? "ACTA DE ENTREGA" : "ACTA DE DEVOLUCIÓN";
-        String tituloReporte = isEntrega ? "ACTA DE ENTREGA DE VEHÍCULO" : "ACTA DE DEVOLUCIÓN DE VEHÍCULO";
+        String tituloReporte = isEntrega
+                ? "ACTA DE ENTREGA DE VEHÍCULO"
+                : "ACTA DE DEVOLUCIÓN DE VEHÍCULO";
 
-        // Consultar datos de intervinientes (Entregado por y Recibido por)
-        UUID entregadoPorId = null;
-        UUID recibidoPorId = null;
+        UUID responsableFlotaId = resolverResponsableFlotaId(control, asignacion);
+        UUID receptorConductorId = resolverConductorOSolicitanteId(control, asignacion, solicitud);
 
-        if (isEntrega) {
-            if (asignacion != null && asignacion.getAsignadoPorId() != null) {
-                entregadoPorId = asignacion.getAsignadoPorId();
-            } else if (control.auditoria() != null && control.auditoria().createdById() != null) {
-                entregadoPorId = obtenerEmpleadoIdPorUsuarioId(control.auditoria().createdById());
-            }
+        UUID entregadoPorId = isEntrega ? responsableFlotaId : receptorConductorId;
+        UUID recibidoPorId = isEntrega ? receptorConductorId : responsableFlotaId;
 
-            if (control.recibidoPorId() != null) {
-                recibidoPorId = control.recibidoPorId();
-            } else if (asignacion != null && asignacion.getConductorId() != null) {
-                ConductorEntity conductor = springConductorRepository.findById(asignacion.getConductorId()).orElse(null);
-                if (conductor != null) {
-                    recibidoPorId = conductor.getEmpleadoId();
-                }
-            } else if (solicitud != null && solicitud.getSolicitanteId() != null) {
-                recibidoPorId = solicitud.getSolicitanteId();
-            }
-        } else {
-            // DEVOLUCIÓN: El conductor o solicitante entrega el vehículo y el encargado/responsable lo recibe
-            if (control.recibidoPorId() != null) {
-                entregadoPorId = control.recibidoPorId();
-            } else if (asignacion != null && asignacion.getConductorId() != null) {
-                ConductorEntity conductor = springConductorRepository.findById(asignacion.getConductorId()).orElse(null);
-                if (conductor != null) {
-                    entregadoPorId = conductor.getEmpleadoId();
-                }
-            } else if (solicitud != null && solicitud.getSolicitanteId() != null) {
-                entregadoPorId = solicitud.getSolicitanteId();
-            }
+        EmpleadoInfoResolver.EmpleadoResumen entregado = empleadoInfoResolver.resolveById(entregadoPorId);
+        EmpleadoInfoResolver.EmpleadoResumen recibido = empleadoInfoResolver.resolveById(recibidoPorId);
 
-            if (asignacion != null && asignacion.getAsignadoPorId() != null) {
-                recibidoPorId = asignacion.getAsignadoPorId();
-            } else if (control.auditoria() != null && control.auditoria().createdById() != null) {
-                recibidoPorId = obtenerEmpleadoIdPorUsuarioId(control.auditoria().createdById());
-            }
+        ControlActivoActaReportData reportData = ControlActivoActaReportData.builder()
+                .controlId(id)
+                .entrega(isEntrega)
+                .tituloReporte(tituloReporte)
+                .numeroSolicitud(solicitud != null ? solicitud.getNumero() : null)
+                .tituloSolicitud(formatearDetalleSolicitud(solicitud))
+                .activoCodigo(activo != null ? activo.getCodigo() : null)
+                .activoNombre(activo != null ? activo.getNombre() : null)
+                .fechaActa(control.fecha())
+                .conforme(control.conforme())
+                .entregadoPorNombre(entregado.nombreCompleto())
+                .entregadoPorCargo(entregado.cargo())
+                .recibidoPorNombre(recibido.nombreCompleto())
+                .recibidoPorCargo(recibido.cargo())
+                .observacionGeneral(control.observacion())
+                .generadoPor(empleadoInfoResolver.resolveCurrentGeneradoPor())
+                .accesorios(construirAccesoriosReporte(control.detalles()))
+                .build();
+
+        return actaReportGenerator.generarPdf(reportData);
+    }
+
+    private AsignacionVehicularEntity resolverAsignacion(
+            ControlActivoResponse control,
+            SolicitudVehicularEntity solicitud
+    ) {
+        if (control.asignacionVehicularId() != null) {
+            return springAsignacionVehicularRepository.findById(control.asignacionVehicularId()).orElse(null);
         }
-
-        String[] entregadoInfo = resolverEmpleadoInfo(entregadoPorId);
-        String[] recibidoInfo = resolverEmpleadoInfo(recibidoPorId);
-
-        // Parámetros JasperReports
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("TITULO_REPORTE", tituloReporte);
-        parameters.put("TIPO_ACTA", tipoActa);
-        parameters.put("NUMERO_SOLICITUD", solicitud != null && solicitud.getNumero() != null ? solicitud.getNumero() : "S/N");
-
-        String detalleSolicitud = "-";
         if (solicitud != null) {
-            StringBuilder sb = new StringBuilder();
-            if (solicitud.getMotivo() != null && !solicitud.getMotivo().isBlank()) {
-                sb.append(solicitud.getMotivo().trim());
-            }
-            if (solicitud.getDestino() != null && !solicitud.getDestino().isBlank()) {
-                if (!sb.isEmpty()) sb.append(" | ");
-                sb.append("Destino: ").append(solicitud.getDestino().trim());
-            }
-            detalleSolicitud = !sb.isEmpty() ? sb.toString() : "-";
-        }
-        parameters.put("TITULO_SOLICITUD", detalleSolicitud);
-
-        parameters.put("ACTIVO_CODIGO", activo != null && activo.getCodigo() != null ? activo.getCodigo() : "-");
-        parameters.put("ACTIVO_NOMBRE", activo != null && activo.getNombre() != null ? activo.getNombre() : "-");
-        parameters.put("FECHA_ACTA", control.fecha() != null ? control.fecha().format(FORMATTER_FECHA_HORA) : "-");
-        parameters.put("ESTADO_CONFORMIDAD", Boolean.TRUE.equals(control.conforme()) ? "CONFORME" : "NO CONFORME");
-        parameters.put("ENTREGADO_POR", entregadoInfo[0]);
-        parameters.put("ENTREGADO_CARGO", entregadoInfo[1]);
-        parameters.put("RECIBIDO_POR", recibidoInfo[0]);
-        parameters.put("RECIBIDO_CARGO", recibidoInfo[1]);
-        parameters.put("OBSERVACION_GENERAL", control.observacion() != null ? control.observacion() : "");
-        parameters.put("FECHA_EMISION", LocalDateTime.now().format(FORMATTER_FECHA_HORA));
-
-        // Usuario generador
-        String usuarioGenerador = securityUtils.getCurrentUsername();
-        UUID currentEmpId = obtenerEmpleadoIdActual();
-        if (currentEmpId != null) {
-            String[] currentEmpInfo = resolverEmpleadoInfo(currentEmpId);
-            if (!"-".equals(currentEmpInfo[0])) {
-                usuarioGenerador = currentEmpInfo[0] + (!currentEmpInfo[1].isBlank() ? " - " + currentEmpInfo[1] : "");
+            List<AsignacionVehicularEntity> asignaciones =
+                    springAsignacionVehicularRepository.findBySolicitudVehicularId(solicitud.getId());
+            if (asignaciones != null && !asignaciones.isEmpty()) {
+                return asignaciones.getFirst();
             }
         }
-        parameters.put("GENERADO_POR", usuarioGenerador);
-
-        // Código de barras (usar número de solicitud o ID de control)
-        String barcodeValue = (solicitud != null && solicitud.getNumero() != null && !solicitud.getNumero().isBlank())
-                ? solicitud.getNumero() + "-" + (isEntrega ? "ENT" : "DEV")
-                : id.toString();
-        java.awt.image.BufferedImage barcodeImage = BarcodeUtil.generateBarcode128(barcodeValue, 320, 60);
-        if (barcodeImage != null) {
-            parameters.put("BARCODE_IMAGEN", barcodeImage);
-        }
-
-        // Logo institucional
-        try {
-            ClassPathResource logoResource = new ClassPathResource("reports/images/logo-ende-corani.png");
-            if (logoResource.exists()) {
-                parameters.put("LOGO_EMPRESA", logoResource.getInputStream());
-            }
-        } catch (Exception e) {
-            log.warn("No se pudo cargar el logo para el reporte de control de activo vehicular: {}", e.getMessage());
-        }
-
-        // Lista de accesorios para el datasource del reporte
-        List<ControlActivoVehicularAccesorioReporteDto> dataSourceList = new ArrayList<>();
-        if (control.detalles() != null && !control.detalles().isEmpty()) {
-            int idx = 1;
-            for (ControlActivoDetalleResponse det : control.detalles()) {
-                String accCodigo = det.accesorio() != null && det.accesorio().codigo() != null ? det.accesorio().codigo() : "-";
-                String accNombre = det.accesorio() != null && det.accesorio().nombre() != null ? det.accesorio().nombre() : "Accesorio";
-                dataSourceList.add(ControlActivoVehicularAccesorioReporteDto.builder()
-                        .numero(idx++)
-                        .codigo(accCodigo)
-                        .nombre(accNombre)
-                        .cantidadEsperada(det.cantidadEsperada() != null ? det.cantidadEsperada() : 0)
-                        .cantidadEncontrada(det.cantidadEncontrada() != null ? det.cantidadEncontrada() : 0)
-                        .estadoConformidad(det.conforme() ? "CONFORME" : "OBSERVADO")
-                        .observacion(det.observacion() != null ? det.observacion() : "-")
-                        .build());
-            }
-        }
-
-        return jasperReportService.generatePdfReport(REPORTE_CONTROL_ACTIVO_PATH, parameters, dataSourceList);
+        return null;
     }
 
-    private String[] resolverEmpleadoInfo(UUID empleadoId) {
-        if (empleadoId == null) {
-            return new String[]{"-", ""};
+    private UUID resolverResponsableFlotaId(
+            ControlActivoResponse control,
+            AsignacionVehicularEntity asignacion
+    ) {
+        if (asignacion != null && asignacion.getAsignadoPorId() != null) {
+            return asignacion.getAsignadoPorId();
         }
-        VEmpleadoEntity ve = springVEmpleadoRepository.findById(empleadoId).orElse(null);
-        if (ve != null) {
-            return new String[]{
-                    ve.getNombreCompleto() != null ? ve.getNombreCompleto() : "-",
-                    ve.getCargo() != null ? ve.getCargo() : ""
-            };
+        if (control.auditoria() != null && control.auditoria().createdById() != null) {
+            return empleadoInfoResolver.resolveEmpleadoIdByUsuarioId(control.auditoria().createdById()).orElse(null);
         }
-        Empleado emp = empleadoRepository.findById(empleadoId).orElse(null);
-        if (emp != null) {
-            return new String[]{
-                    emp.getNombreCompleto() != null ? emp.getNombreCompleto() : "-",
-                    emp.getCargo() != null ? emp.getCargo() : ""
-            };
-        }
-        return new String[]{"-", ""};
+        return null;
     }
 
-    private UUID obtenerEmpleadoIdPorUsuarioId(UUID usuarioId) {
-        if (usuarioId == null) return null;
-        return usuarioRepository.findById(usuarioId)
-                .map(Usuario::getPersonaId)
-                .flatMap(empleadoRepository::findFirstByPersonaId)
-                .map(Empleado::getId)
-                .orElse(null);
+    private UUID resolverConductorOSolicitanteId(
+            ControlActivoResponse control,
+            AsignacionVehicularEntity asignacion,
+            SolicitudVehicularEntity solicitud
+    ) {
+        if (control.recibidoPorId() != null) {
+            return control.recibidoPorId();
+        }
+        if (asignacion != null && asignacion.getConductorId() != null) {
+            ConductorEntity conductor = springConductorRepository.findById(asignacion.getConductorId()).orElse(null);
+            if (conductor != null) {
+                return conductor.getEmpleadoId();
+            }
+        }
+        if (solicitud != null && solicitud.getSolicitanteId() != null) {
+            return solicitud.getSolicitanteId();
+        }
+        return null;
     }
 
-    private UUID obtenerEmpleadoIdActual() {
-        return securityUtils.getCurrentUserId()
-                .flatMap(usuarioRepository::findById)
-                .map(Usuario::getPersonaId)
-                .flatMap(empleadoRepository::findFirstByPersonaId)
-                .map(Empleado::getId)
-                .orElse(null);
+    private String formatearDetalleSolicitud(SolicitudVehicularEntity solicitud) {
+        if (solicitud == null) {
+            return "-";
+        }
+        StringBuilder sb = new StringBuilder();
+        if (solicitud.getMotivo() != null && !solicitud.getMotivo().isBlank()) {
+            sb.append(solicitud.getMotivo().trim());
+        }
+        if (solicitud.getDestino() != null && !solicitud.getDestino().isBlank()) {
+            if (!sb.isEmpty()) {
+                sb.append(" | ");
+            }
+            sb.append("Destino: ").append(solicitud.getDestino().trim());
+        }
+        return !sb.isEmpty() ? sb.toString() : "-";
     }
 
     private ControlActivo obtenerPorId(UUID id) {
@@ -380,31 +291,29 @@ public class ControlActivoService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<UUID, ControlActivoDetalleResponse.AccesorioInfo> accesorioMap = Collections.emptyMap();
-        if (!accesorioIds.isEmpty()) {
-            accesorioMap = springAccesorioRepository.findAllById(accesorioIds).stream()
-                    .collect(Collectors.toMap(
-                            AccesorioEntity::getId,
-                            acc -> new ControlActivoDetalleResponse.AccesorioInfo(acc.getId(), acc.getCodigo(), acc.getNombre()),
-                            (a, b) -> a
-                    ));
-        }
-
-        final Map<UUID, ControlActivoDetalleResponse.AccesorioInfo> finalMap = accesorioMap;
+        Map<UUID, AccesorioLookupService.AccesorioResumen> accesorioMap = accesorioLookupService.findMapByIds(accesorioIds);
 
         return controles.stream().map(c -> {
             ControlActivoResponse base = mapper.toResponse(c);
             List<ControlActivoDetalleResponse> detallesResponse = Collections.emptyList();
             if (c.getDetalles() != null && !c.getDetalles().isEmpty()) {
-                detallesResponse = c.getDetalles().stream().map(d -> new ControlActivoDetalleResponse(
-                        d.getId(),
-                        d.getControlActivoId(),
-                        d.getAccesorioId() != null ? finalMap.get(d.getAccesorioId()) : null,
-                        d.getCantidadEsperada(),
-                        d.getCantidadEncontrada(),
-                        d.isConforme(),
-                        d.getObservacion()
-                )).collect(Collectors.toList());
+                detallesResponse = c.getDetalles().stream().map(d -> {
+                    AccesorioLookupService.AccesorioResumen acc = d.getAccesorioId() != null
+                            ? accesorioMap.get(d.getAccesorioId())
+                            : null;
+                    ControlActivoDetalleResponse.AccesorioInfo accesorioInfo = acc != null
+                            ? new ControlActivoDetalleResponse.AccesorioInfo(acc.id(), acc.codigo(), acc.nombre())
+                            : null;
+                    return new ControlActivoDetalleResponse(
+                            d.getId(),
+                            d.getControlActivoId(),
+                            accesorioInfo,
+                            d.getCantidadEsperada(),
+                            d.getCantidadEncontrada(),
+                            d.isConforme(),
+                            d.getObservacion()
+                    );
+                }).collect(Collectors.toList());
             }
 
             return new ControlActivoResponse(
@@ -421,5 +330,27 @@ public class ControlActivoService {
                     base.auditoria()
             );
         }).collect(Collectors.toList());
+    }
+
+    private List<ControlActivoAccesorioReporteItem> construirAccesoriosReporte(List<ControlActivoDetalleResponse> detalles) {
+        if (detalles == null || detalles.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<ControlActivoAccesorioReporteItem> items = new ArrayList<>(detalles.size());
+        int idx = 1;
+        for (ControlActivoDetalleResponse det : detalles) {
+            String accCodigo = det.accesorio() != null && det.accesorio().codigo() != null ? det.accesorio().codigo() : "-";
+            String accNombre = det.accesorio() != null && det.accesorio().nombre() != null ? det.accesorio().nombre() : "Accesorio";
+            items.add(ControlActivoAccesorioReporteItem.builder()
+                    .numero(idx++)
+                    .codigo(accCodigo)
+                    .nombre(accNombre)
+                    .cantidadEsperada(det.cantidadEsperada() != null ? det.cantidadEsperada() : 0)
+                    .cantidadEncontrada(det.cantidadEncontrada() != null ? det.cantidadEncontrada() : 0)
+                    .estadoConformidad(det.conforme() ? "CONFORME" : "OBSERVADO")
+                    .observacion(det.observacion() != null ? det.observacion() : "-")
+                    .build());
+        }
+        return items;
     }
 }

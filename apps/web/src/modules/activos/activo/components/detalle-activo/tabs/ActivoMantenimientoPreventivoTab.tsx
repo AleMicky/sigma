@@ -82,7 +82,12 @@ export function ActivoMantenimientoPreventivoTab({
     if (Array.isArray(programacionesPage)) {
       return (programacionesPage as ProgramacionMantenimiento[])[0] ?? null
     }
-    const content = (programacionesPage as any)?.content
+    const content =
+      typeof programacionesPage === "object" &&
+      programacionesPage !== null &&
+      "content" in programacionesPage
+        ? (programacionesPage as { content?: ProgramacionMantenimiento[] }).content
+        : undefined
     if (Array.isArray(content) && content.length > 0) {
       return content[0] as ProgramacionMantenimiento
     }
@@ -156,8 +161,8 @@ export function ActivoMantenimientoPreventivoTab({
             Sin Mantenimiento Preventivo Configurado
           </h3>
           <p className="text-xs text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
-            Este activo aún no tiene un plan ni una programación de mantenimiento preventivo vinculada. 
-            Configure intervalos por kilometraje, calendario u horómetro para recibir alertas y disparos automáticos.
+            Este activo aún no tiene un plan ni una programación de mantenimiento preventivo vinculada.
+            Configure intervalos por tiempo o uso para recibir alertas y disparos automáticos.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -332,8 +337,8 @@ export function ActivoMantenimientoPreventivoTab({
                 const isTiempo = crit.tipoCriterio === "TIEMPO"
 
                 // Cálculos
-                let lecturaActualLabel = "-"
-                let proximoLabel = "-"
+                let lecturaActualLabel: string
+                let proximoLabel: string
                 let margenLabel = "-"
                 let pct = 0
                 let vencido = false
@@ -510,7 +515,7 @@ export function ActivoMantenimientoPreventivoTab({
                   <th className="py-2.5 px-4">Solicitud Generada</th>
                   <th className="py-2.5 px-4">Estado del Ciclo</th>
                   <th className="py-2.5 px-4">Fecha Servicio</th>
-                  <th className="py-2.5 px-4">Odómetro / Lectura</th>
+                  <th className="py-2.5 px-4">Lectura de Uso</th>
                   <th className="py-2.5 px-4">Observaciones</th>
                 </tr>
               </thead>
@@ -563,8 +568,12 @@ export function ActivoMantenimientoPreventivoTab({
 
                     <td className="py-2.5 px-4 font-mono font-medium text-foreground">
                       {hist.valorUsoServicio != null
-                        ? `${hist.valorUsoServicio.toLocaleString()} ${
-                            hist.tipoCriterioDisparador === "KILOMETRAJE" ? "km" : "hrs"
+                        ? `${hist.valorUsoServicio.toLocaleString()}${
+                            hist.tipoCriterioDisparador === "KILOMETRAJE"
+                              ? " km"
+                              : hist.tipoCriterioDisparador === "HORAS_USO"
+                                ? " hrs"
+                                : ""
                           }`
                         : "-"}
                     </td>

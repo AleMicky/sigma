@@ -18,6 +18,8 @@ public interface SpringFlotaVehiculoRepository extends JpaRepository<FlotaVehicu
 
     List<FlotaVehiculoEntity> findByFlotaVehicularIdAndActivoIdIn(UUID flotaVehicularId, Collection<UUID> activoIds);
 
+    List<FlotaVehiculoEntity> findByActivoIdInAndActivoTrue(Collection<UUID> activoIds);
+
     void deleteByFlotaVehicularId(UUID flotaVehicularId);
 
     Optional<FlotaVehiculoEntity> findByFlotaVehicularIdAndActivoId(UUID flotaVehicularId, UUID activoId);

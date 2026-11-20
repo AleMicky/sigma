@@ -1,0 +1,26 @@
+# Control de versiones y entorno local
+.git
+.gitignore
+.DS_Store
+.vscode
+.idea
+.env
+.env.*
+!.env.example
+
+# Dependencias y artefactos de build
+**/node_modules
+**/.pnpm-store
+**/dist
+**/dist-ssr
+**/.vite
+**/target
+
+# Otros módulos no necesarios para el contexto del frontend web
+apps/api
+apps/sigma-mobile
+docs
+uploads
+**/uploads
+docker-data
+*.log

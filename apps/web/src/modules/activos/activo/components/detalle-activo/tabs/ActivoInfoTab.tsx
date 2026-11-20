@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   AlertTriangle,
@@ -12,6 +12,7 @@ import {
   Plus,
   Save,
   ShieldCheck,
+  SlidersHorizontal,
   Tag,
   X,
 } from "lucide-react"
@@ -20,8 +21,19 @@ import { toast } from "sonner"
 import { activoKeys } from "@/modules/activos/activo/api/activo.keys"
 import { useUpdateActivo } from "@/modules/activos/activo/api/activo.mutations"
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
+import { ActivoAtributoValorFields } from "@/modules/activos/activo/components/ActivoAtributoValorFields"
+import {
+  formatAtributoValor,
+  formatLocalDateLong,
+  syncAtributoValores,
+  validateAtributos,
+} from "@/modules/activos/activo/lib/activo-form.utils"
+import type { ActivoAtributo } from "@/modules/activos/activo-atributo/api/activo-atributo.service"
+import { activoAtributoValorKeys } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.keys"
+import type { ActivoAtributoValor } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.service"
 import type { Categoria } from "@/modules/activos/categoria/api/categoria.service"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
+import type { TipoDato } from "@/modules/parametros/tipo-dato/api/tipo-dato.service"
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 import { isApiError } from "@/shared/api"
 import { AuditInfo } from "@/shared/components/audit-info"
@@ -44,6 +56,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
+import { Skeleton } from "@/shared/components/ui/skeleton"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
 
@@ -59,6 +72,10 @@ type ActivoInfoTabProps = {
   categoria?: Categoria | null
   ubicacion?: Ubicacion | null
   ubicaciones?: Ubicacion[]
+  atributos?: ActivoAtributo[]
+  atributoValores?: ActivoAtributoValor[]
+  tiposDatoById?: Map<string, TipoDato>
+  atributosLoading?: boolean
   documentos: ActivoDocumento[]
   isEditing?: boolean
   onToggleEdit?: (editing: boolean) => void
@@ -68,8 +85,13 @@ type ActivoInfoTabProps = {
 export function ActivoInfoTab({
   activo,
   tipoActivo,
+  categoria,
   ubicacion,
   ubicaciones = [],
+  atributos = [],
+  atributoValores = [],
+  tiposDatoById,
+  atributosLoading = false,
   documentos,
   isEditing = false,
   onToggleEdit,
@@ -79,6 +101,8 @@ export function ActivoInfoTab({
   const updateMutation = useUpdateActivo()
 
   // Form states
+  const editSessionKey = `${activo.id}:${activo.updatedAt ?? ""}:${isEditing ? "edit" : "view"}`
+  const [prevEditSessionKey, setPrevEditSessionKey] = useState(editSessionKey)
   const [formData, setFormData] = useState({
     codigo: activo.codigo,
     codigoAlternativo: activo.codigoAlternativo ?? "",
@@ -89,8 +113,68 @@ export function ActivoInfoTab({
     activo: activo.activo,
   })
 
+  const [userAtributoValores, setUserAtributoValores] = useState<
+    Record<string, string>
+  >({})
+  const [atributoErrors, setAtributoErrors] = useState<Record<string, string>>(
+    {},
+  )
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  if (prevEditSessionKey !== editSessionKey) {
+    setPrevEditSessionKey(editSessionKey)
+    setFormData({
+      codigo: activo.codigo,
+      codigoAlternativo: activo.codigoAlternativo ?? "",
+      nombre: activo.nombre,
+      descripcion: activo.descripcion ?? "",
+      ubicacionId: activo.ubicacionId ?? "",
+      fechaAdquisicion: activo.fechaAdquisicion ?? "",
+      activo: activo.activo,
+    })
+    setUserAtributoValores({})
+    setAtributoErrors({})
+  }
+
+  const resolvedTiposDatoById = useMemo(
+    () => tiposDatoById ?? new Map<string, TipoDato>(),
+    [tiposDatoById],
+  )
+
+  const atributosVisibles = useMemo(
+    () =>
+      atributos
+        .filter((atributo) => atributo.visible === true)
+        .slice()
+        .sort((a, b) => a.orden - b.orden),
+    [atributos],
+  )
+
+  const valoresExistentesByAtributoId = useMemo(() => {
+    const map = new Map<string, ActivoAtributoValor>()
+    for (const item of atributoValores) {
+      map.set(item.activoAtributoId, item)
+    }
+    return map
+  }, [atributoValores])
+
+  const atributoFormValores = useMemo(() => {
+    const result: Record<string, string> = {}
+    for (const atributo of atributosVisibles) {
+      if (userAtributoValores[atributo.id] !== undefined) {
+        result[atributo.id] = userAtributoValores[atributo.id]
+      } else {
+        const existente = valoresExistentesByAtributoId.get(atributo.id)
+        if (existente?.valor != null) {
+          result[atributo.id] = existente.valor
+        } else {
+          result[atributo.id] = atributo.valorDefecto ?? ""
+        }
+      }
+    }
+    return result
+  }, [atributosVisibles, userAtributoValores, valoresExistentesByAtributoId])
 
   // Ensure list of ubicaciones includes current location if not present
   const allUbicaciones = useMemo(() => {
@@ -104,19 +188,6 @@ export function ActivoInfoTab({
     return allUbicaciones.find((u) => u.id === formData.ubicacionId) ?? null
   }, [allUbicaciones, formData.ubicacionId])
 
-  // Sync initial values when entering edit mode or when active asset changes
-  useEffect(() => {
-    setFormData({
-      codigo: activo.codigo,
-      codigoAlternativo: activo.codigoAlternativo ?? "",
-      nombre: activo.nombre,
-      descripcion: activo.descripcion ?? "",
-      ubicacionId: activo.ubicacionId ?? "",
-      fechaAdquisicion: activo.fechaAdquisicion ?? "",
-      activo: activo.activo,
-    })
-  }, [activo, isEditing])
-
   function handleCancel() {
     setFormData({
       codigo: activo.codigo,
@@ -127,6 +198,8 @@ export function ActivoInfoTab({
       fechaAdquisicion: activo.fechaAdquisicion ?? "",
       activo: activo.activo,
     })
+    setUserAtributoValores({})
+    setAtributoErrors({})
     setIsConfirmSaveOpen(false)
     onToggleEdit?.(false)
   }
@@ -140,6 +213,16 @@ export function ActivoInfoTab({
     }
     if (!formData.nombre.trim()) {
       toast.error("El nombre del activo es obligatorio")
+      return
+    }
+
+    const nextAtributoErrors = validateAtributos(
+      atributosVisibles,
+      atributoFormValores,
+    )
+    setAtributoErrors(nextAtributoErrors)
+    if (Object.keys(nextAtributoErrors).length > 0) {
+      toast.error("Completa los atributos obligatorios del tipo de activo")
       return
     }
 
@@ -160,17 +243,34 @@ export function ActivoInfoTab({
           descripcion: formData.descripcion.trim() || null,
           tipoActivoId: activo.tipoActivo?.id ?? activo.tipoActivoId ?? "",
           ubicacionId: formData.ubicacionId || null,
+          estadoOperativoId:
+            activo.estadoOperativo?.id ?? activo.estadoOperativoId ?? null,
           fechaAdquisicion: formData.fechaAdquisicion || null,
           activo: formData.activo,
         },
       })
 
-      // 2. Invalidate queries
+      // 2. Sync dynamic attribute values configured for this asset type
+      if (atributosVisibles.length > 0) {
+        await syncAtributoValores({
+          activoId: activo.id,
+          atributos: atributosVisibles,
+          valores: atributoFormValores,
+          existentes: valoresExistentesByAtributoId,
+        })
+      }
+
+      // 3. Invalidate queries
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: activoKeys.detail(activo.id) }),
         queryClient.invalidateQueries({ queryKey: activoKeys.lists() }),
+        queryClient.invalidateQueries({
+          queryKey: activoAtributoValorKeys.lists(),
+        }),
       ])
 
+      setUserAtributoValores({})
+      setAtributoErrors({})
       setIsConfirmSaveOpen(false)
       onToggleEdit?.(false)
     } catch (error) {
@@ -214,113 +314,55 @@ export function ActivoInfoTab({
                   <h3 className="font-heading text-sm font-bold text-foreground">
                     {isEditing
                       ? "Editar Información del Activo"
-                      : "Información General del Activo"}
+                      : "Ubicación y Datos de Registro"}
                   </h3>
                   {isEditing && (
                     <p className="text-[11px] text-muted-foreground">
-                      Modifica los campos del bien y guarda los cambios directamente.
+                      Modifica los datos generales y especificaciones técnicas del activo.
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                {isEditing ? (
-                  <>
-                    <Button
-                      size="sm"
-                      type="button"
-                      variant="ghost"
-                      onClick={handleCancel}
-                      disabled={isSubmitting}
-                      className="h-7 px-2.5 text-xs gap-1"
-                    >
-                      <X className="size-3.5" />
-                      Cancelar
-                    </Button>
-                    <Button
-                      size="sm"
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="h-7 px-3 text-xs gap-1 shadow-xs font-semibold"
-                    >
-                      <Save className="size-3.5" />
-                      Guardar
-                    </Button>
-                  </>
-                ) : (
+              {isEditing ? (
+                <div className="flex items-center gap-1.5">
                   <Button
                     size="sm"
                     type="button"
                     variant="ghost"
-                    onClick={() => onToggleEdit?.(true)}
-                    className="h-7 px-2 text-xs text-primary hover:text-primary gap-1"
+                    onClick={handleCancel}
+                    disabled={isSubmitting}
+                    className="h-7 px-2.5 text-xs gap-1"
                   >
-                    <Edit2 className="size-3" />
-                    Editar en Ficha
+                    <X className="size-3.5" />
+                    Cancelar
                   </Button>
-                )}
-              </div>
+                  <Button
+                    size="sm"
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-7 px-3 text-xs gap-1 shadow-xs font-semibold"
+                  >
+                    <Save className="size-3.5" />
+                    Guardar
+                  </Button>
+                </div>
+              ) : null}
             </div>
 
-            {/* VIEW MODE */}
+            {/* VIEW MODE (solo datos que no están ya visibles en la cabecera del activo) */}
             {!isEditing ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
-                  {/* Nombre */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                  {/* Categoría */}
                   <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Nombre Oficial
-                    </span>
-                    <span className="text-xs font-semibold text-foreground truncate">
-                      {activo.nombre}
-                    </span>
-                  </div>
-
-                  {/* Código Alternativo */}
-                  <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Código Alternativo
-                    </span>
-                    <span className="text-xs font-semibold font-mono text-foreground truncate">
-                      {activo.codigoAlternativo || "No registrado"}
-                    </span>
-                  </div>
-
-                  {/* Estado del Activo */}
-                  <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Estado de Habilitación
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={cn(
-                          "size-2 rounded-full",
-                          activo.activo ? "bg-emerald-500" : "bg-destructive",
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "text-xs font-bold",
-                          activo.activo
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-destructive",
-                        )}
-                      >
-                        {activo.activo ? "Habilitado / Operativo" : "Inactivo"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Tipo de Activo */}
-                  <div className="flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Tipo de Activo
+                      Categoría
                     </span>
                     <div className="flex items-center gap-1.5 min-w-0">
                       <Tag className="size-3.5 text-primary shrink-0" />
                       <span className="text-xs font-semibold text-foreground truncate">
-                        {tipoActivo?.nombre || "No especificado"}
+                        {categoria?.nombre || "Sin categoría"}
                       </span>
                     </div>
                   </div>
@@ -344,16 +386,7 @@ export function ActivoInfoTab({
                     <div className="flex items-center gap-1.5">
                       <Calendar className="size-3.5 text-muted-foreground" />
                       <span className="text-xs font-semibold text-foreground">
-                        {activo.fechaAdquisicion
-                          ? new Date(activo.fechaAdquisicion).toLocaleDateString(
-                              "es-ES",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              },
-                            )
-                          : "No registrada"}
+                        {formatLocalDateLong(activo.fechaAdquisicion) ?? "No registrada"}
                       </span>
                     </div>
                   </div>
@@ -373,11 +406,30 @@ export function ActivoInfoTab({
               /* EDIT MODE - ULTRA COMPACT INLINE FORM FIELDS */
               <div className="flex flex-col gap-3 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-                  {/* Nombre Field (col-span-8) */}
-                  <div className="flex flex-col gap-1 sm:col-span-8">
+                  {/* Código Institucional Field (col-span-4) */}
+                  <div className="flex flex-col gap-1 sm:col-span-4">
+                    <Label className="text-[11px] font-semibold">
+                      Código Institucional <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      value={formData.codigo}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          codigo: e.target.value,
+                        }))
+                      }
+                      maxLength={50}
+                      placeholder="Ej. ACT-0001"
+                      className="h-8 text-xs font-mono font-semibold uppercase"
+                      required
+                    />
+                  </div>
+
+                  {/* Nombre Field (col-span-5) */}
+                  <div className="flex flex-col gap-1 sm:col-span-5">
                     <Label className="text-[11px] font-semibold flex items-center justify-between">
                       <span>Nombre del Activo <span className="text-destructive">*</span></span>
-                      <span className="text-[10px] text-muted-foreground font-normal">Denominación oficial</span>
                     </Label>
                     <Input
                       value={formData.nombre}
@@ -390,8 +442,8 @@ export function ActivoInfoTab({
                     />
                   </div>
 
-                  {/* Código Alternativo Field (col-span-4) */}
-                  <div className="flex flex-col gap-1 sm:col-span-4">
+                  {/* Código Alternativo Field (col-span-3) */}
+                  <div className="flex flex-col gap-1 sm:col-span-3">
                     <Label className="text-[11px] font-semibold">
                       Código Alternativo
                     </Label>
@@ -520,6 +572,122 @@ export function ActivoInfoTab({
                     />
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* 2. ESPECIFICACIONES TÉCNICAS DINÁMICAS (ATRIBUTOS DEL TIPO DE ACTIVO) */}
+          <div
+            className={cn(
+              "rounded-2xl border bg-card p-4 sm:p-5 shadow-xs flex flex-col gap-3.5 transition-all",
+              isEditing
+                ? "border-primary/50 ring-1 ring-primary/20"
+                : "border-border/80",
+            )}
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <SlidersHorizontal className="size-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-heading text-sm font-bold text-foreground truncate">
+                    Especificaciones Técnicas
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    Atributos dinámicos configurados para{" "}
+                    <span className="font-medium text-foreground">
+                      {tipoActivo?.nombre || "este tipo de activo"}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
+                {atributosVisibles.length}{" "}
+                {atributosVisibles.length === 1 ? "atributo" : "atributos"}
+              </span>
+            </div>
+
+            {atributosLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                <Skeleton className="h-14 rounded-xl" />
+                <Skeleton className="h-14 rounded-xl" />
+                <Skeleton className="h-14 rounded-xl" />
+              </div>
+            ) : atributosVisibles.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border/80 bg-muted/15 px-4 py-5 text-center text-xs text-muted-foreground">
+                Este tipo de activo no tiene especificaciones técnicas configuradas.
+              </div>
+            ) : isEditing ? (
+              <ActivoAtributoValorFields
+                atributos={atributosVisibles}
+                tiposDatoById={resolvedTiposDatoById}
+                valores={atributoFormValores}
+                errors={atributoErrors}
+                disabled={isSubmitting}
+                onChange={(atributoId, value) => {
+                  setUserAtributoValores((prev) => ({
+                    ...prev,
+                    [atributoId]: value,
+                  }))
+                  setAtributoErrors((prev) => {
+                    if (!prev[atributoId]) return prev
+                    const next = { ...prev }
+                    delete next[atributoId]
+                    return next
+                  })
+                }}
+              />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
+                {atributosVisibles.map((atributo) => {
+                  const tipoDato = resolvedTiposDatoById.get(atributo.tipoDatoId)
+                  const tipoDatoCodigo = (tipoDato?.codigo ?? "TEXT").toUpperCase()
+                  const existente = valoresExistentesByAtributoId.get(atributo.id)
+                  const formattedValue = formatAtributoValor(
+                    atributo,
+                    existente?.valor,
+                    tipoDatoCodigo,
+                  )
+                  const isWide =
+                    tipoDatoCodigo === "TEXTAREA" ||
+                    tipoDatoCodigo === "MULTISELECT"
+
+                  return (
+                    <div
+                      key={atributo.id}
+                      className={cn(
+                        "flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-border/60 bg-muted/20",
+                        isWide && "sm:col-span-2 md:col-span-3",
+                      )}
+                    >
+                      <span
+                        className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate"
+                        title={atributo.descripcion ?? atributo.etiqueta}
+                      >
+                        {atributo.etiqueta}
+                      </span>
+                      {formattedValue ? (
+                        <span
+                          className={cn(
+                            "text-xs font-semibold text-foreground",
+                            tipoDatoCodigo === "TEXTAREA"
+                              ? "whitespace-pre-wrap leading-relaxed font-normal"
+                              : "truncate",
+                          )}
+                          title={formattedValue}
+                        >
+                          {formattedValue}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground/70 italic">
+                          Sin registrar
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

@@ -21,6 +21,49 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 600,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "vendor-react",
+              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+              priority: 30,
+            },
+            {
+              name: "vendor-tanstack",
+              test: /node_modules[\\/]@tanstack[\\/]/,
+              priority: 25,
+            },
+            {
+              name: "vendor-charts",
+              test: /node_modules[\\/](recharts|d3-|victory-vendor)[\\/]/,
+              priority: 20,
+            },
+            {
+              name: "vendor-calendar",
+              test: /node_modules[\\/]@fullcalendar[\\/]/,
+              priority: 20,
+            },
+            {
+              name: "vendor-maps",
+              test: /node_modules[\\/](leaflet|react-leaflet)[\\/]/,
+              priority: 20,
+            },
+            {
+              name: "vendor-icons",
+              test: /node_modules[\\/]lucide-react[\\/]/,
+              priority: 15,
+            },
+            {
+              name: "vendor-ui",
+              test: /node_modules[\\/](@base-ui|motion|framer-motion)[\\/]/,
+              priority: 15,
+            },
+          ],
+        },
+      },
+    },
   },
 })

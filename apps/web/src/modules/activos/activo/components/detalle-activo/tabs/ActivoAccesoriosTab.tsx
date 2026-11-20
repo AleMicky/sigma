@@ -147,7 +147,7 @@ export function ActivoAccesoriosTab({
         <EmptyState
           icon={<Layers className="size-8 text-muted-foreground/60" />}
           title="Sin accesorios asignados"
-          description="Este activo aún no tiene accesorios o periféricos vinculados (ej. GPS, Radio, Extintor, Rueda de auxilio)."
+          description="Este activo aún no tiene accesorios o componentes adicionales vinculados."
           action={
             <Button
               type="button"
