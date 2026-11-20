@@ -18,6 +18,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteri
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.RegistroPorteriaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.ReporteBitacoraPorteriaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoMovimientoPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteriaActivo;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SalidaVehicular;
@@ -102,6 +103,10 @@ public class RegistroPorteriaService {
 
     @Transactional
     public RegistroPorteriaResponse registrarSalida(RegistrarSalidaPorteriaRequest request) {
+        TipoMovimientoPorteria tipoMovimiento = request.tipoMovimiento() != null
+                ? request.tipoMovimiento()
+                : TipoMovimientoPorteria.SALIDA;
+        boolean esEntrada = tipoMovimiento == TipoMovimientoPorteria.ENTRADA;
         boolean esExterno = Boolean.TRUE.equals(request.esExterno());
         String personaExterna = trimToNull(request.personaExterna());
         String placaExterna = trimToNull(request.placaExterna());
@@ -115,7 +120,9 @@ public class RegistroPorteriaService {
             }
         } else {
             if (request.empleadoId() == null) {
-                throw new BusinessException("El funcionario que sale es obligatorio.");
+                throw new BusinessException(esEntrada
+                        ? "El conductor que ingresa es obligatorio."
+                        : "El conductor que sale es obligatorio.");
             }
             if (!vempleadoRepository.existsById(request.empleadoId())) {
                 throw new ResourceNotFoundException("Empleado", request.empleadoId());
@@ -150,7 +157,9 @@ public class RegistroPorteriaService {
             }
         } else {
             if (request.activos() == null || request.activos().isEmpty()) {
-                throw new BusinessException("Debe registrar el vehículo o ítem que retira.");
+                throw new BusinessException(esEntrada
+                        ? "Debe registrar el vehículo que ingresa."
+                        : "Debe registrar el vehículo o ítem que retira.");
             }
             items = construirItemsSalida(request.activos());
         }
@@ -165,6 +174,7 @@ public class RegistroPorteriaService {
 
         RegistroPorteria registro = RegistroPorteria.builder()
                 .numero(numero)
+                .tipoMovimiento(tipoMovimiento)
                 .esExterno(esExterno)
                 .personaExterna(personaExterna)
                 .placaExterna(placaExterna != null ? placaExterna.toUpperCase() : null)
@@ -189,9 +199,11 @@ public class RegistroPorteriaService {
         RegistroPorteria registro = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Registro de Portería", id));
 
+        boolean esEntradaInicial = registro.getTipoMovimiento() == TipoMovimientoPorteria.ENTRADA;
+
         if (registro.getEstado() != EstadoRegistroPorteria.AFUERA) {
             throw new BusinessException(
-                    "Solo se puede registrar la llegada de un registro en estado AFUERA. Estado actual: "
+                    "Solo se puede completar un registro pendiente. Estado actual: "
                             + registro.getEstado());
         }
 
@@ -200,7 +212,9 @@ public class RegistroPorteriaService {
                 : Instant.now();
 
         if (fechaLlegada.isBefore(registro.getFechaHoraSalida())) {
-            throw new BusinessException("La fecha/hora de llegada no puede ser anterior a la fecha/hora de salida.");
+            throw new BusinessException(esEntradaInicial
+                    ? "La fecha/hora de salida no puede ser anterior a la fecha/hora de entrada."
+                    : "La fecha/hora de entrada no puede ser anterior a la fecha/hora de salida.");
         }
 
         aplicarDetalleLlegada(registro, request);
@@ -252,6 +266,7 @@ public class RegistroPorteriaService {
             UUID activoId,
             UUID areaId,
             UUID createdById,
+            TipoMovimientoPorteria tipoMovimiento,
             EstadoRegistroPorteria estado,
             Instant fechaDesde,
             Instant fechaHasta,
@@ -270,6 +285,7 @@ public class RegistroPorteriaService {
                 alcance.areaId(),
                 alcance.createdById(),
                 alcance.unirPorOr(),
+                tipoMovimiento,
                 estado,
                 fechaDesde,
                 fechaHasta,
@@ -446,8 +462,11 @@ public class RegistroPorteriaService {
 
         List<BitacoraPorteriaItemPdfDto> dataSource = reporte.items().stream()
                 .map(it -> {
-                    String horaTexto = (it.horaSalidaFormateada() != null ? it.horaSalidaFormateada() : "-")
+                    boolean esEntrada = it.tipoMovimiento() == TipoMovimientoPorteria.ENTRADA;
+                    String horaTexto = (esEntrada ? "Ent " : "Sal ")
+                            + (it.horaSalidaFormateada() != null ? it.horaSalidaFormateada() : "-")
                             + " -> "
+                            + (esEntrada ? "Sal " : "Ent ")
                             + (it.horaLlegadaFormateada() != null ? it.horaLlegadaFormateada() : "Pend.")
                             + (it.duracionTexto() != null && !"-".equals(it.duracionTexto())
                                     ? " (" + it.duracionTexto() + ")"
@@ -463,9 +482,11 @@ public class RegistroPorteriaService {
                         funcTexto += " - " + it.empleadoArea();
                     }
 
-                    String guardiasTexto = "Sal: "
+                    String guardiasTexto = (esEntrada ? "Ent: " : "Sal: ")
                             + (it.guardiaSalidaNombre() != null ? it.guardiaSalidaNombre() : "-")
-                            + (it.guardiaLlegadaNombre() != null ? " / Lleg: " + it.guardiaLlegadaNombre() : "");
+                            + (it.guardiaLlegadaNombre() != null
+                                    ? (esEntrada ? " / Sal: " : " / Ent: ") + it.guardiaLlegadaNombre()
+                                    : "");
 
                     String estadoObs = "[" + (it.estado() != null ? it.estado().name() : "-") + "]";
                     if (it.observacionesConsolidadas() != null
@@ -759,6 +780,7 @@ public class RegistroPorteriaService {
         return new RegistroPorteriaResponse(
                 r.getId(),
                 r.getNumero(),
+                r.getTipoMovimiento() != null ? r.getTipoMovimiento() : TipoMovimientoPorteria.SALIDA,
                 r.getEsExterno(),
                 r.getPersonaExterna(),
                 r.getPlacaExterna(),
@@ -1078,12 +1100,16 @@ public class RegistroPorteriaService {
         String descripcionActividad = descPartes.isEmpty() ? "Movimiento en portería" : String.join(" | ", descPartes);
 
         // Observaciones consolidadas
+        TipoMovimientoPorteria tipoMov = r.getTipoMovimiento() != null
+                ? r.getTipoMovimiento()
+                : TipoMovimientoPorteria.SALIDA;
+        boolean esEntradaInicial = tipoMov == TipoMovimientoPorteria.ENTRADA;
         List<String> obsPartes = new ArrayList<>();
         if (r.getObservacionSalida() != null && !r.getObservacionSalida().isBlank()) {
-            obsPartes.add("Sal: " + r.getObservacionSalida());
+            obsPartes.add((esEntradaInicial ? "Ent: " : "Sal: ") + r.getObservacionSalida());
         }
         if (r.getObservacionLlegada() != null && !r.getObservacionLlegada().isBlank()) {
-            obsPartes.add("Lleg: " + r.getObservacionLlegada());
+            obsPartes.add((esEntradaInicial ? "Sal: " : "Ent: ") + r.getObservacionLlegada());
         }
         if (r.getActivos() != null) {
             for (RegistroPorteriaActivo a : r.getActivos()) {
@@ -1097,6 +1123,7 @@ public class RegistroPorteriaService {
         return BitacoraPorteriaItemResponse.builder()
                 .id(r.getId())
                 .numero(r.getNumero())
+                .tipoMovimiento(tipoMov)
                 .dia(dia)
                 .diaSemana(diaSemana)
                 .fechaFormateada(fechaFormateada)

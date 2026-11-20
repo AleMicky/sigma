@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity;
 
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoMovimientoPorteria;
 import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.entity.UbicacionEntity;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
@@ -28,6 +29,7 @@ import java.util.UUID;
         indexes = {
                 @Index(name = "idx_registro_porteria_empleado", columnList = "empleado_id"),
                 @Index(name = "idx_registro_porteria_estado", columnList = "estado"),
+                @Index(name = "idx_registro_porteria_tipo_movimiento", columnList = "tipo_movimiento"),
                 @Index(name = "idx_registro_porteria_fecha_salida", columnList = "fecha_hora_salida"),
                 @Index(name = "idx_registro_porteria_salida_vehicular", columnList = "salida_vehicular_id")
         },
@@ -39,6 +41,11 @@ public class RegistroPorteriaEntity extends BaseEntity {
 
     @Column(name = "numero", nullable = false, unique = true, length = 30)
     private String numero;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_movimiento", nullable = false, length = 20)
+    private TipoMovimientoPorteria tipoMovimiento = TipoMovimientoPorteria.SALIDA;
 
     @Column(name = "empleado_id")
     private UUID empleadoId;

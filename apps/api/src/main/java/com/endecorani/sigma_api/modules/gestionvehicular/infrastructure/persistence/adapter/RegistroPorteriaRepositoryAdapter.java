@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persist
 
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoMovimientoPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.RegistroPorteriaRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.RegistroPorteriaActivoEntity;
@@ -77,13 +78,14 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
             UUID areaId,
             UUID createdById,
             boolean unirPorOr,
+            TipoMovimientoPorteria tipoMovimiento,
             EstadoRegistroPorteria estado,
             Instant fechaDesde,
             Instant fechaHasta,
             Pageable pageable
     ) {
         Specification<RegistroPorteriaEntity> spec = buildSpec(
-                search, empleadoId, activoId, areaId, createdById, unirPorOr, null, estado, fechaDesde, fechaHasta
+                search, empleadoId, activoId, areaId, createdById, unirPorOr, null, tipoMovimiento, estado, fechaDesde, fechaHasta
         );
         return springRepository.findAll(spec, pageable).map(mapper::toDomain);
     }
@@ -102,7 +104,7 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
             Instant fechaHasta
     ) {
         Specification<RegistroPorteriaEntity> spec = buildSpec(
-                search, empleadoId, activoId, areaId, createdById, unirPorOr, esExterno, estado, fechaDesde, fechaHasta
+                search, empleadoId, activoId, areaId, createdById, unirPorOr, esExterno, null, estado, fechaDesde, fechaHasta
         );
         return springRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "fechaHoraSalida"))
                 .stream()
@@ -118,6 +120,7 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
             UUID createdById,
             boolean unirPorOr,
             Boolean esExterno,
+            TipoMovimientoPorteria tipoMovimiento,
             EstadoRegistroPorteria estado,
             Instant fechaDesde,
             Instant fechaHasta
@@ -173,6 +176,9 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
             }
             if (esExterno != null) {
                 predicates.add(cb.equal(root.get("esExterno"), esExterno));
+            }
+            if (tipoMovimiento != null) {
+                predicates.add(cb.equal(root.get("tipoMovimiento"), tipoMovimiento));
             }
             if (areaId != null || createdById != null) {
                 predicates.add(alcancePredicate(root, query, cb, areaId, createdById, unirPorOr));

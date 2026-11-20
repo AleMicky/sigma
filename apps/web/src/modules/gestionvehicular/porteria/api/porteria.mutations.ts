@@ -24,7 +24,9 @@ export function useRegistrarSalidaPorteriaMutation() {
     onSuccess: (registro) => {
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.afuera() })
-      toast.success(`Salida ${registro.numero} registrada correctamente`)
+      const label =
+        registro.tipoMovimiento === "ENTRADA" ? "Entrada" : "Salida"
+      toast.success(`${label} ${registro.numero} registrada correctamente`)
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -49,7 +51,9 @@ export function useRegistrarLlegadaPorteriaMutation() {
       void queryClient.invalidateQueries({
         queryKey: porteriaKeys.detail(registro.id),
       })
-      toast.success(`Llegada ${registro.numero} registrada correctamente`)
+      const label =
+        registro.tipoMovimiento === "ENTRADA" ? "Salida" : "Entrada"
+      toast.success(`${label} ${registro.numero} registrada correctamente`)
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))

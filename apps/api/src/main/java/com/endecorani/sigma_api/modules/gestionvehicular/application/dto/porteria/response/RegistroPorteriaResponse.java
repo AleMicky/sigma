@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response;
 
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoMovimientoPorteria;
 
 import java.time.Instant;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.UUID;
 public record RegistroPorteriaResponse(
         UUID id,
         String numero,
+        TipoMovimientoPorteria tipoMovimiento,
         Boolean esExterno,
         String personaExterna,
         String placaExterna,

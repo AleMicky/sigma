@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.mapper;
 
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoMovimientoPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteriaActivo;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.RegistroPorteriaActivoEntity;
@@ -37,6 +38,7 @@ public class RegistroPorteriaPersistenceMapper {
         return RegistroPorteria.builder()
                 .id(entity.getId())
                 .numero(entity.getNumero())
+                .tipoMovimiento(entity.getTipoMovimiento() != null ? entity.getTipoMovimiento() : TipoMovimientoPorteria.SALIDA)
                 .empleadoId(entity.getEmpleadoId())
                 .esExterno(entity.getEsExterno())
                 .personaExterna(entity.getPersonaExterna())
@@ -78,6 +80,7 @@ public class RegistroPorteriaPersistenceMapper {
         RegistroPorteriaEntity entity = RegistroPorteriaEntity.builder()
                 .id(domain.getId())
                 .numero(domain.getNumero())
+                .tipoMovimiento(domain.getTipoMovimiento() != null ? domain.getTipoMovimiento() : TipoMovimientoPorteria.SALIDA)
                 .empleadoId(domain.getEmpleadoId())
                 .esExterno(Boolean.TRUE.equals(domain.getEsExterno()))
                 .personaExterna(domain.getPersonaExterna())

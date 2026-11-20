@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.domain.repository;
 
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoMovimientoPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteria;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +38,7 @@ public interface RegistroPorteriaRepository {
             UUID areaId,
             UUID createdById,
             boolean unirPorOr,
+            TipoMovimientoPorteria tipoMovimiento,
             EstadoRegistroPorteria estado,
             Instant fechaDesde,
             Instant fechaHasta,
