@@ -340,7 +340,7 @@ export function ActivoAddDocumentModal({
               <DialogDescription className="text-[11px] text-muted-foreground truncate">
                 {isEditing
                   ? "Actualiza los datos o sustituye el archivo"
-                  : "Asocia pólizas, certificaciones o actas"}
+                  : "Asocia documentos, certificados, garantías o actas del activo"}
               </DialogDescription>
             </div>
             {activoCodigo && (
@@ -492,7 +492,7 @@ export function ActivoAddDocumentModal({
               <Input
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                placeholder="Ej. Póliza Seguro Todo Riesgo 2026"
+                placeholder="Ej. Certificado de garantía, factura o acta"
                 className="h-8 text-xs bg-background"
                 disabled={isPending}
                 required
@@ -502,13 +502,13 @@ export function ActivoAddDocumentModal({
             {/* N° Documento */}
             <div className="flex flex-col gap-1">
               <Label className="text-[11px] font-semibold flex items-center justify-between">
-                <span>N° Referencia / Póliza</span>
+                <span>N° de Documento / Referencia</span>
                 <span className="text-[9px] font-normal text-muted-foreground">Opcional</span>
               </Label>
               <Input
                 value={numeroDocumento}
                 onChange={(e) => setNumeroDocumento(e.target.value)}
-                placeholder="Ej. POL-9921-A"
+                placeholder="Ej. DOC-2026-001"
                 className="h-8 text-xs bg-background font-mono"
                 disabled={isPending}
               />
@@ -575,7 +575,7 @@ export function ActivoAddDocumentModal({
             <Textarea
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Detalles sobre cobertura, aseguradora o notas..."
+              placeholder="Observaciones o detalles relevantes del documento..."
               rows={1}
               className="text-xs resize-none min-h-[38px] bg-background py-1.5"
               disabled={isPending}

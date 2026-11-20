@@ -308,7 +308,7 @@ export function ActivoAccesorioFormModal({
                 className="h-9 text-xs"
               />
               <p className="text-[11px] text-muted-foreground">
-                Identificador de serie o placa propia del accesorio si aplica.
+                Identificador o número de serie propio del accesorio si aplica.
               </p>
             </div>
 

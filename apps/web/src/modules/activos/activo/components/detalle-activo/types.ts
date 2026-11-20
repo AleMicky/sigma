@@ -5,15 +5,3 @@ export type TabType =
   | "asignacion"
   | "historial"
   | "preventivo"
-
-export interface DocumentoItem {
-  id: string
-  titulo: string
-  codigoRef: string
-  tipo: string
-  fechaEmision: string
-  fechaVencimiento: string
-  estado: "vigente" | "por_vencer" | "vencido"
-  tamano: string
-  archivoUrl?: string
-}

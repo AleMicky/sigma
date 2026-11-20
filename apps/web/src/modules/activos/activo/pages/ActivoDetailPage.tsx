@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft } from "lucide-react"
@@ -14,6 +14,7 @@ import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.quer
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
+import { tipoDatoQueries } from "@/modules/parametros/tipo-dato/api/tipo-dato.queries"
 import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
@@ -85,6 +86,22 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
     enabled: Boolean(activoId),
   })
   const atributoValores = atributoValoresQuery.data?.content ?? []
+
+  const tiposDatoQuery = useQuery(
+    tipoDatoQueries.list({
+      page: 0,
+      size: 100,
+      sortBy: "nombre",
+      direction: "ASC",
+    }),
+  )
+  const tiposDatoById = useMemo(
+    () =>
+      new Map(
+        (tiposDatoQuery.data?.content ?? []).map((tipo) => [tipo.id, tipo]),
+      ),
+    [tiposDatoQuery.data?.content],
+  )
 
   const categoriaQuery = useQuery({
     ...categoriaQueries.detail(tipoActivo?.categoriaId ?? ""),
@@ -195,8 +212,6 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
         <ActivoDetailHeader
           activoId={activo.id}
           nombre={activo.nombre}
-          isEditing={isEditing}
-          onToggleEdit={handleToggleEdit}
           onPrint={handlePrint}
           queries={[
             activoQuery,
@@ -208,6 +223,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
             accesoriosQuery,
             atributosQuery,
             atributoValoresQuery,
+            tiposDatoQuery,
           ]}
         />
 
@@ -215,8 +231,6 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
         <ActivoDetailHero
           activo={activo}
           tipoActivo={tipoActivo}
-          atributos={atributos}
-          atributoValores={atributoValores}
           color={color}
           icon={Icon}
           isEditing={isEditing}
@@ -249,6 +263,12 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
             categoria={categoria}
             ubicacion={ubicacion}
             ubicaciones={ubicaciones}
+            atributos={atributos}
+            atributoValores={atributoValores}
+            tiposDatoById={tiposDatoById}
+            atributosLoading={
+              atributosQuery.isLoading || atributoValoresQuery.isLoading
+            }
             documentos={documentos}
             isEditing={isEditing}
             onToggleEdit={handleToggleEdit}
@@ -267,8 +287,9 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
         {activeTab === "accesorios" && (
           <ActivoAccesoriosTab
             activoId={activo.id}
+            activoCodigo={activo.codigo}
             activoNombre={activo.nombre}
-            tipoActivoId={activo.tipoActivoId}
+            tipoActivoId={activo.tipoActivo?.id ?? activo.tipoActivoId}
             onOpenAddAccesorio={handleOpenAddAccesorio}
             onEditAccesorio={handleEditAccesorio}
           />
@@ -286,6 +307,8 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
           <ActivoHistorialTab
             activo={activo}
             tipoActivo={tipoActivo}
+            documentos={documentos}
+            accesorios={accesorios}
           />
         )}
       </main>
@@ -298,6 +321,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
           if (!open) setEditingDocumento(null)
         }}
         activoId={activo.id}
+        activoCodigo={activo.codigo}
         itemToEdit={editingDocumento}
       />
 
@@ -305,6 +329,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
         open={isAddAccesorioOpen}
         onOpenChange={setIsAddAccesorioOpen}
         activoId={activo.id}
+        activoCodigo={activo.codigo}
         activoNombre={activo.nombre}
         categoriaId={activo.tipoActivo?.categoriaId ?? tipoActivo?.categoriaId}
         itemToEdit={editingAccesorio}
