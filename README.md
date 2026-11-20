@@ -70,7 +70,6 @@ sigma/
 │   │       └── reports/              Plantillas JasperReports (.jrxml) y recursos gráficos
 │   │
 │   └── web/              React 19 + Vite 8 + TanStack Router/Query/Table/Form + Tailwind 4 + shadcn/ui
-│       ├── nginx.conf                Configuración Nginx SPA (gzip, caché inmutable, cabeceras de seguridad)
 │       └── src/
 │           ├── app/                  Config, providers, stores (Zustand), router, query client
 │           ├── layouts/              Layout principal y navegación

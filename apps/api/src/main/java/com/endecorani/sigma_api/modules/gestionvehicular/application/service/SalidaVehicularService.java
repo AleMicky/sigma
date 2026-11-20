@@ -9,6 +9,7 @@ import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repos
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.salidavehicular.request.*;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.salidavehicular.response.*;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.vehiculo.response.VehiculoAtributoResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.BitacoraVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SalidaVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SalidaVehicularEvento;
@@ -542,9 +543,12 @@ public class SalidaVehicularService {
         String activoDescripcion = activo != null ? activo.getDescripcion() : null;
 
         Map<String, String> atributosVehiculo = obtenerAtributosVehiculo(salida.getActivoId());
-        String placa = atributosVehiculo.get("PLACA");
-        String marca = atributosVehiculo.get("MARCA");
-        String modelo = atributosVehiculo.get("MODELO");
+        List<VehiculoAtributoResponse> atributosDetallados =
+                obtenerAtributosDetalladosBatch(Set.of(salida.getActivoId()))
+                        .getOrDefault(salida.getActivoId(), List.of());
+        String placa = resolverValorAtributo(atributosVehiculo, atributosDetallados, "PLACA", "NRO_PLACA", "NUMERO_PLACA");
+        String marca = resolverValorAtributo(atributosVehiculo, atributosDetallados, "MARCA");
+        String modelo = resolverValorAtributo(atributosVehiculo, atributosDetallados, "MODELO");
 
         // Enriquecer empleado
         VEmpleadoEntity emp = vempleadoRepository.findById(salida.getEmpleadoId()).orElse(null);
@@ -563,9 +567,11 @@ public class SalidaVehicularService {
                 .activoId(salida.getActivoId())
                 .activoCodigo(activoCodigo)
                 .activoDescripcion(activoDescripcion)
+                .urlImagen(activo != null ? activo.getUrlImagen() : null)
                 .placa(placa)
                 .marca(marca)
                 .modelo(modelo)
+                .atributos(atributosDetallados)
                 .empleadoId(salida.getEmpleadoId())
                 .empleadoCodigo(empleadoCodigo)
                 .empleadoNombre(empleadoNombre)
@@ -597,6 +603,8 @@ public class SalidaVehicularService {
                 .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, e -> e));
 
         Map<UUID, Map<String, String>> atributosMap = obtenerAtributosVehiculosBatch(activoIds);
+        Map<UUID, List<VehiculoAtributoResponse>> atributosDetalladosMap =
+                obtenerAtributosDetalladosBatch(activoIds);
 
         List<SalidaVehicularEvento> todosEventos = eventoRepository
                 .findBySalidaVehicularIdIn(new ArrayList<>(salidaIds));
@@ -607,6 +615,8 @@ public class SalidaVehicularService {
             ActivoEntity activo = activoMap.get(salida.getActivoId());
             VEmpleadoEntity emp = empleadoMap.get(salida.getEmpleadoId());
             Map<String, String> attrs = atributosMap.getOrDefault(salida.getActivoId(), Collections.emptyMap());
+            List<VehiculoAtributoResponse> attrsDetallados =
+                    atributosDetalladosMap.getOrDefault(salida.getActivoId(), List.of());
 
             return SalidaVehicularResponse.builder()
                     .id(salida.getId())
@@ -614,9 +624,11 @@ public class SalidaVehicularService {
                     .activoId(salida.getActivoId())
                     .activoCodigo(activo != null ? activo.getCodigo() : null)
                     .activoDescripcion(activo != null ? activo.getDescripcion() : null)
-                    .placa(attrs.get("PLACA"))
-                    .marca(attrs.get("MARCA"))
-                    .modelo(attrs.get("MODELO"))
+                    .urlImagen(activo != null ? activo.getUrlImagen() : null)
+                    .placa(resolverValorAtributo(attrs, attrsDetallados, "PLACA", "NRO_PLACA", "NUMERO_PLACA"))
+                    .marca(resolverValorAtributo(attrs, attrsDetallados, "MARCA"))
+                    .modelo(resolverValorAtributo(attrs, attrsDetallados, "MODELO"))
+                    .atributos(attrsDetallados)
                     .empleadoId(salida.getEmpleadoId())
                     .empleadoCodigo(emp != null ? emp.getCodigo() : null)
                     .empleadoNombre(emp != null ? emp.getNombreCompleto() : null)
@@ -717,6 +729,85 @@ public class SalidaVehicularService {
             }
         }
         return result;
+    }
+
+    private Map<UUID, List<VehiculoAtributoResponse>> obtenerAtributosDetalladosBatch(Set<UUID> activoIds) {
+        if (activoIds == null || activoIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<ActivoAtributoValorEntity> valores = activoAtributoValorRepository
+                .findByActivoIdIn(new ArrayList<>(activoIds));
+        if (valores == null || valores.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Set<UUID> attrIds = valores.stream()
+                .map(ActivoAtributoValorEntity::getActivoAtributoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (attrIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, ActivoAtributoEntity> attrMap = activoAtributoRepository.findAllById(attrIds).stream()
+                .collect(Collectors.toMap(ActivoAtributoEntity::getId, a -> a, (a, b) -> a));
+
+        Map<UUID, List<VehiculoAtributoResponse>> result = new HashMap<>();
+        for (ActivoAtributoValorEntity v : valores) {
+            ActivoAtributoEntity attr = attrMap.get(v.getActivoAtributoId());
+            if (attr == null || Boolean.FALSE.equals(attr.getVisible())) {
+                continue;
+            }
+            String valorLimpio = v.getValor() != null ? v.getValor().trim() : null;
+            if (valorLimpio == null || valorLimpio.isEmpty()) {
+                continue;
+            }
+            String etiqueta = (attr.getEtiqueta() != null && !attr.getEtiqueta().isBlank())
+                    ? attr.getEtiqueta().trim()
+                    : attr.getCodigo();
+            result.computeIfAbsent(v.getActivoId(), k -> new ArrayList<>())
+                    .add(new VehiculoAtributoResponse(
+                            attr.getId(),
+                            attr.getCodigo(),
+                            etiqueta,
+                            null,
+                            attr.getOrden() != null ? attr.getOrden() : 0,
+                            Boolean.TRUE,
+                            valorLimpio,
+                            valorLimpio));
+        }
+
+        result.values().forEach(list ->
+                list.sort(Comparator.comparingInt(a -> a.orden() != null ? a.orden() : 0)));
+        return result;
+    }
+
+    private String resolverValorAtributo(
+            Map<String, String> attrsByCode,
+            List<VehiculoAtributoResponse> attrsDetallados,
+            String... codigos) {
+        for (String cod : codigos) {
+            String val = attrsByCode.get(cod);
+            if (val != null && !val.isBlank()) {
+                return val;
+            }
+        }
+        if (attrsDetallados != null) {
+            for (VehiculoAtributoResponse attr : attrsDetallados) {
+                String codigo = attr.codigo() != null ? attr.codigo().trim().toUpperCase(Locale.ROOT) : "";
+                String etiqueta = attr.etiqueta() != null ? attr.etiqueta().trim().toUpperCase(Locale.ROOT) : "";
+                for (String cod : codigos) {
+                    if (cod.equals(codigo) || etiqueta.contains(cod)) {
+                        String val = attr.valorFormateado() != null ? attr.valorFormateado().trim()
+                                : (attr.valor() != null ? attr.valor().trim() : "");
+                        if (!val.isEmpty()) {
+                            return val;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private String resolverTipoEvento(
