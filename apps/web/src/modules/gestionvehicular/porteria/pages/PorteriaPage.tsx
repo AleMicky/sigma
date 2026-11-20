@@ -49,6 +49,7 @@ import { porteriaQueries } from "../api/porteria.queries"
 import type {
   EstadoRegistroPorteria,
   RegistroPorteria,
+  TipoMovimientoPorteria,
 } from "../api/porteria.types"
 import { RegistrarLlegadaPorteriaDialog } from "../components/RegistrarLlegadaPorteriaDialog"
 import { RegistrarSalidaPorteriaDialog } from "../components/RegistrarSalidaPorteriaDialog"
@@ -155,13 +156,50 @@ const ESTADO_CONFIG: Record<
   },
 }
 
-function EstadoBadge({ estado }: { estado: EstadoRegistroPorteria }) {
+function EstadoBadge({
+  estado,
+  tipoMovimiento,
+}: {
+  estado: EstadoRegistroPorteria
+  tipoMovimiento?: TipoMovimientoPorteria
+}) {
   const cfg = ESTADO_CONFIG[estado]
   const Icon = cfg.icon
+  const label =
+    estado === "AFUERA"
+      ? tipoMovimiento === "ENTRADA"
+        ? "Adentro"
+        : "Afuera"
+      : cfg.label
   return (
     <Badge variant="outline" className={cfg.badge}>
       <Icon className="mr-1 size-3" />
-      {cfg.label}
+      {label}
+    </Badge>
+  )
+}
+
+function TipoMovimientoBadge({
+  tipoMovimiento,
+}: {
+  tipoMovimiento?: TipoMovimientoPorteria
+}) {
+  const esEntrada = tipoMovimiento === "ENTRADA"
+  return (
+    <Badge
+      variant="outline"
+      className={
+        esEntrada
+          ? "border-emerald-500/40 bg-emerald-500/10 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300"
+          : "border-amber-500/40 bg-amber-500/10 text-[10px] font-semibold text-amber-700 dark:text-amber-300"
+      }
+    >
+      {esEntrada ? (
+        <LogIn className="mr-1 size-3" />
+      ) : (
+        <LogOut className="mr-1 size-3" />
+      )}
+      {esEntrada ? "Entrada" : "Salida"}
     </Badge>
   )
 }
@@ -314,6 +352,7 @@ function AfueraItem({
   onAnular: () => void
   anulando: boolean
 }) {
+  const esEntrada = registro.tipoMovimiento === "ENTRADA"
   const mins = minutesBetween(registro.fechaHoraSalida, now)
   const nivel =
     mins >= UMBRAL_CRITICO_MIN
@@ -329,13 +368,22 @@ function AfueraItem({
         "before:absolute before:inset-y-0 before:left-0 before:w-1",
         nivel === "critico" && "before:bg-red-500",
         nivel === "alerta" && "before:bg-amber-500",
-        nivel === "normal" && "before:bg-sky-500/60"
+        nivel === "normal" &&
+          (esEntrada ? "before:bg-emerald-500/70" : "before:bg-sky-500/60")
       )}
     >
       <div className="flex min-w-0 flex-1 gap-4">
         <InitialsAvatar
-          name={registro.empleadoNombre}
-          className={ESTADO_CONFIG.AFUERA.avatar}
+          name={
+            registro.esExterno
+              ? registro.personaExterna ?? registro.empleadoNombre
+              : registro.empleadoNombre
+          }
+          className={
+            esEntrada
+              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+              : ESTADO_CONFIG.AFUERA.avatar
+          }
         />
 
         <div className="min-w-0 flex-1 space-y-2">
@@ -348,6 +396,7 @@ function AfueraItem({
             <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
               {registro.numero}
             </span>
+            <TipoMovimientoBadge tipoMovimiento={registro.tipoMovimiento} />
             {registro.esExterno && (
               <Badge
                 variant="outline"
@@ -365,8 +414,12 @@ function AfueraItem({
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
-              <LogOut className="size-3.5" />
-              Salió a las{" "}
+              {esEntrada ? (
+                <LogIn className="size-3.5 text-emerald-600" />
+              ) : (
+                <LogOut className="size-3.5 text-amber-600" />
+              )}
+              {esEntrada ? "Ingresó a las " : "Salió a las "}
               <span className="font-medium text-foreground">
                 {formatTime(registro.fechaHoraSalida)}
               </span>
@@ -398,16 +451,19 @@ function AfueraItem({
             "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums",
             nivel === "critico" && "bg-red-500/10 text-red-600",
             nivel === "alerta" && "bg-amber-500/10 text-amber-600",
-            nivel === "normal" && "bg-sky-500/10 text-sky-600"
+            nivel === "normal" &&
+              (esEntrada
+                ? "bg-emerald-500/10 text-emerald-600"
+                : "bg-sky-500/10 text-sky-600")
           )}
-          title={`Salida: ${formatDateTime(registro.fechaHoraSalida)}`}
+          title={`${esEntrada ? "Entrada" : "Salida"}: ${formatDateTime(registro.fechaHoraSalida)}`}
         >
           {nivel === "normal" ? (
             <Timer className="size-3.5" />
           ) : (
             <AlertTriangle className="size-3.5" />
           )}
-          {formatDuration(mins)} afuera
+          {formatDuration(mins)} {esEntrada ? "adentro" : "afuera"}
         </div>
 
         <div className="flex gap-2">
@@ -422,8 +478,17 @@ function AfueraItem({
             Anular
           </Button>
           <Button size="sm" onClick={onLlegada}>
-            <LogIn className="mr-1.5 size-3.5" />
-            Registrar llegada
+            {esEntrada ? (
+              <>
+                <LogOut className="mr-1.5 size-3.5" />
+                Registrar salida
+              </>
+            ) : (
+              <>
+                <LogIn className="mr-1.5 size-3.5" />
+                Registrar entrada
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -432,6 +497,7 @@ function AfueraItem({
 }
 
 function HistorialItem({ registro }: { registro: RegistroPorteria }) {
+  const esEntrada = registro.tipoMovimiento === "ENTRADA"
   const cfg = ESTADO_CONFIG[registro.estado]
   const duracion = registro.fechaHoraLlegada
     ? formatDuration(
@@ -447,7 +513,11 @@ function HistorialItem({ registro }: { registro: RegistroPorteria }) {
       )}
     >
       <InitialsAvatar
-        name={registro.empleadoNombre}
+        name={
+          registro.esExterno
+            ? registro.personaExterna ?? registro.empleadoNombre
+            : registro.empleadoNombre
+        }
         className={cn("size-10", cfg.avatar)}
       />
 
@@ -466,6 +536,7 @@ function HistorialItem({ registro }: { registro: RegistroPorteria }) {
           <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
             {registro.numero}
           </span>
+          <TipoMovimientoBadge tipoMovimiento={registro.tipoMovimiento} />
           {registro.esExterno && (
             <Badge
               variant="outline"
@@ -479,13 +550,23 @@ function HistorialItem({ registro }: { registro: RegistroPorteria }) {
               Placa: {registro.placaExterna}
             </span>
           )}
-          <EstadoBadge estado={registro.estado} />
+          <EstadoBadge
+            estado={registro.estado}
+            tipoMovimiento={registro.tipoMovimiento}
+          />
         </div>
 
-        {/* Línea de tiempo salida → llegada */}
+        {/* Línea de tiempo movimiento inicial → cierre */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <div className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 px-2 py-1">
-            <LogOut className="size-3.5 text-amber-600" />
+            {esEntrada ? (
+              <LogIn className="size-3.5 text-emerald-600" />
+            ) : (
+              <LogOut className="size-3.5 text-amber-600" />
+            )}
+            <span className="text-muted-foreground">
+              {esEntrada ? "Ent." : "Sal."}
+            </span>
             <span className="font-medium">
               {formatTime(registro.fechaHoraSalida)}
             </span>
@@ -505,7 +586,14 @@ function HistorialItem({ registro }: { registro: RegistroPorteria }) {
 
           {registro.fechaHoraLlegada ? (
             <div className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 px-2 py-1">
-              <LogIn className="size-3.5 text-emerald-600" />
+              {esEntrada ? (
+                <LogOut className="size-3.5 text-amber-600" />
+              ) : (
+                <LogIn className="size-3.5 text-emerald-600" />
+              )}
+              <span className="text-muted-foreground">
+                {esEntrada ? "Sal." : "Ent."}
+              </span>
               <span className="font-medium">
                 {formatDateTime(registro.fechaHoraLlegada)}
               </span>
@@ -517,7 +605,11 @@ function HistorialItem({ registro }: { registro: RegistroPorteria }) {
             </div>
           ) : (
             <span className="italic text-muted-foreground">
-              {registro.estado === "ANULADO" ? "Sin llegada" : "Pendiente de retorno"}
+              {registro.estado === "ANULADO"
+                ? "Anulado"
+                : esEntrada
+                  ? "Pendiente de salida"
+                  : "Pendiente de entrada"}
             </span>
           )}
         </div>
@@ -532,7 +624,9 @@ function HistorialItem({ registro }: { registro: RegistroPorteria }) {
               <p className="flex items-start gap-1.5">
                 <MessageSquareText className="mt-0.5 size-3.5 shrink-0" />
                 <span className="line-clamp-2">
-                  <span className="font-medium">Salida:</span>{" "}
+                  <span className="font-medium">
+                    {esEntrada ? "Entrada:" : "Salida:"}
+                  </span>{" "}
                   {registro.observacionSalida}
                 </span>
               </p>
@@ -541,7 +635,9 @@ function HistorialItem({ registro }: { registro: RegistroPorteria }) {
               <p className="flex items-start gap-1.5">
                 <MessageSquareText className="mt-0.5 size-3.5 shrink-0" />
                 <span className="line-clamp-2">
-                  <span className="font-medium">Llegada:</span>{" "}
+                  <span className="font-medium">
+                    {esEntrada ? "Salida:" : "Entrada:"}
+                  </span>{" "}
                   {registro.observacionLlegada}
                 </span>
               </p>
@@ -563,14 +659,23 @@ export function PorteriaPage() {
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const [estadoFiltro, setEstadoFiltro] = useState<string>("ALL")
+  const [tipoMovimientoFiltro, setTipoMovimientoFiltro] =
+    useState<string>("ALL")
   const [fechaDesde, setFechaDesde] = useState("")
   const [fechaHasta, setFechaHasta] = useState("")
   const [page, setPage] = useState(0)
 
   const [salidaOpen, setSalidaOpen] = useState(false)
+  const [initialTipoMovimiento, setInitialTipoMovimiento] =
+    useState<TipoMovimientoPorteria>("SALIDA")
   const [llegadaTarget, setLlegadaTarget] = useState<RegistroPorteria | null>(
     null
   )
+
+  const openRegistroDialog = (tipo: TipoMovimientoPorteria) => {
+    setInitialTipoMovimiento(tipo)
+    setSalidaOpen(true)
+  }
 
   const afueraQuery = useQuery(porteriaQueries.afuera())
   const historialQuery = useQuery(
@@ -578,6 +683,10 @@ export function PorteriaPage() {
       page,
       size: DEFAULT_PAGE_SIZE,
       search: debouncedSearch || undefined,
+      tipoMovimiento:
+        tipoMovimientoFiltro !== "ALL"
+          ? (tipoMovimientoFiltro as TipoMovimientoPorteria)
+          : undefined,
       estado:
         estadoFiltro !== "ALL"
           ? (estadoFiltro as EstadoRegistroPorteria)
@@ -589,6 +698,7 @@ export function PorteriaPage() {
 
   const hasActiveHistorialFilters = Boolean(
     search.trim() ||
+      (tipoMovimientoFiltro && tipoMovimientoFiltro !== "ALL") ||
       (estadoFiltro && estadoFiltro !== "ALL") ||
       fechaDesde ||
       fechaHasta
@@ -596,6 +706,7 @@ export function PorteriaPage() {
 
   const handleClearHistorialFilters = () => {
     setSearch("")
+    setTipoMovimientoFiltro("ALL")
     setEstadoFiltro("ALL")
     setFechaDesde("")
     setFechaHasta("")
@@ -641,14 +752,15 @@ export function PorteriaPage() {
     )
   }, [afueraList, afueraSearch])
 
+  const salidasPendientes = afueraList.filter(
+    (r) => r.tipoMovimiento !== "ENTRADA"
+  ).length
+  const entradasPendientes = afueraList.filter(
+    (r) => r.tipoMovimiento === "ENTRADA"
+  ).length
   const prolongados = afueraList.filter(
     (r) => minutesBetween(r.fechaHoraSalida, now) >= UMBRAL_ALERTA_MIN
   ).length
-  const activosAfuera = afueraList.reduce(
-    (acc, r) =>
-      acc + (r.activos ?? []).reduce((s, a) => s + (a.cantidad ?? 1), 0),
-    0
-  )
 
   const historialPage = historialQuery.data
   const historialList = Array.isArray(historialPage?.content)
@@ -690,7 +802,7 @@ export function PorteriaPage() {
               Control de Portería
             </h1>
             <p className="text-sm text-muted-foreground">
-              Registro rápido de salida y llegada de funcionarios con activos.
+              Registro rápido de entradas y salidas de vehículos y conductores.
             </p>
           </div>
         </div>
@@ -720,7 +832,15 @@ export function PorteriaPage() {
             />
             Actualizar
           </Button>
-          <Button onClick={() => setSalidaOpen(true)}>
+          <Button
+            variant="outline"
+            className="border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+            onClick={() => openRegistroDialog("ENTRADA")}
+          >
+            <LogIn className="mr-1.5 size-4" />
+            Registrar entrada
+          </Button>
+          <Button onClick={() => openRegistroDialog("SALIDA")}>
             <LogOut className="mr-1.5 size-4" />
             Registrar salida
           </Button>
@@ -730,16 +850,16 @@ export function PorteriaPage() {
       {/* Indicadores */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
-          label="Actualmente afuera"
+          label="En curso (pendientes)"
           value={afueraList.length}
-          hint={`${activosAfuera} activo(s) / ítem(s) fuera`}
+          hint={`${salidasPendientes} salida(s) · ${entradasPendientes} entrada(s)`}
           icon={Clock}
           tone="amber"
         />
         <StatCard
-          label="Salidas prolongadas"
+          label="Registros prolongados"
           value={prolongados}
-          hint={`Más de ${UMBRAL_ALERTA_MIN / 60} horas afuera`}
+          hint={`Más de ${UMBRAL_ALERTA_MIN / 60} horas en curso`}
           icon={AlertTriangle}
           tone="red"
         />
@@ -759,7 +879,7 @@ export function PorteriaPage() {
         <TabsList>
           <TabsTrigger value="afuera">
             <UserRound className="mr-1.5 size-4" />
-            Afuera ahora
+            En curso
             <span className="ml-1.5 rounded-full bg-amber-500/15 px-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
               {afueraList.length}
             </span>
@@ -800,13 +920,26 @@ export function PorteriaPage() {
             <EmptyState
               bordered
               icon={<CheckCircle2 className="size-5.5 text-emerald-500" />}
-              title="No hay salidas pendientes de retorno"
-              description="Todos los funcionarios y activos han retornado o aún no se registraron salidas."
+              title="No hay movimientos pendientes"
+              description="Todos los vehículos y conductores completaron su ciclo o aún no hay registros en curso."
               action={
-                <Button size="sm" onClick={() => setSalidaOpen(true)}>
-                  <LogOut className="mr-1.5 size-4" />
-                  Registrar salida
-                </Button>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openRegistroDialog("ENTRADA")}
+                  >
+                    <LogIn className="mr-1.5 size-4" />
+                    Registrar entrada
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => openRegistroDialog("SALIDA")}
+                  >
+                    <LogOut className="mr-1.5 size-4" />
+                    Registrar salida
+                  </Button>
+                </div>
               }
             />
           ) : afueraFiltrada.length === 0 ? (
@@ -872,18 +1005,34 @@ export function PorteriaPage() {
                 )}
               </div>
               <Select
+                value={tipoMovimientoFiltro}
+                onValueChange={(val) => {
+                  setTipoMovimientoFiltro(val ?? "ALL")
+                  setPage(0)
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-44">
+                  <SelectValue placeholder="Movimiento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todos los tipos</SelectItem>
+                  <SelectItem value="SALIDA">Salida</SelectItem>
+                  <SelectItem value="ENTRADA">Entrada</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
                 value={estadoFiltro}
                 onValueChange={(val) => {
                   setEstadoFiltro(val ?? "ALL")
                   setPage(0)
                 }}
               >
-                <SelectTrigger className="w-full sm:w-48">
+                <SelectTrigger className="w-full sm:w-44">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Todos los estados</SelectItem>
-                  <SelectItem value="AFUERA">Afuera</SelectItem>
+                  <SelectItem value="AFUERA">En curso</SelectItem>
                   <SelectItem value="COMPLETADO">Completado</SelectItem>
                   <SelectItem value="ANULADO">Anulado</SelectItem>
                 </SelectContent>
@@ -1011,6 +1160,7 @@ export function PorteriaPage() {
       <RegistrarSalidaPorteriaDialog
         open={salidaOpen}
         onOpenChange={setSalidaOpen}
+        initialTipoMovimiento={initialTipoMovimiento}
       />
 
       <RegistrarLlegadaPorteriaDialog

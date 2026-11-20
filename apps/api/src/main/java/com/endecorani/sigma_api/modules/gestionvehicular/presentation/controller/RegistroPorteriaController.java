@@ -8,6 +8,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteri
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.ReporteBitacoraPorteriaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.service.RegistroPorteriaService;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoMovimientoPorteria;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.pagination.SearchPageRequestDto;
@@ -48,25 +49,31 @@ public class RegistroPorteriaController {
     private final RegistroPorteriaService service;
 
     @PostMapping("/salidas")
-    @Operation(summary = "Registrar salida en portería con empleado, hora y lista de activos")
+    @Operation(summary = "Registrar movimiento inicial (salida o entrada) en portería con conductor, hora y vehículo")
     public ResponseEntity<ApiResponse<RegistroPorteriaResponse>> registrarSalida(
             @Valid @RequestBody RegistrarSalidaPorteriaRequest request
     ) {
         RegistroPorteriaResponse response = service.registrarSalida(request);
+        String msg = response.tipoMovimiento() == TipoMovimientoPorteria.ENTRADA
+                ? "Entrada en portería registrada correctamente"
+                : "Salida en portería registrada correctamente";
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Salida en portería registrada correctamente", response));
+                .body(ApiResponse.success(msg, response));
     }
 
     @PostMapping("/{id}/llegada")
-    @Operation(summary = "Registrar llegada en portería y verificar retorno de activos")
+    @Operation(summary = "Completar un registro pendiente de portería (entrada si inició con salida, o salida si inició con entrada)")
     public ResponseEntity<ApiResponse<RegistroPorteriaResponse>> registrarLlegada(
             @PathVariable UUID id,
             @Valid @RequestBody(required = false) RegistrarLlegadaPorteriaRequest request
     ) {
         RegistroPorteriaResponse response = service.registrarLlegada(id, request);
+        String msg = response.tipoMovimiento() == TipoMovimientoPorteria.ENTRADA
+                ? "Salida en portería registrada correctamente"
+                : "Entrada en portería registrada correctamente";
         return ResponseEntity.ok(
-                ApiResponse.success("Llegada en portería registrada correctamente", response)
+                ApiResponse.success(msg, response)
         );
     }
 
@@ -199,6 +206,7 @@ public class RegistroPorteriaController {
             @RequestParam(required = false) UUID activoId,
             @RequestParam(required = false) UUID areaId,
             @RequestParam(required = false) UUID createdById,
+            @RequestParam(required = false) TipoMovimientoPorteria tipoMovimiento,
             @RequestParam(required = false) EstadoRegistroPorteria estado,
             @RequestParam(required = false) String fechaDesde,
             @RequestParam(required = false) String fechaHasta,
@@ -217,7 +225,7 @@ public class RegistroPorteriaController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(service.listar(
-                        searchTerm, empleadoId, activoId, areaId, createdById, estado, parsedFechaDesde, parsedFechaHasta, effectivePageRequest
+                        searchTerm, empleadoId, activoId, areaId, createdById, tipoMovimiento, estado, parsedFechaDesde, parsedFechaHasta, effectivePageRequest
                 ))
         );
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import {
   AlertTriangle,
   CheckCheck,
@@ -73,14 +73,16 @@ function getInitials(name?: string | null): string {
 function RetornoToggle({
   value,
   onChange,
+  esEntradaInicial = false,
 }: {
   value: boolean
   onChange: (retornado: boolean) => void
+  esEntradaInicial?: boolean
 }) {
   return (
     <div
       role="radiogroup"
-      aria-label="Estado de retorno"
+      aria-label={esEntradaInicial ? "Estado de salida" : "Estado de retorno"}
       className="inline-flex shrink-0 rounded-lg border bg-muted/40 p-0.5"
     >
       <button
@@ -96,7 +98,7 @@ function RetornoToggle({
         )}
       >
         <CheckCircle2 className="size-3.5" />
-        Retornó
+        {esEntradaInicial ? "Salió" : "Retornó"}
       </button>
       <button
         type="button"
@@ -111,7 +113,7 @@ function RetornoToggle({
         )}
       >
         <XCircle className="size-3.5" />
-        No retornó
+        {esEntradaInicial ? "Se quedó" : "No retornó"}
       </button>
     </div>
   )
@@ -139,7 +141,10 @@ export function RegistrarLlegadaPorteriaDialog({
   const [items, setItems] = useState<ItemLlegadaState[]>([])
   const [formError, setFormError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const openKey = open && registro ? registro.id : null
+  const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null)
+  if (prevOpenKey !== openKey) {
+    setPrevOpenKey(openKey)
     if (open && registro) {
       setFechaHoraLlegada(getLocalDateTimeInputValue())
       setObservacionLlegada("")
@@ -158,7 +163,7 @@ export function RegistrarLlegadaPorteriaDialog({
         }))
       )
     }
-  }, [open, registro])
+  }
 
   const duracionMin = useMemo(() => {
     if (!registro || !fechaHoraLlegada) return null
@@ -169,6 +174,8 @@ export function RegistrarLlegadaPorteriaDialog({
   }, [registro, fechaHoraLlegada])
 
   if (!registro) return null
+
+  const esEntradaInicial = registro.tipoMovimiento === "ENTRADA"
 
   const updateItem = (itemId: string, patch: Partial<ItemLlegadaState>) => {
     setItems((prev) =>
@@ -189,7 +196,11 @@ export function RegistrarLlegadaPorteriaDialog({
     setFormError(null)
 
     if (fechaInvalida) {
-      setFormError("La hora de llegada no puede ser anterior a la de salida.")
+      setFormError(
+        esEntradaInicial
+          ? "La hora de salida no puede ser anterior a la de entrada."
+          : "La hora de entrada no puede ser anterior a la de salida."
+      )
       return
     }
     const sinMotivo = items.find(
@@ -197,7 +208,9 @@ export function RegistrarLlegadaPorteriaDialog({
     )
     if (sinMotivo) {
       setFormError(
-        `Indique el motivo por el que "${sinMotivo.nombre}" no retornó.`
+        esEntradaInicial
+          ? `Indique el motivo por el que "${sinMotivo.nombre}" se quedó.`
+          : `Indique el motivo por el que "${sinMotivo.nombre}" no retornó.`
       )
       updateItem(sinMotivo.itemId, { mostrarObservacion: true })
       return
@@ -221,14 +234,20 @@ export function RegistrarLlegadaPorteriaDialog({
     onOpenChange(false)
   }
 
-  const funcionario = registro.empleadoNombre ?? registro.empleadoId
+  const conductor = registro.esExterno
+    ? registro.personaExterna ?? registro.empleadoNombre ?? "Externo"
+    : registro.empleadoNombre ?? registro.empleadoId
 
   return (
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Registrar llegada"
-      description={`Verifique el retorno del funcionario y de los activos del registro ${registro.numero}.`}
+      title={esEntradaInicial ? "Registrar salida" : "Registrar entrada"}
+      description={
+        esEntradaInicial
+          ? `Complete la salida del conductor y verifique el vehículo del registro ${registro.numero}.`
+          : `Complete la entrada del conductor y verifique el retorno del vehículo del registro ${registro.numero}.`
+      }
       formError={formError}
       onSubmit={handleSubmit}
       size="md"
@@ -237,9 +256,13 @@ export function RegistrarLlegadaPorteriaDialog({
           canSubmit={Boolean(fechaHoraLlegada) && !fechaInvalida}
           isSubmitting={mutation.isPending}
           label={
-            pendientes > 0
-              ? `Confirmar llegada · ${pendientes} sin retornar`
-              : "Confirmar llegada"
+            esEntradaInicial
+              ? pendientes > 0
+                ? `Confirmar salida · ${pendientes} sin salir`
+                : "Confirmar salida"
+              : pendientes > 0
+                ? `Confirmar entrada · ${pendientes} sin retornar`
+                : "Confirmar entrada"
           }
           submittingLabel="Confirmando…"
         />
@@ -249,12 +272,21 @@ export function RegistrarLlegadaPorteriaDialog({
         {/* Resumen del registro */}
         <div className="rounded-xl border bg-muted/30 p-4">
           <div className="flex items-center gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-sm font-semibold text-amber-700 dark:text-amber-400">
-              {getInitials(registro.empleadoNombre)}
+            <div
+              className={cn(
+                "flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                esEntradaInicial
+                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                  : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+              )}
+            >
+              {getInitials(conductor)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">Funcionario</p>
-              <p className="truncate font-semibold">{funcionario}</p>
+              <p className="text-xs text-muted-foreground">
+                {registro.esExterno ? "Persona externa" : "Conductor"}
+              </p>
+              <p className="truncate font-semibold">{conductor}</p>
             </div>
             <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground ring-1 ring-border">
               {registro.numero}
@@ -263,8 +295,12 @@ export function RegistrarLlegadaPorteriaDialog({
 
           <div className="mt-3 grid grid-cols-1 gap-2 border-t pt-3 text-xs sm:grid-cols-2">
             <div className="flex items-center gap-1.5 text-muted-foreground">
-              <LogOut className="size-3.5 text-amber-600" />
-              Salida:
+              {esEntradaInicial ? (
+                <LogIn className="size-3.5 text-emerald-600" />
+              ) : (
+                <LogOut className="size-3.5 text-amber-600" />
+              )}
+              {esEntradaInicial ? "Entrada:" : "Salida:"}
               <span className="font-medium text-foreground">
                 {formatDateTime(registro.fechaHoraSalida)}
               </span>
@@ -284,11 +320,11 @@ export function RegistrarLlegadaPorteriaDialog({
           </div>
         </div>
 
-        {/* Hora de llegada */}
+        {/* Hora de cierre (entrada o salida) */}
         <Field>
           <RequiredFieldLabel>
             <Clock className="size-3.5" />
-            Hora de llegada
+            {esEntradaInicial ? "Hora de salida" : "Hora de entrada"}
           </RequiredFieldLabel>
           <div className="flex gap-2">
             <Input
@@ -318,12 +354,14 @@ export function RegistrarLlegadaPorteriaDialog({
               {fechaInvalida ? (
                 <>
                   <AlertTriangle className="size-3.5" />
-                  La llegada es anterior a la salida.
+                  {esEntradaInicial
+                    ? "La salida es anterior a la entrada."
+                    : "La entrada es anterior a la salida."}
                 </>
               ) : (
                 <>
                   <Timer className="size-3.5" />
-                  Tiempo fuera:{" "}
+                  {esEntradaInicial ? "Tiempo adentro:" : "Tiempo afuera:"}{" "}
                   <span className="font-medium text-foreground">
                     {formatDuration(duracionMin)}
                   </span>
@@ -333,12 +371,12 @@ export function RegistrarLlegadaPorteriaDialog({
           )}
         </Field>
 
-        {/* Verificación de activos */}
+        {/* Verificación de vehículos / activos */}
         <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <FieldLabel className="flex items-center gap-1.5">
               <Package className="size-3.5" />
-              Verificación de activos
+              Verificación de vehículo
             </FieldLabel>
             {items.length > 1 && (
               <div className="flex gap-1">
@@ -350,7 +388,7 @@ export function RegistrarLlegadaPorteriaDialog({
                   onClick={() => marcarTodos(true)}
                 >
                   <CheckCheck className="mr-1 size-3.5" />
-                  Todos retornaron
+                  {esEntradaInicial ? "Todos salieron" : "Todos retornaron"}
                 </Button>
               </div>
             )}
@@ -358,7 +396,7 @@ export function RegistrarLlegadaPorteriaDialog({
 
           {items.length === 0 ? (
             <p className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
-              Este registro no tiene activos asociados.
+              Este registro no tiene vehículos asociados.
             </p>
           ) : (
             <>
@@ -368,11 +406,13 @@ export function RegistrarLlegadaPorteriaDialog({
                     <span className="font-semibold text-foreground">
                       {retornados}
                     </span>{" "}
-                    de {items.length} retornan
+                    de {items.length}{" "}
+                    {esEntradaInicial ? "salen" : "retornan"}
                   </span>
                   {pendientes > 0 && (
                     <span className="font-medium text-destructive">
-                      {pendientes} sin retornar
+                      {pendientes}{" "}
+                      {esEntradaInicial ? "sin salir" : "sin retornar"}
                     </span>
                   )}
                 </div>
@@ -424,8 +464,8 @@ export function RegistrarLlegadaPorteriaDialog({
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
                               {item.esActivo
-                                ? item.codigo ?? "Activo catalogado"
-                                : "Ítem libre"}
+                                ? item.codigo ?? "Vehículo catalogado"
+                                : "Vehículo externo"}
                               {item.observacionSalida &&
                                 ` · ${item.observacionSalida}`}
                             </p>
@@ -433,6 +473,7 @@ export function RegistrarLlegadaPorteriaDialog({
                         </div>
                         <RetornoToggle
                           value={item.retornado}
+                          esEntradaInicial={esEntradaInicial}
                           onChange={(retornado) =>
                             updateItem(item.itemId, { retornado })
                           }
@@ -444,7 +485,9 @@ export function RegistrarLlegadaPorteriaDialog({
                           placeholder={
                             item.retornado
                               ? "Observación (estado, daños, etc.)"
-                              : "Motivo por el que no retornó *"
+                              : esEntradaInicial
+                                ? "Motivo por el que se quedó *"
+                                : "Motivo por el que no retornó *"
                           }
                           value={item.observacionLlegada}
                           aria-invalid={
@@ -482,9 +525,9 @@ export function RegistrarLlegadaPorteriaDialog({
                 <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                   <p>
-                    {pendientes === 1
-                      ? "1 activo quedará registrado como no retornado."
-                      : `${pendientes} activos quedarán registrados como no retornados.`}{" "}
+                    {esEntradaInicial
+                      ? `${pendientes} vehículo(s) quedará(n) registrado(s) como no salido(s).`
+                      : `${pendientes} vehículo(s) quedará(n) registrado(s) como no retornado(s).`}{" "}
                     Indique el motivo en cada uno.
                   </p>
                 </div>
@@ -496,12 +539,22 @@ export function RegistrarLlegadaPorteriaDialog({
         {/* Observación general */}
         <Field>
           <FieldLabel className="flex items-center gap-1.5">
-            <LogIn className="size-3.5" />
-            Observación general de llegada
+            {esEntradaInicial ? (
+              <LogOut className="size-3.5" />
+            ) : (
+              <LogIn className="size-3.5" />
+            )}
+            {esEntradaInicial
+              ? "Observación general de salida"
+              : "Observación general de entrada"}
           </FieldLabel>
           <Textarea
             rows={2}
-            placeholder="Novedades al retorno..."
+            placeholder={
+              esEntradaInicial
+                ? "Novedades al salir..."
+                : "Novedades al ingresar..."
+            }
             value={observacionLlegada}
             onChange={(e) => setObservacionLlegada(e.target.value)}
           />

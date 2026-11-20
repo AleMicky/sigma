@@ -5,6 +5,8 @@ import {
   Car,
   Clock,
   Loader2,
+  LogIn,
+  LogOut,
   MapPin,
   Maximize2,
   Minimize2,
@@ -46,6 +48,7 @@ import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { cn } from "@/shared/lib/utils"
 
 import { useRegistrarSalidaPorteriaMutation } from "../api/porteria.mutations"
+import type { TipoMovimientoPorteria } from "../api/porteria.types"
 
 type TipoRegistro = "interno" | "externo"
 
@@ -456,14 +459,18 @@ function UbicacionSelector({
 interface RegistrarSalidaPorteriaDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  initialTipoMovimiento?: TipoMovimientoPorteria
 }
 
 export function RegistrarSalidaPorteriaDialog({
   open,
   onOpenChange,
+  initialTipoMovimiento = "SALIDA",
 }: RegistrarSalidaPorteriaDialogProps) {
   const mutation = useRegistrarSalidaPorteriaMutation()
 
+  const [tipoMovimiento, setTipoMovimiento] =
+    useState<TipoMovimientoPorteria>(initialTipoMovimiento)
   const [tipoRegistro, setTipoRegistro] = useState<TipoRegistro>("interno")
 
   // Interno
@@ -492,6 +499,7 @@ export function RegistrarSalidaPorteriaDialog({
   if (prevOpen !== open) {
     setPrevOpen(open)
     if (open) {
+      setTipoMovimiento(initialTipoMovimiento)
       setTipoRegistro("interno")
       setConductorId("")
       setVehiculoSeleccionado(null)
@@ -507,6 +515,8 @@ export function RegistrarSalidaPorteriaDialog({
     }
   }
 
+  const esEntrada = tipoMovimiento === "ENTRADA"
+
   const esInternoValido = Boolean(conductorId) && Boolean(vehiculoSeleccionado)
 
   const esExternoValido =
@@ -519,7 +529,11 @@ export function RegistrarSalidaPorteriaDialog({
 
     if (tipoRegistro === "interno") {
       if (!conductorId) {
-        setFormError("Debe seleccionar el conductor que sale.")
+        setFormError(
+          esEntrada
+            ? "Debe seleccionar el conductor que ingresa."
+            : "Debe seleccionar el conductor que sale."
+        )
         return
       }
       if (!vehiculoSeleccionado) {
@@ -528,6 +542,7 @@ export function RegistrarSalidaPorteriaDialog({
       }
 
       await mutation.mutateAsync({
+        tipoMovimiento,
         esExterno: false,
         empleadoId: conductorId,
         origenUbicacionId: origenUbicacion?.id,
@@ -555,6 +570,7 @@ export function RegistrarSalidaPorteriaDialog({
       }
 
       await mutation.mutateAsync({
+        tipoMovimiento,
         esExterno: true,
         personaExterna: personaExterna.trim(),
         placaExterna: placaExterna.trim().toUpperCase(),
@@ -581,8 +597,16 @@ export function RegistrarSalidaPorteriaDialog({
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Registrar salida en portería"
-      description="Control de salida de conductores internos y visitas externas."
+      title={
+        esEntrada
+          ? "Registrar entrada en portería"
+          : "Registrar salida en portería"
+      }
+      description={
+        esEntrada
+          ? "Registra el ingreso; luego deberá completarse con su salida."
+          : "Registra la salida; luego deberá completarse con su entrada."
+      }
       formError={formError}
       onSubmit={handleSubmit}
       size="lg"
@@ -591,72 +615,132 @@ export function RegistrarSalidaPorteriaDialog({
           canSubmit={canSubmit}
           isSubmitting={mutation.isPending}
           label={
-            tipoRegistro === "interno"
-              ? "Registrar salida (Interno)"
-              : "Registrar salida (Externo)"
+            esEntrada
+              ? tipoRegistro === "interno"
+                ? "Registrar entrada (Interno)"
+                : "Registrar entrada (Externo)"
+              : tipoRegistro === "interno"
+                ? "Registrar salida (Interno)"
+                : "Registrar salida (Externo)"
           }
           submittingLabel="Registrando…"
         />
       }
     >
       <div className="space-y-6">
-        {/* Selector de Tipo de Registro: Interno vs Externo */}
-        <div className="flex flex-col gap-2 rounded-xl border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Tipo de pase / salida
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {tipoRegistro === "interno"
-                ? "Conductor interno"
-                : "Persona o visita externa"}
-            </p>
+        {/* Selectores de Tipo de Movimiento (Salida / Entrada) y Tipo de Pase (Interno / Externo) */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col justify-between gap-2 rounded-xl border bg-muted/30 p-3">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Tipo de movimiento
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {esEntrada
+                  ? "Ingresa ahora (pendiente de salida)"
+                  : "Sale ahora (pendiente de entrada)"}
+              </p>
+            </div>
+            <div
+              role="radiogroup"
+              aria-label="Tipo de movimiento"
+              className="grid grid-cols-2 rounded-lg border bg-background p-1 shadow-sm"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={!esEntrada}
+                onClick={() => setTipoMovimiento("SALIDA")}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
+                  !esEntrada
+                    ? "bg-amber-600 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <LogOut className="size-3.5" />
+                Salida
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={esEntrada}
+                onClick={() => setTipoMovimiento("ENTRADA")}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
+                  esEntrada
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <LogIn className="size-3.5" />
+                Entrada
+              </button>
+            </div>
           </div>
-          <div
-            role="radiogroup"
-            className="inline-flex rounded-lg border bg-background p-1 shadow-sm"
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={tipoRegistro === "interno"}
-              onClick={() => setTipoRegistro("interno")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
-                tipoRegistro === "interno"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
+
+          <div className="flex flex-col justify-between gap-2 rounded-xl border bg-muted/30 p-3">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Tipo de pase
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {tipoRegistro === "interno"
+                  ? "Conductor interno"
+                  : "Persona o visita externa"}
+              </p>
+            </div>
+            <div
+              role="radiogroup"
+              aria-label="Tipo de pase"
+              className="grid grid-cols-2 rounded-lg border bg-background p-1 shadow-sm"
             >
-              <UserRound className="size-3.5" />
-              Interno
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={tipoRegistro === "externo"}
-              onClick={() => setTipoRegistro("externo")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
-                tipoRegistro === "externo"
-                  ? "bg-purple-600 text-white shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Building2 className="size-3.5" />
-              Externo
-            </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={tipoRegistro === "interno"}
+                onClick={() => setTipoRegistro("interno")}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
+                  tipoRegistro === "interno"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <UserRound className="size-3.5" />
+                Interno
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={tipoRegistro === "externo"}
+                onClick={() => setTipoRegistro("externo")}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
+                  tipoRegistro === "externo"
+                    ? "bg-purple-600 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Building2 className="size-3.5" />
+                Externo
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Paso 1: ¿Quién sale? */}
+        {/* Paso 1: ¿Quién sale / ingresa? */}
         <section className="space-y-3">
           <SectionTitle
             step={1}
             title={
               tipoRegistro === "interno"
-                ? "¿Quién sale? (Conductor)"
-                : "¿Quién sale? (Persona externa)"
+                ? esEntrada
+                  ? "¿Quién ingresa? (Conductor)"
+                  : "¿Quién sale? (Conductor)"
+                : esEntrada
+                  ? "¿Quién ingresa? (Persona externa)"
+                  : "¿Quién sale? (Persona externa)"
             }
             description={
               tipoRegistro === "interno"
@@ -698,7 +782,7 @@ export function RegistrarSalidaPorteriaDialog({
             <Field className="sm:col-span-2">
               <RequiredFieldLabel>
                 <Clock className="size-3.5" />
-                Hora de salida
+                {esEntrada ? "Hora de entrada" : "Hora de salida"}
               </RequiredFieldLabel>
               <div className="flex gap-2">
                 <Input
@@ -730,7 +814,9 @@ export function RegistrarSalidaPorteriaDialog({
             title={tipoRegistro === "interno" ? "Vehículo" : "Vehículo externo"}
             description={
               tipoRegistro === "interno"
-                ? "Seleccione el vehículo que sale."
+                ? esEntrada
+                  ? "Seleccione el vehículo que ingresa."
+                  : "Seleccione el vehículo que sale."
                 : "Ingrese la placa del vehículo externo."
             }
           />

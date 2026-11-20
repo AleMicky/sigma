@@ -1,6 +1,7 @@
 import type { PageParams } from "@/shared/types/api.types"
 
 export type EstadoRegistroPorteria = "AFUERA" | "COMPLETADO" | "ANULADO"
+export type TipoMovimientoPorteria = "SALIDA" | "ENTRADA"
 
 export interface RegistroPorteriaActivo {
   id: string
@@ -17,6 +18,7 @@ export interface RegistroPorteriaActivo {
 export interface RegistroPorteria {
   id: string
   numero: string
+  tipoMovimiento?: TipoMovimientoPorteria
   empleadoId: string | null
   empleadoNombre: string | null
   esExterno?: boolean
@@ -50,6 +52,7 @@ export interface RegistroPorteriaActivoSalidaRequest {
 }
 
 export interface RegistrarSalidaPorteriaRequest {
+  tipoMovimiento?: TipoMovimientoPorteria
   empleadoId?: string | null
   esExterno?: boolean
   personaExterna?: string | null
@@ -84,6 +87,7 @@ export interface PorteriaFiltros extends PageParams {
   empleadoId?: string
   activoId?: string
   areaId?: string
+  tipoMovimiento?: TipoMovimientoPorteria
   estado?: EstadoRegistroPorteria
   fechaDesde?: string
   fechaHasta?: string
@@ -92,6 +96,7 @@ export interface PorteriaFiltros extends PageParams {
 export interface BitacoraPorteriaItem {
   id: string
   numero: string
+  tipoMovimiento?: TipoMovimientoPorteria
   dia?: number | null
   diaSemana?: string | null
   fechaFormateada?: string | null

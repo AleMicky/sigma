@@ -12,6 +12,7 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteri
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.RegistroPorteriaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.ReporteBitacoraPorteriaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoMovimientoPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteria;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.RegistroPorteriaActivo;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.RegistroPorteriaRepository;
@@ -116,6 +117,7 @@ class RegistroPorteriaServiceTest {
         when(vempleadoRepository.findAllById(any())).thenReturn(List.of(emp, guardia));
 
         RegistrarSalidaPorteriaRequest request = new RegistrarSalidaPorteriaRequest(
+                null,
                 empleadoId,
                 false,
                 null,
@@ -136,6 +138,7 @@ class RegistroPorteriaServiceTest {
 
         assertNotNull(response.id());
         assertEquals("PRT-2026-0001", response.numero());
+        assertEquals(TipoMovimientoPorteria.SALIDA, response.tipoMovimiento());
         assertEquals(EstadoRegistroPorteria.AFUERA, response.estado());
         assertEquals("Juan Perez", response.empleadoNombre());
         assertEquals("Carlos Guardia", response.guardiaSalidaNombre());
@@ -150,6 +153,7 @@ class RegistroPorteriaServiceTest {
         when(vempleadoRepository.existsById(empleadoId)).thenReturn(true);
 
         RegistrarSalidaPorteriaRequest request = new RegistrarSalidaPorteriaRequest(
+                TipoMovimientoPorteria.SALIDA,
                 empleadoId,
                 false,
                 null,
@@ -261,6 +265,7 @@ class RegistroPorteriaServiceTest {
         when(vempleadoRepository.findAllById(any())).thenReturn(List.of(guardia));
 
         RegistrarSalidaPorteriaRequest request = new RegistrarSalidaPorteriaRequest(
+                TipoMovimientoPorteria.ENTRADA,
                 null,
                 true,
                 "Pedro Visitante",
@@ -277,12 +282,59 @@ class RegistroPorteriaServiceTest {
         RegistroPorteriaResponse response = service.registrarSalida(request);
 
         assertNotNull(response.id());
+        assertEquals(TipoMovimientoPorteria.ENTRADA, response.tipoMovimiento());
         assertTrue(response.esExterno());
         assertEquals("Pedro Visitante", response.personaExterna());
         assertEquals("9876-ABC", response.placaExterna());
         assertEquals("Pedro Visitante", response.empleadoNombre());
         assertEquals(1, response.activos().size());
         assertTrue(response.activos().get(0).descripcionItem().contains("9876-ABC"));
+    }
+
+    @Test
+    void registrarLlegada_cuandoMovimientoInicialEsEntrada_debeCompletarConSalidaYValidarFecha() {
+        UUID registroId = UUID.randomUUID();
+        Instant entrada = Instant.now().minus(1, ChronoUnit.HOURS);
+
+        RegistroPorteria existente = RegistroPorteria.builder()
+                .id(registroId)
+                .numero("PRT-2026-0099")
+                .tipoMovimiento(TipoMovimientoPorteria.ENTRADA)
+                .esExterno(true)
+                .personaExterna("Carlos Proveedor")
+                .placaExterna("1234-XYZ")
+                .fechaHoraSalida(entrada)
+                .estado(EstadoRegistroPorteria.AFUERA)
+                .activos(List.of())
+                .build();
+
+        when(repository.findById(registroId)).thenReturn(Optional.of(existente));
+
+        // Fecha anterior a la entrada debe lanzar error específico
+        RegistrarLlegadaPorteriaRequest reqInvalido = new RegistrarLlegadaPorteriaRequest(
+                entrada.minus(5, ChronoUnit.MINUTES),
+                null,
+                null
+        );
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.registrarLlegada(registroId, reqInvalido));
+        assertTrue(ex.getMessage().contains("salida no puede ser anterior"));
+
+        // Fecha posterior completa correctamente
+        when(securityUtils.getCurrentUserId()).thenReturn(Optional.empty());
+        when(repository.save(any(RegistroPorteria.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        RegistrarLlegadaPorteriaRequest reqValido = new RegistrarLlegadaPorteriaRequest(
+                Instant.now(),
+                "Salió sin novedades",
+                null
+        );
+        RegistroPorteriaResponse response = service.registrarLlegada(registroId, reqValido);
+
+        assertEquals(TipoMovimientoPorteria.ENTRADA, response.tipoMovimiento());
+        assertEquals(EstadoRegistroPorteria.COMPLETADO, response.estado());
+        assertNotNull(response.fechaHoraLlegada());
+        assertEquals("Salió sin novedades", response.observacionLlegada());
     }
 
     @Test

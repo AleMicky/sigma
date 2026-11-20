@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response;
 
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.TipoMovimientoPorteria;
 import lombok.Builder;
 
 import java.time.Instant;
@@ -14,6 +15,7 @@ import java.util.UUID;
 public record BitacoraPorteriaItemResponse(
         UUID id,
         String numero,
+        TipoMovimientoPorteria tipoMovimiento,
         Integer dia,
         String diaSemana,
         String fechaFormateada,
