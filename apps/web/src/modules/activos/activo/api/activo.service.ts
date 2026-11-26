@@ -5,6 +5,7 @@ import type { PageParams } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
 import { activoEndpoints } from "./activo.endpoints"
+import type { ActivoResumenFilters } from "./activo.keys"
 
 export type ActivoTipoActivoInfo = {
   id: string
@@ -69,11 +70,19 @@ export type ActivoListParams = PageParams & {
   activo?: boolean
 }
 
+/** Agregados calculados por el backend con los mismos filtros que el listado. */
 export type ActivoResumen = {
   total: number
   deBaja: number
   enMantenimiento: number
   operativos: number
+  operativo: number
+  reserva: number
+  enViaje: number
+  fueraServicio: number
+  disponibles: number
+  /** Porcentaje ya calculado por el servidor (no volver a multiplicar por 100). */
+  tasaDisponibilidad: number
 }
 
 export const EMPTY_ACTIVO_RESUMEN: ActivoResumen = {
@@ -81,6 +90,12 @@ export const EMPTY_ACTIVO_RESUMEN: ActivoResumen = {
   deBaja: 0,
   enMantenimiento: 0,
   operativos: 0,
+  operativo: 0,
+  reserva: 0,
+  enViaje: 0,
+  fueraServicio: 0,
+  disponibles: 0,
+  tasaDisponibilidad: 0,
 }
 
 const crud = createCrudService<Activo, ActivoPayload, ActivoListParams>(
@@ -94,12 +109,11 @@ export const updateActivo = crud.update
 export const deleteActivo = crud.remove
 
 export async function getActivoResumen(
-  filters?: Pick<
-    ActivoListParams,
-    "q" | "tipoActivoId" | "ubicacionId" | "activo"
-  >,
+  filters?: ActivoResumenFilters,
 ): Promise<ActivoResumen> {
-  return http.get<ActivoResumen>("/activos/resumen", { params: filters })
+  return http.get<ActivoResumen>(`${activoEndpoints.root}/resumen`, {
+    params: filters,
+  })
 }
 
 export function uploadActivoImagen(id: string, file: File) {

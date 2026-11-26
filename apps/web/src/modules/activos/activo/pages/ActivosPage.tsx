@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
+import { toast } from "sonner"
 
 import { appConfig } from "@/app/config"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
@@ -14,7 +15,11 @@ import {
 import { useCanManageActivos } from "@/modules/activos/lib/use-can-manage-activos"
 
 import { activoQueries } from "../api/activo.queries"
-import { EMPTY_ACTIVO_RESUMEN, type Activo } from "../api/activo.service"
+import {
+  EMPTY_ACTIVO_RESUMEN,
+  exportarActivosDisponibilidadExcel,
+  type Activo,
+} from "../api/activo.service"
 import { ActivoContentSection } from "../components/ActivoContentSection"
 import { ActivoFilterToolbar, type StatusFilter } from "../components/ActivoFilterToolbar"
 import { ActivoHeader } from "../components/ActivoHeader"
@@ -65,6 +70,7 @@ export function ActivosPage() {
   const [tipoActivoId, setTipoActivoId] = useState<string>(ALL_TIPOS)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [viewMode, setViewMode] = useState<"list" | "grid">("list")
+  const [isExportingExcel, setIsExportingExcel] = useState(false)
 
   const search = usePaginatedSearch({ resetKey: `${tipoActivoId}-${statusFilter}` })
 
@@ -172,6 +178,29 @@ export function ActivosPage() {
     search.setPage(0)
   }
 
+  async function handleExportarExcel() {
+    if (isExportingExcel) return
+
+    try {
+      setIsExportingExcel(true)
+      await exportarActivosDisponibilidadExcel({
+        q: search.query?.trim() || undefined,
+        tipoActivoId:
+          tipoActivoId !== ALL_TIPOS ? tipoActivoId : undefined,
+        activo: getActivoFilterParam(statusFilter),
+      })
+      toast.success("Reporte de activos exportado a Excel correctamente.")
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Error al exportar el archivo Excel.",
+      )
+    } finally {
+      setIsExportingExcel(false)
+    }
+  }
+
   const hasActiveFilters = checkHasActiveFilters(
     search.search,
     tipoActivoId,
@@ -199,12 +228,19 @@ export function ActivosPage() {
         onTipoActivoChange={handleTipoActivoChange}
         statusFilter={statusFilter}
         onStatusFilterChange={handleStatusFilterChange}
+        statusCounts={{
+          all: kpiStats.total,
+          active: kpiStats.total - kpiStats.deBaja,
+          inactive: kpiStats.deBaja,
+        }}
         tipos={tipos}
         tiposById={tiposById}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={resetFilters}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        onExportarExcel={handleExportarExcel}
+        isExportingExcel={isExportingExcel}
       />
 
       {/* Main Content Area */}

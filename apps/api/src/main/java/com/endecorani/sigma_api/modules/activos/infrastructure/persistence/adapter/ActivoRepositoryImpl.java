@@ -110,8 +110,11 @@ public class ActivoRepositoryImpl
             String query,
             UUID tipoActivoId,
             UUID ubicacionId,
-            Boolean activo) {
-        return springRepository.summarize(query, tipoActivoId, ubicacionId, activo);
+            Boolean activo,
+            UUID estadoOperativoId,
+            UUID categoriaId) {
+        return springRepository.summarize(
+                query, tipoActivoId, ubicacionId, activo, estadoOperativoId, categoriaId);
     }
 
     @Override

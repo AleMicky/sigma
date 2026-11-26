@@ -71,21 +71,22 @@ public class DisponibilidadActivoExcelService {
             subtitleCell.setCellStyle(subtitleStyle);
             sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 10));
 
-            // Fila 2: Resumen ejecutivo
-            long total = activos.size();
-            long operativos = activos.stream().filter(a -> a.estadoOperativo() != null && "OPERATIVO".equalsIgnoreCase(a.estadoOperativo().codigo())).count();
-            long mantenimiento = activos.stream().filter(a -> a.estadoOperativo() != null && "MANTENIMIENTO".equalsIgnoreCase(a.estadoOperativo().codigo())).count();
-            long fueraServicio = activos.stream().filter(a -> a.estadoOperativo() != null && "FUERA_SERVICIO".equalsIgnoreCase(a.estadoOperativo().codigo())).count();
-            long reserva = activos.stream().filter(a -> a.estadoOperativo() != null && "RESERVA".equalsIgnoreCase(a.estadoOperativo().codigo())).count();
-            long enViaje = activos.stream().filter(a -> a.estadoOperativo() != null && "EN_VIAJE".equalsIgnoreCase(a.estadoOperativo().codigo())).count();
-            long deBaja = activos.stream().filter(a -> a.estadoOperativo() != null && "DE_BAJA".equalsIgnoreCase(a.estadoOperativo().codigo())).count();
-            double tasaDisponibilidad = total > 0 ? ((double) (operativos + reserva + enViaje) / total) * 100.0 : 0.0;
+            // Fila 2: Resumen ejecutivo (misma regla canónica que GET /activos/resumen)
+            ActivoEstadoClasificador.Conteo conteo = ActivoEstadoClasificador.Conteo.de(activos);
+            long total = conteo.total();
+            long operativos = conteo.operativo();
+            long mantenimiento = conteo.enMantenimiento();
+            long fueraServicio = conteo.fueraServicio();
+            long reserva = conteo.reserva();
+            long enViaje = conteo.enViaje();
+            long deBaja = conteo.deBaja();
+            double tasaDisponibilidad = conteo.tasaDisponibilidad();
 
             Row metaRow = sheet.createRow(rowIndex++);
             metaRow.setHeightInPoints(16);
             Cell metaCell = metaRow.createCell(0);
             metaCell.setCellValue(String.format("Total Activos: %d | Disponibles: %d (%.1f%%) | En Mantenimiento: %d | Fuera de Servicio: %d | De Baja: %d",
-                    total, (operativos + reserva + enViaje), tasaDisponibilidad, mantenimiento, fueraServicio, deBaja));
+                    total, conteo.disponibles(), tasaDisponibilidad, mantenimiento, fueraServicio, deBaja));
             metaCell.setCellStyle(metaStyle);
             sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 10));
 

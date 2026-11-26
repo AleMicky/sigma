@@ -84,10 +84,10 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
   const atributos = atributosQuery.data?.content ?? []
 
   const atributoValoresQuery = useQuery({
-    ...activoAtributoValorQueries.byActivo(activoId),
+    ...activoAtributoValorQueries.byActivoAll(activoId),
     enabled: Boolean(activoId),
   })
-  const atributoValores = atributoValoresQuery.data?.content ?? []
+  const atributoValores = atributoValoresQuery.data ?? []
 
   const tiposDatoQuery = useQuery(
     tipoDatoQueries.list({

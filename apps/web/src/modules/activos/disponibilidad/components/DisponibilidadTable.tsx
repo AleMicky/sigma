@@ -7,11 +7,16 @@ import {
   Eye,
   Inbox,
   MapPin,
-  Tag,
 } from "lucide-react"
 
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
 import { CambiarEstadoOperativoDialog } from "@/modules/activos/activo/components/CambiarEstadoOperativoDialog"
+import {
+  DEFAULT_TIPO_ACTIVO_COLOR,
+  isHexColor,
+  normalizeHexColor,
+} from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
+import { TipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
 import {
   OptionsCombobox,
   type OptionsComboboxOption,
@@ -134,6 +139,10 @@ export function DisponibilidadTable({
                   const itemIndex = currentPage * pageSize + index + 1
                   const estadoColor = activo.estadoOperativo?.color || "#6B7280"
                   const estadoNombre = activo.estadoOperativo?.nombre || "Sin Estado"
+                  const tipoColor =
+                    activo.tipoActivo?.color && isHexColor(activo.tipoActivo.color)
+                      ? normalizeHexColor(activo.tipoActivo.color)
+                      : DEFAULT_TIPO_ACTIVO_COLOR
 
                   return (
                     <TableRow
@@ -192,8 +201,27 @@ export function DisponibilidadTable({
                       {/* Tipo de Activo */}
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-foreground/85">
-                          <Tag className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <span className="truncate">{activo.tipoActivo?.nombre || "-"}</span>
+                          {activo.tipoActivo ? (
+                            <>
+                              <span
+                                className="flex size-5 shrink-0 items-center justify-center rounded"
+                                style={{
+                                  backgroundColor: `${tipoColor}1A`,
+                                  color: tipoColor,
+                                }}
+                              >
+                                <TipoActivoIcon
+                                  name={activo.tipoActivo.icono}
+                                  className="size-3"
+                                />
+                              </span>
+                              <span className="truncate">
+                                {activo.tipoActivo.nombre}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="truncate">-</span>
+                          )}
                         </div>
                       </TableCell>
 

@@ -74,15 +74,23 @@ public class ActivoController {
         }
 
         @GetMapping("/resumen")
-        @Operation(summary = "KPIs agregados de activos con los mismos filtros del listado (REQ-BIZ-006)")
+        @Operation(summary = "KPIs agregados de activos con los mismos filtros del listado (REQ-BIZ-006, REQ-BIZ-020)")
         public ResponseEntity<ApiResponse<ActivoResumenResponse>> resumen(
                         @RequestParam(required = false) String q,
                         @RequestParam(required = false) UUID tipoActivoId,
                         @RequestParam(required = false) UUID ubicacionId,
-                        @RequestParam(required = false) Boolean activo) {
+                        @RequestParam(required = false) Boolean activo,
+                        @RequestParam(required = false) UUID estadoOperativoId,
+                        @RequestParam(required = false) UUID categoriaId) {
                 return ResponseEntity.ok(
                                 ApiResponse.success(
-                                                activoService.resumen(q, tipoActivoId, ubicacionId, activo)));
+                                                activoService.resumen(
+                                                                q,
+                                                                tipoActivoId,
+                                                                ubicacionId,
+                                                                activo,
+                                                                estadoOperativoId,
+                                                                categoriaId)));
         }
 
         @GetMapping("/{id}")

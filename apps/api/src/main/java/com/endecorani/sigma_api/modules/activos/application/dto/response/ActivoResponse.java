@@ -99,9 +99,15 @@ public record ActivoResponse(
             UUID id,
             UUID categoriaId,
             String nombre,
-            String descripcion
+            String descripcion,
+            @Schema(description = "Color del tipo de activo (opcional)", nullable = true) String color,
+            @Schema(description = "Icono del tipo de activo (opcional)", nullable = true) String icono
     ) {
 
+        /** Constructor de compatibilidad para consumidores que sólo usan los cuatro campos originales. */
+        public TipoActivoInfo(UUID id, UUID categoriaId, String nombre, String descripcion) {
+            this(id, categoriaId, nombre, descripcion, null, null);
+        }
     }
 
     public record UbicacionInfo(

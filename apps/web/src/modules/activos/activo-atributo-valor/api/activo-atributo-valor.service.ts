@@ -36,6 +36,34 @@ const crud = createCrudService<
 >(activoAtributoValorEndpoints)
 
 export const listActivoAtributoValores = crud.list
+
+/**
+ * Recupera todos los valores del activo paginando de 100 en 100. El bulk de
+ * reemplazo debe recibir los valores ocultos y los que quedan después de la
+ * primera página; no basta con `listActivoAtributoValores`.
+ */
+export async function listAllActivoAtributoValores(
+  filters: ActivoAtributoValorListParams = {},
+): Promise<ActivoAtributoValor[]> {
+  const size = filters.size ?? 100
+  const valores: ActivoAtributoValor[] = []
+  let page = 0
+  let totalPages: number
+
+  do {
+    const response = await listActivoAtributoValores({
+      ...filters,
+      page,
+      size,
+    })
+    valores.push(...response.content)
+    totalPages = response.totalPages
+    page += 1
+  } while (page < totalPages)
+
+  return valores
+}
+
 export const getActivoAtributoValor = crud.get
 export const createActivoAtributoValor = crud.create
 export const updateActivoAtributoValor = crud.update

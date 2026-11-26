@@ -44,12 +44,23 @@ public interface ActivoRepository extends CrudRepository<Activo, UUID> {
             Boolean activo,
             Pageable pageable);
 
-    /** REQ-BIZ-006: agregación con exactamente los mismos filtros del listado. */
+    /** REQ-BIZ-006 / REQ-BIZ-020: agregación con los mismos filtros del listado. */
     ActivoResumenProjection summarize(
             String query,
             UUID tipoActivoId,
             UUID ubicacionId,
-            Boolean activo);
+            Boolean activo,
+            UUID estadoOperativoId,
+            UUID categoriaId);
+
+    /** Compatibilidad con consumidores que aún no usan los filtros nuevos. */
+    default ActivoResumenProjection summarize(
+            String query,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo) {
+        return summarize(query, tipoActivoId, ubicacionId, activo, null, null);
+    }
 
     Page<Activo> searchDisponibilidad(
             String query,

@@ -312,7 +312,7 @@ export function ActivoFormPage({
   )
 
   const valoresQuery = useQuery({
-    ...activoAtributoValorQueries.byActivo(activoId ?? ""),
+    ...activoAtributoValorQueries.byActivoAll(activoId ?? ""),
     enabled: Boolean(activoId),
   })
 
@@ -326,11 +326,11 @@ export function ActivoFormPage({
 
   const valoresExistentesByAtributoId = useMemo(() => {
     const map = new Map<string, ActivoAtributoValor>()
-    for (const item of valoresQuery.data?.content ?? []) {
+    for (const item of valoresQuery.data ?? []) {
       map.set(item.activoAtributoId, item)
     }
     return map
-  }, [valoresQuery.data?.content])
+  }, [valoresQuery.data])
 
   if (tipoActivoId !== prevTipoActivoId) {
     setPrevTipoActivoId(tipoActivoId)

@@ -89,6 +89,30 @@ describe("buildReplaceAtributosPayload", () => {
       { atributoId: "oculto", valor: "Conservado" },
     ])
   })
+
+  it("conserva los valores existentes aunque superen una página de 100", () => {
+    const existentes = new Map<string, ActivoAtributoValor>()
+    for (let index = 0; index < 120; index += 1) {
+      const id = `oculto-${String(index).padStart(3, "0")}`
+      existentes.set(id, valor(id, `valor-${index}`))
+    }
+
+    const payload = buildReplaceAtributosPayload(
+      [atributo("visible")],
+      { visible: "Nuevo" },
+      existentes,
+    )
+
+    expect(payload.valores).toHaveLength(121)
+    expect(payload.valores[0]).toEqual({
+      atributoId: "visible",
+      valor: "Nuevo",
+    })
+    expect(payload.valores[120]).toEqual({
+      atributoId: "oculto-119",
+      valor: "valor-119",
+    })
+  })
 })
 
 describe("mapAtributoValidationErrors", () => {

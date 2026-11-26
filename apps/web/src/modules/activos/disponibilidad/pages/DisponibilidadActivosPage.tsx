@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
 import {
+  EMPTY_ACTIVO_RESUMEN,
   exportarActivosDisponibilidadExcel,
   type ActivoDisponibilidadParams,
 } from "@/modules/activos/activo/api/activo.service"
@@ -50,6 +51,20 @@ export function DisponibilidadActivosPage() {
     isFetching,
     refetch,
   } = useQuery(activoQueries.disponibilidad(queryFilters))
+
+  // Los agregados se calculan en el servidor con los mismos filtros vigentes.
+  const resumenFilters = {
+    q: queryFilters.q,
+    tipoActivoId: queryFilters.tipoActivoId,
+    categoriaId: queryFilters.categoriaId,
+    ubicacionId: queryFilters.ubicacionId,
+    activo: queryFilters.activo,
+    estadoOperativoId: queryFilters.estadoOperativoId,
+  }
+  const { data: resumenData, refetch: refetchResumen } = useQuery(
+    activoQueries.resumen(resumenFilters),
+  )
+  const metrics = resumenData ?? EMPTY_ACTIVO_RESUMEN
 
   const activos = pageData?.content ?? []
   const totalElements = pageData?.totalElements ?? 0
@@ -113,7 +128,10 @@ export function DisponibilidadActivosPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
+            onClick={() => {
+              void refetch()
+              void refetchResumen()
+            }}
             disabled={isFetching}
             className="h-8 text-xs gap-1.5"
             title="Actualizar datos"
@@ -127,10 +145,7 @@ export function DisponibilidadActivosPage() {
       </div>
 
       {/* Tarjetas de Métricas Resumen */}
-      <DisponibilidadMetrics
-        activos={activos}
-        totalElements={totalElements}
-      />
+      <DisponibilidadMetrics metrics={metrics} />
 
       {/* Barra de Filtros y Búsqueda */}
       <DisponibilidadFiltrosBar
@@ -182,7 +197,10 @@ export function DisponibilidadActivosPage() {
           setSize(newSize)
           setPage(0)
         }}
-        onActivoUpdated={() => refetch()}
+        onActivoUpdated={() => {
+          void refetch()
+          void refetchResumen()
+        }}
       />
     </PageShell>
   )

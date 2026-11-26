@@ -166,25 +166,45 @@ public class ActivoService {
         return toPageResponse(page);
     }
 
-    /** REQ-BIZ-006: KPIs agregados con exactamente los mismos filtros del listado. */
+    /** REQ-BIZ-006 / REQ-BIZ-020: KPIs agregados con los mismos filtros del listado. */
+    @Transactional(readOnly = true)
+    public ActivoResumenResponse resumen(
+            String query,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo,
+            UUID estadoOperativoId,
+            UUID categoriaId) {
+        ActivoResumenProjection projection = activoRepository.summarize(
+                StringUtils.normalize(query),
+                tipoActivoId,
+                ubicacionId,
+                activo,
+                estadoOperativoId,
+                categoriaId
+        );
+        return new ActivoResumenResponse(
+                projection.getTotal(),
+                projection.getDeBaja(),
+                projection.getEnMantenimiento(),
+                projection.getOperativos(),
+                projection.getOperativo(),
+                projection.getReserva(),
+                projection.getEnViaje(),
+                projection.getFueraServicio(),
+                projection.getDisponibles(),
+                projection.getTasaDisponibilidad()
+        );
+    }
+
+    /** Compatibilidad con consumidores que aún no usan los filtros nuevos. */
     @Transactional(readOnly = true)
     public ActivoResumenResponse resumen(
             String query,
             UUID tipoActivoId,
             UUID ubicacionId,
             Boolean activo) {
-        ActivoResumenProjection projection = activoRepository.summarize(
-                StringUtils.normalize(query),
-                tipoActivoId,
-                ubicacionId,
-                activo
-        );
-        return new ActivoResumenResponse(
-                projection.getTotal(),
-                projection.getDeBaja(),
-                projection.getEnMantenimiento(),
-                projection.getOperativos()
-        );
+        return resumen(query, tipoActivoId, ubicacionId, activo, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -410,7 +430,9 @@ public class ActivoService {
                         tipoActivo.getId(),
                         tipoActivo.getCategoriaId(),
                         tipoActivo.getNombre(),
-                        tipoActivo.getDescripcion())
+                        tipoActivo.getDescripcion(),
+                        tipoActivo.getColor(),
+                        tipoActivo.getIcono())
                 : null;
 
         ActivoResponse.UbicacionInfo ubicacionInfo = ubicacion != null
