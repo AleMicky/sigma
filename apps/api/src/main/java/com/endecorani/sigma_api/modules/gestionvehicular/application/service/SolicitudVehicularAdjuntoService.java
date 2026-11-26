@@ -112,12 +112,9 @@ public class SolicitudVehicularAdjuntoService {
     @Transactional
     public SolicitudVehicularAdjuntoResponse replaceFile(UUID id, MultipartFile file) {
         SolicitudVehicularAdjunto domain = obtenerPorId(id);
+        String oldUrl = domain.getUrl();
 
-        if (domain.getUrl() != null) {
-            documentStorageService.delete(domain.getUrl());
-        }
-
-        UUID fileId = domain.getId() != null ? domain.getId() : UUID.randomUUID();
+        UUID fileId = UUID.randomUUID();
         DocumentStorageService.StoredFile stored = documentStorageService.store(
                 ADJUNTO_FOLDER,
                 fileId,
@@ -130,7 +127,13 @@ public class SolicitudVehicularAdjuntoService {
         domain.setMimeType(stored.mimeType());
         domain.setSize(stored.tamanoBytes());
 
-        return mapper.toResponse(repository.save(domain));
+        SolicitudVehicularAdjunto saved = repository.save(domain);
+
+        if (oldUrl != null && !oldUrl.equals(stored.publicUrl())) {
+            documentStorageService.delete(oldUrl);
+        }
+
+        return mapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)

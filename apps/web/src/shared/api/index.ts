@@ -25,6 +25,7 @@ export {
 
 export type {
     ApiErrorResponse,
+    ApiFieldValidationError,
     ApiValidationError,
 } from "./errors";
 

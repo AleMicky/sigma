@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useForm, useStore } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
 import {
@@ -50,7 +50,17 @@ type InsumoFormDrawerProps = {
   onSuccess?: (insumo: Insumo) => void
 }
 
-export function InsumoFormDrawer({
+export function InsumoFormDrawer(props: InsumoFormDrawerProps) {
+  if (!props.open) return null
+  return (
+    <InsumoFormDrawerContent
+      key={props.insumoId ?? "new"}
+      {...props}
+    />
+  )
+}
+
+function InsumoFormDrawerContent({
   open,
   onOpenChange,
   insumoId,
@@ -63,7 +73,7 @@ export function InsumoFormDrawer({
 
   const [formError, setFormError] = useState<string | null>(null)
   const [atributoErrors, setAtributoErrors] = useState<Record<string, string>>({})
-  const [valores, setValores] = useState<Record<string, string>>({})
+  const [editedValores, setEditedValores] = useState<Record<string, string>>({})
 
   // Consultar detalle de Insumo si se está editando
   const insumoQuery = useQuery({
@@ -90,17 +100,20 @@ export function InsumoFormDrawer({
     return map
   }, [existingValoresQuery.data])
 
-  useEffect(() => {
-    if (existingValoresQuery.data?.content) {
-      const initialValores: Record<string, string> = {}
+  const initialServerValores = useMemo(() => {
+    const initial: Record<string, string> = {}
+    if (insumoId && existingValoresQuery.data?.content) {
       existingValoresQuery.data.content.forEach((v) => {
-        initialValores[v.tipoInsumoAtributoId] = v.valor
+        initial[v.tipoInsumoAtributoId] = v.valor
       })
-      setValores(initialValores)
-    } else if (!insumoId) {
-      setValores({})
     }
-  }, [existingValoresQuery.data, insumoId, open])
+    return initial
+  }, [existingValoresQuery.data, insumoId])
+
+  const valores = useMemo(
+    () => ({ ...initialServerValores, ...editedValores }),
+    [initialServerValores, editedValores],
+  )
 
   // Consultar Categorías para obtener el tipo de insumo asociado
   const categoriasQuery = useQuery(
@@ -462,7 +475,7 @@ export function InsumoFormDrawer({
                           id={`attr-${attr.id}`}
                           value={valores[attr.id] ?? ""}
                           onChange={(e) =>
-                            setValores((prev) => ({
+                            setEditedValores((prev) => ({
                               ...prev,
                               [attr.id]: e.target.value,
                             }))
@@ -484,7 +497,7 @@ export function InsumoFormDrawer({
                           }
                           value={valores[attr.id] ?? ""}
                           onChange={(e) =>
-                            setValores((prev) => ({
+                            setEditedValores((prev) => ({
                               ...prev,
                               [attr.id]: e.target.value,
                             }))

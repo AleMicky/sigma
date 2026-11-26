@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
@@ -13,6 +13,7 @@ import {
 
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
+import { getErrorMessage } from "@/shared/api"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -60,7 +61,33 @@ interface ProgramacionMantenimientoFormDialogProps {
   tipoActivoNombre?: string
 }
 
-export function ProgramacionMantenimientoFormDialog({
+function getInitialModo(programacionToEdit?: ProgramacionMantenimiento | null): ModoControl {
+  if (!programacionToEdit) return "KILOMETRAJE"
+  const criterios = programacionToEdit.criterios ?? []
+  const hasKm = criterios.some((c) => c.tipoCriterio === "KILOMETRAJE")
+  const hasTiempo = criterios.some((c) => c.tipoCriterio === "TIEMPO")
+  const hasHoras = criterios.some((c) => c.tipoCriterio === "HORAS_USO")
+
+  if (hasKm && hasTiempo) return "COMBINADO"
+  if (hasKm) return "KILOMETRAJE"
+  if (hasHoras) return "HORAS_USO"
+  return "TIEMPO"
+}
+
+export function ProgramacionMantenimientoFormDialog(
+  props: ProgramacionMantenimientoFormDialogProps,
+) {
+  const { open, onOpenChange, programacionToEdit, activoId, tipoActivoId } = props
+  const contentKey = `${programacionToEdit?.id ?? "new"}-${activoId ?? ""}-${tipoActivoId ?? ""}`
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open ? <ProgramacionMantenimientoFormDialogContent key={contentKey} {...props} /> : null}
+    </Dialog>
+  )
+}
+
+function ProgramacionMantenimientoFormDialogContent({
   open,
   onOpenChange,
   programacionToEdit,
@@ -78,25 +105,42 @@ export function ProgramacionMantenimientoFormDialog({
   const updateMutation = useUpdateProgramacion(programacionToEdit?.id)
   const batchTipoMutation = useCrearPorTipoActivo()
 
+  const initialCriterios = programacionToEdit?.criterios ?? []
+  const initialCritKm = initialCriterios.find((c) => c.tipoCriterio === "KILOMETRAJE")
+  const initialCritTiempo = initialCriterios.find((c) => c.tipoCriterio === "TIEMPO")
+  const initialCritHoras = initialCriterios.find((c) => c.tipoCriterio === "HORAS_USO")
+
   const [alcance, setAlcance] = useState<AlcanceProgramacion>("INDIVIDUAL")
-  const [modo, setModo] = useState<ModoControl>("KILOMETRAJE")
-  const [activo, setActivo] = useState(true)
+  const [modo, setModo] = useState<ModoControl>(() => getInitialModo(programacionToEdit))
+  const activo = programacionToEdit?.activo ?? true
   const [formError, setFormError] = useState<string | null>(null)
 
   // Selección en modo individual
-  const [selectedActivoId, setSelectedActivoId] = useState<string>("")
+  const [selectedActivoId, setSelectedActivoId] = useState<string>(() => propActivoId ?? "")
   const [selectedPlanId, setSelectedPlanId] = useState<string>("")
 
   // Selección en modo por tipo
-  const [selectedTipoActivoId, setSelectedTipoActivoId] = useState<string>("")
+  const [selectedTipoActivoId, setSelectedTipoActivoId] = useState<string>(() => propTipoActivoId ?? "")
 
   // Telemetría & Intervalos
-  const [kmInicial, setKmInicial] = useState<number | "">("")
-  const [kmIntervalo, setKmIntervalo] = useState<number | "">(5000)
-  const [diasIntervalo, setDiasIntervalo] = useState<number | "">(90)
-  const [fechaBase, setFechaBase] = useState<string>("")
-  const [horasInicial, setHorasInicial] = useState<number | "">("")
-  const [horasIntervalo, setHorasIntervalo] = useState<number | "">(250)
+  const [kmInicial, setKmInicial] = useState<number | "">(
+    () => initialCritKm?.valorActualUso ?? "",
+  )
+  const [kmIntervalo, setKmIntervalo] = useState<number | "">(
+    () => initialCritKm?.intervaloUso ?? 5000,
+  )
+  const [diasIntervalo, setDiasIntervalo] = useState<number | "">(
+    () => initialCritTiempo?.intervaloDias ?? 90,
+  )
+  const [fechaBase, setFechaBase] = useState<string>(
+    () => new Date().toISOString().split("T")[0],
+  )
+  const [horasInicial, setHorasInicial] = useState<number | "">(
+    () => initialCritHoras?.valorActualUso ?? "",
+  )
+  const [horasIntervalo, setHorasIntervalo] = useState<number | "">(
+    () => initialCritHoras?.intervaloUso ?? 250,
+  )
 
   // Consultas de datos
   const activosListQuery = useQuery({
@@ -143,68 +187,6 @@ export function ProgramacionMantenimientoFormDialog({
     }
     return activosDisponibles
   }, [activosDisponibles, selectedPlan])
-
-  // Inicialización al abrir
-  useEffect(() => {
-    if (open) {
-      setFormError(null)
-      const today = new Date().toISOString().split("T")[0]
-      setFechaBase(today)
-
-      if (propActivoId) {
-        setSelectedActivoId(propActivoId)
-      } else {
-        setSelectedActivoId("")
-      }
-
-      if (propTipoActivoId) {
-        setSelectedTipoActivoId(propTipoActivoId)
-      } else {
-        setSelectedTipoActivoId("")
-      }
-
-      setSelectedPlanId("")
-      setAlcance("INDIVIDUAL")
-
-      if (programacionToEdit) {
-        setActivo(programacionToEdit.activo)
-        const criterios = programacionToEdit.criterios ?? []
-        const hasKm = criterios.some((c) => c.tipoCriterio === "KILOMETRAJE")
-        const hasTiempo = criterios.some((c) => c.tipoCriterio === "TIEMPO")
-        const hasHoras = criterios.some((c) => c.tipoCriterio === "HORAS_USO")
-
-        if (hasKm && hasTiempo) setModo("COMBINADO")
-        else if (hasKm) setModo("KILOMETRAJE")
-        else if (hasHoras) setModo("HORAS_USO")
-        else setModo("TIEMPO")
-
-        const critKm = criterios.find((c) => c.tipoCriterio === "KILOMETRAJE")
-        if (critKm) {
-          setKmIntervalo(critKm.intervaloUso ?? 5000)
-          setKmInicial(critKm.valorActualUso ?? "")
-        }
-
-        const critTiempo = criterios.find((c) => c.tipoCriterio === "TIEMPO")
-        if (critTiempo) {
-          setDiasIntervalo(critTiempo.intervaloDias ?? 90)
-        }
-
-        const critHoras = criterios.find((c) => c.tipoCriterio === "HORAS_USO")
-        if (critHoras) {
-          setHorasIntervalo(critHoras.intervaloUso ?? 250)
-          setHorasInicial(critHoras.valorActualUso ?? "")
-        }
-      } else {
-        setActivo(true)
-        setModo("KILOMETRAJE")
-        setKmInicial("")
-        setKmIntervalo(5000)
-        setDiasIntervalo(90)
-        setHorasInicial("")
-        setHorasIntervalo(250)
-      }
-    }
-  }, [open, programacionToEdit, propActivoId, propTipoActivoId])
 
   // Cálculos en tiempo real
   const proximoKmLimite = useMemo(() => {
@@ -341,10 +323,8 @@ export function ProgramacionMantenimientoFormDialog({
       }
 
       onOpenChange(false)
-    } catch (err: any) {
-      setFormError(
-        err?.response?.data?.message || err?.message || "Ocurrió un error al guardar la programación.",
-      )
+    } catch (err: unknown) {
+      setFormError(getErrorMessage(err))
     }
   }
 
@@ -352,7 +332,6 @@ export function ProgramacionMantenimientoFormDialog({
     createMutation.isPending || updateMutation.isPending || batchTipoMutation.isPending
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto border-border/80 bg-background shadow-2xl">
         <DialogHeader>
           <div className="flex items-center gap-2.5">
@@ -857,6 +836,5 @@ export function ProgramacionMantenimientoFormDialog({
           </DialogFooter>
         </form>
       </DialogContent>
-    </Dialog>
   )
 }

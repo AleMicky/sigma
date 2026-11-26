@@ -1,5 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+
+import { getErrorMessage } from "@/shared/api"
+
+import { solicitudKeys } from "../../solicitud/api/solicitud.keys"
 import { programacionMantenimientoKeys } from "./programacion-mantenimiento.keys"
 import {
   activarCriterio,
@@ -32,9 +36,8 @@ export function useCreateProgramacion() {
       toast.success("Programación de mantenimiento creada correctamente")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al crear la programación de mantenimiento"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -47,9 +50,8 @@ export function useCrearPorTipoActivo() {
       toast.success(res?.mensaje ?? "Programaciones preventivas aplicadas al tipo de activo")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al aplicar programación por tipo de activo"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -63,9 +65,8 @@ export function useUpdateProgramacion(id?: string) {
       toast.success("Programación actualizada correctamente")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al actualizar la programación"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -78,9 +79,8 @@ export function useActivarProgramacion() {
       toast.success("Programación activada")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al activar la programación"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -93,9 +93,8 @@ export function useDesactivarProgramacion() {
       toast.success("Programación desactivada")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al desactivar la programación"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -108,9 +107,8 @@ export function useDeleteProgramacion() {
       toast.success("Programación eliminada")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al eliminar la programación"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -129,11 +127,10 @@ export function useEvaluarProgramacion() {
         toast.info(data.mensaje)
       }
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
-      queryClient.invalidateQueries({ queryKey: ["solicitudes"] })
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al evaluar la programación"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -157,13 +154,10 @@ export function useEvaluarTodasProgramaciones() {
         )
       }
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
-      queryClient.invalidateQueries({ queryKey: ["solicitudes"] })
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
     },
-    onError: (err: any) => {
-      const msg =
-        err?.response?.data?.message ??
-        "Error al evaluar las programaciones de mantenimiento en lote"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -176,11 +170,10 @@ export function useCompletarMantenimiento() {
     onSuccess: () => {
       toast.success("Mantenimiento completado y criterios recalculados con éxito")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
-      queryClient.invalidateQueries({ queryKey: ["solicitudes"] })
+      queryClient.invalidateQueries({ queryKey: solicitudKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al completar el mantenimiento"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -199,9 +192,8 @@ export function useCreateCriterio(programacionId?: string) {
       toast.success("Criterio agregado a la programación")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al agregar el criterio"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -215,9 +207,8 @@ export function useUpdateCriterio() {
       toast.success("Criterio actualizado")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al actualizar el criterio"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -230,9 +221,8 @@ export function useActivarCriterio() {
       toast.success("Criterio activado")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al activar el criterio"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -245,9 +235,8 @@ export function useDesactivarCriterio() {
       toast.success("Criterio desactivado")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al desactivar el criterio"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }
@@ -260,9 +249,8 @@ export function useDeleteCriterio() {
       toast.success("Criterio eliminado")
       queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? "Error al eliminar el criterio"
-      toast.error(msg)
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err))
     },
   })
 }

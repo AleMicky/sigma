@@ -115,9 +115,9 @@ export function ProgramacionSeguimientoReportView({
       criteriosValidos.forEach((c: ProgramacionMantenimientoCriterio) => {
         const cActivo = Boolean(c.activo)
         let estadoAlerta: "CRITICO" | "PROXIMO" | "AL_DIA" | "INACTIVO" = "AL_DIA"
-        let frecuenciaLabel = ""
-        let lecturaActualLabel = ""
-        let proximoUmbralLabel = ""
+        let frecuenciaLabel: string
+        let lecturaActualLabel: string
+        let proximoUmbralLabel: string
         let porcentaje = 0
         let margenRestanteLabel = ""
 

@@ -5,7 +5,7 @@ import { RowActions } from "@/shared/components/row-actions"
 
 import { useDeleteTipoDato } from "../api/tipo-dato.mutations"
 import type { TipoDato } from "../api/tipo-dato.service"
-import { getTipoDatoIcon } from "../lib/tipo-dato-icons"
+import { TipoDatoIcon } from "../lib/tipo-dato-icons"
 
 type TipoDatoCardProps = {
   tipoDato: TipoDato
@@ -13,14 +13,13 @@ type TipoDatoCardProps = {
 }
 
 export function TipoDatoCard({ tipoDato, onEdit }: TipoDatoCardProps) {
-  const Icon = getTipoDatoIcon(tipoDato.codigo)
   const deleteMutation = useDeleteTipoDato()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   return (
     <li className="group flex min-w-0 gap-2.5 rounded-xl border border-border bg-card p-3 sm:gap-3 sm:p-4">
       <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground sm:size-9">
-        <Icon className="size-3.5 sm:size-4" />
+        <TipoDatoIcon codigo={tipoDato.codigo} className="size-3.5 sm:size-4" />
       </span>
 
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">

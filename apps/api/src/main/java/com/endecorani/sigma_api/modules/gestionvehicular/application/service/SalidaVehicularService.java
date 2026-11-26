@@ -35,6 +35,7 @@ import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowEnt
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -106,6 +107,9 @@ public class SalidaVehicularService {
                         "No se pudo identificar al empleado solicitante. Debe especificar empleadoId.");
             }
         }
+        if (!empleadoRepository.existsById(empleadoId)) {
+            throw new ResourceNotFoundException("Empleado", empleadoId);
+        }
 
         String numero = correlativoService.generar(CorrelativoCodigo.SALIDA_VEHICULAR, LocalDate.now().getYear());
 
@@ -138,15 +142,31 @@ public class SalidaVehicularService {
             variables.put("observaciones", observaciones);
         }
 
+        String processInstanceId;
         try {
-            String processInstanceId = workflowApplicationService.iniciar(WORKFLOW_CODIGO, guardada.getId().toString(),
+            processInstanceId = workflowApplicationService.iniciar(
+                    WORKFLOW_CODIGO,
+                    guardada.getId().toString(),
                     variables);
-            guardada.setProcessInstanceId(processInstanceId);
-            guardada.setEstado(ESTADO_SALIDA);
-            guardada = salidaRepository.save(guardada);
+        } catch (BusinessException ex) {
+            throw ex;
         } catch (Exception ex) {
-            log.warn("No se pudo iniciar el proceso Flowable para la salida vehicular: {}", ex.getMessage());
+            log.error("No se pudo iniciar el proceso Flowable para la salida vehicular {}: {}",
+                    guardada.getId(), ex.getMessage(), ex);
+            throw new BusinessException(
+                    "WORKFLOW_START_ERROR",
+                    "No se pudo iniciar el proceso de salida vehicular en el motor de flujos. Intente nuevamente.");
         }
+
+        if (processInstanceId == null || processInstanceId.isBlank()) {
+            throw new BusinessException(
+                    "WORKFLOW_START_ERROR",
+                    "El motor de flujos no devolvió un identificador de proceso válido para la salida vehicular.");
+        }
+
+        guardada.setProcessInstanceId(processInstanceId);
+        guardada.setEstado(ESTADO_SALIDA);
+        guardada = salidaRepository.save(guardada);
 
         return toResponse(guardada);
     }
@@ -203,15 +223,13 @@ public class SalidaVehicularService {
 
     @Transactional(readOnly = true)
     public SalidaVehicularResponse obtenerPorId(UUID id) {
-        SalidaVehicular salida = salidaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
+        SalidaVehicular salida = obtenerSalidaAutorizada(id);
         return toResponse(salida);
     }
 
     @Transactional
     public SalidaVehicularResponse actualizar(UUID id, ActualizarSalidaVehicularRequest request) {
-        SalidaVehicular salida = salidaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
+        SalidaVehicular salida = obtenerSalidaAutorizada(id);
 
         String estadoActual = salida.getEstado() != null ? salida.getEstado().toUpperCase() : "";
         if (ESTADO_LLEGADA.equals(estadoActual) || "FINALIZADA".equals(estadoActual)
@@ -260,8 +278,7 @@ public class SalidaVehicularService {
 
     @Transactional
     public SalidaVehicularResponse cancelar(UUID id, CancelarSalidaVehicularRequest request) {
-        SalidaVehicular salida = salidaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
+        SalidaVehicular salida = obtenerSalidaAutorizada(id);
 
         String estadoActual = salida.getEstado() != null ? salida.getEstado().toUpperCase() : "";
         if (ESTADO_LLEGADA.equals(estadoActual) || "FINALIZADA".equals(estadoActual)
@@ -272,11 +289,25 @@ public class SalidaVehicularService {
         String motivo = request != null && request.motivo() != null ? request.motivo()
                 : "Cancelada a solicitud del usuario";
 
-        if (salida.getProcessInstanceId() != null) {
+        if (salida.getProcessInstanceId() != null && !salida.getProcessInstanceId().isBlank()) {
             try {
                 workflowApplicationService.cancelarProceso(salida.getProcessInstanceId(), motivo);
+            } catch (ResourceNotFoundException ex) {
+                log.warn("El proceso Flowable {} de la salida vehicular {} ya no existe o había finalizado: {}",
+                        salida.getProcessInstanceId(), id, ex.getMessage());
+            } catch (BusinessException ex) {
+                throw ex;
             } catch (Exception ex) {
-                log.warn("Error al cancelar proceso en Flowable para salida {}: {}", id, ex.getMessage());
+                if (esProcesoNoEncontradoEnFlowable(ex)) {
+                    log.warn("El proceso Flowable {} de la salida vehicular {} ya no existe o había finalizado: {}",
+                            salida.getProcessInstanceId(), id, ex.getMessage());
+                } else {
+                    log.error("Error al cancelar proceso Flowable {} para salida vehicular {}: {}",
+                            salida.getProcessInstanceId(), id, ex.getMessage(), ex);
+                    throw new BusinessException(
+                            "WORKFLOW_CANCEL_ERROR",
+                            "No se pudo cancelar el proceso de salida vehicular en el motor de flujos. Intente nuevamente.");
+                }
             }
         }
 
@@ -307,24 +338,21 @@ public class SalidaVehicularService {
 
     @Transactional(readOnly = true)
     public WorkflowTaskResponse obtenerTareaActual(UUID id) {
-        SalidaVehicular salida = salidaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
+        SalidaVehicular salida = obtenerSalidaAutorizada(id);
 
         return workflowEntitySupport.obtenerTareaActual(salida.getProcessInstanceId(), "La salida vehicular");
     }
 
     @Transactional(readOnly = true)
     public WorkflowTaskActionsResponse obtenerAcciones(UUID id) {
-        SalidaVehicular salida = salidaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
+        SalidaVehicular salida = obtenerSalidaAutorizada(id);
 
         return workflowEntitySupport.obtenerAcciones(salida.getProcessInstanceId(), "La salida vehicular");
     }
 
     @Transactional
     public SalidaVehicularResponse ejecutarAccion(UUID id, String accionId, EjecutarAccionSalidaRequest request) {
-        SalidaVehicular salida = salidaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
+        SalidaVehicular salida = obtenerSalidaAutorizada(id);
 
         WorkflowExecutionResult execResult = workflowEntitySupport.ejecutarAccion(
                 salida.getProcessInstanceId(),
@@ -426,8 +454,7 @@ public class SalidaVehicularService {
 
     @Transactional(readOnly = true)
     public WorkflowHistoryResponse obtenerHistorialProceso(UUID id) {
-        SalidaVehicular salida = salidaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
+        SalidaVehicular salida = obtenerSalidaAutorizada(id);
 
         return workflowEntitySupport.obtenerHistorial(salida.getProcessInstanceId(), "La salida vehicular");
     }
@@ -438,15 +465,14 @@ public class SalidaVehicularService {
 
     @Transactional(readOnly = true)
     public List<SalidaVehicularEventoResponse> listarEventos(UUID id) {
-        if (!salidaRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Salida Vehicular", id);
-        }
+        obtenerSalidaAutorizada(id);
         List<SalidaVehicularEvento> eventos = eventoRepository.findBySalidaVehicularId(id);
         return mapEventosToResponse(eventos);
     }
 
     @Transactional(readOnly = true)
     public SalidaVehicularEventoResponse obtenerEvento(UUID id, UUID eventoId) {
+        obtenerSalidaAutorizada(id);
         SalidaVehicularEvento evento = eventoRepository.findByIdAndSalidaVehicularId(eventoId, id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evento de Salida Vehicular", eventoId));
         return toEventoResponse(evento, resolverNombreEmpleado(evento.getEmpleadoId()));
@@ -458,8 +484,7 @@ public class SalidaVehicularService {
 
     @Transactional
     public BitacoraVehicularResponse registrarBitacora(UUID id, RegistrarBitacoraRequest request) {
-        SalidaVehicular salida = salidaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
+        SalidaVehicular salida = obtenerSalidaAutorizada(id);
 
         UUID empleadoId = obtenerEmpleadoIdActual();
         if (empleadoId == null) {
@@ -482,15 +507,14 @@ public class SalidaVehicularService {
 
     @Transactional(readOnly = true)
     public List<BitacoraVehicularResponse> listarBitacoras(UUID id) {
-        if (!salidaRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Salida Vehicular", id);
-        }
+        obtenerSalidaAutorizada(id);
         List<BitacoraVehicular> bitacoras = bitacoraRepository.findBySalidaVehicularId(id);
         return mapBitacorasToResponse(bitacoras);
     }
 
     @Transactional(readOnly = true)
     public BitacoraVehicularResponse obtenerBitacora(UUID id, UUID bitacoraId) {
+        obtenerSalidaAutorizada(id);
         BitacoraVehicular bitacora = bitacoraRepository.findByIdAndSalidaVehicularId(bitacoraId, id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bitácora Vehicular", bitacoraId));
         return toBitacoraResponse(bitacora, resolverNombreEmpleado(bitacora.getEmpleadoId()));
@@ -512,6 +536,34 @@ public class SalidaVehicularService {
             return new AlcanceArea(null, null, false, true);
         }
         return new AlcanceArea(areaSolicitada, userId, false, false);
+    }
+
+    private SalidaVehicular obtenerSalidaAutorizada(UUID id) {
+        SalidaVehicular salida = salidaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Salida Vehicular", id));
+        validarAccesoASalida(salida);
+        return salida;
+    }
+
+    private void validarAccesoASalida(SalidaVehicular salida) {
+        AlcanceArea alcance = resolverAlcance(null, null);
+        if (!tieneAccesoASalida(salida, alcance)) {
+            throw new ForbiddenException("No tiene permisos para acceder o modificar esta salida vehicular.");
+        }
+    }
+
+    private boolean tieneAccesoASalida(SalidaVehicular salida, AlcanceArea alcance) {
+        if (alcance.sinAcceso()) {
+            return false;
+        }
+        if (alcance.areaId() == null && alcance.createdById() == null) {
+            return true;
+        }
+        if (alcance.createdById() != null && alcance.createdById().equals(salida.getCreatedById())) {
+            return true;
+        }
+        UUID empleadoActual = obtenerEmpleadoIdActual();
+        return empleadoActual != null && empleadoActual.equals(salida.getEmpleadoId());
     }
 
     public UUID obtenerEmpleadoIdActual() {
@@ -871,5 +923,20 @@ public class SalidaVehicularService {
         }
 
         return desc.toString();
+    }
+
+    private boolean esProcesoNoEncontradoEnFlowable(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current instanceof ResourceNotFoundException) {
+                return true;
+            }
+            if (current instanceof org.springframework.web.client.RestClientResponseException restEx
+                    && restEx.getStatusCode().value() == 404) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }

@@ -24,7 +24,7 @@ import { toast } from "sonner"
 
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
-import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
+import { TipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
 import { tipoDocumentoQueries } from "@/modules/activos/tipo-documento/api/tipo-documento.queries"
 import type { TipoDocumento } from "@/modules/activos/tipo-documento/api/tipo-documento.service"
 import { activoDocumentoQueries } from "@/modules/activos/activo-documento/api/activo-documento.queries"
@@ -239,7 +239,6 @@ function ActivoDetailReport({
     }
   }
 
-  const Icon = getTipoActivoIcon(activo.tipoActivo?.icono)
   const color = activo.tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
 
   return (
@@ -253,7 +252,7 @@ function ActivoDetailReport({
               alt={activo.nombre}
               className="size-12 shrink-0 rounded-xl object-cover border border-border/80 shadow-xs"
               fallbackClassName="size-12 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary shadow-xs"
-              fallback={<Icon className="size-6" />}
+              fallback={<TipoActivoIcon name={activo.tipoActivo?.icono} className="size-6" />}
             />
             <div className="flex flex-col min-w-0 gap-1">
               <div className="flex items-center gap-2 flex-wrap">
@@ -783,7 +782,6 @@ export function ActivoConsultaDocumentosPage() {
               }}
             >
               {(activo) => {
-                const Icon = getTipoActivoIcon(activo.tipoActivo?.icono)
                 const color = activo.tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
                 const isSelected = masterDetail.selectedId === activo.id
 
@@ -799,7 +797,12 @@ export function ActivoConsultaDocumentosPage() {
                           alt={activo.nombre}
                           className="size-7.5 shrink-0 rounded-lg object-cover border border-border/70"
                           fallbackClassName="size-7.5 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 text-primary"
-                          fallback={<Icon className="size-3.5" />}
+                          fallback={
+                            <TipoActivoIcon
+                              name={activo.tipoActivo?.icono}
+                              className="size-3.5"
+                            />
+                          }
                         />
                         <div className="flex flex-col min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 min-w-0">

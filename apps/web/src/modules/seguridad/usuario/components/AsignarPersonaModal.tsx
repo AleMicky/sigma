@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { IdCard, Loader2, UserCheck, X } from "lucide-react"
 
 import { PersonaCombobox } from "@/modules/organizacion/persona/components/PersonaCombobox"
@@ -21,27 +21,31 @@ type AsignarPersonaModalProps = {
   onOpenChange: (open: boolean) => void
 }
 
-export function AsignarPersonaModal({
+export function AsignarPersonaModal(props: AsignarPersonaModalProps) {
+  if (!props.open || !props.usuario) return null
+  return (
+    <AsignarPersonaModalContent
+      key={props.usuario.id}
+      {...props}
+      usuario={props.usuario}
+    />
+  )
+}
+
+function AsignarPersonaModalContent({
   usuario,
   open,
   onOpenChange,
-}: AsignarPersonaModalProps) {
-  const [selectedPersonaId, setSelectedPersonaId] = useState<string>("")
+}: Omit<AsignarPersonaModalProps, "usuario"> & { usuario: Usuario }) {
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string>(
+    () => usuario.personaId ?? "",
+  )
   const mutation = useActualizarPersonaUsuario()
-
-  useEffect(() => {
-    if (usuario && open) {
-      setSelectedPersonaId(usuario.personaId ?? "")
-    }
-  }, [usuario, open])
-
-  if (!usuario) return null
 
   const isPending = mutation.isPending
   const hasChanges = (usuario.personaId ?? "") !== selectedPersonaId
 
   async function handleSave() {
-    if (!usuario) return
     try {
       await mutation.mutateAsync({
         id: usuario.id,

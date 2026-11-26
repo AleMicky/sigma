@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { useQueryClient } from "@tanstack/react-query"
 
@@ -44,7 +44,17 @@ type ConductorFormDialogProps = {
   onSuccess?: (conductor: Conductor) => void
 }
 
-export function ConductorFormDialog({
+export function ConductorFormDialog(props: ConductorFormDialogProps) {
+  if (!props.open) return null
+  return (
+    <ConductorFormDialogContent
+      key={props.conductor?.id ?? "new"}
+      {...props}
+    />
+  )
+}
+
+function ConductorFormDialogContent({
   open,
   onOpenChange,
   conductor,
@@ -57,14 +67,6 @@ export function ConductorFormDialog({
   const [formError, setFormError] = useState<string | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [removeExistingImage, setRemoveExistingImage] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      setPendingFile(null)
-      setRemoveExistingImage(false)
-      setFormError(null)
-    }
-  }, [open, conductor])
 
   const initialValues: ConductorBasicFormValues = conductor
     ? {

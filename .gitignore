@@ -1,6 +1,11 @@
 # Aplicación móvil
 apps/sigma-mobile/
 **/sigma-mobile/
+.agents/ 
+
+docs/
+
+AGENTS.md
 
 # Variables de entorno (mantener *.example)
 .env

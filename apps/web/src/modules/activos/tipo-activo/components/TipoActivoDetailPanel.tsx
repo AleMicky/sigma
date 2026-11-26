@@ -21,7 +21,7 @@ import { cn } from "@/shared/lib/utils"
 import { tipoActivoQueries } from "../api/tipo-activo.queries"
 import type { TipoActivo } from "../api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "../lib/tipo-activo-colors"
-import { getTipoActivoIcon } from "../lib/tipo-activo-icons"
+import { TipoActivoIcon } from "../lib/tipo-activo-icons"
 
 type TipoActivoDetailPanelProps = {
   tipoActivo: TipoActivo | null
@@ -57,7 +57,6 @@ export function TipoActivoDetailPanel({
 
   const currentTipo = tipoQuery.data ?? tipoActivo
   const color = currentTipo.color || DEFAULT_TIPO_ACTIVO_COLOR
-  const TipoIcon = getTipoActivoIcon(currentTipo.icono)
 
   return (
     <DetailPanelShell
@@ -71,7 +70,7 @@ export function TipoActivoDetailPanel({
                 className="flex size-7 shrink-0 items-center justify-center rounded-lg text-white shadow-2xs"
                 style={{ backgroundColor: color }}
               >
-                <TipoIcon className="size-4" />
+                <TipoActivoIcon name={currentTipo.icono} className="size-4" />
               </span>
               <span className="truncate font-heading text-lg font-bold text-foreground">
                 {currentTipo.nombre}

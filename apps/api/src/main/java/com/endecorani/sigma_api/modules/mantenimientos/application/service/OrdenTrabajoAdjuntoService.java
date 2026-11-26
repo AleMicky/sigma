@@ -70,12 +70,9 @@ public class OrdenTrabajoAdjuntoService {
     @Transactional
     public OrdenTrabajoAdjuntoResponse replaceFile(UUID id, MultipartFile file) {
         OrdenTrabajoAdjunto domain = obtenerPorId(id);
+        String oldUrl = domain.getUrl();
 
-        if (domain.getUrl() != null) {
-            documentStorageService.delete(domain.getUrl());
-        }
-
-        UUID fileId = domain.getId() != null ? domain.getId() : UUID.randomUUID();
+        UUID fileId = UUID.randomUUID();
         DocumentStorageService.StoredFile stored = documentStorageService.store(
                 ADJUNTO_FOLDER,
                 fileId,
@@ -87,7 +84,13 @@ public class OrdenTrabajoAdjuntoService {
         domain.setTamanio(stored.tamanoBytes());
         domain.setUrl(stored.publicUrl());
 
-        return mapper.toAdjuntoResponse(repository.save(domain));
+        OrdenTrabajoAdjunto saved = repository.save(domain);
+
+        if (oldUrl != null && !oldUrl.equals(stored.publicUrl())) {
+            documentStorageService.delete(oldUrl);
+        }
+
+        return mapper.toAdjuntoResponse(saved);
     }
 
     @Transactional(readOnly = true)

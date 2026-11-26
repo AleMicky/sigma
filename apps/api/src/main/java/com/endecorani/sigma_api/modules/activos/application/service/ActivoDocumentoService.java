@@ -91,23 +91,27 @@ public class ActivoDocumentoService extends AbstractCrudService<ActivoDocumento,
     @Transactional
     public ActivoDocumentoResponse replaceFile(UUID id, MultipartFile file) {
         ActivoDocumento domain = findDomainById(id);
+        String oldRuta = domain.getRutaArchivo();
 
+        UUID fileId = UUID.randomUUID();
         DocumentStorageService.StoredFile stored = documentStorageService.store(
                 DOCUMENT_FOLDER,
-                domain.getId(),
+                fileId,
                 file
         );
-
-        if (domain.getRutaArchivo() != null) {
-            documentStorageService.delete(domain.getRutaArchivo());
-        }
 
         domain.setNombreArchivo(stored.nombreArchivo());
         domain.setRutaArchivo(stored.publicUrl());
         domain.setMimeType(stored.mimeType());
         domain.setSize(stored.tamanoBytes());
 
-        return toResponse(repository.save(domain));
+        ActivoDocumento saved = repository.save(domain);
+
+        if (oldRuta != null && !oldRuta.equals(stored.publicUrl())) {
+            documentStorageService.delete(oldRuta);
+        }
+
+        return toResponse(saved);
     }
 
     @Override

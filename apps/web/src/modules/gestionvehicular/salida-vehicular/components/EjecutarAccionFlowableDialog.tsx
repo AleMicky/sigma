@@ -109,10 +109,10 @@ export function EjecutarAccionFlowableDialog({
     return Number.isNaN(n) ? null : n
   }, [kilometraje])
 
-  const isReachingPreventivo = useMemo(() => {
-    if (numKm === null || kmCriterion?.proximoValorUso == null) return false
-    return numKm >= kmCriterion.proximoValorUso
-  }, [numKm, kmCriterion?.proximoValorUso])
+  const isReachingPreventivo =
+    numKm !== null &&
+    kmCriterion?.proximoValorUso != null &&
+    numKm >= kmCriterion.proximoValorUso
 
   const nextAction = getSalidaNextActionConfig(
     currentTask?.name ?? (hasSalidaEvent ? "LLEGADA" : salida?.estado),
@@ -244,7 +244,7 @@ export function EjecutarAccionFlowableDialog({
       }
     }
 
-    const accionId = action.variable || action.value || action.name
+    const accionId = action.value || action.name
 
     await accionMutation.mutateAsync({
       id: salida.id,

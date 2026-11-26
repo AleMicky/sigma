@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Sparkles,
 } from "lucide-react"
+import { getErrorMessage } from "@/shared/api"
 import { Button } from "@/shared/components/ui/button"
 import { useProgramaciones } from "../api/programacion-mantenimiento.queries"
 import type { ProgramacionMantenimiento } from "../api/programacion-mantenimiento.service"
@@ -41,9 +42,9 @@ export function ProgramacionesMantenimientoPage() {
   })
 
   const programaciones: ProgramacionMantenimiento[] = useMemo(() => {
-    if (Array.isArray(pageData)) return pageData as ProgramacionMantenimiento[]
-    if (pageData && Array.isArray((pageData as any).content)) {
-      return (pageData as any).content as ProgramacionMantenimiento[]
+    if (Array.isArray(pageData)) return pageData
+    if (pageData && "content" in pageData && Array.isArray(pageData.content)) {
+      return pageData.content
     }
     return []
   }, [pageData])
@@ -185,7 +186,7 @@ export function ProgramacionesMantenimientoPage() {
             <AlertTriangle className="size-4 shrink-0" />
             <span>
               Ocurrió un error al cargar las programaciones de mantenimiento:{" "}
-              {(error as any)?.message || "Error del servidor"}
+              {getErrorMessage(error)}
             </span>
           </div>
           <Button

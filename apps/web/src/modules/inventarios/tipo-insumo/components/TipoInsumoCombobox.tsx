@@ -65,6 +65,18 @@ function getTipoInsumoIcon(codigo: string, nombre: string) {
   return Tags
 }
 
+function TipoInsumoIcon({
+  codigo,
+  nombre,
+  className,
+}: {
+  codigo: string
+  nombre: string
+  className?: string
+}) {
+  return React.createElement(getTipoInsumoIcon(codigo, nombre), { className })
+}
+
 export function TipoInsumoCombobox({
   value = "",
   onValueChange,
@@ -92,8 +104,6 @@ export function TipoInsumoCombobox({
 
   // Si hay un tipo seleccionado, mostramos la tarjeta estilizada
   if (selectedTipo) {
-    const Icon = getTipoInsumoIcon(selectedTipo.codigo, selectedTipo.nombre)
-
     return (
       <div
         className={cn(
@@ -104,7 +114,11 @@ export function TipoInsumoCombobox({
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-2xs">
-            <Icon className="size-4.5" />
+            <TipoInsumoIcon
+              codigo={selectedTipo.codigo}
+              nombre={selectedTipo.nombre}
+              className="size-4.5"
+            />
           </div>
 
           <div className="min-w-0 flex-1 space-y-0.5">
@@ -179,19 +193,20 @@ export function TipoInsumoCombobox({
             : "No se encontraron tipos de insumo coincidentes."}
         </ComboboxEmpty>
         <ComboboxList>
-          {(item: TipoInsumo) => {
-            const Icon = getTipoInsumoIcon(item.codigo, item.nombre)
-
-            return (
-              <ComboboxItem
-                key={item.id}
-                value={item}
-                className="cursor-pointer py-2 px-2.5 rounded-lg hover:bg-accent/60 transition-colors"
-              >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Icon className="size-3.5" />
-                  </div>
+          {(item: TipoInsumo) => (
+            <ComboboxItem
+              key={item.id}
+              value={item}
+              className="cursor-pointer py-2 px-2.5 rounded-lg hover:bg-accent/60 transition-colors"
+            >
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <TipoInsumoIcon
+                    codigo={item.codigo}
+                    nombre={item.nombre}
+                    className="size-3.5"
+                  />
+                </div>
                   <div className="flex flex-col min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="truncate text-xs font-semibold text-foreground">
@@ -209,8 +224,7 @@ export function TipoInsumoCombobox({
                   </div>
                 </div>
               </ComboboxItem>
-            )
-          }}
+          )}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>

@@ -24,7 +24,19 @@ interface EjecutarAccionIncidenteModalProps {
   onSuccess?: () => void
 }
 
-export function EjecutarAccionIncidenteModal({
+export function EjecutarAccionIncidenteModal(
+  props: EjecutarAccionIncidenteModalProps,
+) {
+  if (!props.open) return null
+  return (
+    <EjecutarAccionIncidenteModalContent
+      key={props.tareaActual?.taskId ?? props.tareaActual?.taskDefinitionKey ?? "task"}
+      {...props}
+    />
+  )
+}
+
+function EjecutarAccionIncidenteModalContent({
   open,
   onOpenChange,
   incidenteId,
@@ -43,18 +55,6 @@ export function EjecutarAccionIncidenteModal({
   const [observacionGeneral, setObservacionGeneral] = React.useState("")
 
   const ejecutarMutation = useEjecutarAccionIncidenteMutation()
-
-  React.useEffect(() => {
-    if (open) {
-      setAprobado(true)
-      setObservacionRevision("")
-      setDetalleAtencion("")
-      setSolucionAprobada(true)
-      setObservacionValidacion("")
-      setObservacionCierre("")
-      setObservacionGeneral("")
-    }
-  }, [open, tareaActual])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

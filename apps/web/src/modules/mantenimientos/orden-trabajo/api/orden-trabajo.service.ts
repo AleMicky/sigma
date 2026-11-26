@@ -1,6 +1,4 @@
-import { isAxiosError } from "axios"
-
-import { http } from "@/shared/api"
+import { http, isApiError } from "@/shared/api"
 import type { PageParams, PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
@@ -130,7 +128,7 @@ export async function getOrdenTrabajoBySolicitud(
       ORDEN_TRABAJO_ENDPOINTS.bySolicitud(solicitudId),
     )
   } catch (err) {
-    if (isAxiosError(err) && (err.status === 404 || err.response?.status === 404)) {
+    if (isApiError(err) && err.status === 404) {
       return null
     }
     throw err

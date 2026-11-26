@@ -69,9 +69,10 @@ export function PersonaCombobox({
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
 
-  React.useEffect(() => {
+  const handleSearchChange = (nextSearch: string) => {
+    setSearch(nextSearch)
     setPage(0)
-  }, [debouncedSearch])
+  }
 
   // Realiza la búsqueda directamente al endpoint del backend (/api/v1/personas?q=...)
   const query = useQuery({
@@ -168,7 +169,7 @@ export function PersonaCombobox({
             size="icon-xs"
             onClick={() => {
               onValueChange?.("", null)
-              setSearch("")
+              handleSearchChange("")
             }}
             className="size-6 text-muted-foreground hover:text-foreground hover:bg-muted rounded shrink-0 cursor-pointer"
             title="Cambiar persona"
@@ -195,7 +196,7 @@ export function PersonaCombobox({
       value={null}
       onValueChange={(val: Persona | null) => {
         onValueChange?.(val?.id ?? "", val)
-        setSearch("")
+        handleSearchChange("")
       }}
       disabled={disabled || query.isLoading}
     >
@@ -203,7 +204,7 @@ export function PersonaCombobox({
         <ComboboxInput
           id={id}
           name={name}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           placeholder={query.isLoading && !query.data ? "Cargando personas..." : placeholder}
           aria-invalid={ariaInvalid}
           onBlur={onBlur}

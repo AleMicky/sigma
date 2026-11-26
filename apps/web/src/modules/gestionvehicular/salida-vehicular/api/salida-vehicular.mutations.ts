@@ -2,7 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { getErrorMessage } from "@/shared/api"
+import { programacionMantenimientoKeys } from "@/modules/mantenimientos/programacion-mantenimiento/api/programacion-mantenimiento.keys"
 
+import { bitacoraKeys } from "../../bitacora/api/bitacora.keys"
 import { salidaVehicularKeys } from "./salida-vehicular.keys"
 import {
   actualizarSalida,
@@ -27,6 +29,9 @@ export function useRegistrarSalidaMutation() {
     onSuccess: (entity) => {
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.activas() })
+      void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.misSalidas() })
+      void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.reportes.all })
+      void queryClient.invalidateQueries({ queryKey: bitacoraKeys.all })
       toast.success(`Salida ${entity.numero} registrada e iniciada correctamente`)
     },
     onError: (error) => {
@@ -51,6 +56,9 @@ export function useActualizarSalidaMutation() {
         queryKey: salidaVehicularKeys.detail(entity.id),
       })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.lists() })
+      void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.misSalidas() })
+      void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.reportes.all })
+      void queryClient.invalidateQueries({ queryKey: bitacoraKeys.all })
       toast.success("Salida vehicular actualizada correctamente")
     },
     onError: (error) => {
@@ -76,6 +84,9 @@ export function useCancelarSalidaMutation() {
       })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.activas() })
+      void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.misSalidas() })
+      void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.reportes.all })
+      void queryClient.invalidateQueries({ queryKey: bitacoraKeys.all })
       void queryClient.invalidateQueries({
         queryKey: salidaVehicularKeys.tareaActual(entity.id),
       })
@@ -124,6 +135,10 @@ export function useEjecutarAccionSalidaMutation() {
       })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.activas() })
+      void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.misSalidas() })
+      void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.reportes.all })
+      void queryClient.invalidateQueries({ queryKey: bitacoraKeys.all })
+      void queryClient.invalidateQueries({ queryKey: programacionMantenimientoKeys.all })
       toast.success("Acción de flujo y registro en bitácora ejecutados correctamente")
     },
     onError: (error) => {
@@ -150,6 +165,9 @@ export function useRegistrarBitacoraMutation() {
       void queryClient.invalidateQueries({
         queryKey: salidaVehicularKeys.detail(id),
       })
+      void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.misSalidas() })
+      void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.reportes.all })
+      void queryClient.invalidateQueries({ queryKey: bitacoraKeys.all })
       toast.success("Bitácora registrada correctamente")
     },
     onError: (error) => {

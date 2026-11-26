@@ -9,7 +9,7 @@ import {
 
 import {
   TIPO_ACTIVO_ICON_OPTIONS,
-  getTipoActivoIcon,
+  TipoActivoIcon,
   type TipoActivoIconName,
 } from "../lib/tipo-activo-icons"
 
@@ -30,12 +30,10 @@ export function IconPickerField({
   disabled,
   "aria-invalid": ariaInvalid,
 }: IconPickerFieldProps) {
-  const SelectedIcon = getTipoActivoIcon(value || null)
-
   return (
     <div className="flex w-full items-center gap-2">
       <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-foreground">
-        <SelectedIcon className="size-4" />
+        <TipoActivoIcon name={value || null} className="size-4" />
       </span>
 
       <Combobox
@@ -55,15 +53,12 @@ export function IconPickerField({
         <ComboboxContent className="z-[60]">
           <ComboboxEmpty>No se encontró el icono.</ComboboxEmpty>
           <ComboboxList>
-            {(item: TipoActivoIconName) => {
-              const Icon = getTipoActivoIcon(item)
-              return (
-                <ComboboxItem key={item} value={item}>
-                  <Icon className="size-4" />
-                  <span>{item}</span>
-                </ComboboxItem>
-              )
-            }}
+            {(item: TipoActivoIconName) => (
+              <ComboboxItem key={item} value={item}>
+                <TipoActivoIcon name={item} className="size-4" />
+                <span>{item}</span>
+              </ComboboxItem>
+            )}
           </ComboboxList>
         </ComboboxContent>
       </Combobox>

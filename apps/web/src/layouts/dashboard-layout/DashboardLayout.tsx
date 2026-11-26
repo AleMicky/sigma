@@ -28,7 +28,7 @@ export function DashboardLayout({ children }: Readonly<PropsWithChildren>) {
     <TooltipProvider>
       <SidebarProvider defaultOpen={true}>
         <div
-          className="flex h-svh w-full overflow-hidden bg-background select-none"
+          className="flex h-svh w-full overflow-hidden bg-background"
           style={{ "--active-color": themeColor } as React.CSSProperties}
         >
           <AppSidebar />

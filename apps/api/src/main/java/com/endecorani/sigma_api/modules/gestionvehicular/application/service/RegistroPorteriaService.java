@@ -38,6 +38,7 @@ import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepos
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService;
 import lombok.RequiredArgsConstructor;
@@ -200,6 +201,8 @@ public class RegistroPorteriaService {
         RegistroPorteria registro = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Registro de Portería", id));
 
+        validarAccesoAlRegistro(registro);
+
         boolean esEntradaInicial = registro.getTipoMovimiento() == TipoMovimientoPorteria.ENTRADA;
 
         if (registro.getEstado() != EstadoRegistroPorteria.AFUERA) {
@@ -235,6 +238,8 @@ public class RegistroPorteriaService {
     public RegistroPorteriaResponse anular(UUID id, AnularRegistroPorteriaRequest request) {
         RegistroPorteria registro = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Registro de Portería", id));
+
+        validarAccesoAlRegistro(registro);
 
         if (registro.getEstado() != EstadoRegistroPorteria.AFUERA) {
             throw new BusinessException(
@@ -562,7 +567,17 @@ public class RegistroPorteriaService {
         return new AlcanceArea(areaActual, userId, true, false);
     }
 
+    private void validarAccesoAlRegistro(RegistroPorteria registro) {
+        AlcanceArea alcance = resolverAlcance(null, null);
+        if (alcance.sinAcceso() || !tieneAccesoAlRegistro(registro, alcance)) {
+            throw new ForbiddenException("No tiene permisos para operar sobre este registro de portería.");
+        }
+    }
+
     private boolean tieneAccesoAlRegistro(RegistroPorteria registro, AlcanceArea alcance) {
+        if (alcance.sinAcceso()) {
+            return false;
+        }
         if (alcance.areaId() == null && alcance.createdById() == null) {
             return true;
         }

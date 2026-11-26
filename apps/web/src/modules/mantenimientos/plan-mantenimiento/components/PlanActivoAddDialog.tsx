@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
@@ -52,7 +52,12 @@ function getEmpleadoNombre(emp: Empleado | null | undefined): string {
   return emp.personaNombreCompleto || emp.personaInfo?.nombreCompleto || emp.codigo || ""
 }
 
-export function PlanActivoAddDialog({
+export function PlanActivoAddDialog(props: PlanActivoAddDialogProps) {
+  if (!props.open) return null
+  return <PlanActivoAddDialogContent key={props.plan.id} {...props} />
+}
+
+function PlanActivoAddDialogContent({
   open,
   onOpenChange,
   plan,
@@ -60,25 +65,13 @@ export function PlanActivoAddDialog({
 }: PlanActivoAddDialogProps) {
   const [selectedActivo, setSelectedActivo] = useState<Activo | null>(null)
   const [selectedResponsable, setSelectedResponsable] = useState<Empleado | null>(null)
-  const [fechaInicio, setFechaInicio] = useState<string>("")
+  const [fechaInicio, setFechaInicio] = useState<string>(
+    () => new Date().toISOString().split("T")[0],
+  )
   const [fechaFin, setFechaFin] = useState<string>("")
   const [estadoActivo, setEstadoActivo] = useState<boolean>(true)
-  const [dateError, setDateError] = useState<string | null>(null)
 
   const createMutation = useCreatePlanMantenimientoActivo()
-
-  // Reset del formulario al abrir
-  useEffect(() => {
-    if (open) {
-      setSelectedActivo(null)
-      setSelectedResponsable(null)
-      const today = new Date().toISOString().split("T")[0]
-      setFechaInicio(today)
-      setFechaFin("")
-      setEstadoActivo(true)
-      setDateError(null)
-    }
-  }, [open])
 
   // Regla 1: Cargar sólo activos del tipo permitido por el plan
   const activosQuery = useQuery({
@@ -117,17 +110,10 @@ export function PlanActivoAddDialog({
   }, [selectedActivo, activeAssignedActivoIds])
 
   // Regla 3: Validar que fechaFin sea igual o posterior a fechaInicio
-  useEffect(() => {
-    if (fechaInicio && fechaFin) {
-      if (fechaFin < fechaInicio) {
-        setDateError("La fecha de fin debe ser igual o posterior a la fecha de inicio.")
-      } else {
-        setDateError(null)
-      }
-    } else {
-      setDateError(null)
-    }
-  }, [fechaInicio, fechaFin])
+  const dateError =
+    fechaInicio && fechaFin && fechaFin < fechaInicio
+      ? "La fecha de fin debe ser igual o posterior a la fecha de inicio."
+      : null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

@@ -53,8 +53,9 @@ public class LocalDocumentStorageService implements DocumentStorageService {
 
         String mimeType = normalizeContentType(file.getContentType());
         Set<String> allowed = allowedContentTypes();
+        String extension = EXTENSION_BY_CONTENT_TYPE.get(mimeType);
 
-        if (!allowed.contains(mimeType)) {
+        if (extension == null || !allowed.contains(mimeType)) {
             throw new BusinessException(
                     "INVALID_DOCUMENT_CONTENT_TYPE",
                     "El tipo de archivo '%s' no está permitido. Use: %s"
@@ -62,14 +63,21 @@ public class LocalDocumentStorageService implements DocumentStorageService {
             );
         }
 
-        String originalFilename = file.getOriginalFilename();
-        String extension = resolveExtension(originalFilename, mimeType);
+        StoredFileSecurityValidator.validateMagicBytes(mimeType, file);
+
+        String originalFilename = sanitizeOriginalFilename(file.getOriginalFilename());
         String nombreArchivo = fileId + "." + extension;
 
         Path directory = resolveFolder(folder);
         try {
             Files.createDirectories(directory);
-            Path target = directory.resolve(nombreArchivo);
+            Path target = directory.resolve(nombreArchivo).normalize();
+            if (!target.startsWith(directory)) {
+                throw new BusinessException(
+                        "INVALID_DOCUMENT_PATH",
+                        "La ruta del archivo no es válida"
+                );
+            }
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
             }
@@ -114,10 +122,11 @@ public class LocalDocumentStorageService implements DocumentStorageService {
         validateFolder(folder);
         validateFilename(filename);
 
-        Path file = resolveFolder(folder).resolve(filename).normalize();
+        Path folderPath = resolveFolder(folder);
+        Path file = folderPath.resolve(filename).normalize();
         Path baseDir = baseDir().normalize();
 
-        if (!file.startsWith(baseDir)) {
+        if (!file.startsWith(folderPath) || !file.startsWith(baseDir)) {
             throw new BusinessException(
                     "INVALID_DOCUMENT_PATH",
                     "La ruta del archivo no es válida"
@@ -145,22 +154,15 @@ public class LocalDocumentStorageService implements DocumentStorageService {
     }
 
     private void validateFolder(String folder) {
-        if (!StringUtils.hasText(folder)
-                || folder.contains("..")
-                || folder.contains("/")
-                || folder.contains("\\")) {
-            throw new BusinessException(
-                    "INVALID_DOCUMENT_FOLDER",
-                    "La carpeta de almacenamiento no es válida"
-            );
-        }
+        StoredFileSecurityValidator.validateAllowedFolder(folder);
     }
 
     private void validateFilename(String filename) {
         if (!StringUtils.hasText(filename)
                 || filename.contains("..")
                 || filename.contains("/")
-                || filename.contains("\\")) {
+                || filename.contains("\\")
+                || filename.contains("\0")) {
             throw new BusinessException(
                     "INVALID_DOCUMENT_FILENAME",
                     "El nombre del archivo no es válido"
@@ -218,25 +220,14 @@ public class LocalDocumentStorageService implements DocumentStorageService {
         return allowedContentTypes().stream().sorted().collect(Collectors.joining(", "));
     }
 
-    private String resolveExtension(String originalFilename, String mimeType) {
-        if (StringUtils.hasText(originalFilename)) {
-            int dot = originalFilename.lastIndexOf('.');
-            if (dot >= 0 && dot < originalFilename.length() - 1) {
-                String ext = originalFilename.substring(dot + 1).toLowerCase(Locale.ROOT);
-                if (StringUtils.hasText(ext)) {
-                    return ext;
-                }
-            }
+    private String sanitizeOriginalFilename(String originalFilename) {
+        if (!StringUtils.hasText(originalFilename)) {
+            return null;
         }
-
-        String byMime = EXTENSION_BY_CONTENT_TYPE.get(mimeType);
-        if (byMime != null) {
-            return byMime;
-        }
-
-        throw new BusinessException(
-                "INVALID_DOCUMENT_EXTENSION",
-                "No se pudo determinar la extensión del archivo"
-        );
+        String cleaned = originalFilename.replace('\\', '/');
+        int lastSlash = cleaned.lastIndexOf('/');
+        String baseName = lastSlash >= 0 ? cleaned.substring(lastSlash + 1) : cleaned;
+        baseName = baseName.replace("\0", "").trim();
+        return StringUtils.hasText(baseName) ? baseName : null;
     }
 }

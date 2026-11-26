@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Building2, Calendar, FileCheck, RotateCcw, User, UserCheck } from "lucide-react"
 import { toast } from "sonner"
@@ -61,7 +61,17 @@ function formatLocalDateTimeForApi(dateTimeStr?: string | null): string | null {
 const selectClassName =
   "flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1.5 text-xs shadow-2xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 text-foreground"
 
-export function ActivoAsignacionModal({
+export function ActivoAsignacionModal(props: ActivoAsignacionModalProps) {
+  if (!props.open) return null
+  return (
+    <ActivoAsignacionModalContent
+      key={`${props.asignacionToEdit?.id ?? "new"}-${props.mode ?? "create"}`}
+      {...props}
+    />
+  )
+}
+
+function ActivoAsignacionModalContent({
   open,
   onOpenChange,
   activoId,
@@ -72,12 +82,29 @@ export function ActivoAsignacionModal({
   const createMutation = useCreateActivoAsignacion()
   const updateMutation = useUpdateActivoAsignacion()
 
-  const [areaId, setAreaId] = useState<string>("")
-  const [empleadoId, setEmpleadoId] = useState<string>("")
-  const [fechaAsignacion, setFechaAsignacion] = useState<string>("")
-  const [fechaDevolucion, setFechaDevolucion] = useState<string>("")
-  const [observacionAsignacion, setObservacionAsignacion] = useState<string>("")
-  const [observacionDevolucion, setObservacionDevolucion] = useState<string>("")
+  const [areaId, setAreaId] = useState<string>(
+    () => asignacionToEdit?.areaId || "",
+  )
+  const [empleadoId, setEmpleadoId] = useState<string>(
+    () => asignacionToEdit?.empleadoId || "",
+  )
+  const [fechaAsignacion, setFechaAsignacion] = useState<string>(() =>
+    asignacionToEdit
+      ? toLocalInputDate(asignacionToEdit.fechaAsignacion)
+      : toLocalInputDate(new Date().toISOString()),
+  )
+  const [fechaDevolucion, setFechaDevolucion] = useState<string>(() => {
+    if (!asignacionToEdit) return ""
+    return mode === "devolver" && !asignacionToEdit.fechaDevolucion
+      ? toLocalInputDate(new Date().toISOString())
+      : toLocalInputDate(asignacionToEdit.fechaDevolucion)
+  })
+  const [observacionAsignacion, setObservacionAsignacion] = useState<string>(
+    () => asignacionToEdit?.observacionAsignacion || "",
+  )
+  const [observacionDevolucion, setObservacionDevolucion] = useState<string>(
+    () => asignacionToEdit?.observacionDevolucion || "",
+  )
 
   // 1. Áreas de la organización (GET /api/v1/areas)
   const areasQuery = useQuery(
@@ -95,31 +122,6 @@ export function ActivoAsignacionModal({
   const empleadosDeArea = Array.isArray(empleadosQuery.data)
     ? empleadosQuery.data
     : (empleadosQuery.data?.content ?? [])
-
-  useEffect(() => {
-    if (open) {
-      if (asignacionToEdit) {
-        const initialAreaId = asignacionToEdit.areaId || ""
-        setAreaId(initialAreaId)
-        setEmpleadoId(asignacionToEdit.empleadoId || "")
-        setFechaAsignacion(toLocalInputDate(asignacionToEdit.fechaAsignacion))
-        setFechaDevolucion(
-          mode === "devolver" && !asignacionToEdit.fechaDevolucion
-            ? toLocalInputDate(new Date().toISOString())
-            : toLocalInputDate(asignacionToEdit.fechaDevolucion),
-        )
-        setObservacionAsignacion(asignacionToEdit.observacionAsignacion || "")
-        setObservacionDevolucion(asignacionToEdit.observacionDevolucion || "")
-      } else {
-        setAreaId("")
-        setEmpleadoId("")
-        setFechaAsignacion(toLocalInputDate(new Date().toISOString()))
-        setFechaDevolucion("")
-        setObservacionAsignacion("")
-        setObservacionDevolucion("")
-      }
-    }
-  }, [open, asignacionToEdit, mode])
 
   function handleAreaChange(newAreaId: string) {
     setAreaId(newAreaId)

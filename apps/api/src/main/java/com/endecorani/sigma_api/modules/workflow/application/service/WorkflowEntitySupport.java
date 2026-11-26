@@ -14,7 +14,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Servicio centralizado de soporte para entidades de negocio vinculadas a flujos Flowable BPMN.
@@ -70,7 +72,8 @@ public class WorkflowEntitySupport {
     }
 
     /**
-     * Resuelve de forma flexible la acción coincidente configurada en la tarea BPMN actual.
+     * Resuelve de forma estricta la acción coincidente configurada en la tarea BPMN actual.
+     * Lanza {@link BusinessException} si {@code accionId} no coincide con ninguna acción disponible.
      */
     public WorkflowActionResponse resolverAccionCoincidente(WorkflowTaskActionsResponse tareaActual, String accionId) {
         if (tareaActual == null || tareaActual.actions() == null || tareaActual.actions().isEmpty()) {
@@ -78,18 +81,47 @@ public class WorkflowEntitySupport {
         }
 
         if (accionId == null || accionId.isBlank()) {
-            return tareaActual.actions().getFirst();
+            if (tareaActual.actions().size() == 1) {
+                return tareaActual.actions().getFirst();
+            }
+            throw new BusinessException(
+                    "INVALID_WORKFLOW_ACTION",
+                    "Debe especificar una acción válida para la tarea actual. Acciones disponibles: [%s]"
+                            .formatted(formatAvailableActions(tareaActual))
+            );
         }
 
+        String normalizedAccionId = accionId.trim();
         return tareaActual.actions().stream()
-                .filter(a -> a.value() != null && (
-                        a.value().equalsIgnoreCase(accionId)
-                                || (a.name() != null && a.name().equalsIgnoreCase(accionId))
-                                || accionId.equalsIgnoreCase(a.value().replaceAll("[^A-Za-z0-9]", "_"))
-                                || accionId.equalsIgnoreCase(a.value().replaceAll("_", "-"))
-                ))
+                .filter(a -> matchesAction(a, normalizedAccionId))
                 .findFirst()
-                .orElse(tareaActual.actions().getFirst());
+                .orElseThrow(() -> new BusinessException(
+                        "INVALID_WORKFLOW_ACTION",
+                        "La acción '%s' no es válida para la tarea actual. Acciones disponibles: [%s]"
+                                .formatted(normalizedAccionId, formatAvailableActions(tareaActual))
+                ));
+    }
+
+    private boolean matchesAction(WorkflowActionResponse action, String normalizedAccionId) {
+        if (action == null) {
+            return false;
+        }
+        if (action.value() != null) {
+            if (action.value().equalsIgnoreCase(normalizedAccionId)
+                    || normalizedAccionId.equalsIgnoreCase(action.value().replaceAll("[^A-Za-z0-9]", "_"))
+                    || normalizedAccionId.equalsIgnoreCase(action.value().replaceAll("_", "-"))) {
+                return true;
+            }
+        }
+        return action.name() != null && action.name().equalsIgnoreCase(normalizedAccionId);
+    }
+
+    private String formatAvailableActions(WorkflowTaskActionsResponse tareaActual) {
+        return tareaActual.actions().stream()
+                .filter(Objects::nonNull)
+                .map(a -> a.value() != null && !a.value().isBlank() ? a.value() : a.name())
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining(", "));
     }
 
     /**

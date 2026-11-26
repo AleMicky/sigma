@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react"
+import { useMemo, useRef, useState, type ComponentProps } from "react"
 import { Link, useRouterState } from "@tanstack/react-router"
 import {
   ChevronRight,
@@ -133,21 +133,6 @@ function SidebarSearch({
   const { state, setOpen } = useSidebar()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault()
-        if (state === "collapsed") {
-          setOpen(true)
-        }
-        inputRef.current?.focus()
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [state, setOpen])
-
   if (state === "collapsed") {
     return (
       <Tooltip>
@@ -167,7 +152,7 @@ function SidebarSearch({
           <Search className="size-4" />
         </TooltipTrigger>
         <TooltipContent side="right" align="center" className="font-medium text-xs">
-          Buscar menú (⌘K)
+          Buscar menú
         </TooltipContent>
       </Tooltip>
     )
@@ -190,7 +175,7 @@ function SidebarSearch({
         placeholder="Buscar menú…"
         className="h-8.5 rounded-lg border-white/10 bg-white/5 pl-8 pr-8 text-xs text-white placeholder:text-slate-400 shadow-none transition-all focus-visible:bg-white/10 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary"
       />
-      {query ? (
+      {query && (
         <button
           type="button"
           onClick={() => onQueryChange("")}
@@ -199,10 +184,6 @@ function SidebarSearch({
         >
           <X className="size-3.5" />
         </button>
-      ) : (
-        <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-white/10 bg-white/10 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-slate-300">
-          ⌘K
-        </kbd>
       )}
     </div>
   )

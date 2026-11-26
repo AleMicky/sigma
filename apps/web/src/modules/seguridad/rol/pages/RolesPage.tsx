@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   CheckCircle2,
@@ -38,7 +38,7 @@ import { RolMenuDetailPanel } from "../components/RolMenuDetailPanel"
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 export function RolesPage() {
-  const [selectedRol, setSelectedRol] = useState<Rol | null>(null)
+  const [selectedRolId, setSelectedRolId] = useState<string | null | undefined>(undefined)
   const [detailModalRol, setDetailModalRol] = useState<Rol | null>(null)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
 
@@ -55,7 +55,10 @@ export function RolesPage() {
     }),
   )
 
-  const roles = rolesQuery.data?.content ?? []
+  const roles = useMemo(
+    () => rolesQuery.data?.content ?? [],
+    [rolesQuery.data?.content],
+  )
 
   useClampPage(
     search.page,
@@ -64,22 +67,18 @@ export function RolesPage() {
   )
 
   // Auto-selección inteligente del primer rol disponible en escritorio
-  useEffect(() => {
-    if (roles.length > 0) {
-      if (selectedRol) {
-        const updated = roles.find((r) => r.id === selectedRol.id)
-        if (updated) {
-          setSelectedRol(updated)
-        } else if (window.innerWidth >= 1024) {
-          setSelectedRol(roles[0])
-        }
-      } else if (window.innerWidth >= 1024) {
-        setSelectedRol(roles[0])
-      }
-    } else {
-      setSelectedRol(null)
+  const selectedRol = useMemo(() => {
+    if (roles.length === 0) return null
+    if (selectedRolId === null) return null
+    if (selectedRolId) {
+      const updated = roles.find((r) => r.id === selectedRolId)
+      if (updated) return updated
     }
-  }, [roles])
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      return roles[0]
+    }
+    return null
+  }, [roles, selectedRolId])
 
   const stats = useMemo(() => {
     const total = rolesQuery.data?.totalElements ?? 0
@@ -303,7 +302,7 @@ export function RolesPage() {
                     key={rol.id}
                     rol={rol}
                     isSelected={selectedRol?.id === rol.id}
-                    onSelect={(r) => setSelectedRol(r)}
+                    onSelect={(r) => setSelectedRolId(r.id)}
                   />
                 ))}
               </div>
@@ -332,7 +331,7 @@ export function RolesPage() {
           <RolMenuDetailPanel
             key={selectedRol?.id ?? "no-role-selected"}
             rol={selectedRol}
-            onBackToMaster={() => setSelectedRol(null)}
+            onBackToMaster={() => setSelectedRolId(null)}
             onOpenDetailDialog={(r) => setDetailModalRol(r)}
           />
         </div>

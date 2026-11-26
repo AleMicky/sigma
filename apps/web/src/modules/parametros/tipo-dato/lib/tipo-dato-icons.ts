@@ -1,4 +1,5 @@
-import type { LucideIcon } from "lucide-react"
+import { createElement } from "react"
+import type { LucideIcon, LucideProps } from "lucide-react"
 import {
   Calendar,
   CheckSquare,
@@ -26,4 +27,12 @@ const ICON_BY_CODIGO: Record<string, LucideIcon> = {
 
 export function getTipoDatoIcon(codigo: string): LucideIcon {
   return ICON_BY_CODIGO[codigo.trim().toUpperCase()] ?? Type
+}
+
+export interface TipoDatoIconProps extends LucideProps {
+  codigo: string
+}
+
+export function TipoDatoIcon({ codigo, ...props }: TipoDatoIconProps) {
+  return createElement(getTipoDatoIcon(codigo), props)
 }

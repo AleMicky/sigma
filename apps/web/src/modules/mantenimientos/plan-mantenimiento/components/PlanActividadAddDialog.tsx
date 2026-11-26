@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Check, CheckSquare, Layers, Loader2, Plus } from "lucide-react"
 
@@ -38,30 +38,32 @@ type PlanActividadAddDialogProps = {
   existingActividades: PlanMantenimientoActividad[]
 }
 
-export function PlanActividadAddDialog({
+export function PlanActividadAddDialog(props: PlanActividadAddDialogProps) {
+  if (!props.open) return null
+  return (
+    <PlanActividadAddDialogContent
+      key={`${props.plan.id}-${props.existingActividades.length}`}
+      {...props}
+    />
+  )
+}
+
+function PlanActividadAddDialogContent({
   open,
   onOpenChange,
   plan,
   existingActividades,
 }: PlanActividadAddDialogProps) {
-  const [selectedAplicacion, setSelectedAplicacion] = useState<ActividadAplicacion | null>(null)
-  const [orden, setOrden] = useState<number>(0)
-  const [obligatorio, setObligatorio] = useState<boolean>(true)
-
-  const createMutation = useCreatePlanMantenimientoActividad()
-
   const defaultOrder = useMemo(() => {
     if (existingActividades.length === 0) return 0
     return Math.max(...existingActividades.map((a) => a.orden ?? 0)) + 1
   }, [existingActividades])
 
-  useEffect(() => {
-    if (open) {
-      setSelectedAplicacion(null)
-      setOrden(defaultOrder)
-      setObligatorio(true)
-    }
-  }, [open, defaultOrder])
+  const [selectedAplicacion, setSelectedAplicacion] = useState<ActividadAplicacion | null>(null)
+  const [orden, setOrden] = useState<number>(() => defaultOrder)
+  const [obligatorio, setObligatorio] = useState<boolean>(true)
+
+  const createMutation = useCreatePlanMantenimientoActividad()
 
   // Cargar aplicaciones de actividades disponibles para el tipo de activo de este plan
   const aplicacionesQuery = useQuery({

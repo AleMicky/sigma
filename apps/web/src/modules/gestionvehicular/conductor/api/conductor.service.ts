@@ -87,11 +87,30 @@ export const listConductores = (filters?: ConductorListFilters): Promise<PageRes
   return http.get<PageResponse<Conductor>>(conductorEndpoints.root, { params: filters })
 }
 
+function toLocalDateTimeParam(value: string): string {
+  const trimmed = value.trim()
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) {
+    return `${trimmed}:00`
+  }
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(trimmed)) {
+    return trimmed.slice(0, 19)
+  }
+  const d = new Date(trimmed)
+  if (isNaN(d.getTime())) return trimmed
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 export const listConductoresDisponibles = (params: {
   fechaSalida: string
   fechaRetorno: string
 }): Promise<Conductor[]> => {
-  return http.get<Conductor[]>(conductorEndpoints.disponibles, { params })
+  return http.get<Conductor[]>(conductorEndpoints.disponibles, {
+    params: {
+      fechaSalida: toLocalDateTimeParam(params.fechaSalida),
+      fechaRetorno: toLocalDateTimeParam(params.fechaRetorno),
+    },
+  })
 }
 
 export const getConductor = crud.get

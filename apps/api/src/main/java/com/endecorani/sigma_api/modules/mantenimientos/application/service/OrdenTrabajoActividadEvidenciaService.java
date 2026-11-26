@@ -66,12 +66,9 @@ public class OrdenTrabajoActividadEvidenciaService {
     @Transactional
     public OrdenTrabajoActividadEvidenciaResponse replaceFile(UUID id, MultipartFile file) {
         OrdenTrabajoActividadEvidencia domain = obtenerPorId(id);
+        String oldUrl = domain.getUrl();
 
-        if (domain.getUrl() != null) {
-            documentStorageService.delete(domain.getUrl());
-        }
-
-        UUID fileId = domain.getId() != null ? domain.getId() : UUID.randomUUID();
+        UUID fileId = UUID.randomUUID();
         DocumentStorageService.StoredFile stored = documentStorageService.store(
                 EVIDENCIA_FOLDER,
                 fileId,
@@ -83,7 +80,13 @@ public class OrdenTrabajoActividadEvidenciaService {
         domain.setTamanio(stored.tamanoBytes());
         domain.setUrl(stored.publicUrl());
 
-        return mapper.toEvidenciaResponse(repository.save(domain));
+        OrdenTrabajoActividadEvidencia saved = repository.save(domain);
+
+        if (oldUrl != null && !oldUrl.equals(stored.publicUrl())) {
+            documentStorageService.delete(oldUrl);
+        }
+
+        return mapper.toEvidenciaResponse(saved);
     }
 
     @Transactional(readOnly = true)

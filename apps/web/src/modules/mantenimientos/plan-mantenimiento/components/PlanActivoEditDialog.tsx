@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   Calendar,
@@ -45,17 +45,37 @@ function getEmpleadoNombre(emp: Empleado | null | undefined): string {
   return emp.personaNombreCompleto || emp.personaInfo?.nombreCompleto || emp.codigo || ""
 }
 
-export function PlanActivoEditDialog({
+export function PlanActivoEditDialog(props: PlanActivoEditDialogProps) {
+  if (!props.open || !props.asignacion) return null
+  return (
+    <PlanActivoEditDialogContent
+      key={props.asignacion.id}
+      {...props}
+      asignacion={props.asignacion}
+    />
+  )
+}
+
+function PlanActivoEditDialogContent({
   open,
   onOpenChange,
   asignacion,
   planId,
-}: PlanActivoEditDialogProps) {
-  const [selectedResponsable, setSelectedResponsable] = useState<Empleado | null>(null)
-  const [fechaInicio, setFechaInicio] = useState<string>("")
-  const [fechaFin, setFechaFin] = useState<string>("")
-  const [estadoActivo, setEstadoActivo] = useState<boolean>(true)
-  const [dateError, setDateError] = useState<string | null>(null)
+}: Omit<PlanActivoEditDialogProps, "asignacion"> & {
+  asignacion: PlanMantenimientoActivo
+}) {
+  const [responsableOverride, setResponsableOverride] = useState<
+    Empleado | null | undefined
+  >(undefined)
+  const [fechaInicio, setFechaInicio] = useState<string>(
+    () => asignacion.fechaInicio ?? "",
+  )
+  const [fechaFin, setFechaFin] = useState<string>(
+    () => asignacion.fechaFin ?? "",
+  )
+  const [estadoActivo, setEstadoActivo] = useState<boolean>(() =>
+    Boolean(asignacion.estadoActivo),
+  )
 
   const updateMutation = useUpdatePlanMantenimientoActivo(planId)
 
@@ -68,44 +88,33 @@ export function PlanActivoEditDialog({
     return empleadosQuery.data?.content ?? []
   }, [empleadosQuery.data])
 
-  useEffect(() => {
-    if (open && asignacion) {
-      setFechaInicio(asignacion.fechaInicio ?? "")
-      setFechaFin(asignacion.fechaFin ?? "")
-      setEstadoActivo(Boolean(asignacion.estadoActivo))
-      setDateError(null)
-
-      if (asignacion.responsableId && empleadosList.length > 0) {
-        const found = empleadosList.find((e) => e.id === asignacion.responsableId) ?? null
-        setSelectedResponsable(found)
-      } else if (asignacion.responsable) {
-        setSelectedResponsable({
-          id: asignacion.responsable.id,
-          codigo: asignacion.responsable.codigo,
-          personaNombreCompleto: asignacion.responsable.nombreCompleto,
-        } as unknown as Empleado)
-      } else {
-        setSelectedResponsable(null)
-      }
+  const defaultResponsable = useMemo<Empleado | null>(() => {
+    if (asignacion.responsableId && empleadosList.length > 0) {
+      const found =
+        empleadosList.find((e) => e.id === asignacion.responsableId) ?? null
+      if (found) return found
     }
-  }, [open, asignacion, empleadosList])
+    if (asignacion.responsable) {
+      return {
+        id: asignacion.responsable.id,
+        codigo: asignacion.responsable.codigo,
+        personaNombreCompleto: asignacion.responsable.nombreCompleto,
+      } as unknown as Empleado
+    }
+    return null
+  }, [asignacion, empleadosList])
+
+  const selectedResponsable =
+    responsableOverride !== undefined ? responsableOverride : defaultResponsable
 
   // Regla 3: Validar que fechaFin sea igual o posterior a fechaInicio
-  useEffect(() => {
-    if (fechaInicio && fechaFin) {
-      if (fechaFin < fechaInicio) {
-        setDateError("La fecha de fin debe ser igual o posterior a la fecha de inicio.")
-      } else {
-        setDateError(null)
-      }
-    } else {
-      setDateError(null)
-    }
-  }, [fechaInicio, fechaFin])
+  const dateError =
+    fechaInicio && fechaFin && fechaFin < fechaInicio
+      ? "La fecha de fin debe ser igual o posterior a la fecha de inicio."
+      : null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!asignacion) return
     if (dateError) return
 
     await updateMutation.mutateAsync({
@@ -120,8 +129,6 @@ export function PlanActivoEditDialog({
 
     onOpenChange(false)
   }
-
-  if (!asignacion) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -150,7 +157,7 @@ export function PlanActivoEditDialog({
             </Label>
             <Combobox
               value={selectedResponsable}
-              onValueChange={setSelectedResponsable}
+              onValueChange={setResponsableOverride}
               itemToStringLabel={(emp) => `${emp.codigo} - ${getEmpleadoNombre(emp)}`}
             >
               <ComboboxInput

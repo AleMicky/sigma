@@ -32,6 +32,7 @@ import java.util.UUID;
         description = "Asignación y consulta de menús asociados a roles"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize("hasRole('ADMIN')")
 public class RolMenuController {
 
     private final RolMenuService rolMenuService;

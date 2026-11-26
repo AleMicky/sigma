@@ -18,7 +18,10 @@ import {
 
 import { appConfig, flattenNavChildren, routes } from "@/app/config"
 import { useAuthStore } from "@/app/store/auth.store"
-import { useAllowedNavItems } from "@/shared/hooks/use-allowed-nav-items"
+import {
+  isRouteAuthorized,
+  useAllowedNavItems,
+} from "@/shared/hooks/use-allowed-nav-items"
 import { PageShell } from "@/shared/components/page-shell"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -30,6 +33,7 @@ import {
   CardTitle,
 } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
+import { Skeleton } from "@/shared/components/ui/skeleton"
 import { cn } from "@/shared/lib/utils"
 
 const moduleMeta: Record<
@@ -137,7 +141,11 @@ export const Route = createFileRoute("/_dashboard/")({
 
 function HomePage() {
   const user = useAuthStore((state) => state.user)
-  const { navItems: userNavItems } = useAllowedNavItems()
+  const {
+    navItems: userNavItems,
+    allowedRoutes,
+    isLoading: isLoadingMenus,
+  } = useAllowedNavItems()
   const displayName =
     user?.name?.split(/\s+/)[0] || user?.username || "Usuario"
   const [searchQuery, setSearchQuery] = useState("")
@@ -178,36 +186,49 @@ function HomePage() {
     )
   }, [allLinks, searchQuery])
 
-  const quickShortcuts = [
-    {
-      title: "Solicitudes de Mantenimiento",
-      description: "Gestionar y enviar requerimientos técnicos",
-      to: routes.mantenimientos.solicitudes,
-      icon: FileText,
-      color: "text-orange-500 bg-orange-500/10 border-orange-500/20",
-    },
-    {
-      title: "Catálogo de Activos",
-      description: "Exploración visual y detalle técnico de activos",
-      to: routes.activos.catalogo,
-      icon: LayoutGrid,
-      color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
-    },
-    {
-      title: "Reporte GRS (Documentos)",
-      description: "Consulta y seguimiento documental de activos",
-      to: routes.activos.consultaDocumentos,
-      icon: FileSearch,
-      color: "text-sky-500 bg-sky-500/10 border-sky-500/20",
-    },
-    {
-      title: "Personal y Empleados",
-      description: "Directorio de personal y cargos asignados",
-      to: routes.organizacion.empleados,
-      icon: Users,
-      color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
-    },
-  ]
+  const quickShortcuts = useMemo(
+    () =>
+      [
+        {
+          title: "Solicitudes de Mantenimiento",
+          description: "Gestionar y enviar requerimientos técnicos",
+          to: routes.mantenimientos.solicitudes,
+          icon: FileText,
+          color: "text-orange-500 bg-orange-500/10 border-orange-500/20",
+        },
+        {
+          title: "Catálogo de Activos",
+          description: "Exploración visual y detalle técnico de activos",
+          to: routes.activos.catalogo,
+          icon: LayoutGrid,
+          color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+        },
+        {
+          title: "Reporte GRS (Documentos)",
+          description: "Consulta y seguimiento documental de activos",
+          to: routes.activos.consultaDocumentos,
+          icon: FileSearch,
+          color: "text-sky-500 bg-sky-500/10 border-sky-500/20",
+        },
+        {
+          title: "Personal y Empleados",
+          description: "Directorio de personal y cargos asignados",
+          to: routes.organizacion.empleados,
+          icon: Users,
+          color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
+        },
+      ].filter((sc) => isRouteAuthorized(sc.to, allowedRoutes, user?.roles)),
+    [allowedRoutes, user?.roles],
+  )
+
+  const canAccessMantenimientoCta = isRouteAuthorized(
+    routes.mantenimientos.solicitudes,
+    allowedRoutes,
+    user?.roles,
+  )
+  const canAccessActivosCta =
+    isRouteAuthorized(routes.activos.listarActivos, allowedRoutes, user?.roles) ||
+    isRouteAuthorized(routes.activos.root, allowedRoutes, user?.roles)
 
   return (
     <PageShell size="xl" layout="scroll" padding="default" className="gap-6 pb-12">
@@ -237,24 +258,37 @@ function HomePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <Button
-              size="default"
-              render={<Link to={routes.mantenimientos.solicitudes} />}
-              className="gap-2 shadow-xs"
-            >
-              <Wrench className="size-4" />
-              <span>Mantenimiento</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="default"
-              render={<Link to={routes.activos.root} />}
-              className="gap-2 hover:bg-muted/80"
-            >
-              <Boxes className="size-4 text-amber-500" />
-              <span>Ver Activos</span>
-              <ArrowRight className="size-4" />
-            </Button>
+            {isLoadingMenus ? (
+              <>
+                <Skeleton className="h-9 w-36 rounded-lg" />
+                <Skeleton className="h-9 w-32 rounded-lg" />
+              </>
+            ) : (
+              <>
+                {canAccessMantenimientoCta && (
+                  <Button
+                    size="default"
+                    render={<Link to={routes.mantenimientos.solicitudes} />}
+                    className="gap-2 shadow-xs"
+                  >
+                    <Wrench className="size-4" />
+                    <span>Mantenimiento</span>
+                  </Button>
+                )}
+                {canAccessActivosCta && (
+                  <Button
+                    variant="outline"
+                    size="default"
+                    render={<Link to={routes.activos.listarActivos} />}
+                    className="gap-2 hover:bg-muted/80"
+                  >
+                    <Boxes className="size-4 text-amber-500" />
+                    <span>Ver Activos</span>
+                    <ArrowRight className="size-4" />
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -320,51 +354,72 @@ function HomePage() {
       </div>
 
       {/* Top Shortcuts Section */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="font-heading text-base font-bold tracking-tight sm:text-lg">
-              Accesos Frecuentes
-            </h2>
-            <Badge variant="secondary" className="text-[11px] font-medium">
-              Recomendados
-            </Badge>
+      {(isLoadingMenus || quickShortcuts.length > 0) && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="font-heading text-base font-bold tracking-tight sm:text-lg">
+                Accesos Frecuentes
+              </h2>
+              <Badge variant="secondary" className="text-[11px] font-medium">
+                Recomendados
+              </Badge>
+            </div>
           </div>
-        </div>
 
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-          {quickShortcuts.map((sc) => (
-            <Link
-              key={sc.to}
-              to={sc.to}
-              className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/60 bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/40"
-            >
-              <div className="flex items-start gap-3">
+          {isLoadingMenus ? (
+            <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
                 <div
-                  className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform duration-200 group-hover:scale-105",
-                    sc.color,
-                  )}
+                  key={i}
+                  className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-4"
                 >
-                  <sc.icon className="size-5" />
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="size-10 shrink-0 rounded-xl" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-full" />
+                    </div>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                    {sc.title}
-                  </h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                    {sc.description}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center justify-end text-[11px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                <span>Ingresar</span>
-                <ChevronRight className="size-3.5 ml-0.5" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+              {quickShortcuts.map((sc) => (
+                <Link
+                  key={sc.to}
+                  to={sc.to}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/60 bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/40"
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={cn(
+                        "flex size-10 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform duration-200 group-hover:scale-105",
+                        sc.color,
+                      )}
+                    >
+                      <sc.icon className="size-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {sc.title}
+                      </h3>
+                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                        {sc.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-end text-[11px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span>Ingresar</span>
+                    <ChevronRight className="size-3.5 ml-0.5" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Module Overview & Navigation Grid */}
       <section className="flex flex-col gap-4">
@@ -379,6 +434,28 @@ function HomePage() {
           </div>
         </div>
 
+        {isLoadingMenus ? (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden rounded-2xl border border-border/70">
+                <CardHeader className="pb-3 border-b border-border/40">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="size-11 rounded-xl" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-full" />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2 pt-3 pb-4">
+                  <Skeleton className="h-6 w-full rounded-lg" />
+                  <Skeleton className="h-6 w-5/6 rounded-lg" />
+                  <Skeleton className="h-6 w-4/5 rounded-lg" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {menuModules.map((module) => {
             const meta = moduleMeta[module.title] || {
@@ -493,6 +570,7 @@ function HomePage() {
             )
           })}
         </div>
+        )}
       </section>
     </PageShell>
   )
