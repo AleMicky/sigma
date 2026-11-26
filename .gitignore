@@ -4,6 +4,7 @@ apps/sigma-mobile/
 .agents/ 
 
 docs/
+**/docs/
 
 AGENTS.md
 
