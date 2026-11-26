@@ -90,7 +90,7 @@ export function DisponibilidadActivosPage() {
     <PageShell
       size="full"
       padding="compact"
-      layout="scroll"
+      layout="auto"
       className="space-y-4 pb-8"
     >
       {/* Encabezado del Módulo */}

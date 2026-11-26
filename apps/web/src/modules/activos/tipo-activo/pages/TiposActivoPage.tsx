@@ -77,8 +77,9 @@ export function TiposActivoPage() {
   }
 
   return (
-    <div className="flex h-full flex-col min-h-0">
+    <div className="flex w-full flex-col">
       <MasterDetailLayout
+        fill={false}
         title={
           masterDetail.isMobile &&
           masterDetail.mobileShowDetail &&

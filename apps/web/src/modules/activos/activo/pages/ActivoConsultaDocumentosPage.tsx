@@ -235,7 +235,7 @@ function ActivoDetailReport({
   const color = activo.tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-y-auto p-4 sm:p-6 gap-4">
+    <div className="flex w-full flex-1 flex-col gap-4 p-4 sm:p-6">
       {/* Asset Report Banner Card */}
       <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
@@ -687,8 +687,9 @@ export function ActivoConsultaDocumentosPage() {
   const masterDetail = useMasterDetail(activos)
 
   return (
-    <div className="flex h-full flex-col min-h-0">
+    <div className="flex w-full flex-col">
       <MasterDetailLayout
+        fill={false}
         title={
           masterDetail.isMobile &&
             masterDetail.mobileShowDetail &&
@@ -723,6 +724,7 @@ export function ActivoConsultaDocumentosPage() {
         }
         master={
           <MasterPanelShell
+            fill={false}
             label="Activos en Inventario"
             search={search.search}
             onSearchChange={search.setSearch}
@@ -749,6 +751,7 @@ export function ActivoConsultaDocumentosPage() {
 
             {/* List */}
             <PaginatedList<Activo>
+              fill={false}
               items={activos}
               page={activosQuery.data}
               isLoading={activosQuery.isLoading}
@@ -828,6 +831,7 @@ export function ActivoConsultaDocumentosPage() {
         }
         detail={
           <DetailPanelShell
+            fill={false}
             hasSelection={Boolean(masterDetail.selected)}
             emptySelectionMessage="Selecciona un activo de la lista para visualizar su reporte documental."
           >

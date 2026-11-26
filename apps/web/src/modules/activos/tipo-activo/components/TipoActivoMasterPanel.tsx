@@ -52,6 +52,7 @@ export function TipoActivoMasterPanel({
 
   return (
     <MasterPanelShell
+      fill={false}
       label="Tipos de Activo"
       search={search}
       onSearchChange={onSearchChange}
@@ -79,6 +80,7 @@ export function TipoActivoMasterPanel({
       }
     >
       <PaginatedList
+        fill={false}
         items={tipos}
         page={page}
         isLoading={isLoading}

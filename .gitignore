@@ -2,6 +2,7 @@
 apps/sigma-mobile/
 **/sigma-mobile/
 .agents/ 
+.opencode/
 
 docs/
 **/docs/

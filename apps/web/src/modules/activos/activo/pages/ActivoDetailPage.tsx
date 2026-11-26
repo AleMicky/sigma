@@ -180,7 +180,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
 
   if (activoQuery.isLoading) {
     return (
-      <PageShell size="xl" layout="fill" padding="compact">
+      <PageShell size="xl" layout="auto" padding="compact">
         <div className="py-6 flex flex-col gap-4">
           <ListSkeleton rows={3} rowClassName="h-28 rounded-xl" />
         </div>
@@ -190,7 +190,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
 
   if (activoQuery.isError || !activo) {
     return (
-      <PageShell size="xl" layout="fill" padding="compact">
+      <PageShell size="xl" layout="auto" padding="compact">
         <div className="py-12 flex flex-col items-center justify-center">
           <EmptyState
             title={getErrorMessage(activoQuery.error) || "Activo no encontrado"}
@@ -209,7 +209,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
   }
 
   return (
-    <PageShell size="xl" layout="scroll" padding="compact">
+    <PageShell size="xl" layout="auto" padding="compact">
       {/* Top Header Breadcrumb & Actions */}
       <header className="flex shrink-0 flex-col gap-2.5 border-b py-2.5 sm:py-3">
         <ActivoDetailHeader

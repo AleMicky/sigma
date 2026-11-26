@@ -35,6 +35,8 @@ type PaginatedListProps<T> = {
   listClassName?: string
   children: (item: T) => ReactNode
   getKey: (item: T) => string
+  /** true = lista con scroll propio; false = crece con la página y usa el scroll principal */
+  fill?: boolean
 }
 
 export function PaginatedList<T>({
@@ -51,9 +53,12 @@ export function PaginatedList<T>({
   listClassName,
   children,
   getKey,
+  fill = true,
 }: PaginatedListProps<T>) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div
+      className={cn("flex flex-1 flex-col", fill && "min-h-0 overflow-hidden")}
+    >
       {isLoading ? (
         <ListSkeleton
           rows={skeletonRows}
@@ -86,7 +91,8 @@ export function PaginatedList<T>({
         <>
           <ul
             className={cn(
-              "min-h-0 flex-1 overflow-y-auto overscroll-contain p-2",
+              "flex-1 p-2",
+              fill && "min-h-0 overflow-y-auto overscroll-contain",
               isFetching && "opacity-70",
               listClassName,
             )}

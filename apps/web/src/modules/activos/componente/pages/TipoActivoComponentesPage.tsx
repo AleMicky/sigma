@@ -84,7 +84,7 @@ export function TipoActivoComponentesPage({
   const hasSearch = search.search.trim().length > 0
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="flex w-full flex-col">
       {/* Barra de búsqueda y acción */}
       <div className="flex shrink-0 flex-col gap-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
         <SearchField
@@ -106,7 +106,7 @@ export function TipoActivoComponentesPage({
       </div>
 
       {/* Listado con diseño unificado */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex w-full flex-col">
         {componentesQuery.isLoading ? (
           <ListSkeleton
             rows={5}
@@ -159,7 +159,7 @@ export function TipoActivoComponentesPage({
           <>
             <div
               className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 pr-1",
+                "pb-2",
                 componentesQuery.isFetching && "opacity-70",
               )}
             >
