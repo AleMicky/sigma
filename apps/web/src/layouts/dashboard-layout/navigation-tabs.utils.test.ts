@@ -89,6 +89,8 @@ describe("isFormOrTransientPath", () => {
   it("respeta listados y la raíz", () => {
     expect(isFormOrTransientPath("/")).toBe(false)
     expect(isFormOrTransientPath("/activos/catalogo")).toBe(false)
+    // REQ-BIZ-024: el listado de registro de activos no es un formulario.
+    expect(isFormOrTransientPath("/activos/registro-activo")).toBe(false)
   })
 })
 
@@ -117,6 +119,26 @@ describe("persistencia en sessionStorage", () => {
     expect(loadInitialTabs().map((tab) => tab.pathname)).toEqual([
       "/",
       "/activos",
+    ])
+  })
+
+  it("conserva el listado de registro de activo y descarta solo su alta", () => {
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify([
+        DEFAULT_HOME_TAB,
+        {
+          id: "/activos/registro-activo",
+          pathname: "/activos/registro-activo",
+          title: "Registro de Activos",
+        },
+        transientTab,
+      ]),
+    )
+
+    expect(loadInitialTabs().map((tab) => tab.pathname)).toEqual([
+      "/",
+      "/activos/registro-activo",
     ])
   })
 
@@ -163,6 +185,28 @@ describe("syncTabsOnPathChange", () => {
 
     expect(result.map((tab) => tab.pathname)).toEqual(["/", "/activos"])
     expect(result[1]).toMatchObject({ title: "Activos", color: "#10B981" })
+  })
+
+  it("registra el listado de registro de activo pero no su formulario de alta", () => {
+    const withList = syncTabsOnPathChange(
+      [DEFAULT_HOME_TAB],
+      "/activos/registro-activo",
+      navItems,
+    )
+
+    expect(withList.map((tab) => tab.pathname)).toEqual([
+      "/",
+      "/activos/registro-activo",
+    ])
+    expect(withList[1].title).toBe("Registro de Activos")
+
+    expect(
+      syncTabsOnPathChange(
+        withList,
+        "/activos/registro-activo/nuevo",
+        navItems,
+      ).map((tab) => tab.pathname),
+    ).toEqual(["/", "/activos/registro-activo"])
   })
 
   it("ignora rutas de autenticación", () => {

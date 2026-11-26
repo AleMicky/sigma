@@ -150,7 +150,9 @@ export function isFormOrTransientPath(pathname: string): boolean {
     "modificar",
     "form",
     "formulario",
-    "registro",
+    // "registro" NO es palabra de formulario: /activos/registro-activo es el
+    // listado y debe permanecer en el historial de pestañas. La alta/edición
+    // ya se detectan por "nuevo" / "editar" (REQ-BIZ-024).
     "wizard",
     "asistente",
   ]
