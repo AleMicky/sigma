@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
+import { toast } from "sonner"
 
 import { appConfig } from "@/app/config"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
@@ -14,11 +15,15 @@ import {
 import { useCanManageActivos } from "@/modules/activos/lib/use-can-manage-activos"
 
 import { activoQueries } from "../api/activo.queries"
-import type { Activo } from "../api/activo.service"
+import {
+  EMPTY_ACTIVO_RESUMEN,
+  exportarActivosDisponibilidadExcel,
+  type Activo,
+} from "../api/activo.service"
 import { ActivoContentSection } from "../components/ActivoContentSection"
 import { ActivoFilterToolbar, type StatusFilter } from "../components/ActivoFilterToolbar"
 import { ActivoHeader } from "../components/ActivoHeader"
-import { ActivoKpiCards, type ActivoKpiStats } from "../components/ActivoKpiCards"
+import { ActivoKpiCards } from "../components/ActivoKpiCards"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 const ALL_TIPOS = "__all__"
@@ -27,26 +32,6 @@ function getActivoFilterParam(statusFilter: StatusFilter): boolean | undefined {
   if (statusFilter === "active") return true
   if (statusFilter === "inactive") return false
   return undefined
-}
-
-function isOperativoActivo(activo: Activo): boolean {
-  const nombre = activo.estadoOperativo?.nombre?.toLowerCase() ?? ""
-  if (nombre.includes("operativo")) return true
-  return !nombre.includes("mantenimiento") && activo.activo !== false
-}
-
-function computeActivoKpiStats(
-  activos: Activo[],
-  totalElements?: number,
-): ActivoKpiStats {
-  const total = totalElements ?? activos.length
-  const deBaja = activos.filter((a) => a.activo === false).length
-  const enMantenimiento = activos.filter((a) =>
-    a.estadoOperativo?.nombre?.toLowerCase().includes("mantenimiento"),
-  ).length
-  const operativos = activos.filter(isOperativoActivo).length
-
-  return { total, deBaja, enMantenimiento, operativos }
 }
 
 function buildActivoQueryParams(
@@ -85,6 +70,7 @@ export function ActivosPage() {
   const [tipoActivoId, setTipoActivoId] = useState<string>(ALL_TIPOS)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [viewMode, setViewMode] = useState<"list" | "grid">("list")
+  const [isExportingExcel, setIsExportingExcel] = useState(false)
 
   const search = usePaginatedSearch({ resetKey: `${tipoActivoId}-${statusFilter}` })
 
@@ -136,15 +122,23 @@ export function ActivosPage() {
 
   const activosQuery = useQuery(activoQueries.list(queryParams))
 
+  const resumenFilters = useMemo(
+    () => ({
+      q: search.query || undefined,
+      tipoActivoId: tipoActivoId !== ALL_TIPOS ? tipoActivoId : undefined,
+      activo: getActivoFilterParam(statusFilter),
+    }),
+    [search.query, tipoActivoId, statusFilter],
+  )
+  const resumenQuery = useQuery(activoQueries.resumen(resumenFilters))
+
   const activos = useMemo(
     () => activosQuery.data?.content ?? [],
     [activosQuery.data?.content],
   )
 
-  const kpiStats = useMemo(
-    () => computeActivoKpiStats(activos, activosQuery.data?.totalElements),
-    [activos, activosQuery.data?.totalElements],
-  )
+  // Los KPI vienen del servidor con los mismos filtros, no de la página actual.
+  const kpiStats = resumenQuery.data ?? EMPTY_ACTIVO_RESUMEN
 
   useClampPage(search.page, search.setPage, activosQuery.data?.totalPages)
 
@@ -184,6 +178,29 @@ export function ActivosPage() {
     search.setPage(0)
   }
 
+  async function handleExportarExcel() {
+    if (isExportingExcel) return
+
+    try {
+      setIsExportingExcel(true)
+      await exportarActivosDisponibilidadExcel({
+        q: search.query?.trim() || undefined,
+        tipoActivoId:
+          tipoActivoId !== ALL_TIPOS ? tipoActivoId : undefined,
+        activo: getActivoFilterParam(statusFilter),
+      })
+      toast.success("Reporte de activos exportado a Excel correctamente.")
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Error al exportar el archivo Excel.",
+      )
+    } finally {
+      setIsExportingExcel(false)
+    }
+  }
+
   const hasActiveFilters = checkHasActiveFilters(
     search.search,
     tipoActivoId,
@@ -197,11 +214,15 @@ export function ActivosPage() {
         totalActivos={activosQuery.data?.totalElements}
         onCreate={goCreate}
         canManage={canManage}
-        queries={[activosQuery, tiposQuery, ubicacionesQuery]}
+        queries={[activosQuery, resumenQuery, tiposQuery, ubicacionesQuery]}
       />
 
-      {/* KPI Summary Cards */}
-      <ActivoKpiCards stats={kpiStats} />
+      {/* KPI Summary Cards — solo se muestran cifras del servidor */}
+      <ActivoKpiCards
+        stats={kpiStats}
+        isLoading={resumenQuery.isLoading}
+        isError={resumenQuery.isError}
+      />
 
       {/* Filter Toolbar with Status Tabs & View Switcher */}
       <ActivoFilterToolbar
@@ -211,12 +232,23 @@ export function ActivosPage() {
         onTipoActivoChange={handleTipoActivoChange}
         statusFilter={statusFilter}
         onStatusFilterChange={handleStatusFilterChange}
+        statusCounts={
+          resumenQuery.data
+            ? {
+                all: kpiStats.total,
+                active: kpiStats.total - kpiStats.deBaja,
+                inactive: kpiStats.deBaja,
+              }
+            : undefined
+        }
         tipos={tipos}
         tiposById={tiposById}
         hasActiveFilters={hasActiveFilters}
         onResetFilters={resetFilters}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        onExportarExcel={handleExportarExcel}
+        isExportingExcel={isExportingExcel}
       />
 
       {/* Main Content Area */}
@@ -236,6 +268,7 @@ export function ActivosPage() {
           onResetFilters={resetFilters}
           onCreate={goCreate}
           onEdit={goEdit}
+          onRetry={() => void activosQuery.refetch()}
           canManage={canManage}
         />
       </div>

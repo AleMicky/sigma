@@ -1,9 +1,10 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Activity, Check, Loader2 } from "lucide-react"
 
 import { estadoOperativoQueries } from "@/modules/activos/estado-operativo/api/estado-operativo.queries"
 import type { EstadoOperativo } from "@/modules/activos/estado-operativo/api/estado-operativo.service"
+import { tipoActivoEstadoQueries } from "@/modules/activos/tipo-activo-estado/api/tipo-activo-estado.queries"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -19,6 +20,10 @@ import { cn } from "@/shared/lib/utils"
 
 import { useCambiarEstadoOperativoActivo } from "../api/activo.mutations"
 import type { Activo } from "../api/activo.service"
+import {
+  includeCurrentEstadoOption,
+  resolveEstadosDelTipo,
+} from "../lib/estado-operativo.utils"
 
 interface CambiarEstadoOperativoDialogProps {
   open: boolean
@@ -53,7 +58,36 @@ function CambiarEstadoOperativoForm({
       direction: "ASC",
     }),
   )
-  const estadosOperativos = estadosQuery.data?.content ?? []
+  const estadosOperativos = useMemo(
+    () => estadosQuery.data?.content ?? [],
+    [estadosQuery.data?.content],
+  )
+
+  // El backend solo acepta estados asignados al tipo del activo (422 si no lo
+  // están). Se replica la lógica del formulario de registro/edición.
+  const tipoActivoId = activo.tipoActivo?.id ?? activo.tipoActivoId ?? ""
+  const estadoActualId =
+    activo.estadoOperativo?.id ?? activo.estadoOperativoId ?? ""
+  const estadosDelTipoQuery = useQuery(
+    tipoActivoEstadoQueries.byTipoActivoId(tipoActivoId),
+  )
+  const estadosDelTipo = useMemo(
+    () =>
+      resolveEstadosDelTipo(
+        estadosDelTipoQuery.data?.content ?? [],
+        estadosOperativos,
+      ),
+    [estadosDelTipoQuery.data?.content, estadosOperativos],
+  )
+  const estadosParaSelector = useMemo(
+    () =>
+      includeCurrentEstadoOption(
+        estadosDelTipo,
+        estadoActualId,
+        estadosOperativos,
+      ),
+    [estadosDelTipo, estadoActualId, estadosOperativos],
+  )
 
   const handleGuardar = async () => {
     if (!selectedEstadoId) return
@@ -105,13 +139,14 @@ function CambiarEstadoOperativoForm({
           <FieldLabel className="text-xs font-semibold text-foreground mb-1.5">
             Nuevo Estado Operativo
           </FieldLabel>
-          {estadosQuery.isLoading ? (
+          {estadosQuery.isLoading ||
+          (Boolean(tipoActivoId) && estadosDelTipoQuery.isLoading) ? (
             <div className="flex items-center justify-center p-6 text-muted-foreground">
               <Loader2 className="size-5 animate-spin" />
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {estadosOperativos.map((estado: EstadoOperativo) => {
+              {estadosParaSelector.map((estado: EstadoOperativo) => {
                 const isSelected = selectedEstadoId === estado.id
                 const color = estado.color || "#10B981"
                 return (

@@ -1,4 +1,5 @@
 import { http } from "@/shared/api"
+import { toLocalDateKey } from "@/shared/lib/date"
 import type { PageParams, PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
@@ -33,7 +34,6 @@ export interface ViajeVehicularFiltros extends PageParams {
   estado?: EstadoViajeVehicular
   fechaDesde?: string
   fechaHasta?: string
-  sort?: string
 }
 
 export const getViajeByAsignacion = (
@@ -61,11 +61,21 @@ export const listViajes = (
 }
 
 export const exportarViajesExcel = async (
-  filtros?: Omit<ViajeVehicularFiltros, "page" | "size" | "sort">
+  filtros?: Omit<
+    ViajeVehicularFiltros,
+    "page" | "size" | "sortBy" | "direction"
+  >
 ): Promise<void> => {
   const params: Record<string, string> = {}
 
   if (filtros?.search) params.search = filtros.search
+  if (filtros?.q) params.q = filtros.q
+  if (filtros?.asignacionVehicularId) {
+    params.asignacionVehicularId = filtros.asignacionVehicularId
+  }
+  if (filtros?.solicitudVehicularId) {
+    params.solicitudVehicularId = filtros.solicitudVehicularId
+  }
   if (filtros?.activoId) params.activoId = filtros.activoId
   if (filtros?.conductorId) params.conductorId = filtros.conductorId
   if (filtros?.estado) params.estado = filtros.estado
@@ -83,7 +93,7 @@ export const exportarViajesExcel = async (
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  const fechaHoy = new Date().toISOString().split("T")[0]
+  const fechaHoy = toLocalDateKey()
   a.download = `historial-viajes-vehiculares-${fechaHoy}.xlsx`
   document.body.appendChild(a)
   a.click()

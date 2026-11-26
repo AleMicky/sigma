@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.AnularRegistroPorteriaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistrarLlegadaPorteriaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistrarSalidaPorteriaRequest;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.BitacoraPorteriaItemResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.RegistroPorteriaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.response.ReporteBitacoraPorteriaResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.service.RegistroPorteriaService;
@@ -25,6 +26,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -45,6 +47,7 @@ import java.util.UUID;
         description = "Registro ágil de salidas y llegadas en portería (guardia, empleado, hora y activos)"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(GestionVehicularRoles.OPERACION)
 public class RegistroPorteriaController {
 
     private static final ZoneId ZONA = FlexibleLocalDateTimeParser.OPERATIONAL_ZONE;
@@ -99,6 +102,7 @@ public class RegistroPorteriaController {
         return ResponseEntity.ok(ApiResponse.success(service.listarAfuera()));
     }
 
+    @PreAuthorize(GestionVehicularRoles.REPORTE)
     @GetMapping({"/reporte", "/bitacora"})
     @Operation(summary = "Reporte completo de todos los datos registrados en portería al estilo de bitácora "
             + "(ordenado cronológicamente, con métricas consolidadas, ruta, tiempos y detalle de activos)")
@@ -144,6 +148,55 @@ public class RegistroPorteriaController {
         );
     }
 
+    @PreAuthorize(GestionVehicularRoles.REPORTE)
+    @GetMapping("/reporte/paginado")
+    @Operation(summary = "Reporte de bitácora paginado (REQ-VEH-019): mismos filtros de /reporte, "
+            + "response acotada por size, orden fechaHoraSalida ASC y sin métricas")
+    public ResponseEntity<ApiResponse<PageResponse<BitacoraPorteriaItemResponse>>> reporteBitacoraPaginado(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) UUID empleadoId,
+            @RequestParam(required = false) UUID activoId,
+            @RequestParam(required = false) UUID areaId,
+            @RequestParam(required = false) UUID createdById,
+            @RequestParam(required = false) Boolean esExterno,
+            @RequestParam(required = false) EstadoRegistroPorteria estado,
+            @RequestParam(required = false) String fechaDesde,
+            @RequestParam(required = false) String fechaHasta,
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        String searchTerm = (search != null && !search.isBlank())
+                ? search.trim()
+                : (q != null && !q.isBlank() ? q.trim() : null);
+
+        Instant parsedFechaDesde = parseFecha(
+                fechaDesde != null && !fechaDesde.isBlank() ? fechaDesde : fechaInicio,
+                "fechaDesde/fechaInicio", false
+        );
+        Instant parsedFechaHasta = parseFecha(
+                fechaHasta != null && !fechaHasta.isBlank() ? fechaHasta : fechaFin,
+                "fechaHasta/fechaFin", true
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(service.generarReporteBitacoraPaginado(
+                page,
+                size,
+                searchTerm,
+                empleadoId,
+                activoId,
+                areaId,
+                createdById,
+                esExterno,
+                estado,
+                parsedFechaDesde,
+                parsedFechaHasta
+        )));
+    }
+
+    @PreAuthorize(GestionVehicularRoles.REPORTE)
     @GetMapping(value = {"/reporte/pdf", "/bitacora/pdf"}, produces = MediaType.APPLICATION_PDF_VALUE)
     @Operation(summary = "Descargar reporte oficial en PDF de la bitácora de control de portería en formato ENDE CORANI")
     public ResponseEntity<byte[]> reporteBitacoraPdf(

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -104,6 +105,16 @@ public class SalidaVehicularRepositoryAdapter implements SalidaVehicularReposito
     @Override
     public List<SalidaVehicular> findActivas(UUID areaId, UUID createdById) {
         return springRepository.findActivas(areaId, createdById).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<SalidaVehicular> findAllByIdIn(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springRepository.findAllByIdIn(ids).stream()
                 .map(mapper::toDomain)
                 .toList();
     }

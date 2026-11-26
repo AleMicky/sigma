@@ -46,6 +46,26 @@ public interface RegistroPorteriaRepository {
     );
 
     /**
+     * Variante del listado paginado que añade el filtro {@code esExterno} del
+     * reporte de bitácora, manteniendo el resto de filtros y el orden del
+     * {@link Pageable} recibido.
+     */
+    Page<RegistroPorteria> findAll(
+            String search,
+            UUID empleadoId,
+            UUID activoId,
+            UUID areaId,
+            UUID createdById,
+            boolean unirPorOr,
+            Boolean esExterno,
+            TipoMovimientoPorteria tipoMovimiento,
+            EstadoRegistroPorteria estado,
+            Instant fechaDesde,
+            Instant fechaHasta,
+            Pageable pageable
+    );
+
+    /**
      * Lista todos los registros de portería que coincidan con los filtros para el reporte estilo bitácora,
      * ordenados cronológicamente de forma ascendente por {@code fechaHoraSalida}.
      */

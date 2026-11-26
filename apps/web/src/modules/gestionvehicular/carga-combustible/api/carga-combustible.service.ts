@@ -1,5 +1,6 @@
 import { http } from "@/shared/api"
-import type { PageResponse } from "@/shared/types/api.types"
+import { toLocalDateKey } from "@/shared/lib/date"
+import type { PageParams, PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
 import { cargaCombustibleEndpoints } from "./carga-combustible.endpoints"
@@ -62,6 +63,7 @@ export type CargaCombustiblePayload = {
   viajeVehicularId?: string | null
   salidaVehicularId?: string | null
   insumoId: string
+  /** `yyyy-MM-ddTHH:mm:ss` en hora local (America/La_Paz). */
   fechaCarga?: string | null
   litros: number
   precioTotal: number
@@ -83,9 +85,7 @@ export type CargaCombustibleUpdatePayload = {
   empleadoId: string
 }
 
-export type CargaCombustibleListFilters = {
-  page?: number
-  size?: number
+export type CargaCombustibleListFilters = PageParams & {
   search?: string
   activoId?: string
   viajeVehicularId?: string
@@ -94,13 +94,10 @@ export type CargaCombustibleListFilters = {
   empleadoId?: string
   fechaDesde?: string
   fechaHasta?: string
-  sort?: string
 }
 
-export const listCargasCombustible = (
-  filters?: CargaCombustibleListFilters
-): Promise<PageResponse<CargaCombustible>> => {
-  const params: Record<string, unknown> = { ...filters }
+/** Normaliza fechas `YYYY-MM-DD` a rangos `LocalDateTime` para el filtro de la API. */
+function normalizeFechaFiltros(params: Record<string, unknown>): void {
   if (
     typeof params.fechaDesde === "string" &&
     params.fechaDesde.trim() &&
@@ -115,6 +112,13 @@ export const listCargasCombustible = (
   ) {
     params.fechaHasta = `${params.fechaHasta.trim()}T23:59:59`
   }
+}
+
+export const listCargasCombustible = (
+  filters?: CargaCombustibleListFilters
+): Promise<PageResponse<CargaCombustible>> => {
+  const params: Record<string, unknown> = { ...filters }
+  normalizeFechaFiltros(params)
   return http.get<PageResponse<CargaCombustible>>(
     cargaCombustibleEndpoints.root,
     { params }
@@ -167,17 +171,25 @@ export const deleteCargaCombustible = (id: string): Promise<void> => {
 }
 
 export const exportarCargasCombustibleExcel = async (
-  filtros?: Omit<CargaCombustibleListFilters, "page" | "size" | "sort">
+  filtros?: Omit<
+    CargaCombustibleListFilters,
+    "page" | "size" | "sortBy" | "direction"
+  >
 ): Promise<void> => {
-  const params: Record<string, string> = {}
+  const params: Record<string, unknown> = {}
 
   if (filtros?.search) params.search = filtros.search
+  if (filtros?.q) params.q = filtros.q
   if (filtros?.activoId) params.activoId = filtros.activoId
   if (filtros?.viajeVehicularId) params.viajeVehicularId = filtros.viajeVehicularId
+  if (filtros?.salidaVehicularId) {
+    params.salidaVehicularId = filtros.salidaVehicularId
+  }
   if (filtros?.insumoId) params.insumoId = filtros.insumoId
   if (filtros?.empleadoId) params.empleadoId = filtros.empleadoId
   if (filtros?.fechaDesde) params.fechaDesde = filtros.fechaDesde
   if (filtros?.fechaHasta) params.fechaHasta = filtros.fechaHasta
+  normalizeFechaFiltros(params)
 
   const blob = await http.get<Blob>(cargaCombustibleEndpoints.exportarExcel, {
     params,
@@ -190,7 +202,7 @@ export const exportarCargasCombustibleExcel = async (
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  const fechaHoy = new Date().toISOString().split("T")[0]
+  const fechaHoy = toLocalDateKey()
   a.download = `consumo-combustible-${fechaHoy}.xlsx`
   document.body.appendChild(a)
   a.click()

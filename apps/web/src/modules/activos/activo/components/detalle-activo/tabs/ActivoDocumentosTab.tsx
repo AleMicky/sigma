@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
+  AlertCircle,
   Download,
   Eye,
   FileSearch,
@@ -22,7 +23,11 @@ import { useDeleteActivoDocumento } from "@/modules/activos/activo-documento/api
 import { activoDocumentoQueries } from "@/modules/activos/activo-documento/api/activo-documento.queries"
 import type { ActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.service"
 import { tipoDocumentoQueries } from "@/modules/activos/tipo-documento/api/tipo-documento.queries"
-import { fetchAuthenticatedBlob } from "@/shared/api"
+import {
+  downloadProtectedFile,
+  getErrorMessage,
+  openProtectedFile,
+} from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import {
@@ -47,6 +52,7 @@ const DOCUMENTO_ESTADO_OPTIONS: OptionsComboboxOption[] = [
   { value: "vigente", label: "Vigente" },
   { value: "por_vencer", label: "Próximo a vencer" },
   { value: "vencido", label: "Vencido" },
+  { value: "permanente", label: "Permanente" },
 ]
 
 type ActivoDocumentosTabProps = {
@@ -138,9 +144,10 @@ export function ActivoDocumentosTab({
   async function handleViewFile(doc: ActivoDocumento) {
     try {
       setLoadingDocId(doc.id)
-      const blob = await fetchAuthenticatedBlob(doc.rutaArchivo)
-      const url = URL.createObjectURL(blob)
-      window.open(url, "_blank")
+      await openProtectedFile(
+        doc.rutaArchivo,
+        doc.nombreArchivo || `${doc.nombre}.pdf`,
+      )
     } catch {
       toast.error("No se pudo cargar el archivo para visualización")
     } finally {
@@ -151,15 +158,10 @@ export function ActivoDocumentosTab({
   async function handleDownloadFile(doc: ActivoDocumento) {
     try {
       setLoadingDocId(doc.id)
-      const blob = await fetchAuthenticatedBlob(doc.rutaArchivo)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = doc.nombreArchivo || `${doc.nombre}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      await downloadProtectedFile(
+        doc.rutaArchivo,
+        doc.nombreArchivo || `${doc.nombre}.pdf`,
+      )
       toast.success(`Descargando: ${doc.nombreArchivo || doc.nombre}`)
     } catch {
       toast.error("No se pudo descargar el archivo")
@@ -180,8 +182,29 @@ export function ActivoDocumentosTab({
 
   if (documentosQuery.isLoading) {
     return (
-      <div className="py-4">
+      <div className="py-4" aria-busy="true">
         <ListSkeleton rows={3} rowClassName="h-36 rounded-2xl" />
+      </div>
+    )
+  }
+
+  if (documentosQuery.isError) {
+    return (
+      <div role="alert" className="py-4">
+        <EmptyState
+          icon={<AlertCircle className="size-8 text-destructive/70" />}
+          title="No se pudieron cargar los documentos"
+          description={getErrorMessage(documentosQuery.error)}
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void documentosQuery.refetch()}
+            >
+              Reintentar
+            </Button>
+          }
+        />
       </div>
     )
   }
@@ -212,14 +235,16 @@ export function ActivoDocumentosTab({
           />
         </div>
 
-        <Button
-          size="sm"
-          onClick={onOpenAddDocument}
-          className="h-8.5 text-xs font-semibold shadow-xs"
-        >
-          <Plus className="size-3.5" />
-          Nuevo Documento
-        </Button>
+        {canManage ? (
+          <Button
+            size="sm"
+            onClick={onOpenAddDocument}
+            className="h-8.5 text-xs font-semibold shadow-xs"
+          >
+            <Plus className="size-3.5" />
+            Nuevo Documento
+          </Button>
+        ) : null}
       </div>
 
       {/* Document Cards Grid */}
@@ -233,10 +258,12 @@ export function ActivoDocumentosTab({
               : "Este activo aún no tiene documentos o comprobantes asociados."
           }
           action={
-            <Button size="sm" onClick={onOpenAddDocument}>
-              <Plus className="size-4" />
-              Registrar Primer Documento
-            </Button>
+            canManage ? (
+              <Button size="sm" onClick={onOpenAddDocument}>
+                <Plus className="size-4" />
+                Registrar Primer Documento
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -287,9 +314,13 @@ export function ActivoDocumentosTab({
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                         Por vencer
                       </span>
-                    ) : (
+                    ) : estado === "vencido" ? (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-destructive/15 text-destructive border border-destructive/25">
                         Vencido
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/80">
+                        Permanente
                       </span>
                     )}
                   </div>

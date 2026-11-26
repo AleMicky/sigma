@@ -17,23 +17,22 @@ import {
   type ActivoParaSolicitudParams,
 } from "./activo.service"
 
+function normalizeQ(q?: string): string | undefined {
+  return q?.trim() || undefined
+}
+
 export const activoQueries = {
   list: (filters?: ActivoListFilters) =>
     queryOptions({
       queryKey: activoKeys.list(filters),
-      queryFn: () => {
-        const q = filters?.q?.trim()
-        return listActivos(q ? { ...filters, q } : { ...filters, q: undefined })
-      },
+      queryFn: () => listActivos({ ...filters, q: normalizeQ(filters?.q) }),
     }),
 
   resumen: (filters?: ActivoResumenFilters) =>
     queryOptions({
       queryKey: activoKeys.resumen(filters),
-      queryFn: () => {
-        const q = filters?.q?.trim()
-        return getActivoResumen(q ? { ...filters, q } : filters)
-      },
+      queryFn: () =>
+        getActivoResumen({ ...filters, q: normalizeQ(filters?.q) }),
     }),
 
   paraSolicitud: (params?: ActivoParaSolicitudParams) =>

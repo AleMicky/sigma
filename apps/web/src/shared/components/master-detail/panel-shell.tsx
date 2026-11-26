@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 
 import { SearchField } from "@/shared/components/search-field"
+import { cn } from "@/shared/lib/utils"
 
 type MasterPanelShellProps = {
   label: string
@@ -10,6 +11,7 @@ type MasterPanelShellProps = {
   searchAriaLabel: string
   children: ReactNode
   footer?: ReactNode
+  fill?: boolean
 }
 
 export function MasterPanelShell({
@@ -20,9 +22,15 @@ export function MasterPanelShell({
   searchAriaLabel,
   children,
   footer,
+  fill = true,
 }: MasterPanelShellProps) {
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden border-b md:border-r md:border-b-0">
+    <div
+      className={cn(
+        "flex w-full flex-1 flex-col border-b md:border-r md:border-b-0",
+        fill && "h-full min-h-0 overflow-hidden",
+      )}
+    >
       <div className="flex shrink-0 flex-col gap-2 border-b px-3 py-3 sm:px-4">
         <p className="hidden text-xs font-medium tracking-wide text-muted-foreground uppercase md:block">
           {label}
@@ -34,7 +42,12 @@ export function MasterPanelShell({
           aria-label={searchAriaLabel}
         />
       </div>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div
+        className={cn(
+          "flex flex-1 flex-col",
+          fill && "min-h-0 overflow-hidden",
+        )}
+      >
         {children}
       </div>
       {footer}
@@ -48,6 +61,7 @@ type DetailPanelShellProps = {
   header?: ReactNode
   children: ReactNode
   footer?: ReactNode
+  fill?: boolean
 }
 
 export function DetailPanelShell({
@@ -56,10 +70,16 @@ export function DetailPanelShell({
   header,
   children,
   footer,
+  fill = true,
 }: DetailPanelShellProps) {
   if (!hasSelection) {
     return (
-      <div className="flex h-full w-full min-h-0 flex-1 items-center justify-center overflow-hidden p-6 sm:p-8">
+      <div
+        className={cn(
+          "flex w-full flex-1 items-center justify-center p-6 sm:p-8",
+          fill && "h-full min-h-0 overflow-hidden",
+        )}
+      >
         <p className="text-center text-sm text-muted-foreground">
           {emptySelectionMessage}
         </p>
@@ -68,9 +88,16 @@ export function DetailPanelShell({
   }
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
+    <div
+      className={cn(
+        "flex w-full flex-1 flex-col",
+        fill && "h-full min-h-0 overflow-hidden",
+      )}
+    >
       {header}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div
+        className={cn("flex flex-1 flex-col", fill && "min-h-0 overflow-hidden")}
+      >
         {children}
       </div>
       {footer}

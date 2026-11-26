@@ -34,10 +34,14 @@ import { ConsumoCombustibleDetalleDialog } from "./ConsumoCombustibleDetalleDial
 export interface ConsumoCombustibleTableProps {
   cargas: CargaCombustible[]
   isLoading?: boolean
+  isError?: boolean
   currentPage: number
   pageSize: number
   totalElements: number
   totalPages: number
+  sortBy?: "fechaCarga"
+  direction?: "ASC" | "DESC"
+  onSortChange?: (sortBy: "fechaCarga", direction: "ASC" | "DESC") => void
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
 }
@@ -45,15 +49,23 @@ export interface ConsumoCombustibleTableProps {
 export function ConsumoCombustibleTable({
   cargas,
   isLoading = false,
+  isError = false,
   currentPage,
   pageSize,
   totalElements,
   totalPages,
+  sortBy = "fechaCarga",
+  direction = "DESC",
+  onSortChange,
   onPageChange,
   onPageSizeChange,
 }: Readonly<ConsumoCombustibleTableProps>) {
   const [selectedCarga, setSelectedCarga] = React.useState<CargaCombustible | null>(null)
   const [detalleOpen, setDetalleOpen] = React.useState(false)
+
+  const handleSortToggle = () => {
+    onSortChange?.(sortBy, direction === "DESC" ? "ASC" : "DESC")
+  }
 
   const handleVerDetalle = (carga: CargaCombustible) => {
     setSelectedCarga(carga)
@@ -62,13 +74,25 @@ export function ConsumoCombustibleTable({
 
   return (
     <>
-      <Card className="border-border/60 shadow-xs overflow-hidden">
+      <Card className="border-border/60 shadow-xs overflow-hidden" aria-busy={isLoading}>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
               <TableRow>
                 <TableHead className="w-12 text-center">Nº</TableHead>
-                <TableHead className="min-w-[130px]">Fecha Carga</TableHead>
+                <TableHead
+                  className="min-w-[130px]"
+                  aria-sort={direction === "DESC" ? "descending" : "ascending"}
+                >
+                  <button
+                    type="button"
+                    onClick={handleSortToggle}
+                    aria-label={`Ordenar por fecha de carga, actualmente ${direction === "DESC" ? "descendente" : "ascendente"}`}
+                    className="inline-flex items-center gap-1 rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    Fecha Carga <span aria-hidden="true">{direction === "DESC" ? "↓" : "↑"}</span>
+                  </button>
+                </TableHead>
                 <TableHead className="min-w-[120px]">Factura / Vale</TableHead>
                 <TableHead className="min-w-[180px]">Vehículo / Activo</TableHead>
                 <TableHead className="min-w-[130px]">Combustible</TableHead>
@@ -98,7 +122,7 @@ export function ConsumoCombustibleTable({
                 ))
               )}
 
-              {!isLoading && cargas.length === 0 && (
+              {!isError && !isLoading && cargas.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={10} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">

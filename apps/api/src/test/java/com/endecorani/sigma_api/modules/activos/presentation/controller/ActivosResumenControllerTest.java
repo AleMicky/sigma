@@ -43,19 +43,31 @@ class ActivosResumenControllerTest {
     void getActivosResumen_exponeLosKpisBajoData() throws Exception {
         UUID tipoId = UUID.randomUUID();
         UUID ubicacionId = UUID.randomUUID();
-        when(activoService.resumen("ACT-1", tipoId, ubicacionId, true))
-                .thenReturn(new ActivoResumenResponse(20, 3, 4, 13));
+        UUID estadoId = UUID.randomUUID();
+        UUID categoriaId = UUID.randomUUID();
+        when(activoService.resumen("ACT-1", tipoId, ubicacionId, true, estadoId, categoriaId))
+                .thenReturn(new ActivoResumenResponse(20, 3, 4, 13, 7, 3, 2, 1, 12, 60.0));
 
         mockMvc.perform(get("/api/v1/activos/resumen")
                         .param("q", "ACT-1")
                         .param("tipoActivoId", tipoId.toString())
                         .param("ubicacionId", ubicacionId.toString())
-                        .param("activo", "true"))
+                        .param("activo", "true")
+                        .param("estadoOperativoId", estadoId.toString())
+                        .param("categoriaId", categoriaId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(20))
                 .andExpect(jsonPath("$.data.deBaja").value(3))
                 .andExpect(jsonPath("$.data.enMantenimiento").value(4))
-                .andExpect(jsonPath("$.data.operativos").value(13));
+                .andExpect(jsonPath("$.data.operativos").value(13))
+                .andExpect(jsonPath("$.data.operativo").value(7))
+                .andExpect(jsonPath("$.data.reserva").value(3))
+                .andExpect(jsonPath("$.data.enViaje").value(2))
+                .andExpect(jsonPath("$.data.fueraServicio").value(1))
+                .andExpect(jsonPath("$.data.disponibles").value(12))
+                .andExpect(jsonPath("$.data.tasaDisponibilidad").value(60.0));
+
+        verify(activoService).resumen("ACT-1", tipoId, ubicacionId, true, estadoId, categoriaId);
     }
 
     @Test

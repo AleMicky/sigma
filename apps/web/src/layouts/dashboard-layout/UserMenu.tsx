@@ -65,6 +65,7 @@ export function UserMenu() {
               <SidebarMenuButton
                 size="default"
                 tooltip={displayName}
+                aria-label={`Menú de usuario: ${displayName}`}
                 className="group h-8.5 rounded-md px-1.5 data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-colors"
               />
             }
@@ -134,6 +135,8 @@ export function UserMenu() {
                 <button
                   type="button"
                   onClick={() => setTheme("light")}
+                  aria-label="Tema claro"
+                  aria-pressed={theme === "light"}
                   className={cn(
                     "flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10.5px] font-medium transition-all",
                     theme === "light"
@@ -147,6 +150,8 @@ export function UserMenu() {
                 <button
                   type="button"
                   onClick={() => setTheme("dark")}
+                  aria-label="Tema oscuro"
+                  aria-pressed={theme === "dark"}
                   className={cn(
                     "flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10.5px] font-medium transition-all",
                     theme === "dark"
@@ -160,6 +165,8 @@ export function UserMenu() {
                 <button
                   type="button"
                   onClick={() => setTheme("system")}
+                  aria-label="Tema automático (según el sistema)"
+                  aria-pressed={theme === "system"}
                   className={cn(
                     "flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[10.5px] font-medium transition-all",
                     theme === "system"

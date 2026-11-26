@@ -123,7 +123,7 @@ export function TipoActivoEstadosTab({ tipoActivoId }: TipoActivoEstadosTabProps
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="flex w-full flex-col">
       {/* Barra de herramientas */}
       <div className="flex shrink-0 items-center justify-between py-3">
         <div className="flex items-center gap-2">
@@ -152,7 +152,7 @@ export function TipoActivoEstadosTab({ tipoActivoId }: TipoActivoEstadosTabProps
       </div>
 
       {/* Lista de estados asignados */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex w-full flex-col">
         {estadosAsignadosQuery.isLoading || todosEstadosQuery.isLoading ? (
           <ListSkeleton rows={4} rowClassName="h-14 rounded-xl" />
         ) : estadosAsignadosQuery.isError ? (
@@ -183,7 +183,7 @@ export function TipoActivoEstadosTab({ tipoActivoId }: TipoActivoEstadosTabProps
             }
           />
         ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 space-y-2 pb-4">
+          <div className="space-y-2 pb-4">
             {asignaciones.map((item) => {
               const estado = estadosMap.get(item.estadoOperativoId)
               const color = estado?.color || "#10B981"

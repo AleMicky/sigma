@@ -11,6 +11,7 @@ import { toast } from "sonner"
 
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
+import { TipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
 import {
   ALL_TIPOS,
@@ -94,7 +95,10 @@ export function ActivoCatalogoToolbar({
     }
     return (
       <span className="flex min-w-0 items-center gap-1.5 truncate">
-        <Filter className="size-3.5 shrink-0 text-muted-foreground" />
+        <TipoActivoIcon
+          name={tipo.icono}
+          className="size-3.5 shrink-0 text-muted-foreground"
+        />
         <span
           className="size-2 shrink-0 rounded-full"
           style={{ backgroundColor: tipo.color || DEFAULT_TIPO_ACTIVO_COLOR }}
@@ -109,6 +113,10 @@ export function ActivoCatalogoToolbar({
     if (!tipo) return <span className="truncate">{option.label}</span>
     return (
       <span className="flex min-w-0 items-center gap-2 truncate">
+        <TipoActivoIcon
+          name={tipo.icono}
+          className="size-3.5 shrink-0 text-muted-foreground"
+        />
         <span
           className="size-2 shrink-0 rounded-full"
           style={{ backgroundColor: tipo.color || DEFAULT_TIPO_ACTIVO_COLOR }}

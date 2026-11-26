@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { gestionVehicularDashboardKeys } from "../../dashboard/api/gestion-vehicular-dashboard.queries"
 import { toast } from "sonner"
 
 import { getErrorMessage } from "@/shared/api"
@@ -21,6 +22,7 @@ export function useCreateFlota() {
   return useMutation({
     mutationFn: (data: FlotaVehicularRequest) => flotaService.create(data),
     onSuccess: (saved) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.all })
       toast.success("Flota vehicular creada", {
         description: `Se creó la flota "${saved.nombre}" exitosamente.`,
@@ -41,6 +43,7 @@ export function useUpdateFlota() {
     mutationFn: ({ id, data }: { id: string; data: FlotaVehicularUpdate }) =>
       flotaService.update(id, data),
     onSuccess: (saved) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.all })
       toast.success("Flota vehicular actualizada", {
         description: `Se actualizó la flota "${saved.nombre}".`,
@@ -60,6 +63,7 @@ export function useToggleActivoFlota() {
   return useMutation({
     mutationFn: (id: string) => flotaService.toggleActivo(id),
     onSuccess: (saved) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.all })
       toast.success(
         saved.activo ? "Flota activada" : "Flota desactivada",
@@ -84,6 +88,7 @@ export function useDeleteFlota() {
   return useMutation({
     mutationFn: (id: string) => flotaService.delete(id),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.all })
       toast.success("Flota eliminada", {
         description: "La flota vehicular ha sido eliminada correctamente.",
@@ -104,6 +109,7 @@ export function useAsignarVehiculos() {
   return useMutation({
     mutationFn: (data: FlotaVehiculoRequest) => flotaService.asignarVehiculos(data),
     onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.vehiculos(vars.flotaVehicularId) })
       queryClient.invalidateQueries({ queryKey: flotaKeys.lists() })
       toast.success("Vehículo(s) asignado(s)", {
@@ -124,6 +130,7 @@ export function useAsignarVehiculosBatch() {
   return useMutation({
     mutationFn: (data: FlotaVehiculoBatchRequest) => flotaService.asignarVehiculosBatch(data),
     onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.vehiculos(vars.flotaVehicularId) })
       queryClient.invalidateQueries({ queryKey: flotaKeys.lists() })
       toast.success("Vehículos asignados", {
@@ -145,6 +152,7 @@ export function useSincronizarVehiculos() {
     mutationFn: ({ flotaId, data }: { flotaId: string; data: SincronizarFlotaVehiculosRequest }) =>
       flotaService.sincronizarVehiculos(flotaId, data),
     onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.vehiculos(vars.flotaId) })
       queryClient.invalidateQueries({ queryKey: flotaKeys.lists() })
       toast.success("Vehículos sincronizados", {
@@ -166,6 +174,7 @@ export function useToggleActivoVehiculo() {
     mutationFn: ({ id }: { id: string; flotaId: string }) =>
       flotaService.toggleActivoVehiculo(id),
     onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.vehiculos(vars.flotaId) })
       toast.success("Estado de vehículo actualizado")
     },
@@ -184,6 +193,7 @@ export function useDeleteVehiculo() {
     mutationFn: ({ id }: { id: string; flotaId: string }) =>
       flotaService.deleteVehiculo(id),
     onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.vehiculos(vars.flotaId) })
       queryClient.invalidateQueries({ queryKey: flotaKeys.lists() })
       toast.success("Vehículo desvinculado", {
@@ -205,6 +215,7 @@ export function useAsignarResponsable() {
   return useMutation({
     mutationFn: (data: ResponsableFlotaRequest) => flotaService.asignarResponsable(data),
     onSuccess: (saved) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.responsables(saved.flotaVehicularId) })
       toast.success("Responsable asignado", {
         description: "El empleado fue asignado como responsable de la flota.",
@@ -225,6 +236,7 @@ export function useUpdateResponsable() {
     mutationFn: ({ id, data }: { id: string; data: ResponsableFlotaUpdate }) =>
       flotaService.updateResponsable(id, data),
     onSuccess: (saved) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.responsables(saved.flotaVehicularId) })
       toast.success("Responsable actualizado")
     },
@@ -243,6 +255,7 @@ export function useSetResponsablePrincipal() {
     mutationFn: ({ id }: { id: string; flotaId: string }) =>
       flotaService.setResponsablePrincipal(id),
     onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.responsables(vars.flotaId) })
       toast.success("Responsable principal actualizado", {
         description: "Se estableció el nuevo responsable principal de la flota.",
@@ -263,6 +276,7 @@ export function useToggleActivoResponsable() {
     mutationFn: ({ id }: { id: string; flotaId: string }) =>
       flotaService.toggleActivoResponsable(id),
     onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.responsables(vars.flotaId) })
       toast.success("Estado de responsable actualizado")
     },
@@ -281,6 +295,7 @@ export function useDeleteResponsable() {
     mutationFn: ({ id }: { id: string; flotaId: string }) =>
       flotaService.deleteResponsable(id),
     onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({ queryKey: flotaKeys.responsables(vars.flotaId) })
       toast.success("Responsable desvinculado", {
         description: "El responsable fue desvinculado de la flota.",

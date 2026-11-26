@@ -1,12 +1,18 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.service;
 
+import com.endecorani.sigma_api.config.security.SecurityUtils;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.response.SolicitudVehicularAdjuntoResponse;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.mapper.SolicitudVehicularAdjuntoMapper;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SolicitudVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SolicitudVehicularAdjunto;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ConductorRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.SolicitudVehicularAdjuntoRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.SolicitudVehicularRepository;
+import com.endecorani.sigma_api.modules.organizacion.domain.repository.EmpleadoRepository;
+import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.shared.application.storage.DocumentStorageService;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -37,9 +43,22 @@ class SolicitudVehicularAdjuntoServiceTest {
     private SolicitudVehicularAdjuntoMapper mapper;
     @Mock
     private DocumentStorageService documentStorageService;
+    @Mock
+    private SecurityUtils securityUtils;
+    @Mock
+    private UsuarioRepository usuarioRepository;
+    @Mock
+    private EmpleadoRepository empleadoRepository;
+    @Mock
+    private ConductorRepository conductorRepository;
 
     @InjectMocks
     private SolicitudVehicularAdjuntoService service;
+
+    @BeforeEach
+    void usuarioAdmin() {
+        when(securityUtils.isAdmin()).thenReturn(true);
+    }
 
     @Test
     void replaceFile_dosReemplazosPdfConsecutivos_generanUuidsNuevosYPreservanArchivoNuevo() {
@@ -57,6 +76,9 @@ class SolicitudVehicularAdjuntoServiceTest {
 
         List<UUID> capturedIds = new ArrayList<>();
         when(repository.findById(adjuntoId)).thenReturn(Optional.of(domain));
+        when(solicitudVehicularRepository.findById(domain.getSolicitudVehicularId()))
+                .thenReturn(Optional.of(SolicitudVehicular.builder()
+                        .id(domain.getSolicitudVehicularId()).build()));
         when(documentStorageService.store(eq("solicitud_vehicular_adjuntos"), any(UUID.class), any(MultipartFile.class)))
                 .thenAnswer(inv -> {
                     UUID fileId = inv.getArgument(1);
@@ -104,11 +126,15 @@ class SolicitudVehicularAdjuntoServiceTest {
         String existingUrl = "/api/v1/files/solicitud_vehicular_adjuntos/valido.pdf";
         SolicitudVehicularAdjunto domain = SolicitudVehicularAdjunto.builder()
                 .id(adjuntoId)
+                .solicitudVehicularId(UUID.randomUUID())
                 .url(existingUrl)
                 .build();
 
         MockMultipartFile invalidFile = new MockMultipartFile("file", "bad.exe", "application/octet-stream", "MZ".getBytes());
         when(repository.findById(adjuntoId)).thenReturn(Optional.of(domain));
+        when(solicitudVehicularRepository.findById(domain.getSolicitudVehicularId()))
+                .thenReturn(Optional.of(SolicitudVehicular.builder()
+                        .id(domain.getSolicitudVehicularId()).build()));
         when(documentStorageService.store(eq("solicitud_vehicular_adjuntos"), any(UUID.class), eq(invalidFile)))
                 .thenThrow(new BusinessException("INVALID_MIME", "Formato no soportado"));
 

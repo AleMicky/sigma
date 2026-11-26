@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import {
   Car,
   Check,
@@ -17,11 +17,10 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react"
-import { toast } from "sonner"
-
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { formatDate } from "@/shared/lib/format-date"
 import { cn } from "@/shared/lib/utils"
 
@@ -73,7 +72,8 @@ export function ConductorDetailPanel({
   onPrev,
   onNext,
 }: ConductorDetailPanelProps) {
-  const [copiedLicencia, setCopiedLicencia] = useState<string | null>(null)
+  const { copy: copyToClipboard, isCopied: isLicenciaCopiada } =
+    useCopyToClipboard()
 
   const nombre = conductor?.empleado?.nombreCompleto || "Conductor Seleccionado"
   const codigo = conductor?.empleado?.codigo || "-"
@@ -129,10 +129,7 @@ export function ConductorDetailPanel({
   }, [licenciaVigente, hoy])
 
   function copyText(val: string) {
-    navigator.clipboard.writeText(val)
-    setCopiedLicencia(val)
-    toast.success(`Copiado: ${val}`)
-    setTimeout(() => setCopiedLicencia(null), 2000)
+    void copyToClipboard(val)
   }
 
   if (!conductor) {
@@ -425,7 +422,7 @@ export function ConductorDetailPanel({
                         className="text-muted-foreground hover:text-foreground cursor-pointer"
                         title="Copiar número"
                       >
-                        {copiedLicencia === licenciaVigente.numeroLicencia ? (
+                        {isLicenciaCopiada(licenciaVigente.numeroLicencia) ? (
                           <Check className="size-3 text-emerald-500" />
                         ) : (
                           <Copy className="size-3" />
@@ -533,7 +530,7 @@ export function ConductorDetailPanel({
           ) : (
             <div className="space-y-2">
               {historialLicencias.map((lic, index) => {
-                const isCopied = copiedLicencia === lic.numeroLicencia
+                const isCopied = isLicenciaCopiada(lic.numeroLicencia)
 
                 return (
                   <div

@@ -95,23 +95,45 @@ public interface SpringActivoRepository
                 Pageable pageable);
 
         /**
-         * REQ-BIZ-006: deBaja = activo = false; enMantenimiento = nombre del
-         * estado operativo contiene "mantenimiento"; operativos = no dado de
-         * baja y sin mantenimiento. Se agrega en servidor con los mismos
-         * filtros que el listado (q, tipo, ubicación y activo).
+         * REQ-BIZ-006 / REQ-BIZ-020: agregación server-side con los mismos
+         * filtros que el listado (q, tipo, ubicación, activo, estado operativo
+         * y categoría del tipo de activo).
+         *
+         * Regla canónica (idéntica a ActivoEstadoClasificador): de baja =
+         * {@code activo = false} O código {@code DE_BAJA}. Esa condición gana
+         * sobre cualquier otro estado, por lo que los seis cubos son
+         * excluyentes y suman {@code total}. El KPI legado {@code operativos}
+         * se mantiene como total - deBaja - enMantenimiento.
          */
         @Query("""
                 SELECT COUNT(a) AS total,
-                       COALESCE(SUM(CASE WHEN a.activo = false THEN 1 ELSE 0 END), 0) AS deBaja,
-                       COALESCE(SUM(CASE WHEN LOWER(e.nombre) LIKE '%mantenimiento%' THEN 1 ELSE 0 END), 0) AS enMantenimiento,
+                       COALESCE(SUM(CASE WHEN a.activo = false OR UPPER(e.codigo) = 'DE_BAJA' THEN 1 ELSE 0 END), 0) AS deBaja,
+                       COALESCE(SUM(CASE WHEN a.activo = true AND UPPER(e.codigo) = 'MANTENIMIENTO' THEN 1 ELSE 0 END), 0) AS enMantenimiento,
                        COALESCE(SUM(CASE WHEN a.activo = true
-                                          AND (e.nombre IS NULL OR LOWER(e.nombre) NOT LIKE '%mantenimiento%')
-                                         THEN 1 ELSE 0 END), 0) AS operativos
+                                          AND (e.codigo IS NULL OR UPPER(e.codigo) NOT IN ('DE_BAJA', 'MANTENIMIENTO'))
+                                         THEN 1 ELSE 0 END), 0) AS operativos,
+                       COALESCE(SUM(CASE WHEN a.activo = true
+                                          AND (e.codigo IS NULL OR UPPER(e.codigo) NOT IN ('DE_BAJA', 'MANTENIMIENTO', 'FUERA_SERVICIO', 'RESERVA', 'EN_VIAJE'))
+                                         THEN 1 ELSE 0 END), 0) AS operativo,
+                       COALESCE(SUM(CASE WHEN a.activo = true AND UPPER(e.codigo) = 'RESERVA' THEN 1 ELSE 0 END), 0) AS reserva,
+                       COALESCE(SUM(CASE WHEN a.activo = true AND UPPER(e.codigo) = 'EN_VIAJE' THEN 1 ELSE 0 END), 0) AS enViaje,
+                       COALESCE(SUM(CASE WHEN a.activo = true AND UPPER(e.codigo) = 'FUERA_SERVICIO' THEN 1 ELSE 0 END), 0) AS fueraServicio,
+                       COALESCE(SUM(CASE WHEN a.activo = true
+                                          AND (e.codigo IS NULL OR UPPER(e.codigo) NOT IN ('DE_BAJA', 'MANTENIMIENTO', 'FUERA_SERVICIO'))
+                                         THEN 1 ELSE 0 END), 0) AS disponibles,
+                       CASE WHEN COUNT(a) = 0 THEN 0.0
+                            ELSE COALESCE(SUM(CASE WHEN a.activo = true
+                                                    AND (e.codigo IS NULL OR UPPER(e.codigo) NOT IN ('DE_BAJA', 'MANTENIMIENTO', 'FUERA_SERVICIO'))
+                                                   THEN 1 ELSE 0 END), 0) * 100.0 / COUNT(a)
+                       END AS tasaDisponibilidad
                 FROM ActivoEntity a
                 LEFT JOIN a.estadoOperativo e
+                LEFT JOIN TipoActivoEntity ta ON a.tipoActivoId = ta.id
                 WHERE (:tipoActivoId IS NULL OR a.tipoActivoId = :tipoActivoId)
                   AND (:ubicacionId IS NULL OR a.ubicacionId = :ubicacionId)
                   AND (:activo IS NULL OR a.activo = :activo)
+                  AND (:estadoOperativoId IS NULL OR a.estadoOperativoId = :estadoOperativoId)
+                  AND (:categoriaId IS NULL OR ta.categoriaId = :categoriaId)
                   AND (
                     CAST(:query AS String) IS NULL
                     OR LOWER(a.codigo) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%'))
@@ -124,7 +146,18 @@ public interface SpringActivoRepository
                 @Param("query") String query,
                 @Param("tipoActivoId") UUID tipoActivoId,
                 @Param("ubicacionId") UUID ubicacionId,
-                @Param("activo") Boolean activo);
+                @Param("activo") Boolean activo,
+                @Param("estadoOperativoId") UUID estadoOperativoId,
+                @Param("categoriaId") UUID categoriaId);
+
+        /** Compatibilidad con llamadas que aún no usan los filtros nuevos. */
+        default ActivoResumenProjection summarize(
+                String query,
+                UUID tipoActivoId,
+                UUID ubicacionId,
+                Boolean activo) {
+                return summarize(query, tipoActivoId, ubicacionId, activo, null, null);
+        }
 
         @Query("""
                 SELECT a

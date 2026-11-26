@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -28,6 +29,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import tools.jackson.databind.json.JsonMapper;
@@ -37,9 +39,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -57,10 +62,15 @@ class ActivosControllersSecurityTest {
     @Autowired
     private WebApplicationContext context;
 
+    @Autowired
+    private ActivoService activoService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
+        when(activoService.exportarDisponibilidadExcel(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new byte[]{1, 2, 3, 4});
         mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 
@@ -73,6 +83,12 @@ class ActivosControllersSecurityTest {
         @Bean
         JsonMapper jsonMapper() {
             return JsonMapper.builder().build();
+        }
+
+        /** Necesario para que MockMvc resuelva el multipart del endpoint de imagen. */
+        @Bean
+        StandardServletMultipartResolver multipartResolver() {
+            return new StandardServletMultipartResolver();
         }
 
         @Bean
@@ -233,5 +249,74 @@ class ActivosControllersSecurityTest {
         mockMvc.perform(patch("/api/v1/activos/{id}/activo", id)
                         .header(HttpHeaders.AUTHORIZATION, ADMIN))
                 .andExpect(status().isOk());
+    }
+
+    // REQ-BIZ-023: cobertura explícita de /resumen, /disponibilidad, export Excel e imagen.
+
+    @Test
+    void sinJwt_resumenDisponibilidadExportEImagenDevuelven401() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/v1/activos/resumen"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/activos/disponibilidad"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/activos/disponibilidad/exportar-excel"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(multipart("/api/v1/activos/{id}/imagen", id).file(imagen()))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/api/v1/activos/{id}/imagen", id))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void jwtOperador_lecturaYExportPermitidosPeroImagenSinPermisoDevuelve403() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        // Contrato de los tres endpoints de lectura: cualquier JWT válido (rol autenticado).
+        mockMvc.perform(get("/api/v1/activos/resumen").header(HttpHeaders.AUTHORIZATION, OPERADOR))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/activos/disponibilidad").header(HttpHeaders.AUTHORIZATION, OPERADOR))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/activos/disponibilidad/exportar-excel")
+                        .header(HttpHeaders.AUTHORIZATION, OPERADOR))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+
+        // La imagen es administrativa: rol sin permiso => 403.
+        mockMvc.perform(multipart("/api/v1/activos/{id}/imagen", id)
+                        .file(imagen()).header(HttpHeaders.AUTHORIZATION, OPERADOR))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/v1/activos/{id}/imagen", id)
+                        .header(HttpHeaders.AUTHORIZATION, OPERADOR))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void jwtAdmin_losCuatroEndpointsIncluidaImagenDevuelven200() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/v1/activos/resumen").header(HttpHeaders.AUTHORIZATION, ADMIN))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/activos/disponibilidad").header(HttpHeaders.AUTHORIZATION, ADMIN))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/activos/disponibilidad/exportar-excel")
+                        .header(HttpHeaders.AUTHORIZATION, ADMIN))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        mockMvc.perform(multipart("/api/v1/activos/{id}/imagen", id)
+                        .file(imagen()).header(HttpHeaders.AUTHORIZATION, ADMIN))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/v1/activos/{id}/imagen", id)
+                        .header(HttpHeaders.AUTHORIZATION, ADMIN))
+                .andExpect(status().isOk());
+    }
+
+    private static MockMultipartFile imagen() {
+        return new MockMultipartFile(
+                "file", "foto.png", "image/png",
+                new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A});
     }
 }

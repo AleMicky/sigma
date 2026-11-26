@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { gestionVehicularDashboardKeys } from "../../dashboard/api/gestion-vehicular-dashboard.queries"
 import { toast } from "sonner"
 
 import { workflowKeys } from "@/modules/workflow/api/workflow.keys"
@@ -19,6 +20,7 @@ export const useCreateAsignacionVehicular = () => {
     mutationFn: (payload: AsignacionVehicularPayload) =>
       createAsignacionVehicular(payload),
     onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({
         queryKey: asignacionVehicularKeys.all,
       })
@@ -53,6 +55,7 @@ export const useUpdateAsignacionVehicular = () => {
       payload: AsignacionVehicularUpdatePayload
     }) => updateAsignacionVehicular(id, payload),
     onSuccess: (_, { id, payload }) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({
         queryKey: asignacionVehicularKeys.all,
       })
@@ -84,6 +87,7 @@ export const useDeleteAsignacionVehicular = () => {
   return useMutation({
     mutationFn: (id: string) => deleteAsignacionVehicular(id),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({
         queryKey: asignacionVehicularKeys.all,
       })

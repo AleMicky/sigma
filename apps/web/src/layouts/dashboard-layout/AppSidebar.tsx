@@ -179,6 +179,7 @@ function SidebarSearch({
         <button
           type="button"
           onClick={() => onQueryChange("")}
+          aria-label="Limpiar búsqueda del menú"
           className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-0.5 text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-colors"
           title="Limpiar búsqueda"
         >

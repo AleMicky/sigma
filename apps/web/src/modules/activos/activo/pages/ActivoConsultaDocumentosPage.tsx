@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
+  AlertCircle,
   Calendar,
   CheckCircle2,
   Clock,
@@ -36,9 +37,12 @@ import {
 import {
   ALL_DOCUMENTO_FILTER,
   buildDocumentoFilters,
-  getDocumentoEstado,
 } from "@/modules/activos/activo-documento/lib/activo-documento.utils"
-import { fetchAuthenticatedBlob, getErrorMessage } from "@/shared/api"
+import {
+  downloadProtectedFile,
+  getErrorMessage,
+  openProtectedFile,
+} from "@/shared/api"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -67,6 +71,7 @@ import { cn } from "@/shared/lib/utils"
 
 import { activoQueries } from "../api/activo.queries"
 import type { Activo } from "../api/activo.service"
+import { getDocumentoEstado } from "../lib/activo-documentos.utils"
 
 const PAGE_SIZE = 12
 const ALL_FILTER = "__all__"
@@ -186,6 +191,7 @@ function ActivoDetailReport({
     [query.data?.content],
   )
   const stats = resumenQuery.data ?? EMPTY_ACTIVO_DOCUMENTO_RESUMEN
+  const statsPlaceholder = resumenQuery.isLoading || resumenQuery.isError
   const hasDocumentoFilters =
     docSearch.search.trim().length > 0 ||
     tipoDocFilter !== ALL_DOCUMENTO_FILTER ||
@@ -202,9 +208,10 @@ function ActivoDetailReport({
   async function handleViewFile(doc: ActivoDocumento) {
     try {
       setLoadingDocId(doc.id)
-      const blob = await fetchAuthenticatedBlob(doc.rutaArchivo)
-      const url = URL.createObjectURL(blob)
-      window.open(url, "_blank")
+      await openProtectedFile(
+        doc.rutaArchivo,
+        doc.nombreArchivo || `${doc.nombre}.pdf`,
+      )
     } catch {
       toast.error("No se pudo abrir el archivo")
     } finally {
@@ -215,15 +222,10 @@ function ActivoDetailReport({
   async function handleDownloadFile(doc: ActivoDocumento) {
     try {
       setLoadingDocId(doc.id)
-      const blob = await fetchAuthenticatedBlob(doc.rutaArchivo)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = doc.nombreArchivo || `${doc.nombre}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      await downloadProtectedFile(
+        doc.rutaArchivo,
+        doc.nombreArchivo || `${doc.nombre}.pdf`,
+      )
       toast.success(`Descargando: ${doc.nombreArchivo || doc.nombre}`)
     } catch {
       toast.error("No se pudo descargar el archivo")
@@ -235,7 +237,7 @@ function ActivoDetailReport({
   const color = activo.tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-y-auto p-4 sm:p-6 gap-4">
+    <div className="flex w-full flex-1 flex-col gap-4 p-4 sm:p-6">
       {/* Asset Report Banner Card */}
       <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
@@ -303,7 +305,10 @@ function ActivoDetailReport({
         </div>
 
         {/* Stats Metrics Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div
+          className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
+          aria-busy={resumenQuery.isLoading}
+        >
           <div className="flex items-center gap-2.5 p-2.5 rounded-xl border border-border/70 bg-muted/20 shadow-2xs">
             <div className="flex size-7.5 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <FileText className="size-4" />
@@ -313,7 +318,7 @@ function ActivoDetailReport({
                 Total Registrados
               </span>
               <span className="font-heading font-bold text-sm text-foreground">
-                {stats.total}{" "}
+                {statsPlaceholder ? "—" : stats.total}{" "}
                 <span className="text-[10px] font-normal text-muted-foreground">docs</span>
               </span>
             </div>
@@ -328,7 +333,7 @@ function ActivoDetailReport({
                 Vigentes / OK
               </span>
               <span className="font-heading font-bold text-sm text-emerald-700 dark:text-emerald-300">
-                {stats.vigentes + stats.permanentes}
+                {statsPlaceholder ? "—" : stats.vigentes + stats.permanentes}
               </span>
             </div>
           </div>
@@ -342,7 +347,7 @@ function ActivoDetailReport({
                 Por Vencer (&lt;30d)
               </span>
               <span className="font-heading font-bold text-sm text-amber-700 dark:text-amber-300">
-                {stats.porVencer}
+                {statsPlaceholder ? "—" : stats.porVencer}
               </span>
             </div>
           </div>
@@ -356,7 +361,7 @@ function ActivoDetailReport({
                 Vencidos
               </span>
               <span className="font-heading font-bold text-sm text-destructive">
-                {stats.vencidos}
+                {statsPlaceholder ? "—" : stats.vencidos}
               </span>
             </div>
           </div>
@@ -366,7 +371,7 @@ function ActivoDetailReport({
       {/* Detail Document List Section */}
       <div className="flex flex-col gap-3.5">
         {/* Filter Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 print:hidden">
           <div className="flex items-center gap-2 flex-1 flex-wrap">
             <SearchField
               value={docSearch.search}
@@ -430,11 +435,27 @@ function ActivoDetailReport({
             className="flex flex-col gap-2.5 p-0"
           />
         ) : query.isError ? (
-          <EmptyState
-            title="Error al cargar documentos"
-            description="No se pudo obtener el historial de documentos para este activo."
-            className="text-destructive py-6"
-          />
+          <div role="alert" className="text-destructive">
+            <EmptyState
+              icon={<AlertCircle className="size-8 text-destructive/70" />}
+              title="Error al cargar documentos"
+              description={
+                getErrorMessage(query.error) ||
+                "No se pudo obtener el historial de documentos para este activo."
+              }
+              action={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void query.refetch()}
+                >
+                  <RotateCcw className="size-4" />
+                  Reintentar
+                </Button>
+              }
+              className="py-6"
+            />
+          </div>
         ) : documentos.length === 0 ? (
           hasDocumentoFilters ? (
             <EmptyState
@@ -687,8 +708,9 @@ export function ActivoConsultaDocumentosPage() {
   const masterDetail = useMasterDetail(activos)
 
   return (
-    <div className="flex h-full flex-col min-h-0">
+    <div className="flex w-full flex-col">
       <MasterDetailLayout
+        fill={false}
         title={
           masterDetail.isMobile &&
             masterDetail.mobileShowDetail &&
@@ -702,7 +724,7 @@ export function ActivoConsultaDocumentosPage() {
         backLabel="Volver a lista de activos"
         onBack={masterDetail.backToMaster}
         headerAction={
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 print:hidden">
             <Button
               size="sm"
               variant="outline"
@@ -722,112 +744,118 @@ export function ActivoConsultaDocumentosPage() {
           </div>
         }
         master={
-          <MasterPanelShell
-            label="Activos en Inventario"
-            search={search.search}
-            onSearchChange={search.setSearch}
-            searchPlaceholder="Buscar por código, código alternativo o nombre..."
-            searchAriaLabel="Buscar activo por nombre, código o código alternativo"
-          >
-            {/* Filter Tipo de Activo inside master panel */}
-            <div className="border-b px-3 py-2 bg-muted/15">
-              <OptionsCombobox
-                options={tipoActivoOptions}
-                value={tipoActivoId}
-                onValueChange={(value) => {
-                  setTipoActivoId(value || ALL_FILTER)
-                  search.setPage(0)
-                }}
-                placeholder="Tipo de Activo"
-                ariaLabel="Tipo de activo"
-                size="sm"
-                className="w-full"
-                renderValue={(option) => renderConIcono(option, Layers)}
-                emptyMessage="No se encontraron tipos de activo"
-              />
-            </div>
-
-            {/* List */}
-            <PaginatedList<Activo>
-              items={activos}
-              page={activosQuery.data}
-              isLoading={activosQuery.isLoading}
-              isFetching={activosQuery.isFetching}
-              errorMessage={
-                activosQuery.isError ? getErrorMessage(activosQuery.error) : null
-              }
-              hasSearch={search.search.trim().length > 0 || tipoActivoId !== ALL_FILTER}
-              onPageChange={search.setPage}
-              getKey={(activo) => activo.id}
-              empty={{
-                icon: <FileSearch className="size-4 text-muted-foreground" />,
-                title: "No hay activos",
-                description: "No se encontraron activos registrados en el inventario.",
-                searchDescription: "Prueba modificando el criterio de búsqueda o el tipo de activo.",
-              }}
+          <div className="print:hidden flex w-full flex-1 flex-col">
+            <MasterPanelShell
+              fill={false}
+              label="Activos en Inventario"
+              search={search.search}
+              onSearchChange={search.setSearch}
+              searchPlaceholder="Buscar por código, código alternativo o nombre..."
+              searchAriaLabel="Buscar activo por nombre, código o código alternativo"
             >
-              {(activo) => {
-                const color = activo.tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
-                const isSelected = masterDetail.selectedId === activo.id
+              {/* Filter Tipo de Activo inside master panel */}
+              <div className="border-b px-3 py-2 bg-muted/15">
+                <OptionsCombobox
+                  options={tipoActivoOptions}
+                  value={tipoActivoId}
+                  onValueChange={(value) => {
+                    setTipoActivoId(value || ALL_FILTER)
+                    search.setPage(0)
+                  }}
+                  placeholder="Tipo de Activo"
+                  ariaLabel="Tipo de activo"
+                  size="sm"
+                  className="w-full"
+                  renderValue={(option) => renderConIcono(option, Layers)}
+                  emptyMessage="No se encontraron tipos de activo"
+                />
+              </div>
 
-                return (
-                  <SelectableListItem
-                    key={activo.id}
-                    active={isSelected}
-                    onSelect={() => masterDetail.select(activo.id)}
-                    title={
-                      <div className="flex items-center gap-2 min-w-0">
-                        <AuthenticatedImage
-                          src={activo.urlImagen}
-                          alt={activo.nombre}
-                          className="size-7.5 shrink-0 rounded-lg object-cover border border-border/70"
-                          fallbackClassName="size-7.5 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 text-primary"
-                          fallback={
-                            <TipoActivoIcon
-                              name={activo.tipoActivo?.icono}
-                              className="size-3.5"
-                            />
-                          }
-                        />
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="font-mono text-[10px] font-bold text-muted-foreground uppercase bg-muted px-1 rounded shrink-0">
-                              {activo.codigo}
-                            </span>
-                            <span className="font-semibold text-xs text-foreground truncate">
-                              {activo.nombre}
-                            </span>
+              {/* List */}
+              <PaginatedList<Activo>
+                fill={false}
+                items={activos}
+                page={activosQuery.data}
+                isLoading={activosQuery.isLoading}
+                isFetching={activosQuery.isFetching}
+                errorMessage={
+                  activosQuery.isError ? getErrorMessage(activosQuery.error) : null
+                }
+                onRetry={() => void activosQuery.refetch()}
+                hasSearch={search.search.trim().length > 0 || tipoActivoId !== ALL_FILTER}
+                onPageChange={search.setPage}
+                getKey={(activo) => activo.id}
+                empty={{
+                  icon: <FileSearch className="size-4 text-muted-foreground" />,
+                  title: "No hay activos",
+                  description: "No se encontraron activos registrados en el inventario.",
+                  searchDescription: "Prueba modificando el criterio de búsqueda o el tipo de activo.",
+                }}
+              >
+                {(activo) => {
+                  const color = activo.tipoActivo?.color || DEFAULT_TIPO_ACTIVO_COLOR
+                  const isSelected = masterDetail.selectedId === activo.id
+
+                  return (
+                    <SelectableListItem
+                      key={activo.id}
+                      active={isSelected}
+                      onSelect={() => masterDetail.select(activo.id)}
+                      title={
+                        <div className="flex items-center gap-2 min-w-0">
+                          <AuthenticatedImage
+                            src={activo.urlImagen}
+                            alt={activo.nombre}
+                            className="size-7.5 shrink-0 rounded-lg object-cover border border-border/70"
+                            fallbackClassName="size-7.5 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 text-primary"
+                            fallback={
+                              <TipoActivoIcon
+                                name={activo.tipoActivo?.icono}
+                                className="size-3.5"
+                              />
+                            }
+                          />
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-mono text-[10px] font-bold text-muted-foreground uppercase bg-muted px-1 rounded shrink-0">
+                                {activo.codigo}
+                              </span>
+                              <span className="font-semibold text-xs text-foreground truncate">
+                                {activo.nombre}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    }
-                    subtitle={
-                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 pl-9.5 truncate">
-                        {activo.tipoActivo && (
-                          <span className="flex items-center gap-1 shrink-0">
-                            <span
-                              className="size-1.5 rounded-full inline-block"
-                              style={{ backgroundColor: color }}
-                            />
-                            <span className="truncate">{activo.tipoActivo.nombre}</span>
-                          </span>
-                        )}
-                        {activo.ubicacion && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate">{activo.ubicacion.nombre}</span>
-                          </>
-                        )}
-                      </div>
-                    }
-                  />
-                )
-              }}
-            </PaginatedList>
-          </MasterPanelShell>
+                      }
+                      subtitle={
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 pl-9.5 truncate">
+                          {activo.tipoActivo && (
+                            <span className="flex items-center gap-1 shrink-0">
+                              <span
+                                className="size-1.5 rounded-full inline-block"
+                                style={{ backgroundColor: color }}
+                              />
+                              <span className="truncate">{activo.tipoActivo.nombre}</span>
+                            </span>
+                          )}
+                          {activo.ubicacion && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate">{activo.ubicacion.nombre}</span>
+                            </>
+                          )}
+                        </div>
+                      }
+                    />
+                  )
+                }}
+              </PaginatedList>
+            </MasterPanelShell>
+          </div>
         }
         detail={
           <DetailPanelShell
+            fill={false}
             hasSelection={Boolean(masterDetail.selected)}
             emptySelectionMessage="Selecciona un activo de la lista para visualizar su reporte documental."
           >
@@ -845,5 +873,3 @@ export function ActivoConsultaDocumentosPage() {
     </div>
   )
 }
-
-

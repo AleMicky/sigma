@@ -118,7 +118,7 @@ export function AccesoriosPage() {
     search.search.trim().length > 0 || Boolean(selectedCategoriaId)
 
   return (
-    <PageShell className="h-full min-h-0 w-full max-w-none gap-0 overflow-hidden px-4 py-0 sm:px-6 md:px-8 lg:px-10 md:py-0">
+    <PageShell layout="auto" className="w-full max-w-none gap-0 px-4 pb-6 sm:px-6 md:px-8 lg:px-10">
       {/* Header */}
       <header className="flex shrink-0 flex-col gap-3 border-b py-4 sm:gap-4 sm:py-6 md:flex-row md:items-start md:justify-between md:py-8">
         <div className="min-w-0 flex flex-1 flex-col gap-1">
@@ -197,7 +197,7 @@ export function AccesoriosPage() {
       </div>
 
       {/* Contenido principal */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex flex-col gap-3">
         {accesoriosQuery.isLoading ? (
           <ListSkeleton
             rows={6}
@@ -250,7 +250,7 @@ export function AccesoriosPage() {
           <>
             <div
               className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4 pr-1",
+                "pb-4",
                 accesoriosQuery.isFetching && "opacity-70",
               )}
             >

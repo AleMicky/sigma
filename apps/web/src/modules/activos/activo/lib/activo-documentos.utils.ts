@@ -1,10 +1,19 @@
+import type { ActivoDocumentoEstado } from "@/modules/activos/activo-documento/api/activo-documento.service"
+
+export type DocumentoEstado = Lowercase<ActivoDocumentoEstado>
+
+/**
+ * Única fuente de verdad para la vigencia de un documento.
+ * Un documento sin fecha de vencimiento es permanente, no "vigente".
+ */
 export function getDocumentoEstado(
   fechaVencimiento?: string | null,
-): "vigente" | "por_vencer" | "vencido" {
-  if (!fechaVencimiento) return "vigente"
+  now: Date = new Date(),
+): DocumentoEstado {
+  if (!fechaVencimiento) return "permanente"
 
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
   const parts = fechaVencimiento.split("-")
   const expiry =
     parts.length === 3
@@ -12,8 +21,9 @@ export function getDocumentoEstado(
       : new Date(fechaVencimiento)
   expiry.setHours(0, 0, 0, 0)
 
-  const diffTime = expiry.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const diffDays = Math.ceil(
+    (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  )
 
   if (diffDays < 0) return "vencido"
   if (diffDays <= 30) return "por_vencer"

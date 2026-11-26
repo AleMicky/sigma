@@ -9,6 +9,9 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.mapper.Asig
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.AsignacionVehicular;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.Conductor;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.SolicitudVehicular;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.util.LicenciaVigencia;
+import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity;
+import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.repository.SpringConductorLicenciaRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.AsignacionVehicularRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ConductorRepository;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.SolicitudVehicularRepository;
@@ -18,7 +21,9 @@ import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
+import com.endecorani.sigma_api.shared.util.FlexibleLocalDateTimeParser;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,6 +54,7 @@ public class AsignacionVehicularService {
         private final SolicitudVehicularRepository solicitudVehicularRepository;
         private final SpringActivoRepository springActivoRepository;
         private final ConductorRepository conductorRepository;
+        private final SpringConductorLicenciaRepository conductorLicenciaRepository;
         private final EmpleadoRepository empleadoRepository;
         private final SpringVEmpleadoRepository springVEmpleadoRepository;
         private final AsignacionVehicularMapper mapper;
@@ -98,6 +105,7 @@ public class AsignacionVehicularService {
                                 dto.asignadoPorId());
 
                 LocalDateTime fecha = dto.fechaAsignacion() != null ? dto.fechaAsignacion() : LocalDateTime.now();
+                validarLicenciaVigente(dto.conductorId(), fecha, dto.solicitudVehicularId());
 
                 AsignacionVehicular domain = mapper.toDomain(dto);
                 domain.setFechaAsignacion(fecha);
@@ -123,6 +131,11 @@ public class AsignacionVehicularService {
                                 dto.activoId(),
                                 dto.conductorId(),
                                 dto.asignadoPorId());
+
+                LocalDateTime fechaEfectiva = dto.fechaAsignacion() != null
+                                ? dto.fechaAsignacion()
+                                : (actual.getFechaAsignacion() != null ? actual.getFechaAsignacion() : LocalDateTime.now());
+                validarLicenciaVigente(dto.conductorId(), fechaEfectiva, dto.solicitudVehicularId());
 
                 if (actual.getSolicitudVehicularId() != null
                                 && dto.solicitudVehicularId() != null
@@ -159,6 +172,11 @@ public class AsignacionVehicularService {
                                 dto.activoId(),
                                 dto.conductorId(),
                                 dto.asignadoPorId());
+
+                LocalDateTime fechaEfectiva = dto.fechaAsignacion() != null
+                                ? dto.fechaAsignacion()
+                                : (actual.getFechaAsignacion() != null ? actual.getFechaAsignacion() : LocalDateTime.now());
+                validarLicenciaVigente(dto.conductorId(), fechaEfectiva, dto.solicitudVehicularId());
 
                 if (actual.getSolicitudVehicularId() != null
                                 && dto.solicitudVehicularId() != null
@@ -444,6 +462,52 @@ public class AsignacionVehicularService {
         private AsignacionVehicular obtenerPorId(UUID id) {
                 return repository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("Asignación vehicular", id));
+        }
+
+        /**
+         * REQ-VEH-011: la licencia debe ser VIGENTE y cubrir tanto la fecha de
+         * asignación como la fecha de salida de la solicitud. Se valida antes de
+         * guardar y sincronizar la solicitud.
+         */
+        private void validarLicenciaVigente(
+                        UUID conductorId,
+                        LocalDateTime fechaAsignacion,
+                        UUID solicitudVehicularId) {
+                if (conductorId == null) {
+                        return;
+                }
+
+                Set<LocalDate> fechas = new LinkedHashSet<>();
+                if (fechaAsignacion != null) {
+                        fechas.add(fechaAsignacion.toLocalDate());
+                }
+                if (solicitudVehicularId != null) {
+                        solicitudVehicularRepository.findById(solicitudVehicularId)
+                                        .map(SolicitudVehicular::getFechaSalida)
+                                        .filter(Objects::nonNull)
+                                        .map(LocalDateTime::toLocalDate)
+                                        .ifPresent(fechas::add);
+                }
+                if (fechas.isEmpty()) {
+                        fechas.add(LocalDate.now(FlexibleLocalDateTimeParser.OPERATIONAL_ZONE));
+                }
+
+                List<ConductorLicenciaEntity> licencias =
+                                conductorLicenciaRepository.findByConductorId(conductorId);
+                boolean vigenteEnTodasLasFechas = fechas.stream().allMatch(fecha ->
+                                licencias.stream().anyMatch(lic -> LicenciaVigencia.vigenteAFecha(
+                                                lic.getEstado(),
+                                                lic.isActivo(),
+                                                lic.getFechaEmision(),
+                                                lic.getFechaVencimiento(),
+                                                fecha)));
+
+                if (!vigenteEnTodasLasFechas) {
+                        throw new ConflictException(
+                                        "CONDUCTOR_SIN_LICENCIA_VIGENTE",
+                                        "El conductor no tiene una licencia VIGENTE vigente en la fecha de salida/asignación."
+                        );
+                }
         }
 
         private void validarDependenciasExisten(

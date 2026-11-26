@@ -1,5 +1,12 @@
 import { useMemo } from "react"
-import { FileSpreadsheet, Filter, LayoutGrid, List, RotateCcw } from "lucide-react"
+import {
+  FileSpreadsheet,
+  Filter,
+  LayoutGrid,
+  List,
+  Loader2,
+  RotateCcw,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -11,6 +18,7 @@ import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
+import { TipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
 
 const ALL_TIPOS = "__all__"
 
@@ -34,13 +42,8 @@ type ActivoFilterToolbarProps = {
   onResetFilters: () => void
   viewMode?: "list" | "grid"
   onViewModeChange?: (mode: "list" | "grid") => void
-}
-
-function handleExportExcel() {
-  toast.info("Exportación a Excel", {
-    description:
-      "La generación de reportes y exportación en formato Excel (.xlsx) estará disponible próximamente.",
-  })
+  onExportarExcel?: () => Promise<void>
+  isExportingExcel?: boolean
 }
 
 export function ActivoFilterToolbar({
@@ -57,6 +60,8 @@ export function ActivoFilterToolbar({
   onResetFilters,
   viewMode = "list",
   onViewModeChange,
+  onExportarExcel,
+  isExportingExcel = false,
 }: Readonly<ActivoFilterToolbarProps>) {
   const tipoOptions = useMemo<OptionsComboboxOption[]>(
     () => [
@@ -78,7 +83,10 @@ export function ActivoFilterToolbar({
     }
     return (
       <span className="flex min-w-0 items-center gap-1.5 truncate">
-        <Filter className="size-3.5 shrink-0 text-muted-foreground" />
+        <TipoActivoIcon
+          name={tipo.icono}
+          className="size-3.5 shrink-0 text-muted-foreground"
+        />
         <span
           className="size-2 shrink-0 rounded-full"
           style={{
@@ -95,6 +103,10 @@ export function ActivoFilterToolbar({
     if (!tipo) return <span className="truncate">{option.label}</span>
     return (
       <span className="flex min-w-0 items-center gap-2 truncate">
+        <TipoActivoIcon
+          name={tipo.icono}
+          className="size-3.5 shrink-0 text-muted-foreground"
+        />
         <span
           className="size-2 shrink-0 rounded-full"
           style={{
@@ -104,6 +116,21 @@ export function ActivoFilterToolbar({
         <span className="truncate">{option.label}</span>
       </span>
     )
+  }
+
+  const handleExportExcel = async () => {
+    if (isExportingExcel) return
+
+    if (!onExportarExcel) {
+      // Compatibilidad con usos que todavía no cablean el reporte real.
+      toast.info("Exportación a Excel", {
+        description:
+          "La generación de reportes y exportación en formato Excel (.xlsx) estará disponible próximamente.",
+      })
+      return
+    }
+
+    await onExportarExcel()
   }
 
   return (
@@ -201,11 +228,16 @@ export function ActivoFilterToolbar({
             type="button"
             size="sm"
             variant="outline"
-            onClick={handleExportExcel}
+            onClick={() => void handleExportExcel()}
+            disabled={isExportingExcel}
             className="h-8 px-2.5 text-xs font-medium gap-1.5 shrink-0 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
             title="Exportar a Excel"
           >
-            <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+            {isExportingExcel ? (
+              <Loader2 className="size-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+            )}
             <span className="hidden sm:inline">Exportar Excel</span>
           </Button>
         </div>

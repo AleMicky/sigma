@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { gestionVehicularDashboardKeys } from "../../dashboard/api/gestion-vehicular-dashboard.queries"
 import { toast } from "sonner"
 
 import { workflowKeys } from "@/modules/workflow/api/workflow.keys"
@@ -22,6 +23,7 @@ export function useCreateControlActivoVehicular() {
     mutationFn: (payload: ControlActivoVehicularPayload) =>
       createControlActivoVehicular(payload),
     onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       toast.success("Control de activo vehicular creado exitosamente")
       queryClient.invalidateQueries({
         queryKey: controlActivoVehicularKeys.all,
@@ -60,6 +62,7 @@ export function useCreateControlActivoVehicularWithDetalles() {
       return createControlActivoVehicular(payload)
     },
     onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       toast.success(
         `Acta de ${data.tipo === "ENTREGA" ? "Entrega" : "Devolución"} guardada exitosamente`
       )
@@ -102,6 +105,7 @@ export function useUpdateControlActivoVehicularWithDetalles() {
       return updateControlActivoVehicular(id, payload)
     },
     onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       toast.success("Control de activo actualizado exitosamente")
       queryClient.invalidateQueries({
         queryKey: controlActivoVehicularKeys.all,
@@ -136,6 +140,7 @@ export function useUpdateControlActivoVehicular() {
       payload: ControlActivoVehicularPayload
     }) => updateControlActivoVehicular(id, payload),
     onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       toast.success("Control de activo vehicular actualizado exitosamente")
       queryClient.invalidateQueries({
         queryKey: controlActivoVehicularKeys.all,
@@ -162,6 +167,7 @@ export function useDeleteControlActivoVehicular() {
   return useMutation({
     mutationFn: (id: string) => deleteControlActivoVehicular(id),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       toast.success("Control de activo eliminado exitosamente")
       queryClient.invalidateQueries({
         queryKey: controlActivoVehicularKeys.all,
@@ -182,6 +188,7 @@ export function useCreateControlActivoVehicularDetalle() {
     mutationFn: (payload: ControlActivoVehicularDetallePayload) =>
       createControlActivoVehicularDetalle(payload),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({
         queryKey: controlActivoVehicularKeys.detalles.all,
       })
@@ -207,6 +214,7 @@ export function useUpdateControlActivoVehicularDetalle() {
       payload: ControlActivoVehicularDetallePayload
     }) => updateControlActivoVehicularDetalle(id, payload),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({
         queryKey: controlActivoVehicularKeys.detalles.all,
       })
@@ -226,6 +234,7 @@ export function useDeleteControlActivoVehicularDetalle() {
   return useMutation({
     mutationFn: (id: string) => deleteControlActivoVehicularDetalle(id),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({
         queryKey: controlActivoVehicularKeys.detalles.all,
       })

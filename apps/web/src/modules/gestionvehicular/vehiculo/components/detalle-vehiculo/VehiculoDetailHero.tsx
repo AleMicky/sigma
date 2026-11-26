@@ -1,4 +1,3 @@
-import { useState } from "react"
 import {
   Activity,
   CarFront,
@@ -11,10 +10,9 @@ import {
   Maximize2,
   X,
 } from "lucide-react"
-import { toast } from "sonner"
-
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Button } from "@/shared/components/ui/button"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 
 import type { VehiculoCatalogo } from "../../api/vehiculo.types"
 import { getPlacaFromAtributos } from "../../lib/vehiculo-atributos.utils"
@@ -40,16 +38,13 @@ export function VehiculoDetailHero({
   onOpenAddDocument,
   onCambiarEstado,
 }: Readonly<VehiculoDetailHeroProps>) {
-  const [copiedPlaca, setCopiedPlaca] = useState(false)
+  const { copy: copyToClipboard, isCopied } = useCopyToClipboard()
   const isActivo = vehiculo.activo !== false
   const estadoColor = vehiculo.estadoOperativo?.color || "#10b981"
   const { valor: placaValor } = getPlacaFromAtributos(vehiculo)
 
   function handleCopyPlaca(placa: string) {
-    void navigator.clipboard.writeText(placa)
-    setCopiedPlaca(true)
-    toast.success(`Placa "${placa}" copiada`)
-    setTimeout(() => setCopiedPlaca(false), 1800)
+    void copyToClipboard(placa, "placa")
   }
 
   return (
@@ -121,7 +116,7 @@ export function VehiculoDetailHero({
                         className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground hover:bg-cyan-500/15 hover:text-foreground transition-colors cursor-pointer"
                         title="Copiar placa"
                       >
-                        {copiedPlaca ? (
+                        {isCopied("placa") ? (
                           <Check className="size-3.5 text-emerald-500" />
                         ) : (
                           <Copy className="size-3.5" />

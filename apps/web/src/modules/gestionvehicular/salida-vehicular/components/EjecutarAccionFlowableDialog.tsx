@@ -16,6 +16,7 @@ import {
 
 import { useProgramacionesByActivo } from "@/modules/mantenimientos/programacion-mantenimiento/api/programacion-mantenimiento.queries"
 
+import { getErrorMessage } from "@/shared/api/errors"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -35,7 +36,10 @@ import { useEjecutarAccionSalidaMutation } from "../api/salida-vehicular.mutatio
 import { salidaVehicularQueries } from "../api/salida-vehicular.queries"
 import type { SalidaVehicular, WorkflowAction } from "../api/salida-vehicular.types"
 import { SalidaVehicularStatusBadge } from "./SalidaVehicularStatusBadge"
-import { getSalidaNextActionConfig } from "./salida-action.utils"
+import {
+  getSalidaNextActionConfig,
+  isSalidaInactive,
+} from "./salida-action.utils"
 
 interface EjecutarAccionFlowableDialogProps {
   open: boolean
@@ -72,14 +76,7 @@ export function EjecutarAccionFlowableDialog({
 
   const currentTask = tareaQuery.data
   const availableActions = accionesQuery.data?.actions ?? []
-
-  const hasSalidaEvent = useMemo(
-    () =>
-      (salida?.eventos ?? []).some((e) =>
-        (e.tipoEvento ?? "").toUpperCase().includes("SALIDA")
-      ),
-    [salida?.eventos]
-  )
+  const isFlowInactive = isSalidaInactive(salida?.estado)
 
   const kilometrajeSalida = useMemo(() => {
     const salidaEvent = (salida?.eventos ?? []).find(
@@ -114,11 +111,13 @@ export function EjecutarAccionFlowableDialog({
     kmCriterion?.proximoValorUso != null &&
     numKm >= kmCriterion.proximoValorUso
 
-  const nextAction = getSalidaNextActionConfig(
-    currentTask?.name ?? (hasSalidaEvent ? "LLEGADA" : salida?.estado),
-    salida?.descripcionActividad
-  )
-  const ActionIcon = nextAction.icon
+  const nextAction = getSalidaNextActionConfig({
+    tareaActual: currentTask,
+    acciones: accionesQuery.data,
+    estado: salida?.estado,
+    descripcionActividad: salida?.descripcionActividad,
+  })
+  const ActionIcon = nextAction?.icon ?? Play
 
   const kilometrajeField = useMemo(
     () => accionesQuery.data?.fields?.find((f) => f.id === "kilometraje"),
@@ -127,7 +126,11 @@ export function EjecutarAccionFlowableDialog({
 
   const kilometrajeLabel =
     kilometrajeField?.name ||
-    (nextAction.type === "SALIDA" ? "Kilometraje de Salida" : "Kilometraje de Llegada")
+    (nextAction?.type === "SALIDA"
+      ? "Kilometraje de Salida"
+      : nextAction?.type === "LLEGADA"
+        ? "Kilometraje de Llegada"
+        : "Kilometraje")
 
   // Capture GPS internally in background
   const captureGPS = useCallback(() => {
@@ -208,7 +211,7 @@ export function EjecutarAccionFlowableDialog({
     }
 
     if (
-      nextAction.type === "LLEGADA" &&
+      nextAction?.type === "LLEGADA" &&
       kilometrajeSalida !== null &&
       numKm < kilometrajeSalida
     ) {
@@ -274,15 +277,15 @@ export function EjecutarAccionFlowableDialog({
                 <div
                   className={cn(
                     "flex size-8 items-center justify-center rounded-lg border shadow-2xs shrink-0",
-                    nextAction.buttonClassName
+                    nextAction?.buttonClassName ?? "bg-muted text-muted-foreground border-border"
                   )}
                 >
-                  <ActionIcon className={cn("size-4", nextAction.iconClassName)} />
+                  <ActionIcon className={cn("size-4", nextAction?.iconClassName)} />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <DialogTitle className="text-sm sm:text-base font-bold text-foreground leading-tight">
-                      {nextAction.label}
+                      {nextAction?.label ?? "Acción del flujo"}
                     </DialogTitle>
                     {salida?.numero && (
                       <span className="font-mono text-[11px] font-bold px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20">
@@ -312,7 +315,35 @@ export function EjecutarAccionFlowableDialog({
         </div>
 
         {salida && (
-          <div className="p-4 sm:p-5 space-y-3 max-h-[75vh] overflow-y-auto">
+          <div
+            className="p-4 sm:p-5 space-y-3 max-h-[75vh] overflow-y-auto"
+            aria-busy={tareaQuery.isFetching || accionesQuery.isFetching}
+          >
+            {(tareaQuery.isError || accionesQuery.isError) && !isFlowInactive && (
+              <div
+                role="alert"
+                className="p-2.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-xs text-rose-700 dark:text-rose-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+              >
+                <span>
+                  No se pudo cargar la tarea activa de Flowable:{" "}
+                  {getErrorMessage(tareaQuery.error ?? accionesQuery.error)}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    void tareaQuery.refetch()
+                    void accionesQuery.refetch()
+                  }}
+                  className="h-7 gap-1 text-xs cursor-pointer border-rose-500/30"
+                >
+                  <RefreshCw className="size-3" />
+                  Reintentar
+                </Button>
+              </div>
+            )}
+
             {/* Card de Información del Vehículo y Actividad */}
             <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 space-y-1.5 text-xs">
               {salida.descripcionActividad && (
@@ -348,7 +379,7 @@ export function EjecutarAccionFlowableDialog({
                     <Gauge className="size-3.5 text-primary" />
                     {kilometrajeLabel} <span className="text-destructive font-bold">*</span>
                   </span>
-                  {kilometrajeSalida !== null && nextAction.type === "LLEGADA" ? (
+                  {kilometrajeSalida !== null && nextAction?.type === "LLEGADA" ? (
                     <span className="text-[10px] text-muted-foreground font-mono">
                       Km Salida: {kilometrajeSalida} km
                     </span>
@@ -363,9 +394,9 @@ export function EjecutarAccionFlowableDialog({
                     id="kilometraje"
                     type="number"
                     step="1"
-                    min={kilometrajeSalida !== null && nextAction.type === "LLEGADA" ? kilometrajeSalida : 0}
+                    min={kilometrajeSalida !== null && nextAction?.type === "LLEGADA" ? kilometrajeSalida : 0}
                     placeholder={
-                      kilometrajeSalida !== null && nextAction.type === "LLEGADA"
+                      kilometrajeSalida !== null && nextAction?.type === "LLEGADA"
                         ? `Mínimo ${kilometrajeSalida}`
                         : "Ej. 125430"
                     }
@@ -391,7 +422,7 @@ export function EjecutarAccionFlowableDialog({
                     {kmError}
                   </p>
                 ) : (
-                  kilometrajeSalida !== null && nextAction.type === "LLEGADA" && (
+                  kilometrajeSalida !== null && nextAction?.type === "LLEGADA" && (
                     <p className="text-[10.5px] text-muted-foreground">
                       Debe ser igual o mayor a los {kilometrajeSalida} km registrados en la salida.
                     </p>
@@ -522,7 +553,7 @@ export function EjecutarAccionFlowableDialog({
             </div>
 
             {/* Aviso si no hay acciones de Flowable */}
-            {!accionesQuery.isLoading && availableActions.length === 0 && (
+            {!accionesQuery.isError && !accionesQuery.isLoading && availableActions.length === 0 && (
               <div className="p-2.5 bg-muted/30 border border-dashed rounded-lg text-center text-xs text-muted-foreground">
                 <CheckCircle2 className="size-3.5 mx-auto mb-1 text-muted-foreground/60" />
                 No hay acciones de avance disponibles para la tarea actual en Flowable.
@@ -559,8 +590,8 @@ export function EjecutarAccionFlowableDialog({
                   disabled={accionMutation.isPending}
                   className={cn(
                     "h-7.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer px-3.5",
-                    nextAction.type === "SALIDA" && "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20",
-                    nextAction.type === "LLEGADA" && "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
+                    nextAction?.type === "SALIDA" && "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20",
+                    nextAction?.type === "LLEGADA" && "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
                   )}
                 >
                   {accionMutation.isPending ? (
@@ -569,7 +600,9 @@ export function EjecutarAccionFlowableDialog({
                     <Play className="size-3 fill-current" />
                   )}
                   <span>
-                    {action.name.toUpperCase() === "COMPLETAR" ? nextAction.label : action.name}
+                    {action.name.toUpperCase() === "COMPLETAR"
+                      ? (nextAction?.label ?? action.name)
+                      : action.name}
                   </span>
                 </Button>
               ))

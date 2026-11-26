@@ -21,6 +21,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
+import { toLocalDateKey } from "@/shared/lib/date"
 
 export interface BitacoraFiltrosBarProps {
   activoId: string
@@ -60,24 +61,24 @@ export function BitacoraFiltrosBar({
     const now = new Date()
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    onFechaInicioChange(firstDay.toISOString().split("T")[0])
-    onFechaFinChange(lastDay.toISOString().split("T")[0])
+    onFechaInicioChange(toLocalDateKey(firstDay))
+    onFechaFinChange(toLocalDateKey(lastDay))
   }
 
   const setMesAnterior = () => {
     const now = new Date()
     const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const lastDay = new Date(now.getFullYear(), now.getMonth(), 0)
-    onFechaInicioChange(firstDay.toISOString().split("T")[0])
-    onFechaFinChange(lastDay.toISOString().split("T")[0])
+    onFechaInicioChange(toLocalDateKey(firstDay))
+    onFechaFinChange(toLocalDateKey(lastDay))
   }
 
   const setUltimos30Dias = () => {
     const now = new Date()
     const past = new Date()
     past.setDate(now.getDate() - 30)
-    onFechaInicioChange(past.toISOString().split("T")[0])
-    onFechaFinChange(now.toISOString().split("T")[0])
+    onFechaInicioChange(toLocalDateKey(past))
+    onFechaFinChange(toLocalDateKey(now))
   }
 
   const isFormValid = Boolean(activoId && fechaInicio && fechaFin)

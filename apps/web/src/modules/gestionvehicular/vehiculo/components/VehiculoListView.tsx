@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   Calendar,
@@ -10,12 +9,11 @@ import {
   MapPin,
   Maximize2,
 } from "lucide-react"
-import { toast } from "sonner"
-
 import { routes } from "@/app/config/routes"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { cn } from "@/shared/lib/utils"
 
 import type { VehiculoCatalogo } from "../api/vehiculo.types"
@@ -50,13 +48,11 @@ export function VehiculoListView({
   vehiculos,
   onPreviewImage,
 }: Readonly<VehiculoListViewProps>) {
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copy: copyToClipboard, isCopied: isPlacaCopiada } =
+    useCopyToClipboard()
 
   function handleCopyPlaca(vehiculoId: string, placa: string) {
-    void navigator.clipboard.writeText(placa)
-    setCopiedId(vehiculoId)
-    toast.success(`Placa "${placa}" copiada`)
-    setTimeout(() => setCopiedId(null), 1800)
+    void copyToClipboard(placa, vehiculoId)
   }
 
   return (
@@ -67,7 +63,7 @@ export function VehiculoListView({
         const estadoColor = v.estadoOperativo?.color || "#10B981"
         const estadoNombre = v.estadoOperativo?.nombre || "Operativo"
         const formattedDate = formatDateShort(v.fechaAdquisicion)
-        const isCopied = copiedId === v.id
+        const isCopied = isPlacaCopiada(v.id)
         const atributosVisibles = getAtributosVisibles(v)
         const { valor: placaValor } = getPlacaFromAtributos(v)
         const titulo = getVehiculoTituloDinamico(v)

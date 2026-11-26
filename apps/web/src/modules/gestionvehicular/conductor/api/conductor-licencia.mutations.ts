@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { gestionVehicularDashboardKeys } from "../../dashboard/api/gestion-vehicular-dashboard.queries"
 import { toast } from "sonner"
 
 import { isApiError } from "@/shared/api"
@@ -26,6 +27,7 @@ export const useCreateLicencia = () => {
       file?: File | null
     }) => createLicencia(conductorId, payload, file),
     onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({
         queryKey: conductorLicenciaKeys.byConductor(variables.conductorId),
       })
@@ -57,6 +59,7 @@ export const useUpdateLicencia = () => {
       file?: File | null
     }) => updateLicencia(id, payload, file),
     onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({
         queryKey: conductorLicenciaKeys.byConductor(variables.conductorId),
       })
@@ -80,6 +83,7 @@ export const useDeleteLicencia = () => {
     mutationFn: ({ id }: { id: string; conductorId: string }) =>
       deleteLicencia(id),
     onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       queryClient.invalidateQueries({
         queryKey: conductorLicenciaKeys.byConductor(variables.conductorId),
       })

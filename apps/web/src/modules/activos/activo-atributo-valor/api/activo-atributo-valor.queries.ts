@@ -9,6 +9,7 @@ import {
 import {
   getActivoAtributoValor,
   listActivoAtributoValores,
+  listAllActivoAtributoValores,
 } from "./activo-atributo-valor.service"
 
 export const activoAtributoValorQueries = {
@@ -28,6 +29,20 @@ export const activoAtributoValorQueries = {
           size: params?.size ?? 100,
           sortBy: params?.sortBy ?? "createdAt",
           direction: params?.direction ?? "ASC",
+        }),
+      enabled: Boolean(activoId),
+    }),
+
+  /** Todos los valores del activo, no solo la primera página. */
+  byActivoAll: (activoId: string) =>
+    queryOptions({
+      queryKey: [...activoAtributoValorKeys.list({ activoId }), "all"] as const,
+      queryFn: () =>
+        listAllActivoAtributoValores({
+          activoId,
+          size: 100,
+          sortBy: "createdAt",
+          direction: "ASC",
         }),
       enabled: Boolean(activoId),
     }),

@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Badge } from "@/shared/components/ui/badge"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { formatDateTime } from "@/shared/utils/date.utils"
 
 import { useDeleteEstadoOperativo } from "../api/estado-operativo.mutations"
@@ -27,15 +28,14 @@ export function EstadoOperativoListView({
   onEdit,
 }: EstadoOperativoListViewProps) {
   const [estadoToDelete, setEstadoToDelete] = useState<EstadoOperativo | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copiedKey: copiedId, copy } = useCopyToClipboard()
   const deleteMutation = useDeleteEstadoOperativo()
 
-  function copyCode(e: React.MouseEvent, estado: EstadoOperativo) {
+  async function copyCode(e: React.MouseEvent, estado: EstadoOperativo) {
     e.stopPropagation()
-    navigator.clipboard.writeText(estado.codigo)
-    setCopiedId(estado.id)
-    toast.success(`Código "${estado.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedId(null), 2000)
+    if (await copy(estado.codigo, estado.id)) {
+      toast.success(`Código "${estado.codigo}" copiado al portapapeles`)
+    }
   }
 
   return (

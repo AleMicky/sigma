@@ -106,6 +106,61 @@ export function isBrowserViewable(
 }
 
 /**
+ * Abre un archivo autenticado en pestaña nueva. La ventana se crea antes de
+ * la petición para conservar el gesto del usuario; si el popup está bloqueado
+ * se ofrece la descarga como respaldo.
+ */
+export async function openProtectedFile(
+  path: string,
+  fileName: string,
+): Promise<void> {
+  const newWindow = window.open("", "_blank")
+
+  try {
+    const blob = await fetchAuthenticatedBlob(path)
+    const objectUrl = URL.createObjectURL(blob)
+
+    if (newWindow) {
+      newWindow.opener = null
+      newWindow.location.href = objectUrl
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
+      return
+    }
+
+    const link = document.createElement("a")
+    link.href = objectUrl
+    link.download = fileName || "archivo"
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
+  } catch (error) {
+    newWindow?.close()
+    throw error
+  }
+}
+
+/** Descarga un archivo autenticado y revoca el ObjectURL con un margen seguro. */
+export async function downloadProtectedFile(
+  path: string,
+  fileName: string,
+): Promise<void> {
+  const blob = await fetchAuthenticatedBlob(path)
+  const objectUrl = URL.createObjectURL(blob)
+
+  try {
+    const link = document.createElement("a")
+    link.href = objectUrl
+    link.download = fileName || "archivo"
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  } finally {
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
+  }
+}
+
+/**
  * Abre un archivo autenticado en una nueva pestaña (PDFs, imágenes) o lo
  * descarga con su nombre y extensión originales si es un documento (Excel, Word, etc.).
  */
@@ -114,34 +169,11 @@ export async function openOrDownloadProtectedFile(
   fileName: string,
   mimeType?: string | null,
 ): Promise<"viewed" | "downloaded"> {
-  const canView = isBrowserViewable(fileName, mimeType)
-  // Abrir ventana previa únicamente si se va a visualizar en el navegador para no dejar pestaña vacía
-  const newWindow = canView ? window.open("", "_blank") : null
-
-  try {
-    const blob = await fetchAuthenticatedBlob(path)
-    const objectUrl = URL.createObjectURL(blob)
-
-    if (canView) {
-      if (newWindow) {
-        newWindow.location.href = objectUrl
-      } else {
-        window.open(objectUrl, "_blank")
-      }
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
-      return "viewed"
-    }
-
-    const a = document.createElement("a")
-    a.href = objectUrl
-    a.download = fileName || "archivo"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
-    return "downloaded"
-  } catch (error) {
-    newWindow?.close()
-    throw error
+  if (isBrowserViewable(fileName, mimeType)) {
+    await openProtectedFile(path, fileName)
+    return "viewed"
   }
+
+  await downloadProtectedFile(path, fileName)
+  return "downloaded"
 }

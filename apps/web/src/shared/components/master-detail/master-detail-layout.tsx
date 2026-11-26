@@ -15,6 +15,8 @@ type MasterDetailLayoutProps = {
   master: ReactNode
   detail: ReactNode
   children?: ReactNode
+  /** true = panel fijo con scroll internos; false = crece con la página y usa el scroll principal */
+  fill?: boolean
 }
 
 export function MasterDetailLayout({
@@ -28,9 +30,15 @@ export function MasterDetailLayout({
   master,
   detail,
   children,
+  fill = true,
 }: MasterDetailLayoutProps) {
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <div
+      className={cn(
+        "flex flex-1 flex-col",
+        fill ? "h-full min-h-0 overflow-hidden" : "w-full",
+      )}
+    >
       <div className="flex shrink-0 items-center justify-between gap-2 border-b px-4 py-3 sm:gap-3 sm:px-6 sm:py-4 md:px-8">
         <div className="flex min-w-0 items-center gap-2">
           {showBack ? (
@@ -53,13 +61,15 @@ export function MasterDetailLayout({
 
       <div
         className={cn(
-          "grid min-h-0 flex-1 overflow-hidden",
+          "grid flex-1",
+          fill ? "min-h-0 overflow-hidden" : "w-full",
           "md:grid-cols-[minmax(220px,32%)_1fr] lg:grid-cols-[minmax(260px,340px)_1fr]",
         )}
       >
         <div
           className={cn(
-            "h-full min-h-0 min-w-0 flex-col overflow-hidden",
+            "min-w-0 flex-col",
+            fill ? "h-full min-h-0 overflow-hidden" : "w-full",
             showMaster ? "flex" : "hidden",
             "md:flex",
           )}
@@ -68,7 +78,8 @@ export function MasterDetailLayout({
         </div>
         <div
           className={cn(
-            "h-full min-h-0 min-w-0 flex-col overflow-hidden",
+            "min-w-0 flex-col",
+            fill ? "h-full min-h-0 overflow-hidden" : "w-full",
             showDetail ? "flex" : "hidden",
             "md:flex",
           )}

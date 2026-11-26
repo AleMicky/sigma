@@ -47,6 +47,7 @@ export function TipoActivoDetailPanel({
   if (!tipoActivo) {
     return (
       <DetailPanelShell
+        fill={false}
         hasSelection={false}
         emptySelectionMessage="Selecciona un tipo de activo del panel izquierdo para configurar sus atributos dinámicos, componentes estructurales y estados operativos."
       >
@@ -60,6 +61,7 @@ export function TipoActivoDetailPanel({
 
   return (
     <DetailPanelShell
+      fill={false}
       hasSelection={true}
       emptySelectionMessage=""
       header={
@@ -105,7 +107,7 @@ export function TipoActivoDetailPanel({
         />
       }
     >
-      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden px-3 sm:px-4">
+      <div className="flex w-full flex-1 flex-col px-3 sm:px-4">
         {/* Selector de pestañas compacto y limpio */}
         <div className="flex items-center gap-1 border-b border-border/60 pb-px shrink-0">
           <button
@@ -152,7 +154,7 @@ export function TipoActivoDetailPanel({
         </div>
 
         {/* Contenido de la pestaña activa */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-1">
+        <div className="flex w-full flex-1 flex-col pt-1">
           {activeTab === "atributos" ? (
             <TipoActivoAtributosPage
               key={`attr-${currentTipo.id}`}

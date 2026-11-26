@@ -1,4 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { gestionVehicularDashboardKeys } from "../../dashboard/api/gestion-vehicular-dashboard.queries"
+import { gestionVehicularTotalesKeys } from "../../totales/api/gestion-vehicular-totales.queries"
 import { toast } from "sonner"
 
 import { isApiError } from "@/shared/api"
@@ -22,6 +24,8 @@ export function useCreateSolicitudVehicular() {
     mutationFn: (payload: SolicitudVehicularPayload) =>
       createSolicitudVehicular(payload),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       toast.success("Solicitud vehicular creada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
       queryClient.invalidateQueries({ queryKey: workflowKeys.all })
@@ -48,6 +52,8 @@ export function useCreateSolicitudVehicularWithFiles() {
       files?: File[]
     }) => createSolicitudVehicularWithFiles(payload, files),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       toast.success("Solicitud vehicular creada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
       queryClient.invalidateQueries({ queryKey: workflowKeys.all })
@@ -74,6 +80,8 @@ export function useUpdateSolicitudVehicular() {
       payload: SolicitudVehicularUpdatePayload
     }) => updateSolicitudVehicular(id, payload),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       toast.success("Solicitud vehicular actualizada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
       queryClient.invalidateQueries({ queryKey: workflowKeys.all })
@@ -94,6 +102,8 @@ export function useDeleteSolicitudVehicular() {
   return useMutation({
     mutationFn: (id: string) => deleteSolicitudVehicular(id),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       toast.success("Solicitud vehicular eliminada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
       queryClient.invalidateQueries({ queryKey: workflowKeys.all })
@@ -123,6 +133,8 @@ export function useEnviarSolicitudVehicular() {
         m.enviarSolicitudVehicular(id, payload)
       ),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       toast.success("Solicitud vehicular enviada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
       queryClient.invalidateQueries({ queryKey: workflowKeys.all })
@@ -152,6 +164,8 @@ export function useCompletarWorkflowSolicitudVehicular() {
         m.completarWorkflowSolicitudVehicular(id, payload)
       ),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       toast.success("Tarea de flujo completada correctamente")
       queryClient.invalidateQueries({ queryKey: solicitudVehicularKeys.all })
       queryClient.invalidateQueries({ queryKey: workflowKeys.all })

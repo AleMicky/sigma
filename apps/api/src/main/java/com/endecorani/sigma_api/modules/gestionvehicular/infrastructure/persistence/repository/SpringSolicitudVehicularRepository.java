@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -142,4 +144,13 @@ public interface SpringSolicitudVehicularRepository extends JpaRepository<Solici
             @Param("fechaDesde") java.time.LocalDateTime fechaDesde,
             @Param("fechaHasta") java.time.LocalDateTime fechaHasta
     );
+
+    /** REQ-VEH-019: distribución por estado con GROUP BY en SQL. */
+    @Query(value = """
+        SELECT UPPER(COALESCE(estado, 'SIN_ESTADO')) AS estado, COUNT(*) AS cantidad
+        FROM gestion_vehicular.solicitudes_vehiculares
+        WHERE id IN (:solicitudIds)
+        GROUP BY 1
+        """, nativeQuery = true)
+    List<Object[]> contarPorEstado(@Param("solicitudIds") Collection<UUID> solicitudIds);
 }

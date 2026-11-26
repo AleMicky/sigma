@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import {
   Activity,
@@ -9,12 +10,14 @@ import {
   FileText,
   Fuel,
   History,
+  Play,
   Quote,
 } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 
+import { salidaVehicularQueries } from "../api/salida-vehicular.queries"
 import type { SalidaVehicular } from "../api/salida-vehicular.types"
 import { SalidaVehicularStatusBadge } from "./SalidaVehicularStatusBadge"
 import { getSalidaNextActionConfig } from "./salida-action.utils"
@@ -66,18 +69,27 @@ export function SalidaVehicularListItem({
   const navigate = useNavigate()
 
   const estadoNorm = (salida.estado ?? "").trim().toUpperCase()
-  const isFinalizado = estadoNorm.includes("LLEGAD") || estadoNorm.includes("FINALIZ") || estadoNorm.includes("COMPLET")
-  const isCancelado = estadoNorm.includes("CANCEL") || estadoNorm.includes("ANULAD")
+  const isFinalizado = ["LLEGADA", "FINALIZADA", "COMPLETADA"].includes(estadoNorm)
+  const isCancelado = ["CANCELADA", "ANULADA"].includes(estadoNorm)
   const isInactive = isFinalizado || isCancelado
 
-  const hasSalidaEvent = (salida.eventos ?? []).some((e) =>
-    (e.tipoEvento ?? "").toUpperCase().includes("SALIDA")
-  )
-  const nextAction = getSalidaNextActionConfig(
-    hasSalidaEvent ? "LLEGADA" : salida.estado,
-    salida.descripcionActividad
-  )
-  const ActionIcon = nextAction.icon
+  const flowQueriesEnabled = !isInactive && Boolean(salida.id)
+  const tareaActualQuery = useQuery({
+    ...salidaVehicularQueries.tareaActual(salida.id),
+    enabled: flowQueriesEnabled,
+  })
+  const accionesQuery = useQuery({
+    ...salidaVehicularQueries.acciones(salida.id),
+    enabled: flowQueriesEnabled,
+  })
+
+  const nextAction = getSalidaNextActionConfig({
+    tareaActual: tareaActualQuery.data,
+    acciones: accionesQuery.data,
+    estado: salida.estado,
+    descripcionActividad: salida.descripcionActividad,
+  })
+  const ActionIcon = nextAction?.icon ?? Play
 
   const vehiculoTexto = salida.marca
     ? `${salida.marca} ${salida.modelo ?? ""}`.trim()
@@ -164,7 +176,7 @@ export function SalidaVehicularListItem({
             </Button>
           )}
 
-          {!isInactive && onExecuteAction && (
+          {nextAction && !isInactive && onExecuteAction && (
             <Button
               type="button"
               size="xs"

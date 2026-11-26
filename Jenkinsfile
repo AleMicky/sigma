@@ -33,6 +33,69 @@ pipeline {
         }
 
         // ─────────────────────────────────────────────
+        // CHECK-ENV (fail-fast, sin imprimir secretos)
+        // ─────────────────────────────────────────────
+
+        stage('check-env') {
+            steps {
+                sh '''
+                    set -eu
+
+                    if [ ! -f "${ENV_FILE}" ]; then
+                        echo "ERROR: No existe el archivo de entorno ${ENV_FILE}. Créalo desde .env.example con valores reales antes de ejecutar el pipeline."
+                        exit 1
+                    fi
+
+                    # Variables críticas declaradas en compose*.yml. Solo se imprimen nombres, nunca valores.
+                    REQUIRED_VARS="SPRING_PROFILES_ACTIVE DB_HOST DB_NAME DB_USERNAME DB_PASSWORD CORS_ALLOWED_ORIGINS KEYCLOAK_ISSUER_URI KEYCLOAK_TOKEN_URL KEYCLOAK_LOGOUT_URL KEYCLOAK_CLIENT_ID KEYCLOAK_CLIENT_SECRET FLOWABLE_BASE_URL FLOWABLE_USERNAME FLOWABLE_PASSWORD VITE_API_URL"
+
+                    awk -v vars="${REQUIRED_VARS}" -v env_file="${ENV_FILE}" '
+                        BEGIN {
+                            n = split(vars, v, " ")
+                            for (i = 1; i <= n; i++) required[v[i]] = 1
+                            dq = sprintf("%c", 34)
+                            sq = sprintf("%c", 39)
+                        }
+                        /^[[:space:]]*#/ { next }
+                        {
+                            line = $0
+                            sub(/^[[:space:]]*export[[:space:]]+/, "", line)
+                            p = index(line, "=")
+                            if (p == 0) next
+                            name = substr(line, 1, p - 1)
+                            gsub(/[[:space:]]/, "", name)
+                            if (!(name in required)) next
+                            value = substr(line, p + 1)
+                            gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+                            q = substr(value, 1, 1)
+                            if ((q == dq || q == sq) && substr(value, length(value), 1) == q)
+                                value = substr(value, 2, length(value) - 2)
+                            gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+                            seen[name] = 1
+                            if (value == "") empty[name] = 1
+                        }
+                        END {
+                            failed = 0
+                            n = split(vars, v, " ")
+                            for (i = 1; i <= n; i++) {
+                                if (!(v[i] in seen)) {
+                                    print "ERROR: falta la variable crítica " v[i] " en " env_file
+                                    failed = 1
+                                } else if (v[i] in empty) {
+                                    print "ERROR: la variable crítica " v[i] " está vacía en " env_file
+                                    failed = 1
+                                }
+                            }
+                            exit failed
+                        }
+                    ' "${ENV_FILE}"
+
+                    echo "check-env OK: ${ENV_FILE} existe y las variables críticas están definidas."
+                '''
+            }
+        }
+
+        // ─────────────────────────────────────────────
         // VALIDATE
         // ─────────────────────────────────────────────
 
@@ -199,6 +262,7 @@ pipeline {
                     changeset "pnpm-workspace.yaml"
                     changeset ".dockerignore"
                     changeset "compose.prod.yml"
+                    changeset "infrastructure/nginx/**"
                 }
             }
 
@@ -224,6 +288,7 @@ pipeline {
                     changeset "pnpm-workspace.yaml"
                     changeset ".dockerignore"
                     changeset "compose.prod.yml"
+                    changeset "infrastructure/nginx/**"
                 }
             }
 
@@ -256,6 +321,7 @@ pipeline {
                         changeset "pnpm-workspace.yaml"
                         changeset ".dockerignore"
                         changeset "compose.prod.yml"
+                        changeset "infrastructure/nginx/**"
                     }
                 }
             }
@@ -289,6 +355,7 @@ pipeline {
                         changeset "pnpm-workspace.yaml"
                         changeset ".dockerignore"
                         changeset "compose.prod.yml"
+                        changeset "infrastructure/nginx/**"
                     }
                 }
             }

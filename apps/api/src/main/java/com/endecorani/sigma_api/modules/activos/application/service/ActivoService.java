@@ -166,25 +166,45 @@ public class ActivoService {
         return toPageResponse(page);
     }
 
-    /** REQ-BIZ-006: KPIs agregados con exactamente los mismos filtros del listado. */
+    /** REQ-BIZ-006 / REQ-BIZ-020: KPIs agregados con los mismos filtros del listado. */
+    @Transactional(readOnly = true)
+    public ActivoResumenResponse resumen(
+            String query,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo,
+            UUID estadoOperativoId,
+            UUID categoriaId) {
+        ActivoResumenProjection projection = activoRepository.summarize(
+                StringUtils.normalize(query),
+                tipoActivoId,
+                ubicacionId,
+                activo,
+                estadoOperativoId,
+                categoriaId
+        );
+        return new ActivoResumenResponse(
+                projection.getTotal(),
+                projection.getDeBaja(),
+                projection.getEnMantenimiento(),
+                projection.getOperativos(),
+                projection.getOperativo(),
+                projection.getReserva(),
+                projection.getEnViaje(),
+                projection.getFueraServicio(),
+                projection.getDisponibles(),
+                projection.getTasaDisponibilidad()
+        );
+    }
+
+    /** Compatibilidad con consumidores que aún no usan los filtros nuevos. */
     @Transactional(readOnly = true)
     public ActivoResumenResponse resumen(
             String query,
             UUID tipoActivoId,
             UUID ubicacionId,
             Boolean activo) {
-        ActivoResumenProjection projection = activoRepository.summarize(
-                StringUtils.normalize(query),
-                tipoActivoId,
-                ubicacionId,
-                activo
-        );
-        return new ActivoResumenResponse(
-                projection.getTotal(),
-                projection.getDeBaja(),
-                projection.getEnMantenimiento(),
-                projection.getOperativos()
-        );
+        return resumen(query, tipoActivoId, ubicacionId, activo, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -221,20 +241,37 @@ public class ActivoService {
     @Transactional
     public ActivoResponse uploadImagen(UUID id, MultipartFile file) {
         Activo domain = findDomainById(id);
+        String urlAnterior = domain.getUrlImagen();
         String url = imageStorageService.store(IMAGE_FOLDER, id, file);
-        domain.setUrlImagen(url);
-        return toResponse(activoRepository.save(domain));
+        try {
+            domain.setUrlImagen(url);
+            return toResponse(activoRepository.save(domain));
+        } catch (RuntimeException ex) {
+            // REQ-BIZ-023: si la persistencia falla, revertimos la URL en memoria y
+            // eliminamos el archivo recién escrito para no dejar huérfanos ni apuntar a él.
+            domain.setUrlImagen(urlAnterior);
+            try {
+                imageStorageService.delete(url);
+            } catch (RuntimeException cleanupFailure) {
+                // La excepción original es la causa raíz; no debe ser enmascarada.
+            }
+            throw ex;
+        }
     }
 
     @Transactional
     public ActivoResponse deleteImagen(UUID id) {
         Activo domain = findDomainById(id);
-        if (domain.getUrlImagen() != null) {
-            imageStorageService.delete(domain.getUrlImagen());
-            domain.setUrlImagen(null);
-            domain = activoRepository.save(domain);
+        String url = domain.getUrlImagen();
+        if (url == null) {
+            return toResponse(domain);
         }
-        return toResponse(domain);
+        // REQ-BIZ-023: primero confirmamos el cambio en BD y sólo después borramos
+        // el archivo; así un fallo de persistencia conserva la imagen física.
+        domain.setUrlImagen(null);
+        Activo updated = activoRepository.save(domain);
+        imageStorageService.delete(url);
+        return toResponse(updated);
     }
 
     @Transactional
@@ -248,10 +285,12 @@ public class ActivoService {
     @Transactional
     public void delete(UUID id) {
         Activo domain = findDomainById(id);
+        // Validación de negocio: findDomainById lanza 404 si el activo no existe;
+        // el borrado físico se confirma en BD antes de liberar el archivo asociado.
+        activoRepository.deleteById(id);
         if (domain.getUrlImagen() != null) {
             imageStorageService.delete(domain.getUrlImagen());
         }
-        activoRepository.deleteById(id);
     }
 
     private Activo findDomainById(UUID id) {
@@ -410,7 +449,9 @@ public class ActivoService {
                         tipoActivo.getId(),
                         tipoActivo.getCategoriaId(),
                         tipoActivo.getNombre(),
-                        tipoActivo.getDescripcion())
+                        tipoActivo.getDescripcion(),
+                        tipoActivo.getColor(),
+                        tipoActivo.getIcono())
                 : null;
 
         ActivoResponse.UbicacionInfo ubicacionInfo = ubicacion != null

@@ -6,6 +6,45 @@ import {
   type ReplaceActivoAtributosPayload,
 } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.service"
 
+import type { Activo, ActivoPayload } from "../api/activo.service"
+import type { ActivoDto } from "../schemas/activo.schema"
+
+/** Normaliza el formulario y preserva el flag `activo` del registro editado. */
+export function buildActivoPayload(
+  value: ActivoDto,
+  activo?: Activo | null,
+): ActivoPayload {
+  return {
+    codigo: value.codigo.trim(),
+    codigoAlternativo: value.codigoAlternativo.trim() || null,
+    nombre: value.nombre.trim(),
+    descripcion: value.descripcion.trim() || null,
+    tipoActivoId: value.tipoActivoId,
+    ubicacionId: value.ubicacionId?.trim() || null,
+    estadoOperativoId: value.estadoOperativoId?.trim() || null,
+    fechaAdquisicion: value.fechaAdquisicion || null,
+    activo: activo?.activo ?? true,
+  }
+}
+
+/**
+ * Decide si el guardado debe crear o actualizar. Un id ya persistido (por
+ * ejemplo, cuando falló la subida de imagen o de atributos) impide crear un
+ * segundo activo al reintentar.
+ */
+export function resolveActivoSaveTarget({
+  isEditing,
+  activoId,
+  savedId,
+}: {
+  isEditing: boolean
+  activoId?: string
+  savedId?: string | null
+}): { mode: "create" } | { mode: "update"; id: string } {
+  const id = savedId ?? (isEditing ? activoId : undefined)
+  return id ? { mode: "update", id } : { mode: "create" }
+}
+
 export function validateAtributos(
   atributos: ActivoAtributo[],
   valores: Record<string, string>,

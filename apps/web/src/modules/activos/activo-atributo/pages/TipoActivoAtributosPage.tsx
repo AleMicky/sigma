@@ -14,6 +14,7 @@ import { RowActions } from "@/shared/components/row-actions"
 import { SearchField } from "@/shared/components/search-field"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import {
   useClampPage,
   usePaginatedSearch,
@@ -38,7 +39,7 @@ export function TipoActivoAtributosPage({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<ActivoAtributo | null>(null)
   const [toDelete, setToDelete] = useState<ActivoAtributo | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copiedKey: copiedId, copy } = useCopyToClipboard()
   const search = usePaginatedSearch({ resetKey: tipoActivoId })
   const deleteMutation = useDeleteActivoAtributo()
 
@@ -69,12 +70,11 @@ export function TipoActivoAtributosPage({
 
   useClampPage(search.page, search.setPage, atributosQuery.data?.totalPages)
 
-  function copyCode(e: React.MouseEvent, atributo: ActivoAtributo) {
+  async function copyCode(e: React.MouseEvent, atributo: ActivoAtributo) {
     e.stopPropagation()
-    navigator.clipboard.writeText(atributo.codigo)
-    setCopiedId(atributo.id)
-    toast.success(`Código "${atributo.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedId(null), 2000)
+    if (await copy(atributo.codigo, atributo.id)) {
+      toast.success(`Código "${atributo.codigo}" copiado al portapapeles`)
+    }
   }
 
   function openCreate() {
@@ -90,7 +90,7 @@ export function TipoActivoAtributosPage({
   const hasSearch = search.search.trim().length > 0
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="flex w-full flex-col">
       {/* Barra de búsqueda y acción */}
       <div className="flex shrink-0 flex-col gap-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
         <SearchField
@@ -112,7 +112,7 @@ export function TipoActivoAtributosPage({
       </div>
 
       {/* Listado con diseño unificado */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex w-full flex-col">
         {atributosQuery.isLoading ? (
           <ListSkeleton
             rows={5}
@@ -165,7 +165,7 @@ export function TipoActivoAtributosPage({
           <>
             <div
               className={cn(
-                "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 pr-1",
+                "pb-2",
                 atributosQuery.isFetching && "opacity-70",
               )}
             >

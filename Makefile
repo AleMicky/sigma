@@ -7,13 +7,14 @@ SHELL := /bin/bash
 # Archivos de variables: se usa .env.example como referencia si no existe el real.
 # Ningún target escribe .env automáticamente en producción.
 ENV_FILE_DEV  := $(if $(wildcard .env),.env,.env.example)
-ENV_FILE_TEST := $(if $(wildcard .env.test),.env.test,.env.example)
+ENV_FILE_TEST := $(if $(wildcard .env.test),.env.test,.env.test.example)
 ENV_FILE_PROD := $(if $(wildcard .env),.env,.env.example)
 
 COMPOSE_PROD  := docker compose --env-file $(ENV_FILE_PROD) -f compose.prod.yml
 COMPOSE_TEST  := docker compose --env-file $(ENV_FILE_TEST) -f compose.test.yml
 COMPOSE_DEV   := docker compose --env-file $(ENV_FILE_DEV) -f compose.yml
-NETWORK_NAME  := infraestructura-network
+NETWORK_NAME      := infraestructura-network
+NETWORK_TEST_NAME := sigma-network
 
 # Colores para salida en consola
 GREEN  := \033[0;32m
@@ -66,6 +67,16 @@ init-network: ## Crea la red Docker externa 'infraestructura-network' si no exis
 		printf "$(GREEN)Red $(NETWORK_NAME) creada.$(RESET)\n"; \
 	else \
 		printf "$(BLUE)La red $(NETWORK_NAME) ya existe.$(RESET)\n"; \
+	fi
+
+.PHONY: init-network-test
+init-network-test: ## Crea la red externa 'sigma-network' usada por compose.test.yml si no existe
+	@if ! docker network ls --format '{{.Name}}' | grep -wq $(NETWORK_TEST_NAME); then \
+		printf "$(YELLOW)Creando red externa de test: $(NETWORK_TEST_NAME)...$(RESET)\n"; \
+		docker network create $(NETWORK_TEST_NAME); \
+		printf "$(GREEN)Red $(NETWORK_TEST_NAME) creada.$(RESET)\n"; \
+	else \
+		printf "$(BLUE)La red $(NETWORK_TEST_NAME) ya existe.$(RESET)\n"; \
 	fi
 
 # ------------------------------------------------------------------------------
@@ -144,7 +155,7 @@ ps: ## Muestra el estado de los contenedores en producción
 # ------------------------------------------------------------------------------
 
 .PHONY: deploy-test
-deploy-test: ## Despliega el stack de test usando compose.test.yml y .env.test
+deploy-test: init-network-test ## Despliega el stack de test usando compose.test.yml y .env.test
 	@printf "$(YELLOW)Desplegando stack de test SIGMA...$(RESET)\n"
 	$(COMPOSE_TEST) up -d --build
 	@printf "$(GREEN)Despliegue de test completado exitosamente.$(RESET)\n"

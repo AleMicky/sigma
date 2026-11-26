@@ -40,6 +40,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
+import { toLocalDateTimeIso } from "@/shared/lib/date"
 import { formatDate } from "@/shared/utils/date.utils"
 
 import {
@@ -129,7 +130,7 @@ function CargaCombustibleForm({
       litros: parsedLitros,
       precioTotal: parsedPrecio,
       numeroFactura: numeroFactura.trim() ? numeroFactura.trim() : null,
-      fechaCarga: new Date(fechaCarga).toISOString(),
+      fechaCarga: toLocalDateTimeIso(fechaCarga),
       empleadoId: activeEmpleadoId,
     })
 

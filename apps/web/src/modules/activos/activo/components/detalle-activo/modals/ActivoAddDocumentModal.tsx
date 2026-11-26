@@ -161,6 +161,8 @@ function ActivoAddDocumentModalContent({
   )
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const formRef = useRef<HTMLFormElement>(null)
 
   const selectedTipo = useMemo(
     () => tiposDocumento.find((t) => t.id === tipoDocumentoId) ?? null,
@@ -177,6 +179,7 @@ function ActivoAddDocumentModalContent({
     setFechaVencimiento("")
     setSelectedFile(null)
     setIsDragging(false)
+    setFieldErrors({})
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -196,9 +199,12 @@ function ActivoAddDocumentModalContent({
 
   function processFile(file: File) {
     if (file.size > 20 * 1024 * 1024) {
-      toast.error("El archivo supera el tamaño máximo permitido de 20 MB")
+      const message = "El archivo supera el tamaño máximo permitido de 20 MB"
+      setFieldErrors((prev) => ({ ...prev, archivo: message }))
+      toast.error(message)
       return
     }
+    clearFieldError("archivo")
     setSelectedFile(file)
     if (!nombre.trim() && !isEditing) {
       const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "")
@@ -235,28 +241,61 @@ function ActivoAddDocumentModalContent({
     }
   }
 
+  function clearFieldError(field: string) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
+  }
+
+  function fieldProps(field: string) {
+    const message = fieldErrors[field]
+    return {
+      "aria-invalid": Boolean(message),
+      "aria-describedby": message ? `activo-documento-${field}-error` : undefined,
+    }
+  }
+
+  function renderFieldError(field: string) {
+    const message = fieldErrors[field]
+    return message ? (
+      <p
+        id={`activo-documento-${field}-error`}
+        role="alert"
+        className="text-[10px] font-medium text-destructive"
+      >
+        {message}
+      </p>
+    ) : null
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
+    const errors: Record<string, string> = {}
     if (!tipoDocumentoId) {
-      toast.error("Selecciona un tipo de documento")
-      return
+      errors.tipoDocumentoId = "Selecciona un tipo de documento"
     }
-
     if (!nombre.trim()) {
-      toast.error("Ingresa el título del documento")
-      return
+      errors.nombre = "Ingresa el título del documento"
     }
-
     if (requiereVencimiento && !fechaVencimiento) {
-      toast.error(
-        `El tipo "${selectedTipo?.nombre}" requiere obligatoriamente una fecha de vencimiento`,
-      )
-      return
+      errors.fechaVencimiento = `El tipo "${selectedTipo?.nombre}" requiere obligatoriamente una fecha de vencimiento`
+    }
+    if (!isEditing && !selectedFile) {
+      errors.archivo = "Debes adjuntar un archivo físico para el documento"
     }
 
-    if (!isEditing && !selectedFile) {
-      toast.error("Debes adjuntar un archivo físico para el documento")
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      toast.error(Object.values(errors)[0])
+      requestAnimationFrame(() => {
+        formRef.current
+          ?.querySelector<HTMLElement>("[aria-invalid='true']")
+          ?.focus()
+      })
       return
     }
 
@@ -361,10 +400,18 @@ function ActivoAddDocumentModalContent({
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 p-3.5 sm:p-4 text-xs">
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          noValidate
+          className="flex flex-col gap-2.5 p-3.5 sm:p-4 text-xs"
+        >
           {/* Tipo de Documento con diseño de tarjeta seleccionada */}
           <div className="flex flex-col gap-1">
-            <Label className="text-[11px] font-semibold flex items-center justify-between">
+            <Label
+              htmlFor="activo-documento-tipoDocumentoId"
+              className="text-[11px] font-semibold flex items-center justify-between"
+            >
               <span>
                 Tipo de Documento <span className="text-destructive">*</span>
               </span>
@@ -427,17 +474,20 @@ function ActivoAddDocumentModalContent({
                 value={null}
                 onValueChange={(val: TipoDocumento | null) => {
                   setTipoDocumentoId(val?.id ?? "")
+                  clearFieldError("tipoDocumentoId")
                 }}
                 disabled={isPending || tiposDocumentoQuery.isLoading}
               >
                 <div className="relative w-full">
                   <ComboboxInput
+                    id="activo-documento-tipoDocumentoId"
                     placeholder={
                       tiposDocumentoQuery.isLoading
                         ? "Cargando tipos de documento..."
                         : "Buscar o seleccionar tipo de documento..."
                     }
                     className="h-8 text-xs w-full bg-background shadow-2xs"
+                    {...fieldProps("tipoDocumentoId")}
                   />
                   {tiposDocumentoQuery.isLoading && (
                     <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -487,32 +537,46 @@ function ActivoAddDocumentModalContent({
                 </ComboboxContent>
               </Combobox>
             )}
+            {renderFieldError("tipoDocumentoId")}
           </div>
 
           {/* Row 2: Título & N° Referencia */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {/* Título / Denominación */}
             <div className="flex flex-col gap-1">
-              <Label className="text-[11px] font-semibold">
+              <Label
+                htmlFor="activo-documento-nombre"
+                className="text-[11px] font-semibold"
+              >
                 Título / Denominación <span className="text-destructive">*</span>
               </Label>
               <Input
+                id="activo-documento-nombre"
                 value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
+                onChange={(e) => {
+                  setNombre(e.target.value)
+                  clearFieldError("nombre")
+                }}
                 placeholder="Ej. Certificado de garantía, factura o acta"
                 className="h-8 text-xs bg-background"
                 disabled={isPending}
                 required
+                {...fieldProps("nombre")}
               />
+              {renderFieldError("nombre")}
             </div>
 
             {/* N° Documento */}
             <div className="flex flex-col gap-1">
-              <Label className="text-[11px] font-semibold flex items-center justify-between">
+              <Label
+                htmlFor="activo-documento-numeroDocumento"
+                className="text-[11px] font-semibold flex items-center justify-between"
+              >
                 <span>N° de Documento / Referencia</span>
                 <span className="text-[9px] font-normal text-muted-foreground">Opcional</span>
               </Label>
               <Input
+                id="activo-documento-numeroDocumento"
                 value={numeroDocumento}
                 onChange={(e) => setNumeroDocumento(e.target.value)}
                 placeholder="Ej. DOC-2026-001"
@@ -526,11 +590,15 @@ function ActivoAddDocumentModalContent({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {/* Fecha Emisión */}
             <div className="flex flex-col gap-1">
-              <Label className="text-[11px] font-semibold flex items-center gap-1">
+              <Label
+                htmlFor="activo-documento-fechaEmision"
+                className="text-[11px] font-semibold flex items-center gap-1"
+              >
                 <Calendar className="size-3 text-muted-foreground" />
                 <span>Fecha Emisión</span>
               </Label>
               <Input
+                id="activo-documento-fechaEmision"
                 type="date"
                 value={fechaEmision}
                 onChange={(e) => setFechaEmision(e.target.value)}
@@ -541,7 +609,10 @@ function ActivoAddDocumentModalContent({
 
             {/* Fecha Vencimiento */}
             <div className="flex flex-col gap-1">
-              <Label className="text-[11px] font-semibold flex items-center justify-between">
+              <Label
+                htmlFor="activo-documento-fechaVencimiento"
+                className="text-[11px] font-semibold flex items-center justify-between"
+              >
                 <span className="flex items-center gap-1">
                   <Calendar className="size-3 text-muted-foreground" />
                   <span>
@@ -558,9 +629,13 @@ function ActivoAddDocumentModalContent({
                 )}
               </Label>
               <Input
+                id="activo-documento-fechaVencimiento"
                 type="date"
                 value={fechaVencimiento}
-                onChange={(e) => setFechaVencimiento(e.target.value)}
+                onChange={(e) => {
+                  setFechaVencimiento(e.target.value)
+                  clearFieldError("fechaVencimiento")
+                }}
                 className={cn(
                   "h-8 text-xs font-mono bg-background",
                   requiereVencimiento &&
@@ -569,17 +644,23 @@ function ActivoAddDocumentModalContent({
                 )}
                 required={requiereVencimiento}
                 disabled={isPending}
+                {...fieldProps("fechaVencimiento")}
               />
+              {renderFieldError("fechaVencimiento")}
             </div>
           </div>
 
           {/* Row 4: Descripción */}
           <div className="flex flex-col gap-1">
-            <Label className="text-[11px] font-semibold flex items-center justify-between">
+            <Label
+              htmlFor="activo-documento-descripcion"
+              className="text-[11px] font-semibold flex items-center justify-between"
+            >
               <span>Descripción / Observaciones</span>
               <span className="text-[9px] font-normal text-muted-foreground">Opcional</span>
             </Label>
             <Textarea
+              id="activo-documento-descripcion"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="Observaciones o detalles relevantes del documento..."
@@ -592,7 +673,10 @@ function ActivoAddDocumentModalContent({
           {/* Row 5: Archivo Adjunto */}
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <Label className="text-[11px] font-semibold flex items-center gap-1">
+              <Label
+                htmlFor="activo-documento-archivo"
+                className="text-[11px] font-semibold flex items-center gap-1"
+              >
                 <Paperclip className="size-3 text-muted-foreground" />
                 <span>
                   Archivo Adjunto{" "}
@@ -605,12 +689,15 @@ function ActivoAddDocumentModalContent({
             </div>
 
             <input
+              id="activo-documento-archivo"
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              className="hidden"
+              className="sr-only"
+              tabIndex={-1}
               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
               disabled={isPending}
+              {...fieldProps("archivo")}
             />
 
             {activeFileMeta ? (
@@ -690,13 +777,20 @@ function ActivoAddDocumentModalContent({
                 </div>
               </div>
             ) : (
-              <div
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                disabled={isPending}
+                aria-describedby={
+                  fieldErrors.archivo
+                    ? "activo-documento-archivo-error"
+                    : undefined
+                }
                 className={cn(
-                  "p-3 border border-dashed rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer text-center",
+                  "p-3 border border-dashed rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50",
                   isDragging
                     ? "border-primary bg-primary/10"
                     : "border-border/80 bg-muted/15 hover:bg-muted/30 hover:border-primary/50",
@@ -706,8 +800,9 @@ function ActivoAddDocumentModalContent({
                 <span className="text-xs font-semibold text-foreground">
                   {isDragging ? "Suelta el archivo aquí" : "Seleccionar o arrastrar archivo"}
                 </span>
-              </div>
+              </button>
             )}
+            {renderFieldError("archivo")}
           </div>
 
           {/* Footer Actions */}

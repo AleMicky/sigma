@@ -14,7 +14,8 @@ services:
         required: false
 
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      # Perfil estricto: el stack de test nunca debe caer en "dev" por omisión.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?Definir SPRING_PROFILES_ACTIVE=test en .env.test}
       SERVER_PORT: ${SERVER_PORT:-8080}
 
       # Base de datos externa
@@ -29,7 +30,7 @@ services:
       STORAGE_BASE_DIR: ${STORAGE_BASE_DIR:-./uploads}
       STORAGE_MAX_FILE_SIZE: ${STORAGE_MAX_FILE_SIZE:-20MB}
       STORAGE_MAX_REQUEST_SIZE: ${STORAGE_MAX_REQUEST_SIZE:-20MB}
-      STORAGE_MAX_FILE_SIZE_BYTES: ${STORAGE_MAX_FILE_SIZE_BYTES:-5242880}
+      STORAGE_MAX_FILE_SIZE_BYTES: ${STORAGE_MAX_FILE_SIZE_BYTES:-20971520}
       DOCUMENTS_MAX_FILE_SIZE_BYTES: ${DOCUMENTS_MAX_FILE_SIZE_BYTES:-20971520}
 
       # CORS
@@ -98,7 +99,7 @@ services:
         condition: service_healthy
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ > /dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ > /dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

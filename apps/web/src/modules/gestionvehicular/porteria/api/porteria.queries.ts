@@ -4,12 +4,14 @@ import { porteriaKeys } from "./porteria.keys"
 import {
   getRegistroPorteriaById,
   getReporteBitacoraPorteria,
+  getReporteBitacoraPorteriaPaginado,
   listRegistrosAfuera,
   listRegistrosPorteria,
 } from "./porteria.service"
 import type {
   PorteriaFiltros,
   ReporteBitacoraPorteriaFiltros,
+  ReporteBitacoraPorteriaPaginadoParams,
 } from "./porteria.types"
 
 export const porteriaQueries = {
@@ -29,6 +31,12 @@ export const porteriaQueries = {
     queryOptions({
       queryKey: porteriaKeys.reporte(filters),
       queryFn: () => getReporteBitacoraPorteria(filters),
+    }),
+
+  reportePaginado: (filters?: ReporteBitacoraPorteriaPaginadoParams) =>
+    queryOptions({
+      queryKey: porteriaKeys.reportePaginado(filters),
+      queryFn: () => getReporteBitacoraPorteriaPaginado(filters),
     }),
 
   detail: (id: string) =>

@@ -25,6 +25,7 @@ import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { cn } from "@/shared/lib/utils"
 import { formatDateTime } from "@/shared/utils/date.utils"
 
@@ -50,16 +51,15 @@ export function ActivoListView({
   const [activoToDelete, setActivoToDelete] = useState<Activo | null>(null)
   const [activoParaCambiarEstado, setActivoParaCambiarEstado] =
     useState<Activo | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copiedKey: copiedId, copy } = useCopyToClipboard()
   const deleteMutation = useDeleteActivo()
   const setActivoMutation = useSetActivoActivo()
 
-  function copyCode(e: React.MouseEvent, activo: Activo) {
+  async function copyCode(e: React.MouseEvent, activo: Activo) {
     e.stopPropagation()
-    void navigator.clipboard.writeText(activo.codigo)
-    setCopiedId(activo.id)
-    toast.success(`Código "${activo.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedId(null), 2000)
+    if (await copy(activo.codigo, activo.id)) {
+      toast.success(`Código "${activo.codigo}" copiado al portapapeles`)
+    }
   }
 
   return (

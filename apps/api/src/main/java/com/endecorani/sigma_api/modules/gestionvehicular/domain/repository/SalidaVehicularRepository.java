@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,6 +67,9 @@ public interface SalidaVehicularRepository {
     }
 
     List<SalidaVehicular> findActivas();
+
+    /** REQ-VEH-019: una sola consulta para resolver los números de salida de la bitácora. */
+    List<SalidaVehicular> findAllByIdIn(Collection<UUID> ids);
 
     default List<SalidaVehicular> findActivas(UUID areaId, UUID createdById) {
         return findActivas();

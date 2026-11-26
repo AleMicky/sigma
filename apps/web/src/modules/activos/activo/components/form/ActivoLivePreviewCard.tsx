@@ -18,6 +18,7 @@ import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.ser
 import { TIPO_UBICACION_CONFIG } from "@/modules/parametros/ubicacion/lib/tipo-ubicacion.config"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Badge } from "@/shared/components/ui/badge"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { cn } from "@/shared/lib/utils"
 
 type ActivoLivePreviewCardProps = {
@@ -50,7 +51,7 @@ export function ActivoLivePreviewCard({
   removeExistingImage,
 }: ActivoLivePreviewCardProps) {
   const [viewMode, setViewMode] = useState<"card" | "list">("card")
-  const [isCopied, setIsCopied] = useState(false)
+  const { isCopied, copy } = useCopyToClipboard()
 
   const localPreviewUrl = useMemo(() => {
     if (!pendingFile) return null
@@ -85,9 +86,7 @@ export function ActivoLivePreviewCard({
 
   const handleCopyCode = () => {
     if (!codigo) return
-    void navigator.clipboard.writeText(codigo)
-    setIsCopied(true)
-    setTimeout(() => setIsCopied(false), 2000)
+    void copy(codigo, "codigo")
   }
 
   // Renderizador de imagen compartida
@@ -273,7 +272,7 @@ export function ActivoLivePreviewCard({
                       className="inline-flex size-4 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       title="Copiar código"
                     >
-                      {isCopied ? (
+                      {isCopied("codigo") ? (
                         <Check className="size-2.5 text-emerald-500" />
                       ) : (
                         <Copy className="size-2.5" />

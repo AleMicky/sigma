@@ -53,7 +53,14 @@ import type {
 
 export interface ReporteBitacoraPorteriaTableProps {
   filas: BitacoraPorteriaItem[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  onPageChange: (page: number) => void
+  onSizeChange: (size: number) => void
   isLoading?: boolean
+  isError?: boolean
   className?: string
 }
 
@@ -101,24 +108,26 @@ function getEstadoBadge(estado?: EstadoRegistroPorteria | string | null) {
 
 export function ReporteBitacoraPorteriaTable({
   filas,
+  page,
+  size,
+  totalElements,
+  totalPages,
+  onPageChange,
+  onSizeChange,
   isLoading = false,
+  isError = false,
   className,
 }: Readonly<ReporteBitacoraPorteriaTableProps>) {
-  const [currentPage, setCurrentPage] = useState(0)
-  const [pageSize, setPageSize] = useState(20)
   const [selectedItem, setSelectedItem] = useState<BitacoraPorteriaItem | null>(
     null
   )
 
-  const totalElements = filas.length
-  const totalPages = Math.max(1, Math.ceil(totalElements / pageSize))
-  const safePage = Math.min(currentPage, totalPages - 1)
+  // `filas` ya viene acotada por el servidor; nunca se hace slicing local.
+  const pageItems = filas
+  const safePage = Math.min(page, Math.max(0, totalPages - 1))
 
-  const pageItems = useMemo(() => {
-    const start = safePage * pageSize
-    return filas.slice(start, start + pageSize)
-  }, [filas, safePage, pageSize])
-
+  // Estos totales son solo de la página actual; las métricas globales
+  // proceden de los agregados de `/porteria/reporte` en la página contenedora.
   const totales = useMemo(() => {
     let internos = 0
     let externos = 0
@@ -152,6 +161,7 @@ export function ReporteBitacoraPorteriaTable({
   return (
     <>
       <Card
+        aria-busy={isLoading}
         className={cn(
           "border-border/60 shadow-xs overflow-hidden",
           className
@@ -230,7 +240,7 @@ export function ReporteBitacoraPorteriaTable({
                     </TableCell>
                   </TableRow>
                 ))
-              ) : pageItems.length === 0 ? (
+              ) : isError ? null : pageItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
@@ -491,7 +501,7 @@ export function ReporteBitacoraPorteriaTable({
               <tfoot>
                 <tr className="bg-muted/60 text-foreground font-semibold border-t border-border/80 text-xs">
                   <td colSpan={3} className="px-3 py-2.5">
-                    Total filtrado:{" "}
+                    Total en esta página:{" "}
                     <strong className="text-primary">{totales.total}</strong>{" "}
                     registros
                   </td>
@@ -536,11 +546,11 @@ export function ReporteBitacoraPorteriaTable({
             <span>
               Mostrando{" "}
               <strong className="text-foreground">
-                {totalElements > 0 ? safePage * pageSize + 1 : 0}
+                {totalElements > 0 ? safePage * size + 1 : 0}
               </strong>{" "}
               a{" "}
               <strong className="text-foreground">
-                {Math.min((safePage + 1) * pageSize, totalElements)}
+                {Math.min((safePage + 1) * size, totalElements)}
               </strong>{" "}
               de <strong className="text-foreground">{totalElements}</strong>{" "}
               registros
@@ -549,11 +559,8 @@ export function ReporteBitacoraPorteriaTable({
             <div className="flex items-center gap-1.5 pl-3 border-l border-border/50">
               <span>Por página:</span>
               <Select
-                value={String(pageSize)}
-                onValueChange={(val) => {
-                  setPageSize(Number(val))
-                  setCurrentPage(0)
-                }}
+                value={String(size)}
+                onValueChange={(val) => onSizeChange(Number(val))}
               >
                 <SelectTrigger className="h-7 w-16 text-xs">
                   <SelectValue />
@@ -573,8 +580,9 @@ export function ReporteBitacoraPorteriaTable({
               type="button"
               variant="outline"
               size="icon"
+              aria-label="Página anterior"
               className="h-7 w-7"
-              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+              onClick={() => onPageChange(Math.max(0, safePage - 1))}
               disabled={safePage <= 0 || isLoading}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -588,9 +596,10 @@ export function ReporteBitacoraPorteriaTable({
               type="button"
               variant="outline"
               size="icon"
+              aria-label="Página siguiente"
               className="h-7 w-7"
               onClick={() =>
-                setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+                onPageChange(Math.min(Math.max(0, totalPages - 1), safePage + 1))
               }
               disabled={safePage + 1 >= totalPages || isLoading}
             >

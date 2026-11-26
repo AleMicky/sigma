@@ -39,6 +39,7 @@ import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepos
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
+import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -244,6 +245,47 @@ public class SolicitudVehicularService {
         return InterfazFiltros.denegado();
     }
 
+    /**
+     * REQ-VEH-003: aplica a las operaciones por ID el mismo alcance que ya se aplica a los
+     * listados. Reutiliza {@link #resolverFiltrosPorInterfaz(UUID, UUID, UUID, String)}
+     * para las tres interfaces que puede usar el usuario (propia, asignación y conductor).
+     * Si no se puede resolver el empleado/conductor del usuario, falla cerrado con 403.
+     */
+    private void validarAccesoASolicitud(SolicitudVehicular solicitud) {
+        if (securityUtils.isAdmin()) {
+            return;
+        }
+
+        UUID solicitanteId = solicitud.getSolicitanteId();
+        UUID responsableId = solicitud.getResponsableAsignacionId();
+        UUID conductorId = solicitud.getConductorAsignadoId();
+
+        InterfazFiltros propia = resolverFiltrosPorInterfaz(null, null, null, null);
+        if (propia.sinAcceso()) {
+            throw new ForbiddenException("No tiene permisos para acceder a esta solicitud vehicular.");
+        }
+        if (coincide(propia.solicitanteId(), solicitanteId)
+                || coincide(propia.conductorAsignadoId(), conductorId)) {
+            return;
+        }
+
+        InterfazFiltros asignacion = resolverFiltrosPorInterfaz(null, null, null, "AsignacionVehicularPage");
+        if (!asignacion.sinAcceso() && coincide(asignacion.responsableAsignacionId(), responsableId)) {
+            return;
+        }
+
+        InterfazFiltros conductor = resolverFiltrosPorInterfaz(null, null, null, "ConductorViajesPage");
+        if (!conductor.sinAcceso() && coincide(conductor.conductorAsignadoId(), conductorId)) {
+            return;
+        }
+
+        throw new ForbiddenException("No tiene permisos para acceder a esta solicitud vehicular.");
+    }
+
+    private static boolean coincide(UUID filtro, UUID valor) {
+        return filtro != null && filtro.equals(valor);
+    }
+
     private PageResponse<SolicitudVehicularResponse> listarInternal(
             String search,
             String estado,
@@ -285,6 +327,7 @@ public class SolicitudVehicularService {
 
     private SolicitudVehicularResponse findByIdInternal(UUID id) {
         SolicitudVehicular solicitud = obtenerPorId(id);
+        validarAccesoASolicitud(solicitud);
         List<SolicitudVehicularAdjuntoResponse> adjuntos = adjuntoService.findBySolicitudVehicularId(id);
         return toResponse(solicitud, adjuntos);
     }
@@ -364,6 +407,7 @@ public class SolicitudVehicularService {
     @Transactional
     public SolicitudVehicularResponse enviar(UUID id, EnviarSolicitudVehicularRequest request) {
         SolicitudVehicular solicitud = obtenerPorId(id);
+        validarAccesoASolicitud(solicitud);
 
         String estadoActual = solicitud.getEstado() != null ? solicitud.getEstado().toUpperCase() : "";
         if (!ESTADO_BORRADOR.equals(estadoActual) && !ESTADO_PENDIENTE.equals(estadoActual)) {
@@ -410,6 +454,7 @@ public class SolicitudVehicularService {
     @Transactional
     public SolicitudVehicularResponse completarWorkflow(UUID id, CompleteWorkflowTaskRequest request) {
         SolicitudVehicular solicitud = obtenerPorId(id);
+        validarAccesoASolicitud(solicitud);
 
         if (solicitud.getProcessInstanceId() == null) {
             throw new ConflictException(
@@ -870,6 +915,7 @@ public class SolicitudVehicularService {
     @Transactional
     public SolicitudVehicularResponse update(UUID id, SolicitudVehicularUpdate dto) {
         SolicitudVehicular actual = obtenerPorId(id);
+        validarAccesoASolicitud(actual);
         validarEstadoEditable(actual);
 
         String numero = StringUtils.normalize(dto.numero());
@@ -920,6 +966,7 @@ public class SolicitudVehicularService {
     @Transactional
     public SolicitudVehicularResponse update(UUID id, SolicitudVehicularRequest dto) {
         SolicitudVehicular actual = obtenerPorId(id);
+        validarAccesoASolicitud(actual);
         validarEstadoEditable(actual);
 
         String numero = StringUtils.normalize(dto.numero());
@@ -970,6 +1017,7 @@ public class SolicitudVehicularService {
     @Transactional
     public void delete(UUID id) {
         SolicitudVehicular actual = obtenerPorId(id);
+        validarAccesoASolicitud(actual);
         String estadoActual = actual.getEstado() != null ? actual.getEstado().toUpperCase() : "";
         if (!ESTADO_BORRADOR.equals(estadoActual) && !ESTADO_PENDIENTE.equals(estadoActual)) {
             throw new ConflictException(

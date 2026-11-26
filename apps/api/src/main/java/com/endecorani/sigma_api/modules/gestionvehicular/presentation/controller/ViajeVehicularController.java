@@ -24,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -39,6 +40,7 @@ import java.util.UUID;
         description = "Administración, control y seguimiento de viajes vehiculares asignados"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(GestionVehicularRoles.OPERACION)
 public class ViajeVehicularController {
 
     private final ViajeVehicularService service;
@@ -61,6 +63,7 @@ public class ViajeVehicularController {
         );
     }
 
+    @PreAuthorize(GestionVehicularRoles.REPORTE)
     @GetMapping(value = "/exportar-excel", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     @Operation(summary = "Exportar historial de viajes vehiculares a formato Excel (.xlsx)")
     public ResponseEntity<byte[]> exportarExcel(

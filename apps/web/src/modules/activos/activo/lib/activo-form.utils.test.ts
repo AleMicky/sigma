@@ -4,11 +4,15 @@ import type { ActivoAtributo } from "@/modules/activos/activo-atributo/api/activ
 import type { ActivoAtributoValor } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.service"
 import { ApiError } from "@/shared/api"
 
+import type { Activo } from "../api/activo.service"
+import type { ActivoDto } from "../schemas/activo.schema"
 import {
+  buildActivoPayload,
   buildReplaceAtributosPayload,
   formatAtributoValor,
   formatLocalDateLong,
   mapAtributoValidationErrors,
+  resolveActivoSaveTarget,
   validateAtributos,
 } from "./activo-form.utils"
 
@@ -84,6 +88,30 @@ describe("buildReplaceAtributosPayload", () => {
       { atributoId: "visible", valor: "Nuevo" },
       { atributoId: "oculto", valor: "Conservado" },
     ])
+  })
+
+  it("conserva los valores existentes aunque superen una página de 100", () => {
+    const existentes = new Map<string, ActivoAtributoValor>()
+    for (let index = 0; index < 120; index += 1) {
+      const id = `oculto-${String(index).padStart(3, "0")}`
+      existentes.set(id, valor(id, `valor-${index}`))
+    }
+
+    const payload = buildReplaceAtributosPayload(
+      [atributo("visible")],
+      { visible: "Nuevo" },
+      existentes,
+    )
+
+    expect(payload.valores).toHaveLength(121)
+    expect(payload.valores[0]).toEqual({
+      atributoId: "visible",
+      valor: "Nuevo",
+    })
+    expect(payload.valores[120]).toEqual({
+      atributoId: "oculto-119",
+      valor: "valor-119",
+    })
   })
 })
 
@@ -194,5 +222,72 @@ describe("formatLocalDateLong", () => {
     expect(formatted).toContain("noviembre")
     expect(formatLocalDateLong(null)).toBeNull()
     expect(formatLocalDateLong("no-fecha")).toBe("no-fecha")
+  })
+})
+
+const valoresFormulario: ActivoDto = {
+  codigo: "  ACT-1  ",
+  codigoAlternativo: "   ",
+  nombre: "  Transformador  ",
+  descripcion: "  ",
+  tipoActivoId: "tipo-1",
+  ubicacionId: "  ubic-1  ",
+  estadoOperativoId: "  ",
+  fechaAdquisicion: "2026-01-01",
+}
+
+describe("buildActivoPayload", () => {
+  it("normaliza los campos y da de alta en la creación", () => {
+    expect(buildActivoPayload(valoresFormulario)).toEqual({
+      codigo: "ACT-1",
+      codigoAlternativo: null,
+      nombre: "Transformador",
+      descripcion: null,
+      tipoActivoId: "tipo-1",
+      ubicacionId: "ubic-1",
+      estadoOperativoId: null,
+      fechaAdquisicion: "2026-01-01",
+      activo: true,
+    })
+  })
+
+  it("conserva el flag de baja al editar un activo dado de baja", () => {
+    const activo = { id: "activo-1", activo: false } as Activo
+
+    expect(buildActivoPayload(valoresFormulario, activo).activo).toBe(false)
+    expect(buildActivoPayload(valoresFormulario, null).activo).toBe(true)
+  })
+})
+
+describe("resolveActivoSaveTarget", () => {
+  it("crea cuando todavía no hay un id persistido", () => {
+    expect(resolveActivoSaveTarget({ isEditing: false })).toEqual({
+      mode: "create",
+    })
+  })
+
+  it("actualiza el id guardado si falló la imagen o los atributos", () => {
+    expect(
+      resolveActivoSaveTarget({
+        isEditing: false,
+        savedId: "activo-guardado",
+      }),
+    ).toEqual({ mode: "update", id: "activo-guardado" })
+  })
+
+  it("actualiza el activo de la ruta en modo edición", () => {
+    expect(
+      resolveActivoSaveTarget({ isEditing: true, activoId: "activo-1" }),
+    ).toEqual({ mode: "update", id: "activo-1" })
+  })
+
+  it("prefiere el id recién guardado sobre el id de la ruta", () => {
+    expect(
+      resolveActivoSaveTarget({
+        isEditing: true,
+        activoId: "activo-ruta",
+        savedId: "activo-guardado",
+      }),
+    ).toEqual({ mode: "update", id: "activo-guardado" })
   })
 })

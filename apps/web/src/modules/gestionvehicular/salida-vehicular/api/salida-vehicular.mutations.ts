@@ -1,4 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { gestionVehicularDashboardKeys } from "../../dashboard/api/gestion-vehicular-dashboard.queries"
+import { gestionVehicularTotalesKeys } from "../../totales/api/gestion-vehicular-totales.queries"
 import { toast } from "sonner"
 
 import { getErrorMessage } from "@/shared/api"
@@ -27,6 +29,8 @@ export function useRegistrarSalidaMutation() {
   return useMutation({
     mutationFn: (data: RegistrarSalidaVehicularRequest) => registrarSalida(data),
     onSuccess: (entity) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.activas() })
       void queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.misSalidas() })
@@ -52,6 +56,8 @@ export function useActualizarSalidaMutation() {
       data: ActualizarSalidaVehicularRequest
     }) => actualizarSalida(id, data),
     onSuccess: (entity) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       void queryClient.invalidateQueries({
         queryKey: salidaVehicularKeys.detail(entity.id),
       })
@@ -79,6 +85,8 @@ export function useCancelarSalidaMutation() {
       data?: CancelarSalidaVehicularRequest
     }) => cancelarSalida(id, data),
     onSuccess: (entity) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       void queryClient.invalidateQueries({
         queryKey: salidaVehicularKeys.detail(entity.id),
       })
@@ -115,6 +123,8 @@ export function useEjecutarAccionSalidaMutation() {
       data?: EjecutarAccionSalidaRequest
     }) => ejecutarAccion(id, accionId, data),
     onSuccess: (entity) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       void queryClient.invalidateQueries({
         queryKey: salidaVehicularKeys.detail(entity.id),
       })
@@ -159,6 +169,8 @@ export function useRegistrarBitacoraMutation() {
       data: RegistrarBitacoraRequest
     }) => registrarBitacora(id, data),
     onSuccess: (_, { id }) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       void queryClient.invalidateQueries({
         queryKey: salidaVehicularKeys.bitacoras(id),
       })

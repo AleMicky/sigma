@@ -31,13 +31,24 @@ export function DashboardLayout({ children }: Readonly<PropsWithChildren>) {
           className="flex h-svh w-full overflow-hidden bg-background"
           style={{ "--active-color": themeColor } as React.CSSProperties}
         >
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-md focus:ring-2 focus:ring-ring"
+          >
+            Saltar al contenido principal
+          </a>
+
           <AppSidebar />
 
           <SidebarInset className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
             <AppHeader />
             <NavigationTabs />
 
-            <main className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-5 transition-all">
+            <main
+              id="main-content"
+              tabIndex={-1}
+              className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-5 transition-all focus:outline-none"
+            >
               <PageTransition>{children}</PageTransition>
             </main>
           </SidebarInset>

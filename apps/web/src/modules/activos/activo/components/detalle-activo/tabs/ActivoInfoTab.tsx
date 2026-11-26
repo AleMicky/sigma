@@ -265,8 +265,7 @@ export function ActivoInfoTab({
 
       // 3. Invalidate queries
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: activoKeys.detail(activo.id) }),
-        queryClient.invalidateQueries({ queryKey: activoKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: activoKeys.all }),
         queryClient.invalidateQueries({
           queryKey: activoAtributoValorKeys.lists(),
         }),
@@ -776,7 +775,9 @@ export function ActivoInfoTab({
                           ? "border-border/70 bg-muted/20 hover:border-primary/40"
                           : estado === "por_vencer"
                           ? "border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50"
-                          : "border-destructive/30 bg-destructive/5 hover:border-destructive/50",
+                          : estado === "vencido"
+                          ? "border-destructive/30 bg-destructive/5 hover:border-destructive/50"
+                          : "border-border/60 bg-muted/10 hover:border-primary/40",
                       )}
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -787,7 +788,9 @@ export function ActivoInfoTab({
                               ? "bg-primary/10 text-primary"
                               : estado === "por_vencer"
                               ? "bg-amber-500/15 text-amber-600"
-                              : "bg-destructive/15 text-destructive",
+                              : estado === "vencido"
+                              ? "bg-destructive/15 text-destructive"
+                              : "bg-muted text-muted-foreground",
                           )}
                         >
                           <FileText className="size-3.5" />
@@ -816,9 +819,13 @@ export function ActivoInfoTab({
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                             Por vencer
                           </span>
-                        ) : (
+                        ) : estado === "vencido" ? (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-destructive/15 text-destructive border border-destructive/25">
                             Vencido
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/80">
+                            Permanente
                           </span>
                         )}
                       </div>

@@ -66,13 +66,13 @@ public class GestionVehicularDashboardService {
 
         LocalDate hoy = LocalDate.now();
         YearMonth mesActual = YearMonth.from(hoy);
-        LocalDateTime inicioMesActual = mesActual.atDay(1).atStartOfDay();
-        LocalDateTime finMesActual = mesActual.atEndOfMonth().atTime(23, 59, 59);
 
+        // REQ-VEH-019: todas las lecturas están acotadas por flota/fecha y el
+        // número de consultas es constante (no depende del número de meses).
         // 1. Obtener datos clave de flotas y vehículos
         List<FlotaVehiculoEntity> flotaVehiculos = (flotaId != null)
                 ? flotaVehiculoRepository.findByFlotaVehicularId(flotaId)
-                : flotaVehiculoRepository.findAll();
+                : flotaVehiculoRepository.findByActivoTrue();
         Set<UUID> vehiculoIds = flotaVehiculos.stream()
                 .filter(FlotaVehiculoEntity::isActivo)
                 .map(FlotaVehiculoEntity::getActivoId)
@@ -82,22 +82,30 @@ public class GestionVehicularDashboardService {
         List<ActivoEntity> activos = vehiculoIds.isEmpty() ? List.of() : activoRepository.findAllById(vehiculoIds);
         Map<UUID, ActivoEntity> activoMap = activos.stream().collect(Collectors.toMap(ActivoEntity::getId, a -> a));
 
-        // 2. Obtener Estados Operativos
-        Map<UUID, EstadoOperativoEntity> estadosOperativosMap = estadoOperativoRepository.findAll().stream()
-                .collect(Collectors.toMap(EstadoOperativoEntity::getId, e -> e));
+        // 2. Estados operativos acotados a los activos de la flota
+        Set<UUID> estadoOperativoIds = activos.stream()
+                .map(ActivoEntity::getEstadoOperativoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, EstadoOperativoEntity> estadosOperativosMap = estadoOperativoIds.isEmpty()
+                ? Map.of()
+                : estadoOperativoRepository.findAllById(estadoOperativoIds).stream()
+                        .collect(Collectors.toMap(EstadoOperativoEntity::getId, e -> e));
 
-        // 3. Viajes y Asignaciones
-        List<AsignacionVehicularEntity> todasAsignaciones = asignacionVehicularRepository.findAll();
+        // 3. Viajes y Asignaciones acotados a los vehículos de la flota
+        List<AsignacionVehicularEntity> todasAsignaciones = vehiculoIds.isEmpty()
+                ? List.of()
+                : asignacionVehicularRepository.findByActivoIdIn(vehiculoIds);
         Map<UUID, AsignacionVehicularEntity> asignacionMap = todasAsignaciones.stream()
                 .collect(Collectors.toMap(AsignacionVehicularEntity::getId, a -> a, (a, b) -> a));
 
-        List<ViajeVehicularEntity> todosLosViajes = viajeVehicularRepository.findAll().stream()
-                .filter(v -> {
-                    if (flotaId == null) return true;
-                    AsignacionVehicularEntity asig = asignacionMap.get(v.getAsignacionVehicularId());
-                    return asig != null && asig.getActivoId() != null && vehiculoIds.contains(asig.getActivoId());
-                })
-                .toList();
+        Set<UUID> asignacionIds = todasAsignaciones.stream()
+                .map(AsignacionVehicularEntity::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        List<ViajeVehicularEntity> todosLosViajes = asignacionIds.isEmpty()
+                ? List.of()
+                : viajeVehicularRepository.findByAsignacionVehicularIdIn(asignacionIds);
 
         // Viajes activos en curso
         List<ViajeVehicularEntity> viajesEnCurso = todosLosViajes.stream()
@@ -127,53 +135,44 @@ public class GestionVehicularDashboardService {
         });
         Map<UUID, VehiculoInfo> vehiculosInfoMap = resolverVehiculosInfo(todosActivoIds, activoMap);
 
-        // 5. Conductores y Licencias
-        Set<UUID> conductorIdsDeFlota = (flotaId != null)
-                ? todasAsignaciones.stream()
-                        .filter(a -> a.getActivoId() != null && vehiculoIds.contains(a.getActivoId()) && a.getConductorId() != null)
-                        .map(AsignacionVehicularEntity::getConductorId)
-                        .collect(Collectors.toSet())
-                : null;
+        // 5. Conductores y Licencias acotados a la flota y a la ventana de alerta
+        Set<UUID> conductorIdsDeFlota = todasAsignaciones.stream()
+                .map(AsignacionVehicularEntity::getConductorId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-        List<ConductorEntity> conductoresRaw = conductorRepository.findAll();
-        List<ConductorEntity> conductores = (conductorIdsDeFlota != null && !conductorIdsDeFlota.isEmpty())
-                ? conductoresRaw.stream().filter(c -> conductorIdsDeFlota.contains(c.getId())).toList()
-                : conductoresRaw;
+        List<ConductorEntity> conductores = conductorIdsDeFlota.isEmpty()
+                ? List.of()
+                : new ArrayList<>(conductorRepository.findAllById(conductorIdsDeFlota));
 
-        List<ConductorLicenciaEntity> licencias = conductorLicenciaRepository.findAll().stream()
-                .filter(l -> conductorIdsDeFlota == null || conductorIdsDeFlota.isEmpty() || conductorIdsDeFlota.contains(l.getConductorId()))
-                .toList();
+        List<ConductorLicenciaEntity> licencias = conductorIdsDeFlota.isEmpty()
+                ? List.of()
+                : conductorLicenciaRepository.findByConductorIdInAndFechaVencimientoLessThanEqual(
+                        conductorIdsDeFlota, hoy.plusDays(30));
 
-        Map<UUID, ConductorEntity> conductorMap = conductoresRaw.stream().collect(Collectors.toMap(ConductorEntity::getId, c -> c));
+        Map<UUID, ConductorEntity> conductorMap = conductores.stream()
+                .collect(Collectors.toMap(ConductorEntity::getId, c -> c, (a, b) -> a));
 
         Set<UUID> empleadoIds = conductores.stream().map(ConductorEntity::getEmpleadoId).filter(Objects::nonNull).collect(Collectors.toSet());
         Map<UUID, VEmpleadoEntity> empleadoMap = empleadoIds.isEmpty() ? Map.of() :
                 vEmpleadoRepository.findAllById(empleadoIds).stream()
                         .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, e -> e, (a, b) -> a));
 
-        // 6. Solicitudes Vehiculares
-        Set<UUID> solicitudesDeFlota = (flotaId != null)
-                ? todasAsignaciones.stream()
-                        .filter(a -> a.getActivoId() != null && vehiculoIds.contains(a.getActivoId()) && a.getSolicitudVehicularId() != null)
-                        .map(AsignacionVehicularEntity::getSolicitudVehicularId)
-                        .collect(Collectors.toSet())
-                : null;
+        // 6. Solicitudes Vehiculares acotadas a las asignaciones de la flota
+        Set<UUID> solicitudesDeFlota = todasAsignaciones.stream()
+                .map(AsignacionVehicularEntity::getSolicitudVehicularId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-        List<SolicitudVehicularEntity> todasSolicitudesRaw = solicitudVehicularRepository.findAll();
-        List<SolicitudVehicularEntity> todasSolicitudes = (solicitudesDeFlota != null && !solicitudesDeFlota.isEmpty())
-                ? todasSolicitudesRaw.stream().filter(s -> solicitudesDeFlota.contains(s.getId())).toList()
-                : todasSolicitudesRaw;
+        List<SolicitudVehicularEntity> todasSolicitudes = solicitudesDeFlota.isEmpty()
+                ? List.of()
+                : new ArrayList<>(solicitudVehicularRepository.findAllById(solicitudesDeFlota));
 
-        Map<UUID, SolicitudVehicularEntity> solicitudMap = todasSolicitudesRaw.stream()
+        Map<UUID, SolicitudVehicularEntity> solicitudMap = todasSolicitudes.stream()
                 .collect(Collectors.toMap(SolicitudVehicularEntity::getId, s -> s, (a, b) -> a));
 
-        // 7. Cargas de Combustible
-        List<CargaCombustibleEntity> todasCargas = cargaCombustibleRepository.findAll().stream()
-                .filter(c -> {
-                    if (flotaId == null) return true;
-                    return c.getActivoId() != null && vehiculoIds.contains(c.getActivoId());
-                })
-                .toList();
+        // 7. Las cargas de combustible no se cargan en memoria: sus agregaciones
+        //    se resuelven en SQL (GROUP BY) más abajo.
 
         // ==========================================
         // CÁLCULO DE KPIS
@@ -237,42 +236,31 @@ public class GestionVehicularDashboardService {
         }
         alertasLicencias.sort(Comparator.comparingLong(AlertaLicenciaConductorDto::getDiasRestantes));
 
-        int solicitudesPendientes = (int) todasSolicitudes.stream()
-                .filter(s -> s.getEstado() != null && (s.getEstado().equalsIgnoreCase("PENDIENTE") || s.getEstado().equalsIgnoreCase("BORRADOR") || s.getEstado().equalsIgnoreCase("SOLICITADO")))
-                .count();
-
-        int solicitudesAprobadas = (int) todasSolicitudes.stream()
-                .filter(s -> s.getEstado() != null && s.getEstado().equalsIgnoreCase("APROBADA"))
-                .count();
-
-        int solicitudesEnCurso = (int) todasSolicitudes.stream()
-                .filter(s -> s.getEstado() != null && (s.getEstado().equalsIgnoreCase("EN_CURSO") || s.getEstado().equalsIgnoreCase("EN_RUTA")))
-                .count();
-
-        // Viajes mes actual
-        List<ViajeVehicularEntity> viajesMesActual = todosLosViajes.stream()
-                .filter(v -> {
-                    LocalDateTime fechaRef = getFechaReferencia(v);
-                    return !fechaRef.isBefore(inicioMesActual) && !fechaRef.isAfter(finMesActual);
-                })
-                .toList();
-
-        long kmMesActual = 0;
-        for (ViajeVehicularEntity v : viajesMesActual) {
-            if (v.getKilometrajeSalida() != null && v.getKilometrajeRetorno() != null && v.getKilometrajeRetorno() >= v.getKilometrajeSalida()) {
-                kmMesActual += (v.getKilometrajeRetorno() - v.getKilometrajeSalida());
-            }
+        // REQ-VEH-019: una sola consulta agrupada por periodo para cada módulo y
+        // una sola para la distribución de solicitudes; el coste no crece con `meses`.
+        List<YearMonth> periodos = new ArrayList<>();
+        for (int i = meses - 1; i >= 0; i--) {
+            periodos.add(mesActual.minusMonths(i));
         }
+        LocalDateTime inicioPeriodos = periodos.get(0).atDay(1).atStartOfDay();
+        LocalDateTime finPeriodos = mesActual.atEndOfMonth().atTime(23, 59, 59);
+        Map<String, Object[]> viajesPorPeriodo = vehiculoIds.isEmpty() ? Map.of()
+                : agruparPorPeriodo(viajeVehicularRepository.resumenMensualPorActivos(vehiculoIds, inicioPeriodos, finPeriodos));
+        Map<String, Object[]> cargasPorPeriodo = vehiculoIds.isEmpty() ? Map.of()
+                : agruparPorPeriodo(cargaCombustibleRepository.resumenMensualPorActivos(vehiculoIds, inicioPeriodos, finPeriodos));
+        Map<String, Long> conteoEstadosSolicitud = solicitudesDeFlota.isEmpty() ? Map.of()
+                : agruparConteo(solicitudVehicularRepository.contarPorEstado(solicitudesDeFlota));
+        String periodoActual = mesActual.format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
-        // Combustible mes actual
-        BigDecimal litrosMesActual = BigDecimal.ZERO;
-        BigDecimal costoMesActual = BigDecimal.ZERO;
-        for (CargaCombustibleEntity c : todasCargas) {
-            if (c.getFechaCarga() != null && !c.getFechaCarga().isBefore(inicioMesActual) && !c.getFechaCarga().isAfter(finMesActual)) {
-                if (c.getLitros() != null) litrosMesActual = litrosMesActual.add(c.getLitros());
-                if (c.getPrecioTotal() != null) costoMesActual = costoMesActual.add(c.getPrecioTotal());
-            }
-        }
+        int solicitudesPendientes = (int) (contarEn(conteoEstadosSolicitud, "PENDIENTE", "SOLICITADO", "BORRADOR"));
+        int solicitudesAprobadas = (int) contarEn(conteoEstadosSolicitud, "APROBADA");
+        int solicitudesEnCurso = (int) (contarEn(conteoEstadosSolicitud, "EN_CURSO", "EN_RUTA"));
+
+        Object[] viajesMes = viajesPorPeriodo.getOrDefault(periodoActual, new Object[6]);
+        Object[] cargasMes = cargasPorPeriodo.getOrDefault(periodoActual, new Object[4]);
+        long kmMesActual = longEn(viajesMes, 5);
+        BigDecimal litrosMesActual = decimalEn(cargasMes, 2);
+        BigDecimal costoMesActual = decimalEn(cargasMes, 3);
 
         GestionVehicularKpisDto kpis = GestionVehicularKpisDto.builder()
                 .totalVehiculosFlota(totalVehiculos)
@@ -286,7 +274,7 @@ public class GestionVehicularDashboardService {
                 .solicitudesPendientes(solicitudesPendientes)
                 .solicitudesAprobadas(solicitudesAprobadas)
                 .solicitudesEnCurso(solicitudesEnCurso)
-                .viajesMesActual(viajesMesActual.size())
+                .viajesMesActual((int) longEn(viajesMes, 1))
                 .viajesEnCurso(viajesEnCurso.size())
                 .kmRecorridosMesActual(kmMesActual)
                 .combustibleLitrosMesActual(litrosMesActual.setScale(2, RoundingMode.HALF_UP))
@@ -294,73 +282,33 @@ public class GestionVehicularDashboardService {
                 .build();
 
         // ==========================================
-        // TENDENCIA MENSUAL (ÚLTIMOS N MESES)
+        // TENDENCIA MENSUAL (ÚLTIMOS N MESES) — aggregates de SQL
         // ==========================================
-        List<YearMonth> periodos = new ArrayList<>();
-        for (int i = meses - 1; i >= 0; i--) {
-            periodos.add(mesActual.minusMonths(i));
-        }
-
         List<TendenciaViajesDto> tendenciaViajesYKm = new ArrayList<>();
         List<TendenciaCombustibleDto> tendenciaCombustible = new ArrayList<>();
 
         for (YearMonth ym : periodos) {
-            LocalDateTime inicio = ym.atDay(1).atStartOfDay();
-            LocalDateTime fin = ym.atEndOfMonth().atTime(23, 59, 59);
             String label = obtenerMesNombre(ym.getMonthValue()) + " " + ym.getYear();
             String periodoStr = ym.format(DateTimeFormatter.ofPattern("yyyy-MM"));
-
-            // Viajes del periodo
-            List<ViajeVehicularEntity> viajesPeriodo = todosLosViajes.stream()
-                    .filter(v -> {
-                        LocalDateTime ref = getFechaReferencia(v);
-                        return !ref.isBefore(inicio) && !ref.isAfter(fin);
-                    })
-                    .toList();
-
-            int completados = 0;
-            int cancelados = 0;
-            int enCurso = 0;
-            long kmTotal = 0;
-
-            for (ViajeVehicularEntity v : viajesPeriodo) {
-                if (v.getEstado() == EstadoViajeVehicular.FINALIZADO) completados++;
-                else if (v.getEstado() == EstadoViajeVehicular.CANCELADO) cancelados++;
-                else if (v.getEstado() == EstadoViajeVehicular.EN_CURSO) enCurso++;
-
-                if (v.getKilometrajeSalida() != null && v.getKilometrajeRetorno() != null && v.getKilometrajeRetorno() >= v.getKilometrajeSalida()) {
-                    kmTotal += (v.getKilometrajeRetorno() - v.getKilometrajeSalida());
-                }
-            }
+            Object[] viajes = viajesPorPeriodo.getOrDefault(periodoStr, new Object[6]);
+            Object[] cargas = cargasPorPeriodo.getOrDefault(periodoStr, new Object[4]);
 
             tendenciaViajesYKm.add(TendenciaViajesDto.builder()
                     .periodo(periodoStr)
                     .mesLabel(label)
-                    .totalViajes(viajesPeriodo.size())
-                    .completados(completados)
-                    .cancelados(cancelados)
-                    .enCurso(enCurso)
-                    .totalKmRecorridos(kmTotal)
+                    .totalViajes((int) longEn(viajes, 1))
+                    .completados((int) longEn(viajes, 2))
+                    .cancelados((int) longEn(viajes, 3))
+                    .enCurso((int) longEn(viajes, 4))
+                    .totalKmRecorridos(longEn(viajes, 5))
                     .build());
-
-            // Combustible del periodo
-            List<CargaCombustibleEntity> cargasPeriodo = todasCargas.stream()
-                    .filter(c -> c.getFechaCarga() != null && !c.getFechaCarga().isBefore(inicio) && !c.getFechaCarga().isAfter(fin))
-                    .toList();
-
-            BigDecimal lit = BigDecimal.ZERO;
-            BigDecimal cos = BigDecimal.ZERO;
-            for (CargaCombustibleEntity c : cargasPeriodo) {
-                if (c.getLitros() != null) lit = lit.add(c.getLitros());
-                if (c.getPrecioTotal() != null) cos = cos.add(c.getPrecioTotal());
-            }
 
             tendenciaCombustible.add(TendenciaCombustibleDto.builder()
                     .periodo(periodoStr)
                     .mesLabel(label)
-                    .totalLitros(lit.setScale(2, RoundingMode.HALF_UP))
-                    .totalCosto(cos.setScale(2, RoundingMode.HALF_UP))
-                    .cantidadCargas(cargasPeriodo.size())
+                    .totalLitros(decimalEn(cargas, 2).setScale(2, RoundingMode.HALF_UP))
+                    .totalCosto(decimalEn(cargas, 3).setScale(2, RoundingMode.HALF_UP))
+                    .cantidadCargas((int) longEn(cargas, 1))
                     .build());
         }
 
@@ -385,11 +333,7 @@ public class GestionVehicularDashboardService {
         List<DistribucionEstadoDto> distribucionSolicitudes = new ArrayList<>();
         int totalSol = todasSolicitudes.size();
         if (totalSol > 0) {
-            Map<String, Long> agrupadoSol = todasSolicitudes.stream()
-                    .collect(Collectors.groupingBy(
-                            s -> s.getEstado() != null ? s.getEstado().toUpperCase(Locale.ROOT) : "SIN_ESTADO",
-                            Collectors.counting()
-                    ));
+            Map<String, Long> agrupadoSol = conteoEstadosSolicitud;
 
             distribucionSolicitudes.add(crearDistribucion("BORRADOR", "Borradores", agrupadoSol.getOrDefault("BORRADOR", 0L).intValue(), totalSol, "#64748B"));
             distribucionSolicitudes.add(crearDistribucion("PENDIENTE", "Pendientes", (agrupadoSol.getOrDefault("PENDIENTE", 0L).intValue() + agrupadoSol.getOrDefault("SOLICITADO", 0L).intValue()), totalSol, "#F59E0B"));
@@ -400,76 +344,41 @@ public class GestionVehicularDashboardService {
         }
 
         // ==========================================
-        // TOP 5 VEHÍCULOS POR RECORRIDO (KM)
+        // TOP 5 VEHÍCULOS POR RECORRIDO (KM) — GROUP BY en SQL
         // ==========================================
-        Map<UUID, Long> kmPorActivo = new HashMap<>();
-        Map<UUID, Integer> viajesPorActivo = new HashMap<>();
-
-        for (ViajeVehicularEntity v : todosLosViajes) {
-            AsignacionVehicularEntity asig = asignacionMap.get(v.getAsignacionVehicularId());
-            if (asig != null && asig.getActivoId() != null) {
-                UUID actId = asig.getActivoId();
-                viajesPorActivo.put(actId, viajesPorActivo.getOrDefault(actId, 0) + 1);
-
-                if (v.getKilometrajeSalida() != null && v.getKilometrajeRetorno() != null && v.getKilometrajeRetorno() >= v.getKilometrajeSalida()) {
-                    long diff = v.getKilometrajeRetorno() - v.getKilometrajeSalida();
-                    kmPorActivo.put(actId, kmPorActivo.getOrDefault(actId, 0L) + diff);
-                }
-            }
-        }
-
-        List<TopVehiculoKmDto> topVehiculosRecorrido = kmPorActivo.entrySet().stream()
-                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
-                .limit(5)
-                .map(entry -> {
-                    UUID actId = entry.getKey();
+        List<Object[]> topKmRows = vehiculoIds.isEmpty() ? List.of() : viajeVehicularRepository.topActivosPorKm(vehiculoIds);
+        List<TopVehiculoKmDto> topVehiculosRecorrido = topKmRows.stream()
+                .map(row -> {
+                    UUID actId = uuidEn(row[0]);
                     VehiculoInfo info = vehiculosInfoMap.getOrDefault(actId, new VehiculoInfo("-", "-", "Vehículo"));
                     return TopVehiculoKmDto.builder()
                             .activoId(actId)
                             .codigo(info.codigo)
                             .placa(info.placa)
                             .marcaModelo(info.marcaModelo)
-                            .totalKmRecorridos(entry.getValue())
-                            .cantidadViajes(viajesPorActivo.getOrDefault(actId, 0))
+                            .totalKmRecorridos(longEn(row, 2))
+                            .cantidadViajes((int) longEn(row, 1))
                             .build();
                 })
                 .toList();
 
         // ==========================================
-        // TOP 5 VEHÍCULOS POR COMBUSTIBLE
+        // TOP 5 VEHÍCULOS POR COMBUSTIBLE — GROUP BY en SQL
         // ==========================================
-        Map<UUID, BigDecimal> litrosPorActivo = new HashMap<>();
-        Map<UUID, BigDecimal> costoPorActivo = new HashMap<>();
-        Map<UUID, Integer> cargasPorActivo = new HashMap<>();
-
-        for (CargaCombustibleEntity c : todasCargas) {
-            if (c.getActivoId() != null) {
-                UUID actId = c.getActivoId();
-                cargasPorActivo.put(actId, cargasPorActivo.getOrDefault(actId, 0) + 1);
-
-                if (c.getLitros() != null) {
-                    litrosPorActivo.put(actId, litrosPorActivo.getOrDefault(actId, BigDecimal.ZERO).add(c.getLitros()));
-                }
-                if (c.getPrecioTotal() != null) {
-                    costoPorActivo.put(actId, costoPorActivo.getOrDefault(actId, BigDecimal.ZERO).add(c.getPrecioTotal()));
-                }
-            }
-        }
-
-        List<TopVehiculoCombustibleDto> topVehiculosCombustible = costoPorActivo.entrySet().stream()
-                .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
-                .limit(5)
-                .map(entry -> {
-                    UUID actId = entry.getKey();
+        List<Object[]> topCombustibleRows = vehiculoIds.isEmpty() ? List.of()
+                : cargaCombustibleRepository.topActivosPorCosto(vehiculoIds);
+        List<TopVehiculoCombustibleDto> topVehiculosCombustible = topCombustibleRows.stream()
+                .map(row -> {
+                    UUID actId = uuidEn(row[0]);
                     VehiculoInfo info = vehiculosInfoMap.getOrDefault(actId, new VehiculoInfo("-", "-", "Vehículo"));
                     return TopVehiculoCombustibleDto.builder()
                             .activoId(actId)
                             .codigo(info.codigo)
                             .placa(info.placa)
                             .marcaModelo(info.marcaModelo)
-                            .totalLitros(litrosPorActivo.getOrDefault(actId, BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP))
-                            .totalCosto(entry.getValue().setScale(2, RoundingMode.HALF_UP))
-                            .cantidadCargas(cargasPorActivo.getOrDefault(actId, 0))
+                            .totalLitros(decimalEn(row, 2).setScale(2, RoundingMode.HALF_UP))
+                            .totalCosto(decimalEn(row, 3).setScale(2, RoundingMode.HALF_UP))
+                            .cantidadCargas((int) longEn(row, 1))
                             .build();
                 })
                 .toList();
@@ -536,6 +445,62 @@ public class GestionVehicularDashboardService {
                 .viajesActivosRecientes(viajesActivosRecientes)
                 .alertasLicencias(alertasLicencias)
                 .build();
+    }
+
+    /** REQ-VEH-019: helpers tolerantes a los tipos numéricos devueltos por PostgreSQL. */
+    private Map<String, Object[]> agruparPorPeriodo(List<Object[]> rows) {
+        Map<String, Object[]> resultado = new HashMap<>();
+        for (Object[] row : rows) {
+            if (row != null && row.length > 0 && row[0] != null) {
+                resultado.put(row[0].toString(), row);
+            }
+        }
+        return resultado;
+    }
+
+    private Map<String, Long> agruparConteo(List<Object[]> rows) {
+        Map<String, Long> resultado = new HashMap<>();
+        for (Object[] row : rows) {
+            if (row != null && row.length > 1 && row[0] != null) {
+                resultado.merge(row[0].toString(), longEn(row, 1), Long::sum);
+            }
+        }
+        return resultado;
+    }
+
+    private long contarEn(Map<String, Long> conteos, String... claves) {
+        long total = 0;
+        for (String clave : claves) {
+            total += conteos.getOrDefault(clave, 0L);
+        }
+        return total;
+    }
+
+    private long longEn(Object[] row, int indice) {
+        if (row == null || indice >= row.length || !(row[indice] instanceof Number numero)) {
+            return 0L;
+        }
+        return numero.longValue();
+    }
+
+    private BigDecimal decimalEn(Object[] row, int indice) {
+        if (row == null || indice >= row.length || row[indice] == null) {
+            return BigDecimal.ZERO;
+        }
+        if (row[indice] instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        if (row[indice] instanceof Number numero) {
+            return BigDecimal.valueOf(numero.doubleValue());
+        }
+        return new BigDecimal(row[indice].toString());
+    }
+
+    private UUID uuidEn(Object valor) {
+        if (valor instanceof UUID uuid) {
+            return uuid;
+        }
+        return UUID.fromString(valor.toString());
     }
 
     private LocalDateTime toLocalDateTime(Instant instant) {

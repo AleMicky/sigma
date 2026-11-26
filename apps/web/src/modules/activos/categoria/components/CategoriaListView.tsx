@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Badge } from "@/shared/components/ui/badge"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { formatDateTime } from "@/shared/utils/date.utils"
 
 import { useDeleteCategoria } from "../api/categoria.mutations"
@@ -30,15 +31,14 @@ export function CategoriaListView({
   const [categoriaToDelete, setCategoriaToDelete] = useState<Categoria | null>(
     null,
   )
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copiedKey: copiedId, copy } = useCopyToClipboard()
   const deleteMutation = useDeleteCategoria()
 
-  function copyCode(e: React.MouseEvent, categoria: Categoria) {
+  async function copyCode(e: React.MouseEvent, categoria: Categoria) {
     e.stopPropagation()
-    navigator.clipboard.writeText(categoria.codigo)
-    setCopiedId(categoria.id)
-    toast.success(`Código "${categoria.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedId(null), 2000)
+    if (await copy(categoria.codigo, categoria.id)) {
+      toast.success(`Código "${categoria.codigo}" copiado al portapapeles`)
+    }
   }
 
   return (

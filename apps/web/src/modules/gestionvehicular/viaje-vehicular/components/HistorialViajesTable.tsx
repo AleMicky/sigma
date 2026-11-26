@@ -36,10 +36,14 @@ import { HistorialViajeDetalleDialog } from "./HistorialViajeDetalleDialog"
 export interface HistorialViajesTableProps {
   viajes: ViajeVehicular[]
   isLoading?: boolean
+  isError?: boolean
   currentPage: number
   pageSize: number
   totalElements: number
   totalPages: number
+  sortBy?: "createdAt"
+  direction?: "ASC" | "DESC"
+  onSortChange?: (sortBy: "createdAt", direction: "ASC" | "DESC") => void
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
 }
@@ -82,15 +86,23 @@ function getEstadoBadge(estado: string) {
 export function HistorialViajesTable({
   viajes,
   isLoading = false,
+  isError = false,
   currentPage,
   pageSize,
   totalElements,
   totalPages,
+  sortBy = "createdAt",
+  direction = "DESC",
+  onSortChange,
   onPageChange,
   onPageSizeChange,
 }: Readonly<HistorialViajesTableProps>) {
   const [selectedViaje, setSelectedViaje] = React.useState<ViajeVehicular | null>(null)
   const [detalleOpen, setDetalleOpen] = React.useState(false)
+
+  const handleSortToggle = () => {
+    onSortChange?.(sortBy, direction === "DESC" ? "ASC" : "DESC")
+  }
 
   const handleVerDetalle = (viaje: ViajeVehicular) => {
     setSelectedViaje(viaje)
@@ -99,12 +111,24 @@ export function HistorialViajesTable({
 
   return (
     <>
-      <Card className="border-border/60 shadow-xs overflow-hidden">
+      <Card className="border-border/60 shadow-xs overflow-hidden" aria-busy={isLoading}>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[120px] text-xs font-semibold">Nº Solicitud</TableHead>
+                <TableHead
+                  className="w-[120px] text-xs font-semibold"
+                  aria-sort={direction === "DESC" ? "descending" : "ascending"}
+                >
+                  <button
+                    type="button"
+                    onClick={handleSortToggle}
+                    aria-label={`Ordenar por fecha de registro, actualmente ${direction === "DESC" ? "descendente" : "ascendente"}`}
+                    className="inline-flex items-center gap-1 rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    Nº Solicitud <span aria-hidden="true">{direction === "DESC" ? "↓" : "↑"}</span>
+                  </button>
+                </TableHead>
                 <TableHead className="min-w-[170px] text-xs font-semibold">Vehículo</TableHead>
                 <TableHead className="min-w-[180px] text-xs font-semibold">Conductor</TableHead>
                 <TableHead className="min-w-[200px] text-xs font-semibold">Destino / Motivo</TableHead>
@@ -130,7 +154,7 @@ export function HistorialViajesTable({
                     <TableCell><Skeleton className="h-6 w-8 mx-auto" /></TableCell>
                   </TableRow>
                 ))
-              ) : viajes.length === 0 ? (
+              ) : isError ? null : viajes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
