@@ -1,5 +1,5 @@
 # ── Stage 1: Build (monorepo workspace context) ──────────────
-FROM node:22-alpine AS build
+FROM node:22.23.5-alpine3.23 AS build
 
 # Enable corepack con versión fijada de pnpm
 RUN corepack enable && corepack prepare pnpm@12.5.1 --activate
@@ -25,21 +25,11 @@ ENV VITE_APP_NAME=${VITE_APP_NAME}
 
 RUN pnpm --filter web build
 
-# ── Stage 2: Serve with Nginx ────────────────────────────────
-FROM nginx:alpine AS runtime
+# ── Stage 2: Serve with unprivileged Nginx ───────────────────
+FROM nginxinc/nginx-unprivileged:1.29-alpine3.23 AS runtime
 
-RUN rm /etc/nginx/conf.d/default.conf
-
+# SPA + gzip + caché de assets versionados (el imagen ya corre como usuario no-root)
+COPY infrastructure/nginx/web-spa.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /workspace/apps/web/dist /usr/share/nginx/html
 
-# Simple SPA-friendly Nginx config for this container
-RUN printf 'server {\n\
-    listen 80;\n\
-    root /usr/share/nginx/html;\n\
-    index index.html;\n\
-    location / {\n\
-        try_files $uri $uri/ /index.html;\n\
-    }\n\
-}\n' > /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
+EXPOSE 8080

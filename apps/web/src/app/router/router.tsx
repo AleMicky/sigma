@@ -1,5 +1,7 @@
 import { createRouter } from "@tanstack/react-router"
 
+import { RouterErrorFallback } from "@/shared/components/error-boundary"
+
 import { queryClient } from "../query/queryClient"
 import type { RouterContext } from "./router.context"
 import { routeTree } from "./routeTree.gen"
@@ -14,6 +16,7 @@ export const router = createRouter({
   defaultPreload: "intent",
   defaultPreloadStaleTime: 0,
   scrollRestoration: true,
+  defaultErrorComponent: RouterErrorFallback,
   defaultNotFoundComponent: () => {
     return (
       <div className="flex h-full min-h-[400px] w-full flex-col items-center justify-center space-y-4">

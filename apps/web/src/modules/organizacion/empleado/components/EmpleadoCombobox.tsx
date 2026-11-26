@@ -32,6 +32,7 @@ export type EmpleadoComboboxProps = {
   id?: string
   name?: string
   "aria-invalid"?: boolean
+  "aria-describedby"?: string
   pageSize?: number
   onlyMisEmpleados?: boolean
 }
@@ -61,6 +62,7 @@ export function EmpleadoCombobox({
   id,
   name,
   "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
   pageSize = 7,
   onlyMisEmpleados = false,
 }: EmpleadoComboboxProps) {
@@ -195,6 +197,7 @@ export function EmpleadoCombobox({
           onChange={(e) => setSearch(e.target.value)}
           placeholder={query.isLoading && !query.data ? "Cargando personal..." : placeholder}
           aria-invalid={ariaInvalid}
+          aria-describedby={ariaDescribedBy}
           onBlur={onBlur}
           className={cn("w-full shadow-2xs", className)}
         />

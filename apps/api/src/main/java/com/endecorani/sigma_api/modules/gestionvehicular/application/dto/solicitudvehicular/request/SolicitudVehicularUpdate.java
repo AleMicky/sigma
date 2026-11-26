@@ -1,9 +1,11 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.dto.solicitudvehicular.request;
 
+import com.endecorani.sigma_api.shared.infrastructure.datetime.FlexibleLocalDateTimeDeserializer;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -31,9 +33,11 @@ public record SolicitudVehicularUpdate(
         String destino,
 
         @NotNull(message = "La fecha de salida es obligatoria")
+        @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
         LocalDateTime fechaSalida,
 
         @NotNull(message = "La fecha de retorno estimada es obligatoria")
+        @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
         LocalDateTime fechaRetornoEstimada,
 
         @NotNull(message = "La cantidad de pasajeros es obligatoria")

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   ChevronDown,
@@ -95,42 +95,51 @@ function filterTree(
     .filter((n): n is MenuTreeNode => n !== null)
 }
 
-export function RolMenuAssignmentSheet({
+export function RolMenuAssignmentSheet(props: RolMenuAssignmentSheetProps) {
+  if (!props.open || !props.rol) return null
+  return (
+    <RolMenuAssignmentSheetContent
+      key={props.rol.id}
+      {...props}
+      rol={props.rol}
+    />
+  )
+}
+
+function RolMenuAssignmentSheetContent({
   rol,
   open,
   onOpenChange,
-}: RolMenuAssignmentSheetProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+}: Omit<RolMenuAssignmentSheetProps, "rol"> & { rol: Rol }) {
+  const [selectedIdsOverride, setSelectedIdsOverride] = useState<Set<string> | null>(null)
+  const [expandedIdsOverride, setExpandedIdsOverride] = useState<Set<string> | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
   const menuArbolQuery = useQuery(menuQueries.arbol())
   const rolMenuIdsQuery = useQuery({
-    ...rolQueries.menuIds(rol?.id ?? ""),
-    enabled: Boolean(rol?.id && open),
+    ...rolQueries.menuIds(rol.id),
+    enabled: Boolean(rol.id && open),
   })
 
   const asignarMutation = useAsignarMenusRol()
 
-  // Reset/sync state when opening with fresh data
-  useEffect(() => {
-    if (open && rolMenuIdsQuery.data) {
-      setSelectedIds(new Set(rolMenuIdsQuery.data))
-    }
-  }, [open, rolMenuIdsQuery.data])
-
-  // Initialize expanded nodes
-  useEffect(() => {
-    if (open && menuArbolQuery.data) {
-      const allIds = getAllMenuIds(menuArbolQuery.data)
-      setExpandedIds(new Set(allIds))
-    }
-  }, [open, menuArbolQuery.data])
-
-  const allAvailableNodes = menuArbolQuery.data ?? []
+  const allAvailableNodes = useMemo(
+    () => menuArbolQuery.data ?? [],
+    [menuArbolQuery.data],
+  )
   const allAvailableIds = useMemo(
     () => getAllMenuIds(allAvailableNodes),
     [allAvailableNodes],
+  )
+
+  const selectedIds = useMemo(
+    () => selectedIdsOverride ?? new Set(rolMenuIdsQuery.data ?? []),
+    [selectedIdsOverride, rolMenuIdsQuery.data],
+  )
+
+  const expandedIds = useMemo(
+    () => expandedIdsOverride ?? new Set(allAvailableIds),
+    [expandedIdsOverride, allAvailableIds],
   )
 
   const filteredNodes = useMemo(
@@ -139,8 +148,8 @@ export function RolMenuAssignmentSheet({
   )
 
   function toggleNode(nodeId: string) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev)
+    setExpandedIdsOverride((prev) => {
+      const next = new Set(prev ?? allAvailableIds)
       if (next.has(nodeId)) {
         next.delete(nodeId)
       } else {
@@ -152,8 +161,8 @@ export function RolMenuAssignmentSheet({
 
   function handleSelectNode(node: MenuTreeNode, checked: boolean) {
     const descendantIds = getDescendantIds(node)
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
+    setSelectedIdsOverride((prev) => {
+      const next = new Set(prev ?? (rolMenuIdsQuery.data ?? []))
       if (checked) {
         descendantIds.forEach((id) => next.add(id))
       } else {
@@ -164,23 +173,22 @@ export function RolMenuAssignmentSheet({
   }
 
   function handleSelectAll() {
-    setSelectedIds(new Set(allAvailableIds))
+    setSelectedIdsOverride(new Set(allAvailableIds))
   }
 
   function handleDeselectAll() {
-    setSelectedIds(new Set())
+    setSelectedIdsOverride(new Set())
   }
 
   function handleExpandAll() {
-    setExpandedIds(new Set(allAvailableIds))
+    setExpandedIdsOverride(new Set(allAvailableIds))
   }
 
   function handleCollapseAll() {
-    setExpandedIds(new Set())
+    setExpandedIdsOverride(new Set())
   }
 
   async function handleSave() {
-    if (!rol) return
     try {
       await asignarMutation.mutateAsync({
         id: rol.id,
@@ -191,8 +199,6 @@ export function RolMenuAssignmentSheet({
       // Handled by mutation onError toast
     }
   }
-
-  if (!rol) return null
 
   const isLoadingData =
     menuArbolQuery.isLoading || (rolMenuIdsQuery.isLoading && open)

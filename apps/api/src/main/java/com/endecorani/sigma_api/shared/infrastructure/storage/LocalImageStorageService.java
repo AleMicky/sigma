@@ -59,12 +59,20 @@ public class LocalImageStorageService implements ImageStorageService {
             );
         }
 
+        StoredFileSecurityValidator.validateMagicBytes(contentType, file);
+
         Path directory = resolveFolder(folder);
         try {
             Files.createDirectories(directory);
             deleteExistingFiles(directory, entityId);
 
-            Path target = directory.resolve(entityId + "." + extension);
+            Path target = directory.resolve(entityId + "." + extension).normalize();
+            if (!target.startsWith(directory)) {
+                throw new BusinessException(
+                        "INVALID_IMAGE_PATH",
+                        "La ruta del archivo no es válida"
+                );
+            }
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
             }
@@ -101,10 +109,11 @@ public class LocalImageStorageService implements ImageStorageService {
         validateFolder(folder);
         validateFilename(filename);
 
-        Path file = resolveFolder(folder).resolve(filename).normalize();
+        Path folderPath = resolveFolder(folder);
+        Path file = folderPath.resolve(filename).normalize();
         Path baseDir = baseDir().normalize();
 
-        if (!file.startsWith(baseDir)) {
+        if (!file.startsWith(folderPath) || !file.startsWith(baseDir)) {
             throw new BusinessException(
                     "INVALID_IMAGE_PATH",
                     "La ruta del archivo no es válida"
@@ -132,22 +141,15 @@ public class LocalImageStorageService implements ImageStorageService {
     }
 
     private void validateFolder(String folder) {
-        if (!StringUtils.hasText(folder)
-                || folder.contains("..")
-                || folder.contains("/")
-                || folder.contains("\\")) {
-            throw new BusinessException(
-                    "INVALID_IMAGE_FOLDER",
-                    "La carpeta de almacenamiento no es válida"
-            );
-        }
+        StoredFileSecurityValidator.validateAllowedFolder(folder);
     }
 
     private void validateFilename(String filename) {
         if (!StringUtils.hasText(filename)
                 || filename.contains("..")
                 || filename.contains("/")
-                || filename.contains("\\")) {
+                || filename.contains("\\")
+                || filename.contains("\0")) {
             throw new BusinessException(
                     "INVALID_IMAGE_FILENAME",
                     "El nombre del archivo no es válido"

@@ -22,6 +22,7 @@ import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService;
+import com.endecorani.sigma_api.shared.util.FlexibleLocalDateTimeParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -43,6 +44,8 @@ import java.util.stream.Stream;
 @Service
 @RequiredArgsConstructor
 public class SalidaVehicularReporteService {
+
+    private static final ZoneId ZONA = FlexibleLocalDateTimeParser.OPERATIONAL_ZONE;
 
     private static final String REPORTE_BITACORA_SALIDAS_PATH = "reports/gestion-vehicular/bitacora_salidas_vehiculares.jrxml";
     private static final Pattern PLACA_PATTERN = Pattern.compile(
@@ -85,8 +88,8 @@ public class SalidaVehicularReporteService {
             LocalDateTime fechaDesde,
             LocalDateTime fechaHasta
     ) {
-        Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
-        Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
+        Instant instantDesde = fechaDesde != null ? fechaDesde.atZone(ZONA).toInstant() : null;
+        Instant instantHasta = fechaHasta != null ? fechaHasta.atZone(ZONA).toInstant() : null;
 
         SalidaVehicularService.AlcanceArea alcance = salidaService != null
                 ? salidaService.resolverAlcance(areaId, createdById)
@@ -146,8 +149,8 @@ public class SalidaVehicularReporteService {
             LocalDateTime fechaDesde,
             LocalDateTime fechaHasta
     ) {
-        Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
-        Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
+        Instant instantDesde = fechaDesde != null ? fechaDesde.atZone(ZONA).toInstant() : null;
+        Instant instantHasta = fechaHasta != null ? fechaHasta.atZone(ZONA).toInstant() : null;
 
         List<SalidaVehicular> salidas = salidaRepository.findForReporte(
                 null, activoId, null, null, instantDesde, instantHasta
@@ -229,8 +232,8 @@ public class SalidaVehicularReporteService {
             LocalDateTime fechaDesde,
             LocalDateTime fechaHasta
     ) {
-        Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
-        Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
+        Instant instantDesde = fechaDesde != null ? fechaDesde.atZone(ZONA).toInstant() : null;
+        Instant instantHasta = fechaHasta != null ? fechaHasta.atZone(ZONA).toInstant() : null;
 
         List<SalidaVehicular> salidas = salidaRepository.findForReporte(
                 null, null, empleadoId, null, instantDesde, instantHasta
@@ -306,8 +309,8 @@ public class SalidaVehicularReporteService {
             LocalDateTime fechaDesde,
             LocalDateTime fechaHasta
     ) {
-        Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
-        Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
+        Instant instantDesde = fechaDesde != null ? fechaDesde.atZone(ZONA).toInstant() : null;
+        Instant instantHasta = fechaHasta != null ? fechaHasta.atZone(ZONA).toInstant() : null;
 
         List<SalidaVehicular> salidas = salidaRepository.findForReporte(
                 null, activoId, empleadoId, null, instantDesde, instantHasta
@@ -418,8 +421,8 @@ public class SalidaVehicularReporteService {
             LocalDateTime fechaDesde,
             LocalDateTime fechaHasta
     ) {
-        Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
-        Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
+        Instant instantDesde = fechaDesde != null ? fechaDesde.atZone(ZONA).toInstant() : null;
+        Instant instantHasta = fechaHasta != null ? fechaHasta.atZone(ZONA).toInstant() : null;
 
         List<BitacoraVehicular> bitacoras = bitacoraRepository.findConFiltros(
                 salidaId, empleadoId, tipo, instantDesde, instantHasta
@@ -498,8 +501,8 @@ public class SalidaVehicularReporteService {
             LocalDateTime fechaHasta,
             String search
     ) {
-        Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
-        Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
+        Instant instantDesde = fechaDesde != null ? fechaDesde.atZone(ZONA).toInstant() : null;
+        Instant instantHasta = fechaHasta != null ? fechaHasta.atZone(ZONA).toInstant() : null;
 
         // 1. Obtener salidas en el rango (con o sin activoId)
         List<SalidaVehicular> salidas = new ArrayList<>(salidaRepository.findForReporte(
@@ -600,8 +603,8 @@ public class SalidaVehicularReporteService {
         Map<UUID, String> nombresMap = empIds.isEmpty() ? Collections.emptyMap() : vempleadoRepository.findAllById(empIds).stream()
                 .collect(Collectors.toMap(VEmpleadoEntity::getEmpleadoId, VEmpleadoEntity::getNombreCompleto));
 
-        DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("d").withZone(ZoneId.of("America/La_Paz"));
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.of("America/La_Paz"));
+        DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("d").withZone(ZONA);
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZONA);
 
         long totalKmRecorrido = 0;
         BigDecimal totalLitros = BigDecimal.ZERO;
@@ -659,7 +662,7 @@ public class SalidaVehicularReporteService {
             // Combustible
             List<CargaCombustibleEntity> cargas = new ArrayList<>(cargasPorSalida.getOrDefault(s.getId(), Collections.emptyList()));
             if (cargas.isEmpty() && s.getActivoId() != null && fechaInst != null) {
-                LocalDate salidaDate = fechaInst.atZone(ZoneId.of("America/La_Paz")).toLocalDate();
+                LocalDate salidaDate = fechaInst.atZone(ZONA).toLocalDate();
                 cargas.addAll(cargasCombustible.stream()
                         .filter(c -> c.getSalidaVehicularId() == null
                                 && s.getActivoId().equals(c.getActivoId())
@@ -720,7 +723,7 @@ public class SalidaVehicularReporteService {
             log.warn("No se pudo cargar el logo institucional: {}", e.getMessage());
         }
 
-        int anio = fechaDesde != null ? fechaDesde.getYear() : LocalDate.now().getYear();
+        int anio = fechaDesde != null ? fechaDesde.getYear() : LocalDate.now(ZONA).getYear();
         String mes = fechaDesde != null
                 ? fechaDesde.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "BO")).toUpperCase(Locale.ROOT)
                 : "OCTUBRE";

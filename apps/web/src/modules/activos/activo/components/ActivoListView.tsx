@@ -37,6 +37,7 @@ type ActivoListViewProps = {
   tiposById: Map<string, TipoActivo>
   ubicacionesById?: Map<string, Ubicacion>
   onEdit: (activo: Activo) => void
+  canManage?: boolean
 }
 
 export function ActivoListView({
@@ -44,6 +45,7 @@ export function ActivoListView({
   tiposById,
   ubicacionesById,
   onEdit,
+  canManage = false,
 }: ActivoListViewProps) {
   const [activoToDelete, setActivoToDelete] = useState<Activo | null>(null)
   const [activoParaCambiarEstado, setActivoParaCambiarEstado] =
@@ -240,26 +242,43 @@ export function ActivoListView({
                     {/* Fila 2: Estados y Metadatos (Sin colisiones con el título) */}
                     <div className="flex flex-wrap items-center gap-2 pt-0.5">
                       {/* Badge de Estado Operativo (Interactivo) */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setActivoParaCambiarEstado(activo)
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border hover:opacity-85 transition-opacity cursor-pointer shadow-2xs"
-                        style={{
-                          backgroundColor: `${opColor}15`,
-                          borderColor: `${opColor}35`,
-                          color: opColor,
-                        }}
-                        title="Haga clic para cambiar el estado operativo"
-                      >
+                      {canManage ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setActivoParaCambiarEstado(activo)
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border hover:opacity-85 transition-opacity cursor-pointer shadow-2xs"
+                          style={{
+                            backgroundColor: `${opColor}15`,
+                            borderColor: `${opColor}35`,
+                            color: opColor,
+                          }}
+                          title="Haga clic para cambiar el estado operativo"
+                        >
+                          <span
+                            className="size-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: opColor }}
+                          />
+                          <span className="truncate max-w-[140px]">{opNombre}</span>
+                        </button>
+                      ) : (
                         <span
-                          className="size-1.5 rounded-full shrink-0"
-                          style={{ backgroundColor: opColor }}
-                        />
-                        <span className="truncate max-w-[140px]">{opNombre}</span>
-                      </button>
+                          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border shadow-2xs"
+                          style={{
+                            backgroundColor: `${opColor}15`,
+                            borderColor: `${opColor}35`,
+                            color: opColor,
+                          }}
+                        >
+                          <span
+                            className="size-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: opColor }}
+                          />
+                          <span className="truncate max-w-[140px]">{opNombre}</span>
+                        </span>
+                      )}
 
                       {/* Badge de Estado Activo / De Baja */}
                       <Badge
@@ -312,74 +331,76 @@ export function ActivoListView({
                   </div>
                 </div>
 
-                {/* Lado derecho: Botones de Acción */}
-                <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-center pt-1 sm:pt-0">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="xs"
-                    onClick={() => setActivoParaCambiarEstado(activo)}
-                    className="h-7.5 px-2.5 text-xs font-medium gap-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-                    title="Cambiar estado operativo"
-                  >
-                    <Activity className="size-3.5 text-primary" />
-                    <span>Estado</span>
-                  </Button>
+                {/* Lado derecho: Botones de Acción (solo ADMIN, REQ-BIZ-001) */}
+                {canManage ? (
+                  <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-center pt-1 sm:pt-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="xs"
+                      onClick={() => setActivoParaCambiarEstado(activo)}
+                      className="h-7.5 px-2.5 text-xs font-medium gap-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                      title="Cambiar estado operativo"
+                    >
+                      <Activity className="size-3.5 text-primary" />
+                      <span>Estado</span>
+                    </Button>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="xs"
-                    disabled={isToggling}
-                    onClick={() => {
-                      setActivoMutation.mutate({
-                        id: activo.id,
-                        activo: !isActivo,
-                      })
-                    }}
-                    className={cn(
-                      "h-7.5 px-2.5 text-xs font-medium gap-1.5 transition-colors cursor-pointer",
-                      isActivo
-                        ? "text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30"
-                        : "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30",
-                    )}
-                    title={
-                      isActivo
-                        ? "Dar de baja el activo"
-                        : "Dar de alta el activo"
-                    }
-                  >
-                    {isActivo ? (
-                      <PowerOff className="size-3.5" />
-                    ) : (
-                      <Power className="size-3.5" />
-                    )}
-                    <span>{isActivo ? "Baja" : "Alta"}</span>
-                  </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="xs"
+                      disabled={isToggling}
+                      onClick={() => {
+                        setActivoMutation.mutate({
+                          id: activo.id,
+                          activo: !isActivo,
+                        })
+                      }}
+                      className={cn(
+                        "h-7.5 px-2.5 text-xs font-medium gap-1.5 transition-colors cursor-pointer",
+                        isActivo
+                          ? "text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30"
+                          : "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30",
+                      )}
+                      title={
+                        isActivo
+                          ? "Dar de baja el activo"
+                          : "Dar de alta el activo"
+                      }
+                    >
+                      {isActivo ? (
+                        <PowerOff className="size-3.5" />
+                      ) : (
+                        <Power className="size-3.5" />
+                      )}
+                      <span>{isActivo ? "Baja" : "Alta"}</span>
+                    </Button>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-xs"
-                    onClick={() => onEdit(activo)}
-                    className="size-7.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
-                    title="Editar activo"
-                  >
-                    <Pencil className="size-3.5" />
-                  </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      onClick={() => onEdit(activo)}
+                      className="size-7.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
+                      title="Editar activo"
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-xs"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => setActivoToDelete(activo)}
-                    className="size-7.5 text-destructive hover:bg-destructive/10 hover:border-destructive/30 cursor-pointer"
-                    title="Eliminar activo"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => setActivoToDelete(activo)}
+                      className="size-7.5 text-destructive hover:bg-destructive/10 hover:border-destructive/30 cursor-pointer"
+                      title="Eliminar activo"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                ) : null}
               </div>
 
               {/* Barra inferior de auditoría discreta */}

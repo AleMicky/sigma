@@ -1,8 +1,7 @@
 import type { ComponentType } from "react"
-import { useQuery } from "@tanstack/react-query"
 import { Activity, Calendar, FileText, MapPin } from "lucide-react"
 
-import { estadoOperativoQueries } from "@/modules/activos/estado-operativo/api/estado-operativo.queries"
+import type { EstadoOperativo } from "@/modules/activos/estado-operativo/api/estado-operativo.service"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
@@ -45,6 +44,10 @@ type ActivoFormMainSectionProps = {
   ubicaciones?: Ubicacion[]
   ubicacionesById?: Map<string, Ubicacion>
   ubicacionesLoading?: boolean
+  estadosOperativos?: EstadoOperativo[]
+  estadosLoading?: boolean
+  estadosErrorMessage?: string | null
+  onEstadoChange?: (estadoOperativoId: string) => void
 }
 
 export function ActivoFormMainSection({
@@ -58,17 +61,11 @@ export function ActivoFormMainSection({
   ubicaciones = [],
   ubicacionesById = new Map(),
   ubicacionesLoading = false,
+  estadosOperativos = [],
+  estadosLoading = false,
+  estadosErrorMessage = null,
+  onEstadoChange,
 }: ActivoFormMainSectionProps) {
-  const estadosQuery = useQuery(
-    estadoOperativoQueries.list({
-      page: 0,
-      size: 100,
-      sortBy: "nombre",
-      direction: "ASC",
-    }),
-  )
-  const estadosOperativos = estadosQuery.data?.content ?? []
-
   return (
     <div className="flex flex-col gap-5">
       {/* 1. Información General */}
@@ -361,8 +358,15 @@ export function ActivoFormMainSection({
                 </FieldLabel>
                 <Select
                   value={field.state.value || null}
-                  onValueChange={(value) => field.handleChange(value ?? "")}
-                  disabled={estadosQuery.isLoading}
+                  onValueChange={(value) => {
+                    field.handleChange(value ?? "")
+                    onEstadoChange?.(value ?? "")
+                  }}
+                  disabled={
+                    estadosLoading ||
+                    Boolean(estadosErrorMessage) ||
+                    estadosOperativos.length === 0
+                  }
                 >
                   <SelectTrigger id={field.name} aria-invalid={isInvalid} className="w-full">
                     <SelectValue placeholder="Selecciona estado operativo">
@@ -403,6 +407,9 @@ export function ActivoFormMainSection({
                     ))}
                   </SelectContent>
                 </Select>
+                {estadosErrorMessage ? (
+                  <p className="text-xs text-destructive">{estadosErrorMessage}</p>
+                ) : null}
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )

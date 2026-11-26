@@ -161,6 +161,13 @@ public class SolicitudVehicularService {
             String interfaz,
             PageRequestDto pageRequest) {
         InterfazFiltros filtros = resolverFiltrosPorInterfaz(solicitanteId, responsableAsignacionId, conductorAsignadoId, interfaz);
+        if (filtros.sinAcceso()) {
+            Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+            return PageResponse.of(
+                    Collections.emptyList(),
+                    new org.springframework.data.domain.PageImpl<>(Collections.emptyList(), pageable, 0)
+            );
+        }
         return listarInternal(search, estado, tipoSolicitudVehicularId, filtros.solicitanteId(), filtros.conductorAsignadoId(),
                 filtros.responsableAsignacionId(), pageRequest);
     }
@@ -185,7 +192,16 @@ public class SolicitudVehicularService {
                 .orElse(null);
     }
 
-    private record InterfazFiltros(UUID solicitanteId, UUID responsableAsignacionId, UUID conductorAsignadoId) {}
+    private record InterfazFiltros(
+            UUID solicitanteId,
+            UUID responsableAsignacionId,
+            UUID conductorAsignadoId,
+            boolean sinAcceso
+    ) {
+        static InterfazFiltros denegado() {
+            return new InterfazFiltros(null, null, null, true);
+        }
+    }
 
     private InterfazFiltros resolverFiltrosPorInterfaz(
             UUID solicitanteId,
@@ -193,33 +209,39 @@ public class SolicitudVehicularService {
             UUID conductorAsignadoId,
             String interfaz) {
         if (securityUtils.isAdmin()) {
-            return new InterfazFiltros(solicitanteId, responsableAsignacionId, conductorAsignadoId);
+            return new InterfazFiltros(solicitanteId, responsableAsignacionId, conductorAsignadoId, false);
         }
-        if (interfaz != null) {
-            String clean = interfaz.trim();
-            if ("SolicitudesVehicularesPage".equalsIgnoreCase(clean) || "SolicitudesPage".equalsIgnoreCase(clean)) {
-                UUID emp = obtenerEmpleadoIdActual();
-                return new InterfazFiltros(
-                        emp != null ? emp : UUID.fromString("00000000-0000-0000-0000-000000000000"),
-                        responsableAsignacionId,
-                        conductorAsignadoId);
+        if (interfaz == null || interfaz.isBlank()) {
+            UUID emp = obtenerEmpleadoIdActual();
+            if (emp == null) {
+                return InterfazFiltros.denegado();
             }
-            if ("AsignacionVehicularPage".equalsIgnoreCase(clean)) {
-                UUID emp = obtenerEmpleadoIdActual();
-                return new InterfazFiltros(
-                        solicitanteId,
-                        emp != null ? emp : UUID.fromString("00000000-0000-0000-0000-000000000000"),
-                        conductorAsignadoId);
-            }
-            if ("ConductorViajesPage".equalsIgnoreCase(clean)) {
-                UUID cond = obtenerConductorIdActual();
-                return new InterfazFiltros(
-                        solicitanteId,
-                        responsableAsignacionId,
-                        cond != null ? cond : UUID.fromString("00000000-0000-0000-0000-000000000000"));
-            }
+            return new InterfazFiltros(emp, responsableAsignacionId, conductorAsignadoId, false);
         }
-        return new InterfazFiltros(solicitanteId, responsableAsignacionId, conductorAsignadoId);
+
+        String clean = interfaz.trim();
+        if ("SolicitudesVehicularesPage".equalsIgnoreCase(clean) || "SolicitudesPage".equalsIgnoreCase(clean)) {
+            UUID emp = obtenerEmpleadoIdActual();
+            if (emp == null) {
+                return InterfazFiltros.denegado();
+            }
+            return new InterfazFiltros(emp, responsableAsignacionId, conductorAsignadoId, false);
+        }
+        if ("AsignacionVehicularPage".equalsIgnoreCase(clean)) {
+            UUID emp = obtenerEmpleadoIdActual();
+            if (emp == null) {
+                return InterfazFiltros.denegado();
+            }
+            return new InterfazFiltros(solicitanteId, emp, conductorAsignadoId, false);
+        }
+        if ("ConductorViajesPage".equalsIgnoreCase(clean)) {
+            UUID cond = obtenerConductorIdActual();
+            if (cond == null) {
+                return InterfazFiltros.denegado();
+            }
+            return new InterfazFiltros(solicitanteId, responsableAsignacionId, cond, false);
+        }
+        return InterfazFiltros.denegado();
     }
 
     private PageResponse<SolicitudVehicularResponse> listarInternal(

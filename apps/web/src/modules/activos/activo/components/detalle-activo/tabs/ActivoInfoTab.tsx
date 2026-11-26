@@ -80,6 +80,7 @@ type ActivoInfoTabProps = {
   isEditing?: boolean
   onToggleEdit?: (editing: boolean) => void
   onOpenAddDocument: () => void
+  canManage?: boolean
 }
 
 export function ActivoInfoTab({
@@ -96,6 +97,7 @@ export function ActivoInfoTab({
   isEditing = false,
   onToggleEdit,
   onOpenAddDocument,
+  canManage = false,
 }: ActivoInfoTabProps) {
   const queryClient = useQueryClient()
   const updateMutation = useUpdateActivo()
@@ -207,6 +209,7 @@ export function ActivoInfoTab({
   function handleTriggerSubmit(e?: React.FormEvent) {
     e?.preventDefault()
 
+    if (!canManage || !isEditing) return
     if (!formData.codigo.trim()) {
       toast.error("El código institucional es obligatorio")
       return
@@ -825,17 +828,19 @@ export function ActivoInfoTab({
               )}
             </div>
 
-            {/* Add Document Action */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onOpenAddDocument}
-              className="w-full h-8 text-xs font-semibold border-dashed hover:border-primary hover:text-primary gap-1.5"
-            >
-              <Plus className="size-3.5" />
-              Agregar Documento
-            </Button>
+            {/* Add Document Action (solo ADMIN, REQ-BIZ-001) */}
+            {canManage ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onOpenAddDocument}
+                className="w-full h-8 text-xs font-semibold border-dashed hover:border-primary hover:text-primary gap-1.5"
+              >
+                <Plus className="size-3.5" />
+                Agregar Documento
+              </Button>
+            ) : null}
           </div>
         </div>
       </form>

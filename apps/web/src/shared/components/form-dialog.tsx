@@ -120,6 +120,12 @@ type FormDialogSubmitProps = {
   isSubmitting: boolean
   label?: string
   submittingLabel?: string
+  /**
+   * Permite enviar aunque el formulario sea inválido para que el usuario vea
+   * los `FieldError` por campo. Úsalo sólo en formularios que validan todos
+   * sus campos obligatorios dentro de `onSubmit`.
+   */
+  allowInvalidSubmit?: boolean
 }
 
 export function FormDialogSubmit({
@@ -127,9 +133,12 @@ export function FormDialogSubmit({
   isSubmitting,
   label = "Guardar",
   submittingLabel = "Guardando…",
+  allowInvalidSubmit = false,
 }: FormDialogSubmitProps) {
+  const disabled = isSubmitting || (!canSubmit && !allowInvalidSubmit)
+
   return (
-    <Button type="submit" disabled={!canSubmit || isSubmitting}>
+    <Button type="submit" disabled={disabled} aria-disabled={disabled}>
       {isSubmitting ? submittingLabel : label}
     </Button>
   )

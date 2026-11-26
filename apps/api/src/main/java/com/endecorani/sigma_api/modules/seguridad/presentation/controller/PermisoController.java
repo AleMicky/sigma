@@ -38,7 +38,7 @@ import java.util.UUID;
         description = "Administración de permisos por menú"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasRole('ADMIN')")
 public class PermisoController {
 
     private final PermisoService permisoService;

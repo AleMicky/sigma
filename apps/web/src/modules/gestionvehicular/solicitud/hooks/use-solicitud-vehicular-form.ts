@@ -28,10 +28,29 @@ type UseSolicitudVehicularFormProps = {
 
 function toDatetimeLocal(isoString?: string | null): string {
   if (!isoString) return ""
-  const d = new Date(isoString)
+  const trimmed = isoString.trim()
+  const localMatch = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/.exec(trimmed)
+  if (localMatch && !/(Z|[+-]\d{2}:\d{2})$/i.test(trimmed)) {
+    return localMatch[1]
+  }
+  const d = new Date(trimmed)
   if (isNaN(d.getTime())) return ""
   const pad = (n: number) => String(n).padStart(2, "0")
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function toLocalDateTimeIso(value: string): string {
+  const trimmed = value.trim()
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) {
+    return `${trimmed}:00`
+  }
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(trimmed)) {
+    return trimmed.slice(0, 19)
+  }
+  const d = new Date(trimmed)
+  if (isNaN(d.getTime())) return trimmed
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 export function useSolicitudVehicularForm({
@@ -208,8 +227,8 @@ export function useSolicitudVehicularForm({
       }
 
       try {
-        const salidaIso = new Date(value.fechaSalida).toISOString()
-        const retornoIso = new Date(value.fechaRetornoEstimada).toISOString()
+        const salidaLocal = toLocalDateTimeIso(value.fechaSalida)
+        const retornoLocal = toLocalDateTimeIso(value.fechaRetornoEstimada)
 
         const payload: SolicitudVehicularPayload = {
           numero: value.numero?.trim() ? value.numero.trim().toUpperCase() : (solicitud?.numero || undefined),
@@ -220,8 +239,8 @@ export function useSolicitudVehicularForm({
           motivo: value.motivo.trim(),
           justificacion: value.justificacion?.trim() || null,
           destino: value.destino.trim(),
-          fechaSalida: salidaIso,
-          fechaRetornoEstimada: retornoIso,
+          fechaSalida: salidaLocal,
+          fechaRetornoEstimada: retornoLocal,
           cantidadPasajeros: Number(value.cantidadPasajeros) || 1,
           observacion: value.observacion?.trim() || null,
           estado: value.estado || (solicitud?.estado || "PENDIENTE"),

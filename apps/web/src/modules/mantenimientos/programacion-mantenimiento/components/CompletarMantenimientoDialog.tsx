@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react"
+import { useMemo, useState } from "react"
 import { CheckCircle, Clock, Gauge, Hourglass, RefreshCw } from "lucide-react"
 import {
   Dialog,
@@ -12,6 +12,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { toLocalDateKey } from "@/shared/lib/date"
 import { useCompletarMantenimiento } from "../api/programacion-mantenimiento.mutations"
 import type { ProgramacionMantenimiento } from "../api/programacion-mantenimiento.service"
 
@@ -21,38 +22,51 @@ interface CompletarMantenimientoDialogProps {
   programacion: ProgramacionMantenimiento | null
 }
 
+function formatLocalDate(date: Date): string {
+  return toLocalDateKey(date)
+}
+
 export function CompletarMantenimientoDialog({
   open,
   onOpenChange,
   programacion,
 }: CompletarMantenimientoDialogProps) {
-  const [fechaServicio, setFechaServicio] = useState(new Date().toISOString().split("T")[0])
-  const [kilometrajeServicio, setKilometrajeServicio] = useState<string>("")
-  const [horasUsoServicio, setHorasUsoServicio] = useState<string>("")
+  if (!programacion) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && (
+        <CompletarMantenimientoDialogContent
+          key={programacion.id}
+          programacion={programacion}
+          onOpenChange={onOpenChange}
+        />
+      )}
+    </Dialog>
+  )
+}
+
+interface CompletarMantenimientoDialogContentProps {
+  programacion: ProgramacionMantenimiento
+  onOpenChange: (open: boolean) => void
+}
+
+function CompletarMantenimientoDialogContent({
+  programacion,
+  onOpenChange,
+}: CompletarMantenimientoDialogContentProps) {
+  const [fechaServicio, setFechaServicio] = useState(toLocalDateKey)
+  const [kilometrajeServicio, setKilometrajeServicio] = useState<string>(() => {
+    const kmCrit = programacion.criterios.find((c) => c.tipoCriterio === "KILOMETRAJE")
+    return kmCrit?.proximoValorUso != null ? String(kmCrit.proximoValorUso) : ""
+  })
+  const [horasUsoServicio, setHorasUsoServicio] = useState<string>(() => {
+    const horasCrit = programacion.criterios.find((c) => c.tipoCriterio === "HORAS_USO")
+    return horasCrit?.proximoValorUso != null ? String(horasCrit.proximoValorUso) : ""
+  })
   const [observacion, setObservacion] = useState<string>("")
 
   const completarMutation = useCompletarMantenimiento()
-
-  useEffect(() => {
-    if (open && programacion) {
-      setFechaServicio(new Date().toISOString().split("T")[0])
-      const kmCrit = programacion.criterios.find((c) => c.tipoCriterio === "KILOMETRAJE")
-      if (kmCrit && kmCrit.proximoValorUso != null) {
-        setKilometrajeServicio(String(kmCrit.proximoValorUso))
-      } else {
-        setKilometrajeServicio("")
-      }
-      const horasCrit = programacion.criterios.find((c) => c.tipoCriterio === "HORAS_USO")
-      if (horasCrit && horasCrit.proximoValorUso != null) {
-        setHorasUsoServicio(String(horasCrit.proximoValorUso))
-      } else {
-        setHorasUsoServicio("")
-      }
-      setObservacion("")
-    }
-  }, [open, programacion])
-
-  if (!programacion) return null
 
   const activo = programacion.planActivo
 
@@ -65,7 +79,7 @@ export function CompletarMantenimientoDialog({
         return {
           ...c,
           formula: `${fechaServicio || "Hoy"} + ${c.intervaloDias} días`,
-          nuevoProximo: baseDate.toISOString().split("T")[0],
+          nuevoProximo: formatLocalDate(baseDate),
         }
       }
       if (c.tipoCriterio === "KILOMETRAJE" && c.intervaloUso) {
@@ -90,7 +104,7 @@ export function CompletarMantenimientoDialog({
 
   async function handleSubmit() {
     await completarMutation.mutateAsync({
-      id: programacion!.id,
+      id: programacion.id,
       payload: {
         fechaServicio: fechaServicio || undefined,
         kilometrajeServicio: kilometrajeServicio ? Number(kilometrajeServicio) : undefined,
@@ -102,8 +116,7 @@ export function CompletarMantenimientoDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+    <DialogContent className="max-w-xl">
         <DialogHeader>
           <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
             <CheckCircle className="size-5" />
@@ -239,6 +252,5 @@ export function CompletarMantenimientoDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
   )
 }

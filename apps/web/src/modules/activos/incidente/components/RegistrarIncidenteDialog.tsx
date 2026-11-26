@@ -36,7 +36,17 @@ interface RegistrarIncidenteDialogProps {
   onSuccess?: () => void
 }
 
-export function RegistrarIncidenteDialog({
+export function RegistrarIncidenteDialog(props: RegistrarIncidenteDialogProps) {
+  if (!props.open) return null
+  return (
+    <RegistrarIncidenteDialogContent
+      key={props.incidenteToEdit?.id ?? "new"}
+      {...props}
+    />
+  )
+}
+
+function RegistrarIncidenteDialogContent({
   open,
   onOpenChange,
   incidenteToEdit,
@@ -44,50 +54,40 @@ export function RegistrarIncidenteDialog({
 }: RegistrarIncidenteDialogProps) {
   const isEditing = Boolean(incidenteToEdit)
 
-  const [activoId, setActivoId] = React.useState("")
-  const [empleadoReportaId, setEmpleadoReportaId] = React.useState("")
-  const [tipoIncidente, setTipoIncidente] = React.useState("COLISION")
-  const [prioridad, setPrioridad] = React.useState("MEDIA")
-  const [fechaHora, setFechaHora] = React.useState(
-    new Date().toISOString().slice(0, 16)
+  const [activoId, setActivoId] = React.useState(
+    () => incidenteToEdit?.activoId || "",
   )
-  const [ubicacion, setUbicacion] = React.useState("")
-  const [latitud, setLatitud] = React.useState<string>("")
-  const [longitud, setLongitud] = React.useState<string>("")
-  const [descripcion, setDescripcion] = React.useState("")
+  const [empleadoReportaId, setEmpleadoReportaId] = React.useState(
+    () => incidenteToEdit?.empleadoReportaId || "",
+  )
+  const [tipoIncidente, setTipoIncidente] = React.useState(
+    () => incidenteToEdit?.tipoIncidente || "COLISION",
+  )
+  const [prioridad, setPrioridad] = React.useState(
+    () => incidenteToEdit?.prioridad || "MEDIA",
+  )
+  const [fechaHora, setFechaHora] = React.useState(() =>
+    incidenteToEdit?.fechaHora
+      ? new Date(incidenteToEdit.fechaHora).toISOString().slice(0, 16)
+      : new Date().toISOString().slice(0, 16),
+  )
+  const [ubicacion, setUbicacion] = React.useState(
+    () => incidenteToEdit?.ubicacion || "",
+  )
+  const [latitud, setLatitud] = React.useState<string>(() =>
+    incidenteToEdit?.latitud != null ? String(incidenteToEdit.latitud) : "",
+  )
+  const [longitud, setLongitud] = React.useState<string>(() =>
+    incidenteToEdit?.longitud != null ? String(incidenteToEdit.longitud) : "",
+  )
+  const [descripcion, setDescripcion] = React.useState(
+    () => incidenteToEdit?.descripcion || "",
+  )
 
   const registrarMutation = useRegistrarIncidenteMutation()
   const actualizarMutation = useActualizarIncidenteMutation()
 
   const isPending = registrarMutation.isPending || actualizarMutation.isPending
-
-  React.useEffect(() => {
-    if (incidenteToEdit) {
-      setActivoId(incidenteToEdit.activoId || "")
-      setEmpleadoReportaId(incidenteToEdit.empleadoReportaId || "")
-      setTipoIncidente(incidenteToEdit.tipoIncidente || "COLISION")
-      setPrioridad(incidenteToEdit.prioridad || "MEDIA")
-      setFechaHora(
-        incidenteToEdit.fechaHora
-          ? new Date(incidenteToEdit.fechaHora).toISOString().slice(0, 16)
-          : new Date().toISOString().slice(0, 16)
-      )
-      setUbicacion(incidenteToEdit.ubicacion || "")
-      setLatitud(incidenteToEdit.latitud != null ? String(incidenteToEdit.latitud) : "")
-      setLongitud(incidenteToEdit.longitud != null ? String(incidenteToEdit.longitud) : "")
-      setDescripcion(incidenteToEdit.descripcion || "")
-    } else {
-      setActivoId("")
-      setEmpleadoReportaId("")
-      setTipoIncidente("COLISION")
-      setPrioridad("MEDIA")
-      setFechaHora(new Date().toISOString().slice(0, 16))
-      setUbicacion("")
-      setLatitud("")
-      setLongitud("")
-      setDescripcion("")
-    }
-  }, [incidenteToEdit, open])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

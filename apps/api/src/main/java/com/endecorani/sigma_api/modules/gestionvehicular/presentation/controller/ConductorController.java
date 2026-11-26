@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -55,8 +54,8 @@ public class ConductorController {
     @GetMapping("/disponibles")
     @Operation(summary = "Listar conductores disponibles para un rango de fechas de solicitud")
     public ResponseEntity<ApiResponse<List<ConductorResponse>>> findDisponibles(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaSalida,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaRetorno
+            @RequestParam LocalDateTime fechaSalida,
+            @RequestParam LocalDateTime fechaRetorno
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(service.findDisponibles(fechaSalida, fechaRetorno))

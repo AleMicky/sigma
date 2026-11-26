@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entit
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoValorRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoRepository;
+import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.AnularRegistroPorteriaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistrarLlegadaPorteriaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistrarSalidaPorteriaRequest;
 import com.endecorani.sigma_api.modules.gestionvehicular.application.dto.porteria.request.RegistroPorteriaActivoLlegadaRequest;
@@ -27,6 +28,7 @@ import com.endecorani.sigma_api.modules.parametros.infrastructure.persistence.re
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
 import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -191,6 +193,7 @@ class RegistroPorteriaServiceTest {
                 .build();
 
         when(repository.findById(registroId)).thenReturn(Optional.of(existente));
+        when(securityUtils.isAdmin()).thenReturn(true);
         when(securityUtils.getCurrentUserId()).thenReturn(Optional.empty());
         when(repository.save(any(RegistroPorteria.class))).thenAnswer(inv -> inv.getArgument(0));
         when(vempleadoRepository.findAllById(any())).thenReturn(List.of());
@@ -227,6 +230,7 @@ class RegistroPorteriaServiceTest {
                 .build();
 
         when(repository.findById(registroId)).thenReturn(Optional.of(existente));
+        when(securityUtils.isAdmin()).thenReturn(true);
 
         RegistrarLlegadaPorteriaRequest request = new RegistrarLlegadaPorteriaRequest(
                 salida.minus(10, ChronoUnit.MINUTES),
@@ -309,6 +313,7 @@ class RegistroPorteriaServiceTest {
                 .build();
 
         when(repository.findById(registroId)).thenReturn(Optional.of(existente));
+        when(securityUtils.isAdmin()).thenReturn(true);
 
         // Fecha anterior a la entrada debe lanzar error específico
         RegistrarLlegadaPorteriaRequest reqInvalido = new RegistrarLlegadaPorteriaRequest(
@@ -447,6 +452,99 @@ class RegistroPorteriaServiceTest {
         assertEquals("María Proveedora", item2.empleadoNombre());
         assertEquals("4512-XYZ", item2.vehiculoPlaca());
         assertEquals("En curso", item2.duracionTexto());
+    }
+
+    @Test
+    void registrarLlegada_cuandoUsuarioSinAccesoAlAreaNiCreador_debeLanzarForbiddenException() {
+        UUID registroId = UUID.randomUUID();
+        UUID otroCreadorId = UUID.randomUUID();
+        UUID usuarioActualId = UUID.randomUUID();
+        UUID personaActualId = UUID.randomUUID();
+        UUID areaActualId = UUID.randomUUID();
+        UUID areaAjenaId = UUID.randomUUID();
+        UUID empleadoAjenoId = UUID.randomUUID();
+
+        RegistroPorteria existente = RegistroPorteria.builder()
+                .id(registroId)
+                .createdById(otroCreadorId)
+                .empleadoId(empleadoAjenoId)
+                .fechaHoraSalida(Instant.now().minus(1, ChronoUnit.HOURS))
+                .estado(EstadoRegistroPorteria.AFUERA)
+                .activos(List.of())
+                .build();
+
+        when(repository.findById(registroId)).thenReturn(Optional.of(existente));
+        when(securityUtils.isAdmin()).thenReturn(false);
+        when(securityUtils.getCurrentUserId()).thenReturn(Optional.of(usuarioActualId));
+        when(usuarioRepository.findById(usuarioActualId))
+                .thenReturn(Optional.of(Usuario.builder().id(usuarioActualId).personaId(personaActualId).build()));
+        when(empleadoRepository.findFirstByPersonaId(personaActualId))
+                .thenReturn(Optional.of(Empleado.builder().id(UUID.randomUUID()).areaId(areaActualId).build()));
+        when(empleadoRepository.findAllById(any()))
+                .thenReturn(List.of(Empleado.builder().id(empleadoAjenoId).areaId(areaAjenaId).build()));
+
+        RegistrarLlegadaPorteriaRequest request = new RegistrarLlegadaPorteriaRequest(Instant.now(), "OK", null);
+
+        assertThrows(ForbiddenException.class, () -> service.registrarLlegada(registroId, request));
+    }
+
+    @Test
+    void anular_cuandoUsuarioSinAccesoAlAreaNiCreador_debeLanzarForbiddenException() {
+        UUID registroId = UUID.randomUUID();
+        UUID otroCreadorId = UUID.randomUUID();
+        UUID usuarioActualId = UUID.randomUUID();
+        UUID personaActualId = UUID.randomUUID();
+        UUID areaActualId = UUID.randomUUID();
+        UUID areaAjenaId = UUID.randomUUID();
+        UUID empleadoAjenoId = UUID.randomUUID();
+
+        RegistroPorteria existente = RegistroPorteria.builder()
+                .id(registroId)
+                .createdById(otroCreadorId)
+                .empleadoId(empleadoAjenoId)
+                .fechaHoraSalida(Instant.now().minus(1, ChronoUnit.HOURS))
+                .estado(EstadoRegistroPorteria.AFUERA)
+                .activos(List.of())
+                .build();
+
+        when(repository.findById(registroId)).thenReturn(Optional.of(existente));
+        when(securityUtils.isAdmin()).thenReturn(false);
+        when(securityUtils.getCurrentUserId()).thenReturn(Optional.of(usuarioActualId));
+        when(usuarioRepository.findById(usuarioActualId))
+                .thenReturn(Optional.of(Usuario.builder().id(usuarioActualId).personaId(personaActualId).build()));
+        when(empleadoRepository.findFirstByPersonaId(personaActualId))
+                .thenReturn(Optional.of(Empleado.builder().id(UUID.randomUUID()).areaId(areaActualId).build()));
+        when(empleadoRepository.findAllById(any()))
+                .thenReturn(List.of(Empleado.builder().id(empleadoAjenoId).areaId(areaAjenaId).build()));
+
+        AnularRegistroPorteriaRequest request = new AnularRegistroPorteriaRequest("Duplicado");
+
+        assertThrows(ForbiddenException.class, () -> service.anular(registroId, request));
+    }
+
+    @Test
+    void anular_cuandoUsuarioEsCreadorDelRegistro_debePermitirAnular() {
+        UUID registroId = UUID.randomUUID();
+        UUID usuarioActualId = UUID.randomUUID();
+
+        RegistroPorteria existente = RegistroPorteria.builder()
+                .id(registroId)
+                .createdById(usuarioActualId)
+                .fechaHoraSalida(Instant.now().minus(1, ChronoUnit.HOURS))
+                .estado(EstadoRegistroPorteria.AFUERA)
+                .activos(List.of())
+                .build();
+
+        when(repository.findById(registroId)).thenReturn(Optional.of(existente));
+        when(securityUtils.isAdmin()).thenReturn(false);
+        when(securityUtils.getCurrentUserId()).thenReturn(Optional.of(usuarioActualId));
+        when(usuarioRepository.findById(usuarioActualId)).thenReturn(Optional.empty());
+        when(repository.save(any(RegistroPorteria.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        RegistroPorteriaResponse response = service.anular(registroId, new AnularRegistroPorteriaRequest("Error de digitación"));
+
+        assertEquals(EstadoRegistroPorteria.ANULADO, response.estado());
+        assertEquals("Error de digitación", response.observacionLlegada());
     }
 }
 

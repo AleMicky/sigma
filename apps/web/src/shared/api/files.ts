@@ -40,6 +40,53 @@ export async function uploadImage<TResponse>(
 }
 
 /**
+ * Abre un reporte PDF autenticado en una pestaña nueva.
+ *
+ * La pestaña se crea **antes** de la petición para conservar el gesto del
+ * usuario y evitar que el bloqueador de pop-ups la descarte. Si la petición
+ * falla se cierra; si el popup está bloqueado se deja una descarga como
+ * respaldo. El `ObjectURL` siempre se revoca después de usarlo.
+ */
+export async function openPdfInNewTab(
+  path: string,
+  fileName: string,
+  params?: Record<string, string | number | boolean | undefined>,
+): Promise<void> {
+  const newWindow = window.open("", "_blank")
+
+  try {
+    const blob = await http.get<Blob>(toApiRelativePath(path), {
+      params,
+      responseType: "blob",
+      headers: {
+        Accept: "application/pdf",
+      },
+    })
+    const objectUrl = URL.createObjectURL(blob)
+
+    if (newWindow) {
+      newWindow.opener = null
+      newWindow.location.href = objectUrl
+      // Margen suficiente para que el navegador termine de leer el blob.
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
+      return
+    }
+
+    // Popup bloqueado: no perder el reporte, ofrecerlo como descarga.
+    const link = document.createElement("a")
+    link.href = objectUrl
+    link.download = fileName || "reporte.pdf"
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
+  } catch (error) {
+    newWindow?.close()
+    throw error
+  }
+}
+
+/**
  * Determina si el archivo puede previsualizarse nativamente en una pestaña
  * del navegador (PDF, imágenes, texto) o si debe descargarse (Excel, Word, etc.).
  */

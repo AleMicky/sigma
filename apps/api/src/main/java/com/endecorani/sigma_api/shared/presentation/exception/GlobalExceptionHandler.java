@@ -214,8 +214,7 @@ public class GlobalExceptionHandler {
             MethodArgumentTypeMismatchException.class,
             MissingServletRequestParameterException.class,
             HttpMessageNotReadableException.class,
-            IllegalArgumentException.class,
-            IllegalStateException.class
+            IllegalArgumentException.class
     })
     public ResponseEntity<ApiErrorResponse> handleBadRequest(
             Exception exception,
@@ -225,6 +224,25 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "BAD_REQUEST",
                 resolveBadRequestMessage(exception),
+                request.getRequestURI()
+        );
+    }
+
+    /**
+     * Un {@link IllegalStateException} que llega hasta la capa web es un fallo interno
+     * (configuración, estado inconsistente, etc.). Se registra con su detalle para
+     * diagnóstico pero la respuesta al cliente nunca expone ese detalle.
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalState(
+            IllegalStateException exception,
+            HttpServletRequest request
+    ) {
+        log.error("Estado inválido inesperado en {}", request.getRequestURI(), exception);
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "INTERNAL_SERVER_ERROR",
+                "Ocurrió un error interno en el servidor",
                 request.getRequestURI()
         );
     }
@@ -330,7 +348,7 @@ public class GlobalExceptionHandler {
             return "El cuerpo de la solicitud tiene un formato inválido";
         }
 
-        if ((exception instanceof IllegalArgumentException || exception instanceof IllegalStateException)
+        if (exception instanceof IllegalArgumentException
                 && exception.getMessage() != null && !exception.getMessage().isBlank()) {
             return exception.getMessage();
         }

@@ -1,15 +1,28 @@
 import axios, { type AxiosError } from "axios";
 
+export interface ApiFieldValidationError {
+    field: string;
+    message: string;
+    rejectedValue?: unknown;
+}
+
 export interface ApiValidationError {
     field: string;
     messages: string[];
+    rejectedValue?: unknown;
 }
 
 export interface ApiErrorResponse {
+    success?: boolean;
     message?: string;
     title?: string;
     detail?: string;
+    error?: string;
+    code?: string;
     status?: number;
+    path?: string;
+    timestamp?: string;
+    validationErrors?: ApiFieldValidationError[];
     errors?: Record<string, string[]>;
 }
 
@@ -37,19 +50,85 @@ export class ApiError extends Error {
     }
 }
 
-function mapValidationErrors(
-    errors?: Record<string, string[]>,
-): ApiValidationError[] {
-    if (!errors) {
-        return [];
+function normalizeErrorResponseData(
+    raw: unknown,
+): ApiErrorResponse | undefined {
+    if (!raw) {
+        return undefined;
     }
 
-    return Object.entries(errors).map(
-        ([field, messages]) => ({
-            field,
-            messages,
-        }),
-    );
+    if (typeof raw === "string") {
+        const trimmed = raw.trim();
+        if (!trimmed) {
+            return undefined;
+        }
+        try {
+            const parsed: unknown = JSON.parse(trimmed);
+            if (typeof parsed === "object" && parsed !== null) {
+                return parsed as ApiErrorResponse;
+            }
+        } catch {
+            // Texto plano no JSON
+        }
+        return { message: trimmed };
+    }
+
+    if (typeof Blob !== "undefined" && raw instanceof Blob) {
+        return undefined;
+    }
+
+    if (typeof raw === "object") {
+        return raw as ApiErrorResponse;
+    }
+
+    return undefined;
+}
+
+function mapValidationErrors(
+    data?: ApiErrorResponse,
+): ApiValidationError[] {
+    if (
+        Array.isArray(data?.validationErrors) &&
+        data.validationErrors.length > 0
+    ) {
+        const grouped = new Map<string, ApiValidationError>();
+
+        for (const item of data.validationErrors) {
+            if (!item?.field) {
+                continue;
+            }
+
+            const message = item.message || "Valor inválido";
+            const existing = grouped.get(item.field);
+
+            if (existing) {
+                existing.messages.push(message);
+            } else {
+                grouped.set(item.field, {
+                    field: item.field,
+                    messages: [message],
+                    ...(item.rejectedValue !== undefined
+                        ? { rejectedValue: item.rejectedValue }
+                        : {}),
+                });
+            }
+        }
+
+        return Array.from(grouped.values());
+    }
+
+    if (data?.errors && typeof data.errors === "object") {
+        return Object.entries(data.errors).map(
+            ([field, messages]) => ({
+                field,
+                messages: Array.isArray(messages)
+                    ? messages
+                    : [String(messages)],
+            }),
+        );
+    }
+
+    return [];
 }
 
 function getResponseMessage(
@@ -80,7 +159,7 @@ export function parseApiError(error: unknown): ApiError {
     }
 
     const axiosError =
-        error as AxiosError<ApiErrorResponse>;
+        error as AxiosError<unknown>;
 
     if (axiosError.code === "ECONNABORTED") {
         return new ApiError({
@@ -100,7 +179,8 @@ export function parseApiError(error: unknown): ApiError {
         });
     }
 
-    const { status, data } = axiosError.response;
+    const { status, data: rawData } = axiosError.response;
+    const data = normalizeErrorResponseData(rawData);
 
     const defaultMessages: Record<number, string> = {
         400: "La solicitud contiene datos incorrectos",
@@ -121,10 +201,8 @@ export function parseApiError(error: unknown): ApiError {
             "Ocurrió un error al procesar la solicitud",
         ),
         status,
-        code: axiosError.code,
-        validationErrors: mapValidationErrors(
-            data?.errors,
-        ),
+        code: data?.code ?? axiosError.code,
+        validationErrors: mapValidationErrors(data),
         originalError: error,
     });
 }

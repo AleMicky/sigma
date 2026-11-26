@@ -94,23 +94,40 @@ public class SolicitudMantenimientoService {
     private final ApplicationEventPublisher eventPublisher;
     private final org.springframework.jdbc.core.simple.JdbcClient jdbcClient;
 
-    private record InterfazFiltros(UUID solicitanteId, UUID aprobadorId, UUID supervisorId, UUID responsableId) {}
+    private record InterfazFiltros(
+            UUID solicitanteId,
+            UUID aprobadorId,
+            UUID supervisorId,
+            UUID responsableId,
+            boolean sinAcceso
+    ) {
+        static InterfazFiltros sinFiltro() {
+            return new InterfazFiltros(null, null, null, null, false);
+        }
+
+        static InterfazFiltros denegado() {
+            return new InterfazFiltros(null, null, null, null, true);
+        }
+    }
 
     private InterfazFiltros resolverFiltrosPorInterfaz(String interfaz) {
         if (securityUtils.isAdmin()) {
-            return new InterfazFiltros(null, null, null, null);
+            return InterfazFiltros.sinFiltro();
         }
         UUID empleadoActual = obtenerEmpleadoIdActual();
-        if (interfaz == null || interfaz.isBlank() || "SolicitudesPage".equalsIgnoreCase(interfaz.trim())) {
-            return new InterfazFiltros(empleadoActual, null, null, null);
-        } else if ("AprobacionesPage".equalsIgnoreCase(interfaz.trim())) {
-            return new InterfazFiltros(null, empleadoActual, null, null);
-        } else if ("SupervisorMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
-            return new InterfazFiltros(null, null, empleadoActual, null);
-        } else if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
-            return new InterfazFiltros(null, null, null, empleadoActual);
+        if (empleadoActual == null) {
+            return InterfazFiltros.denegado();
         }
-        return new InterfazFiltros(empleadoActual, null, null, null);
+        if (interfaz == null || interfaz.isBlank() || "SolicitudesPage".equalsIgnoreCase(interfaz.trim())) {
+            return new InterfazFiltros(empleadoActual, null, null, null, false);
+        } else if ("AprobacionesPage".equalsIgnoreCase(interfaz.trim())) {
+            return new InterfazFiltros(null, empleadoActual, null, null, false);
+        } else if ("SupervisorMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+            return new InterfazFiltros(null, null, empleadoActual, null, false);
+        } else if ("EncargadoMantenimientoPage".equalsIgnoreCase(interfaz.trim())) {
+            return new InterfazFiltros(null, null, null, empleadoActual, false);
+        }
+        return new InterfazFiltros(empleadoActual, null, null, null, false);
     }
 
     @Transactional(readOnly = true)
@@ -121,6 +138,9 @@ public class SolicitudMantenimientoService {
     @Transactional(readOnly = true)
     public SolicitudMantenimientoResumenResponse obtenerResumen(String interfaz) {
         InterfazFiltros filtros = resolverFiltrosPorInterfaz(interfaz);
+        if (filtros.sinAcceso()) {
+            return SolicitudMantenimientoResumenResponse.from(null, interfaz);
+        }
 
         SolicitudMantenimientoResumenProjection projection = repository.obtenerResumen(
                 filtros.solicitanteId(),
@@ -140,6 +160,13 @@ public class SolicitudMantenimientoService {
     public PageResponse<SolicitudMantenimientoResponse> findAll(String q, String estado, String interfaz,
             PageRequestDto pageRequest) {
         InterfazFiltros filtros = resolverFiltrosPorInterfaz(interfaz);
+        if (filtros.sinAcceso()) {
+            Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
+            return PageResponse.of(
+                    Collections.emptyList(),
+                    new org.springframework.data.domain.PageImpl<>(Collections.emptyList(), pageable, 0)
+            );
+        }
         List<String> estados = resolverEstados(estado, interfaz);
 
         SolicitudMantenimientoSearchCriteria criteria = new SolicitudMantenimientoSearchCriteria(

@@ -1,4 +1,4 @@
-import { http } from "@/shared/api"
+import { http, openPdfInNewTab } from "@/shared/api"
 
 import { bitacoraEndpoints } from "./bitacora.endpoints"
 
@@ -138,16 +138,11 @@ export async function abrirBitacoraVehicularPdf(
     params.conductorId = filtros.conductorId
   }
 
-  const blob = await http.get<Blob>(bitacoraEndpoints.pdf, {
+  await openPdfInNewTab(
+    bitacoraEndpoints.pdf,
+    `bitacora-${filtros.fechaInicio}_${filtros.fechaFin}.pdf`,
     params,
-    responseType: "blob",
-    headers: {
-      Accept: "application/pdf",
-    },
-  })
-
-  const url = window.URL.createObjectURL(blob)
-  window.open(url, "_blank")
+  )
 }
 
 // ============================================================================
@@ -254,7 +249,9 @@ export async function descargarBitacoraConsolidadaPdf(
 export async function abrirBitacoraConsolidadaPdf(
   filtros: BitacoraConsolidadaFiltros
 ): Promise<void> {
-  const blob = await fetchBitacoraConsolidadaPdf(filtros)
-  const url = window.URL.createObjectURL(blob)
-  window.open(url, "_blank")
+  await openPdfInNewTab(
+    bitacoraEndpoints.consolidadoPdf,
+    `bitacora-vehicular-${filtros.fechaInicio}_${filtros.fechaFin}.pdf`,
+    buildConsolidadoParams(filtros),
+  )
 }

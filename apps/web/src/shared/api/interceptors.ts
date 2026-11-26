@@ -81,27 +81,25 @@ function handleRequestError(
     return Promise.reject(parseApiError(error));
 }
 
+let isRedirecting = false;
+
 function redirectToLogin(): void {
+    if (isRedirecting) {
+        return;
+    }
+
     queryClient.clear();
     useAuthStore.getState().clearSession();
 
     const currentPath = window.location.pathname;
 
     if (currentPath !== routes.login) {
-        const redirectUrl = encodeURIComponent(
-            window.location.href,
-        );
+        isRedirecting = true;
+        const relativePath = `${window.location.pathname}${window.location.search}`;
+        const redirectUrl = encodeURIComponent(relativePath);
 
-        window.location.href =
-            `${routes.login}?redirect=${redirectUrl}`;
+        window.location.href = `${routes.login}?redirect=${redirectUrl}`;
     }
-}
-
-function isAuthRefreshRequest(
-    config?: InternalAxiosRequestConfig,
-): boolean {
-    const url = config?.url ?? "";
-    return url.includes(authEndpoints.refresh);
 }
 
 let refreshPromise: Promise<string> | null = null;
@@ -147,9 +145,54 @@ async function refreshAccessToken(): Promise<string> {
     return refreshPromise;
 }
 
+async function normalizeBlobErrorResponse(
+    error: AxiosError,
+): Promise<void> {
+    const response = error.response;
+    if (!response || typeof Blob === "undefined" || !(response.data instanceof Blob)) {
+        return;
+    }
+
+    const blob = response.data;
+    const headerContentType =
+        typeof response.headers?.["content-type"] === "string"
+            ? response.headers["content-type"]
+            : "";
+    const contentType = (blob.type || headerContentType).toLowerCase();
+    const isJsonOrText =
+        contentType.includes("application/json") ||
+        contentType.includes("+json") ||
+        contentType.startsWith("text/") ||
+        contentType === "";
+
+    if (!isJsonOrText) {
+        return;
+    }
+
+    try {
+        const text = await blob.text();
+        const trimmed = text.trim();
+        if (!trimmed) {
+            return;
+        }
+
+        try {
+            response.data = JSON.parse(trimmed);
+        } catch {
+            if (contentType.startsWith("text/")) {
+                response.data = { message: trimmed };
+            }
+        }
+    } catch {
+        // Fallback al mensaje por defecto según el código HTTP
+    }
+}
+
 async function handleResponseError(
     error: AxiosError,
 ): Promise<AxiosResponse | never> {
+    await normalizeBlobErrorResponse(error);
+
     const apiError = parseApiError(error);
     const config = error.config;
 
@@ -157,13 +200,9 @@ async function handleResponseError(
         return Promise.reject(apiError);
     }
 
-    // Login/logout u otras llamadas públicas: solo rechazar.
-    // Refresh fallido: sesión inválida → login.
+    // Login/logout/refresh u otras llamadas públicas: solo rechazar.
+    // Si /auth/refresh falla, el catch de refreshAccessToken() ejecuta una única redirección.
     if (config.skipAuth) {
-        if (isAuthRefreshRequest(config)) {
-            redirectToLogin();
-        }
-
         return Promise.reject(apiError);
     }
 

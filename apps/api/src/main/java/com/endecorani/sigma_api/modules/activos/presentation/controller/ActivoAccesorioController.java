@@ -37,6 +37,7 @@ import java.util.UUID;
         description = "Administración de accesorios asignados a activos"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize("isAuthenticated()")
 public class ActivoAccesorioController {
 
     private final ActivoAccesorioService activoAccesorioService;
@@ -130,7 +131,8 @@ public class ActivoAccesorioController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar la asignación de un accesorio a un activo")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Eliminar la asignación de un accesorio a un activo (solo ADMIN)")
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID id
     ) {

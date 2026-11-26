@@ -14,6 +14,8 @@ import { estadoOperativoQueries } from "@/modules/activos/estado-operativo/api/e
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
+import { tipoActivoEstadoQueries } from "@/modules/activos/tipo-activo-estado/api/tipo-activo-estado.queries"
+import { useCanManageActivos } from "@/modules/activos/lib/use-can-manage-activos"
 import { tipoDatoQueries } from "@/modules/parametros/tipo-dato/api/tipo-dato.queries"
 import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
 import { getErrorMessage, isApiError } from "@/shared/api"
@@ -37,6 +39,11 @@ import { ActivoFormImageSection } from "../components/form/ActivoFormImageSectio
 import { ActivoFormMainSection } from "../components/form/ActivoFormMainSection"
 import { ActivoLivePreviewCard } from "../components/form/ActivoLivePreviewCard"
 import { syncAtributoValores, validateAtributos } from "../lib/activo-form.utils"
+import {
+  includeCurrentEstadoOption,
+  resolveEstadoPredeterminadoId,
+  resolveEstadosDelTipo,
+} from "../lib/estado-operativo.utils"
 import { activoSchema, defaultActivoValues } from "../schemas/activo.schema"
 
 type ActivoFormPageProps = {
@@ -49,6 +56,7 @@ export function ActivoFormPage({
   defaultTipoActivoId,
 }: ActivoFormPageProps) {
   const isEditing = Boolean(activoId)
+  const canManage = useCanManageActivos()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const createMutation = useCreateActivo()
@@ -72,6 +80,9 @@ export function ActivoFormPage({
     pendingFile: null as File | null,
     removeExistingImage: false,
   })
+  // Selección explícita del usuario; se descarta al cambiar el tipo de activo.
+  const estadoManualRef = useRef<string | null>(null)
+  const prevEstadoTipoRef = useRef(defaultTipoActivoId ?? "")
 
   const activoQuery = useQuery({
     ...activoQueries.detail(activoId ?? ""),
@@ -152,6 +163,7 @@ export function ActivoFormPage({
       onSubmit: activoSchema,
     },
     onSubmit: async ({ value }) => {
+      if (!canManage) return
       setFormError(null)
 
       const {
@@ -250,6 +262,32 @@ export function ActivoFormPage({
     (state) => state.values.descripcion,
   )
 
+  // Catálogo tipos_activo_estados del tipo seleccionado (una sola petición por tipo).
+  const estadosDelTipoQuery = useQuery(
+    tipoActivoEstadoQueries.byTipoActivoId(tipoActivoId ?? ""),
+  )
+  const asignacionesEstado = useMemo(
+    () => estadosDelTipoQuery.data?.content ?? [],
+    [estadosDelTipoQuery.data?.content],
+  )
+  const estadosDelTipo = useMemo(
+    () => resolveEstadosDelTipo(asignacionesEstado, estadosOperativos),
+    [asignacionesEstado, estadosOperativos],
+  )
+  const estadoPredeterminadoId = useMemo(
+    () => resolveEstadoPredeterminadoId(asignacionesEstado),
+    [asignacionesEstado],
+  )
+  const estadosParaSelector = useMemo(
+    () =>
+      includeCurrentEstadoOption(
+        estadosDelTipo,
+        estadoOperativoId ?? "",
+        estadosOperativos,
+      ),
+    [estadosDelTipo, estadoOperativoId, estadosOperativos],
+  )
+
   const selectedEstadoOperativo = useMemo(
     () => estadosOperativos.find((e) => e.id === estadoOperativoId),
     [estadosOperativos, estadoOperativoId],
@@ -344,13 +382,68 @@ export function ActivoFormPage({
     form.setFieldValue("ubicacionId", activo.ubicacion?.id ?? activo.ubicacionId ?? "")
     form.setFieldValue("estadoOperativoId", activo.estadoOperativo?.id ?? activo.estadoOperativoId ?? "")
     form.setFieldValue("fechaAdquisicion", activo.fechaAdquisicion ?? "")
+    // La hidratación no debe disparar el reset por cambio de tipo.
+    prevEstadoTipoRef.current = activo.tipoActivo?.id ?? activo.tipoActivoId ?? ""
   }, [activo, form, isEditing])
+
+  useEffect(() => {
+    if (!tipoActivoId) {
+      prevEstadoTipoRef.current = ""
+      estadoManualRef.current = null
+      return
+    }
+    if (prevEstadoTipoRef.current === tipoActivoId) return
+    prevEstadoTipoRef.current = tipoActivoId
+    // El estado elegido para el tipo anterior deja de ser válido.
+    estadoManualRef.current = null
+    form.setFieldValue("estadoOperativoId", "")
+  }, [form, tipoActivoId])
+
+  useEffect(() => {
+    if (isEditing || !tipoActivoId || !estadoPredeterminadoId) return
+    if (estadoManualRef.current !== null) return
+    if (!estadosDelTipo.some((estado) => estado.id === estadoPredeterminadoId)) return
+    if (estadoOperativoId === estadoPredeterminadoId) return
+    form.setFieldValue("estadoOperativoId", estadoPredeterminadoId)
+  }, [
+    estadoOperativoId,
+    estadoPredeterminadoId,
+    estadosDelTipo,
+    form,
+    isEditing,
+    tipoActivoId,
+  ])
+
+  function handleEstadoChange(estadoOperativoIdSeleccionado: string) {
+    estadoManualRef.current = estadoOperativoIdSeleccionado || null
+  }
 
   const selectedTipo = tiposById.get(tipoActivoId)
   const SelectedIcon = selectedTipo
     ? getTipoActivoIcon(selectedTipo.icono)
     : Box
   const selectedColor = selectedTipo?.color || DEFAULT_TIPO_ACTIVO_COLOR
+
+  if (!canManage) {
+    return (
+      <PageShell size="full" padding="none" layout="auto" className="w-full max-w-5xl mx-auto py-8">
+        <EmptyState
+          title="Acceso restringido"
+          description="Solo los usuarios con perfil ADMIN pueden crear o editar activos."
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              render={<Link to={routes.activos.root} />}
+            >
+              Volver al listado
+            </Button>
+          }
+        />
+      </PageShell>
+    )
+  }
 
   if (isEditing && activoQuery.isLoading) {
     return (
@@ -414,6 +507,16 @@ export function ActivoFormPage({
               ubicaciones={ubicaciones}
               ubicacionesById={ubicacionesById}
               ubicacionesLoading={ubicacionesQuery.isLoading}
+              estadosOperativos={estadosParaSelector}
+              estadosLoading={
+                estadosOperativosQuery.isLoading || estadosDelTipoQuery.isLoading
+              }
+              estadosErrorMessage={
+                estadosDelTipoQuery.isError
+                  ? getErrorMessage(estadosDelTipoQuery.error)
+                  : null
+              }
+              onEstadoChange={handleEstadoChange}
             />
 
             <ActivoFormAtributosSection

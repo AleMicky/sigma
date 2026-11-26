@@ -9,7 +9,6 @@ import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
-import com.endecorani.sigma_api.shared.presentation.controller.AbstractCrudController;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -30,7 +29,7 @@ import java.util.UUID;
 @Tag(name = "Activo Documentos", description = "Administración de documentos de un activo con archivos físicos")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class ActivoDocumentoController
-        extends AbstractCrudController<ActivoDocumentoRequest, ActivoDocumentoResponse, UUID> {
+        extends AbstractActivoOperationalCrudController<ActivoDocumentoRequest, ActivoDocumentoResponse, UUID> {
 
     private final ActivoDocumentoService service;
 

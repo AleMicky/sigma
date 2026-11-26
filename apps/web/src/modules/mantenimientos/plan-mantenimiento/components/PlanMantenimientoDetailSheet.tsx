@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
@@ -54,7 +54,19 @@ type PlanMantenimientoDetailSheetProps = {
   onEditPlan?: (plan: PlanMantenimiento) => void
 }
 
-export function PlanMantenimientoDetailSheet({
+export function PlanMantenimientoDetailSheet(
+  props: PlanMantenimientoDetailSheetProps,
+) {
+  if (!props.open) return null
+  return (
+    <PlanMantenimientoDetailSheetContent
+      key={`${props.plan?.id ?? "none"}-${props.initialTab ?? "actividades"}`}
+      {...props}
+    />
+  )
+}
+
+function PlanMantenimientoDetailSheetContent({
   open,
   onOpenChange,
   plan,
@@ -68,13 +80,6 @@ export function PlanMantenimientoDetailSheet({
   const [copiedCode, setCopiedCode] = useState(false)
 
   const planId = plan?.id ?? ""
-
-  useEffect(() => {
-    if (open) {
-      setActiveTab(initialTab)
-      setSearchFilter("")
-    }
-  }, [open, initialTab])
 
   // Consultar actividades del plan
   const actividadesQuery = useQuery({

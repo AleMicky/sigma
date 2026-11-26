@@ -1,0 +1,33 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/sigma}
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sigma_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  flyway:
+    out-of-order: true
+    validate-on-migrate: false
+    ignore-migration-patterns: "*:missing,*:future,*:pending,*:checksumMismatch"
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+  keycloak:
+    token-url: ${KEYCLOAK_TOKEN_URL:http://localhost:8081/realms/sigma/protocol/openid-connect/token}
+    logout-url: ${KEYCLOAK_LOGOUT_URL:http://localhost:8081/realms/sigma/protocol/openid-connect/logout}
+    client-id: ${KEYCLOAK_CLIENT_ID:sigma-web}
+
+flowable:
+  base-url: ${FLOWABLE_BASE_URL:http://localhost:8089/flowable-rest/service}
+  username: ${FLOWABLE_USERNAME:admin}
+  password: ${FLOWABLE_PASSWORD:admin}

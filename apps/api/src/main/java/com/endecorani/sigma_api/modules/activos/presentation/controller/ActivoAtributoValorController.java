@@ -8,7 +8,6 @@ import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
-import com.endecorani.sigma_api.shared.presentation.controller.AbstractCrudController;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -30,7 +29,7 @@ import java.util.UUID;
 @Tag(name = "Valores de atributo de activo", description = "Administración de valores de atributos personalizados por activo")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class ActivoAtributoValorController
-                extends AbstractCrudController<ActivoAtributoValorRequest, ActivoAtributoValorResponse, UUID> {
+                extends AbstractActivoOperationalCrudController<ActivoAtributoValorRequest, ActivoAtributoValorResponse, UUID> {
 
         private final ActivoAtributoValorService activoAtributoValorService;
 

@@ -1,4 +1,4 @@
-import { createCrudService, http } from "@/shared/api"
+import { createCrudService, http, openPdfInNewTab } from "@/shared/api"
 import type { PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
@@ -322,14 +322,9 @@ export const abrirReporteSolicitudesPdf = async (
   if (params.estado?.trim()) queryParams.estado = params.estado.trim()
   if (params.search?.trim()) queryParams.search = params.search.trim()
 
-  const blob = await http.get<Blob>(solicitudVehicularEndpoints.reportes.pdf, {
-    params: queryParams,
-    responseType: "blob",
-    headers: {
-      Accept: "application/pdf",
-    },
-  })
-
-  const url = window.URL.createObjectURL(blob)
-  window.open(url, "_blank")
+  await openPdfInNewTab(
+    solicitudVehicularEndpoints.reportes.pdf,
+    `reporte-solicitudes-${params.fechaDesde ?? "inicio"}_${params.fechaHasta ?? "fin"}.pdf`,
+    queryParams,
+  )
 }

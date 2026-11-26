@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { CheckSquare, Loader2, Plus, PlusCircle, Save } from "lucide-react"
 
@@ -33,19 +33,34 @@ type ChecklistItemFormDialogProps = {
   onSuccess?: () => void
 }
 
-export function ChecklistItemFormDialog({
+export function ChecklistItemFormDialog(props: ChecklistItemFormDialogProps) {
+  if (!props.open || !props.aplicacion) return null
+  return (
+    <ChecklistItemFormDialogContent
+      key={`${props.aplicacion.id}-${props.item?.id ?? "new"}`}
+      {...props}
+      aplicacion={props.aplicacion}
+    />
+  )
+}
+
+function ChecklistItemFormDialogContent({
   aplicacion,
   item,
   nextOrder = 1,
   open,
   onOpenChange,
   onSuccess,
-}: ChecklistItemFormDialogProps) {
+}: Omit<ChecklistItemFormDialogProps, "aplicacion"> & {
+  aplicacion: ActividadAplicacion
+}) {
   const isEditing = Boolean(item)
 
-  const [nombre, setNombre] = useState("")
-  const [descripcion, setDescripcion] = useState("")
-  const [orden, setOrden] = useState(nextOrder)
+  const [nombre, setNombre] = useState(() => item?.nombre ?? "")
+  const [descripcion, setDescripcion] = useState(() => item?.descripcion ?? "")
+  const [ordenOverride, setOrdenOverride] = useState<number | null>(() =>
+    item ? item.orden : null,
+  )
   const [formError, setFormError] = useState<string | null>(null)
   const [isSubmittingAndNew, setIsSubmittingAndNew] = useState(false)
 
@@ -58,46 +73,29 @@ export function ChecklistItemFormDialog({
 
   // Consulta los ítems existentes de la aplicación para calcular el orden automático
   const checklistQuery = useQuery({
-    ...checklistItemQueries.byAplicacionList(aplicacion?.id ?? ""),
-    enabled: Boolean(open && aplicacion?.id && !item),
+    ...checklistItemQueries.byAplicacionList(aplicacion.id),
+    enabled: Boolean(open && aplicacion.id && !item),
   })
 
-  // Sincroniza el formulario al abrir o cambiar el ítem seleccionado
-  useEffect(() => {
-    if (open) {
-      if (item) {
-        setNombre(item.nombre)
-        setDescripcion(item.descripcion ?? "")
-        setOrden(item.orden)
-      } else {
-        setNombre("")
-        setDescripcion("")
-        const items = checklistQuery.data ?? []
-        const maxOrden =
-          items.length > 0
-            ? Math.max(...items.map((i) => i.orden ?? 0))
-            : 0
-        setOrden(maxOrden > 0 ? maxOrden + 1 : nextOrder)
-        setTimeout(() => {
-          nombreInputRef.current?.focus()
-        }, 50)
-      }
-      setFormError(null)
-    }
-  }, [open, item])
+  const autoOrden = useMemo(() => {
+    const items = checklistQuery.data ?? []
+    const maxOrden =
+      items.length > 0 ? Math.max(...items.map((i) => i.orden ?? 0)) : 0
+    return maxOrden > 0 ? maxOrden + 1 : nextOrder
+  }, [checklistQuery.data, nextOrder])
 
-  // Ajusta el orden automático cuando cargan los ítems existentes
+  const orden = ordenOverride ?? autoOrden
+
   useEffect(() => {
-    if (open && !item && checklistQuery.data && nombre === "") {
-      const items = checklistQuery.data
-      const maxOrden =
-        items.length > 0 ? Math.max(...items.map((i) => i.orden ?? 0)) : 0
-      setOrden(maxOrden > 0 ? maxOrden + 1 : nextOrder)
+    if (!item) {
+      const timer = window.setTimeout(() => {
+        nombreInputRef.current?.focus()
+      }, 50)
+      return () => window.clearTimeout(timer)
     }
-  }, [checklistQuery.data, open, item, nextOrder])
+  }, [item])
 
   async function handleSave(keepOpen: boolean = false) {
-    if (!aplicacion) return
     if (!nombre.trim()) {
       setFormError("El nombre del ítem es obligatorio.")
       return
@@ -133,8 +131,8 @@ export function ChecklistItemFormDialog({
       if (keepOpen && !isEditing) {
         setNombre("")
         setDescripcion("")
-        setOrden((prev) => Number(prev) + 1)
-        setTimeout(() => {
+        setOrdenOverride(Number(orden) + 1)
+        window.setTimeout(() => {
           nombreInputRef.current?.focus()
         }, 50)
       } else {
@@ -155,8 +153,6 @@ export function ChecklistItemFormDialog({
     e.preventDefault()
     handleSave(false)
   }
-
-  if (!aplicacion) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -235,7 +231,7 @@ export function ChecklistItemFormDialog({
                 type="number"
                 min={0}
                 value={orden}
-                onChange={(e) => setOrden(Number(e.target.value))}
+                onChange={(e) => setOrdenOverride(Number(e.target.value))}
                 className="text-xs font-mono"
                 disabled={isPending}
               />

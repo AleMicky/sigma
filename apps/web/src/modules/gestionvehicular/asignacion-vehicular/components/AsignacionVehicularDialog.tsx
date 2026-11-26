@@ -27,6 +27,17 @@ import {
   type VehiculoResponsableItem,
 } from "./VehiculoResponsableCombobox"
 import { isApiError } from "@/shared/api"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -65,6 +76,7 @@ export function AsignacionVehicularDialog({
   onSuccess,
 }: Readonly<AsignacionVehicularDialogProps>) {
   const [isEditing, setIsEditing] = React.useState(false)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
 
   // Consulta de asignaciones existentes para esta solicitud
@@ -88,24 +100,23 @@ export function AsignacionVehicularDialog({
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       setIsEditing(false)
+      setConfirmDeleteOpen(false)
       setErrorMessage(null)
     }
     onOpenChange(newOpen)
   }
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!asignacionActual) return
-    const confirm = window.confirm(
-      "¿Está seguro de que desea eliminar esta asignación vehicular?"
-    )
-    if (!confirm) return
 
     try {
       await deleteMutation.mutateAsync(asignacionActual.id)
+      setConfirmDeleteOpen(false)
       setIsEditing(false)
       setErrorMessage(null)
       onSuccess?.()
     } catch (err) {
+      setConfirmDeleteOpen(false)
       setErrorMessage(
         isApiError(err)
           ? err.message
@@ -286,7 +297,7 @@ export function AsignacionVehicularDialog({
               type="button"
               variant="destructive"
               size="sm"
-              onClick={handleDelete}
+              onClick={() => setConfirmDeleteOpen(true)}
               disabled={isSubmitting}
               className="w-full sm:w-auto gap-1.5 text-xs cursor-pointer order-2 sm:order-1"
             >
@@ -321,6 +332,50 @@ export function AsignacionVehicularDialog({
           </DialogFooter>
         )}
       </DialogContent>
+
+      <AlertDialog
+        open={confirmDeleteOpen}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && !deleteMutation.isPending) {
+            setConfirmDeleteOpen(false)
+          }
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive">
+              <Trash2 />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Eliminar asignación vehicular</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Está seguro de que desea eliminar esta asignación vehicular de la solicitud{" "}
+              <span className="font-mono font-semibold text-foreground">
+                {solicitud.numero}
+              </span>
+              ? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => void handleConfirmDelete()}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                  Eliminando…
+                </>
+              ) : (
+                "Eliminar"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }

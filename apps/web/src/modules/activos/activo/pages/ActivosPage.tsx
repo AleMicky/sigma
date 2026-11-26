@@ -11,6 +11,8 @@ import {
   usePaginatedSearch,
 } from "@/shared/hooks/use-paginated-search"
 
+import { useCanManageActivos } from "@/modules/activos/lib/use-can-manage-activos"
+
 import { activoQueries } from "../api/activo.queries"
 import type { Activo } from "../api/activo.service"
 import { ActivoContentSection } from "../components/ActivoContentSection"
@@ -79,6 +81,7 @@ function checkHasActiveFilters(
 
 export function ActivosPage() {
   const navigate = useNavigate()
+  const canManage = useCanManageActivos()
   const [tipoActivoId, setTipoActivoId] = useState<string>(ALL_TIPOS)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [viewMode, setViewMode] = useState<"list" | "grid">("list")
@@ -193,6 +196,7 @@ export function ActivosPage() {
       <ActivoHeader
         totalActivos={activosQuery.data?.totalElements}
         onCreate={goCreate}
+        canManage={canManage}
         queries={[activosQuery, tiposQuery, ubicacionesQuery]}
       />
 
@@ -232,6 +236,7 @@ export function ActivosPage() {
           onResetFilters={resetFilters}
           onCreate={goCreate}
           onEdit={goEdit}
+          canManage={canManage}
         />
       </div>
     </PageShell>

@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   History,
+  Loader2,
   LogIn,
   LogOut,
   MapPin,
@@ -25,13 +26,30 @@ import {
 
 import { appConfig } from "@/app/config"
 import { routes } from "@/app/config/routes"
+import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { PageShell } from "@/shared/components/page-shell"
+import {
+  StatusBadge,
+  type StatusBadgeVariant,
+} from "@/shared/components/status-badge"
 import { Pagination } from "@/shared/components/pagination"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -41,7 +59,9 @@ import {
 } from "@/shared/components/ui/select"
 import { Skeleton } from "@/shared/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
+import { Textarea } from "@/shared/components/ui/textarea"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
+import { toLocalDateKey } from "@/shared/lib/date"
 import { cn } from "@/shared/lib/utils"
 
 import { useAnularRegistroPorteriaMutation } from "../api/porteria.mutations"
@@ -100,8 +120,7 @@ function getInitials(name?: string | null): string {
 }
 
 function dayKey(value: string): string {
-  const d = new Date(value)
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+  return toLocalDateKey(new Date(value))
 }
 
 function dayLabel(value: string): string {
@@ -109,8 +128,9 @@ function dayLabel(value: string): string {
   const today = new Date()
   const yesterday = new Date()
   yesterday.setDate(today.getDate() - 1)
-  if (dayKey(value) === dayKey(today.toISOString())) return "Hoy"
-  if (dayKey(value) === dayKey(yesterday.toISOString())) return "Ayer"
+  const valueKey = toLocalDateKey(d)
+  if (valueKey === toLocalDateKey(today)) return "Hoy"
+  if (valueKey === toLocalDateKey(yesterday)) return "Ayer"
   const label = d.toLocaleDateString("es-BO", {
     weekday: "long",
     day: "numeric",
@@ -134,24 +154,24 @@ function useNow(intervalMs = 60_000): number {
 
 const ESTADO_CONFIG: Record<
   EstadoRegistroPorteria,
-  { label: string; icon: typeof Clock; badge: string; avatar: string }
+  { label: string; icon: typeof Clock; variant: StatusBadgeVariant; avatar: string }
 > = {
   AFUERA: {
     label: "Afuera",
     icon: Clock,
-    badge: "border-amber-500/40 bg-amber-500/10 text-amber-600",
+    variant: "warning",
     avatar: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
   },
   COMPLETADO: {
     label: "Completado",
     icon: CheckCircle2,
-    badge: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+    variant: "success",
     avatar: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
   },
   ANULADO: {
     label: "Anulado",
     icon: XCircle,
-    badge: "border-destructive/40 bg-destructive/10 text-destructive",
+    variant: "danger",
     avatar: "bg-muted text-muted-foreground",
   },
 }
@@ -172,10 +192,9 @@ function EstadoBadge({
         : "Afuera"
       : cfg.label
   return (
-    <Badge variant="outline" className={cfg.badge}>
-      <Icon className="mr-1 size-3" />
+    <StatusBadge variant={cfg.variant} dot={false} icon={<Icon className="size-3" />}>
       {label}
-    </Badge>
+    </StatusBadge>
   )
 }
 
@@ -186,21 +205,19 @@ function TipoMovimientoBadge({
 }) {
   const esEntrada = tipoMovimiento === "ENTRADA"
   return (
-    <Badge
-      variant="outline"
-      className={
-        esEntrada
-          ? "border-emerald-500/40 bg-emerald-500/10 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300"
-          : "border-amber-500/40 bg-amber-500/10 text-[10px] font-semibold text-amber-700 dark:text-amber-300"
+    <StatusBadge
+      variant={esEntrada ? "success" : "warning"}
+      dot={false}
+      icon={
+        esEntrada ? (
+          <LogIn className="size-3" />
+        ) : (
+          <LogOut className="size-3" />
+        )
       }
     >
-      {esEntrada ? (
-        <LogIn className="mr-1 size-3" />
-      ) : (
-        <LogOut className="mr-1 size-3" />
-      )}
       {esEntrada ? "Entrada" : "Salida"}
-    </Badge>
+    </StatusBadge>
   )
 }
 
@@ -445,7 +462,7 @@ function AfueraItem({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t pt-3 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3 sm:flex-col sm:flex-nowrap sm:items-end sm:border-t-0 sm:pt-0">
         <div
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums",
@@ -466,7 +483,7 @@ function AfueraItem({
           {formatDuration(mins)} {esEntrada ? "adentro" : "afuera"}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             size="sm"
             variant="ghost"
@@ -671,6 +688,10 @@ export function PorteriaPage() {
   const [llegadaTarget, setLlegadaTarget] = useState<RegistroPorteria | null>(
     null
   )
+  const [anularTarget, setAnularTarget] = useState<RegistroPorteria | null>(
+    null
+  )
+  const [motivoAnulacion, setMotivoAnulacion] = useState("")
 
   const openRegistroDialog = (tipo: TipoMovimientoPorteria) => {
     setInitialTipoMovimiento(tipo)
@@ -714,7 +735,7 @@ export function PorteriaPage() {
   }
 
   const handleFiltrarHoy = () => {
-    const today = new Date().toISOString().split("T")[0]
+    const today = toLocalDateKey()
     setFechaDesde(today)
     setFechaHasta(today)
     setPage(0)
@@ -739,6 +760,11 @@ export function PorteriaPage() {
       [
         r.numero,
         r.empleadoNombre,
+        r.personaExterna,
+        r.placaExterna,
+        r.origenUbicacionNombre,
+        r.destinoUbicacionNombre,
+        r.destinoOtro,
         r.guardiaSalidaNombre,
         r.observacionSalida,
         ...(r.activos ?? []).flatMap((a) => [
@@ -763,9 +789,10 @@ export function PorteriaPage() {
   ).length
 
   const historialPage = historialQuery.data
-  const historialList = Array.isArray(historialPage?.content)
-    ? historialPage.content
-    : []
+  const historialList = useMemo(
+    () => (Array.isArray(historialPage?.content) ? historialPage.content : []),
+    [historialPage]
+  )
 
   const historialAgrupado = useMemo(() => {
     const groups: { key: string; label: string; items: RegistroPorteria[] }[] =
@@ -783,8 +810,23 @@ export function PorteriaPage() {
   }, [historialList])
 
   const handleAnular = (registro: RegistroPorteria) => {
-    if (!window.confirm(`¿Anular el registro ${registro.numero}?`)) return
-    anularMutation.mutate({ id: registro.id })
+    setAnularTarget(registro)
+    setMotivoAnulacion("")
+  }
+
+  const handleConfirmAnular = async () => {
+    if (!anularTarget) return
+    const motivo = motivoAnulacion.trim()
+    try {
+      await anularMutation.mutateAsync({
+        id: anularTarget.id,
+        data: motivo ? { motivo } : undefined,
+      })
+      setAnularTarget(null)
+      setMotivoAnulacion("")
+    } catch {
+      // El toast de error ya se muestra en useAnularRegistroPorteriaMutation
+    }
   }
 
   const isRefreshing = afueraQuery.isFetching || historialQuery.isFetching
@@ -897,7 +939,7 @@ export function PorteriaPage() {
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-9 pr-8"
-                placeholder="Filtrar por funcionario, número, guardia, activo u observación..."
+                placeholder="Filtrar por funcionario, externo, placa, destino, número, guardia o activo..."
                 value={afueraSearch}
                 onChange={(e) => setAfueraSearch(e.target.value)}
               />
@@ -916,6 +958,30 @@ export function PorteriaPage() {
 
           {afueraQuery.isLoading ? (
             <ListSkeleton />
+          ) : afueraQuery.isError ? (
+            <EmptyState
+              bordered
+              className="border-destructive/30 bg-destructive/5"
+              icon={<AlertTriangle className="size-5.5 text-destructive" />}
+              title="No se pudieron cargar los movimientos en curso"
+              description={getErrorMessage(afueraQuery.error)}
+              action={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={afueraQuery.isFetching}
+                  onClick={() => void afueraQuery.refetch()}
+                >
+                  <RefreshCw
+                    className={cn(
+                      "mr-1.5 size-4",
+                      afueraQuery.isFetching && "animate-spin"
+                    )}
+                  />
+                  Reintentar
+                </Button>
+              }
+            />
           ) : afueraList.length === 0 ? (
             <EmptyState
               bordered
@@ -1093,6 +1159,30 @@ export function PorteriaPage() {
 
           {historialQuery.isLoading ? (
             <ListSkeleton rows={5} />
+          ) : historialQuery.isError ? (
+            <EmptyState
+              bordered
+              className="border-destructive/30 bg-destructive/5"
+              icon={<AlertTriangle className="size-5.5 text-destructive" />}
+              title="No se pudo cargar el historial de portería"
+              description={getErrorMessage(historialQuery.error)}
+              action={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={historialQuery.isFetching}
+                  onClick={() => void historialQuery.refetch()}
+                >
+                  <RefreshCw
+                    className={cn(
+                      "mr-1.5 size-4",
+                      historialQuery.isFetching && "animate-spin"
+                    )}
+                  />
+                  Reintentar
+                </Button>
+              }
+            />
           ) : historialList.length === 0 ? (
             <EmptyState
               bordered
@@ -1170,6 +1260,67 @@ export function PorteriaPage() {
         }}
         registro={llegadaTarget}
       />
+
+      <AlertDialog
+        open={Boolean(anularTarget)}
+        onOpenChange={(open) => {
+          if (!open && !anularMutation.isPending) {
+            setAnularTarget(null)
+            setMotivoAnulacion("")
+          }
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive">
+              <AlertTriangle />
+            </AlertDialogMedia>
+            <AlertDialogTitle>
+              Anular registro {anularTarget?.numero ?? ""}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              El registro pasará a estado anulado y dejará de figurar como movimiento en curso. Puedes indicar un motivo de anulación.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="porteria-motivo-anulacion" className="text-xs font-medium">
+              Motivo de anulación{" "}
+              <span className="font-normal text-muted-foreground">(opcional)</span>
+            </Label>
+            <Textarea
+              id="porteria-motivo-anulacion"
+              rows={3}
+              maxLength={500}
+              placeholder="Ej. Registro duplicado o datos ingresados por error..."
+              value={motivoAnulacion}
+              onChange={(e) => setMotivoAnulacion(e.target.value)}
+              disabled={anularMutation.isPending}
+              className="resize-none text-xs"
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={anularMutation.isPending}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={anularMutation.isPending}
+              onClick={() => void handleConfirmAnular()}
+            >
+              {anularMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                  Anulando…
+                </>
+              ) : (
+                "Anular registro"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   )
 }

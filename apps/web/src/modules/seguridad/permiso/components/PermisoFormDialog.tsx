@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { KeyRound, Loader2, Save, Sparkles } from "lucide-react"
 
@@ -43,7 +43,17 @@ type PermisoFormDialogProps = {
   onSuccess?: (permiso: Permiso) => void
 }
 
-export function PermisoFormDialog({
+export function PermisoFormDialog(props: PermisoFormDialogProps) {
+  if (!props.open) return null
+  return (
+    <PermisoFormDialogContent
+      key={`${props.menuId}-${props.permiso?.id ?? "new"}`}
+      {...props}
+    />
+  )
+}
+
+function PermisoFormDialogContent({
   open,
   onOpenChange,
   menuId,
@@ -121,30 +131,6 @@ export function PermisoFormDialog({
       }
     },
   })
-
-  // Synchronize form values whenever the dialog opens
-  useEffect(() => {
-    if (open) {
-      setFormError(null)
-      if (permiso) {
-        form.setFieldValue("menuId", permiso.menuId)
-        form.setFieldValue("codigo", permiso.codigo)
-        form.setFieldValue("nombre", permiso.nombre)
-        form.setFieldValue("descripcion", permiso.descripcion ?? "")
-        form.setFieldValue("metodoHttp", permiso.metodoHttp)
-        form.setFieldValue("ruta", permiso.ruta)
-        form.setFieldValue("activo", permiso.activo)
-      } else {
-        form.setFieldValue("menuId", menuId)
-        form.setFieldValue("codigo", "")
-        form.setFieldValue("nombre", "")
-        form.setFieldValue("descripcion", "")
-        form.setFieldValue("metodoHttp", "GET")
-        form.setFieldValue("ruta", suggestedRoute)
-        form.setFieldValue("activo", true)
-      }
-    }
-  }, [open, permiso, menuId, suggestedRoute])
 
   const isPending = createMutation.isPending || updateMutation.isPending
 

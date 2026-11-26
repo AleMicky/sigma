@@ -35,6 +35,7 @@ import java.util.UUID;
         description = "Administración y sincronización de roles del sistema"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize("hasRole('ADMIN')")
 public class RolController {
 
     private final RolService rolService;

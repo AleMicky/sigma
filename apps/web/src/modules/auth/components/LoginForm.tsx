@@ -1,9 +1,9 @@
 import { useState, type ComponentProps } from "react"
 import { useForm } from "@tanstack/react-form"
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate, useSearch } from "@tanstack/react-router"
 import { Eye, EyeOff, User, Lock, ArrowRight, Loader2, AlertCircle } from "lucide-react"
 
-import { appConfig, routes } from "@/app/config"
+import { appConfig } from "@/app/config"
 import { Button } from "@/shared/components/ui/button"
 import {
   Field,
@@ -16,6 +16,7 @@ import { Input } from "@/shared/components/ui/input"
 import { isApiError } from "@/shared/api"
 import { cn } from "@/shared/lib/utils"
 import { useLogin } from "../api/auth.mutations"
+import { sanitizeRedirectPath } from "../lib/redirect"
 import { defaultLoginValues, loginSchema } from "../schemas/login.schema"
 
 export function LoginForm({
@@ -23,6 +24,7 @@ export function LoginForm({
   ...props
 }: ComponentProps<"div">) {
   const navigate = useNavigate()
+  const { redirect: redirectParam } = useSearch({ from: "/login" })
   const loginMutation = useLogin()
   const [formError, setFormError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -41,7 +43,8 @@ export function LoginForm({
           password: value.password,
         })
 
-        await navigate({ to: routes.home })
+        const targetPath = sanitizeRedirectPath(redirectParam)
+        await navigate({ href: targetPath, replace: true })
       } catch (error) {
         if (isApiError(error)) {
           setFormError(

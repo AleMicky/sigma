@@ -14,6 +14,7 @@ import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.pagination.SearchPageRequestDto;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
+import com.endecorani.sigma_api.shared.util.FlexibleLocalDateTimeParser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,6 +46,8 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class RegistroPorteriaController {
+
+    private static final ZoneId ZONA = FlexibleLocalDateTimeParser.OPERATIONAL_ZONE;
 
     private final RegistroPorteriaService service;
 
@@ -81,7 +84,7 @@ public class RegistroPorteriaController {
     @Operation(summary = "Anular un registro de portería que aún se encuentra afuera")
     public ResponseEntity<ApiResponse<RegistroPorteriaResponse>> anular(
             @PathVariable UUID id,
-            @RequestBody(required = false) AnularRegistroPorteriaRequest request
+            @Valid @RequestBody(required = false) AnularRegistroPorteriaRequest request
     ) {
         RegistroPorteriaResponse response = service.anular(id, request);
         return ResponseEntity.ok(
@@ -117,11 +120,13 @@ public class RegistroPorteriaController {
                 ? search.trim()
                 : (q != null && !q.isBlank() ? q.trim() : null);
 
-        Instant parsedFechaDesde = parseFechaDesde(
-                fechaDesde != null && !fechaDesde.isBlank() ? fechaDesde : fechaInicio
+        Instant parsedFechaDesde = parseFecha(
+                fechaDesde != null && !fechaDesde.isBlank() ? fechaDesde : fechaInicio,
+                "fechaDesde/fechaInicio", false
         );
-        Instant parsedFechaHasta = parseFechaHasta(
-                fechaHasta != null && !fechaHasta.isBlank() ? fechaHasta : fechaFin
+        Instant parsedFechaHasta = parseFecha(
+                fechaHasta != null && !fechaHasta.isBlank() ? fechaHasta : fechaFin,
+                "fechaHasta/fechaFin", true
         );
 
         return ResponseEntity.ok(
@@ -159,11 +164,13 @@ public class RegistroPorteriaController {
                 ? search.trim()
                 : (q != null && !q.isBlank() ? q.trim() : null);
 
-        Instant parsedFechaDesde = parseFechaDesde(
-                fechaDesde != null && !fechaDesde.isBlank() ? fechaDesde : fechaInicio
+        Instant parsedFechaDesde = parseFecha(
+                fechaDesde != null && !fechaDesde.isBlank() ? fechaDesde : fechaInicio,
+                "fechaDesde/fechaInicio", false
         );
-        Instant parsedFechaHasta = parseFechaHasta(
-                fechaHasta != null && !fechaHasta.isBlank() ? fechaHasta : fechaFin
+        Instant parsedFechaHasta = parseFecha(
+                fechaHasta != null && !fechaHasta.isBlank() ? fechaHasta : fechaFin,
+                "fechaHasta/fechaFin", true
         );
 
         byte[] pdfBytes = service.generarReporteBitacoraPdf(
@@ -181,7 +188,7 @@ public class RegistroPorteriaController {
         String filename = "bitacora-porteria-"
                 + (activoId != null ? activoId : "todos")
                 + "-"
-                + LocalDate.now()
+                + LocalDate.now(ZONA)
                 + ".pdf";
 
         HttpHeaders headers = new HttpHeaders();
@@ -216,8 +223,8 @@ public class RegistroPorteriaController {
                 ? search.trim()
                 : (q != null && !q.isBlank() ? q.trim() : (pageRequest != null ? pageRequest.getSearchTerm() : null));
 
-        Instant parsedFechaDesde = parseFechaDesde(fechaDesde);
-        Instant parsedFechaHasta = parseFechaHasta(fechaHasta);
+        Instant parsedFechaDesde = parseFecha(fechaDesde, "fechaDesde", false);
+        Instant parsedFechaHasta = parseFecha(fechaHasta, "fechaHasta", true);
 
         PageRequestDto effectivePageRequest = pageRequest != null
                 ? pageRequest.toPageRequest()
@@ -230,11 +237,17 @@ public class RegistroPorteriaController {
         );
     }
 
-    private Instant parseFechaDesde(String str) {
-        if (str == null || str.isBlank()) {
+    /**
+     * Interpreta los filtros de fecha en la zona operacional {@code America/La_Paz}.
+     * Una fecha inválida se rechaza con {@code IllegalArgumentException}, que el
+     * manejador global traduce a HTTP 400; nunca se devuelve {@code null} porque
+     * eso silenciaría el filtro y mostraría todos los registros.
+     */
+    private Instant parseFecha(String valor, String nombreParametro, boolean finDelDia) {
+        if (valor == null || valor.isBlank()) {
             return null;
         }
-        String s = str.trim();
+        String s = valor.trim();
         try {
             return Instant.parse(s);
         } catch (DateTimeParseException ignored) {
@@ -244,38 +257,18 @@ public class RegistroPorteriaController {
         } catch (DateTimeParseException ignored) {
         }
         try {
-            return LocalDateTime.parse(s).atZone(ZoneId.systemDefault()).toInstant();
+            return LocalDateTime.parse(s).atZone(ZONA).toInstant();
         } catch (DateTimeParseException ignored) {
         }
         try {
-            return LocalDate.parse(s).atStartOfDay(ZoneId.systemDefault()).toInstant();
+            LocalDate fecha = LocalDate.parse(s);
+            return (finDelDia ? fecha.atTime(LocalTime.MAX) : fecha.atStartOfDay())
+                    .atZone(ZONA)
+                    .toInstant();
         } catch (DateTimeParseException ignored) {
         }
-        return null;
-    }
-
-    private Instant parseFechaHasta(String str) {
-        if (str == null || str.isBlank()) {
-            return null;
-        }
-        String s = str.trim();
-        try {
-            return Instant.parse(s);
-        } catch (DateTimeParseException ignored) {
-        }
-        try {
-            return OffsetDateTime.parse(s).toInstant();
-        } catch (DateTimeParseException ignored) {
-        }
-        try {
-            return LocalDateTime.parse(s).atZone(ZoneId.systemDefault()).toInstant();
-        } catch (DateTimeParseException ignored) {
-        }
-        try {
-            return LocalDate.parse(s).atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
-        } catch (DateTimeParseException ignored) {
-        }
-        return null;
+        throw new IllegalArgumentException(
+                "El parámetro '%s' no tiene un formato de fecha válido".formatted(nombreParametro));
     }
 
     @GetMapping("/{id}")

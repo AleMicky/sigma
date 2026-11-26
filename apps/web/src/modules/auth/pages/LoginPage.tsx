@@ -109,7 +109,7 @@ export function LoginPage() {
             <main className="relative flex flex-col justify-between bg-background px-6 py-8 md:px-16 lg:px-20 lg:py-12">
                 <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,oklch(var(--color-primary)/0.08),transparent_70%)]"
+                    className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,color-mix(in_oklab,var(--color-primary)_8%,transparent),transparent_70%)]"
                 />
 
                 {/* Top Actions: Mobile Brand & Theme Switcher */}

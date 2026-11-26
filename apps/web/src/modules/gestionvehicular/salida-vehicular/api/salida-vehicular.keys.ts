@@ -7,7 +7,9 @@ export const salidaVehicularKeys = {
     [...salidaVehicularKeys.lists(), filters] as const,
   activas: () => [...salidaVehicularKeys.all, "activas"] as const,
   misSalidas: (params?: Record<string, unknown>) =>
-    [...salidaVehicularKeys.all, "mis-salidas", params] as const,
+    params !== undefined
+      ? ([...salidaVehicularKeys.all, "mis-salidas", params] as const)
+      : ([...salidaVehicularKeys.all, "mis-salidas"] as const),
   details: () => [...salidaVehicularKeys.all, "detail"] as const,
   detail: (id: string) => [...salidaVehicularKeys.details(), id] as const,
 

@@ -94,11 +94,13 @@ export function UbicacionMapPicker({
 }: UbicacionMapPickerProps) {
   const mapRef = useRef<LeafletMap | null>(null)
 
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchOverride, setSearchOverride] = useState<string | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<NominatimResult[]>([])
   const [isLocating, setIsLocating] = useState(false)
   const [geoError, setGeoError] = useState<string | null>(null)
+
+  const searchQuery = searchOverride ?? direccion
 
   const initialCenter: [number, number] =
     latitud !== null && longitud !== null
@@ -106,13 +108,6 @@ export function UbicacionMapPicker({
       : DEFAULT_MAP_CENTER
 
   const initialZoom = latitud !== null && longitud !== null ? 14 : DEFAULT_MAP_ZOOM
-
-  // Automatically sync search query with direccion prop when user clicks "Buscar dirección"
-  useEffect(() => {
-    if (direccion && !searchQuery) {
-      setSearchQuery(direccion)
-    }
-  }, [direccion, searchQuery])
 
   // Get current device GPS location using browser navigator.geolocation
   function handleUseMyLocation() {
@@ -195,7 +190,7 @@ export function UbicacionMapPicker({
             <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchOverride(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault()
@@ -209,7 +204,7 @@ export function UbicacionMapPicker({
               <button
                 type="button"
                 onClick={() => {
-                  setSearchQuery("")
+                  setSearchOverride("")
                   setSearchResults([])
                 }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"

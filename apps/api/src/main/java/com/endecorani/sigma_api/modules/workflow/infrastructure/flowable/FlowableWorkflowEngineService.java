@@ -430,9 +430,24 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
         }
         try {
             flowableClient.cancelarProceso(processInstanceId, motivo);
-        } catch (Exception ex) {
-            // Ignorar o registrar advertencia si la instancia ya finalizó o no existe en Flowable
+        } catch (RuntimeException ex) {
+            if (esProcesoNoEncontrado(ex)) {
+                return;
+            }
+            throw ex;
         }
+    }
+
+    private boolean esProcesoNoEncontrado(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current instanceof org.springframework.web.client.RestClientResponseException restEx
+                    && restEx.getStatusCode().value() == 404) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private String obtenerNombreRecurso(

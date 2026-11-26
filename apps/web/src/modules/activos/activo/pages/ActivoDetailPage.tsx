@@ -16,6 +16,7 @@ import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tip
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
 import { tipoDatoQueries } from "@/modules/parametros/tipo-dato/api/tipo-dato.queries"
 import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
+import { useCanManageActivos } from "@/modules/activos/lib/use-can-manage-activos"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -49,6 +50,7 @@ function handlePrint() {
 }
 
 export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) {
+  const canManage = useCanManageActivos()
   const [activeTab, setActiveTab] = useState<TabType>("informacion")
   const [isEditing, setIsEditing] = useState(false)
   const [isAddDocOpen, setIsAddDocOpen] = useState(false)
@@ -149,6 +151,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
   const accesorios = accesoriosQuery.data?.content ?? []
 
   function handleToggleEdit(editing: boolean) {
+    if (editing && !canManage) return
     if (editing) {
       setActiveTab("informacion")
     }
@@ -241,6 +244,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
             handleOpenAddDocument()
           }}
           onCambiarEstado={() => setIsCambiarEstadoOpen(true)}
+          canManage={canManage}
         />
 
         {/* Tab Navigation Toolbar */}
@@ -273,6 +277,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
             isEditing={isEditing}
             onToggleEdit={handleToggleEdit}
             onOpenAddDocument={handleOpenAddDocument}
+            canManage={canManage}
           />
         )}
 
@@ -281,6 +286,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
             activoId={activo.id}
             onOpenAddDocument={handleOpenAddDocument}
             onEditDocumento={handleEditDocumento}
+            canManage={canManage}
           />
         )}
 
@@ -292,6 +298,7 @@ export function ActivoDetailPage({ activoId }: Readonly<ActivoDetailPageProps>) 
             tipoActivoId={activo.tipoActivo?.id ?? activo.tipoActivoId}
             onOpenAddAccesorio={handleOpenAddAccesorio}
             onEditAccesorio={handleEditAccesorio}
+            canManage={canManage}
           />
         )}
 

@@ -16,13 +16,93 @@ import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
 import { http } from "@/shared/api/http"
 import { cn } from "@/shared/lib/utils"
 
+interface WorkflowRestLicencia {
+  estado?: string | null
+  numeroLicencia?: string | null
+  categoriaLicencia?: string | null
+}
+
+export interface WorkflowRestRecord {
+  id?: string | number | null
+  value?: string | number | null
+  codigo?: string | null
+  placa?: string | null
+  empleadoId?: string | number | null
+  empleado?: {
+    id?: string | number | null
+    codigo?: string | null
+    nombreCompleto?: string | null
+    cargo?: string | null
+    area?: string | null
+    urlImagen?: string | null
+    foto?: string | null
+  } | null
+  personaInfo?: {
+    nombreCompleto?: string | null
+    foto?: string | null
+    fotoUrl?: string | null
+  } | null
+  personaNombreCompleto?: string | null
+  nombreCompleto?: string | null
+  denominacion?: string | null
+  nombre?: string | null
+  name?: string | null
+  username?: string | null
+  titulo?: string | null
+  descripcion?: string | null
+  label?: string | null
+  cargoInfo?: { nombre?: string | null } | null
+  cargoNombre?: string | null
+  cargo?: string | null
+  areaInfo?: { nombre?: string | null } | null
+  areaNombre?: string | null
+  area?: string | null
+  email?: string | null
+  urlImagen?: string | null
+  foto?: string | null
+  fotoUrl?: string | null
+  imagen?: string | null
+  avatar?: string | null
+  avatarUrl?: string | null
+  licencias?: WorkflowRestLicencia[] | null
+  [key: string]: unknown
+}
+
+export type WorkflowRestOption = WorkflowRestRecord | string
+
+function isWorkflowRestRecord(item: unknown): item is WorkflowRestRecord {
+  return typeof item === "object" && item !== null
+}
+
+function extractRestItems(payload: unknown): WorkflowRestOption[] {
+  if (!payload) return []
+  if (Array.isArray(payload)) return payload as WorkflowRestOption[]
+
+  if (isWorkflowRestRecord(payload)) {
+    if (Array.isArray(payload.data)) {
+      return payload.data as WorkflowRestOption[]
+    }
+    if (
+      isWorkflowRestRecord(payload.data) &&
+      Array.isArray(payload.data.content)
+    ) {
+      return payload.data.content as WorkflowRestOption[]
+    }
+    if (Array.isArray(payload.content)) {
+      return payload.content as WorkflowRestOption[]
+    }
+  }
+
+  return []
+}
+
 export type WorkflowRestSelectProps = {
   url: string
   params?: Record<string, string>
   value?: string | null
   fieldId?: string
   valueField?: string
-  onValueChange?: (value: string, item?: any | null) => void
+  onValueChange?: (value: string, item?: WorkflowRestOption | null) => void
   placeholder?: string
   disabled?: boolean
   className?: string
@@ -31,7 +111,7 @@ export type WorkflowRestSelectProps = {
   "aria-invalid"?: boolean
 }
 
-export function getItemLabel(item: any): string {
+export function getItemLabel(item: WorkflowRestOption | null | undefined): string {
   if (!item) return ""
   if (typeof item === "string") return item
 
@@ -77,8 +157,8 @@ export function getItemLabel(item: any): string {
   return `${prefix}${nombre}`
 }
 
-export function getItemImage(item: any): string | null {
-  if (!item || typeof item !== "object") return null
+export function getItemImage(item: WorkflowRestOption | null | undefined): string | null {
+  if (!isWorkflowRestRecord(item)) return null
   return (
     item.urlImagen ||
     item.foto ||
@@ -103,8 +183,8 @@ export function getItemInitials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase() || "??"
 }
 
-export function getItemSecondaryText(item: any): string | null {
-  if (!item || typeof item !== "object") return null
+export function getItemSecondaryText(item: WorkflowRestOption | null | undefined): string | null {
+  if (!isWorkflowRestRecord(item)) return null
 
   const parts: string[] = []
 
@@ -124,16 +204,23 @@ export function getItemSecondaryText(item: any): string | null {
   if (area && area !== cargo) parts.push(area)
 
   if (Array.isArray(item.licencias) && item.licencias.length > 0) {
-    const lic = item.licencias.find((l: any) => l.estado === "VIGENTE") || item.licencias[0]
+    const lic =
+      item.licencias.find((l) => l.estado === "VIGENTE") || item.licencias[0]
     if (lic?.numeroLicencia) {
-      parts.push(`Lic: ${lic.numeroLicencia}${lic.categoriaLicencia ? ` (${lic.categoriaLicencia})` : ""}`)
+      parts.push(
+        `Lic: ${lic.numeroLicencia}${lic.categoriaLicencia ? ` (${lic.categoriaLicencia})` : ""}`,
+      )
     }
   }
 
   return parts.length > 0 ? parts.join(" • ") : null
 }
 
-export function getItemId(item: any, fieldId?: string, valueField?: string): string {
+export function getItemId(
+  item: WorkflowRestOption | null | undefined,
+  fieldId?: string,
+  valueField?: string,
+): string {
   if (!item) return ""
   if (typeof item === "string") return item
 
@@ -155,6 +242,38 @@ export function getItemId(item: any, fieldId?: string, valueField?: string): str
   return String(item.id ?? item.value ?? item.codigo ?? "")
 }
 
+function getItemDisplayName(item: WorkflowRestOption): string {
+  if (typeof item === "string") return item
+  return (
+    item.empleado?.nombreCompleto ||
+    item.personaInfo?.nombreCompleto ||
+    item.personaNombreCompleto ||
+    item.nombreCompleto ||
+    item.denominacion ||
+    item.nombre ||
+    item.name ||
+    item.label ||
+    getItemLabel(item)
+  )
+}
+
+function matchesItemValue(
+  item: WorkflowRestOption,
+  value: string,
+  fieldId?: string,
+  valueField?: string,
+): boolean {
+  const idVal = getItemId(item, fieldId, valueField)
+  if (idVal === value) return true
+  if (!isWorkflowRestRecord(item)) return false
+
+  return (
+    String(item.id) === value ||
+    Boolean(item.empleadoId && String(item.empleadoId) === value) ||
+    Boolean(item.empleado?.id && String(item.empleado.id) === value)
+  )
+}
+
 export function WorkflowRestSelect({
   url,
   params = {},
@@ -173,7 +292,7 @@ export function WorkflowRestSelect({
   const debouncedSearch = useDebouncedValue(search, 300)
 
   const queryParams = React.useMemo(() => {
-    const p: Record<string, any> = {
+    const p: Record<string, string | number> = {
       page: 0,
       size: 50,
       ...params,
@@ -199,46 +318,28 @@ export function WorkflowRestSelect({
   const query = useQuery({
     queryKey: ["workflow-rest-select", normalizedUrl, queryParams],
     queryFn: async () => {
-      const data = await http.get<any>(normalizedUrl, { params: queryParams })
-      if (!data) return []
-      if (Array.isArray(data)) return data
-      if (data.data && Array.isArray(data.data)) return data.data
-      if (data.data && Array.isArray(data.data.content)) return data.data.content
-      if (Array.isArray(data.content)) return data.content
-      return []
+      const data = await http.get<unknown>(normalizedUrl, { params: queryParams })
+      return extractRestItems(data)
     },
     enabled: Boolean(normalizedUrl),
     staleTime: 1000 * 60 * 2,
   })
 
-  const items: any[] = React.useMemo(() => query.data ?? [], [query.data])
+  const items: WorkflowRestOption[] = React.useMemo(
+    () => query.data ?? [],
+    [query.data],
+  )
 
   const selectedItem = React.useMemo(() => {
     if (!value) return null
     return (
-      items.find((i) => {
-        const idVal = getItemId(i, fieldId, valueField)
-        return (
-          idVal === value ||
-          String(i.id) === value ||
-          (i.empleadoId && String(i.empleadoId) === value) ||
-          (i.empleado?.id && String(i.empleado.id) === value)
-        )
-      }) ?? null
+      items.find((i) => matchesItemValue(i, value, fieldId, valueField)) ?? null
     )
   }, [value, items, fieldId, valueField])
 
   // Si hay un valor seleccionado, mostramos card detallada con avatar/foto y opción de cambiar selección
   if (selectedItem) {
-    const rawNombre =
-      selectedItem.empleado?.nombreCompleto ||
-      selectedItem.personaInfo?.nombreCompleto ||
-      selectedItem.personaNombreCompleto ||
-      selectedItem.nombreCompleto ||
-      selectedItem.denominacion ||
-      selectedItem.nombre ||
-      selectedItem.name ||
-      getItemLabel(selectedItem)
+    const rawNombre = getItemDisplayName(selectedItem)
     const imgUrl = getItemImage(selectedItem)
     const initials = getItemInitials(rawNombre)
     const secondary = getItemSecondaryText(selectedItem)
@@ -300,10 +401,12 @@ export function WorkflowRestSelect({
     <Combobox
       items={items}
       filter={() => true}
-      itemToStringLabel={(item: any) => getItemLabel(item)}
-      itemToStringValue={(item: any) => getItemId(item, fieldId, valueField)}
+      itemToStringLabel={(item: WorkflowRestOption | null) => getItemLabel(item)}
+      itemToStringValue={(item: WorkflowRestOption | null) =>
+        getItemId(item, fieldId, valueField)
+      }
       value={null}
-      onValueChange={(val: any) => {
+      onValueChange={(val: WorkflowRestOption | null) => {
         onValueChange?.(getItemId(val, fieldId, valueField), val)
         setSearch("")
       }}
@@ -352,30 +455,22 @@ export function WorkflowRestSelect({
         </ComboboxEmpty>
 
         <ComboboxList className="max-h-56 overflow-y-auto overscroll-contain pr-1 py-1 space-y-1">
-          {(item: any) => {
-            const rawNombre =
-              item.empleado?.nombreCompleto ||
-              item.personaInfo?.nombreCompleto ||
-              item.personaNombreCompleto ||
-              item.nombreCompleto ||
-              item.denominacion ||
-              item.nombre ||
-              item.name ||
-              item.label ||
-              getItemLabel(item)
+          {(item: WorkflowRestOption) => {
+            const rawNombre = getItemDisplayName(item)
             const itemId = getItemId(item, fieldId, valueField)
             const imgUrl = getItemImage(item)
             const initials = getItemInitials(rawNombre)
             const secondary = getItemSecondaryText(item)
-            const isSelected =
-              value === itemId ||
-              String(item.id) === value ||
-              (item.empleadoId && String(item.empleadoId) === value) ||
-              (item.empleado?.id && String(item.empleado.id) === value)
+            const isSelected = Boolean(
+              value && matchesItemValue(item, value, fieldId, valueField),
+            )
+            const fallbackKey = isWorkflowRestRecord(item)
+              ? String(item.id ?? rawNombre)
+              : item
 
             return (
               <ComboboxItem
-                key={itemId || item.id}
+                key={itemId || fallbackKey}
                 value={item}
                 className="cursor-pointer py-1.5 px-2 rounded-lg hover:bg-accent/60 transition-colors flex items-center justify-between text-xs gap-2"
               >

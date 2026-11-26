@@ -135,9 +135,8 @@ export function RolMenuDetailPanel({
   onOpenDetailDialog,
 }: RolMenuDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<"menus" | "usuarios">("menus")
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [initialIds, setInitialIds] = useState<Set<string>>(new Set())
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const [selectedIdsOverride, setSelectedIdsOverride] = useState<Set<string> | null>(null)
+  const [expandedIdsOverride, setExpandedIdsOverride] = useState<Set<string> | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterMode, setFilterMode] = useState<MenuFilterMode>("all")
   const [copiedCode, setCopiedCode] = useState(false)
@@ -154,30 +153,25 @@ export function RolMenuDetailPanel({
 
   const asignarMutation = useAsignarMenusRol()
 
-  // Reset/sync state when role changes or query data arrives
-  useEffect(() => {
-    if (rol && rolMenuIdsQuery.data) {
-      const loaded = new Set(rolMenuIdsQuery.data)
-      setSelectedIds(loaded)
-      setInitialIds(loaded)
-    } else if (!rol) {
-      setSelectedIds(new Set())
-      setInitialIds(new Set())
-    }
-  }, [rol?.id, rolMenuIdsQuery.data])
-
-  // Initialize expanded nodes
-  useEffect(() => {
-    if (menuArbolQuery.data) {
-      const allIds = getAllMenuIds(menuArbolQuery.data)
-      setExpandedIds(new Set(allIds))
-    }
-  }, [menuArbolQuery.data])
-
-  const allAvailableNodes = menuArbolQuery.data ?? []
+  const allAvailableNodes = useMemo(
+    () => menuArbolQuery.data ?? [],
+    [menuArbolQuery.data],
+  )
   const allAvailableIds = useMemo(
     () => getAllMenuIds(allAvailableNodes),
     [allAvailableNodes],
+  )
+
+  const initialIds = useMemo(
+    () => new Set(rol && rolMenuIdsQuery.data ? rolMenuIdsQuery.data : []),
+    [rol, rolMenuIdsQuery.data],
+  )
+
+  const selectedIds = selectedIdsOverride ?? initialIds
+
+  const expandedIds = useMemo(
+    () => expandedIdsOverride ?? new Set(allAvailableIds),
+    [expandedIdsOverride, allAvailableIds],
   )
 
   const filteredNodes = useMemo(
@@ -196,8 +190,8 @@ export function RolMenuDetailPanel({
   }, [selectedIds.size, allAvailableIds.length])
 
   function toggleNode(nodeId: string) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev)
+    setExpandedIdsOverride((prev) => {
+      const next = new Set(prev ?? allAvailableIds)
       if (next.has(nodeId)) {
         next.delete(nodeId)
       } else {
@@ -209,8 +203,8 @@ export function RolMenuDetailPanel({
 
   function handleSelectNode(node: MenuTreeNode, checked: boolean) {
     const descendantIds = getDescendantIds(node)
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
+    setSelectedIdsOverride((prev) => {
+      const next = new Set(prev ?? initialIds)
       if (checked) {
         descendantIds.forEach((id) => next.add(id))
       } else {
@@ -221,23 +215,23 @@ export function RolMenuDetailPanel({
   }
 
   function handleSelectAll() {
-    setSelectedIds(new Set(allAvailableIds))
+    setSelectedIdsOverride(new Set(allAvailableIds))
   }
 
   function handleDeselectAll() {
-    setSelectedIds(new Set())
+    setSelectedIdsOverride(new Set())
   }
 
   function handleExpandAll() {
-    setExpandedIds(new Set(allAvailableIds))
+    setExpandedIdsOverride(new Set(allAvailableIds))
   }
 
   function handleCollapseAll() {
-    setExpandedIds(new Set())
+    setExpandedIdsOverride(new Set())
   }
 
   function handleResetChanges() {
-    setSelectedIds(new Set(initialIds))
+    setSelectedIdsOverride(null)
   }
 
   function handleCopyCode() {
@@ -254,7 +248,7 @@ export function RolMenuDetailPanel({
         id: rol.id,
         menuIds: Array.from(selectedIds),
       })
-      setInitialIds(new Set(selectedIds))
+      setSelectedIdsOverride(null)
     } catch {
       // Error toast managed by mutation
     }

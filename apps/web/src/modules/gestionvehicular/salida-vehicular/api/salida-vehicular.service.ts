@@ -1,4 +1,4 @@
-import { http } from "@/shared/api"
+import { http, openPdfInNewTab } from "@/shared/api"
 import type { PageParams, PageResponse } from "@/shared/types/api.types"
 
 import { salidaVehicularEndpoints } from "./salida-vehicular.endpoints"
@@ -228,14 +228,9 @@ export const abrirReporteSalidasBitacoraPdf = async (
     queryParams.search = params.search.trim()
   }
 
-  const blob = await http.get<Blob>(salidaVehicularEndpoints.reportes.pdf, {
-    params: queryParams,
-    responseType: "blob",
-    headers: {
-      Accept: "application/pdf",
-    },
-  })
-
-  const url = window.URL.createObjectURL(blob)
-  window.open(url, "_blank")
+  await openPdfInNewTab(
+    salidaVehicularEndpoints.reportes.pdf,
+    `bitacora-salidas-${params.fechaDesde}_${params.fechaHasta}.pdf`,
+    queryParams,
+  )
 }

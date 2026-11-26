@@ -28,6 +28,18 @@ public class CorrelativoRepositoryImpl implements CorrelativoRepository {
     }
 
     @Override
+    public int insertIfAbsent(Correlativo correlativo) {
+        return repository.insertIfAbsent(
+                correlativo.getId(),
+                correlativo.getCodigo(),
+                correlativo.getGestion(),
+                correlativo.getUltimoNumero(),
+                correlativo.getPrefijo(),
+                correlativo.getLongitud()
+        );
+    }
+
+    @Override
     public Optional<Correlativo> findById(UUID id) {
         return repository.findById(id).map(mapper::toDomain);
     }

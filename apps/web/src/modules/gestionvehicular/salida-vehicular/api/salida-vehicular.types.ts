@@ -1,4 +1,5 @@
 import type { PageParams } from "@/shared/types/api.types"
+import type { VehiculoAtributo } from "../../vehiculo/api/vehiculo.types"
 
 export interface SalidaVehicular {
   id: string
@@ -6,9 +7,11 @@ export interface SalidaVehicular {
   activoId: string
   activoCodigo?: string | null
   activoDescripcion?: string | null
+  urlImagen?: string | null
   placa?: string | null
   marca?: string | null
   modelo?: string | null
+  atributos?: VehiculoAtributo[] | null
   empleadoId: string
   empleadoCodigo?: string | null
   empleadoNombre?: string | null

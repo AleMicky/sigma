@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
+import { getErrorMessage } from "@/shared/api"
+
 import { incidenteKeys } from "./incidente.keys"
 import {
   actualizarIncidente,
@@ -31,8 +33,8 @@ export const useRegistrarIncidenteMutation = () => {
       toast.success("Incidente registrado exitosamente")
       queryClient.invalidateQueries({ queryKey: incidenteKeys.lists() })
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Error al registrar el incidente")
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -48,8 +50,8 @@ export const useActualizarIncidenteMutation = () => {
       queryClient.invalidateQueries({ queryKey: incidenteKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: incidenteKeys.lists() })
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Error al actualizar el incidente")
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -66,8 +68,8 @@ export const useCancelarIncidenteMutation = () => {
       queryClient.invalidateQueries({ queryKey: incidenteKeys.lists() })
       queryClient.invalidateQueries({ queryKey: incidenteKeys.tareaActual(id) })
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Error al cancelar el incidente")
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -93,8 +95,8 @@ export const useEjecutarAccionIncidenteMutation = () => {
       queryClient.invalidateQueries({ queryKey: incidenteKeys.acciones(id) })
       queryClient.invalidateQueries({ queryKey: incidenteKeys.historial(id) })
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Error al ejecutar la acción de flujo")
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -111,8 +113,8 @@ export const useRegistrarInvolucradoMutation = (incidenteId: string) => {
       queryClient.invalidateQueries({ queryKey: incidenteKeys.involucrados(incidenteId) })
       queryClient.invalidateQueries({ queryKey: incidenteKeys.detail(incidenteId) })
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Error al agregar involucrado")
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -133,8 +135,8 @@ export const useActualizarInvolucradoMutation = (incidenteId: string) => {
       queryClient.invalidateQueries({ queryKey: incidenteKeys.involucrados(incidenteId) })
       queryClient.invalidateQueries({ queryKey: incidenteKeys.detail(incidenteId) })
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Error al actualizar involucrado")
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -149,8 +151,8 @@ export const useEliminarInvolucradoMutation = (incidenteId: string) => {
       queryClient.invalidateQueries({ queryKey: incidenteKeys.involucrados(incidenteId) })
       queryClient.invalidateQueries({ queryKey: incidenteKeys.detail(incidenteId) })
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Error al eliminar involucrado")
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -166,8 +168,8 @@ export const useSubirEvidenciaMutation = (incidenteId: string) => {
       queryClient.invalidateQueries({ queryKey: incidenteKeys.evidencias(incidenteId) })
       queryClient.invalidateQueries({ queryKey: incidenteKeys.detail(incidenteId) })
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Error al subir la evidencia")
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -182,9 +184,8 @@ export const useEliminarEvidenciaMutation = (incidenteId: string) => {
       queryClient.invalidateQueries({ queryKey: incidenteKeys.evidencias(incidenteId) })
       queryClient.invalidateQueries({ queryKey: incidenteKeys.detail(incidenteId) })
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Error al eliminar la evidencia")
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error))
     },
   })
 }
-

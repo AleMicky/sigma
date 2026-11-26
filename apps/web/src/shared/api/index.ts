@@ -11,6 +11,7 @@ export {
     fetchAuthenticatedBlob,
     isBrowserViewable,
     openOrDownloadProtectedFile,
+    openPdfInNewTab,
     toApiRelativePath,
     uploadImage,
 } from "./files";
@@ -25,6 +26,7 @@ export {
 
 export type {
     ApiErrorResponse,
+    ApiFieldValidationError,
     ApiValidationError,
 } from "./errors";
 

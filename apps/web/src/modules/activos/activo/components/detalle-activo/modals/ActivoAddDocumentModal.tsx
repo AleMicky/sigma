@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   Calendar,
@@ -105,7 +105,17 @@ function getFileFormatMeta(fileName: string, mimeType?: string | null) {
   }
 }
 
-export function ActivoAddDocumentModal({
+export function ActivoAddDocumentModal(props: ActivoAddDocumentModalProps) {
+  if (!props.open) return null
+  return (
+    <ActivoAddDocumentModalContent
+      key={props.itemToEdit?.id ?? "new"}
+      {...props}
+    />
+  )
+}
+
+function ActivoAddDocumentModalContent({
   open,
   onOpenChange,
   activoId,
@@ -130,12 +140,22 @@ export function ActivoAddDocumentModal({
   })
   const tiposDocumento = tiposDocumentoQuery.data?.content ?? []
 
-  const [tipoDocumentoId, setTipoDocumentoId] = useState("")
-  const [nombre, setNombre] = useState("")
-  const [numeroDocumento, setNumeroDocumento] = useState("")
-  const [descripcion, setDescripcion] = useState("")
-  const [fechaEmision, setFechaEmision] = useState("")
-  const [fechaVencimiento, setFechaVencimiento] = useState("")
+  const [tipoDocumentoId, setTipoDocumentoId] = useState(
+    () => itemToEdit?.tipoDocumentoId || "",
+  )
+  const [nombre, setNombre] = useState(() => itemToEdit?.nombre || "")
+  const [numeroDocumento, setNumeroDocumento] = useState(
+    () => itemToEdit?.numeroDocumento ?? "",
+  )
+  const [descripcion, setDescripcion] = useState(
+    () => itemToEdit?.descripcion ?? "",
+  )
+  const [fechaEmision, setFechaEmision] = useState(
+    () => itemToEdit?.fechaEmision ?? "",
+  )
+  const [fechaVencimiento, setFechaVencimiento] = useState(
+    () => itemToEdit?.fechaVencimiento ?? "",
+  )
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -158,22 +178,6 @@ export function ActivoAddDocumentModal({
       fileInputRef.current.value = ""
     }
   }
-
-  useEffect(() => {
-    if (open) {
-      if (itemToEdit) {
-        setTipoDocumentoId(itemToEdit.tipoDocumentoId || "")
-        setNombre(itemToEdit.nombre || "")
-        setNumeroDocumento(itemToEdit.numeroDocumento ?? "")
-        setDescripcion(itemToEdit.descripcion ?? "")
-        setFechaEmision(itemToEdit.fechaEmision ?? "")
-        setFechaVencimiento(itemToEdit.fechaVencimiento ?? "")
-        setSelectedFile(null)
-      } else {
-        resetForm()
-      }
-    }
-  }, [open, itemToEdit])
 
   const isPending =
     createMutation.isPending ||

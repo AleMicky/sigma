@@ -6,6 +6,7 @@ import { Button } from "@/shared/components/ui/button"
 type ActivoHeaderProps = {
   totalActivos?: number
   onCreate: () => void
+  canManage?: boolean
   onRefresh?: () => void
   isRefreshing?: boolean
   queries?: QueryLike | QueryLike[]
@@ -14,6 +15,7 @@ type ActivoHeaderProps = {
 export function ActivoHeader({
   totalActivos,
   onCreate,
+  canManage = false,
   onRefresh,
   isRefreshing,
   queries,
@@ -36,15 +38,17 @@ export function ActivoHeader({
               isRefreshing={isRefreshing}
               queries={queries}
             />
-            <Button
-              size="sm"
-              type="button"
-              onClick={onCreate}
-              className="shrink-0"
-            >
-              <Plus className="size-4" />
-              <span className="sr-only sm:not-sr-only">Crear</span>
-            </Button>
+            {canManage ? (
+              <Button
+                size="sm"
+                type="button"
+                onClick={onCreate}
+                className="shrink-0"
+              >
+                <Plus className="size-4" />
+                <span className="sr-only sm:not-sr-only">Crear</span>
+              </Button>
+            ) : null}
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -58,15 +62,17 @@ export function ActivoHeader({
           isRefreshing={isRefreshing}
           queries={queries}
         />
-        <Button
-          size="sm"
-          type="button"
-          onClick={onCreate}
-          className="shadow-xs font-medium"
-        >
-          <Plus className="size-4" />
-          Nuevo Activo
-        </Button>
+        {canManage ? (
+          <Button
+            size="sm"
+            type="button"
+            onClick={onCreate}
+            className="shadow-xs font-medium"
+          >
+            <Plus className="size-4" />
+            Nuevo Activo
+          </Button>
+        ) : null}
       </div>
     </header>
   )

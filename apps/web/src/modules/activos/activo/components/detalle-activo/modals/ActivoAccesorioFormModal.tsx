@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Layers, Loader2, Minus, Plus, Tag } from "lucide-react"
 
@@ -40,7 +40,17 @@ type ActivoAccesorioFormModalProps = {
   itemToEdit?: ActivoAccesorio | null
 }
 
-export function ActivoAccesorioFormModal({
+export function ActivoAccesorioFormModal(props: ActivoAccesorioFormModalProps) {
+  if (!props.open) return null
+  return (
+    <ActivoAccesorioFormModalContent
+      key={props.itemToEdit?.id ?? "new"}
+      {...props}
+    />
+  )
+}
+
+function ActivoAccesorioFormModalContent({
   open,
   onOpenChange,
   activoId,
@@ -52,10 +62,16 @@ export function ActivoAccesorioFormModal({
   const createMutation = useCreateActivoAccesorio()
   const updateMutation = useUpdateActivoAccesorio()
 
-  const [accesorioId, setAccesorioId] = useState("")
-  const [cantidad, setCantidad] = useState(1)
-  const [numeroSerie, setNumeroSerie] = useState("")
-  const [observacion, setObservacion] = useState("")
+  const [accesorioId, setAccesorioId] = useState(
+    () => itemToEdit?.accesorio?.id ?? "",
+  )
+  const [cantidad, setCantidad] = useState(() => itemToEdit?.cantidad || 1)
+  const [numeroSerie, setNumeroSerie] = useState(
+    () => itemToEdit?.numeroSerie ?? "",
+  )
+  const [observacion, setObservacion] = useState(
+    () => itemToEdit?.observacion ?? "",
+  )
 
   // Fetch accessories
   const accesoriosQuery = useQuery({
@@ -92,23 +108,6 @@ export function ActivoAccesorioFormModal({
     () => accesoriosList.find((acc) => acc.id === accesorioId) ?? null,
     [accesoriosList, accesorioId],
   )
-
-  // Prefill when editing or opening
-  useEffect(() => {
-    if (open) {
-      if (itemToEdit) {
-        setAccesorioId(itemToEdit.accesorio?.id ?? "")
-        setCantidad(itemToEdit.cantidad || 1)
-        setNumeroSerie(itemToEdit.numeroSerie ?? "")
-        setObservacion(itemToEdit.observacion ?? "")
-      } else {
-        setAccesorioId("")
-        setCantidad(1)
-        setNumeroSerie("")
-        setObservacion("")
-      }
-    }
-  }, [open, itemToEdit])
 
   const isPending = createMutation.isPending || updateMutation.isPending
 

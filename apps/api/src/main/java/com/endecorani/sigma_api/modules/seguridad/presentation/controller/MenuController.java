@@ -41,7 +41,7 @@ import java.util.UUID;
         description = "Administración de menús con jerarquía recursiva"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasRole('ADMIN')")
 public class MenuController {
 
     private final MenuService menuService;

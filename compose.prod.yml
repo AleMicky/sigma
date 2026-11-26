@@ -10,29 +10,55 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8080
-      DB_HOST: ${DB_HOST}
+      DB_HOST: ${DB_HOST:?DB_HOST es requerida}
       DB_PORT: ${DB_PORT:-5432}
-      DB_NAME: ${DB_NAME}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
-      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_ISSUER_URI}
-      KEYCLOAK_TOKEN_URL: ${KEYCLOAK_TOKEN_URL}
-      KEYCLOAK_LOGOUT_URL: ${KEYCLOAK_LOGOUT_URL}
-      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      DB_NAME: ${DB_NAME:?DB_NAME es requerida}
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME es requerida}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD es requerida}
+      DB_SSL_MODE: ${DB_SSL_MODE:-require}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS es requerida}
+      KEYCLOAK_BASE_URL: ${KEYCLOAK_BASE_URL:-}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-}
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_ISSUER_URI:?KEYCLOAK_ISSUER_URI es requerida}
+      KEYCLOAK_TOKEN_URL: ${KEYCLOAK_TOKEN_URL:?KEYCLOAK_TOKEN_URL es requerida}
+      KEYCLOAK_LOGOUT_URL: ${KEYCLOAK_LOGOUT_URL:?KEYCLOAK_LOGOUT_URL es requerida}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:?KEYCLOAK_CLIENT_ID es requerida}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?KEYCLOAK_CLIENT_SECRET es requerida}
       KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-sigma-api}
-      FLOWABLE_BASE_URL: ${FLOWABLE_BASE_URL:-http://157.173.99.216:8089/flowable-rest/service}
-      FLOWABLE_USERNAME: ${FLOWABLE_USERNAME:-admin}
-      FLOWABLE_PASSWORD: ${FLOWABLE_PASSWORD}
+      FLOWABLE_BASE_URL: ${FLOWABLE_BASE_URL:?FLOWABLE_BASE_URL es requerida}
+      FLOWABLE_USERNAME: ${FLOWABLE_USERNAME:?FLOWABLE_USERNAME es requerida}
+      FLOWABLE_PASSWORD: ${FLOWABLE_PASSWORD:?FLOWABLE_PASSWORD es requerida}
+
+      # Almacenamiento de archivos
+      STORAGE_BASE_DIR: ${STORAGE_BASE_DIR:-./uploads}
+      STORAGE_MAX_FILE_SIZE: ${STORAGE_MAX_FILE_SIZE:-20MB}
+      STORAGE_MAX_REQUEST_SIZE: ${STORAGE_MAX_REQUEST_SIZE:-20MB}
+      STORAGE_MAX_FILE_SIZE_BYTES: ${STORAGE_MAX_FILE_SIZE_BYTES:-5242880}
+      DOCUMENTS_MAX_FILE_SIZE_BYTES: ${DOCUMENTS_MAX_FILE_SIZE_BYTES:-20971520}
 
       JAVA_OPTS: "-Xms256m -Xmx512m"
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/v3/api-docs > /dev/null || exit 1" ]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' || exit 1"]
       interval: 30s
-      timeout: 20s
+      timeout: 10s
       retries: 5
       start_period: 120s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
     volumes:
       - sigma_uploads:/app/uploads
     networks:
@@ -46,12 +72,34 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_URL: ${VITE_API_URL:?VITE_API_URL es requerida}
         VITE_APP_NAME: ${VITE_APP_NAME:-SIGMA}
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+
     networks:
       infraestructura-network:
         aliases:
