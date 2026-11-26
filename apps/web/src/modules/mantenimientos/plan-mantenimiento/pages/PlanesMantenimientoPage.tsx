@@ -79,7 +79,10 @@ export function PlanesMantenimientoPage() {
     }),
   )
 
-  const planesMantenimiento = planesMantenimientoQuery.data?.content ?? []
+  const planesMantenimiento = useMemo(
+    () => planesMantenimientoQuery.data?.content ?? [],
+    [planesMantenimientoQuery.data?.content],
+  )
 
   // Mantener actualizado el plan seleccionado en el drawer si cambia en la lista
   const activePlanInDrawer = useMemo(() => {

@@ -1,9 +1,11 @@
 package com.endecorani.sigma_api.modules.activos.application.service;
 
 import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResumenResponse;
 import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
+import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoResumenProjection;
 import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoRepository;
 import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.CambiarEstadoOperativoRequest;
@@ -143,14 +145,46 @@ public class ActivoService {
             UUID tipoActivoId,
             Boolean activo,
             PageRequestDto pageRequest) {
+        return findAll(query, tipoActivoId, null, activo, pageRequest);
+    }
+
+    /** REQ-BIZ-006: listado con ubicación aplicada en servidor. */
+    @Transactional(readOnly = true)
+    public PageResponse<ActivoResponse> findAll(
+            String query,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo,
+            PageRequestDto pageRequest) {
         String normalized = StringUtils.normalize(query);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
 
         Page<Activo> page = (normalized == null)
-                ? activoRepository.findAllFiltered(tipoActivoId, activo, pageable)
-                : activoRepository.searchFiltered(normalized, tipoActivoId, activo, pageable);
+                ? activoRepository.findAllFiltered(tipoActivoId, ubicacionId, activo, pageable)
+                : activoRepository.searchFiltered(normalized, tipoActivoId, ubicacionId, activo, pageable);
 
         return toPageResponse(page);
+    }
+
+    /** REQ-BIZ-006: KPIs agregados con exactamente los mismos filtros del listado. */
+    @Transactional(readOnly = true)
+    public ActivoResumenResponse resumen(
+            String query,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo) {
+        ActivoResumenProjection projection = activoRepository.summarize(
+                StringUtils.normalize(query),
+                tipoActivoId,
+                ubicacionId,
+                activo
+        );
+        return new ActivoResumenResponse(
+                projection.getTotal(),
+                projection.getDeBaja(),
+                projection.getEnMantenimiento(),
+                projection.getOperativos()
+        );
     }
 
     @Transactional(readOnly = true)

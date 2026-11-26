@@ -22,6 +22,10 @@ import {
 } from "@/shared/components/ui/select"
 
 import {
+  ESTADOS_PORTERIA,
+  TIPOS_PASE_PORTERIA,
+} from "../lib/reporte-bitacora.constants"
+import {
   ReporteVehiculoCombobox,
   type ReporteVehiculoItemData,
 } from "../../salida-vehicular/components/ReporteVehiculoCombobox"
@@ -55,19 +59,6 @@ export interface ReporteBitacoraPorteriaFiltrosBarProps {
   onTipoPaseChange: (tipo: string) => void
   onLimpiarFiltros: () => void
 }
-
-export const ESTADOS_PORTERIA = [
-  { value: "TODOS", label: "Todos los estados" },
-  { value: "AFUERA", label: "● Afuera (En curso)" },
-  { value: "COMPLETADO", label: "● Completado (Retornó)" },
-  { value: "ANULADO", label: "● Anulado" },
-]
-
-export const TIPOS_PASE_PORTERIA = [
-  { value: "TODOS", label: "Todos (Internos y Externos)" },
-  { value: "INTERNO", label: "Personal Interno" },
-  { value: "EXTERNO", label: "Visitas / Externos" },
-]
 
 export function ReporteBitacoraPorteriaFiltrosBar({
   searchQuery,

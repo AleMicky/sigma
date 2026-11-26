@@ -10,7 +10,7 @@ import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
-import { useSolicitudFormContext } from "../../context/solicitud-form.context"
+import { useSolicitudFormContext } from "../../context/solicitud-form.context-state"
 
 export function SolicitudTecnicaSection() {
   const {

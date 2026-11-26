@@ -47,7 +47,10 @@ export function CategoriasInsumoPage() {
     }),
   )
 
-  const tiposInsumo = tiposInsumoQuery.data?.content ?? []
+  const tiposInsumo = useMemo(
+    () => tiposInsumoQuery.data?.content ?? [],
+    [tiposInsumoQuery.data?.content],
+  )
 
   const tiposInsumoMap = useMemo(() => {
     const map = new Map<string, { nombre: string; codigo: string }>()

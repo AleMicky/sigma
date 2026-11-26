@@ -4,7 +4,7 @@ import { ArrowLeft, Wrench } from "lucide-react"
 import { routes } from "@/app/config/routes"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
-import { useSolicitudFormContext } from "../../context/solicitud-form.context"
+import { useSolicitudFormContext } from "../../context/solicitud-form.context-state"
 import { getEstadoBadgeVariant } from "../../lib/solicitud.utils"
 
 type SolicitudFormHeaderProps = {

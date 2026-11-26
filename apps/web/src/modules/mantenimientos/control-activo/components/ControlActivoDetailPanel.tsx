@@ -38,7 +38,7 @@ import {
   type ControlActivo,
   type ControlActivoDetalle,
 } from "../api/control-activo.service"
-import { formatEstadoLabel } from "./ControlActivoMasterPanel"
+import { formatEstadoLabel } from "../lib/control-activo.utils"
 
 type ControlActivoDetailPanelProps = {
   solicitud: SolicitudMantenimiento | null
@@ -66,7 +66,10 @@ export function ControlActivoDetailPanel({
     enabled: Boolean(solicitud?.id),
   })
 
-  const controlesList = (controlesQuery.data ?? []) as ControlActivo[]
+  const controlesList = useMemo(
+    () => (controlesQuery.data ?? []) as ControlActivo[],
+    [controlesQuery.data],
+  )
 
   // Selected or active ControlActivo
   const currentControl = useMemo(() => {

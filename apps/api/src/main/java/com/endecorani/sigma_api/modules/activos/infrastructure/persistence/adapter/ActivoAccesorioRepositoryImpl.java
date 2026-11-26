@@ -117,4 +117,22 @@ public class ActivoAccesorioRepositoryImpl implements ActivoAccesorioRepository 
     ) {
         return springRepository.existsByActivoIdAndAccesorioIdAndIdNot(activoId, accesorioId, id);
     }
+
+    @Override
+    public boolean existsByAccesorioIdAndNumeroSerie(UUID accesorioId, String numeroSerieNormalizado) {
+        return springRepository.existsByAccesorioIdAndNumeroSerie(accesorioId, numeroSerieNormalizado);
+    }
+
+    @Override
+    public boolean existsByAccesorioIdAndNumeroSerieAndIdNot(
+            UUID accesorioId,
+            String numeroSerieNormalizado,
+            UUID id
+    ) {
+        return springRepository.existsByAccesorioIdAndNumeroSerieAndIdNot(
+                accesorioId,
+                numeroSerieNormalizado,
+                id
+        );
+    }
 }

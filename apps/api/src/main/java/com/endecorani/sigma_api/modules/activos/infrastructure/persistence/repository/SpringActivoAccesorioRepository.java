@@ -57,4 +57,30 @@ public interface SpringActivoAccesorioRepository
             UUID accesorioId,
             UUID id
     );
+
+    @Query("""
+            select count(aa) > 0
+            from ActivoAccesorioEntity aa
+            where aa.accesorio.id = :accesorioId
+              and aa.numeroSerie is not null
+              and upper(trim(aa.numeroSerie)) = :numeroSerieNormalizado
+            """)
+    boolean existsByAccesorioIdAndNumeroSerie(
+            @Param("accesorioId") UUID accesorioId,
+            @Param("numeroSerieNormalizado") String numeroSerieNormalizado
+    );
+
+    @Query("""
+            select count(aa) > 0
+            from ActivoAccesorioEntity aa
+            where aa.accesorio.id = :accesorioId
+              and aa.id <> :id
+              and aa.numeroSerie is not null
+              and upper(trim(aa.numeroSerie)) = :numeroSerieNormalizado
+            """)
+    boolean existsByAccesorioIdAndNumeroSerieAndIdNot(
+            @Param("accesorioId") UUID accesorioId,
+            @Param("numeroSerieNormalizado") String numeroSerieNormalizado,
+            @Param("id") UUID id
+    );
 }

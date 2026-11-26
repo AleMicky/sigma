@@ -1,10 +1,13 @@
 package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.specification;
 
+import com.endecorani.sigma_api.modules.activos.domain.enums.DocumentoEstadoFilter;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoDocumentoSearchCriteria;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoDocumentoEntity;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +33,37 @@ public class ActivoDocumentoSpecifications {
                 predicates.add(cb.or(nombrePredicate, descripcionPredicate, numeroPredicate));
             }
 
+            if (criteria.estado() != null && criteria.fechaReferencia() != null) {
+                predicates.add(estadoPredicate(
+                        criteria.estado(),
+                        root.get("fechaVencimiento"),
+                        criteria.fechaReferencia(),
+                        cb
+                ));
+            }
+
             return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    /**
+     * Misma regla que getDocumentoEstado de Web: sin vencimiento es
+     * PERMANENTE; vencido si la fecha es anterior a hoy; POR_VENCER si está
+     * entre hoy y hoy + {@link DocumentoEstadoFilter#DIAS_POR_VENCER};
+     * en caso contrario VIGENTE.
+     */
+    private static Predicate estadoPredicate(
+            DocumentoEstadoFilter estado,
+            Path<LocalDate> fechaVencimiento,
+            LocalDate hoy,
+            jakarta.persistence.criteria.CriteriaBuilder cb
+    ) {
+        LocalDate limite = hoy.plusDays(DocumentoEstadoFilter.DIAS_POR_VENCER);
+        return switch (estado) {
+            case PERMANENTE -> cb.isNull(fechaVencimiento);
+            case VENCIDO -> cb.lessThan(fechaVencimiento, hoy);
+            case POR_VENCER -> cb.between(fechaVencimiento, hoy, limite);
+            case VIGENTE -> cb.greaterThan(fechaVencimiento, limite);
         };
     }
 }

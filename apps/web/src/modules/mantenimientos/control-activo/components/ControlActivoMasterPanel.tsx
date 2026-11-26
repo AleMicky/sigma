@@ -20,6 +20,7 @@ import {
   getEstadoBadgeVariant,
   getPrioridadBadgeStyles,
 } from "@/modules/mantenimientos/solicitud/lib/solicitud.utils"
+import { formatEstadoLabel } from "../lib/control-activo.utils"
 
 type FilterTab = "todos" | "concluidos" | "en_proceso" | "observados"
 
@@ -34,12 +35,6 @@ type ControlActivoMasterPanelProps = {
   onSearchChange: (value: string) => void
   onSelect: (id: string) => void
   onPageChange: (page: number) => void
-}
-
-export function formatEstadoLabel(estado?: string | null): string {
-  if (!estado) return "Registrado"
-  const clean = estado.replace(/_/g, " ").trim().toLowerCase()
-  return clean.charAt(0).toUpperCase() + clean.slice(1)
 }
 
 export function ControlActivoMasterPanel({

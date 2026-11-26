@@ -64,7 +64,7 @@ export function IncidentesPage() {
     size: pageSize,
   })
 
-  const incidentes = pageData?.content || []
+  const incidentes = React.useMemo(() => pageData?.content || [], [pageData?.content])
   const totalElements = pageData?.totalElements || 0
   const totalPages = pageData?.totalPages || 1
 

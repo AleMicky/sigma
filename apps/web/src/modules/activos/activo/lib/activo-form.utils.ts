@@ -1,8 +1,9 @@
+import { isApiError } from "@/shared/api"
 import type { ActivoAtributo } from "@/modules/activos/activo-atributo/api/activo-atributo.service"
 import {
-  createActivoAtributoValor,
-  updateActivoAtributoValor,
+  replaceActivoAtributos,
   type ActivoAtributoValor,
+  type ReplaceActivoAtributosPayload,
 } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.service"
 
 export function validateAtributos(
@@ -22,6 +23,27 @@ export function validateAtributos(
   return errors
 }
 
+/** Construye el payload bulk que reemplaza todos los valores del activo. */
+export function buildReplaceAtributosPayload(
+  atributos: ActivoAtributo[],
+  valores: Record<string, string>,
+  existentes?: Map<string, ActivoAtributoValor>,
+): ReplaceActivoAtributosPayload {
+  const items = atributos.map((atributo) => ({
+    atributoId: atributo.id,
+    valor: valores[atributo.id]?.trim() || null,
+  }))
+
+  // Los atributos no visibles no se editan en el formulario, pero conservan su valor.
+  for (const [atributoId, existente] of existentes ?? []) {
+    if (items.some((item) => item.atributoId === atributoId)) continue
+    items.push({ atributoId, valor: existente.valor ?? null })
+  }
+
+  return { valores: items }
+}
+
+/** Compatibilidad con las vistas de detalle: delega en el endpoint bulk. */
 export async function syncAtributoValores({
   activoId,
   atributos,
@@ -33,31 +55,59 @@ export async function syncAtributoValores({
   valores: Record<string, string>
   existentes: Map<string, ActivoAtributoValor>
 }) {
-  await Promise.all(
-    atributos.map(async (atributo) => {
-      const raw = valores[atributo.id]?.trim() ?? ""
-      const valor = raw.length > 0 ? raw : null
-      const existing = existentes.get(atributo.id)
-
-      if (existing) {
-        if ((existing.valor ?? null) === valor) return
-        await updateActivoAtributoValor(existing.id, {
-          activoId,
-          activoAtributoId: atributo.id,
-          valor,
-        })
-        return
-      }
-
-      if (valor == null) return
-
-      await createActivoAtributoValor({
-        activoId,
-        activoAtributoId: atributo.id,
-        valor,
-      })
-    }),
+  await replaceActivoAtributos(
+    activoId,
+    buildReplaceAtributosPayload(atributos, valores, existentes),
   )
+}
+
+/** Traduce los `validationErrors` de la API (422) a errores por campo visible. */
+export function mapAtributoValidationErrors(
+  error: unknown,
+  atributos: ActivoAtributo[],
+): Record<string, string> {
+  if (!isApiError(error) || error.status !== 422) return {}
+
+  const ids = new Set(atributos.map((atributo) => atributo.id))
+  const errors: Record<string, string> = {}
+
+  for (const validation of error.validationErrors) {
+    const field = validation.field
+      .replace(/^valores\[\d+\]\./, "")
+      .replace(/\.(atributoId|valor)$/, "")
+    const rejected =
+      typeof validation.rejectedValue === "string" &&
+      ids.has(validation.rejectedValue)
+        ? validation.rejectedValue
+        : undefined
+    const atributoId = rejected ?? (ids.has(field) ? field : undefined)
+
+    if (atributoId) {
+      errors[atributoId] = validation.messages[0] ?? "Valor inválido"
+    }
+  }
+
+  // La API de atributos reporta estos 422 como BusinessException con el
+  // código del atributo en el mensaje, no como `validationErrors`.
+  if (error.code === "ACTIVO_ATRIBUTO_VALOR_REQUIRED") {
+    const codigo = error.message.match(/'([^']+)'/)?.[1]
+    const atributo = atributos.find((item) => item.codigo === codigo)
+    if (atributo) errors[atributo.id] = error.message
+  } else if (error.code === "ATRIBUTOS_REQUERIDOS_FALTANTES") {
+    const codigos = error.message
+      .split(":")
+      .slice(1)
+      .join(":")
+      .split(",")
+      .map((codigo) => codigo.trim())
+    for (const atributo of atributos) {
+      if (codigos.includes(atributo.codigo)) {
+        errors[atributo.id] = "Este atributo es obligatorio"
+      }
+    }
+  }
+
+  return errors
 }
 
 export function formatAtributoValor(

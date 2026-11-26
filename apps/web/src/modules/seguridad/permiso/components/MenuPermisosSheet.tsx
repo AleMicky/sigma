@@ -78,7 +78,7 @@ export function MenuPermisosSheet({
   const updateMutation = useUpdatePermiso()
   const deleteMutation = useDeletePermiso()
 
-  const permisos = permisosQuery.data ?? []
+  const permisos = useMemo(() => permisosQuery.data ?? [], [permisosQuery.data])
 
   // Filter permisos by query & method
   const filteredPermisos = useMemo(() => {

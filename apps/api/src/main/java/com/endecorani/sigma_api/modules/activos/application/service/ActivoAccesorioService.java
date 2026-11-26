@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -54,11 +55,14 @@ public class ActivoAccesorioService {
         requireAccesorioExists(request.accesorioId());
         validateUniqueActivoAccesorioForCreate(request.activoId(), request.accesorioId());
 
+        String numeroSerie = StringUtils.normalize(request.numeroSerie());
+        validateNumeroSerieForCreate(request.accesorioId(), numeroSerie);
+
         ActivoAccesorio domain = ActivoAccesorio.builder()
                 .activoId(request.activoId())
                 .accesorioId(request.accesorioId())
                 .cantidad(request.cantidad())
-                .numeroSerie(StringUtils.normalize(request.numeroSerie()))
+                .numeroSerie(numeroSerie)
                 .observacion(StringUtils.normalize(request.observacion()))
                 .build();
 
@@ -81,10 +85,13 @@ public class ActivoAccesorioService {
                 id
         );
 
+        String numeroSerie = StringUtils.normalize(request.numeroSerie());
+        validateNumeroSerieForUpdate(request.accesorioId(), numeroSerie, id);
+
         domain.setActivoId(request.activoId());
         domain.setAccesorioId(request.accesorioId());
         domain.setCantidad(request.cantidad());
-        domain.setNumeroSerie(StringUtils.normalize(request.numeroSerie()));
+        domain.setNumeroSerie(numeroSerie);
         domain.setObservacion(StringUtils.normalize(request.observacion()));
 
         return toResponse(activoAccesorioRepository.save(domain));
@@ -210,6 +217,47 @@ public class ActivoAccesorioService {
                     "Ya existe otro registro con el mismo activo y accesorio"
             );
         }
+    }
+
+    /**
+     * REQ-BIZ-005: se reutiliza {@link ConflictException} (ya mapeada a 409
+     * por el GlobalExceptionHandler) con un código de negocio específico, en
+     * lugar de inventar una nueva excepción HTTP.
+     */
+    private void validateNumeroSerieForCreate(UUID accesorioId, String numeroSerie) {
+        if (numeroSerie == null) {
+            return;
+        }
+        if (activoAccesorioRepository.existsByAccesorioIdAndNumeroSerie(
+                accesorioId,
+                normalizeSerieKey(numeroSerie)
+        )) {
+            throw duplicateNumeroSerie(numeroSerie);
+        }
+    }
+
+    private void validateNumeroSerieForUpdate(UUID accesorioId, String numeroSerie, UUID currentId) {
+        if (numeroSerie == null) {
+            return;
+        }
+        if (activoAccesorioRepository.existsByAccesorioIdAndNumeroSerieAndIdNot(
+                accesorioId,
+                normalizeSerieKey(numeroSerie),
+                currentId
+        )) {
+            throw duplicateNumeroSerie(numeroSerie);
+        }
+    }
+
+    private String normalizeSerieKey(String numeroSerie) {
+        return numeroSerie.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private ConflictException duplicateNumeroSerie(String numeroSerie) {
+        return new ConflictException(
+                "ACTIVO_ACCESORIO_NUMERO_SERIE_DUPLICADO",
+                "Ya existe un accesorio con el número de serie '%s'".formatted(numeroSerie)
+        );
     }
 
     private PageResponse<ActivoAccesorioResponse> toPageResponse(Page<ActivoAccesorio> page) {

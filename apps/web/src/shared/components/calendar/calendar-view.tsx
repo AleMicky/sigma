@@ -37,9 +37,9 @@ import {
 } from "@/shared/components/ui/dialog"
 import {
   StatusBadge,
-  resolveStatusVariant,
   type StatusBadgeVariant,
 } from "@/shared/components/status-badge"
+import { resolveStatusVariant } from "@/shared/lib/status-variant"
 
 export interface CalendarEventDetail {
   label: string

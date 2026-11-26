@@ -90,7 +90,10 @@ export function TipoInsumoAtributoFormDialog({
     }),
   )
 
-  const tiposDato = tiposDatoQuery.data?.content ?? []
+  const tiposDato = useMemo(
+    () => tiposDatoQuery.data?.content ?? [],
+    [tiposDatoQuery.data?.content],
+  )
   const tiposById = useMemo(
     () => new Map(tiposDato.map((tipo) => [tipo.id, tipo])),
     [tiposDato],

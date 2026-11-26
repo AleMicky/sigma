@@ -1,7 +1,9 @@
 package com.endecorani.sigma_api.modules.activos.application.service;
 
 import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoDocumentoRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoDocumentoResumenResponse;
 import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoDocumentoResponse;
+import com.endecorani.sigma_api.modules.activos.domain.enums.DocumentoEstadoFilter;
 import com.endecorani.sigma_api.modules.activos.domain.model.ActivoDocumento;
 import com.endecorani.sigma_api.modules.activos.domain.model.TiposDocumento;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoDocumentoRepository;
@@ -146,11 +148,59 @@ public class ActivoDocumentoService extends AbstractCrudService<ActivoDocumento,
 
     @Transactional(readOnly = true)
     public PageResponse<ActivoDocumentoResponse> find(UUID activoId, UUID tipoDocumentoId, String query, PageRequestDto pageRequest) {
-        ActivoDocumentoSearchCriteria criteria = new ActivoDocumentoSearchCriteria(activoId, tipoDocumentoId, StringUtils.normalize(query));
+        return find(activoId, tipoDocumentoId, query, null, pageRequest);
+    }
+
+    /** REQ-BIZ-007: listado con filtros de texto, tipo de documento y vigencia. */
+    @Transactional(readOnly = true)
+    public PageResponse<ActivoDocumentoResponse> find(
+            UUID activoId,
+            UUID tipoDocumentoId,
+            String query,
+            DocumentoEstadoFilter estado,
+            PageRequestDto pageRequest) {
+        ActivoDocumentoSearchCriteria criteria = buildCriteria(activoId, tipoDocumentoId, query, estado);
         return PageResponse.from(
                 repository.findAll(criteria, pageRequest.toPageable(allowedSortFields())),
                 this::toResponse
         );
+    }
+
+    /**
+     * REQ-BIZ-007: los conteos usan la misma fecha de referencia y los mismos
+     * criterios base que el listado; el filtro de estado se aplica sólo al
+     * conteo correspondiente para que los cinco KPIs sean coherentes.
+     */
+    @Transactional(readOnly = true)
+    public ActivoDocumentoResumenResponse resumen(
+            UUID activoId,
+            UUID tipoDocumentoId,
+            String query) {
+        LocalDate hoy = LocalDate.now();
+        ActivoDocumentoSearchCriteria base = buildCriteria(activoId, tipoDocumentoId, query, null);
+
+        return new ActivoDocumentoResumenResponse(
+                repository.count(base),
+                repository.count(base.withEstado(DocumentoEstadoFilter.VIGENTE, hoy)),
+                repository.count(base.withEstado(DocumentoEstadoFilter.POR_VENCER, hoy)),
+                repository.count(base.withEstado(DocumentoEstadoFilter.VENCIDO, hoy)),
+                repository.count(base.withEstado(DocumentoEstadoFilter.PERMANENTE, hoy))
+        );
+    }
+
+    private ActivoDocumentoSearchCriteria buildCriteria(
+            UUID activoId,
+            UUID tipoDocumentoId,
+            String query,
+            DocumentoEstadoFilter estado) {
+        ActivoDocumentoSearchCriteria base = new ActivoDocumentoSearchCriteria(
+                activoId,
+                tipoDocumentoId,
+                StringUtils.normalize(query)
+        );
+        return estado == null
+                ? base
+                : base.withEstado(estado, LocalDate.now());
     }
 
     @Override

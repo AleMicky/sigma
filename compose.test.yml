@@ -23,7 +23,7 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_SSL_MODE: ${DB_SSL_MODE:-require}
+      DB_SSL_MODE: ${DB_SSL_MODE:-disable}
 
       # Almacenamiento de archivos
       STORAGE_BASE_DIR: ${STORAGE_BASE_DIR:-./uploads}

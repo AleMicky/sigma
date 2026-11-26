@@ -53,7 +53,10 @@ export function TiposDocumentoPage() {
     }),
   )
 
-  const rawTipos = tiposDocumentoQuery.data?.content ?? []
+  const rawTipos = useMemo(
+    () => tiposDocumentoQuery.data?.content ?? [],
+    [tiposDocumentoQuery.data?.content],
+  )
 
   // Client-side filter for vencimiento
   const tiposDocumento = useMemo(() => {

@@ -1,36 +1,48 @@
 import { queryOptions } from "@tanstack/react-query"
 
+import { normalizeDocumentoFilters } from "../lib/activo-documento.utils"
 import { activoDocumentoKeys } from "./activo-documento.keys"
 import {
   getActivoDocumento,
+  getActivoDocumentosResumen,
   listActivoDocumentos,
   type ActivoDocumentoFilters,
+  type ActivoDocumentoResumenFilters,
 } from "./activo-documento.service"
 
 export const activoDocumentoQueries = {
-  list: (filters?: ActivoDocumentoFilters) =>
-    queryOptions({
-      queryKey: activoDocumentoKeys.list(filters),
-      queryFn: () => {
-        const { q, ...rest } = filters ?? {}
-        const trimmed = q?.trim()
-        return listActivoDocumentos(trimmed ? { ...rest, q: trimmed } : rest)
-      },
-    }),
+  list: (filters?: ActivoDocumentoFilters) => {
+    const normalized = normalizeDocumentoFilters(filters)
 
-  byActivo: (activoId: string, filters?: Omit<ActivoDocumentoFilters, "activoId">) =>
-    queryOptions({
-      queryKey: activoDocumentoKeys.byActivo(activoId, filters),
-      queryFn: () => {
-        const { q, ...rest } = filters ?? {}
-        const trimmed = q?.trim()
-        return listActivoDocumentos({
-          activoId,
-          ...(trimmed ? { ...rest, q: trimmed } : rest),
-        })
-      },
+    return queryOptions({
+      queryKey: activoDocumentoKeys.list(normalized),
+      queryFn: () => listActivoDocumentos(normalized),
+    })
+  },
+
+  byActivo: (
+    activoId: string,
+    filters?: Omit<ActivoDocumentoFilters, "activoId">,
+  ) => {
+    const normalized = normalizeDocumentoFilters(filters)
+
+    return queryOptions({
+      queryKey: activoDocumentoKeys.byActivo(activoId, normalized),
+      queryFn: () =>
+        listActivoDocumentos({ activoId, ...(normalized ?? {}) }),
       enabled: Boolean(activoId),
-    }),
+    })
+  },
+
+  resumen: (filters?: ActivoDocumentoResumenFilters) => {
+    const normalized = normalizeDocumentoFilters(filters)
+
+    return queryOptions({
+      queryKey: activoDocumentoKeys.resumen(normalized),
+      queryFn: () => getActivoDocumentosResumen(normalized),
+      enabled: Boolean(filters?.activoId),
+    })
+  },
 
   detail: (id: string) =>
     queryOptions({

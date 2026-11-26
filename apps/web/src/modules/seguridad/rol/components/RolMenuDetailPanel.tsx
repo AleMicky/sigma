@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
@@ -241,10 +241,12 @@ export function RolMenuDetailPanel({
     setTimeout(() => setCopiedCode(false), 1800)
   }
 
-  async function handleSave() {
+  const { mutateAsync: asignarMenus } = asignarMutation
+
+  const handleSave = useCallback(async () => {
     if (!rol) return
     try {
-      await asignarMutation.mutateAsync({
+      await asignarMenus({
         id: rol.id,
         menuIds: Array.from(selectedIds),
       })
@@ -252,7 +254,7 @@ export function RolMenuDetailPanel({
     } catch {
       // Error toast managed by mutation
     }
-  }
+  }, [rol, selectedIds, asignarMenus])
 
   // Keyboard shortcut Ctrl+S / Cmd+S to save
   useEffect(() => {

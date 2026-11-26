@@ -16,7 +16,7 @@ import { ActivoAtributoValorFields } from "@/modules/activos/activo/components/A
 import {
   formatDateString,
   getDocumentoEstado,
-} from "@/modules/activos/activo/components/detalle-activo/tabs/ActivoDocumentosTab"
+} from "@/modules/activos/activo/lib/activo-documentos.utils"
 import {
   formatAtributoValor,
   syncAtributoValores,

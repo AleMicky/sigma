@@ -11,4 +11,7 @@ public interface ActivoDocumentoRepository extends CrudRepository<ActivoDocument
 
     Page<ActivoDocumento> findAll(ActivoDocumentoSearchCriteria criteria, Pageable pageable);
 
+    /** REQ-BIZ-007: conteo con los mismos criterios que el listado. */
+    long count(ActivoDocumentoSearchCriteria criteria);
+
 }

@@ -9,10 +9,8 @@ import { SolicitudFormHeader } from "../components/form/SolicitudFormHeader"
 import { SolicitudNonEditableAlert } from "../components/form/SolicitudNonEditableAlert"
 import { SolicitudResumenCard } from "../components/form/SolicitudResumenCard"
 import { SolicitudTecnicaSection } from "../components/form/SolicitudTecnicaSection"
-import {
-  SolicitudFormProvider,
-  useSolicitudFormContext,
-} from "../context/solicitud-form.context"
+import { SolicitudFormProvider } from "../context/solicitud-form.context"
+import { useSolicitudFormContext } from "../context/solicitud-form.context-state"
 
 type SolicitudFormPageProps = {
   solicitudId?: string

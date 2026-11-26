@@ -12,6 +12,10 @@ import { toast } from "sonner"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
+import {
+  ALL_TIPOS,
+  ALL_UBICACIONES,
+} from "@/modules/activos/activo/lib/catalogo.utils"
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -22,9 +26,6 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select"
 import { cn } from "@/shared/lib/utils"
-
-export const ALL_TIPOS = "__all__"
-export const ALL_UBICACIONES = "__all__"
 
 interface ActivoCatalogoToolbarProps {
   search: string

@@ -59,7 +59,7 @@ export function RequisitosInicioMantenimientoDialog({
     enabled: open && Boolean(solicitudId),
   })
 
-  const controles = controlesQuery.data ?? []
+  const controles = useMemo(() => controlesQuery.data ?? [], [controlesQuery.data])
   const hasEntrega = useMemo(
     () => controles.some((c) => c.tipo === "ENTREGA"),
     [controles],

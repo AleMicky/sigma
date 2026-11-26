@@ -6,7 +6,7 @@ import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.s
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import { getTipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-icons"
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
-import { TIPO_UBICACION_CONFIG } from "@/modules/parametros/ubicacion/components/TipoUbicacionBadge"
+import { TIPO_UBICACION_CONFIG } from "@/modules/parametros/ubicacion/lib/tipo-ubicacion.config"
 import { FormSection } from "@/shared/components/form-section"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
 import {

@@ -56,7 +56,10 @@ export function UnidadesMedidaPage() {
     }),
   )
 
-  const rawUnidades = unidadesQuery.data?.content ?? []
+  const rawUnidades = useMemo(
+    () => unidadesQuery.data?.content ?? [],
+    [unidadesQuery.data?.content],
+  )
 
   // Filter client-side by decimal mode if selected
   const filteredUnidades = useMemo(() => {

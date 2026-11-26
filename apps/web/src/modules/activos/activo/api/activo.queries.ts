@@ -2,9 +2,14 @@ import { queryOptions } from "@tanstack/react-query"
 
 import type { PageParams } from "@/shared/types/api.types"
 
-import { type ActivoListFilters, activoKeys } from "./activo.keys"
+import {
+  type ActivoListFilters,
+  type ActivoResumenFilters,
+  activoKeys,
+} from "./activo.keys"
 import {
   getActivo,
+  getActivoResumen,
   listActivos,
   listActivosDisponibilidad,
   listActivosParaSolicitud,
@@ -19,6 +24,15 @@ export const activoQueries = {
       queryFn: () => {
         const q = filters?.q?.trim()
         return listActivos(q ? { ...filters, q } : { ...filters, q: undefined })
+      },
+    }),
+
+  resumen: (filters?: ActivoResumenFilters) =>
+    queryOptions({
+      queryKey: activoKeys.resumen(filters),
+      queryFn: () => {
+        const q = filters?.q?.trim()
+        return getActivoResumen(q ? { ...filters, q } : filters)
       },
     }),
 

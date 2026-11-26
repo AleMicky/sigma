@@ -64,8 +64,23 @@ export type ActivoPayload = {
 
 export type ActivoListParams = PageParams & {
   tipoActivoId?: string
+  ubicacionId?: string
   q?: string
   activo?: boolean
+}
+
+export type ActivoResumen = {
+  total: number
+  deBaja: number
+  enMantenimiento: number
+  operativos: number
+}
+
+export const EMPTY_ACTIVO_RESUMEN: ActivoResumen = {
+  total: 0,
+  deBaja: 0,
+  enMantenimiento: 0,
+  operativos: 0,
 }
 
 const crud = createCrudService<Activo, ActivoPayload, ActivoListParams>(
@@ -77,6 +92,12 @@ export const getActivo = crud.get
 export const createActivo = crud.create
 export const updateActivo = crud.update
 export const deleteActivo = crud.remove
+
+export async function getActivoResumen(
+  filters?: Pick<ActivoListParams, "q" | "tipoActivoId" | "ubicacionId">,
+): Promise<ActivoResumen> {
+  return http.get<ActivoResumen>("/activos/resumen", { params: filters })
+}
 
 export function uploadActivoImagen(id: string, file: File) {
   return uploadImage<Activo>(`${activoEndpoints.byId(id)}/imagen`, file)

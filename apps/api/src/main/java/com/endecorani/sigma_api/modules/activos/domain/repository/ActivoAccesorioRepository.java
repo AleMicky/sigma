@@ -33,4 +33,13 @@ public interface ActivoAccesorioRepository {
     boolean existsByActivoIdAndAccesorioId(UUID activoId, UUID accesorioId);
 
     boolean existsByActivoIdAndAccesorioIdAndIdNot(UUID activoId, UUID accesorioId, UUID id);
+
+    /** REQ-BIZ-005: la clave recibida ya está normalizada (upper + trim). */
+    boolean existsByAccesorioIdAndNumeroSerie(UUID accesorioId, String numeroSerieNormalizado);
+
+    boolean existsByAccesorioIdAndNumeroSerieAndIdNot(
+            UUID accesorioId,
+            String numeroSerieNormalizado,
+            UUID id
+    );
 }

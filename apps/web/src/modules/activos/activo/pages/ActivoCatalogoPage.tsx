@@ -10,15 +10,17 @@ import {
 } from "@/shared/hooks/use-paginated-search"
 
 import { activoQueries } from "../api/activo.queries"
-import type { Activo } from "../api/activo.service"
-import { ActivoKpiCards, type ActivoKpiStats } from "../components/ActivoKpiCards"
+import { EMPTY_ACTIVO_RESUMEN } from "../api/activo.service"
+import { ActivoKpiCards } from "../components/ActivoKpiCards"
 import { ActivoCatalogoContentSection } from "../components/catalogo/ActivoCatalogoContentSection"
 import { ActivoCatalogoHeader } from "../components/catalogo/ActivoCatalogoHeader"
+import { ActivoCatalogoToolbar } from "../components/catalogo/ActivoCatalogoToolbar"
 import {
-  ActivoCatalogoToolbar,
   ALL_TIPOS,
   ALL_UBICACIONES,
-} from "../components/catalogo/ActivoCatalogoToolbar"
+  buildActivoListFilters,
+  buildActivoResumenFilters,
+} from "../lib/catalogo.utils"
 
 const PAGE_SIZE = 12
 
@@ -32,37 +34,6 @@ function checkHasActiveFilters(
     tipoActivoId !== ALL_TIPOS ||
     ubicacionId !== ALL_UBICACIONES
   )
-}
-
-function isOperativoActivo(activo: Activo): boolean {
-  const nombre = activo.estadoOperativo?.nombre?.toLowerCase() ?? ""
-  if (nombre.includes("operativo")) return true
-  return !nombre.includes("mantenimiento") && activo.activo !== false
-}
-
-function computeActivoKpiStats(
-  activos: Activo[],
-  totalElements?: number,
-): ActivoKpiStats {
-  const total = totalElements ?? activos.length
-  const deBaja = activos.filter((a) => a.activo === false).length
-  const enMantenimiento = activos.filter((a) =>
-    a.estadoOperativo?.nombre?.toLowerCase().includes("mantenimiento"),
-  ).length
-  const operativos = activos.filter(isOperativoActivo).length
-
-  return { total, deBaja, enMantenimiento, operativos }
-}
-
-function filterActivosByUbicacion(
-  rawActivos: Activo[],
-  ubicacionId: string,
-): Activo[] {
-  let list = rawActivos.filter((a) => a.activo !== false)
-  if (ubicacionId !== ALL_UBICACIONES) {
-    list = list.filter((a) => a.ubicacionId === ubicacionId)
-  }
-  return list
 }
 
 export function ActivoCatalogoPage() {
@@ -92,23 +63,29 @@ export function ActivoCatalogoPage() {
     }),
   )
 
-  const queryParams = useMemo(
-    () => ({
-      page: search.page,
-      size: PAGE_SIZE,
-      q: search.debouncedSearch.trim() || undefined,
-      tipoActivoId: tipoActivoId === ALL_TIPOS ? undefined : tipoActivoId,
-      sortBy: "createdAt",
-      direction: "DESC" as const,
-    }),
-    [search.page, search.debouncedSearch, tipoActivoId],
+  const listFilters = useMemo(
+    () =>
+      buildActivoListFilters({
+        page: search.page,
+        size: PAGE_SIZE,
+        search: search.debouncedSearch,
+        tipoActivoId,
+        ubicacionId,
+      }),
+    [search.page, search.debouncedSearch, tipoActivoId, ubicacionId],
   )
 
-  const activosQuery = useQuery(activoQueries.list(queryParams))
+  const resumenFilters = useMemo(
+    () => buildActivoResumenFilters(listFilters),
+    [listFilters],
+  )
+
+  const activosQuery = useQuery(activoQueries.list(listFilters))
+  const resumenQuery = useQuery(activoQueries.resumen(resumenFilters))
 
   useClampPage(search.page, search.setPage, activosQuery.data?.totalPages)
 
-  const rawActivos = useMemo(
+  const activos = useMemo(
     () => activosQuery.data?.content ?? [],
     [activosQuery.data?.content],
   )
@@ -131,16 +108,6 @@ export function ActivoCatalogoPage() {
   const ubicacionesById = useMemo(
     () => new Map(rawUbicaciones.map((u) => [u.id, u])),
     [rawUbicaciones],
-  )
-
-  const activos = useMemo(
-    () => filterActivosByUbicacion(rawActivos, ubicacionId),
-    [rawActivos, ubicacionId],
-  )
-
-  const kpiStats = useMemo(
-    () => computeActivoKpiStats(rawActivos, activosQuery.data?.totalElements),
-    [rawActivos, activosQuery.data?.totalElements],
   )
 
   function resetFilters() {
@@ -170,12 +137,12 @@ export function ActivoCatalogoPage() {
     <PageShell size="full" padding="none" layout="auto" className="w-full space-y-4 pb-12">
       {/* Header */}
       <ActivoCatalogoHeader
-        totalActivos={activosQuery.data?.totalElements ?? rawActivos.length}
-        queries={[activosQuery, tiposQuery, ubicacionesQuery]}
+        totalActivos={resumenQuery.data?.total}
+        queries={[activosQuery, resumenQuery, tiposQuery, ubicacionesQuery]}
       />
 
-      {/* KPI Summary Cards */}
-      <ActivoKpiCards stats={kpiStats} />
+      {/* KPI Summary Cards — agregados calculados en servidor */}
+      <ActivoKpiCards stats={resumenQuery.data ?? EMPTY_ACTIVO_RESUMEN} />
 
       {/* Toolbar */}
       <ActivoCatalogoToolbar

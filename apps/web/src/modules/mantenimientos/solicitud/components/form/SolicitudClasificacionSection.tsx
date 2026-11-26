@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select"
 import { cn } from "@/shared/lib/utils"
-import { useSolicitudFormContext } from "../../context/solicitud-form.context"
+import { useSolicitudFormContext } from "../../context/solicitud-form.context-state"
 import {
   getPrioridadColorConfig,
   getTipoMantenimientoBadgeClass,

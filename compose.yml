@@ -35,7 +35,7 @@ services:
     env_file: .env
     environment:
       DB_HOST: postgres
-      DB_SSL_MODE: ${DB_SSL_MODE:-require}
+      DB_SSL_MODE: ${DB_SSL_MODE:-disable}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       STORAGE_BASE_DIR: ${STORAGE_BASE_DIR:-./uploads}
       STORAGE_MAX_FILE_SIZE: ${STORAGE_MAX_FILE_SIZE:-20MB}

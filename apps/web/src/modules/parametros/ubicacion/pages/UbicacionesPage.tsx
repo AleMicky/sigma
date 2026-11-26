@@ -60,7 +60,10 @@ export function UbicacionesPage() {
   const arbolQuery = useQuery(ubicacionQueries.arbol())
   const raicesQuery = useQuery(ubicacionQueries.raices())
 
-  const ubicacionesList = ubicacionesListQuery.data?.content ?? []
+  const ubicacionesList = useMemo(
+    () => ubicacionesListQuery.data?.content ?? [],
+    [ubicacionesListQuery.data?.content],
+  )
   const treeNodes = arbolQuery.data ?? []
 
   // Create lookup maps for parent locations

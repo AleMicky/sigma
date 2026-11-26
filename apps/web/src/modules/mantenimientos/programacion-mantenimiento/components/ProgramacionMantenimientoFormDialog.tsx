@@ -147,7 +147,10 @@ function ProgramacionMantenimientoFormDialogContent({
     ...activoQueries.list({ page: 0, size: 200, sortBy: "codigo", direction: "ASC" }),
     enabled: open && !isLockedToAsset && alcance === "INDIVIDUAL",
   })
-  const activosDisponibles = activosListQuery.data?.content ?? []
+  const activosDisponibles = useMemo(
+    () => activosListQuery.data?.content ?? [],
+    [activosListQuery.data?.content],
+  )
 
   const tiposActivoQuery = useQuery({
     ...tipoActivoQueries.list({ page: 0, size: 100, sortBy: "nombre", direction: "ASC" }),
@@ -172,7 +175,10 @@ function ProgramacionMantenimientoFormDialogContent({
     }),
     enabled: open && Boolean(effectiveTipoActivoId || isLockedToAsset),
   })
-  const planesDisponibles = planesQuery.data?.content ?? []
+  const planesDisponibles = useMemo(
+    () => planesQuery.data?.content ?? [],
+    [planesQuery.data?.content],
+  )
 
   const selectedPlan = useMemo(() => {
     return planesDisponibles.find((p) => p.id === selectedPlanId)

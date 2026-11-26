@@ -49,7 +49,7 @@ export function RequisitosDevolucionDialog({
     enabled: open && Boolean(solicitudId),
   })
 
-  const controles = controlesQuery.data ?? []
+  const controles = useMemo(() => controlesQuery.data ?? [], [controlesQuery.data])
   const devolucion = useMemo(
     () => controles.find((c) => c.tipo === "DEVOLUCION"),
     [controles],

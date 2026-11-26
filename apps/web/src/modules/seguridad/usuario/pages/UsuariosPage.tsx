@@ -54,7 +54,10 @@ export function UsuariosPage() {
     }),
   )
 
-  const usuarios = usuariosQuery.data?.content ?? []
+  const usuarios = useMemo(
+    () => usuariosQuery.data?.content ?? [],
+    [usuariosQuery.data?.content],
+  )
 
   useClampPage(
     search.page,

@@ -1,11 +1,7 @@
 import * as React from "react"
 
-import {
-  useSolicitudForm,
-  type UseSolicitudFormReturn,
-} from "../hooks/use-solicitud-form"
-
-const SolicitudFormContext = React.createContext<UseSolicitudFormReturn | null>(null)
+import { useSolicitudForm } from "../hooks/use-solicitud-form"
+import { SolicitudFormContext } from "./solicitud-form.context-state"
 
 export type SolicitudFormProviderProps = {
   solicitudId?: string
@@ -23,14 +19,4 @@ export function SolicitudFormProvider({
       {children}
     </SolicitudFormContext.Provider>
   )
-}
-
-export function useSolicitudFormContext(): UseSolicitudFormReturn {
-  const context = React.useContext(SolicitudFormContext)
-  if (!context) {
-    throw new Error(
-      "useSolicitudFormContext debe utilizarse dentro de un <SolicitudFormProvider>",
-    )
-  }
-  return context
 }

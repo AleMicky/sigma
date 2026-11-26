@@ -6,7 +6,7 @@ import { routes } from "@/app/config/routes"
 import { useAuthStore } from "@/app/store/auth.store"
 import { menuQueries } from "@/modules/seguridad/menu/api/menu.queries"
 import type { MenuTreeNode } from "@/modules/seguridad/menu/api/menu.service"
-import { resolveLucideIcon } from "@/modules/seguridad/menu/components/DynamicLucideIcon"
+import { resolveLucideIcon } from "@/modules/seguridad/menu/lib/menu-icons"
 import type { NavNode, NavSection } from "@/shared/types/nav.types"
 
 export function isAdminUser(roles?: string[] | null): boolean {

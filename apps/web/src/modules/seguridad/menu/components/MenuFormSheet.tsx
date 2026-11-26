@@ -25,7 +25,8 @@ import {
 import { useCreateMenu, useUpdateMenu } from "../api/menu.mutations"
 import type { Menu, TipoMenu } from "../api/menu.service"
 import { defaultMenuValues, menuSchema } from "../schemas/menu.schema"
-import { AVAILABLE_MENU_ICONS, DynamicLucideIcon } from "./DynamicLucideIcon"
+import { AVAILABLE_MENU_ICONS } from "../lib/menu-icons"
+import { DynamicLucideIcon } from "./DynamicLucideIcon"
 
 const NONE_PARENT = "__none__"
 

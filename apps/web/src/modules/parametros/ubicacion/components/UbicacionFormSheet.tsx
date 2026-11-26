@@ -34,7 +34,7 @@ import {
   defaultUbicacionValues,
   ubicacionSchema,
 } from "../schemas/ubicacion.schema"
-import { TIPO_UBICACION_CONFIG } from "./TipoUbicacionBadge"
+import { TIPO_UBICACION_CONFIG } from "../lib/tipo-ubicacion.config"
 import { UbicacionMapPickerModal } from "./map/UbicacionMapPickerModal"
 
 const NONE_PARENT = "__none__"

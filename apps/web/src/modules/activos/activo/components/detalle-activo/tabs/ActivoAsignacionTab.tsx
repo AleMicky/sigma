@@ -80,14 +80,21 @@ export function ActivoAsignacionTab({
       direction: "DESC",
     }),
   )
-  const asignaciones = asignacionesQuery.data?.content ?? []
+  const asignaciones = useMemo(
+    () => asignacionesQuery.data?.content ?? [],
+    [asignacionesQuery.data?.content],
+  )
 
   const empleadosQuery = useQuery(
     empleadoQueries.list({ size: 100, sortBy: "createdAt", direction: "DESC" }),
   )
-  const empleados = Array.isArray(empleadosQuery.data)
-    ? empleadosQuery.data
-    : (empleadosQuery.data?.content ?? [])
+  const empleados = useMemo(
+    () =>
+      Array.isArray(empleadosQuery.data)
+        ? empleadosQuery.data
+        : (empleadosQuery.data?.content ?? []),
+    [empleadosQuery.data],
+  )
   const empleadosMap = useMemo(
     () => new Map(empleados.map((e) => [e.id, e])),
     [empleados],
@@ -96,9 +103,13 @@ export function ActivoAsignacionTab({
   const areasQuery = useQuery(
     areaQueries.list({ size: 100, sortBy: "nombre", direction: "ASC" }),
   )
-  const areas = Array.isArray(areasQuery.data)
-    ? areasQuery.data
-    : (areasQuery.data?.content ?? [])
+  const areas = useMemo(
+    () =>
+      Array.isArray(areasQuery.data)
+        ? areasQuery.data
+        : (areasQuery.data?.content ?? []),
+    [areasQuery.data],
+  )
   const areasMap = useMemo(() => new Map(areas.map((a) => [a.id, a])), [areas])
 
   // Helper to get entity details for an assignment

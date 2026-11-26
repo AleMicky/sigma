@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.activos.infrastructure.persistence.adap
 
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoRepository;
+import com.endecorani.sigma_api.modules.activos.domain.repository.ActivoResumenProjection;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.mapper.ActivoPersistenceMapper;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoRepository;
@@ -69,8 +70,17 @@ public class ActivoRepositoryImpl
             UUID tipoActivoId,
             Boolean activo,
             Pageable pageable) {
+        return findAllFiltered(tipoActivoId, null, activo, pageable);
+    }
+
+    @Override
+    public Page<Activo> findAllFiltered(
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo,
+            Pageable pageable) {
         return springRepository
-                .findAllFiltered(tipoActivoId, activo, pageable)
+                .findAllFiltered(tipoActivoId, ubicacionId, activo, pageable)
                 .map(mapper::toDomain);
     }
 
@@ -80,9 +90,28 @@ public class ActivoRepositoryImpl
             UUID tipoActivoId,
             Boolean activo,
             Pageable pageable) {
+        return searchFiltered(query, tipoActivoId, null, activo, pageable);
+    }
+
+    @Override
+    public Page<Activo> searchFiltered(
+            String query,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo,
+            Pageable pageable) {
         return springRepository
-                .searchFiltered(query, tipoActivoId, activo, pageable)
+                .searchFiltered(query, tipoActivoId, ubicacionId, activo, pageable)
                 .map(mapper::toDomain);
+    }
+
+    @Override
+    public ActivoResumenProjection summarize(
+            String query,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo) {
+        return springRepository.summarize(query, tipoActivoId, ubicacionId, activo);
     }
 
     @Override
