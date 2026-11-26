@@ -19,6 +19,7 @@ import {
   RotateCcw,
   ShieldAlert,
   Tag,
+  type LucideIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -41,6 +42,10 @@ import { fetchAuthenticatedBlob, getErrorMessage } from "@/shared/api"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Pagination } from "@/shared/components/pagination"
 import {
   DetailPanelShell,
@@ -53,13 +58,6 @@ import { RefreshButton } from "@/shared/components/refresh-button"
 import { SearchField } from "@/shared/components/search-field"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { useMasterDetail } from "@/shared/hooks/use-master-detail"
 import {
   useClampPage,
@@ -72,6 +70,23 @@ import type { Activo } from "../api/activo.service"
 
 const PAGE_SIZE = 12
 const ALL_FILTER = "__all__"
+
+const DOCUMENTO_ESTADO_OPTIONS: OptionsComboboxOption[] = [
+  { value: ALL_DOCUMENTO_FILTER, label: "Todas las vigencias" },
+  { value: "vigente", label: "Vigente" },
+  { value: "por_vencer", label: "Por vencer (30d)" },
+  { value: "vencido", label: "Vencido" },
+  { value: "permanente", label: "Permanente" },
+]
+
+function renderConIcono(option: OptionsComboboxOption, Icon: LucideIcon) {
+  return (
+    <span className="flex min-w-0 items-center gap-1.5 truncate">
+      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+      <span className="truncate">{option.label}</span>
+    </span>
+  )
+}
 
 function formatFileSize(bytes?: number | null): string {
   if (!bytes || bytes <= 0) return "0 B"
@@ -175,6 +190,14 @@ function ActivoDetailReport({
     docSearch.search.trim().length > 0 ||
     tipoDocFilter !== ALL_DOCUMENTO_FILTER ||
     estadoFilter !== ALL_DOCUMENTO_FILTER
+
+  const tipoDocumentoOptions = useMemo<OptionsComboboxOption[]>(
+    () => [
+      { value: ALL_DOCUMENTO_FILTER, label: "Todos los tipos" },
+      ...tiposDoc.map((tipo) => ({ value: tipo.id, label: tipo.nombre })),
+    ],
+    [tiposDoc],
+  )
 
   async function handleViewFile(doc: ActivoDocumento) {
     try {
@@ -352,54 +375,33 @@ function ActivoDetailReport({
               className="flex-1 min-w-[200px]"
             />
 
-            <Select
+            <OptionsCombobox
+              options={tipoDocumentoOptions}
               value={tipoDocFilter}
-              onValueChange={(v) => setTipoDocFilter(v ?? ALL_DOCUMENTO_FILTER)}
-            >
-              <SelectTrigger className="w-full sm:w-44 h-8.5 text-xs bg-background">
-                <FileCheck className="size-3.5 text-muted-foreground mr-1.5" />
-                <SelectValue placeholder="Tipo de Doc.">
-                  {tipoDocFilter === ALL_DOCUMENTO_FILTER
-                    ? "Todos los tipos"
-                    : tiposDocumentoMap.get(tipoDocFilter)?.nombre ?? "Tipo de Doc."}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="max-h-64">
-                <SelectItem value={ALL_DOCUMENTO_FILTER}>Todos los tipos</SelectItem>
-                {tiposDoc.map((td) => (
-                  <SelectItem key={td.id} value={td.id}>
-                    {td.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={(value) =>
+                setTipoDocFilter(value || ALL_DOCUMENTO_FILTER)
+              }
+              placeholder="Tipo de Doc."
+              ariaLabel="Tipo de documento"
+              size="sm"
+              className="w-full sm:w-44"
+              renderValue={(option) => renderConIcono(option, FileCheck)}
+              emptyMessage="No se encontraron tipos de documento"
+            />
 
-            <Select
+            <OptionsCombobox
+              options={DOCUMENTO_ESTADO_OPTIONS}
               value={estadoFilter}
-              onValueChange={(v) => setEstadoFilter(v ?? ALL_DOCUMENTO_FILTER)}
-            >
-              <SelectTrigger className="w-full sm:w-38 h-8.5 text-xs bg-background">
-                <Filter className="size-3.5 text-muted-foreground mr-1.5" />
-                <SelectValue placeholder="Vigencia">
-                  {estadoFilter === ALL_DOCUMENTO_FILTER
-                    ? "Todas las vigencias"
-                    : estadoFilter === "vigente"
-                      ? "Vigente"
-                      : estadoFilter === "por_vencer"
-                        ? "Por vencer (30d)"
-                        : estadoFilter === "vencido"
-                          ? "Vencido"
-                          : "Permanente"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_DOCUMENTO_FILTER}>Todas las vigencias</SelectItem>
-                <SelectItem value="vigente">Vigente</SelectItem>
-                <SelectItem value="por_vencer">Por vencer (30d)</SelectItem>
-                <SelectItem value="vencido">Vencido</SelectItem>
-                <SelectItem value="permanente">Permanente</SelectItem>
-              </SelectContent>
-            </Select>
+              onValueChange={(value) =>
+                setEstadoFilter(value || ALL_DOCUMENTO_FILTER)
+              }
+              placeholder="Vigencia"
+              ariaLabel="Vigencia del documento"
+              size="sm"
+              className="w-full sm:w-38"
+              renderValue={(option) => renderConIcono(option, Filter)}
+              emptyMessage="No se encontraron estados"
+            />
           </div>
 
           {hasDocumentoFilters && (
@@ -658,6 +660,14 @@ export function ActivoConsultaDocumentosPage() {
     [tiposActivoQuery.data?.content],
   )
 
+  const tipoActivoOptions = useMemo<OptionsComboboxOption[]>(
+    () => [
+      { value: ALL_FILTER, label: "Todos los tipos de activo" },
+      ...tiposActivo.map((tipo) => ({ value: tipo.id, label: tipo.nombre })),
+    ],
+    [tiposActivo],
+  )
+
   const tiposDoc = useMemo(
     () => tiposDocQuery.data?.content ?? [],
     [tiposDocQuery.data?.content],
@@ -721,31 +731,20 @@ export function ActivoConsultaDocumentosPage() {
           >
             {/* Filter Tipo de Activo inside master panel */}
             <div className="border-b px-3 py-2 bg-muted/15">
-              <Select
+              <OptionsCombobox
+                options={tipoActivoOptions}
                 value={tipoActivoId}
-                onValueChange={(val) => {
-                  setTipoActivoId(val ?? ALL_FILTER)
+                onValueChange={(value) => {
+                  setTipoActivoId(value || ALL_FILTER)
                   search.setPage(0)
                 }}
-              >
-                <SelectTrigger className="w-full h-8 text-xs bg-background">
-                  <Layers className="size-3.5 text-muted-foreground mr-1.5 shrink-0" />
-                  <SelectValue placeholder="Tipo de Activo">
-                    {tipoActivoId === ALL_FILTER
-                      ? "Todos los tipos de activo"
-                      : tiposActivo.find((t) => t.id === tipoActivoId)?.nombre ??
-                      "Tipo de Activo"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-64">
-                  <SelectItem value={ALL_FILTER}>Todos los tipos de activo</SelectItem>
-                  {tiposActivo.map((ta) => (
-                    <SelectItem key={ta.id} value={ta.id}>
-                      {ta.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Tipo de Activo"
+                ariaLabel="Tipo de activo"
+                size="sm"
+                className="w-full"
+                renderValue={(option) => renderConIcono(option, Layers)}
+                emptyMessage="No se encontraron tipos de activo"
+              />
             </div>
 
             {/* List */}

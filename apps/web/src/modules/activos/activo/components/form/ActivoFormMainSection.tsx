@@ -1,4 +1,4 @@
-import type { ComponentType } from "react"
+import { useMemo, type ComponentType } from "react"
 import { Activity, Calendar, FileText, MapPin } from "lucide-react"
 
 import type { EstadoOperativo } from "@/modules/activos/estado-operativo/api/estado-operativo.service"
@@ -9,6 +9,10 @@ import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.ser
 import { TIPO_UBICACION_CONFIG } from "@/modules/parametros/ubicacion/lib/tipo-ubicacion.config"
 import { FormSection } from "@/shared/components/form-section"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import {
   Combobox,
   ComboboxContent,
@@ -23,13 +27,6 @@ import {
   FieldLabel,
 } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 
 type ActivoFormMainSectionProps = {
@@ -66,6 +63,86 @@ export function ActivoFormMainSection({
   estadosErrorMessage = null,
   onEstadoChange,
 }: ActivoFormMainSectionProps) {
+  const tipoOptions = useMemo<OptionsComboboxOption[]>(
+    () => tipos.map((tipo) => ({ value: tipo.id, label: tipo.nombre })),
+    [tipos],
+  )
+
+  const estadoOptions = useMemo<OptionsComboboxOption[]>(
+    () =>
+      estadosOperativos.map((estado) => ({
+        value: estado.id,
+        label: estado.nombre,
+        keywords: [estado.codigo],
+      })),
+    [estadosOperativos],
+  )
+
+  const renderTipoOption = (option: OptionsComboboxOption) => {
+    const tipo = tiposById.get(option.value)
+    if (!tipo) return <span className="truncate">{option.label}</span>
+    const Icon = getTipoActivoIcon(tipo.icono)
+    return (
+      <span className="flex min-w-0 items-center gap-2 truncate">
+        <span
+          className="flex size-4 shrink-0 items-center justify-center rounded-sm text-white"
+          style={{ backgroundColor: tipo.color || DEFAULT_TIPO_ACTIVO_COLOR }}
+        >
+          <Icon className="size-2.5" />
+        </span>
+        <span className="truncate">{option.label}</span>
+      </span>
+    )
+  }
+
+  const renderTipoValor = (option: OptionsComboboxOption) => (
+    <span className="flex min-w-0 items-center gap-2 truncate">
+      <span
+        className="flex size-4 shrink-0 items-center justify-center rounded-sm text-white"
+        style={{ backgroundColor: selectedColor }}
+      >
+        <SelectedIcon className="size-2.5" />
+      </span>
+      <span className="truncate">{option.label}</span>
+    </span>
+  )
+
+  const renderEstadoOption = (option: OptionsComboboxOption) => {
+    const estado = estadosOperativos.find((item) => item.id === option.value)
+    return (
+      <span className="flex min-w-0 items-center gap-2 truncate text-xs">
+        <span
+          className="size-2 shrink-0 rounded-full"
+          style={{ backgroundColor: estado?.color || "#10B981" }}
+        />
+        <span className="font-medium">{option.label}</span>
+        {estado?.codigo ? (
+          <span className="text-[10px] font-mono text-muted-foreground">
+            {estado.codigo}
+          </span>
+        ) : null}
+      </span>
+    )
+  }
+
+  const renderEstadoValor = (option: OptionsComboboxOption) => {
+    const estado = estadosOperativos.find((item) => item.id === option.value)
+    return (
+      <span className="flex min-w-0 items-center gap-2 truncate">
+        <span
+          className="size-2 shrink-0 rounded-full"
+          style={{ backgroundColor: estado?.color || "#10B981" }}
+        />
+        <span className="truncate font-medium text-xs">{option.label}</span>
+        {estado?.codigo ? (
+          <span className="text-[10.5px] font-mono text-muted-foreground">
+            ({estado.codigo})
+          </span>
+        ) : null}
+      </span>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-5">
       {/* 1. Información General */}
@@ -92,60 +169,26 @@ export function ActivoFormMainSection({
           {(field: any) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
-            const selected = tiposById.get(field.state.value)
 
             return (
               <Field data-invalid={isInvalid || undefined}>
                 <RequiredFieldLabel htmlFor={field.name}>
                   Tipo de activo
                 </RequiredFieldLabel>
-                <Select
-                  value={field.state.value || null}
-                  onValueChange={(value) => field.handleChange(value ?? "")}
+                <OptionsCombobox
+                  options={tipoOptions}
+                  value={field.state.value}
+                  onValueChange={field.handleChange}
+                  id={field.name}
+                  name={field.name}
+                  placeholder="Selecciona un tipo"
+                  ariaLabel="Tipo de activo"
                   disabled={tiposQueryLoading}
-                >
-                  <SelectTrigger
-                    id={field.name}
-                    aria-invalid={isInvalid}
-                    className="w-full"
-                  >
-                    <SelectValue placeholder="Selecciona un tipo">
-                      {selected ? (
-                        <div className="flex items-center gap-2 truncate">
-                          <span
-                            className="flex size-4 shrink-0 items-center justify-center rounded-sm text-white"
-                            style={{
-                              backgroundColor:
-                                selected.color || DEFAULT_TIPO_ACTIVO_COLOR,
-                            }}
-                          >
-                            <SelectedIcon className="size-2.5" />
-                          </span>
-                          <span>{selected.nombre}</span>
-                        </div>
-                      ) : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tipos.map((tipo) => {
-                      const Icon = getTipoActivoIcon(tipo.icono)
-                      const color = tipo.color || DEFAULT_TIPO_ACTIVO_COLOR
-                      return (
-                        <SelectItem key={tipo.id} value={tipo.id}>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="flex size-4 shrink-0 items-center justify-center rounded-sm text-white"
-                              style={{ backgroundColor: color }}
-                            >
-                              <Icon className="size-2.5" />
-                            </span>
-                            <span>{tipo.nombre}</span>
-                          </div>
-                        </SelectItem>
-                      )
-                    })}
-                  </SelectContent>
-                </Select>
+                  aria-invalid={isInvalid}
+                  renderOption={renderTipoOption}
+                  renderValue={renderTipoValor}
+                  emptyMessage="No se encontraron tipos de activo"
+                />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -344,9 +387,6 @@ export function ActivoFormMainSection({
           {(field: any) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
-            const selectedEstado = estadosOperativos.find(
-              (e) => e.id === field.state.value,
-            )
 
             return (
               <Field data-invalid={isInvalid || undefined}>
@@ -356,57 +396,27 @@ export function ActivoFormMainSection({
                     Estado Operativo
                   </span>
                 </FieldLabel>
-                <Select
-                  value={field.state.value || null}
+                <OptionsCombobox
+                  options={estadoOptions}
+                  value={field.state.value}
                   onValueChange={(value) => {
-                    field.handleChange(value ?? "")
-                    onEstadoChange?.(value ?? "")
+                    field.handleChange(value)
+                    onEstadoChange?.(value)
                   }}
+                  id={field.name}
+                  name={field.name}
+                  placeholder="Selecciona estado operativo"
+                  ariaLabel="Estado Operativo"
                   disabled={
                     estadosLoading ||
                     Boolean(estadosErrorMessage) ||
                     estadosOperativos.length === 0
                   }
-                >
-                  <SelectTrigger id={field.name} aria-invalid={isInvalid} className="w-full">
-                    <SelectValue placeholder="Selecciona estado operativo">
-                      {selectedEstado ? (
-                        <div className="flex items-center gap-2 truncate">
-                          <span
-                            className="size-2 rounded-full shrink-0"
-                            style={{
-                              backgroundColor: selectedEstado.color || "#10B981",
-                            }}
-                          />
-                          <span className="font-medium text-xs">
-                            {selectedEstado.nombre}
-                          </span>
-                          <span className="text-[10.5px] text-muted-foreground font-mono">
-                            ({selectedEstado.codigo})
-                          </span>
-                        </div>
-                      ) : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {estadosOperativos.map((est) => (
-                      <SelectItem key={est.id} value={est.id}>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="size-2 rounded-full shrink-0"
-                            style={{
-                              backgroundColor: est.color || "#10B981",
-                            }}
-                          />
-                          <span className="text-xs font-medium">{est.nombre}</span>
-                          <span className="text-[10px] text-muted-foreground font-mono">
-                            {est.codigo}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  aria-invalid={isInvalid}
+                  renderOption={renderEstadoOption}
+                  renderValue={renderEstadoValor}
+                  emptyMessage="No se encontraron estados operativos"
+                />
                 {estadosErrorMessage ? (
                   <p className="text-xs text-destructive">{estadosErrorMessage}</p>
                 ) : null}

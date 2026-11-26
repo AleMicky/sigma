@@ -2,6 +2,10 @@ import * as React from "react"
 import { Edit2, Loader2, Plus, Trash2, User } from "lucide-react"
 
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import {
@@ -14,13 +18,6 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import {
   Table,
   TableBody,
@@ -38,6 +35,15 @@ import {
 } from "../api/incidente.mutations"
 import { useIncidenteInvolucradosQuery } from "../api/incidente.queries"
 import type { IncidenteInvolucrado } from "../api/incidente.types"
+
+const TIPO_INVOLUCRADO_OPTIONS: OptionsComboboxOption[] = [
+  { value: "CONDUCTOR", label: "Conductor" },
+  { value: "PASAJERO", label: "Pasajero / Ocupante" },
+  { value: "TERCERO", label: "Tercero Involucrado" },
+  { value: "TESTIGO", label: "Testigo Presencial" },
+  { value: "OFICIAL", label: "Policía / Tránsito / Autoridad" },
+  { value: "OTRO", label: "Otro" },
+]
 
 interface InvolucradosTabProps {
   incidenteId: string
@@ -228,23 +234,18 @@ export function InvolucradosTab({ incidenteId, readOnly = false }: InvolucradosT
 
           <form onSubmit={handleSave} className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">Tipo de Involucrado *</Label>
-              <Select
+              <Label htmlFor="tipo-involucrado" className="text-sm font-semibold">
+                Tipo de Involucrado *
+              </Label>
+              <OptionsCombobox
+                id="tipo-involucrado"
+                options={TIPO_INVOLUCRADO_OPTIONS}
                 value={tipoInvolucrado}
-                onValueChange={(val: string | null) => setTipoInvolucrado(val ?? "CONDUCTOR")}
-              >
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Seleccione rol" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CONDUCTOR">Conductor</SelectItem>
-                  <SelectItem value="PASAJERO">Pasajero / Ocupante</SelectItem>
-                  <SelectItem value="TERCERO">Tercero Involucrado</SelectItem>
-                  <SelectItem value="TESTIGO">Testigo Presencial</SelectItem>
-                  <SelectItem value="OFICIAL">Policía / Tránsito / Autoridad</SelectItem>
-                  <SelectItem value="OTRO">Otro</SelectItem>
-                </SelectContent>
-              </Select>
+                onValueChange={(val) => setTipoInvolucrado(val || "CONDUCTOR")}
+                placeholder="Seleccione rol"
+                ariaLabel="Tipo de Involucrado"
+                className="w-full"
+              />
             </div>
 
             <div className="space-y-1.5">

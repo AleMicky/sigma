@@ -7,18 +7,15 @@ import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.quer
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
 import { RefreshButton } from "@/shared/components/refresh-button"
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import {
   useClampPage,
   usePaginatedSearch,
@@ -31,6 +28,15 @@ import { AccesorioFormDialog } from "../components/AccesorioFormDialog"
 import { AccesorioListView } from "../components/AccesorioListView"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
+
+function renderCategoriaOption(option: OptionsComboboxOption) {
+  return (
+    <span className="flex min-w-0 items-center gap-2 truncate">
+      <Filter className="size-3.5 shrink-0 text-primary" />
+      <span className="truncate">{option.label}</span>
+    </span>
+  )
+}
 
 export function AccesoriosPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -52,9 +58,16 @@ export function AccesoriosPage() {
     [categoriasQuery.data?.content],
   )
 
-  const selectedCategoria = useMemo(
-    () => categorias.find((c) => c.id === selectedCategoriaId),
-    [categorias, selectedCategoriaId],
+  const categoriaOptions = useMemo<OptionsComboboxOption[]>(
+    () => [
+      { value: "ALL", label: "Todas las categorías" },
+      ...categorias.map((categoria) => ({
+        value: categoria.id,
+        label: `${categoria.nombre} (${categoria.codigo})`,
+        keywords: [categoria.codigo],
+      })),
+    ],
+    [categorias],
   )
 
   const isFilteredByCategoria = Boolean(selectedCategoriaId)
@@ -165,32 +178,21 @@ export function AccesoriosPage() {
         />
 
         <div className="w-full sm:w-72 shrink-0">
-          <Select
+          <OptionsCombobox
+            options={categoriaOptions}
             value={selectedCategoriaId || "ALL"}
             onValueChange={(val) => {
-              setSelectedCategoriaId(val === "ALL" ? "" : (val ?? ""))
+              setSelectedCategoriaId(val === "ALL" ? "" : val)
               search.setPage(0)
             }}
-          >
-            <SelectTrigger className="w-full h-10 rounded-xl bg-card border-border/80 text-xs shadow-2xs">
-              <div className="flex items-center gap-2 truncate">
-                <Filter className="size-3.5 text-primary shrink-0" />
-                <SelectValue placeholder="Todas las categorías">
-                  {selectedCategoria
-                    ? `${selectedCategoria.nombre} (${selectedCategoria.codigo})`
-                    : "Todas las categorías"}
-                </SelectValue>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todas las categorías</SelectItem>
-              {categorias.map((categoria) => (
-                <SelectItem key={categoria.id} value={categoria.id}>
-                  {categoria.nombre} ({categoria.codigo})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Todas las categorías"
+            ariaLabel="Filtrar por categoría"
+            size="sm"
+            className="w-full"
+            renderOption={renderCategoriaOption}
+            renderValue={renderCategoriaOption}
+            emptyMessage="No se encontraron categorías"
+          />
         </div>
       </div>
 

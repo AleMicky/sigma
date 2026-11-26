@@ -26,6 +26,10 @@ import { fetchAuthenticatedBlob } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
 import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -37,13 +41,13 @@ import {
 } from "@/shared/components/ui/alert-dialog"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
+
+const DOCUMENTO_ESTADO_OPTIONS: OptionsComboboxOption[] = [
+  { value: "todos", label: "Todos los estados" },
+  { value: "vigente", label: "Vigente" },
+  { value: "por_vencer", label: "Próximo a vencer" },
+  { value: "vencido", label: "Vencido" },
+]
 
 type ActivoDocumentosTabProps = {
   activoId: string
@@ -197,20 +201,15 @@ export function ActivoDocumentosTab({
             />
           </div>
 
-          <Select
+          <OptionsCombobox
+            options={DOCUMENTO_ESTADO_OPTIONS}
             value={docFilter}
-            onValueChange={(val) => handleFilterChange(val ?? "todos")}
-          >
-            <SelectTrigger className="w-40 h-8.5 text-xs">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los estados</SelectItem>
-              <SelectItem value="vigente">Vigente</SelectItem>
-              <SelectItem value="por_vencer">Próximo a vencer</SelectItem>
-              <SelectItem value="vencido">Vencido</SelectItem>
-            </SelectContent>
-          </Select>
+            onValueChange={(val) => handleFilterChange(val || "todos")}
+            placeholder="Estado"
+            ariaLabel="Estado del documento"
+            size="sm"
+            className="w-40"
+          />
         </div>
 
         <Button

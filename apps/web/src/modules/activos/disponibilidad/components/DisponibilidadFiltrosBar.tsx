@@ -11,17 +11,20 @@ import { categoriaQueries } from "@/modules/activos/categoria/api/categoria.quer
 import { estadoOperativoQueries } from "@/modules/activos/estado-operativo/api/estado-operativo.queries"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import { ubicacionQueries } from "@/modules/parametros/ubicacion/api/ubicacion.queries"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
+
+const REGISTRO_OPTIONS: OptionsComboboxOption[] = [
+  { value: "TODOS", label: "Todos" },
+  { value: "ACTIVO", label: "Solo Activos" },
+  { value: "INACTIVO", label: "Solo Inactivos" },
+]
 
 export interface DisponibilidadFiltrosBarProps {
   search: string
@@ -101,6 +104,47 @@ export function DisponibilidadFiltrosBar({
     }),
   )
   const ubicaciones = ubicacionesQuery.data?.content ?? []
+
+  const estadoOptions: OptionsComboboxOption[] = [
+    { value: "TODOS", label: "Todos los estados" },
+    ...estados.map((estado) => ({
+      value: estado.id,
+      label: estado.nombre,
+      keywords: [estado.codigo],
+    })),
+  ]
+  const categoriaOptions: OptionsComboboxOption[] = [
+    { value: "TODAS", label: "Todas las categorías" },
+    ...categorias.map((categoria) => ({
+      value: categoria.id,
+      label: categoria.nombre,
+    })),
+  ]
+  const tipoOptions: OptionsComboboxOption[] = [
+    { value: "TODOS", label: "Todos los tipos" },
+    ...tipos.map((tipo) => ({ value: tipo.id, label: tipo.nombre })),
+  ]
+  const ubicacionOptions: OptionsComboboxOption[] = [
+    { value: "TODAS", label: "Todas las ubicaciones" },
+    ...ubicaciones.map((ubicacion) => ({
+      value: ubicacion.id,
+      label: ubicacion.nombre,
+    })),
+  ]
+
+  const renderEstadoOption = (option: OptionsComboboxOption) => {
+    const estado = estados.find((item) => item.id === option.value)
+    if (!estado) return <span className="truncate">{option.label}</span>
+    return (
+      <span className="flex min-w-0 items-center gap-1.5 truncate">
+        <span
+          className="inline-block size-2 shrink-0 rounded-full"
+          style={{ backgroundColor: estado.color || "#6B7280" }}
+        />
+        <span className="truncate">{option.label}</span>
+      </span>
+    )
+  }
 
   const hasActiveFilters = Boolean(
     search ||
@@ -190,117 +234,94 @@ export function DisponibilidadFiltrosBar({
 
           {/* Estado Operativo */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
+            <Label htmlFor="filtro-estado-operativo" className="text-xs font-medium text-foreground">
               Estado Operativo
             </Label>
-            <Select
+            <OptionsCombobox
+              id="filtro-estado-operativo"
+              options={estadoOptions}
               value={estadoOperativoId ?? "TODOS"}
               onValueChange={(val) =>
-                onEstadoOperativoChange(val === "TODOS" ? null : val)
+                onEstadoOperativoChange(!val || val === "TODOS" ? null : val)
               }
-            >
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="Todos los estados" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TODOS">Todos los estados</SelectItem>
-                {estados.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="inline-block h-2 w-2 rounded-full"
-                        style={{ backgroundColor: e.color || "#6B7280" }}
-                      />
-                      <span>{e.nombre}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Todos los estados"
+              ariaLabel="Estado Operativo"
+              size="sm"
+              className="w-full"
+              renderOption={renderEstadoOption}
+              emptyMessage="No se encontraron estados operativos"
+            />
           </div>
 
           {/* Categoría */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
+            <Label htmlFor="filtro-categoria" className="text-xs font-medium text-foreground">
               Categoría
             </Label>
-            <Select
+            <OptionsCombobox
+              id="filtro-categoria"
+              options={categoriaOptions}
               value={categoriaId ?? "TODAS"}
               onValueChange={(val) => {
-                onCategoriaChange(val === "TODAS" ? null : val)
+                onCategoriaChange(!val || val === "TODAS" ? null : val)
                 onTipoActivoChange(null) // Reset tipo activo
               }}
-            >
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="Todas las categorías" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TODAS">Todas las categorías</SelectItem>
-                {categorias.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Todas las categorías"
+              ariaLabel="Categoría"
+              size="sm"
+              className="w-full"
+              emptyMessage="No se encontraron categorías"
+            />
           </div>
 
           {/* Tipo de Activo */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
+            <Label htmlFor="filtro-tipo-activo" className="text-xs font-medium text-foreground">
               Tipo de Activo
             </Label>
-            <Select
+            <OptionsCombobox
+              id="filtro-tipo-activo"
+              options={tipoOptions}
               value={tipoActivoId ?? "TODOS"}
               onValueChange={(val) =>
-                onTipoActivoChange(val === "TODOS" ? null : val)
+                onTipoActivoChange(!val || val === "TODOS" ? null : val)
               }
-            >
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="Todos los tipos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TODOS">Todos los tipos</SelectItem>
-                {tipos.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Todos los tipos"
+              ariaLabel="Tipo de Activo"
+              size="sm"
+              className="w-full"
+              emptyMessage="No se encontraron tipos de activo"
+            />
           </div>
 
           {/* Ubicación */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
+            <Label htmlFor="filtro-ubicacion" className="text-xs font-medium text-foreground">
               Ubicación
             </Label>
-            <Select
+            <OptionsCombobox
+              id="filtro-ubicacion"
+              options={ubicacionOptions}
               value={ubicacionId ?? "TODAS"}
               onValueChange={(val) =>
-                onUbicacionChange(val === "TODAS" ? null : val)
+                onUbicacionChange(!val || val === "TODAS" ? null : val)
               }
-            >
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="Todas las ubicaciones" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TODAS">Todas las ubicaciones</SelectItem>
-                {ubicaciones.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Todas las ubicaciones"
+              ariaLabel="Ubicación"
+              size="sm"
+              className="w-full"
+              emptyMessage="No se encontraron ubicaciones"
+            />
           </div>
 
           {/* Estado Registro */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
+            <Label htmlFor="filtro-registro" className="text-xs font-medium text-foreground">
               Registro
             </Label>
-            <Select
+            <OptionsCombobox
+              id="filtro-registro"
+              options={REGISTRO_OPTIONS}
               value={
                 activoFilter === null || activoFilter === undefined
                   ? "TODOS"
@@ -309,20 +330,15 @@ export function DisponibilidadFiltrosBar({
                     : "INACTIVO"
               }
               onValueChange={(val) => {
-                if (val === "TODOS") onActivoFilterChange(null)
+                if (!val || val === "TODOS") onActivoFilterChange(null)
                 else if (val === "ACTIVO") onActivoFilterChange(true)
                 else onActivoFilterChange(false)
               }}
-            >
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TODOS">Todos</SelectItem>
-                <SelectItem value="ACTIVO">Solo Activos</SelectItem>
-                <SelectItem value="INACTIVO">Solo Inactivos</SelectItem>
-              </SelectContent>
-            </Select>
+              placeholder="Todos"
+              ariaLabel="Registro"
+              size="sm"
+              className="w-full"
+            />
           </div>
         </div>
       </CardContent>

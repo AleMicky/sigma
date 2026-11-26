@@ -6,18 +6,15 @@ import { appConfig } from "@/app/config"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { PageShell } from "@/shared/components/page-shell"
 import { Pagination } from "@/shared/components/pagination"
 import { RefreshButton } from "@/shared/components/refresh-button"
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import {
   useClampPage,
   usePaginatedSearch,
@@ -32,6 +29,21 @@ import { TipoDocumentoListView } from "../components/TipoDocumentoListView"
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 
 type VencimientoFilter = "ALL" | "VENCIMIENTO" | "PERMANENTE"
+
+const VENCIMIENTO_OPTIONS: OptionsComboboxOption[] = [
+  { value: "ALL", label: "Todos los documentos" },
+  { value: "VENCIMIENTO", label: "Requiere Vencimiento" },
+  { value: "PERMANENTE", label: "Sin Vencimiento" },
+]
+
+function renderVencimientoOption(option: OptionsComboboxOption) {
+  return (
+    <span className="flex min-w-0 items-center gap-2 truncate">
+      <Filter className="size-3.5 shrink-0 text-primary" />
+      <span className="truncate">{option.label}</span>
+    </span>
+  )
+}
 
 export function TiposDocumentoPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -151,31 +163,20 @@ export function TiposDocumentoPage() {
         />
 
         <div className="w-full sm:w-64 shrink-0">
-          <Select
+          <OptionsCombobox
+            options={VENCIMIENTO_OPTIONS}
             value={vencimientoFilter}
             onValueChange={(val) => {
-              setVencimientoFilter((val as VencimientoFilter) ?? "ALL")
+              setVencimientoFilter((val as VencimientoFilter) || "ALL")
               search.setPage(0)
             }}
-          >
-            <SelectTrigger className="w-full h-10 rounded-xl bg-card border-border/80 text-xs shadow-2xs">
-              <div className="flex items-center gap-2 truncate">
-                <Filter className="size-3.5 text-primary shrink-0" />
-                <SelectValue placeholder="Todos los documentos">
-                  {vencimientoFilter === "ALL"
-                    ? "Todos los documentos"
-                    : vencimientoFilter === "VENCIMIENTO"
-                      ? "Requiere Vencimiento"
-                      : "Sin Vencimiento"}
-                </SelectValue>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todos los documentos</SelectItem>
-              <SelectItem value="VENCIMIENTO">Requiere Vencimiento</SelectItem>
-              <SelectItem value="PERMANENTE">Sin Vencimiento</SelectItem>
-            </SelectContent>
-          </Select>
+            placeholder="Todos los documentos"
+            ariaLabel="Filtrar por vencimiento"
+            size="sm"
+            className="w-full"
+            renderOption={renderVencimientoOption}
+            renderValue={renderVencimientoOption}
+          />
         </div>
       </div>
 

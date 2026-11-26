@@ -9,16 +9,13 @@ import {
   FormDialogSubmit,
   RequiredFieldLabel,
 } from "@/shared/components/form-dialog"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Button } from "@/shared/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { tipoDatoQueries } from "@/modules/parametros/tipo-dato/api/tipo-dato.queries"
 
@@ -67,6 +64,16 @@ export function ActivoAtributoFormDialog({
   )
   const tiposById = useMemo(
     () => new Map(tiposDato.map((tipo) => [tipo.id, tipo])),
+    [tiposDato],
+  )
+
+  const tipoDatoOptions = useMemo<OptionsComboboxOption[]>(
+    () =>
+      tiposDato.map((tipo) => ({
+        value: tipo.id,
+        label: `${tipo.nombre} (${tipo.codigo})`,
+        keywords: [tipo.codigo],
+      })),
     [tiposDato],
   )
 
@@ -258,17 +265,16 @@ export function ActivoAtributoFormDialog({
         {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
-          const selected = tiposById.get(field.state.value)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
               <RequiredFieldLabel htmlFor={field.name}>
                 Tipo de dato
               </RequiredFieldLabel>
-              <Select
-                value={field.state.value || null}
-                onValueChange={(value) => {
-                  const nextId = value ?? ""
+              <OptionsCombobox
+                options={tipoDatoOptions}
+                value={field.state.value}
+                onValueChange={(nextId) => {
                   field.handleChange(nextId)
                   const nextTipo = tiposById.get(nextId)
                   if (!nextTipo?.permiteOpciones) {
@@ -279,22 +285,13 @@ export function ActivoAtributoFormDialog({
                     ])
                   }
                 }}
-              >
-                <SelectTrigger id={field.name} className="w-full">
-                  <SelectValue placeholder="Seleccionar tipo de dato">
-                    {selected
-                      ? `${selected.nombre} (${selected.codigo})`
-                      : null}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {tiposDato.map((tipo) => (
-                    <SelectItem key={tipo.id} value={tipo.id}>
-                      {tipo.nombre} ({tipo.codigo})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                id={field.name}
+                name={field.name}
+                placeholder="Seleccionar tipo de dato"
+                ariaLabel="Tipo de dato"
+                aria-invalid={isInvalid}
+                emptyMessage="No se encontraron tipos de dato"
+              />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )

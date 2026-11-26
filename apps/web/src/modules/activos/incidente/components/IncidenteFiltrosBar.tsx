@@ -1,14 +1,41 @@
 import { RotateCcw, Search } from "lucide-react"
 
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
+
+const ESTADO_OPTIONS: OptionsComboboxOption[] = [
+  { value: "ALL", label: "Todos los estados" },
+  { value: "REGISTRADO", label: "Registrado" },
+  { value: "REVISION", label: "En Revisión" },
+  { value: "EN_ATENCION", label: "En Atención" },
+  { value: "VALIDACION", label: "En Validación" },
+  { value: "EN_CIERRE", label: "En Cierre" },
+  { value: "CERRADO", label: "Cerrado" },
+  { value: "RECHAZADO", label: "Rechazado" },
+  { value: "CANCELADO", label: "Cancelado" },
+]
+
+const PRIORIDAD_OPTIONS: OptionsComboboxOption[] = [
+  { value: "ALL", label: "Todas las prioridades" },
+  { value: "BAJA", label: "Baja" },
+  { value: "MEDIA", label: "Media" },
+  { value: "ALTA", label: "Alta" },
+  { value: "CRITICA", label: "Crítica" },
+]
+
+const TIPO_INCIDENTE_OPTIONS: OptionsComboboxOption[] = [
+  { value: "ALL", label: "Todos los tipos" },
+  { value: "COLISION", label: "Colisión / Choque" },
+  { value: "FALLA_MECANICA", label: "Falla Mecánica Grave" },
+  { value: "ROBO_HURTO", label: "Robo / Pérdida" },
+  { value: "DANO_MATERIAL", label: "Daño Material / Vandalismo" },
+  { value: "ACCIDENTE_LABORAL", label: "Accidente Laboral" },
+  { value: "OTRO", label: "Otro Siniestro" },
+]
 
 interface IncidenteFiltrosBarProps {
   search: string
@@ -51,65 +78,43 @@ export function IncidenteFiltrosBar({
 
         {/* Filtro de Estado */}
         <div className="w-full md:w-44">
-          <Select
+          <OptionsCombobox
+            options={ESTADO_OPTIONS}
             value={estado || "ALL"}
-            onValueChange={(val: string | null) => onEstadoChange(val === "ALL" || !val ? "" : val)}
-          >
-            <SelectTrigger className="h-10 bg-background">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todos los estados</SelectItem>
-              <SelectItem value="REGISTRADO">Registrado</SelectItem>
-              <SelectItem value="REVISION">En Revisión</SelectItem>
-              <SelectItem value="EN_ATENCION">En Atención</SelectItem>
-              <SelectItem value="VALIDACION">En Validación</SelectItem>
-              <SelectItem value="EN_CIERRE">En Cierre</SelectItem>
-              <SelectItem value="CERRADO">Cerrado</SelectItem>
-              <SelectItem value="RECHAZADO">Rechazado</SelectItem>
-              <SelectItem value="CANCELADO">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
+            onValueChange={(val) => onEstadoChange(val === "ALL" || !val ? "" : val)}
+            placeholder="Estado"
+            ariaLabel="Estado"
+            size="sm"
+            className="w-full"
+          />
         </div>
 
         {/* Filtro de Prioridad */}
         <div className="w-full md:w-40">
-          <Select
+          <OptionsCombobox
+            options={PRIORIDAD_OPTIONS}
             value={prioridad || "ALL"}
-            onValueChange={(val: string | null) => onPrioridadChange(val === "ALL" || !val ? "" : val)}
-          >
-            <SelectTrigger className="h-10 bg-background">
-              <SelectValue placeholder="Prioridad" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todas las prioridades</SelectItem>
-              <SelectItem value="BAJA">Baja</SelectItem>
-              <SelectItem value="MEDIA">Media</SelectItem>
-              <SelectItem value="ALTA">Alta</SelectItem>
-              <SelectItem value="CRITICA">Crítica</SelectItem>
-            </SelectContent>
-          </Select>
+            onValueChange={(val) => onPrioridadChange(val === "ALL" || !val ? "" : val)}
+            placeholder="Prioridad"
+            ariaLabel="Prioridad"
+            size="sm"
+            className="w-full"
+          />
         </div>
 
         {/* Filtro de Tipo */}
         <div className="w-full md:w-48">
-          <Select
+          <OptionsCombobox
+            options={TIPO_INCIDENTE_OPTIONS}
             value={tipoIncidente || "ALL"}
-            onValueChange={(val: string | null) => onTipoIncidenteChange(val === "ALL" || !val ? "" : val)}
-          >
-            <SelectTrigger className="h-10 bg-background">
-              <SelectValue placeholder="Tipo de incidente" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todos los tipos</SelectItem>
-              <SelectItem value="COLISION">Colisión / Choque</SelectItem>
-              <SelectItem value="FALLA_MECANICA">Falla Mecánica Grave</SelectItem>
-              <SelectItem value="ROBO_HURTO">Robo / Pérdida</SelectItem>
-              <SelectItem value="DANO_MATERIAL">Daño Material / Vandalismo</SelectItem>
-              <SelectItem value="ACCIDENTE_LABORAL">Accidente Laboral</SelectItem>
-              <SelectItem value="OTRO">Otro Siniestro</SelectItem>
-            </SelectContent>
-          </Select>
+            onValueChange={(val) =>
+              onTipoIncidenteChange(val === "ALL" || !val ? "" : val)
+            }
+            placeholder="Tipo de incidente"
+            ariaLabel="Tipo de incidente"
+            size="sm"
+            className="w-full"
+          />
         </div>
 
         {/* Botón Reset */}

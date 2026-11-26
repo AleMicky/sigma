@@ -9,15 +9,12 @@ import {
   FormDialogSubmit,
   RequiredFieldLabel,
 } from "@/shared/components/form-dialog"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 
 import {
@@ -61,9 +58,11 @@ export function TipoActivoFormDialog({
     }),
   )
   const categorias = categoriasQuery.data?.content ?? []
-  const categoriasById = new Map(
-    categorias.map((categoria) => [categoria.id, categoria]),
-  )
+  const categoriaOptions: OptionsComboboxOption[] = categorias.map((categoria) => ({
+    value: categoria.id,
+    label: `${categoria.nombre} (${categoria.codigo})`,
+    keywords: [categoria.codigo],
+  }))
 
   const form = useForm({
     defaultValues: tipoActivo
@@ -154,32 +153,23 @@ export function TipoActivoFormDialog({
         {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
-          const selected = categoriasById.get(field.state.value)
 
           return (
             <Field data-invalid={isInvalid || undefined}>
               <RequiredFieldLabel htmlFor={field.name}>
                 Categoría
               </RequiredFieldLabel>
-              <Select
-                value={field.state.value || null}
-                onValueChange={(value) => field.handleChange(value ?? "")}
-              >
-                <SelectTrigger id={field.name} className="w-full">
-                  <SelectValue placeholder="Seleccionar categoría">
-                    {selected
-                      ? `${selected.nombre} (${selected.codigo})`
-                      : null}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {categorias.map((categoria) => (
-                    <SelectItem key={categoria.id} value={categoria.id}>
-                      {categoria.nombre} ({categoria.codigo})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <OptionsCombobox
+                options={categoriaOptions}
+                value={field.state.value}
+                onValueChange={field.handleChange}
+                id={field.name}
+                name={field.name}
+                placeholder="Seleccionar categoría"
+                ariaLabel="Categoría"
+                aria-invalid={isInvalid}
+                emptyMessage="No se encontraron categorías"
+              />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
