@@ -241,20 +241,37 @@ public class ActivoService {
     @Transactional
     public ActivoResponse uploadImagen(UUID id, MultipartFile file) {
         Activo domain = findDomainById(id);
+        String urlAnterior = domain.getUrlImagen();
         String url = imageStorageService.store(IMAGE_FOLDER, id, file);
-        domain.setUrlImagen(url);
-        return toResponse(activoRepository.save(domain));
+        try {
+            domain.setUrlImagen(url);
+            return toResponse(activoRepository.save(domain));
+        } catch (RuntimeException ex) {
+            // REQ-BIZ-023: si la persistencia falla, revertimos la URL en memoria y
+            // eliminamos el archivo recién escrito para no dejar huérfanos ni apuntar a él.
+            domain.setUrlImagen(urlAnterior);
+            try {
+                imageStorageService.delete(url);
+            } catch (RuntimeException cleanupFailure) {
+                // La excepción original es la causa raíz; no debe ser enmascarada.
+            }
+            throw ex;
+        }
     }
 
     @Transactional
     public ActivoResponse deleteImagen(UUID id) {
         Activo domain = findDomainById(id);
-        if (domain.getUrlImagen() != null) {
-            imageStorageService.delete(domain.getUrlImagen());
-            domain.setUrlImagen(null);
-            domain = activoRepository.save(domain);
+        String url = domain.getUrlImagen();
+        if (url == null) {
+            return toResponse(domain);
         }
-        return toResponse(domain);
+        // REQ-BIZ-023: primero confirmamos el cambio en BD y sólo después borramos
+        // el archivo; así un fallo de persistencia conserva la imagen física.
+        domain.setUrlImagen(null);
+        Activo updated = activoRepository.save(domain);
+        imageStorageService.delete(url);
+        return toResponse(updated);
     }
 
     @Transactional
@@ -268,10 +285,12 @@ public class ActivoService {
     @Transactional
     public void delete(UUID id) {
         Activo domain = findDomainById(id);
+        // Validación de negocio: findDomainById lanza 404 si el activo no existe;
+        // el borrado físico se confirma en BD antes de liberar el archivo asociado.
+        activoRepository.deleteById(id);
         if (domain.getUrlImagen() != null) {
             imageStorageService.delete(domain.getUrlImagen());
         }
-        activoRepository.deleteById(id);
     }
 
     private Activo findDomainById(UUID id) {

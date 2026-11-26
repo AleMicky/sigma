@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
 import { Input } from "@/shared/components/ui/input"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 
 type ActivoAccesoriosTabProps = {
   activoId: string
@@ -59,6 +60,7 @@ export function ActivoAccesoriosTab({
 }: ActivoAccesoriosTabProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [itemToDelete, setItemToDelete] = useState<ActivoAccesorio | null>(null)
+  const { copy } = useCopyToClipboard()
 
   const deleteMutation = useDeleteActivoAccesorio()
 
@@ -86,10 +88,11 @@ export function ActivoAccesoriosTab({
     )
   }, [items, searchTerm])
 
-  function copySerial(serial?: string | null) {
+  async function copySerial(serial?: string | null) {
     if (!serial) return
-    void navigator.clipboard.writeText(serial)
-    toast.success("Número de serie copiado al portapapeles")
+    if (await copy(serial, "serial")) {
+      toast.success("Número de serie copiado al portapapeles")
+    }
   }
 
   async function handleDelete() {

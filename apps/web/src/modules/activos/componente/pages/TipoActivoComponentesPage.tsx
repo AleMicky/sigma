@@ -13,6 +13,7 @@ import { RowActions } from "@/shared/components/row-actions"
 import { SearchField } from "@/shared/components/search-field"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import {
   useClampPage,
   usePaginatedSearch,
@@ -40,7 +41,7 @@ export function TipoActivoComponentesPage({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Componente | null>(null)
   const [toDelete, setToDelete] = useState<Componente | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copiedKey: copiedId, copy } = useCopyToClipboard()
   const search = usePaginatedSearch({ resetKey: tipoActivoId })
   const deleteMutation = useDeleteComponente()
   const setActivoMutation = useSetActivoComponente()
@@ -63,12 +64,11 @@ export function TipoActivoComponentesPage({
     componentesQuery.data?.totalPages,
   )
 
-  function copyCode(e: React.MouseEvent, comp: Componente) {
+  async function copyCode(e: React.MouseEvent, comp: Componente) {
     e.stopPropagation()
-    navigator.clipboard.writeText(comp.codigo)
-    setCopiedId(comp.id)
-    toast.success(`Código "${comp.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedId(null), 2000)
+    if (await copy(comp.codigo, comp.id)) {
+      toast.success(`Código "${comp.codigo}" copiado al portapapeles`)
+    }
   }
 
   function openCreate() {

@@ -4,9 +4,10 @@ import { routes } from "@/app/config/routes"
 import { FormDialogSubmit } from "@/shared/components/form-dialog"
 import { Button } from "@/shared/components/ui/button"
 
+import type { ActivoFormApi } from "../../lib/activo-form.types"
+
 type ActivoFormFooterProps = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  form: any
+  form: ActivoFormApi
 }
 
 export function ActivoFormFooter({ form }: ActivoFormFooterProps) {
@@ -26,12 +27,11 @@ export function ActivoFormFooter({ form }: ActivoFormFooterProps) {
           Cancelar
         </Button>
         <form.Subscribe
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          selector={(state: any) =>
+          selector={(state) =>
             [state.canSubmit, state.isSubmitting] as const
           }
         >
-          {([canSubmit, isSubmitting]: readonly [boolean, boolean]) => (
+          {([canSubmit, isSubmitting]) => (
             <FormDialogSubmit
               canSubmit={canSubmit}
               isSubmitting={isSubmitting}

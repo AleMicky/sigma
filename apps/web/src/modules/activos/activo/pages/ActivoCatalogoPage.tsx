@@ -142,7 +142,11 @@ export function ActivoCatalogoPage() {
       />
 
       {/* KPI Summary Cards — agregados calculados en servidor */}
-      <ActivoKpiCards stats={resumenQuery.data ?? EMPTY_ACTIVO_RESUMEN} />
+      <ActivoKpiCards
+        stats={resumenQuery.data ?? EMPTY_ACTIVO_RESUMEN}
+        isLoading={resumenQuery.isLoading}
+        isError={resumenQuery.isError}
+      />
 
       {/* Toolbar */}
       <ActivoCatalogoToolbar
@@ -175,6 +179,7 @@ export function ActivoCatalogoPage() {
           pageData={activosQuery.data}
           onPageChange={search.setPage}
           onResetFilters={resetFilters}
+          onRetry={() => void activosQuery.refetch()}
         />
       </div>
     </PageShell>

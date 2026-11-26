@@ -280,4 +280,14 @@ describe("resolveActivoSaveTarget", () => {
       resolveActivoSaveTarget({ isEditing: true, activoId: "activo-1" }),
     ).toEqual({ mode: "update", id: "activo-1" })
   })
+
+  it("prefiere el id recién guardado sobre el id de la ruta", () => {
+    expect(
+      resolveActivoSaveTarget({
+        isEditing: true,
+        activoId: "activo-ruta",
+        savedId: "activo-guardado",
+      }),
+    ).toEqual({ mode: "update", id: "activo-guardado" })
+  })
 })

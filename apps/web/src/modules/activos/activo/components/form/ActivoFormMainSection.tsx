@@ -29,9 +29,10 @@ import {
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 
+import type { ActivoFormApi } from "../../lib/activo-form.types"
+
 type ActivoFormMainSectionProps = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  form: any
+  form: ActivoFormApi
   tipos: TipoActivo[]
   tiposById: Map<string, TipoActivo>
   selectedTipo?: TipoActivo
@@ -165,8 +166,7 @@ export function ActivoFormMainSection({
         columns={2}
       >
         <form.Field name="tipoActivoId">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -196,8 +196,7 @@ export function ActivoFormMainSection({
         </form.Field>
 
         <form.Field name="codigo">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -225,8 +224,7 @@ export function ActivoFormMainSection({
         </form.Field>
 
         <form.Field name="codigoAlternativo">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -252,8 +250,7 @@ export function ActivoFormMainSection({
         </form.Field>
 
         <form.Field name="nombre">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -283,8 +280,7 @@ export function ActivoFormMainSection({
         </form.Field>
 
         <form.Field name="fechaAdquisicion">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -321,12 +317,11 @@ export function ActivoFormMainSection({
         columns={2}
       >
         <form.Field name="ubicacionId">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             const selectedUbicacion =
-              ubicacionesById.get(field.state.value) ?? null
+              ubicacionesById.get(field.state.value ?? "") ?? null
 
             return (
               <Field data-invalid={isInvalid || undefined}>
@@ -383,8 +378,7 @@ export function ActivoFormMainSection({
         </form.Field>
 
         <form.Field name="estadoOperativoId">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -398,7 +392,7 @@ export function ActivoFormMainSection({
                 </FieldLabel>
                 <OptionsCombobox
                   options={estadoOptions}
-                  value={field.state.value}
+                  value={field.state.value ?? ""}
                   onValueChange={(value) => {
                     field.handleChange(value)
                     onEstadoChange?.(value)
@@ -428,8 +422,7 @@ export function ActivoFormMainSection({
 
         <div className="col-span-1 md:col-span-2">
           <form.Field name="descripcion">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {(field: any) => {
+            {(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
 

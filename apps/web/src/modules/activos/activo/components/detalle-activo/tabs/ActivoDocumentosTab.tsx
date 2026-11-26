@@ -52,6 +52,7 @@ const DOCUMENTO_ESTADO_OPTIONS: OptionsComboboxOption[] = [
   { value: "vigente", label: "Vigente" },
   { value: "por_vencer", label: "Próximo a vencer" },
   { value: "vencido", label: "Vencido" },
+  { value: "permanente", label: "Permanente" },
 ]
 
 type ActivoDocumentosTabProps = {
@@ -313,9 +314,13 @@ export function ActivoDocumentosTab({
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                         Por vencer
                       </span>
-                    ) : (
+                    ) : estado === "vencido" ? (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-destructive/15 text-destructive border border-destructive/25">
                         Vencido
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/80">
+                        Permanente
                       </span>
                     )}
                   </div>

@@ -8,6 +8,7 @@ import {
   EMPTY_ACTIVO_RESUMEN,
   type ActivoResumen,
   getActivoResumen,
+  listActivos,
 } from "./activo.service"
 
 afterEach(() => {
@@ -22,6 +23,51 @@ describe("getActivoResumen", () => {
 
     expect(get).toHaveBeenCalledWith(`${activoEndpoints.root}/resumen`, {
       params: { q: "transformador" },
+    })
+  })
+
+  it("devuelve los agregados del servidor sin recalcularlos en el cliente", async () => {
+    const resumen: ActivoResumen = {
+      ...EMPTY_ACTIVO_RESUMEN,
+      total: 12,
+      operativos: 7,
+      deBaja: 2,
+      enMantenimiento: 3,
+      disponibles: 8,
+      tasaDisponibilidad: 66.67,
+    }
+    vi.spyOn(http, "get").mockResolvedValue(resumen)
+
+    await expect(getActivoResumen()).resolves.toEqual(resumen)
+  })
+})
+
+describe("listActivos", () => {
+  it("reenvía paginación, orden y atributos de filtro a la API", async () => {
+    const get = vi.spyOn(http, "get").mockResolvedValue({ content: [] })
+
+    await listActivos({
+      page: 2,
+      size: 20,
+      sortBy: "nombre",
+      direction: "ASC",
+      tipoActivoId: "tipo-1",
+      ubicacionId: "ubic-1",
+      activo: true,
+      q: "transformador",
+    })
+
+    expect(get).toHaveBeenCalledWith(activoEndpoints.root, {
+      params: {
+        page: 2,
+        size: 20,
+        sortBy: "nombre",
+        direction: "ASC",
+        tipoActivoId: "tipo-1",
+        ubicacionId: "ubic-1",
+        activo: true,
+        q: "transformador",
+      },
     })
   })
 })

@@ -1,11 +1,17 @@
+import {
+  getDocumentoEstado,
+  type DocumentoEstado,
+} from "@/modules/activos/activo/lib/activo-documentos.utils"
+
 import type {
   ActivoDocumentoEstado,
   ActivoDocumentoResumenFilters,
 } from "../api/activo-documento.service"
 
-export const ALL_DOCUMENTO_FILTER = "__all__"
+export { getDocumentoEstado }
+export type { DocumentoEstado }
 
-export type DocumentoEstado = Lowercase<ActivoDocumentoEstado>
+export const ALL_DOCUMENTO_FILTER = "__all__"
 
 export type DocumentoFilterInput = {
   activoId?: string
@@ -20,32 +26,6 @@ const ESTADOS_API: readonly ActivoDocumentoEstado[] = [
   "VENCIDO",
   "PERMANENTE",
 ]
-
-/** Estado de visualización derivado de la fecha de vencimiento. */
-export function getDocumentoEstado(
-  fechaVencimiento?: string | null,
-  now: Date = new Date(),
-): DocumentoEstado {
-  if (!fechaVencimiento) return "permanente"
-
-  const today = new Date(now)
-  today.setHours(0, 0, 0, 0)
-
-  const parts = fechaVencimiento.split("-")
-  const expiry =
-    parts.length === 3
-      ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
-      : new Date(fechaVencimiento)
-  expiry.setHours(0, 0, 0, 0)
-
-  const diffDays = Math.ceil(
-    (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-  )
-
-  if (diffDays < 0) return "vencido"
-  if (diffDays <= 30) return "por_vencer"
-  return "vigente"
-}
 
 /** Convierte el selector local al enum que espera la API. */
 export function toApiDocumentoEstado(

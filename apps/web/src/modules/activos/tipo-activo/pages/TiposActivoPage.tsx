@@ -123,6 +123,7 @@ export function TiposActivoPage() {
                 ? getErrorMessage(tiposQuery.error)
                 : null
             }
+            onRetry={() => void tiposQuery.refetch()}
             categoriasById={categoriasById}
             onSearchChange={search.setSearch}
             onSelect={masterDetail.select}

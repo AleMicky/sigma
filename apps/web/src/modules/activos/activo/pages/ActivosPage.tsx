@@ -217,8 +217,12 @@ export function ActivosPage() {
         queries={[activosQuery, resumenQuery, tiposQuery, ubicacionesQuery]}
       />
 
-      {/* KPI Summary Cards */}
-      <ActivoKpiCards stats={kpiStats} />
+      {/* KPI Summary Cards — solo se muestran cifras del servidor */}
+      <ActivoKpiCards
+        stats={kpiStats}
+        isLoading={resumenQuery.isLoading}
+        isError={resumenQuery.isError}
+      />
 
       {/* Filter Toolbar with Status Tabs & View Switcher */}
       <ActivoFilterToolbar
@@ -228,11 +232,15 @@ export function ActivosPage() {
         onTipoActivoChange={handleTipoActivoChange}
         statusFilter={statusFilter}
         onStatusFilterChange={handleStatusFilterChange}
-        statusCounts={{
-          all: kpiStats.total,
-          active: kpiStats.total - kpiStats.deBaja,
-          inactive: kpiStats.deBaja,
-        }}
+        statusCounts={
+          resumenQuery.data
+            ? {
+                all: kpiStats.total,
+                active: kpiStats.total - kpiStats.deBaja,
+                inactive: kpiStats.deBaja,
+              }
+            : undefined
+        }
         tipos={tipos}
         tiposById={tiposById}
         hasActiveFilters={hasActiveFilters}
@@ -260,6 +268,7 @@ export function ActivosPage() {
           onResetFilters={resetFilters}
           onCreate={goCreate}
           onEdit={goEdit}
+          onRetry={() => void activosQuery.refetch()}
           canManage={canManage}
         />
       </div>

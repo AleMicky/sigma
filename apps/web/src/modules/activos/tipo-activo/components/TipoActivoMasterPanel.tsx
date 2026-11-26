@@ -24,6 +24,7 @@ type TipoActivoMasterPanelProps = {
   isLoading: boolean
   isFetching: boolean
   errorMessage: string | null
+  onRetry?: () => void
   categoriasById: Map<string, string>
   onSearchChange: (value: string) => void
   onSelect: (id: string) => void
@@ -40,6 +41,7 @@ export function TipoActivoMasterPanel({
   isLoading,
   isFetching,
   errorMessage,
+  onRetry,
   categoriasById,
   onSearchChange,
   onSelect,
@@ -86,6 +88,7 @@ export function TipoActivoMasterPanel({
         isLoading={isLoading}
         isFetching={isFetching}
         errorMessage={errorMessage}
+        onRetry={onRetry}
         hasSearch={search.trim().length > 0}
         onPageChange={onPageChange}
         getKey={(tipo) => tipo.id}

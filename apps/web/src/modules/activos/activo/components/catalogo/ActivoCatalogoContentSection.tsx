@@ -1,4 +1,4 @@
-import { Package, RotateCcw } from "lucide-react"
+import { AlertCircle, Package, RotateCcw } from "lucide-react"
 
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
@@ -63,6 +63,7 @@ type ActivoCatalogoContentSectionProps = {
   pageData?: PageResponse<Activo>
   onPageChange: (page: number) => void
   onResetFilters: () => void
+  onRetry?: () => void
 }
 
 export function ActivoCatalogoContentSection({
@@ -78,6 +79,7 @@ export function ActivoCatalogoContentSection({
   pageData,
   onPageChange,
   onResetFilters,
+  onRetry,
 }: Readonly<ActivoCatalogoContentSectionProps>) {
   if (isLoading) {
     return (
@@ -91,10 +93,22 @@ export function ActivoCatalogoContentSection({
 
   if (isError) {
     return (
-      <EmptyState
-        title={getErrorMessage(error)}
-        className="text-destructive py-12"
-      />
+      <div role="alert" className="text-destructive">
+        <EmptyState
+          icon={<AlertCircle className="size-8 text-destructive/70" />}
+          title="No se pudieron cargar los activos"
+          description={getErrorMessage(error)}
+          action={
+            onRetry ? (
+              <Button size="sm" variant="outline" onClick={onRetry}>
+                <RotateCcw className="size-4" />
+                Reintentar
+              </Button>
+            ) : undefined
+          }
+          className="py-12"
+        />
+      </div>
     )
   }
 

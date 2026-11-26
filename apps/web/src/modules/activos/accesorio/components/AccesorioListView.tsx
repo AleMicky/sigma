@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Badge } from "@/shared/components/ui/badge"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { formatDateTime } from "@/shared/utils/date.utils"
 
 import { useDeleteAccesorio } from "../api/accesorio.mutations"
@@ -21,15 +22,14 @@ export function AccesorioListView({
 }: AccesorioListViewProps) {
   const [accesorioToDelete, setAccesorioToDelete] =
     useState<Accesorio | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copiedKey: copiedId, copy } = useCopyToClipboard()
   const deleteMutation = useDeleteAccesorio()
 
-  function copyCode(e: React.MouseEvent, accesorio: Accesorio) {
+  async function copyCode(e: React.MouseEvent, accesorio: Accesorio) {
     e.stopPropagation()
-    navigator.clipboard.writeText(accesorio.codigo)
-    setCopiedId(accesorio.id)
-    toast.success(`Código "${accesorio.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedId(null), 2000)
+    if (await copy(accesorio.codigo, accesorio.id)) {
+      toast.success(`Código "${accesorio.codigo}" copiado al portapapeles`)
+    }
   }
 
   return (

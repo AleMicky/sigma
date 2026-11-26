@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { Plus } from "lucide-react"
+import { AlertCircle, Plus, RotateCcw } from "lucide-react"
 
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -27,6 +27,7 @@ type PaginatedListProps<T> = {
   isLoading: boolean
   isFetching?: boolean
   errorMessage?: string | null
+  onRetry?: () => void
   hasSearch?: boolean
   empty: EmptyConfig
   onPageChange: (page: number) => void
@@ -45,6 +46,7 @@ export function PaginatedList<T>({
   isLoading,
   isFetching = false,
   errorMessage,
+  onRetry,
   hasSearch = false,
   empty,
   onPageChange,
@@ -65,7 +67,21 @@ export function PaginatedList<T>({
           rowClassName={skeletonRowClassName}
         />
       ) : errorMessage ? (
-        <EmptyState title={errorMessage} className="text-destructive" />
+        <div role="alert" className="text-destructive">
+          <EmptyState
+            icon={<AlertCircle className="size-8 text-destructive/70" />}
+            title="No se pudieron cargar los datos"
+            description={errorMessage}
+            action={
+              onRetry ? (
+                <Button size="sm" variant="outline" onClick={onRetry}>
+                  <RotateCcw className="size-4" />
+                  Reintentar
+                </Button>
+              ) : undefined
+            }
+          />
+        </div>
       ) : items.length === 0 ? (
         <EmptyState
           icon={empty.icon}
