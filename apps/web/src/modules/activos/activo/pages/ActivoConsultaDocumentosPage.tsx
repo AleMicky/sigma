@@ -38,7 +38,11 @@ import {
   buildDocumentoFilters,
   getDocumentoEstado,
 } from "@/modules/activos/activo-documento/lib/activo-documento.utils"
-import { fetchAuthenticatedBlob, getErrorMessage } from "@/shared/api"
+import {
+  downloadProtectedFile,
+  getErrorMessage,
+  openProtectedFile,
+} from "@/shared/api"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
@@ -202,9 +206,10 @@ function ActivoDetailReport({
   async function handleViewFile(doc: ActivoDocumento) {
     try {
       setLoadingDocId(doc.id)
-      const blob = await fetchAuthenticatedBlob(doc.rutaArchivo)
-      const url = URL.createObjectURL(blob)
-      window.open(url, "_blank")
+      await openProtectedFile(
+        doc.rutaArchivo,
+        doc.nombreArchivo || `${doc.nombre}.pdf`,
+      )
     } catch {
       toast.error("No se pudo abrir el archivo")
     } finally {
@@ -215,15 +220,10 @@ function ActivoDetailReport({
   async function handleDownloadFile(doc: ActivoDocumento) {
     try {
       setLoadingDocId(doc.id)
-      const blob = await fetchAuthenticatedBlob(doc.rutaArchivo)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = doc.nombreArchivo || `${doc.nombre}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      await downloadProtectedFile(
+        doc.rutaArchivo,
+        doc.nombreArchivo || `${doc.nombre}.pdf`,
+      )
       toast.success(`Descargando: ${doc.nombreArchivo || doc.nombre}`)
     } catch {
       toast.error("No se pudo descargar el archivo")

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useTheme } from "next-themes"
 import {
@@ -33,6 +33,33 @@ interface CommandItem {
   icon: React.ComponentType<{ className?: string }>
   category: "Navegación" | "Acciones Rápidas" | "Sistema"
   onSelect: () => void
+}
+
+function normalizeText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+}
+
+/** Coincidencia exacta o por subsecuencia, ignorando acentos y mayúsculas. */
+function matchesCommand(haystack: string, query: string): boolean {
+  const normalizedQuery = normalizeText(query)
+  if (!normalizedQuery) return true
+
+  const normalizedText = normalizeText(haystack)
+  if (normalizedText.includes(normalizedQuery)) return true
+
+  const queryChars = Array.from(normalizedQuery)
+  let matched = 0
+
+  for (const char of normalizedText) {
+    if (char === queryChars[matched]) matched += 1
+    if (matched === queryChars.length) return true
+  }
+
+  return false
 }
 
 function extractNavItems(
@@ -110,14 +137,22 @@ export function CommandPalette({
     setSelectedIndex(0)
   }
 
-  // Toggle fullscreen
+  // El estado debe reflejar también salidas con Esc/F11.
+  useEffect(() => {
+    function handleFullscreenChange() {
+      setIsFullscreen(Boolean(document.fullscreenElement))
+    }
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange)
+  }, [])
+
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       void document.documentElement.requestFullscreen()
-      setIsFullscreen(true)
     } else {
       void document.exitFullscreen()
-      setIsFullscreen(false)
     }
     onOpenChange(false)
   }, [onOpenChange])
@@ -194,14 +229,13 @@ export function CommandPalette({
 
   // Filtrado de comandos por búsqueda
   const filteredItems = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    if (!query) return allItems
+    if (!search.trim()) return allItems
 
-    return allItems.filter(
-      (item) =>
-        item.title.toLowerCase().includes(query) ||
-        item.subtitle?.toLowerCase().includes(query) ||
-        item.category.toLowerCase().includes(query),
+    return allItems.filter((item) =>
+      matchesCommand(
+        `${item.title} ${item.subtitle ?? ""} ${item.category}`,
+        search,
+      ),
     )
   }, [allItems, search])
 
@@ -244,6 +278,7 @@ export function CommandPalette({
   }, [filteredItems])
 
   let runningIndex = -1
+  const selectedCommandId = filteredItems[selectedIndex]?.id
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -258,7 +293,16 @@ export function CommandPalette({
           <Search className="size-4.5 text-muted-foreground shrink-0" />
           <input
             type="text"
+            role="combobox"
             autoFocus
+            autoComplete="off"
+            aria-expanded={open && filteredItems.length > 0}
+            aria-controls="command-results"
+            aria-activedescendant={
+              selectedCommandId
+                ? `command-option-${selectedCommandId}`
+                : undefined
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -281,7 +325,12 @@ export function CommandPalette({
         </div>
 
         {/* Lista de Resultados */}
-        <div className="max-h-[340px] overflow-y-auto p-2 scrollbar-thin">
+        <div
+          id="command-results"
+          role="listbox"
+          aria-label="Resultados de comandos"
+          className="max-h-[340px] overflow-y-auto p-2 scrollbar-thin"
+        >
           {filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-muted-foreground">
               <Compass className="size-8 opacity-40" />
@@ -289,7 +338,12 @@ export function CommandPalette({
             </div>
           ) : (
             groupedItems.map((group) => (
-              <div key={group.category} className="mb-2 last:mb-0">
+              <div
+                key={group.category}
+                role="group"
+                aria-label={group.category}
+                className="mb-2 last:mb-0"
+              >
                 <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
                   {group.category}
                 </div>
@@ -302,7 +356,10 @@ export function CommandPalette({
                     return (
                       <button
                         key={item.id}
+                        id={`command-option-${item.id}`}
                         type="button"
+                        role="option"
+                        aria-selected={isSelected}
                         onClick={item.onSelect}
                         onMouseEnter={() => setSelectedIndex(runningIndex)}
                         className={cn(

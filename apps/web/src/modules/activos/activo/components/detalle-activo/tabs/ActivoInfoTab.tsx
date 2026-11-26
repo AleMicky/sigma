@@ -265,8 +265,7 @@ export function ActivoInfoTab({
 
       // 3. Invalidate queries
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: activoKeys.detail(activo.id) }),
-        queryClient.invalidateQueries({ queryKey: activoKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: activoKeys.all }),
         queryClient.invalidateQueries({
           queryKey: activoAtributoValorKeys.lists(),
         }),

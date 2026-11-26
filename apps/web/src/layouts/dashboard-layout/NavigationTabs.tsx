@@ -152,8 +152,7 @@ function NavigationTabItem({
       : undefined
 
   return (
-    <Link
-      to={tab.pathname}
+    <div
       data-tab-active={isActive}
       className={cn(
         "group relative flex h-6.5 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[11.5px] font-medium transition-all border select-none",
@@ -163,41 +162,49 @@ function NavigationTabItem({
       )}
       style={activeStyle}
     >
-      {/* Indicador de color: dot sutil */}
-      {tabColor ? (
-        <span
-          className={cn(
-            "size-1.5 rounded-full shrink-0 transition-transform duration-200",
-            isActive ? "scale-110 ring-1 ring-background" : "opacity-75 group-hover:opacity-100",
-          )}
-          style={{ backgroundColor: tabColor }}
-        />
-      ) : null}
+      <Link
+        to={tab.pathname}
+        aria-current={isActive ? "page" : undefined}
+        aria-label={tabTitle}
+        className="flex min-w-0 items-center gap-1.5 rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        {/* Indicador de color: dot sutil */}
+        {tabColor ? (
+          <span
+            className={cn(
+              "size-1.5 rounded-full shrink-0 transition-transform duration-200",
+              isActive ? "scale-110 ring-1 ring-background" : "opacity-75 group-hover:opacity-100",
+            )}
+            style={{ backgroundColor: tabColor }}
+          />
+        ) : null}
 
-      {createElement(resolveTabIcon(tab.pathname), {
-        className: cn(
-          "size-3 shrink-0 transition-colors",
-          isActive
-            ? "text-primary"
-            : "text-muted-foreground/70 group-hover:text-foreground",
-        ),
-        style: tabColor ? { color: tabColor } : undefined,
-      })}
+        {createElement(resolveTabIcon(tab.pathname), {
+          className: cn(
+            "size-3 shrink-0 transition-colors",
+            isActive
+              ? "text-primary"
+              : "text-muted-foreground/70 group-hover:text-foreground",
+          ),
+          style: tabColor ? { color: tabColor } : undefined,
+        })}
 
-      <span className="truncate max-w-36 tracking-tight">{tabTitle}</span>
+        <span className="truncate max-w-36 tracking-tight">{tabTitle}</span>
+      </Link>
 
-      {/* Botón cerrar pestaña individual */}
+      {/* Botón cerrar pestaña individual (fuera del Link para evitar anidamiento interactivo) */}
       {canClose && (
         <button
           type="button"
           onClick={(e) => onClose(e, tab)}
-          className="size-3.5 shrink-0 rounded flex items-center justify-center text-muted-foreground/60 opacity-0 group-hover:opacity-100 hover:bg-destructive/15 hover:text-destructive transition-all ml-0.5"
+          aria-label={`Cerrar pestaña ${tabTitle}`}
+          className="ml-0.5 flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 transition-all hover:bg-destructive/15 hover:text-destructive focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-ring md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
           title="Cerrar pestaña"
         >
-          <X className="size-2.5" />
+          <X className="size-3" />
         </button>
       )}
-    </Link>
+    </div>
   )
 }
 
@@ -282,6 +289,7 @@ export function NavigationTabs() {
       <button
         type="button"
         onClick={() => scroll("left")}
+        aria-label="Desplazar pestañas a la izquierda"
         className="hidden sm:flex size-5.5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors mr-1"
         title="Desplazar a la izquierda"
       >
@@ -310,6 +318,7 @@ export function NavigationTabs() {
         <button
           type="button"
           onClick={() => scroll("right")}
+          aria-label="Desplazar pestañas a la derecha"
           className="hidden sm:flex size-5.5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
           title="Desplazar a la derecha"
         >
@@ -322,6 +331,7 @@ export function NavigationTabs() {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Opciones de pestañas"
                 className="size-5.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
                 title="Opciones de pestañas"
               />

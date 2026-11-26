@@ -29,6 +29,8 @@ const activoMutations = createCrudMutations<Activo, ActivoPayload>({
     updated: "Activo actualizado correctamente",
     deleted: "Activo eliminado correctamente",
   },
+  // `resumen`, `disponibilidad` y `para-solicitud` son hermanos de `list`.
+  invalidateKeys: [activoKeys.all],
 })
 
 export const useCreateActivo = activoMutations.useCreate

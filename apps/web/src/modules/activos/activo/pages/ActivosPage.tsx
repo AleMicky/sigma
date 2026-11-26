@@ -14,11 +14,11 @@ import {
 import { useCanManageActivos } from "@/modules/activos/lib/use-can-manage-activos"
 
 import { activoQueries } from "../api/activo.queries"
-import type { Activo } from "../api/activo.service"
+import { EMPTY_ACTIVO_RESUMEN, type Activo } from "../api/activo.service"
 import { ActivoContentSection } from "../components/ActivoContentSection"
 import { ActivoFilterToolbar, type StatusFilter } from "../components/ActivoFilterToolbar"
 import { ActivoHeader } from "../components/ActivoHeader"
-import { ActivoKpiCards, type ActivoKpiStats } from "../components/ActivoKpiCards"
+import { ActivoKpiCards } from "../components/ActivoKpiCards"
 
 const PAGE_SIZE = appConfig.pagination.defaultPageSize
 const ALL_TIPOS = "__all__"
@@ -27,26 +27,6 @@ function getActivoFilterParam(statusFilter: StatusFilter): boolean | undefined {
   if (statusFilter === "active") return true
   if (statusFilter === "inactive") return false
   return undefined
-}
-
-function isOperativoActivo(activo: Activo): boolean {
-  const nombre = activo.estadoOperativo?.nombre?.toLowerCase() ?? ""
-  if (nombre.includes("operativo")) return true
-  return !nombre.includes("mantenimiento") && activo.activo !== false
-}
-
-function computeActivoKpiStats(
-  activos: Activo[],
-  totalElements?: number,
-): ActivoKpiStats {
-  const total = totalElements ?? activos.length
-  const deBaja = activos.filter((a) => a.activo === false).length
-  const enMantenimiento = activos.filter((a) =>
-    a.estadoOperativo?.nombre?.toLowerCase().includes("mantenimiento"),
-  ).length
-  const operativos = activos.filter(isOperativoActivo).length
-
-  return { total, deBaja, enMantenimiento, operativos }
 }
 
 function buildActivoQueryParams(
@@ -136,15 +116,23 @@ export function ActivosPage() {
 
   const activosQuery = useQuery(activoQueries.list(queryParams))
 
+  const resumenFilters = useMemo(
+    () => ({
+      q: search.query || undefined,
+      tipoActivoId: tipoActivoId !== ALL_TIPOS ? tipoActivoId : undefined,
+      activo: getActivoFilterParam(statusFilter),
+    }),
+    [search.query, tipoActivoId, statusFilter],
+  )
+  const resumenQuery = useQuery(activoQueries.resumen(resumenFilters))
+
   const activos = useMemo(
     () => activosQuery.data?.content ?? [],
     [activosQuery.data?.content],
   )
 
-  const kpiStats = useMemo(
-    () => computeActivoKpiStats(activos, activosQuery.data?.totalElements),
-    [activos, activosQuery.data?.totalElements],
-  )
+  // Los KPI vienen del servidor con los mismos filtros, no de la página actual.
+  const kpiStats = resumenQuery.data ?? EMPTY_ACTIVO_RESUMEN
 
   useClampPage(search.page, search.setPage, activosQuery.data?.totalPages)
 
@@ -197,7 +185,7 @@ export function ActivosPage() {
         totalActivos={activosQuery.data?.totalElements}
         onCreate={goCreate}
         canManage={canManage}
-        queries={[activosQuery, tiposQuery, ubicacionesQuery]}
+        queries={[activosQuery, resumenQuery, tiposQuery, ubicacionesQuery]}
       />
 
       {/* KPI Summary Cards */}

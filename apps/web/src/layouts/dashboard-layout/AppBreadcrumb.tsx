@@ -38,10 +38,14 @@ export function AppBreadcrumb() {
                 ) : (
                   <BreadcrumbLink
                     render={<Link to={item.href} />}
-                    className="flex items-center gap-1 font-medium transition-all hover:text-primary shrink-0 hover:scale-[1.02]"
+                    className="group flex min-w-0 items-center gap-1 font-medium transition-all hover:text-primary hover:scale-[1.02]"
                   >
-                    {isFirst && <Home className="size-3.5 text-muted-foreground/80 group-hover:text-primary" />}
-                    <span>{item.title}</span>
+                    {isFirst && (
+                      <Home className="size-3.5 shrink-0 text-muted-foreground/80 group-hover:text-primary" />
+                    )}
+                    <span className="truncate max-w-40 sm:max-w-60 md:max-w-none">
+                      {item.title}
+                    </span>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>

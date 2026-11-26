@@ -8,10 +8,12 @@ export { http } from "./http";
 export type { HttpClient } from "./http";
 
 export {
+    downloadProtectedFile,
     fetchAuthenticatedBlob,
     isBrowserViewable,
     openOrDownloadProtectedFile,
     openPdfInNewTab,
+    openProtectedFile,
     toApiRelativePath,
     uploadImage,
 } from "./files";

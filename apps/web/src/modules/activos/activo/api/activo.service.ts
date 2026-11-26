@@ -94,7 +94,10 @@ export const updateActivo = crud.update
 export const deleteActivo = crud.remove
 
 export async function getActivoResumen(
-  filters?: Pick<ActivoListParams, "q" | "tipoActivoId" | "ubicacionId">,
+  filters?: Pick<
+    ActivoListParams,
+    "q" | "tipoActivoId" | "ubicacionId" | "activo"
+  >,
 ): Promise<ActivoResumen> {
   return http.get<ActivoResumen>("/activos/resumen", { params: filters })
 }

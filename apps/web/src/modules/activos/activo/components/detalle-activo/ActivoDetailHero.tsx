@@ -189,7 +189,7 @@ export function ActivoDetailHero({
           </div>
         </div>
 
-        {/* Hero Quick Action Buttons: edición/cambio de estado solo ADMIN; adjuntar documento es operación diaria. */}
+        {/* Hero Quick Action Buttons: todas las acciones de gestión son solo ADMIN. */}
         <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-border/50">
           {canManage ? (
             isEditing ? (
@@ -230,15 +230,17 @@ export function ActivoDetailHero({
             </Button>
           ) : null}
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onOpenAddDocument}
-            className="h-8.5 px-3.5 text-xs font-semibold shadow-xs"
-          >
-            <FilePlus className="size-3.5 text-primary" />
-            Adjuntar Documento
-          </Button>
+          {canManage ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onOpenAddDocument}
+              className="h-8.5 px-3.5 text-xs font-semibold shadow-xs"
+            >
+              <FilePlus className="size-3.5 text-primary" />
+              Adjuntar Documento
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>

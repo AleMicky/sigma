@@ -42,8 +42,10 @@ import { ActivoFormImageSection } from "../components/form/ActivoFormImageSectio
 import { ActivoFormMainSection } from "../components/form/ActivoFormMainSection"
 import { ActivoLivePreviewCard } from "../components/form/ActivoLivePreviewCard"
 import {
+  buildActivoPayload,
   buildReplaceAtributosPayload,
   mapAtributoValidationErrors,
+  resolveActivoSaveTarget,
   validateAtributos,
 } from "../lib/activo-form.utils"
 import {
@@ -90,6 +92,8 @@ export function ActivoFormPage({
   // Selección explícita del usuario; se descarta al cambiar el tipo de activo.
   const estadoManualRef = useRef<string | null>(null)
   const prevEstadoTipoRef = useRef(defaultTipoActivoId ?? "")
+  const savedActivoIdRef = useRef<string | null>(null)
+  const hydratedIdRef = useRef<string | null>(null)
 
   const activoQuery = useQuery({
     ...activoQueries.detail(activoId ?? ""),
@@ -189,27 +193,26 @@ export function ActivoFormPage({
         return
       }
 
-      const payload = {
-        codigo: value.codigo.trim(),
-        codigoAlternativo: value.codigoAlternativo.trim() || null,
-        nombre: value.nombre.trim(),
-        descripcion: value.descripcion.trim() || null,
-        tipoActivoId: value.tipoActivoId,
-        ubicacionId: value.ubicacionId?.trim() || null,
-        estadoOperativoId: value.estadoOperativoId?.trim() || null,
-        fechaAdquisicion: value.fechaAdquisicion || null,
-      }
+      const payload = buildActivoPayload(value, currentActivo)
+      const target = resolveActivoSaveTarget({
+        isEditing,
+        activoId,
+        savedId: savedActivoIdRef.current,
+      })
 
       try {
         let saved: Activo
 
-        if (isEditing && activoId) {
+        if (target.mode === "update") {
           saved = await updateMutation.mutateAsync({
-            id: activoId,
+            id: target.id,
             payload,
           })
         } else {
           saved = await createMutation.mutateAsync(payload)
+          // Si falla la imagen o los atributos, el reintento actualiza este
+          // registro en lugar de crear un segundo activo.
+          savedActivoIdRef.current = saved.id
         }
 
         if (file) {
@@ -223,10 +226,7 @@ export function ActivoFormPage({
           buildReplaceAtributosPayload(atributos, currentValores, existentes),
         )
 
-        void queryClient.invalidateQueries({ queryKey: activoKeys.lists() })
-        void queryClient.invalidateQueries({
-          queryKey: activoKeys.detail(saved.id),
-        })
+        void queryClient.invalidateQueries({ queryKey: activoKeys.all })
         void queryClient.invalidateQueries({
           queryKey: activoAtributoValorKeys.lists(),
         })
@@ -380,22 +380,33 @@ export function ActivoFormPage({
     valoresExistentesByAtributoId,
   ])
 
+  // Hidratación y cambio de tipo comparten refs: si se ejecutaran en efectos
+  // separados, el efecto del tipo sobrescribiría los refs recién hidratados y
+  // borraría el estado operativo del activo al editar.
   useEffect(() => {
-    if (!isEditing || !activo) return
+    if (isEditing && activo && hydratedIdRef.current !== activo.id) {
+      hydratedIdRef.current = activo.id
+      const tipoId = activo.tipoActivo?.id ?? activo.tipoActivoId ?? ""
+      const estadoId =
+        activo.estadoOperativo?.id ?? activo.estadoOperativoId ?? ""
 
-    form.setFieldValue("codigo", activo.codigo)
-    form.setFieldValue("codigoAlternativo", activo.codigoAlternativo ?? "")
-    form.setFieldValue("nombre", activo.nombre)
-    form.setFieldValue("descripcion", activo.descripcion ?? "")
-    form.setFieldValue("tipoActivoId", activo.tipoActivo?.id ?? activo.tipoActivoId ?? "")
-    form.setFieldValue("ubicacionId", activo.ubicacion?.id ?? activo.ubicacionId ?? "")
-    form.setFieldValue("estadoOperativoId", activo.estadoOperativo?.id ?? activo.estadoOperativoId ?? "")
-    form.setFieldValue("fechaAdquisicion", activo.fechaAdquisicion ?? "")
-    // La hidratación no debe disparar el reset por cambio de tipo.
-    prevEstadoTipoRef.current = activo.tipoActivo?.id ?? activo.tipoActivoId ?? ""
-  }, [activo, form, isEditing])
+      form.setFieldValue("codigo", activo.codigo)
+      form.setFieldValue("codigoAlternativo", activo.codigoAlternativo ?? "")
+      form.setFieldValue("nombre", activo.nombre)
+      form.setFieldValue("descripcion", activo.descripcion ?? "")
+      form.setFieldValue("tipoActivoId", tipoId)
+      form.setFieldValue(
+        "ubicacionId",
+        activo.ubicacion?.id ?? activo.ubicacionId ?? "",
+      )
+      form.setFieldValue("estadoOperativoId", estadoId)
+      form.setFieldValue("fechaAdquisicion", activo.fechaAdquisicion ?? "")
 
-  useEffect(() => {
+      prevEstadoTipoRef.current = tipoId
+      estadoManualRef.current = estadoId || null
+      return
+    }
+
     if (!tipoActivoId) {
       prevEstadoTipoRef.current = ""
       estadoManualRef.current = null
@@ -406,7 +417,7 @@ export function ActivoFormPage({
     // El estado elegido para el tipo anterior deja de ser válido.
     estadoManualRef.current = null
     form.setFieldValue("estadoOperativoId", "")
-  }, [form, tipoActivoId])
+  }, [activo, form, isEditing, tipoActivoId])
 
   useEffect(() => {
     if (isEditing || !tipoActivoId || !estadoPredeterminadoId) return

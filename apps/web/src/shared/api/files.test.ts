@@ -3,9 +3,12 @@ import { beforeAll, describe, expect, it, vi } from "vitest"
 import { http } from "@/shared/api/http"
 
 import {
+  downloadProtectedFile,
   fetchAuthenticatedBlob,
   isBrowserViewable,
+  openOrDownloadProtectedFile,
   openPdfInNewTab,
+  openProtectedFile,
   toApiRelativePath,
   uploadImage,
 } from "./files"
@@ -153,5 +156,116 @@ describe("openPdfInNewTab", () => {
       "boom",
     )
     expect(fakeWindow.close).toHaveBeenCalledOnce()
+  })
+})
+
+describe("visor y descarga de archivos protegidos", () => {
+  const createObjectURL = vi.fn(() => "blob:documento")
+  const revokeObjectURL = vi.fn()
+
+  beforeAll(() => {
+    Object.defineProperty(URL, "createObjectURL", {
+      value: createObjectURL,
+      configurable: true,
+    })
+    Object.defineProperty(URL, "revokeObjectURL", {
+      value: revokeObjectURL,
+      configurable: true,
+    })
+  })
+
+  it("abre la pestaña antes del fetch y revoca el ObjectURL", async () => {
+    vi.useFakeTimers()
+    revokeObjectURL.mockClear()
+    httpMock.get.mockResolvedValueOnce(new Blob(["pdf"]))
+    const fakeWindow = {
+      opener: window,
+      location: { href: "" },
+      close: vi.fn(),
+    } as unknown as Window
+    const openSpy = vi.spyOn(window, "open").mockReturnValue(fakeWindow)
+
+    await openProtectedFile("/api/v1/files/activos/1.pdf", "acta.pdf")
+
+    expect(openSpy).toHaveBeenCalledWith("", "_blank")
+    expect(httpMock.get).toHaveBeenCalledWith("/files/activos/1.pdf", {
+      responseType: "blob",
+      headers: { Accept: "*/*" },
+    })
+    expect(fakeWindow.opener).toBeNull()
+    expect(fakeWindow.location.href).toBe("blob:documento")
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:documento")
+    vi.useRealTimers()
+  })
+
+  it("descarga con el nombre original si el popup está bloqueado", async () => {
+    vi.useFakeTimers()
+    revokeObjectURL.mockClear()
+    httpMock.get.mockResolvedValueOnce(new Blob(["xlsx"]))
+    vi.spyOn(window, "open").mockReturnValue(null)
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {})
+
+    await openProtectedFile("/files/planilla.xlsx", "planilla.xlsx")
+
+    expect(clickSpy).toHaveBeenCalledOnce()
+    expect(document.querySelector("a[download='planilla.xlsx']")).toBeNull()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:documento")
+    document.querySelectorAll("a").forEach((anchor) => anchor.remove())
+    vi.useRealTimers()
+  })
+
+  it("cierra la pestaña abierta si el fetch falla", async () => {
+    httpMock.get.mockRejectedValueOnce(new Error("red caída"))
+    const fakeWindow = { close: vi.fn() } as unknown as Window
+    vi.spyOn(window, "open").mockReturnValue(fakeWindow)
+
+    await expect(
+      openProtectedFile("/files/acta.pdf", "acta.pdf"),
+    ).rejects.toThrow("red caída")
+    expect(fakeWindow.close).toHaveBeenCalledOnce()
+  })
+
+  it("downloadProtectedFile descarga y limpia el enlace temporal", async () => {
+    vi.useFakeTimers()
+    revokeObjectURL.mockClear()
+    httpMock.get.mockResolvedValueOnce(new Blob(["docx"]))
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {})
+
+    await downloadProtectedFile("/files/contrato.docx", "contrato.docx")
+
+    expect(clickSpy).toHaveBeenCalledOnce()
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:documento")
+    vi.useRealTimers()
+  })
+
+  it("openOrDownloadProtectedFile elige descarga para documentos Office", async () => {
+    vi.useFakeTimers()
+    httpMock.get.mockResolvedValueOnce(new Blob(["xlsx"]))
+    const openSpy = vi.spyOn(window, "open")
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {})
+
+    await expect(
+      openOrDownloadProtectedFile(
+        "/files/planilla.xlsx",
+        "planilla.xlsx",
+        "application/vnd.ms-excel",
+      ),
+    ).resolves.toBe("downloaded")
+
+    expect(openSpy).not.toHaveBeenCalled()
+    expect(clickSpy).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(10_000)
+    document.querySelectorAll("a").forEach((anchor) => anchor.remove())
+    vi.useRealTimers()
   })
 })

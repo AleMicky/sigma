@@ -10,7 +10,7 @@ export type ActivoListFilters = PageParams & {
 
 export type ActivoResumenFilters = Pick<
   ActivoListFilters,
-  "q" | "tipoActivoId" | "ubicacionId"
+  "q" | "tipoActivoId" | "ubicacionId" | "activo"
 >
 
 const baseKeys = createResourceKeys<"activos", ActivoListFilters>("activos")
