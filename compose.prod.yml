@@ -15,8 +15,9 @@ services:
       DB_NAME: ${DB_NAME:?DB_NAME es requerida}
       DB_USERNAME: ${DB_USERNAME:?DB_USERNAME es requerida}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD es requerida}
-      # TLS obligatorio en producción: valor fijo, no depende del .env local.
-      DB_SSL_MODE: require
+      # Modo SSL configurable por entorno: "prefer" usa TLS si PostgreSQL lo soporta
+      # y permite forzar "require"/"verify-full" desde .env al habilitar SSL en BD.
+      DB_SSL_MODE: ${DB_SSL_MODE:-prefer}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS es requerida}
       KEYCLOAK_BASE_URL: ${KEYCLOAK_BASE_URL:-}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-}
