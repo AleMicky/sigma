@@ -7,37 +7,30 @@ import {
 } from "lucide-react"
 
 import { Card, CardContent } from "@/shared/components/ui/card"
-import type { ViajeVehicular } from "../api/viaje-vehicular.service"
+import type { TotalesGestionVehicularResponse } from "../../totales/api/gestion-vehicular-totales.service"
 
 export interface HistorialViajesMetricsProps {
-  viajes: ViajeVehicular[]
-  totalElements?: number
+  /** Agregados del servidor (`GET /reportes/gestion-vehicular/totales?modulo=viajes`). */
+  totales?: TotalesGestionVehicularResponse | null
+}
+
+function formatear(valor: number | null | undefined): string {
+  if (valor == null || !Number.isFinite(valor)) return "—"
+  return valor.toLocaleString()
 }
 
 export function HistorialViajesMetrics({
-  viajes,
-  totalElements,
+  totales,
 }: Readonly<HistorialViajesMetricsProps>) {
-  const total = totalElements ?? viajes.length
-
-  const finalizados = viajes.filter((v) => v.estado === "FINALIZADO").length
-  const enCurso = viajes.filter((v) => v.estado === "EN_CURSO").length
-  const programados = viajes.filter((v) => v.estado === "PROGRAMADO").length
-  const cancelados = viajes.filter((v) => v.estado === "CANCELADO").length
-
-  const kmTotal = viajes.reduce((acc, v) => {
-    if (
-      v.kilometrajeRetorno != null &&
-      v.kilometrajeSalida != null &&
-      v.kilometrajeRetorno >= v.kilometrajeSalida
-    ) {
-      return acc + (v.kilometrajeRetorno - v.kilometrajeSalida)
-    }
-    return acc
-  }, 0)
+  const kmLabel = formatear(totales?.totalKm)
+  // El contrato de totales no incluye desglose por estado; no se calcula desde `content`.
+  const estadoNoDisponible = "—"
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 print:hidden">
+    <div
+      data-testid="metricas-viajes"
+      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 print:hidden"
+    >
       {/* 1. Total Viajes */}
       <Card className="border-border/60 bg-card/60 shadow-xs hover:border-primary/40 transition-colors">
         <CardContent className="p-3.5 space-y-1">
@@ -48,10 +41,10 @@ export function HistorialViajesMetrics({
             <Car className="h-4 w-4 text-primary" />
           </div>
           <div className="text-2xl font-bold text-foreground">
-            {total.toLocaleString()}
+            {formatear(totales?.totalRegistros)}
           </div>
           <p className="text-[10px] text-muted-foreground truncate">
-            Registrados en el sistema
+            Registrados con los filtros aplicados
           </p>
         </CardContent>
       </Card>
@@ -66,7 +59,7 @@ export function HistorialViajesMetrics({
             <Clock className="h-4 w-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-            {enCurso}
+            {estadoNoDisponible}
           </div>
           <p className="text-[10px] text-muted-foreground truncate">
             Vehículos en ruta activa
@@ -84,7 +77,7 @@ export function HistorialViajesMetrics({
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-            {finalizados}
+            {estadoNoDisponible}
           </div>
           <p className="text-[10px] text-muted-foreground truncate">
             Retorno y odómetro confirmado
@@ -102,7 +95,10 @@ export function HistorialViajesMetrics({
             <Gauge className="h-4 w-4 text-sky-500" />
           </div>
           <div className="text-2xl font-bold text-sky-600 dark:text-sky-400">
-            {kmTotal.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">km</span>
+            {kmLabel}{" "}
+            {kmLabel !== "—" && (
+              <span className="text-xs font-normal text-muted-foreground">km</span>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground truncate">
             Distancia neta acumulada
@@ -120,10 +116,10 @@ export function HistorialViajesMetrics({
             <Navigation className="h-4 w-4 text-blue-500" />
           </div>
           <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-            {programados}
+            {estadoNoDisponible}
           </div>
           <p className="text-[10px] text-muted-foreground truncate">
-            {cancelados > 0 ? `${cancelados} cancelados` : "Pendientes de salida"}
+            Pendientes de salida
           </p>
         </CardContent>
       </Card>

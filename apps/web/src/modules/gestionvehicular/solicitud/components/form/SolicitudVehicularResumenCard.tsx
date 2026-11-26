@@ -49,8 +49,7 @@ export function SolicitudVehicularResumenCard() {
 
   return (
     <form.Subscribe
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      selector={(state: any) => ({
+      selector={(state) => ({
         numero: state.values.numero,
         tipoSolicitudVehicularId: state.values.tipoSolicitudVehicularId,
         solicitanteId: state.values.solicitanteId,
@@ -62,8 +61,7 @@ export function SolicitudVehicularResumenCard() {
         justificacion: state.values.justificacion,
       })}
     >
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      {(values: any) => {
+      {(values) => {
         const selectedTipo = tiposMap.get(values.tipoSolicitudVehicularId)
         const isJustificacionRequired = Boolean(selectedTipo?.requiereJustificacion)
         const isEmergencia = Boolean(

@@ -122,55 +122,28 @@ export function SolicitudesVehicularesPage() {
 
   const query = useQuery(solicitudVehicularQueries.list(queryParams))
 
-  // Consulta optimizada para métricas globales de tarjetas resumen con select
-  const allQuery = useQuery({
-    ...solicitudVehicularQueries.list({
-      size: 1000,
-      interfaz: "SolicitudesVehicularesPage",
-    }),
+  // KPIs globales: única fuente = agregados del servidor en
+  // GET /api/v1/reportes/solicitudes-vehiculares (ReporteSolicitudesGeneralResponse).
+  // No se cuentan `content` ni `totalElements` de la lista paginada (REQ-VEH-009).
+  const resumenQuery = useQuery({
+    ...solicitudVehicularQueries.reporteGeneral(),
     staleTime: 1000 * 60 * 3,
-    select: (data) => {
-      let borradores = 0
-      let solicitados = 0
-      let aprobados = 0
-      let enRuta = 0
-      let finalizadas = 0
-
-      for (const item of data.content) {
-        const estado = (item.estado || "").toUpperCase().trim()
-        if (estado === "BORRADOR" || estado === "PENDIENTE") {
-          borradores++
-        } else if (estado === "SOLICITADO" || estado === "OBSERVADO") {
-          solicitados++
-        } else if (estado === "APROBADO" || estado === "APROBADA") {
-          aprobados++
-        } else if (
-          estado === "EN_CURSO" ||
-          estado === "EN_VIAJE" ||
-          estado === "RETORNO" ||
-          estado === "EN_RUTA"
-        ) {
-          enRuta++
-        } else if (
-          estado === "FINALIZADA" ||
-          estado === "COMPLETADA" ||
-          estado === "FINALIZADO"
-        ) {
-          finalizadas++
-        } else {
-          solicitados++
-        }
-      }
-
-      return {
-        total: data.totalElements,
-        borradores,
-        solicitados,
-        aprobados,
-        enRuta,
-        finalizadas,
-      }
-    },
+    select: (data) => ({
+      total: data.totalSolicitudes,
+      // Correspondencia explícita con las etiquetas actuales de la UI:
+      //   borradores ← solicitudesBorrador
+      //   solicitados ("Por Revisar") ← solicitudesPendientes
+      //   aprobados ← solicitudesAsignadas
+      //   enRuta ← solicitudesEnCurso
+      //   finalizadas ← solicitudesFinalizadas
+      // `solicitudesRechazadas` y `totalPasajeros` no tienen tarjeta en esta
+      // página: no se inventa una etiqueta ni se mezclan en otro KPI.
+      borradores: data.solicitudesBorrador,
+      solicitados: data.solicitudesPendientes,
+      aprobados: data.solicitudesAsignadas,
+      enRuta: data.solicitudesEnCurso,
+      finalizadas: data.solicitudesFinalizadas,
+    }),
   })
 
   // Consulta reactiva para el modal/sheet de detalle
@@ -183,57 +156,11 @@ export function SolicitudesVehicularesPage() {
     () => query.data?.content ?? [],
     [query.data?.content]
   )
-  const totalCount = allQuery.data?.total ?? query.data?.totalElements ?? 0
+  const resumen = resumenQuery.data
+  const totalCount = resumen?.total
 
   const activeDetailItem =
     detailQuery.data ?? solicitudes.find((s) => s.id === selectedDetailId) ?? null
-
-  const resumen = useMemo(() => {
-    if (allQuery.data) {
-      return allQuery.data
-    }
-
-    let borradores = 0
-    let solicitados = 0
-    let aprobados = 0
-    let enRuta = 0
-    let finalizadas = 0
-
-    for (const item of solicitudes) {
-      const estado = (item.estado || "").toUpperCase().trim()
-      if (estado === "BORRADOR" || estado === "PENDIENTE") {
-        borradores++
-      } else if (estado === "SOLICITADO" || estado === "OBSERVADO") {
-        solicitados++
-      } else if (estado === "APROBADO" || estado === "APROBADA") {
-        aprobados++
-      } else if (
-        estado === "EN_CURSO" ||
-        estado === "EN_VIAJE" ||
-        estado === "RETORNO" ||
-        estado === "EN_RUTA"
-      ) {
-        enRuta++
-      } else if (
-        estado === "FINALIZADA" ||
-        estado === "COMPLETADA" ||
-        estado === "FINALIZADO"
-      ) {
-        finalizadas++
-      } else {
-        solicitados++
-      }
-    }
-
-    return {
-      total: query.data?.totalElements ?? solicitudes.length,
-      borradores,
-      solicitados,
-      aprobados,
-      enRuta,
-      finalizadas,
-    }
-  }, [allQuery.data, query.data?.totalElements, solicitudes])
 
   useClampPage(search.page, search.setPage, query.data?.totalPages)
 
@@ -279,12 +206,12 @@ export function SolicitudesVehicularesPage() {
 
   const handleRefresh = useCallback(() => {
     query.refetch()
-    allQuery.refetch()
+    resumenQuery.refetch()
     tiposQuery.refetch()
     if (selectedDetailId) {
       detailQuery.refetch()
     }
-  }, [query, allQuery, tiposQuery, detailQuery, selectedDetailId])
+  }, [query, resumenQuery, tiposQuery, detailQuery, selectedDetailId])
 
   const handleActionSelect = useCallback(
     (
@@ -305,19 +232,51 @@ export function SolicitudesVehicularesPage() {
     >
       {/* Encabezado principal */}
       <SolicitudVehicularHeader
-        queries={[query, allQuery]}
+        queries={[query, resumenQuery]}
         totalCount={totalCount}
         onRefresh={handleRefresh}
-        isRefreshing={query.isRefetching || allQuery.isRefetching}
+        isRefreshing={query.isRefetching || resumenQuery.isRefetching}
       />
 
+      {/* Los agregados fallidos no se sustituyen por ceros: se anuncian y se pueden reintentar */}
+      {resumenQuery.isError && (
+        <div
+          role="alert"
+          aria-busy="false"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle className="size-5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold">
+                Error al cargar los indicadores de solicitudes
+              </p>
+              <p className="text-xs text-destructive/90">
+                {getErrorMessage(resumenQuery.error)}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 text-xs cursor-pointer"
+            onClick={() => void resumenQuery.refetch()}
+          >
+            <RefreshCw className="size-3.5" />
+            Reintentar métricas
+          </Button>
+        </div>
+      )}
+
       {/* Tarjetas KPI de Resumen interactivo con barra porcentual y elevación hover */}
-      <SolicitudVehicularResumenCards
-        resumen={resumen}
-        isLoading={allQuery.isLoading && !allQuery.data}
-        selectedEstado={selectedEstado}
-        onSelectEstado={handleSelectEstado}
-      />
+      {!resumenQuery.isError && (
+        <SolicitudVehicularResumenCards
+          resumen={resumen}
+          isLoading={resumenQuery.isLoading && !resumen}
+          selectedEstado={selectedEstado}
+          onSelectEstado={handleSelectEstado}
+        />
+      )}
 
       {/* Barra de Búsqueda, Filtro Avanzado por Tipo y Chips Activos */}
       <SolicitudVehicularFilterToolbar

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQueries, useQuery } from "@tanstack/react-query"
 import {
   AlertCircle,
   BarChart3,
@@ -19,6 +19,8 @@ import {
 } from "@/modules/gestionvehicular/vehiculo/lib/vehiculo-atributos.utils"
 import { cargaCombustibleQueries } from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.queries"
 import type { CargaCombustible } from "@/modules/gestionvehicular/carga-combustible/api/carga-combustible.service"
+import { getErrorMessage } from "@/shared/api/errors"
+import type { PageResponse } from "@/shared/types/api.types"
 import { PageShell } from "@/shared/components/page-shell"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -39,6 +41,10 @@ import {
   ReporteSalidasFiltrosBar,
   type VehiculoMetaInfo,
 } from "../components/ReporteSalidasFiltrosBar"
+
+const CARGAS_PAGE_SIZE = 500
+/** Tope defensivo para no colgar la UI si el rango tiene miles de cargas. */
+const MAX_CARGAS_PAGES = 20
 
 const MESES = [
   "ENERO",
@@ -152,16 +158,67 @@ export const ReportesSalidasVehicularesPage = () => {
     enabled: Boolean(filtrosActivos?.fechaDesde && filtrosActivos?.fechaHasta),
   })
 
-  // Consulta 2: Cargas de combustible (soporta activoId opcional para traer todo)
-  const cargasQuery = useQuery({
+  // Consulta 2: Cargas de combustible. Se recorren todas las páginas hasta
+  // `totalPages`, con tope defensivo de MAX_CARGAS_PAGES para no colgar la UI.
+  const filtrosCargas = {
+    activoId: filtrosActivos?.activoId || undefined,
+    fechaDesde: filtrosActivos?.fechaDesde ? `${filtrosActivos.fechaDesde}T00:00:00` : undefined,
+    fechaHasta: filtrosActivos?.fechaHasta ? `${filtrosActivos.fechaHasta}T23:59:59` : undefined,
+  }
+  const cargasPrimeraPaginaQuery = useQuery({
     ...cargaCombustibleQueries.list({
-      activoId: filtrosActivos?.activoId || undefined,
-      fechaDesde: filtrosActivos?.fechaDesde ? `${filtrosActivos.fechaDesde}T00:00:00` : undefined,
-      fechaHasta: filtrosActivos?.fechaHasta ? `${filtrosActivos.fechaHasta}T23:59:59` : undefined,
-      size: 500,
+      ...filtrosCargas,
+      page: 0,
+      size: CARGAS_PAGE_SIZE,
     }),
     enabled: Boolean(filtrosActivos?.fechaDesde && filtrosActivos?.fechaHasta),
   })
+
+  const paginasRestantes = useMemo(() => {
+    const totalPages = cargasPrimeraPaginaQuery.data?.totalPages ?? 0
+    const cantidad = Math.min(totalPages, MAX_CARGAS_PAGES) - 1
+    return Array.from({ length: Math.max(cantidad, 0) }, (_, index) => index + 1)
+  }, [cargasPrimeraPaginaQuery.data?.totalPages])
+
+  const cargasPaginasQueries = useQueries({
+    queries: paginasRestantes.map((page) =>
+      cargaCombustibleQueries.list({
+        ...filtrosCargas,
+        page,
+        size: CARGAS_PAGE_SIZE,
+      })
+    ),
+  })
+
+  const {
+    cargas,
+    totalCargas,
+    cargasTruncadas,
+    cargasIsLoading,
+    cargasIsError,
+    cargasError,
+  } = useMemo(() => {
+    const paginas = [
+      cargasPrimeraPaginaQuery.data,
+      ...cargasPaginasQueries.map((query) => query.data),
+    ].filter((pagina): pagina is PageResponse<CargaCombustible> => Boolean(pagina))
+    const totalPages = cargasPrimeraPaginaQuery.data?.totalPages ?? 0
+    return {
+      cargas: paginas.flatMap((pagina) => pagina.content),
+      totalCargas: cargasPrimeraPaginaQuery.data?.totalElements ?? 0,
+      cargasTruncadas: totalPages > MAX_CARGAS_PAGES,
+      cargasIsLoading:
+        cargasPrimeraPaginaQuery.isLoading ||
+        cargasPrimeraPaginaQuery.isFetching ||
+        cargasPaginasQueries.some((query) => query.isLoading || query.isFetching),
+      cargasIsError:
+        cargasPrimeraPaginaQuery.isError ||
+        cargasPaginasQueries.some((query) => query.isError),
+      cargasError:
+        cargasPrimeraPaginaQuery.error ??
+        cargasPaginasQueries.find((query) => query.error)?.error,
+    }
+  }, [cargasPrimeraPaginaQuery, cargasPaginasQueries])
 
   // Consulta 3: Datos detallados del vehículo (endpoint propio gestionvehicular)
   const vehiculoDetailQuery = useQuery({
@@ -218,7 +275,6 @@ export const ReportesSalidasVehicularesPage = () => {
   // Transformar salidas y asociar odómetros y combustible
   const { filas, totalesMetricas } = useMemo(() => {
     const rawSalidas: SalidaVehicular[] = reporteQuery.data?.items ?? []
-    const cargas: CargaCombustible[] = cargasQuery.data?.content ?? []
     const isMultiVehiculo = !filtrosActivos?.activoId
 
     // Indexar cargas por salidaVehicularId directo y agrupar cargas no vinculadas directamente
@@ -403,7 +459,7 @@ export const ReportesSalidasVehicularesPage = () => {
         promedioKmPorSalida,
       },
     }
-  }, [cargasQuery.data?.content, filtrosActivos?.activoId, reporteQuery.data?.items, searchQuery])
+  }, [cargas, filtrosActivos?.activoId, reporteQuery.data?.items, searchQuery])
 
   // Manejo de cambio de vehículo
   const handleActivoChange = (
@@ -441,7 +497,8 @@ export const ReportesSalidasVehicularesPage = () => {
       fechaHasta,
     })
     void reporteQuery.refetch()
-    void cargasQuery.refetch()
+    void cargasPrimeraPaginaQuery.refetch()
+    cargasPaginasQueries.forEach((query) => void query.refetch())
     if (activoId) {
       void vehiculoDetailQuery.refetch()
     }
@@ -474,11 +531,7 @@ export const ReportesSalidasVehicularesPage = () => {
       })
       toast.success("Reporte oficial en PDF generado y descargado exitosamente.")
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Error al generar el PDF en el servidor"
-      toast.error(`No se pudo generar el PDF: ${message}`)
+      toast.error(`No se pudo generar el PDF: ${getErrorMessage(err)}`)
     } finally {
       setIsPdfLoading(false)
     }
@@ -502,9 +555,7 @@ export const ReportesSalidasVehicularesPage = () => {
         placa: filtrosActivos.activoId ? datosVehiculo.placa : "todos",
       })
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Error al abrir el PDF"
-      toast.error(`No se pudo abrir el PDF: ${message}`)
+      toast.error(`No se pudo abrir el PDF: ${getErrorMessage(err)}`)
     } finally {
       setIsPdfLoading(false)
     }
@@ -581,10 +632,13 @@ export const ReportesSalidasVehicularesPage = () => {
 
   const isLoading =
     reporteQuery.isLoading ||
-    cargasQuery.isLoading ||
     vehiculoDetailQuery.isLoading ||
     reporteQuery.isFetching ||
-    cargasQuery.isFetching
+    cargasIsLoading
+  const isError =
+    reporteQuery.isError || cargasIsError || vehiculoDetailQuery.isError
+  const reportError =
+    reporteQuery.error ?? cargasError ?? vehiculoDetailQuery.error
 
   return (
     <PageShell size="full" padding="compact" layout="scroll" className="space-y-3 pb-10">
@@ -636,10 +690,24 @@ export const ReportesSalidasVehicularesPage = () => {
         placaSeleccionada={datosVehiculo.placa !== "S/P" ? datosVehiculo.placa : null}
       />
 
+      {/* Aviso explícito cuando el tope defensivo de páginas de cargas se alcanza */}
+      {cargasTruncadas && !isLoading && !isError && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"
+        >
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>
+            Reporte truncado: se mostraron {cargas.length} de {totalCargas} cargas.
+          </span>
+        </div>
+      )}
+
       {/* ========================================================= */}
       {/* 3. RESUMEN DE MÉTRICAS RÁPIDAS COMPACTO (Oculto print)    */}
       {/* ========================================================= */}
-      {filtrosActivos && !isLoading && filas.length > 0 && (
+      {filtrosActivos && !isLoading && !isError && filas.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 print:hidden">
           <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
             <div className="p-1.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0">
@@ -702,19 +770,17 @@ export const ReportesSalidasVehicularesPage = () => {
       {/* ========================================================= */}
       {/* 4. ESTADO DE ERROR                                        */}
       {/* ========================================================= */}
-      {(reporteQuery.error || cargasQuery.error) && (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive print:hidden flex items-center justify-between">
+      {isError && (
+        <div
+          role="alert"
+          aria-busy="false"
+          className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive print:hidden flex items-center justify-between"
+        >
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <div>
               <p className="font-semibold text-sm">Error al consultar los datos del reporte</p>
-              <p className="text-xs text-destructive/90">
-                {reporteQuery.error instanceof Error
-                  ? reporteQuery.error.message
-                  : cargasQuery.error instanceof Error
-                    ? `Error al cargar combustible: ${cargasQuery.error.message}`
-                    : "No se pudo obtener la información desde el servidor."}
-              </p>
+              <p className="text-xs text-destructive/90">{getErrorMessage(reportError)}</p>
             </div>
           </div>
           <Button
@@ -722,7 +788,9 @@ export const ReportesSalidasVehicularesPage = () => {
             size="sm"
             onClick={() => {
               void reporteQuery.refetch()
-              void cargasQuery.refetch()
+              void cargasPrimeraPaginaQuery.refetch()
+              cargasPaginasQueries.forEach((query) => void query.refetch())
+              void vehiculoDetailQuery.refetch()
             }}
             className="gap-1.5 ml-4 text-xs h-8 cursor-pointer"
           >
@@ -736,7 +804,7 @@ export const ReportesSalidasVehicularesPage = () => {
       {/* 5. ESTADO DE CARGA                                        */}
       {/* ========================================================= */}
       {isLoading && (
-        <div className="space-y-3 print:hidden">
+        <div role="status" aria-busy="true" className="space-y-3 print:hidden">
           <Skeleton className="h-28 w-full rounded-xl" />
           <Skeleton className="h-72 w-full rounded-xl" />
         </div>
@@ -745,7 +813,7 @@ export const ReportesSalidasVehicularesPage = () => {
       {/* ========================================================= */}
       {/* 6. ESTADO INICIAL (Sin filtros aplicados)                 */}
       {/* ========================================================= */}
-      {!filtrosActivos && !isLoading && (
+      {!filtrosActivos && !isLoading && !isError && (
         <Card className="border-dashed border-2 border-border/80 bg-muted/10 print:hidden">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
             <div className="p-3.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400">
@@ -766,7 +834,7 @@ export const ReportesSalidasVehicularesPage = () => {
       {/* ========================================================= */}
       {/* 7. PLANILLA OFICIAL DE LA BITÁCORA (Imprimible y visible) */}
       {/* ========================================================= */}
-      {filtrosActivos && !isLoading && (
+      {filtrosActivos && !isLoading && !isError && (
         <div id="bitacora-reporte-imprimible" className="space-y-4">
           <ReporteBitacoraVehicularTable
             filas={filas}

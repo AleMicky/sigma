@@ -12,11 +12,10 @@ import {
   Navigation,
   User,
 } from "lucide-react"
-import { toast } from "sonner"
-
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card } from "@/shared/components/ui/card"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { cn } from "@/shared/lib/utils"
 
 import type { BitacoraVehicular, SalidaVehicular, SalidaVehicularEvento } from "../api/salida-vehicular.types"
@@ -82,12 +81,25 @@ function MapViewController({
   return null
 }
 
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+}
+
 function createPointIcon(point: GeoWaypoint) {
+  const accessibleLabel = escapeHtmlAttribute(
+    `${point.titulo} (${point.categoria})`
+  )
+
   if (point.isLatest) {
     return L.divIcon({
       className: "custom-live-marker",
       html: `
-        <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <div role="img" aria-label="${accessibleLabel}" style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
           <div style="position: absolute; inset: 0; border-radius: 9999px; background-color: rgba(37, 99, 235, 0.35); animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
           <div style="position: relative; width: 34px; height: 34px; border-radius: 9999px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border: 3px solid #ffffff; box-shadow: 0 4px 12px rgba(37,99,235,0.45); display: flex; align-items: center; justify-content: center; color: #ffffff;">
             <svg style="width: 17px; height: 17px;" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
@@ -122,7 +134,7 @@ function createPointIcon(point: GeoWaypoint) {
   return L.divIcon({
     className: "custom-point-marker",
     html: `
-      <div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background-color: ${bgColor}; border: 2px solid #ffffff; border-radius: 9999px; box-shadow: 0 3px 8px rgba(0,0,0,0.25); color: #ffffff; font-weight: 700; font-size: 11px; font-family: ui-monospace, monospace;">
+      <div role="img" aria-label="${accessibleLabel}" style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background-color: ${bgColor}; border: 2px solid #ffffff; border-radius: 9999px; box-shadow: 0 3px 8px rgba(0,0,0,0.25); color: #ffffff; font-weight: 700; font-size: 11px; font-family: ui-monospace, monospace;">
         ${content}
       </div>
     `,
@@ -141,6 +153,7 @@ export function SalidaVehicularRouteMap({
 }: SalidaVehicularRouteMapProps) {
   const [filterType, setFilterType] = useState<"ALL" | "EVENTOS" | "BITACORAS">("ALL")
   const [focusPoint, setFocusPoint] = useState<[number, number] | null>(null)
+  const { copy: copyToClipboard, isCopied } = useCopyToClipboard()
 
   // Normalizar y ordenar todos los puntos cronológicamente
   const allWaypoints: GeoWaypoint[] = useMemo(() => {
@@ -227,8 +240,7 @@ export function SalidaVehicularRouteMap({
   }, [latestPoint, allWaypoints])
 
   const handleCopyCoords = (lat: number, lng: number) => {
-    void navigator.clipboard.writeText(`${lat}, ${lng}`)
-    toast.success("Coordenadas copiadas al portapapeles")
+    void copyToClipboard(`${lat}, ${lng}`, `${lat},${lng}`)
   }
 
   const handleResetView = () => {
@@ -411,7 +423,7 @@ export function SalidaVehicularRouteMap({
           center={defaultCenter}
           zoom={13}
           scrollWheelZoom={true}
-          attributionControl={false}
+          attributionControl={true}
           className="h-full w-full z-0"
         >
           <TileLayer
@@ -499,7 +511,7 @@ export function SalidaVehicularRouteMap({
                         className="inline-flex items-center gap-1 text-primary hover:underline font-semibold cursor-pointer"
                       >
                         <Copy className="size-2.5" />
-                        Copiar
+                        {isCopied(`${pt.lat},${pt.lng}`) ? "Copiado" : "Copiar"}
                       </button>
                     </div>
                   </div>

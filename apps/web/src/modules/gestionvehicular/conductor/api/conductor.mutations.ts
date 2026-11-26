@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { gestionVehicularDashboardKeys } from "../../dashboard/api/gestion-vehicular-dashboard.queries"
 import { toast } from "sonner"
 
 import { isApiError } from "@/shared/api"
@@ -18,6 +19,7 @@ export function useCreateConductor() {
   return useMutation({
     mutationFn: (payload: ConductorPayload) => createConductor(payload),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       toast.success("Conductor registrado correctamente")
       queryClient.invalidateQueries({ queryKey: conductorKeys.all })
     },
@@ -36,6 +38,7 @@ export function useUpdateConductor() {
     mutationFn: ({ id, payload }: { id: string; payload: ConductorUpdatePayload }) =>
       updateConductor(id, payload),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       toast.success("Conductor actualizado correctamente")
       queryClient.invalidateQueries({ queryKey: conductorKeys.all })
     },
@@ -53,6 +56,7 @@ export function useDeleteConductor() {
   return useMutation({
     mutationFn: (id: string) => deleteConductor(id),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
       toast.success("Conductor eliminado correctamente")
       queryClient.invalidateQueries({ queryKey: conductorKeys.all })
     },

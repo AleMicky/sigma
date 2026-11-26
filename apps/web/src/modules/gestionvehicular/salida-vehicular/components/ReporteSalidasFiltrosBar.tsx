@@ -22,6 +22,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
+import { toLocalDateKey } from "@/shared/lib/date"
 
 export interface VehiculoMetaInfo {
   nombre?: string
@@ -82,32 +83,32 @@ export function ReporteSalidasFiltrosBar({
     const now = new Date()
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    onFechaDesdeChange(firstDay.toISOString().split("T")[0])
-    onFechaHastaChange(lastDay.toISOString().split("T")[0])
+    onFechaDesdeChange(toLocalDateKey(firstDay))
+    onFechaHastaChange(toLocalDateKey(lastDay))
   }
 
   const setMesAnterior = () => {
     const now = new Date()
     const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const lastDay = new Date(now.getFullYear(), now.getMonth(), 0)
-    onFechaDesdeChange(firstDay.toISOString().split("T")[0])
-    onFechaHastaChange(lastDay.toISOString().split("T")[0])
+    onFechaDesdeChange(toLocalDateKey(firstDay))
+    onFechaHastaChange(toLocalDateKey(lastDay))
   }
 
   const setUltimos30Dias = () => {
     const now = new Date()
     const past = new Date()
     past.setDate(now.getDate() - 30)
-    onFechaDesdeChange(past.toISOString().split("T")[0])
-    onFechaHastaChange(now.toISOString().split("T")[0])
+    onFechaDesdeChange(toLocalDateKey(past))
+    onFechaHastaChange(toLocalDateKey(now))
   }
 
   const setAnioActual = () => {
     const now = new Date()
     const firstDay = new Date(now.getFullYear(), 0, 1)
     const lastDay = new Date(now.getFullYear(), 11, 31)
-    onFechaDesdeChange(firstDay.toISOString().split("T")[0])
-    onFechaHastaChange(lastDay.toISOString().split("T")[0])
+    onFechaDesdeChange(toLocalDateKey(firstDay))
+    onFechaHastaChange(toLocalDateKey(lastDay))
   }
 
   const isFormValid = Boolean(fechaDesde && fechaHasta && fechaDesde <= fechaHasta)

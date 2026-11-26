@@ -84,8 +84,27 @@ public class RegistroPorteriaRepositoryAdapter implements RegistroPorteriaReposi
             Instant fechaHasta,
             Pageable pageable
     ) {
+        return findAll(search, empleadoId, activoId, areaId, createdById, unirPorOr,
+                null, tipoMovimiento, estado, fechaDesde, fechaHasta, pageable);
+    }
+
+    @Override
+    public Page<RegistroPorteria> findAll(
+            String search,
+            UUID empleadoId,
+            UUID activoId,
+            UUID areaId,
+            UUID createdById,
+            boolean unirPorOr,
+            Boolean esExterno,
+            TipoMovimientoPorteria tipoMovimiento,
+            EstadoRegistroPorteria estado,
+            Instant fechaDesde,
+            Instant fechaHasta,
+            Pageable pageable
+    ) {
         Specification<RegistroPorteriaEntity> spec = buildSpec(
-                search, empleadoId, activoId, areaId, createdById, unirPorOr, null, tipoMovimiento, estado, fechaDesde, fechaHasta
+                search, empleadoId, activoId, areaId, createdById, unirPorOr, esExterno, tipoMovimiento, estado, fechaDesde, fechaHasta
         );
         return springRepository.findAll(spec, pageable).map(mapper::toDomain);
     }

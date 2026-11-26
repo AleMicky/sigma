@@ -31,6 +31,7 @@ import {
   ReporteSalidasFiltrosBar,
   type VehiculoMetaInfo,
 } from "@/modules/gestionvehicular/salida-vehicular/components/ReporteSalidasFiltrosBar"
+import { getErrorMessage } from "@/shared/api/errors"
 import { PageShell } from "@/shared/components/page-shell"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -340,11 +341,7 @@ export function BitacoraVehicularPage() {
       )
       toast.success("Reporte oficial en PDF generado y descargado exitosamente.")
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Error al generar el PDF en el servidor"
-      toast.error(`No se pudo generar el PDF: ${message}`)
+      toast.error(`No se pudo generar el PDF: ${getErrorMessage(err)}`)
     } finally {
       setIsPdfLoading(false)
     }
@@ -367,9 +364,7 @@ export function BitacoraVehicularPage() {
         search: searchQuery || undefined,
       })
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Error al abrir el PDF"
-      toast.error(`No se pudo abrir el PDF: ${message}`)
+      toast.error(`No se pudo abrir el PDF: ${getErrorMessage(err)}`)
     } finally {
       setIsPdfLoading(false)
     }
@@ -448,6 +443,8 @@ export function BitacoraVehicularPage() {
     reporteQuery.isLoading ||
     vehiculoDetailQuery.isLoading ||
     reporteQuery.isFetching
+  const isError = reporteQuery.isError || vehiculoDetailQuery.isError
+  const reportError = reporteQuery.error ?? vehiculoDetailQuery.error
 
   return (
     <PageShell size="full" padding="compact" layout="scroll" className="space-y-3 pb-10">
@@ -502,7 +499,7 @@ export function BitacoraVehicularPage() {
       {/* ========================================================= */}
       {/* 3. RESUMEN DE MÉTRICAS RÁPIDAS COMPACTO (Oculto print)    */}
       {/* ========================================================= */}
-      {filtrosActivos && !isLoading && filas.length > 0 && (
+      {filtrosActivos && !isLoading && !isError && filas.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 print:hidden">
           <div className="flex items-center gap-2.5 p-2 px-3 rounded-lg border border-border/60 bg-card shadow-2xs">
             <div className="p-1.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0">
@@ -565,17 +562,17 @@ export function BitacoraVehicularPage() {
       {/* ========================================================= */}
       {/* 4. ESTADO DE ERROR                                        */}
       {/* ========================================================= */}
-      {reporteQuery.error && (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive print:hidden flex items-center justify-between">
+      {isError && (
+        <div
+          role="alert"
+          aria-busy="false"
+          className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive print:hidden flex items-center justify-between"
+        >
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <div>
               <p className="font-semibold text-sm">Error al consultar los datos del reporte</p>
-              <p className="text-xs text-destructive/90">
-                {reporteQuery.error instanceof Error
-                  ? reporteQuery.error.message
-                  : "No se pudo obtener la información desde el servidor."}
-              </p>
+              <p className="text-xs text-destructive/90">{getErrorMessage(reportError)}</p>
             </div>
           </div>
           <Button
@@ -583,6 +580,7 @@ export function BitacoraVehicularPage() {
             size="sm"
             onClick={() => {
               void reporteQuery.refetch()
+              void vehiculoDetailQuery.refetch()
             }}
             className="gap-1.5 ml-4 text-xs h-8 cursor-pointer"
           >
@@ -596,7 +594,7 @@ export function BitacoraVehicularPage() {
       {/* 5. ESTADO DE CARGA                                        */}
       {/* ========================================================= */}
       {isLoading && (
-        <div className="space-y-3 print:hidden">
+        <div role="status" aria-busy="true" className="space-y-3 print:hidden">
           <Skeleton className="h-28 w-full rounded-xl" />
           <Skeleton className="h-72 w-full rounded-xl" />
         </div>
@@ -605,7 +603,7 @@ export function BitacoraVehicularPage() {
       {/* ========================================================= */}
       {/* 6. ESTADO INICIAL (Sin filtros aplicados)                 */}
       {/* ========================================================= */}
-      {!filtrosActivos && !isLoading && (
+      {!filtrosActivos && !isLoading && !isError && (
         <Card className="border-dashed border-2 border-border/80 bg-muted/10 print:hidden">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
             <div className="p-3.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400">
@@ -626,7 +624,7 @@ export function BitacoraVehicularPage() {
       {/* ========================================================= */}
       {/* 7. PLANILLA OFICIAL DE LA BITÁCORA (Imprimible y visible) */}
       {/* ========================================================= */}
-      {filtrosActivos && !isLoading && (
+      {filtrosActivos && !isLoading && !isError && (
         <div id="bitacora-reporte-imprimible" className="space-y-4">
           <ReporteBitacoraVehicularTable
             filas={filas}

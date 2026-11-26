@@ -47,6 +47,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import { cn } from "@/shared/lib/utils"
 
+import { getErrorMessage } from "@/shared/api/errors"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
+
 import { salidaVehicularQueries } from "../api/salida-vehicular.queries"
 import type { SalidaVehicularEvento } from "../api/salida-vehicular.types"
 import { CancelarSalidaDialog } from "../components/CancelarSalidaDialog"
@@ -56,7 +59,10 @@ import { SalidaCargaCombustibleDialog } from "../components/SalidaCargaCombustib
 import { SalidaVehicularRouteMap } from "../components/SalidaVehicularRouteMap"
 import { SalidaVehicularStatusBadge } from "../components/SalidaVehicularStatusBadge"
 import { VehiculoPreventivoWidget } from "../components/VehiculoPreventivoWidget"
-import { getSalidaNextActionConfig } from "../components/salida-action.utils"
+import {
+  getSalidaNextActionConfig,
+  isSalidaInactive,
+} from "../components/salida-action.utils"
 
 interface SalidaVehicularDetailPageProps {
   salidaId: string
@@ -85,6 +91,18 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
   const bitacorasQuery = useQuery(salidaVehicularQueries.bitacoras(salidaId))
   const cargasCombustibleQuery = useQuery(cargaCombustibleQueries.bySalida(salidaId))
   const deleteCargaMutation = useDeleteCargaCombustible()
+  const { copy: copyToClipboard, isCopied } = useCopyToClipboard()
+
+  const flowQueriesEnabled =
+    Boolean(salidaId) && !isSalidaInactive(salidaQuery.data?.estado)
+  const tareaActualQuery = useQuery({
+    ...salidaVehicularQueries.tareaActual(salidaId),
+    enabled: flowQueriesEnabled,
+  })
+  const accionesQuery = useQuery({
+    ...salidaVehicularQueries.acciones(salidaId),
+    enabled: flowQueriesEnabled,
+  })
 
   const salida = salidaQuery.data
   const eventos = useMemo(() => eventosQuery.data ?? [], [eventosQuery.data])
@@ -110,7 +128,9 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
     salidaQuery.isFetching ||
     eventosQuery.isFetching ||
     bitacorasQuery.isFetching ||
-    cargasCombustibleQuery.isFetching
+    cargasCombustibleQuery.isFetching ||
+    tareaActualQuery.isFetching ||
+    accionesQuery.isFetching
 
   const handleRefresh = async () => {
     await Promise.all([
@@ -118,22 +138,20 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
       eventosQuery.refetch(),
       bitacorasQuery.refetch(),
       cargasCombustibleQuery.refetch(),
+      tareaActualQuery.refetch(),
+      accionesQuery.refetch(),
     ])
     toast.success("Información actualizada")
   }
 
   const handleCopyNumero = () => {
     if (!salida?.numero) return
-    void navigator.clipboard.writeText(salida.numero)
-    toast.success(`Folio ${salida.numero} copiado al portapapeles`)
+    void copyToClipboard(salida.numero, "folio")
   }
 
   const estadoNorm = (salida?.estado ?? "").trim().toUpperCase()
-  const isFinalizado =
-    estadoNorm.includes("LLEGAD") ||
-    estadoNorm.includes("FINALIZ") ||
-    estadoNorm.includes("COMPLET")
-  const isCancelado = estadoNorm.includes("CANCEL") || estadoNorm.includes("ANULAD")
+  const isFinalizado = ["LLEGADA", "FINALIZADA", "COMPLETADA"].includes(estadoNorm)
+  const isCancelado = ["CANCELADA", "ANULADA"].includes(estadoNorm)
   const isInactive = isFinalizado || isCancelado
 
   const hasSalidaEvent = useMemo(
@@ -141,11 +159,13 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
     [eventos]
   )
 
-  const nextAction = getSalidaNextActionConfig(
-    hasSalidaEvent ? "LLEGADA" : salida?.estado,
-    salida?.descripcionActividad
-  )
-  const ActionIcon = nextAction.icon
+  const nextAction = getSalidaNextActionConfig({
+    tareaActual: tareaActualQuery.data,
+    acciones: accionesQuery.data,
+    estado: salida?.estado,
+    descripcionActividad: salida?.descripcionActividad,
+  })
+  const ActionIcon = nextAction?.icon ?? Play
 
   // Ciclo de vida del viaje (2 tareas: Salida y Llegada, donde Llegada es la finalización)
   const currentStep = useMemo(() => {
@@ -272,11 +292,43 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
   if (salidaQuery.isLoading) {
     return (
       <PageShell size="full" padding="none" layout="auto" className="w-full p-8">
-        <div className="flex flex-col items-center justify-center p-12 text-center space-y-3">
+        <div
+          role="status"
+          aria-busy="true"
+          className="flex flex-col items-center justify-center p-12 text-center space-y-3"
+        >
           <div className="size-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           <p className="text-xs font-medium text-muted-foreground">
             Cargando información de la salida vehicular...
           </p>
+        </div>
+      </PageShell>
+    )
+  }
+
+  if (salidaQuery.isError) {
+    return (
+      <PageShell size="full" padding="none" layout="auto" className="w-full p-8">
+        <div
+          role="alert"
+          className="max-w-xl mx-auto rounded-xl border border-rose-500/30 bg-rose-500/10 p-5 space-y-3"
+        >
+          <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">
+            No se pudo cargar la salida vehicular
+          </p>
+          <p className="text-xs text-rose-700/90 dark:text-rose-300/90">
+            {getErrorMessage(salidaQuery.error)}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void salidaQuery.refetch()}
+            className="gap-1.5 text-xs cursor-pointer"
+          >
+            <RefreshCw className="size-3.5" />
+            Reintentar
+          </Button>
         </div>
       </PageShell>
     )
@@ -336,7 +388,8 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
                 <button
                   type="button"
                   onClick={handleCopyNumero}
-                  title="Copiar folio"
+                  title={isCopied("folio") ? "Folio copiado" : "Copiar folio"}
+                  aria-label={isCopied("folio") ? "Folio copiado" : "Copiar folio"}
                   className="size-7 rounded-lg inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer"
                 >
                   <Copy className="size-3.5" />
@@ -408,7 +461,7 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
               </Button>
             )}
 
-            {!isInactive && (
+            {nextAction && !isInactive && (
               <Button
                 type="button"
                 size="sm"
@@ -645,8 +698,35 @@ export function SalidaVehicularDetailPage({ salidaId }: SalidaVehicularDetailPag
 
         {/* TAB 1: INFORMACIÓN GENERAL Y RUTA */}
         <TabsContent value="general" className="space-y-4 pt-1">
+          {(tareaActualQuery.isError || accionesQuery.isError) && !isInactive && (
+            <Card className="border-rose-500/30 bg-rose-500/10 shadow-2xs">
+              <CardContent
+                role="alert"
+                className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+              >
+                <span className="text-rose-700 dark:text-rose-300">
+                  No se pudo cargar la tarea activa y sus acciones:{" "}
+                  {getErrorMessage(tareaActualQuery.error ?? accionesQuery.error)}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    void tareaActualQuery.refetch()
+                    void accionesQuery.refetch()
+                  }}
+                  className="h-7 gap-1 border-rose-500/30 text-rose-700 dark:text-rose-300 cursor-pointer"
+                >
+                  <RefreshCw className="size-3" />
+                  Reintentar
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Banner de Siguiente Paso Operativo */}
-          {!isInactive && (
+          {nextAction && !isInactive && (
             <Card className="border-primary/30 bg-primary/5 shadow-2xs">
               <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">

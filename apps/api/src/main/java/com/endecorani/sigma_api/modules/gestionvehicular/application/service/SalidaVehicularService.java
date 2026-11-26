@@ -35,6 +35,7 @@ import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowEnt
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.FlexibleLocalDateTimeParser;
@@ -112,6 +113,9 @@ public class SalidaVehicularService {
         if (!empleadoRepository.existsById(empleadoId)) {
             throw new ResourceNotFoundException("Empleado", empleadoId);
         }
+
+        // REQ-VEH-010: se valida ANTES de generar el correlativo, persistir o iniciar Flowable.
+        validarSalidaActivaDelVehiculo(request.activoId());
 
         String numero = correlativoService.generar(CorrelativoCodigo.SALIDA_VEHICULAR, LocalDate.now(ZONA).getYear());
 
@@ -251,6 +255,21 @@ public class SalidaVehicularService {
 
         SalidaVehicular guardada = salidaRepository.save(salida);
         return toResponse(guardada);
+    }
+
+    /**
+     * REQ-VEH-010: el mismo predicado de "activa" usado por {@code findActivas()}
+     * y por el índice parcial de V182. Se evalúa antes de cualquier efecto secundario.
+     */
+    private void validarSalidaActivaDelVehiculo(UUID activoId) {
+        boolean yaTieneSalidaActiva = salidaRepository.findActivas().stream()
+                .anyMatch(s -> activoId != null && activoId.equals(s.getActivoId()));
+        if (yaTieneSalidaActiva) {
+            throw new ConflictException(
+                    "SALIDA_VEHICULAR_ACTIVA_DUPLICADA",
+                    "El vehículo ya tiene una salida vehicular activa. Finalícela antes de registrar otra."
+            );
+        }
     }
 
     @Transactional(readOnly = true)

@@ -84,8 +84,7 @@ export function SolicitudVehicularItinerarioSection() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-start">
         <div className="sm:col-span-2">
           <form.Field name="destino">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {(field: any) => {
+                        {(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
@@ -116,8 +115,7 @@ export function SolicitudVehicularItinerarioSection() {
         </div>
 
         <form.Field name="cantidadPasajeros">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+                    {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
@@ -153,8 +151,7 @@ export function SolicitudVehicularItinerarioSection() {
 
       {/* 2. FILA: FECHAS DE SALIDA Y RETORNO (Con validación de anticipación) */}
       <form.Subscribe
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        selector={(state: any) =>
+        selector={(state) =>
           [
             state.values.tipoSolicitudVehicularId,
             state.values.fechaSalida,
@@ -199,8 +196,7 @@ export function SolicitudVehicularItinerarioSection() {
             <div className="space-y-1.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start">
                 <form.Field name="fechaSalida">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(field: any) => {
+                                    {(field) => {
                     const isInvalid =
                       (field.state.meta.isTouched && !field.state.meta.isValid) ||
                       isAnticipacionInvalid
@@ -262,8 +258,7 @@ export function SolicitudVehicularItinerarioSection() {
                     },
                   }}
                 >
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(field: any) => {
+                                    {(field) => {
                     const isInvalid =
                       (field.state.meta.isTouched || Boolean(field.state.value)) &&
                       !field.state.meta.isValid
@@ -362,8 +357,7 @@ export function SolicitudVehicularItinerarioSection() {
 
       {/* 3. MOTIVO */}
       <form.Field name="motivo">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(field: any) => {
+                {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
           return (
@@ -392,11 +386,12 @@ export function SolicitudVehicularItinerarioSection() {
 
       {/* 4. JUSTIFICACIÓN Y OBSERVACIONES */}
       <form.Subscribe
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        selector={(state: any) => state.values.tipoSolicitudVehicularId}
+        selector={(state) => ({
+          tipoSolicitudVehicularId: state.values.tipoSolicitudVehicularId,
+        })}
       >
-        {(tipoSolicitudVehicularId: string) => {
-          const selectedTipo = tiposMap.get(tipoSolicitudVehicularId)
+        {(values) => {
+          const selectedTipo = tiposMap.get(values.tipoSolicitudVehicularId)
           const isEmergencia =
             selectedTipo?.codigo?.toUpperCase() === "EMERGENCIA" ||
             selectedTipo?.diasAnticipacion === 0
@@ -417,8 +412,7 @@ export function SolicitudVehicularItinerarioSection() {
               >
                 {requiereJustificacion && (
                   <form.Field name="justificacion">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(field: any) => {
+                                        {(field) => {
                       const isInvalid =
                         field.state.meta.isTouched && !field.state.meta.isValid
                       return (
@@ -451,8 +445,7 @@ export function SolicitudVehicularItinerarioSection() {
                 )}
 
                 <form.Field name="observacion">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(field: any) => {
+                                    {(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
                     return (

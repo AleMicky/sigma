@@ -41,13 +41,16 @@ import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService;
+import com.endecorani.sigma_api.shared.util.ApiConstants;
 import com.endecorani.sigma_api.shared.util.FlexibleLocalDateTimeParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -171,6 +174,22 @@ public class RegistroPorteriaService {
                 ? request.fechaHoraSalida()
                 : Instant.now();
 
+        // REQ-VEH-003: el guardia debe resolverse desde el JWT y el registro se valida
+        // con el mismo alcance que las operaciones sobre registros existentes.
+        UUID guardiaEmpleadoId = obtenerEmpleadoIdActual();
+        if (guardiaEmpleadoId == null) {
+            throw new ForbiddenException("No se pudo identificar al guardia responsable del registro de portería.");
+        }
+        UUID usuarioActualId = securityUtils.getCurrentUserId().orElse(null);
+        if (usuarioActualId == null) {
+            throw new ForbiddenException("No se pudo identificar al usuario que registra la salida de portería.");
+        }
+        validarAccesoAlRegistro(RegistroPorteria.builder()
+                .empleadoId(esExterno ? null : request.empleadoId())
+                .guardiaSalidaId(guardiaEmpleadoId)
+                .createdById(usuarioActualId)
+                .build());
+
         String numero = correlativoService.generar(
                 CorrelativoCodigo.REGISTRO_PORTERIA,
                 LocalDate.now(ZONA).getYear());
@@ -185,7 +204,7 @@ public class RegistroPorteriaService {
                 .destinoUbicacionId(request.destinoUbicacionId())
                 .destinoOtro(trimToNull(request.destinoOtro()))
                 .empleadoId(esExterno ? null : request.empleadoId())
-                .guardiaSalidaId(obtenerEmpleadoIdActual())
+                .guardiaSalidaId(guardiaEmpleadoId)
                 .salidaVehicularId(request.salidaVehicularId())
                 .fechaHoraSalida(fechaSalida)
                 .estado(EstadoRegistroPorteria.AFUERA)
@@ -422,6 +441,80 @@ public class RegistroPorteriaService {
                 .duracionPromedioMinutos(duracionPromedio)
                 .items(items)
                 .build();
+    }
+
+    /**
+     * REQ-VEH-019: variante paginada del reporte de bitácora. Mantiene el orden
+     * cronológico y acota la respuesta y el número de filas resueltas en memoria.
+     * Overload de compatibilidad: sin filtros.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<BitacoraPorteriaItemResponse> generarReporteBitacoraPaginado(int page, int size) {
+        return generarReporteBitacoraPaginado(
+                page, size, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * REQ-VEH-019 / QA 2026-11-26: reporte paginado con los mismos filtros de
+     * {@code /reporte}. Los filtros se empujan a la consulta (no se pagina en
+     * memoria), se conserva el alcance por área/usuario y el orden ascendente
+     * por {@code fechaHoraSalida}.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<BitacoraPorteriaItemResponse> generarReporteBitacoraPaginado(
+            int page,
+            int size,
+            String search,
+            UUID empleadoId,
+            UUID activoId,
+            UUID areaId,
+            UUID createdById,
+            Boolean esExterno,
+            EstadoRegistroPorteria estado,
+            Instant fechaDesde,
+            Instant fechaHasta) {
+        if (fechaDesde != null && fechaHasta != null && fechaHasta.isBefore(fechaDesde)) {
+            throw new BusinessException("La fecha de fin no puede ser anterior a la fecha de inicio.");
+        }
+
+        Pageable pageable = PageRequest.of(
+                Math.max(0, page),
+                Math.min(Math.max(1, size), ApiConstants.MAX_PAGE_SIZE),
+                Sort.by(Sort.Direction.ASC, "fechaHoraSalida")
+        );
+
+        AlcanceArea alcance = resolverAlcance(areaId, createdById);
+        if (alcance.sinAcceso()) {
+            return PageResponse.of(List.of(), new PageImpl<>(List.of(), pageable, 0));
+        }
+
+        Page<RegistroPorteria> registros = esExterno == null
+                ? repository.findAll(
+                        search,
+                        empleadoId,
+                        activoId,
+                        alcance.areaId(),
+                        alcance.createdById(),
+                        alcance.unirPorOr(),
+                        null,
+                        estado,
+                        fechaDesde,
+                        fechaHasta,
+                        pageable)
+                : repository.findAll(
+                        search,
+                        empleadoId,
+                        activoId,
+                        alcance.areaId(),
+                        alcance.createdById(),
+                        alcance.unirPorOr(),
+                        esExterno,
+                        null,
+                        estado,
+                        fechaDesde,
+                        fechaHasta,
+                        pageable);
+        return PageResponse.of(toBitacoraItemList(registros.getContent()), registros);
     }
 
     /**
@@ -947,14 +1040,15 @@ public class RegistroPorteriaService {
                                 UbicacionEntity::getNombre,
                                 (a, b) -> a));
 
-        Map<UUID, String> salidaNumerosMap = new HashMap<>();
-        if (!salidaIds.isEmpty() && salidaVehicularRepository != null) {
-            for (UUID sId : salidaIds) {
-                salidaVehicularRepository.findById(sId)
-                        .map(SalidaVehicular::getNumero)
-                        .ifPresent(num -> salidaNumerosMap.put(sId, num));
-            }
-        }
+        // REQ-VEH-019: una sola consulta en lugar de findById por fila (N+1).
+        Map<UUID, String> salidaNumerosMap = (salidaIds.isEmpty() || salidaVehicularRepository == null)
+                ? Collections.emptyMap()
+                : salidaVehicularRepository.findAllByIdIn(salidaIds).stream()
+                        .filter(s -> s.getId() != null && s.getNumero() != null)
+                        .collect(Collectors.toMap(
+                                SalidaVehicular::getId,
+                                SalidaVehicular::getNumero,
+                                (a, b) -> a));
 
         return registros.stream()
                 .map(r -> mapToBitacoraItem(

@@ -7,29 +7,39 @@ import {
 } from "lucide-react"
 
 import { Card, CardContent } from "@/shared/components/ui/card"
-import type { CargaCombustible } from "../api/carga-combustible.service"
+import type { TotalesGestionVehicularResponse } from "../../totales/api/gestion-vehicular-totales.service"
 
 export interface ConsumoCombustibleMetricsProps {
-  cargas: CargaCombustible[]
-  totalElements?: number
+  /** Agregados del servidor (`GET /reportes/gestion-vehicular/totales?modulo=combustible`). */
+  totales?: TotalesGestionVehicularResponse | null
+}
+
+function formatear(valor: number | null | undefined, decimales = 0): string {
+  if (valor == null || !Number.isFinite(valor)) return "—"
+  return valor.toLocaleString("es-BO", {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales,
+  })
 }
 
 export function ConsumoCombustibleMetrics({
-  cargas,
-  totalElements,
+  totales,
 }: Readonly<ConsumoCombustibleMetricsProps>) {
-  const total = totalElements ?? cargas.length
-
-  const totalLitros = cargas.reduce((sum, c) => sum + (Number(c.litros) || 0), 0)
-  const totalImporte = cargas.reduce((sum, c) => sum + (Number(c.precioTotal) || 0), 0)
-  const precioPromedio = totalLitros > 0 ? totalImporte / totalLitros : 0
-
-  const vehiculosUnicos = new Set(
-    cargas.map((c) => c.activo?.id ?? c.activoId).filter(Boolean)
-  ).size
+  const totalLitros = totales?.totalLitros
+  const totalImporte = totales?.totalImporte
+  const litrosLabel = formatear(totalLitros, 2)
+  const importeLabel = formatear(totalImporte, 2)
+  const precioPromedio =
+    totalLitros != null && totalImporte != null && totalLitros > 0
+      ? totalImporte / totalLitros
+      : null
+  const precioLabel = formatear(precioPromedio, 2)
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 print:hidden">
+    <div
+      data-testid="metricas-combustible"
+      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 print:hidden"
+    >
       {/* 1. Total Cargas */}
       <Card className="border-border/60 bg-card/60 shadow-xs hover:border-amber-500/40 transition-colors">
         <CardContent className="p-3.5 space-y-1">
@@ -40,7 +50,7 @@ export function ConsumoCombustibleMetrics({
             <Fuel className="h-4 w-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold text-foreground">
-            {total.toLocaleString()}
+            {formatear(totales?.totalRegistros)}
           </div>
           <p className="text-[10px] text-muted-foreground truncate">
             Vales y facturas registradas
@@ -58,14 +68,13 @@ export function ConsumoCombustibleMetrics({
             <Droplet className="h-4 w-4 text-sky-500" />
           </div>
           <div className="text-2xl font-bold text-sky-600 dark:text-sky-400">
-            {totalLitros.toLocaleString("es-BO", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{" "}
-            <span className="text-sm font-normal text-muted-foreground">L</span>
+            {litrosLabel}{" "}
+            {litrosLabel !== "—" && (
+              <span className="text-sm font-normal text-muted-foreground">L</span>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground truncate">
-            Litros despachados en página
+            Litros despachados con los filtros aplicados
           </p>
         </CardContent>
       </Card>
@@ -80,11 +89,10 @@ export function ConsumoCombustibleMetrics({
             <Coins className="h-4 w-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-            {totalImporte.toLocaleString("es-BO", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{" "}
-            <span className="text-sm font-normal text-muted-foreground">Bs.</span>
+            {importeLabel}{" "}
+            {importeLabel !== "—" && (
+              <span className="text-sm font-normal text-muted-foreground">Bs.</span>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground truncate">
             Costo acumulado de combustible
@@ -102,11 +110,10 @@ export function ConsumoCombustibleMetrics({
             <TrendingUp className="h-4 w-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-            {precioPromedio.toLocaleString("es-BO", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{" "}
-            <span className="text-sm font-normal text-muted-foreground">Bs./L</span>
+            {precioLabel}{" "}
+            {precioLabel !== "—" && (
+              <span className="text-sm font-normal text-muted-foreground">Bs./L</span>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground truncate">
             Costo promedio por litro
@@ -114,7 +121,7 @@ export function ConsumoCombustibleMetrics({
         </CardContent>
       </Card>
 
-      {/* 5. Vehículos Atendidos */}
+      {/* 5. Vehículos Atendidos: el agregado no expone este indicador */}
       <Card className="border-border/60 bg-card/60 shadow-xs hover:border-purple-500/40 transition-colors col-span-2 sm:col-span-1">
         <CardContent className="p-3.5 space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
@@ -123,8 +130,11 @@ export function ConsumoCombustibleMetrics({
             </span>
             <Car className="h-4 w-4 text-purple-500" />
           </div>
-          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-            {vehiculosUnicos}
+          <div
+            className="text-2xl font-bold text-purple-600 dark:text-purple-400"
+            title="El endpoint de totales no reporta vehículos únicos"
+          >
+            —
           </div>
           <p className="text-[10px] text-muted-foreground truncate">
             Vehículos abastecidos

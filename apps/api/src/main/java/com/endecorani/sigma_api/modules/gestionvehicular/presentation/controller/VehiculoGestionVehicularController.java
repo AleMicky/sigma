@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +31,7 @@ import java.util.UUID;
         description = "Consulta de activos de tipo Vehículo con todos sus atributos dinámicos e imágenes"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(GestionVehicularRoles.OPERACION)
 public class VehiculoGestionVehicularController {
 
     private final VehiculoGestionVehicularService service;

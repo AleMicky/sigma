@@ -1,8 +1,10 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.application.dto.cargacombustible.request;
 
+import com.endecorani.sigma_api.shared.infrastructure.datetime.FlexibleLocalDateTimeDeserializer;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,6 +21,7 @@ public record CargaCombustibleRequest(
         @NotNull(message = "El insumo (combustible) es obligatorio")
         UUID insumoId,
 
+        @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
         LocalDateTime fechaCarga,
 
         @NotNull(message = "Los litros cargados son obligatorios")

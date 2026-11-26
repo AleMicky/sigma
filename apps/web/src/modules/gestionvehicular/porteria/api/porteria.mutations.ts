@@ -1,4 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { gestionVehicularDashboardKeys } from "../../dashboard/api/gestion-vehicular-dashboard.queries"
+import { gestionVehicularTotalesKeys } from "../../totales/api/gestion-vehicular-totales.queries"
 import { toast } from "sonner"
 
 import { getErrorMessage } from "@/shared/api"
@@ -22,6 +24,8 @@ export function useRegistrarSalidaPorteriaMutation() {
     mutationFn: (data: RegistrarSalidaPorteriaRequest) =>
       registrarSalidaPorteria(data),
     onSuccess: (registro) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.afuera() })
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.reportes() })
@@ -47,6 +51,8 @@ export function useRegistrarLlegadaPorteriaMutation() {
       data?: RegistrarLlegadaPorteriaRequest
     }) => registrarLlegadaPorteria(id, data),
     onSuccess: (registro) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.afuera() })
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.reportes() })
@@ -75,6 +81,8 @@ export function useAnularRegistroPorteriaMutation() {
       data?: AnularRegistroPorteriaRequest
     }) => anularRegistroPorteria(id, data),
     onSuccess: (registro) => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.afuera() })
       void queryClient.invalidateQueries({ queryKey: porteriaKeys.reportes() })

@@ -175,3 +175,13 @@ export interface ReporteBitacoraPorteriaFiltros {
   fechaHasta?: string
 }
 
+/** Parámetros de `GET /porteria/reporte/paginado` (mismos filtros de `/reporte`). */
+export interface ReporteBitacoraPorteriaPaginadoParams
+  extends ReporteBitacoraPorteriaFiltros {
+  q?: string
+  fechaInicio?: string
+  fechaFin?: string
+  page?: number
+  size?: number
+}
+

@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.modules.gestionvehicular.presentation.controller;
 
 import com.endecorani.sigma_api.modules.gestionvehicular.application.service.RegistroPorteriaService;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoRegistroPorteria;
 import com.endecorani.sigma_api.shared.presentation.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,5 +90,61 @@ class RegistroPorteriaControllerTest {
         assertEquals(
                 LocalDate.of(2026, 11, 27).atStartOfDay(ZONA).toInstant().minusNanos(1),
                 hasta.getValue());
+    }
+
+    @Test
+    void reportePaginado_todosLosFiltrosYAliasFecha_debePasarlosAlServicio() throws Exception {
+        UUID empleadoId = UUID.randomUUID();
+        UUID activoId = UUID.randomUUID();
+        UUID areaId = UUID.randomUUID();
+        UUID createdById = UUID.randomUUID();
+        ArgumentCaptor<Instant> desde = ArgumentCaptor.forClass(Instant.class);
+        ArgumentCaptor<Instant> hasta = ArgumentCaptor.forClass(Instant.class);
+
+        mockMvc.perform(get("/api/v1/porteria/reporte/paginado")
+                        .param("search", "  ABC-123  ")
+                        .param("q", "ignorado")
+                        .param("empleadoId", empleadoId.toString())
+                        .param("activoId", activoId.toString())
+                        .param("areaId", areaId.toString())
+                        .param("createdById", createdById.toString())
+                        .param("esExterno", "true")
+                        .param("estado", "AFUERA")
+                        .param("fechaInicio", "2026-11-26T00:00:00")
+                        .param("fechaFin", "2026-11-26")
+                        .param("page", "1")
+                        .param("size", "7"))
+                .andExpect(status().isOk());
+
+        verify(service).generarReporteBitacoraPaginado(
+                eq(1), eq(7), eq("ABC-123"), eq(empleadoId), eq(activoId), eq(areaId), eq(createdById),
+                eq(true), eq(EstadoRegistroPorteria.AFUERA), desde.capture(), hasta.capture());
+        assertEquals(Instant.parse("2026-11-26T04:00:00Z"), desde.getValue());
+        assertEquals(
+                LocalDate.of(2026, 11, 27).atStartOfDay(ZONA).toInstant().minusNanos(1),
+                hasta.getValue());
+    }
+
+    @Test
+    void reportePaginado_sinParametros_debeUsarQYPaginacionPorDefecto() throws Exception {
+        mockMvc.perform(get("/api/v1/porteria/reporte/paginado")
+                        .param("q", "  XYZ  ")
+                        .param("fechaDesde", "2026-11-26T00:00:00Z")
+                        .param("fechaHasta", "2026-11-26T23:00:00+00:00"))
+                .andExpect(status().isOk());
+
+        verify(service).generarReporteBitacoraPaginado(
+                eq(0), eq(20), eq("XYZ"), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                eq(Instant.parse("2026-11-26T00:00:00Z")),
+                eq(Instant.parse("2026-11-26T23:00:00Z")));
+    }
+
+    @Test
+    void reportePaginado_fechaInvalida_debeRetornar400SinInvocarServicio() throws Exception {
+        mockMvc.perform(get("/api/v1/porteria/reporte/paginado")
+                        .param("fechaFin", "fecha-invalida"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(service);
     }
 }

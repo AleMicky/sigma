@@ -6,17 +6,21 @@ import com.endecorani.sigma_api.modules.gestionvehicular.application.mapper.Cond
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.enums.EstadoLicenciaConductor;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.model.ConductorLicencia;
 import com.endecorani.sigma_api.modules.gestionvehicular.domain.repository.ConductorRepository;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.util.LicenciaVigencia;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.mapper.ConductorPersistenceMapper;
 import com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.repository.SpringConductorLicenciaRepository;
 import com.endecorani.sigma_api.shared.application.storage.DocumentStorageService;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
+import com.endecorani.sigma_api.shared.util.FlexibleLocalDateTimeParser;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -58,6 +62,7 @@ public class ConductorLicenciaService {
             MultipartFile file
     ) {
         validarConductorExiste(conductorId);
+        validarFechasLicencia(request.fechaEmision(), request.fechaVencimiento());
 
         EstadoLicenciaConductor estado = request.estado() != null ? request.estado() : EstadoLicenciaConductor.VIGENTE;
 
@@ -101,6 +106,7 @@ public class ConductorLicenciaService {
     ) {
         ConductorLicenciaEntity actual = obtenerPorId(id);
         UUID conductorId = actual.getConductorId();
+        validarFechasLicencia(request.fechaEmision(), request.fechaVencimiento());
 
         EstadoLicenciaConductor estado = request.estado() != null ? request.estado() : actual.getEstado();
 
@@ -148,6 +154,23 @@ public class ConductorLicenciaService {
             documentStorageService.delete(entity.getUrl());
         }
         licenciaRepository.deleteById(id);
+    }
+
+    /** REQ-VEH-011: se valida antes de desactivar licencias anteriores o persistir. */
+    private void validarFechasLicencia(LocalDate fechaEmision, LocalDate fechaVencimiento) {
+        if (!LicenciaVigencia.rangoValido(fechaEmision, fechaVencimiento)) {
+            throw new BusinessException(
+                    "LICENCIA_FECHAS_INVALIDAS",
+                    "La fecha de emisión no puede ser posterior a la fecha de vencimiento."
+            );
+        }
+        LocalDate hoy = LocalDate.now(FlexibleLocalDateTimeParser.OPERATIONAL_ZONE);
+        if (fechaVencimiento.isBefore(hoy)) {
+            throw new BusinessException(
+                    "LICENCIA_VENCIDA",
+                    "No se puede registrar ni actualizar una licencia vencida."
+            );
+        }
     }
 
     private void desactivarLicenciasVigentesAnteriores(UUID conductorId, UUID excludeId) {

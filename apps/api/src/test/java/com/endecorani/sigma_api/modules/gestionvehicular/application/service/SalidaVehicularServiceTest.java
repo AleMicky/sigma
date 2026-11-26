@@ -27,6 +27,7 @@ import com.endecorani.sigma_api.modules.workflow.infrastructure.flowable.excepti
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -243,6 +244,33 @@ class SalidaVehicularServiceTest {
 
         assertThrows(ResourceNotFoundException.class, () -> service.registrar(request));
         verifyNoInteractions(correlativoService, salidaRepository, workflowApplicationService);
+    }
+
+    @Test
+    void registrar_cuandoElVehiculoYaTieneSalidaActiva_debeLanzar409SinPersistirNiIniciarFlowable() {
+        UUID activoId = UUID.randomUUID();
+        UUID empleadoId = UUID.randomUUID();
+        when(activoRepository.existsById(activoId)).thenReturn(true);
+        when(empleadoRepository.existsById(empleadoId)).thenReturn(true);
+        when(salidaRepository.findActivas()).thenReturn(List.of(SalidaVehicular.builder()
+                .id(UUID.randomUUID())
+                .activoId(activoId)
+                .empleadoId(empleadoId)
+                .estado("SALIDA")
+                .build()));
+
+        RegistrarSalidaVehicularRequest request = new RegistrarSalidaVehicularRequest(
+                activoId,
+                empleadoId,
+                Instant.now(),
+                "Segunda salida del mismo vehículo",
+                null
+        );
+
+        ConflictException ex = assertThrows(ConflictException.class, () -> service.registrar(request));
+        assertEquals("SALIDA_VEHICULAR_ACTIVA_DUPLICADA", ex.getCode());
+        verify(salidaRepository, never()).save(any(SalidaVehicular.class));
+        verifyNoInteractions(correlativoService, workflowApplicationService);
     }
 
     @Test

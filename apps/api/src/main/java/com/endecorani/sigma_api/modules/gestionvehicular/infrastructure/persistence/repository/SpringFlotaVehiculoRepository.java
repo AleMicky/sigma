@@ -20,6 +20,9 @@ public interface SpringFlotaVehiculoRepository extends JpaRepository<FlotaVehicu
 
     List<FlotaVehiculoEntity> findByActivoIdInAndActivoTrue(Collection<UUID> activoIds);
 
+    /** REQ-VEH-019: evita cargar vehículos inactivos en el dashboard. */
+    List<FlotaVehiculoEntity> findByActivoTrue();
+
     void deleteByFlotaVehicularId(UUID flotaVehicularId);
 
     Optional<FlotaVehiculoEntity> findByFlotaVehicularIdAndActivoId(UUID flotaVehicularId, UUID activoId);

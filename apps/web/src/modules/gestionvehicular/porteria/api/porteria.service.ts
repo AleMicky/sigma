@@ -4,11 +4,13 @@ import type { PageResponse } from "@/shared/types/api.types"
 import { porteriaEndpoints } from "./porteria.endpoints"
 import type {
   AnularRegistroPorteriaRequest,
+  BitacoraPorteriaItem,
   PorteriaFiltros,
   RegistrarLlegadaPorteriaRequest,
   RegistrarSalidaPorteriaRequest,
   RegistroPorteria,
   ReporteBitacoraPorteriaFiltros,
+  ReporteBitacoraPorteriaPaginadoParams,
   ReporteBitacoraPorteriaResponse,
 } from "./porteria.types"
 
@@ -34,6 +36,19 @@ export const getReporteBitacoraPorteria = (
   return http.get<ReporteBitacoraPorteriaResponse>(porteriaEndpoints.reporte, {
     params,
   })
+}
+
+/**
+ * Bitácora paginada: response acotada por `size`, orden `fechaHoraSalida ASC`
+ * y sin métricas agregadas. Los agregados siguen viniendo de `/reporte`.
+ */
+export const getReporteBitacoraPorteriaPaginado = (
+  params?: ReporteBitacoraPorteriaPaginadoParams
+): Promise<PageResponse<BitacoraPorteriaItem>> => {
+  return http.get<PageResponse<BitacoraPorteriaItem>>(
+    porteriaEndpoints.reportePaginado,
+    { params }
+  )
 }
 
 async function fetchReporteBitacoraPorteriaPdf(

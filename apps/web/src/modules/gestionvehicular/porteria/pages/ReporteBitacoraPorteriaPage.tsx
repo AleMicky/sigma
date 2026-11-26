@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { getErrorMessage } from "@/shared/api/errors"
 import { PageShell } from "@/shared/components/page-shell"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
@@ -27,7 +28,6 @@ import {
   descargarReporteBitacoraPorteriaPdf,
 } from "../api/porteria.service"
 import type {
-  BitacoraPorteriaItem,
   EstadoRegistroPorteria,
   ReporteBitacoraPorteriaFiltros,
 } from "../api/porteria.types"
@@ -49,6 +49,8 @@ function getFechaActual(): string {
   return `${year}-${month}-${day}`
 }
 
+const PAGE_SIZE = 20
+
 export function ReporteBitacoraPorteriaPage() {
   // Filtros interactivos en tiempo real
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -59,9 +61,13 @@ export function ReporteBitacoraPorteriaPage() {
   const [fechaHasta, setFechaHasta] = useState<string>(getFechaActual())
   const [estado, setEstado] = useState<string>("TODOS")
   const [tipoPase, setTipoPase] = useState<string>("TODOS")
+  const [page, setPage] = useState(0)
+  const [size, setSize] = useState(PAGE_SIZE)
 
   const apiParams = useMemo<ReporteBitacoraPorteriaFiltros>(() => {
     return {
+      // La búsqueda se resuelve en el servidor; no se filtra el contenido local.
+      search: debouncedSearch.trim() || undefined,
       empleadoId: empleadoId || undefined,
       activoId: activoId || undefined,
       estado:
@@ -75,9 +81,48 @@ export function ReporteBitacoraPorteriaPage() {
       fechaDesde: fechaDesde || undefined,
       fechaHasta: fechaHasta || undefined,
     }
-  }, [empleadoId, activoId, estado, tipoPase, fechaDesde, fechaHasta])
+  }, [debouncedSearch, empleadoId, activoId, estado, tipoPase, fechaDesde, fechaHasta])
 
+  // La tabla consume SOLO la página devuelta por el servidor.
+  const reportePaginadoQuery = useQuery(
+    porteriaQueries.reportePaginado({ ...apiParams, page, size })
+  )
+
+  // Los agregados globales siguen viniendo exclusivamente de `/reporte`.
   const reporteQuery = useQuery(porteriaQueries.reporte(apiParams))
+
+  const handleBusquedaChange = (value: string) => {
+    setSearchQuery(value)
+    setPage(0)
+  }
+  const handleEmpleadoChange = (value: string) => {
+    setEmpleadoId(value)
+    setPage(0)
+  }
+  const handleActivoChange = (value: string) => {
+    setActivoId(value)
+    setPage(0)
+  }
+  const handleFechaDesdeChange = (value: string) => {
+    setFechaDesde(value)
+    setPage(0)
+  }
+  const handleFechaHastaChange = (value: string) => {
+    setFechaHasta(value)
+    setPage(0)
+  }
+  const handleEstadoChange = (value: string) => {
+    setEstado(value)
+    setPage(0)
+  }
+  const handleTipoPaseChange = (value: string) => {
+    setTipoPase(value)
+    setPage(0)
+  }
+  const handleSizeChange = (value: number) => {
+    setSize(value)
+    setPage(0)
+  }
 
   const handleLimpiarFiltros = () => {
     setSearchQuery("")
@@ -87,88 +132,17 @@ export function ReporteBitacoraPorteriaPage() {
     setTipoPase("TODOS")
     setFechaDesde(getPrimerDiaMes())
     setFechaHasta(getFechaActual())
+    setPage(0)
   }
 
-  // Filtrado instantáneo por texto y métricas dinámicas
-  const { filas, metricas } = useMemo(() => {
-    const rawItems: BitacoraPorteriaItem[] = reporteQuery.data?.items ?? []
-    const q = debouncedSearch.trim().toLowerCase()
+  // Un fallo de /reporte nunca se pinta como ceros: se anuncia con «—».
+  const agregados = reporteQuery.data
+  const metricas = agregados && !reporteQuery.isError ? agregados : null
+  const valorMetrica = (value: number | undefined) =>
+    metricas && value !== undefined ? value : "—"
 
-    const filtered = q
-      ? rawItems.filter((item) =>
-          [
-            item.numero,
-            item.empleadoNombre,
-            item.empleadoCodigo,
-            item.empleadoArea,
-            item.empleadoCargo,
-            item.personaExterna,
-            item.placaExterna,
-            item.vehiculoPlaca,
-            item.vehiculoCodigo,
-            item.vehiculoNombre,
-            item.activosResumen,
-            item.rutaTexto,
-            item.origenUbicacionNombre,
-            item.destinoUbicacionNombre,
-            item.destinoOtro,
-            item.guardiaSalidaNombre,
-            item.guardiaLlegadaNombre,
-            item.observacionSalida,
-            item.observacionLlegada,
-            item.observacionesConsolidadas,
-            item.estado,
-          ]
-            .filter(Boolean)
-            .some((val) => String(val).toLowerCase().includes(q))
-        )
-      : rawItems
-
-    let internos = 0
-    let externos = 0
-    let afuera = 0
-    let completados = 0
-    let anulados = 0
-    let totalActivos = 0
-    let activosNoRetornados = 0
-    let sumaDuracion = 0
-    let conDuracion = 0
-
-    for (const item of filtered) {
-      if (item.esExterno) externos++
-      else internos++
-
-      if (item.estado === "AFUERA") afuera++
-      else if (item.estado === "COMPLETADO") completados++
-      else if (item.estado === "ANULADO") anulados++
-
-      totalActivos += item.totalActivos ?? (item.activos?.length || 0)
-      activosNoRetornados += item.activosPendientesRetorno ?? 0
-
-      if (item.duracionMinutos != null && item.duracionMinutos >= 0) {
-        sumaDuracion += item.duracionMinutos
-        conDuracion++
-      }
-    }
-
-    const promedioMin =
-      conDuracion > 0 ? Math.round(sumaDuracion / conDuracion) : 0
-
-    return {
-      filas: filtered,
-      metricas: {
-        total: filtered.length,
-        internos,
-        externos,
-        afuera,
-        completados,
-        anulados,
-        totalActivos,
-        activosNoRetornados,
-        promedioMin,
-      },
-    }
-  }, [reporteQuery.data?.items, debouncedSearch])
+  // CSV y PDFs continúan alimentándose de /reporte (no de `content`).
+  const filasExportar = reporteQuery.data?.items ?? []
 
   const [isPdfLoading, setIsPdfLoading] = useState(false)
 
@@ -182,9 +156,7 @@ export function ReporteBitacoraPorteriaPage() {
         search: searchQuery.trim() || undefined,
       })
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Error al generar el reporte PDF"
-      toast.error(`No se pudo abrir el reporte: ${message}`)
+      toast.error(`No se pudo abrir el reporte: ${getErrorMessage(err)}`)
     } finally {
       setIsPdfLoading(false)
     }
@@ -201,19 +173,15 @@ export function ReporteBitacoraPorteriaPage() {
       })
       toast.success("Reporte PDF descargado correctamente.")
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Error al descargar el PDF en el servidor"
-      toast.error(`No se pudo descargar el PDF: ${message}`)
+      toast.error(`No se pudo descargar el PDF: ${getErrorMessage(err)}`)
     } finally {
       setIsPdfLoading(false)
     }
   }
 
-  // Exportar a Excel (CSV UTF-8)
+  // Exportar a Excel (CSV UTF-8): filas y totales globales desde /reporte
   const handleExportarCsv = () => {
-    if (filas.length === 0) {
+    if (filasExportar.length === 0) {
       toast.info("No hay datos para exportar.")
       return
     }
@@ -243,7 +211,7 @@ export function ReporteBitacoraPorteriaPage() {
       "OBSERVACIONES",
     ]
 
-    const csvRows = filas.map((f) => [
+    const csvRows = filasExportar.map((f) => [
       f.dia ?? "",
       `"${f.diaSemana || ""}"`,
       `"${f.fechaFormateada || ""}"`,
@@ -274,7 +242,7 @@ export function ReporteBitacoraPorteriaPage() {
         headers.join(";"),
         ...csvRows.map((r) => r.join(";")),
         "",
-        `"TOTALES";"";"";"${metricas.total} registros";"Int: ${metricas.internos} / Ext: ${metricas.externos}";"";"";"";"";"";"";"";"";"";"${metricas.totalActivos} activos";"";"";"";"";"";"Completados: ${metricas.completados} / Afuera: ${metricas.afuera}";""`,
+        `"TOTALES";"";"";"${valorMetrica(agregados?.totalRegistros)} registros";"Int: ${valorMetrica(agregados?.totalInternos)} / Ext: ${valorMetrica(agregados?.totalExternos)}";"";"";"";"";"";"";"";"";"";"${valorMetrica(agregados?.totalActivosMovilizados)} activos (${valorMetrica(agregados?.totalActivosNoRetornados)} sin retorno)";"";"";"";"";"";"Completados: ${valorMetrica(agregados?.totalCompletados)} / Afuera: ${valorMetrica(agregados?.totalAfuera)} / Anulados: ${valorMetrica(agregados?.totalAnulados)} / Promedio: ${valorMetrica(agregados?.duracionPromedioMinutos)} min";""`,
       ].join("\r\n")
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
@@ -289,7 +257,9 @@ export function ReporteBitacoraPorteriaPage() {
     toast.success("Archivo Excel (CSV) descargado.")
   }
 
-  const isLoading = reporteQuery.isLoading || reporteQuery.isFetching
+  const isLoading =
+    reportePaginadoQuery.isLoading || reportePaginadoQuery.isFetching
+  const isLoadingMetricas = reporteQuery.isLoading || reporteQuery.isFetching
 
   return (
     <PageShell
@@ -319,8 +289,11 @@ export function ReporteBitacoraPorteriaPage() {
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => void reporteQuery.refetch()}
-            disabled={isLoading}
+            onClick={() => {
+              void reportePaginadoQuery.refetch()
+              void reporteQuery.refetch()
+            }}
+            disabled={isLoading || isLoadingMetricas}
             className="h-9 text-xs gap-1.5 cursor-pointer"
             title="Volver a consultar los datos"
           >
@@ -335,7 +308,7 @@ export function ReporteBitacoraPorteriaPage() {
             variant="outline"
             size="sm"
             onClick={handleExportarCsv}
-            disabled={filas.length === 0}
+            disabled={filasExportar.length === 0}
             className="h-9 text-xs gap-1.5 cursor-pointer"
             title="Exportar la tabla filtrada a Excel (CSV)"
           >
@@ -374,8 +347,12 @@ export function ReporteBitacoraPorteriaPage() {
         </div>
       </div>
 
-      {/* 2. Tarjetas de Métricas Resumen */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {/* 2. Tarjetas de Métricas Resumen — exclusivamente agregados de /reporte */}
+      <div
+        data-testid="metricas-bitacora-porteria"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
+        aria-busy={isLoadingMetricas}
+      >
         <Card className="border-border/60 shadow-2xs">
           <CardContent className="p-3.5 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0">
@@ -386,7 +363,7 @@ export function ReporteBitacoraPorteriaPage() {
                 Total Registros
               </span>
               <p className="text-lg font-bold text-foreground leading-tight">
-                {metricas.total}
+                {valorMetrica(agregados?.totalRegistros)}
               </p>
             </div>
           </CardContent>
@@ -402,12 +379,12 @@ export function ReporteBitacoraPorteriaPage() {
                 Internos / Externos
               </span>
               <p className="text-lg font-bold text-foreground leading-tight">
-                {metricas.internos}{" "}
+                {valorMetrica(agregados?.totalInternos)}{" "}
                 <span className="text-xs font-normal text-muted-foreground">
                   /
                 </span>{" "}
                 <span className="text-purple-600 dark:text-purple-400">
-                  {metricas.externos}
+                  {valorMetrica(agregados?.totalExternos)}
                 </span>
               </p>
             </div>
@@ -424,7 +401,7 @@ export function ReporteBitacoraPorteriaPage() {
                 Afuera Ahora
               </span>
               <p className="text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight">
-                {metricas.afuera}
+                {valorMetrica(agregados?.totalAfuera)}
               </p>
             </div>
           </CardContent>
@@ -440,7 +417,10 @@ export function ReporteBitacoraPorteriaPage() {
                 Completados
               </span>
               <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
-                {metricas.completados}
+                {valorMetrica(agregados?.totalCompletados)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Anulados: {valorMetrica(agregados?.totalAnulados)}
               </p>
             </div>
           </CardContent>
@@ -449,7 +429,7 @@ export function ReporteBitacoraPorteriaPage() {
         <Card className="border-border/60 shadow-2xs col-span-2 sm:col-span-1">
           <CardContent className="p-3.5 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
-              {metricas.promedioMin > 0 ? (
+              {metricas && metricas.duracionPromedioMinutos > 0 ? (
                 <Timer className="h-4 w-4" />
               ) : (
                 <Package className="h-4 w-4" />
@@ -460,12 +440,15 @@ export function ReporteBitacoraPorteriaPage() {
                 Activos Movilizados
               </span>
               <p className="text-lg font-bold text-foreground leading-tight">
-                {metricas.totalActivos}
-                {metricas.activosNoRetornados > 0 && (
+                {valorMetrica(agregados?.totalActivosMovilizados)}
+                {metricas && metricas.totalActivosNoRetornados > 0 && (
                   <span className="ml-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
-                    ({metricas.activosNoRetornados} pend.)
+                    ({valorMetrica(agregados?.totalActivosNoRetornados)} pend.)
                   </span>
                 )}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Duración promedio: {valorMetrica(agregados?.duracionPromedioMinutos)} min
               </p>
             </div>
           </CardContent>
@@ -475,25 +458,29 @@ export function ReporteBitacoraPorteriaPage() {
       {/* 3. Barra Interactiva de Filtros */}
       <ReporteBitacoraPorteriaFiltrosBar
         searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
+        onSearchQueryChange={handleBusquedaChange}
         empleadoId={empleadoId}
-        onEmpleadoChange={setEmpleadoId}
+        onEmpleadoChange={handleEmpleadoChange}
         activoId={activoId}
-        onActivoChange={(id) => setActivoId(id)}
+        onActivoChange={handleActivoChange}
         fechaDesde={fechaDesde}
-        onFechaDesdeChange={setFechaDesde}
+        onFechaDesdeChange={handleFechaDesdeChange}
         fechaHasta={fechaHasta}
-        onFechaHastaChange={setFechaHasta}
+        onFechaHastaChange={handleFechaHastaChange}
         estado={estado}
-        onEstadoChange={setEstado}
+        onEstadoChange={handleEstadoChange}
         tipoPase={tipoPase}
-        onTipoPaseChange={setTipoPase}
+        onTipoPaseChange={handleTipoPaseChange}
         onLimpiarFiltros={handleLimpiarFiltros}
       />
 
-      {/* 4. Estado de Error */}
-      {reporteQuery.error && (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive flex items-center justify-between">
+      {/* 4. Estados de Error: paginación y agregados se recuperan por separado */}
+      {reportePaginadoQuery.isError && (
+        <div
+          role="alert"
+          aria-busy="false"
+          className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive flex items-center justify-between"
+        >
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <div>
@@ -501,9 +488,36 @@ export function ReporteBitacoraPorteriaPage() {
                 Error al cargar la bitácora de portería
               </p>
               <p className="text-xs text-destructive/90">
-                {reporteQuery.error instanceof Error
-                  ? reporteQuery.error.message
-                  : "No se pudo obtener la información desde el servidor."}
+                {getErrorMessage(reportePaginadoQuery.error)}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void reportePaginadoQuery.refetch()}
+            className="gap-1.5 ml-4 text-xs h-8 cursor-pointer"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Reintentar bitácora
+          </Button>
+        </div>
+      )}
+
+      {reporteQuery.isError && (
+        <div
+          role="alert"
+          aria-busy="false"
+          className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-semibold text-sm">
+                Error al cargar los agregados de la bitácora
+              </p>
+              <p className="text-xs text-destructive/90">
+                {getErrorMessage(reporteQuery.error)}
               </p>
             </div>
           </div>
@@ -514,13 +528,23 @@ export function ReporteBitacoraPorteriaPage() {
             className="gap-1.5 ml-4 text-xs h-8 cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Reintentar
+            Reintentar agregados
           </Button>
         </div>
       )}
 
       {/* 5. Tabla Interactiva de Bitácora con Paginación y Modal de Detalle */}
-      <ReporteBitacoraPorteriaTable filas={filas} isLoading={isLoading} />
+      <ReporteBitacoraPorteriaTable
+        filas={reportePaginadoQuery.data?.content ?? []}
+        page={page}
+        size={size}
+        totalElements={reportePaginadoQuery.data?.totalElements ?? 0}
+        totalPages={reportePaginadoQuery.data?.totalPages ?? 0}
+        onPageChange={setPage}
+        onSizeChange={handleSizeChange}
+        isLoading={isLoading}
+        isError={reportePaginadoQuery.isError}
+      />
     </PageShell>
   )
 }

@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +34,7 @@ import java.util.UUID;
         description = "Administración de conductores del parque vehicular"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(GestionVehicularRoles.OPERACION)
 public class ConductorController {
 
     private final ConductorService service;

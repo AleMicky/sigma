@@ -35,8 +35,7 @@ export function SolicitudVehicularGeneralSection() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start">
         {/* Empleado Solicitante */}
         <form.Field name="solicitanteId">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
@@ -66,8 +65,7 @@ export function SolicitudVehicularGeneralSection() {
 
         {/* Tipo de Solicitud */}
         <form.Field name="tipoSolicitudVehicularId">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             const selectedTipo = tiposList.find(

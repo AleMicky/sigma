@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   CarFront,
@@ -7,12 +7,11 @@ import {
   Copy,
   MapPin,
 } from "lucide-react"
-import { toast } from "sonner"
-
 import { routes } from "@/app/config/routes"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { cn } from "@/shared/lib/utils"
 
 import type { VehiculoCatalogo } from "../api/vehiculo.types"
@@ -38,7 +37,8 @@ export function VehiculoTableView({
   vehiculos,
   onPreviewImage,
 }: Readonly<VehiculoTableViewProps>) {
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copy: copyToClipboard, isCopied: isPlacaCopiada } =
+    useCopyToClipboard()
 
   const dynamicColumns = useMemo<DynamicColumn[]>(() => {
     const map = new Map<string, DynamicColumn>()
@@ -58,10 +58,7 @@ export function VehiculoTableView({
   }, [vehiculos])
 
   function handleCopyPlaca(vehiculoId: string, placa: string) {
-    void navigator.clipboard.writeText(placa)
-    setCopiedId(vehiculoId)
-    toast.success(`Placa "${placa}" copiada`)
-    setTimeout(() => setCopiedId(null), 1800)
+    void copyToClipboard(placa, vehiculoId)
   }
 
   return (
@@ -98,7 +95,7 @@ export function VehiculoTableView({
               const atributosVisibles = getAtributosVisibles(v)
               const { valor: placaValor } = getPlacaFromAtributos(v)
               const titulo = getVehiculoTituloDinamico(v)
-              const isCopied = copiedId === v.id
+              const isCopied = isPlacaCopiada(v.id)
               const attrById = new Map(
                 atributosVisibles.map((a) => [a.atributoId, a]),
               )

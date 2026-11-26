@@ -9,6 +9,7 @@ import type { TipoSolicitudVehicular } from "@/modules/gestionvehicular/tipo-sol
 import { empleadoQueries } from "@/modules/organizacion/empleado/api/empleado.queries"
 import type { Empleado } from "@/modules/organizacion/empleado/api/empleado.service"
 import { isApiError } from "@/shared/api"
+import { toLocalDateTimeIso } from "@/shared/lib/date"
 
 import {
   useCreateSolicitudVehicularWithFiles,
@@ -21,6 +22,9 @@ import {
   type SolicitudVehicularFormValues,
   solicitudVehicularSchema,
 } from "../schemas/solicitud-vehicular.schema"
+
+// Se re-exporta para no romper consumidores del helper ubicado aquí antes.
+export { toLocalDateTimeIso }
 
 type UseSolicitudVehicularFormProps = {
   solicitudId?: string
@@ -37,20 +41,6 @@ function toDatetimeLocal(isoString?: string | null): string {
   if (isNaN(d.getTime())) return ""
   const pad = (n: number) => String(n).padStart(2, "0")
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-function toLocalDateTimeIso(value: string): string {
-  const trimmed = value.trim()
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) {
-    return `${trimmed}:00`
-  }
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(trimmed)) {
-    return trimmed.slice(0, 19)
-  }
-  const d = new Date(trimmed)
-  if (isNaN(d.getTime())) return trimmed
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 export function useSolicitudVehicularForm({

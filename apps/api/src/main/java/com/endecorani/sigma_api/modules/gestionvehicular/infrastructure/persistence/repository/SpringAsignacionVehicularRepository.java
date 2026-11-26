@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,4 +56,24 @@ public interface SpringAsignacionVehicularRepository extends JpaRepository<Asign
             @Param("asignadoPorId") UUID asignadoPorId,
             Pageable pageable
     );
+
+    /** REQ-VEH-019: consulta acotada por flota en lugar de findAll(). */
+    List<AsignacionVehicularEntity> findByActivoIdIn(Collection<UUID> activoIds);
+
+    @Query("""
+        SELECT COUNT(DISTINCT a.conductorId)
+        FROM AsignacionVehicularEntity a
+        WHERE a.activoId IN :activoIds
+    """)
+    long countDistinctConductorByActivoIds(@Param("activoIds") Collection<UUID> activoIds);
+
+    @Query("""
+        SELECT COUNT(DISTINCT a.conductorId)
+        FROM AsignacionVehicularEntity a
+        JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorEntity c
+          ON a.conductorId = c.id
+        WHERE a.activoId IN :activoIds
+          AND c.activo = TRUE
+    """)
+    long countDistinctConductorActivoByActivoIds(@Param("activoIds") Collection<UUID> activoIds);
 }

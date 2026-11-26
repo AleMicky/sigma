@@ -1,4 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { gestionVehicularDashboardKeys } from "../../dashboard/api/gestion-vehicular-dashboard.queries"
+import { gestionVehicularTotalesKeys } from "../../totales/api/gestion-vehicular-totales.queries"
 import { toast } from "sonner"
 
 import { isApiError } from "@/shared/api"
@@ -20,6 +22,8 @@ export function useCreateCargaCombustible() {
     mutationFn: (payload: CargaCombustiblePayload) =>
       createCargaCombustible(payload),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       toast.success("Carga de combustible registrada correctamente")
       queryClient.invalidateQueries({ queryKey: cargaCombustibleKeys.all })
       queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.all })
@@ -46,6 +50,8 @@ export function useUpdateCargaCombustible() {
       payload: CargaCombustibleUpdatePayload
     }) => updateCargaCombustible(id, payload),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       toast.success("Carga de combustible actualizada correctamente")
       queryClient.invalidateQueries({ queryKey: cargaCombustibleKeys.all })
       queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.all })
@@ -66,6 +72,8 @@ export function useDeleteCargaCombustible() {
   return useMutation({
     mutationFn: (id: string) => deleteCargaCombustible(id),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gestionVehicularTotalesKeys.all })
       toast.success("Carga de combustible eliminada correctamente")
       queryClient.invalidateQueries({ queryKey: cargaCombustibleKeys.all })
       queryClient.invalidateQueries({ queryKey: salidaVehicularKeys.all })
