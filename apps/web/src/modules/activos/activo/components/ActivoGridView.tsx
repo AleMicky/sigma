@@ -35,6 +35,7 @@ type ActivoGridViewProps = {
   tiposById: Map<string, TipoActivo>
   ubicacionesById?: Map<string, Ubicacion>
   onEdit: (activo: Activo) => void
+  canManage?: boolean
 }
 
 export function ActivoGridView({
@@ -42,6 +43,7 @@ export function ActivoGridView({
   tiposById,
   ubicacionesById,
   onEdit,
+  canManage = false,
 }: Readonly<ActivoGridViewProps>) {
   const [activoToDelete, setActivoToDelete] = useState<Activo | null>(null)
   const [activoParaCambiarEstado, setActivoParaCambiarEstado] =
@@ -181,26 +183,43 @@ export function ActivoGridView({
                     </div>
                   ) : <div />}
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setActivoParaCambiarEstado(activo)
-                    }}
-                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium backdrop-blur-md bg-background/90 border shadow-xs transition-opacity hover:opacity-85 pointer-events-auto cursor-pointer"
-                    style={{
-                      backgroundColor: `${opColor}18`,
-                      borderColor: `${opColor}40`,
-                      color: opColor,
-                    }}
-                    title="Clic para cambiar estado operativo"
-                  >
+                  {canManage ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setActivoParaCambiarEstado(activo)
+                      }}
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium backdrop-blur-md bg-background/90 border shadow-xs transition-opacity hover:opacity-85 pointer-events-auto cursor-pointer"
+                      style={{
+                        backgroundColor: `${opColor}18`,
+                        borderColor: `${opColor}40`,
+                        color: opColor,
+                      }}
+                      title="Clic para cambiar estado operativo"
+                    >
+                      <span
+                        className="size-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: opColor }}
+                      />
+                      <span className="truncate max-w-[110px]">{opNombre}</span>
+                    </button>
+                  ) : (
                     <span
-                      className="size-1.5 rounded-full shrink-0"
-                      style={{ backgroundColor: opColor }}
-                    />
-                    <span className="truncate max-w-[110px]">{opNombre}</span>
-                  </button>
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium backdrop-blur-md bg-background/90 border shadow-xs pointer-events-auto"
+                      style={{
+                        backgroundColor: `${opColor}18`,
+                        borderColor: `${opColor}40`,
+                        color: opColor,
+                      }}
+                    >
+                      <span
+                        className="size-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: opColor }}
+                      />
+                      <span className="truncate max-w-[110px]">{opNombre}</span>
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -290,71 +309,73 @@ export function ActivoGridView({
                 ) : null}
               </div>
 
-              {/* Card Footer Actions */}
-              <div className="flex items-center justify-between border-t border-border/50 bg-muted/20 px-3 py-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => setActivoParaCambiarEstado(activo)}
-                  className="h-7 px-2 text-xs font-medium gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                  title="Cambiar estado operativo"
-                >
-                  <Activity className="size-3 text-primary" />
-                  <span>Estado</span>
-                </Button>
-
-                <div className="flex items-center gap-1">
+              {/* Card Footer Actions (solo ADMIN, REQ-BIZ-001) */}
+              {canManage ? (
+                <div className="flex items-center justify-between border-t border-border/50 bg-muted/20 px-3 py-2">
                   <Button
                     type="button"
                     variant="ghost"
-                    size="icon-xs"
-                    disabled={isToggling}
-                    onClick={() => {
-                      setActivoMutation.mutate({
-                        id: activo.id,
-                        activo: !isActivo,
-                      })
-                    }}
-                    className={cn(
-                      "size-7 cursor-pointer",
-                      isActivo
-                        ? "text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
-                        : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10",
-                    )}
-                    title={isActivo ? "Dar de baja" : "Dar de alta"}
+                    size="xs"
+                    onClick={() => setActivoParaCambiarEstado(activo)}
+                    className="h-7 px-2 text-xs font-medium gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                    title="Cambiar estado operativo"
                   >
-                    {isActivo ? (
-                      <PowerOff className="size-3.5" />
-                    ) : (
-                      <Power className="size-3.5" />
-                    )}
+                    <Activity className="size-3 text-primary" />
+                    <span>Estado</span>
                   </Button>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => onEdit(activo)}
-                    className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
-                    title="Editar activo"
-                  >
-                    <Pencil className="size-3.5" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      disabled={isToggling}
+                      onClick={() => {
+                        setActivoMutation.mutate({
+                          id: activo.id,
+                          activo: !isActivo,
+                        })
+                      }}
+                      className={cn(
+                        "size-7 cursor-pointer",
+                        isActivo
+                          ? "text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
+                          : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10",
+                      )}
+                      title={isActivo ? "Dar de baja" : "Dar de alta"}
+                    >
+                      {isActivo ? (
+                        <PowerOff className="size-3.5" />
+                      ) : (
+                        <Power className="size-3.5" />
+                      )}
+                    </Button>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => setActivoToDelete(activo)}
-                    className="size-7 text-destructive hover:bg-destructive/10 cursor-pointer"
-                    title="Eliminar activo"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => onEdit(activo)}
+                      className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                      title="Editar activo"
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => setActivoToDelete(activo)}
+                      className="size-7 text-destructive hover:bg-destructive/10 cursor-pointer"
+                      title="Eliminar activo"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           )
         })}

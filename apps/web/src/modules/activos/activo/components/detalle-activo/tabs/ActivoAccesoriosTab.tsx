@@ -47,12 +47,15 @@ type ActivoAccesoriosTabProps = {
   tipoActivoId?: string
   onOpenAddAccesorio: () => void
   onEditAccesorio: (item: ActivoAccesorio) => void
+  canManage?: boolean
 }
 
 export function ActivoAccesoriosTab({
   activoId,
   onOpenAddAccesorio,
   onEditAccesorio,
+  // Otros módulos (p. ej. vehículos) reutilizan este tab sin pasar el flag.
+  canManage = true,
 }: ActivoAccesoriosTabProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [itemToDelete, setItemToDelete] = useState<ActivoAccesorio | null>(null)
@@ -237,13 +240,15 @@ export function ActivoAccesoriosTab({
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => setItemToDelete(item)}
-                        className="text-xs gap-2 text-destructive focus:text-destructive cursor-pointer"
-                      >
-                        <Trash2 className="size-3.5" />
-                        Desvincular
-                      </DropdownMenuItem>
+                      {canManage ? (
+                        <DropdownMenuItem
+                          onClick={() => setItemToDelete(item)}
+                          className="text-xs gap-2 text-destructive focus:text-destructive cursor-pointer"
+                        >
+                          <Trash2 className="size-3.5" />
+                          Desvincular
+                        </DropdownMenuItem>
+                      ) : null}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

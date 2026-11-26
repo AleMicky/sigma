@@ -8,7 +8,6 @@ import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
-import com.endecorani.sigma_api.shared.presentation.controller.AbstractCrudController;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -30,7 +29,7 @@ import java.util.UUID;
 @Tag(name = "Estados operativos", description = "Administración del catálogo de estados operativos de activos")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class EstadoOperativoController
-        extends AbstractCrudController<EstadoOperativoRequest, EstadoOperativoResponse, UUID> {
+        extends AbstractActivoCatalogCrudController<EstadoOperativoRequest, EstadoOperativoResponse, UUID> {
 
     private final EstadoOperativoService estadoOperativoService;
 

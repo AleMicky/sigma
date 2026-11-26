@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react"
+import { useId, useState, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   Building2,
@@ -32,6 +32,7 @@ import {
   FormDialogSubmit,
   RequiredFieldLabel,
 } from "@/shared/components/form-dialog"
+import { SegmentedRadioGroup } from "@/shared/components/segmented-radio-group"
 import { Button } from "@/shared/components/ui/button"
 import {
   Combobox,
@@ -41,7 +42,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/shared/components/ui/combobox"
-import { Field, FieldLabel } from "@/shared/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
@@ -51,6 +52,14 @@ import { useRegistrarSalidaPorteriaMutation } from "../api/porteria.mutations"
 import type { TipoMovimientoPorteria } from "../api/porteria.types"
 
 type TipoRegistro = "interno" | "externo"
+
+type FieldErrors = {
+  conductor?: string
+  vehiculo?: string
+  personaExterna?: string
+  placaExterna?: string
+  fechaHora?: string
+}
 
 function getLocalDateTimeInputValue(date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0")
@@ -89,9 +98,15 @@ function SectionTitle({
 function VehiculoSelector({
   value,
   onChange,
+  id,
+  invalid = false,
+  describedBy,
 }: {
   value: VehiculoCatalogo | null
   onChange: (vehiculo: VehiculoCatalogo | null) => void
+  id?: string
+  invalid?: boolean
+  describedBy?: string
 }) {
   const [search, setSearch] = useState("")
   const [fotoAmpliada, setFotoAmpliada] = useState(false)
@@ -115,7 +130,14 @@ function VehiculoSelector({
     const titulo = getVehiculoTituloDinamico(value)
 
     return (
-      <div className="space-y-2.5 rounded-xl border border-border/80 bg-background/95 p-2.5 shadow-2xs transition-all hover:border-primary/40">
+      <div
+        id={id}
+        tabIndex={-1}
+        className={cn(
+          "space-y-2.5 rounded-xl border bg-background/95 p-2.5 shadow-2xs transition-all hover:border-primary/40",
+          invalid ? "border-destructive" : "border-border/80",
+        )}
+      >
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             {value.urlImagen ? (
@@ -243,6 +265,9 @@ function VehiculoSelector({
               : "Buscar vehículo por placa, marca o modelo..."
           }
           onChange={(e) => setSearch(e.target.value)}
+          id={id}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           className="w-full"
         />
         {vehiculosQuery.isFetching && (
@@ -327,10 +352,12 @@ function UbicacionSelector({
   value,
   onChange,
   placeholder = "Buscar ubicación...",
+  id,
 }: {
   value: Ubicacion | null
   onChange: (ubicacion: Ubicacion | null) => void
   placeholder?: string
+  id?: string
 }) {
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -347,7 +374,11 @@ function UbicacionSelector({
 
   if (value) {
     return (
-      <div className="flex min-h-9 items-center justify-between gap-2 rounded-xl border border-border/80 bg-background/95 px-2.5 py-1.5 shadow-2xs transition-all hover:border-primary/40">
+      <div
+        id={id}
+        tabIndex={-1}
+        className="flex min-h-9 items-center justify-between gap-2 rounded-xl border border-border/80 bg-background/95 px-2.5 py-1.5 shadow-2xs transition-all hover:border-primary/40"
+      >
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
             <MapPin className="size-3.5" />
@@ -404,6 +435,7 @@ function UbicacionSelector({
               : placeholder
           }
           onChange={(e) => setSearch(e.target.value)}
+          id={id}
           className="w-full"
         />
         {ubicacionesQuery.isFetching && (
@@ -468,6 +500,16 @@ export function RegistrarSalidaPorteriaDialog({
   initialTipoMovimiento = "SALIDA",
 }: RegistrarSalidaPorteriaDialogProps) {
   const mutation = useRegistrarSalidaPorteriaMutation()
+  const fieldId = useId()
+
+  const conductorIdField = `${fieldId}-conductor`
+  const vehiculoField = `${fieldId}-vehiculo`
+  const personaExternaField = `${fieldId}-persona-externa`
+  const placaExternaField = `${fieldId}-placa-externa`
+  const fechaHoraField = `${fieldId}-fecha-hora`
+  const origenField = `${fieldId}-origen`
+  const destinoField = `${fieldId}-destino`
+  const observacionField = `${fieldId}-observacion`
 
   const [tipoMovimiento, setTipoMovimiento] =
     useState<TipoMovimientoPorteria>(initialTipoMovimiento)
@@ -494,6 +536,7 @@ export function RegistrarSalidaPorteriaDialog({
   )
   const [observacionSalida, setObservacionSalida] = useState("")
   const [formError, setFormError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
 
   const [prevOpen, setPrevOpen] = useState(open)
   if (prevOpen !== open) {
@@ -512,10 +555,13 @@ export function RegistrarSalidaPorteriaDialog({
       setFechaHoraSalida(getLocalDateTimeInputValue())
       setObservacionSalida("")
       setFormError(null)
+      setFieldErrors({})
     }
   }
 
   const esEntrada = tipoMovimiento === "ENTRADA"
+  const personaFieldId =
+    tipoRegistro === "interno" ? conductorIdField : personaExternaField
 
   const esInternoValido = Boolean(conductorId) && Boolean(vehiculoSeleccionado)
 
@@ -527,19 +573,33 @@ export function RegistrarSalidaPorteriaDialog({
   const handleSubmit = async () => {
     setFormError(null)
 
+    const nextErrors: FieldErrors = {}
     if (tipoRegistro === "interno") {
       if (!conductorId) {
-        setFormError(
-          esEntrada
-            ? "Debe seleccionar el conductor que ingresa."
-            : "Debe seleccionar el conductor que sale."
-        )
-        return
+        nextErrors.conductor = esEntrada
+          ? "Seleccione el conductor que ingresa."
+          : "Seleccione el conductor que sale."
       }
       if (!vehiculoSeleccionado) {
-        setFormError("Debe seleccionar el vehículo.")
-        return
+        nextErrors.vehiculo = "Seleccione el vehículo."
       }
+    } else {
+      if (!personaExterna.trim()) {
+        nextErrors.personaExterna = "Ingrese el nombre de la persona externa."
+      }
+      if (!placaExterna.trim()) {
+        nextErrors.placaExterna = "Ingrese la placa del vehículo externo."
+      }
+    }
+    if (!fechaHoraSalida) {
+      nextErrors.fechaHora = "Seleccione la fecha y hora."
+    }
+    setFieldErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
+
+    if (tipoRegistro === "interno") {
+      // El bloque de validación anterior garantiza que no sea null.
+      if (!vehiculoSeleccionado) return
 
       await mutation.mutateAsync({
         tipoMovimiento,
@@ -560,15 +620,6 @@ export function RegistrarSalidaPorteriaDialog({
         ],
       })
     } else {
-      if (!personaExterna.trim()) {
-        setFormError("Debe ingresar el nombre de la persona externa.")
-        return
-      }
-      if (!placaExterna.trim()) {
-        setFormError("Debe ingresar la placa del vehículo externo.")
-        return
-      }
-
       await mutation.mutateAsync({
         tipoMovimiento,
         esExterno: true,
@@ -614,6 +665,7 @@ export function RegistrarSalidaPorteriaDialog({
         <FormDialogSubmit
           canSubmit={canSubmit}
           isSubmitting={mutation.isPending}
+          allowInvalidSubmit
           label={
             esEntrada
               ? tipoRegistro === "interno"
@@ -641,42 +693,26 @@ export function RegistrarSalidaPorteriaDialog({
                   : "Sale ahora (pendiente de entrada)"}
               </p>
             </div>
-            <div
-              role="radiogroup"
-              aria-label="Tipo de movimiento"
-              className="grid grid-cols-2 rounded-lg border bg-background p-1 shadow-sm"
-            >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={!esEntrada}
-                onClick={() => setTipoMovimiento("SALIDA")}
-                className={cn(
-                  "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
-                  !esEntrada
-                    ? "bg-amber-600 text-white shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <LogOut className="size-3.5" />
-                Salida
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={esEntrada}
-                onClick={() => setTipoMovimiento("ENTRADA")}
-                className={cn(
-                  "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
-                  esEntrada
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <LogIn className="size-3.5" />
-                Entrada
-              </button>
-            </div>
+            <SegmentedRadioGroup
+              name={`${fieldId}-tipo-movimiento`}
+              ariaLabel="Tipo de movimiento"
+              value={tipoMovimiento}
+              onValueChange={setTipoMovimiento}
+              options={[
+                {
+                  value: "SALIDA",
+                  label: "Salida",
+                  icon: <LogOut className="size-3.5" />,
+                  activeClassName: "bg-amber-600 text-white shadow-sm",
+                },
+                {
+                  value: "ENTRADA",
+                  label: "Entrada",
+                  icon: <LogIn className="size-3.5" />,
+                  activeClassName: "bg-emerald-600 text-white shadow-sm",
+                },
+              ]}
+            />
           </div>
 
           <div className="flex flex-col justify-between gap-2 rounded-xl border bg-muted/30 p-3">
@@ -690,42 +726,29 @@ export function RegistrarSalidaPorteriaDialog({
                   : "Persona o visita externa"}
               </p>
             </div>
-            <div
-              role="radiogroup"
-              aria-label="Tipo de pase"
-              className="grid grid-cols-2 rounded-lg border bg-background p-1 shadow-sm"
-            >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={tipoRegistro === "interno"}
-                onClick={() => setTipoRegistro("interno")}
-                className={cn(
-                  "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
-                  tipoRegistro === "interno"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <UserRound className="size-3.5" />
-                Interno
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={tipoRegistro === "externo"}
-                onClick={() => setTipoRegistro("externo")}
-                className={cn(
-                  "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
-                  tipoRegistro === "externo"
-                    ? "bg-purple-600 text-white shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Building2 className="size-3.5" />
-                Externo
-              </button>
-            </div>
+            <SegmentedRadioGroup<TipoRegistro>
+              name={`${fieldId}-tipo-pase`}
+              ariaLabel="Tipo de pase"
+              value={tipoRegistro}
+              onValueChange={(next) => {
+                setTipoRegistro(next)
+                setFieldErrors({})
+              }}
+              options={[
+                {
+                  value: "interno",
+                  label: "Interno",
+                  icon: <UserRound className="size-3.5" />,
+                  activeClassName: "bg-primary text-primary-foreground shadow-sm",
+                },
+                {
+                  value: "externo",
+                  label: "Externo",
+                  icon: <Building2 className="size-3.5" />,
+                  activeClassName: "bg-purple-600 text-white shadow-sm",
+                },
+              ]}
+            />
           </div>
         </div>
 
@@ -750,7 +773,7 @@ export function RegistrarSalidaPorteriaDialog({
           />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
             <Field className="sm:col-span-3">
-              <RequiredFieldLabel>
+              <RequiredFieldLabel htmlFor={personaFieldId}>
                 {tipoRegistro === "interno" ? (
                   <>
                     <UserRound className="size-3.5" />
@@ -765,30 +788,64 @@ export function RegistrarSalidaPorteriaDialog({
               </RequiredFieldLabel>
               {tipoRegistro === "interno" ? (
                 <EmpleadoCombobox
+                  id={conductorIdField}
                   value={conductorId}
-                  onValueChange={(val) => setConductorId(val)}
+                  onValueChange={(val) => {
+                    setConductorId(val)
+                    setFieldErrors((prev) => ({ ...prev, conductor: undefined }))
+                  }}
                   placeholder="Buscar conductor..."
+                  aria-invalid={Boolean(fieldErrors.conductor)}
+                  aria-describedby={
+                    fieldErrors.conductor ? `${conductorIdField}-error` : undefined
+                  }
                 />
               ) : (
                 <Input
+                  id={personaExternaField}
                   placeholder="Ej. Juan Carlos Pérez - Proveedor XYZ"
                   value={personaExterna}
-                  onChange={(e) => setPersonaExterna(e.target.value)}
+                  onChange={(e) => {
+                    setPersonaExterna(e.target.value)
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      personaExterna: undefined,
+                    }))
+                  }}
+                  aria-invalid={Boolean(fieldErrors.personaExterna)}
+                  aria-describedby={
+                    fieldErrors.personaExterna
+                      ? `${personaFieldId}-error`
+                      : undefined
+                  }
                   autoFocus
                 />
               )}
+              <FieldError id={`${personaFieldId}-error`}>
+                {tipoRegistro === "interno"
+                  ? fieldErrors.conductor
+                  : fieldErrors.personaExterna}
+              </FieldError>
             </Field>
 
             <Field className="sm:col-span-2">
-              <RequiredFieldLabel>
+              <RequiredFieldLabel htmlFor={fechaHoraField}>
                 <Clock className="size-3.5" />
                 {esEntrada ? "Hora de entrada" : "Hora de salida"}
               </RequiredFieldLabel>
               <div className="flex gap-2">
                 <Input
+                  id={fechaHoraField}
                   type="datetime-local"
                   value={fechaHoraSalida}
-                  onChange={(e) => setFechaHoraSalida(e.target.value)}
+                  onChange={(e) => {
+                    setFechaHoraSalida(e.target.value)
+                    setFieldErrors((prev) => ({ ...prev, fechaHora: undefined }))
+                  }}
+                  aria-invalid={Boolean(fieldErrors.fechaHora)}
+                  aria-describedby={
+                    fieldErrors.fechaHora ? `${fechaHoraField}-error` : undefined
+                  }
                   required
                 />
                 <Button
@@ -796,13 +853,17 @@ export function RegistrarSalidaPorteriaDialog({
                   variant="outline"
                   size="sm"
                   className="h-9 shrink-0"
-                  onClick={() =>
+                  onClick={() => {
                     setFechaHoraSalida(getLocalDateTimeInputValue())
-                  }
+                    setFieldErrors((prev) => ({ ...prev, fechaHora: undefined }))
+                  }}
                 >
                   Ahora
                 </Button>
               </div>
+              <FieldError id={`${fechaHoraField}-error`}>
+                {fieldErrors.fechaHora}
+              </FieldError>
             </Field>
           </div>
         </section>
@@ -824,29 +885,56 @@ export function RegistrarSalidaPorteriaDialog({
           {tipoRegistro === "interno" ? (
             <div className="rounded-xl border bg-muted/20 p-3">
               <Field>
-                <RequiredFieldLabel>
+                <RequiredFieldLabel htmlFor={vehiculoField}>
                   <Car className="size-3.5" />
                   Vehículo
                 </RequiredFieldLabel>
                 <VehiculoSelector
+                  id={vehiculoField}
                   value={vehiculoSeleccionado}
-                  onChange={(vehiculo) => setVehiculoSeleccionado(vehiculo)}
+                  onChange={(vehiculo) => {
+                    setVehiculoSeleccionado(vehiculo)
+                    setFieldErrors((prev) => ({ ...prev, vehiculo: undefined }))
+                  }}
+                  invalid={Boolean(fieldErrors.vehiculo)}
+                  describedBy={
+                    fieldErrors.vehiculo ? `${vehiculoField}-error` : undefined
+                  }
                 />
+                <FieldError id={`${vehiculoField}-error`}>
+                  {fieldErrors.vehiculo}
+                </FieldError>
               </Field>
             </div>
           ) : (
             <div className="rounded-xl border bg-purple-500/[0.03] border-purple-500/20 p-3">
               <Field>
-                <RequiredFieldLabel>
+                <RequiredFieldLabel htmlFor={placaExternaField}>
                   <Car className="size-3.5 text-purple-600 dark:text-purple-400" />
                   Placa del vehículo externo
                 </RequiredFieldLabel>
                 <Input
+                  id={placaExternaField}
                   placeholder="Ej. 4521-KLP"
                   value={placaExterna}
-                  onChange={(e) => setPlacaExterna(e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    setPlacaExterna(e.target.value.toUpperCase())
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      placaExterna: undefined,
+                    }))
+                  }}
+                  aria-invalid={Boolean(fieldErrors.placaExterna)}
+                  aria-describedby={
+                    fieldErrors.placaExterna
+                      ? `${placaExternaField}-error`
+                      : undefined
+                  }
                   className="font-mono uppercase tracking-wider text-sm font-semibold"
                 />
+                <FieldError id={`${placaExternaField}-error`}>
+                  {fieldErrors.placaExterna}
+                </FieldError>
               </Field>
             </div>
           )}
@@ -861,11 +949,12 @@ export function RegistrarSalidaPorteriaDialog({
           />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field>
-              <FieldLabel>
+              <FieldLabel htmlFor={origenField}>
                 <MapPin className="size-3.5 text-muted-foreground" />
                 Origen
               </FieldLabel>
               <UbicacionSelector
+                id={origenField}
                 value={origenUbicacion}
                 onChange={setOrigenUbicacion}
                 placeholder="Seleccionar origen..."
@@ -874,7 +963,7 @@ export function RegistrarSalidaPorteriaDialog({
 
             <Field>
               <div className="flex items-center justify-between">
-                <FieldLabel>
+                <FieldLabel htmlFor={destinoField}>
                   <Navigation className="size-3.5 text-muted-foreground" />
                   Destino
                 </FieldLabel>
@@ -896,12 +985,14 @@ export function RegistrarSalidaPorteriaDialog({
               </div>
               {usarDestinoOtro ? (
                 <Input
+                  id={destinoField}
                   placeholder="Ej. Cochabamba / Taller externo..."
                   value={destinoOtro}
                   onChange={(e) => setDestinoOtro(e.target.value)}
                 />
               ) : (
                 <UbicacionSelector
+                  id={destinoField}
                   value={destinoUbicacion}
                   onChange={setDestinoUbicacion}
                   placeholder="Seleccionar destino..."
@@ -919,10 +1010,11 @@ export function RegistrarSalidaPorteriaDialog({
             description="Opcional. Motivo de la salida o detalle adicional."
           />
           <Field>
-            <FieldLabel className="sr-only">
+            <FieldLabel htmlFor={observacionField} className="sr-only">
               Observación general de salida
             </FieldLabel>
             <Textarea
+              id={observacionField}
               rows={2}
               placeholder="Ej. Salida autorizada para supervisión, entrega de suministros..."
               value={observacionSalida}

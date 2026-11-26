@@ -1,5 +1,5 @@
 # ── Stage 1: Build ────────────────────────────────────────────
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM eclipse-temurin:21.0.13.1_2-jdk-alpine-3.23 AS build
 
 WORKDIR /build
 
@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=/root/.m2 \
     mv target/*.jar target/app.jar
 
 # ── Stage 2: Runtime ─────────────────────────────────────────
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:21.0.13.1_2-jre-alpine-3.23 AS runtime
 
 RUN addgroup -S sigma && adduser -S sigma -G sigma
 

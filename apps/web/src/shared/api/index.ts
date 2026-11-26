@@ -11,6 +11,7 @@ export {
     fetchAuthenticatedBlob,
     isBrowserViewable,
     openOrDownloadProtectedFile,
+    openPdfInNewTab,
     toApiRelativePath,
     uploadImage,
 } from "./files";

@@ -8,7 +8,6 @@ import com.endecorani.sigma_api.shared.application.crud.CrudService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.response.ApiResponse;
-import com.endecorani.sigma_api.shared.presentation.controller.AbstractCrudController;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -30,7 +29,7 @@ import java.util.UUID;
 @Tag(name = "Activo Asignaciones", description = "Administración de asignaciones de activos a empleados o áreas")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class ActivoAsignacionController
-        extends AbstractCrudController<ActivoAsignacionRequest, ActivoAsignacionResponse, UUID> {
+        extends AbstractActivoOperationalCrudController<ActivoAsignacionRequest, ActivoAsignacionResponse, UUID> {
 
     private final ActivoAsignacionService service;
 

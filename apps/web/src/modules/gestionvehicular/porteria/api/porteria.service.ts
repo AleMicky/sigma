@@ -1,4 +1,4 @@
-import { http } from "@/shared/api"
+import { http, openPdfInNewTab } from "@/shared/api"
 import type { PageResponse } from "@/shared/types/api.types"
 
 import { porteriaEndpoints } from "./porteria.endpoints"
@@ -69,9 +69,15 @@ export async function descargarReporteBitacoraPorteriaPdf(
 export async function abrirReporteBitacoraPorteriaPdf(
   params?: ReporteBitacoraPorteriaFiltros
 ): Promise<void> {
-  const blob = await fetchReporteBitacoraPorteriaPdf(params)
-  const url = window.URL.createObjectURL(blob)
-  window.open(url, "_blank")
+  const rango =
+    params?.fechaDesde && params?.fechaHasta
+      ? `${params.fechaDesde}_${params.fechaHasta}`
+      : "general"
+  await openPdfInNewTab(
+    porteriaEndpoints.reportePdf,
+    `bitacora-porteria-${rango}.pdf`,
+    params ? { ...params } : undefined,
+  )
 }
 
 export const registrarSalidaPorteria = (

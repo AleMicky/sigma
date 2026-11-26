@@ -86,6 +86,7 @@ type ActivoDocumentosTabProps = {
   onFilterChange?: (value: string) => void
   onOpenAddDocument: () => void
   onEditDocumento?: (doc: ActivoDocumento) => void
+  canManage?: boolean
 }
 
 export function ActivoDocumentosTab({
@@ -96,6 +97,8 @@ export function ActivoDocumentosTab({
   onFilterChange,
   onOpenAddDocument,
   onEditDocumento,
+  // Otros módulos (p. ej. vehículos) reutilizan este tab sin pasar el flag.
+  canManage = true,
 }: ActivoDocumentosTabProps) {
   const [internalSearch, setInternalSearch] = useState("")
   const [internalFilter, setInternalFilter] = useState("todos")
@@ -375,7 +378,7 @@ export function ActivoDocumentosTab({
                     >
                       <Download className="size-3.5" />
                     </Button>
-                    {onEditDocumento && (
+                    {onEditDocumento ? (
                       <Button
                         size="icon-xs"
                         variant="ghost"
@@ -385,16 +388,18 @@ export function ActivoDocumentosTab({
                       >
                         <Pencil className="size-3.5" />
                       </Button>
-                    )}
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      onClick={() => setDocToDelete(doc)}
-                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      title="Eliminar documento"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                    ) : null}
+                    {canManage ? (
+                      <Button
+                        size="icon-xs"
+                        variant="ghost"
+                        onClick={() => setDocToDelete(doc)}
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        title="Eliminar documento"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               </div>

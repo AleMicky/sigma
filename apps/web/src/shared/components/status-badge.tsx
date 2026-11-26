@@ -8,16 +8,11 @@ const statusBadgeVariants = cva(
   {
     variants: {
       variant: {
-        success:
-          "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25",
-        warning:
-          "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25",
-        danger:
-          "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/25",
-        info:
-          "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/25",
-        indigo:
-          "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/25",
+        success: "bg-success/10 text-success border-success/25",
+        warning: "bg-warning/10 text-warning border-warning/25",
+        danger: "bg-destructive/10 text-destructive border-destructive/25",
+        info: "bg-info/10 text-info border-info/25",
+        indigo: "bg-chart-4/10 text-chart-4 border-chart-4/25",
         neutral:
           "bg-muted/60 text-muted-foreground border-border/60",
       },
@@ -34,13 +29,13 @@ const statusBadgeVariants = cva(
   },
 )
 
-const dotColorMap: Record<string, string> = {
-  success: "bg-emerald-500",
-  warning: "bg-amber-500",
-  danger: "bg-rose-500",
-  info: "bg-sky-500",
-  indigo: "bg-indigo-500",
-  neutral: "bg-muted-foreground/60",
+const dotColorMap: Record<StatusBadgeVariant, string> = {
+  success: "bg-success",
+  warning: "bg-warning",
+  danger: "bg-destructive",
+  info: "bg-info",
+  indigo: "bg-chart-4",
+  neutral: "bg-muted-foreground/70",
 }
 
 export type StatusBadgeVariant =

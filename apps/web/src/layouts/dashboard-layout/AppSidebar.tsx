@@ -66,7 +66,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r border-sidebar-border bg-sidebar select-none transition-all duration-200"
+      className="border-r border-sidebar-border bg-sidebar transition-all duration-200"
       {...props}
     >
       {/* ── Header: Logo + Búsqueda ── */}
@@ -75,7 +75,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           to="/"
           className="group flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 transition-colors hover:bg-sidebar-accent group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0.5"
         >
-          <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-white p-1 shadow-2xs ring-1 ring-white/10 transition-all group-hover:scale-105">
+          <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent-foreground p-1 shadow-2xs ring-1 ring-sidebar-border transition-all group-hover:scale-105">
             <img
               src={logoEndeCorani}
               alt={appConfig.shortName}
@@ -84,16 +84,16 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           </div>
           <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold tracking-tight text-white font-heading">
+              <span className="text-xs font-bold tracking-tight text-sidebar-accent-foreground font-heading">
                 {appConfig.shortName}
               </span>
-              <span className="inline-flex items-center gap-1 rounded bg-primary/25 px-1 py-0.2 text-[9px] font-semibold text-white">
+              <span className="inline-flex items-center gap-1 rounded bg-sidebar-primary/20 px-1 py-0.2 text-[9px] font-semibold text-sidebar-accent-foreground">
                 v{appConfig.version}
               </span>
             </div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="size-1.5 rounded-full bg-emerald-400" />
-              <span className="truncate text-[10.5px] font-medium text-slate-400">
+              <span className="size-1.5 rounded-full bg-sidebar-primary" />
+              <span className="truncate text-[10.5px] font-medium text-sidebar-foreground/70">
                 {appConfig.companyName}
               </span>
             </div>
@@ -141,7 +141,7 @@ function SidebarSearch({
             <Button
               variant="ghost"
               size="icon"
-              className="size-8.5 rounded-xl text-slate-400 hover:bg-sidebar-accent hover:text-white mx-auto transition-colors"
+              className="size-8.5 rounded-xl text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground mx-auto transition-colors"
               onClick={() => {
                 setOpen(true)
                 setTimeout(() => inputRef.current?.focus(), 150)
@@ -160,7 +160,7 @@ function SidebarSearch({
 
   return (
     <div className="relative group-data-[collapsible=icon]:hidden">
-      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
+      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-sidebar-foreground/60" />
       <SidebarInput
         ref={inputRef}
         value={query}
@@ -173,13 +173,13 @@ function SidebarSearch({
           }
         }}
         placeholder="Buscar menú…"
-        className="h-8.5 rounded-lg border-white/10 bg-white/5 pl-8 pr-8 text-xs text-white placeholder:text-slate-400 shadow-none transition-all focus-visible:bg-white/10 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary"
+        className="h-8.5 rounded-lg border-sidebar-border bg-sidebar-accent/50 pl-8 pr-8 text-xs text-sidebar-accent-foreground placeholder:text-sidebar-foreground/60 shadow-none transition-all focus-visible:bg-sidebar-accent focus-visible:ring-1 focus-visible:ring-sidebar-ring focus-visible:border-sidebar-ring"
       />
       {query && (
         <button
           type="button"
           onClick={() => onQueryChange("")}
-          className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-0.5 text-slate-400 hover:text-white hover:bg-sidebar-accent transition-colors"
+          className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-0.5 text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-colors"
           title="Limpiar búsqueda"
         >
           <X className="size-3.5" />
@@ -500,7 +500,7 @@ function NavSectionExpanded({
 }>) {
   return (
     <SidebarGroup className="p-0">
-      <SidebarGroupLabel className="flex h-5 items-center gap-1.5 px-2 mb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 group-data-[collapsible=icon]:hidden select-none">
+      <SidebarGroupLabel className="flex h-5 items-center gap-1.5 px-2 mb-0.5 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
         <span
           className="size-1.5 rounded-full shrink-0 transition-transform duration-200"
           style={{ backgroundColor: section.color || "var(--primary)" }}
@@ -583,7 +583,7 @@ function NavNodeBadge({
         size === "sm" ? "text-[9.5px] rounded-md" : "text-[9px] rounded",
         isNumeric
           ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 tabular-nums"
-          : "bg-white/20 text-white border border-white/30",
+          : "bg-sidebar-accent text-sidebar-accent-foreground border border-sidebar-border",
       )}
       style={
         isCustomColor
@@ -649,8 +649,8 @@ function NavNodeFolderItem({
           "group relative flex items-center justify-between rounded-md px-2 font-medium transition-colors",
           depth === 0 ? "h-8 text-[12.5px]" : "h-7.5 text-[12px]",
           isActive && !isOpen
-            ? "bg-white/10 text-white font-semibold"
-            : "text-slate-300 hover:bg-white/10 hover:text-white",
+            ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+            : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         )}
         style={
           isActive && !isOpen && effectiveColor
@@ -663,7 +663,9 @@ function NavNodeFolderItem({
             className={cn(
               "shrink-0 transition-colors",
               depth === 0 ? "size-3.5" : "size-3",
-              isActive ? "text-primary" : "text-slate-400 group-hover:text-white",
+              isActive
+                ? "text-sidebar-primary"
+                : "text-sidebar-foreground/60 group-hover:text-sidebar-accent-foreground",
             )}
             style={!isActive && effectiveColor ? { color: effectiveColor } : undefined}
           />
@@ -680,15 +682,15 @@ function NavNodeFolderItem({
           )}
           <ChevronRight
             className={cn(
-              "size-3 text-slate-500 transition-transform duration-150 shrink-0 group-hover:text-white",
-              isOpen && "rotate-90 text-white",
+              "size-3 text-sidebar-foreground/60 transition-transform duration-150 shrink-0 group-hover:text-sidebar-accent-foreground",
+              isOpen && "rotate-90 text-sidebar-accent-foreground",
             )}
           />
         </div>
       </SidebarMenuButton>
 
       {isOpen && node.children && (
-        <SidebarMenuSub className="relative ml-3 border-l border-white/10 pl-2 mt-0.5 gap-0.5 transition-all">
+        <SidebarMenuSub className="relative ml-3 border-l border-sidebar-border pl-2 mt-0.5 gap-0.5 transition-all">
           {node.children.map((child) => (
             <NavNodeItem
               key={getNavNodeKey(child)}
@@ -727,8 +729,8 @@ function NavNodeRootLeafItem({
         className={cn(
           "group relative h-8 rounded-md px-2 text-[12.5px] font-medium transition-colors",
           isSelfActive
-            ? "bg-primary text-white font-semibold shadow-xs"
-            : "text-slate-300 hover:bg-white/10 hover:text-white",
+            ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-xs"
+            : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         )}
         style={
           isSelfActive && effectiveColor
@@ -742,7 +744,9 @@ function NavNodeRootLeafItem({
         <NodeIcon
           className={cn(
             "size-3.5 shrink-0 transition-colors",
-            isSelfActive ? "text-white font-bold" : "text-slate-400 group-hover:text-white",
+            isSelfActive
+              ? "text-sidebar-primary-foreground font-bold"
+              : "text-sidebar-foreground/60 group-hover:text-sidebar-accent-foreground",
           )}
           style={!isSelfActive && effectiveColor ? { color: effectiveColor } : undefined}
         />
@@ -781,8 +785,8 @@ function NavNodeSubLeafItem({
         className={cn(
           "group relative h-7 rounded-md px-2 text-[11.5px] font-medium transition-colors",
           isSelfActive
-            ? "bg-primary/25 text-white font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-0.75 before:rounded-r before:bg-primary"
-            : "text-slate-400 hover:bg-white/10 hover:text-white",
+            ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-0.75 before:rounded-r before:bg-sidebar-primary"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         )}
         style={
           isSelfActive && effectiveColor
@@ -797,7 +801,9 @@ function NavNodeSubLeafItem({
         <NodeIcon
           className={cn(
             "size-3 shrink-0 transition-colors",
-            isSelfActive ? "text-primary font-bold" : "text-slate-400 group-hover:text-white",
+            isSelfActive
+              ? "text-sidebar-primary font-bold"
+              : "text-sidebar-foreground/60 group-hover:text-sidebar-accent-foreground",
           )}
           style={effectiveColor ? { color: effectiveColor } : undefined}
         />

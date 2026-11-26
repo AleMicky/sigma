@@ -203,12 +203,13 @@ pipeline {
             }
 
             steps {
-                echo 'Cambios detectados en Web. Verificando lint y compilación TypeScript/Vite...'
+                echo 'Cambios detectados en Web. Verificando lint, tests unitarios y compilación TypeScript/Vite...'
 
                 sh '''
                     set -eu
                     pnpm --filter web install --frozen-lockfile
                     pnpm --filter web lint
+                    pnpm --filter web test
                     pnpm --filter web build
                 '''
             }

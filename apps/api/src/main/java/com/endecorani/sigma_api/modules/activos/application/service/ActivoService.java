@@ -9,6 +9,8 @@ import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivo;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.CambiarEstadoOperativoRequest;
 import com.endecorani.sigma_api.modules.activos.domain.model.EstadoOperativo;
 import com.endecorani.sigma_api.modules.activos.domain.repository.EstadoOperativoRepository;
+import com.endecorani.sigma_api.modules.activos.domain.model.TipoActivoEstado;
+import com.endecorani.sigma_api.modules.activos.domain.repository.TipoActivoEstadoRepository;
 import com.endecorani.sigma_api.modules.parametros.domain.model.Ubicacion;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.UbicacionRepository;
 import com.endecorani.sigma_api.modules.activos.domain.repository.CategoriaRepository;
@@ -65,6 +67,7 @@ public class ActivoService {
     private final TipoActivoRepository tipoActivoRepository;
     private final UbicacionRepository ubicacionRepository;
     private final EstadoOperativoRepository estadoOperativoRepository;
+    private final TipoActivoEstadoRepository tipoActivoEstadoRepository;
     private final CategoriaRepository categoriaRepository;
     private final ImageStorageService imageStorageService;
     private final DisponibilidadActivoExcelService disponibilidadActivoExcelService;
@@ -77,13 +80,12 @@ public class ActivoService {
         String codigo = requireNormalizedCodigo(request.codigo());
         validateUniqueCodigoForCreate(codigo);
 
-        UUID estadoOperativoId = request.estadoOperativoId();
-        if (estadoOperativoId == null) {
-            estadoOperativoId = estadoOperativoRepository.findByCodigoIgnoreCase("OPERATIVO")
-                    .map(EstadoOperativo::getId)
-                    .orElse(null);
+        UUID estadoOperativoId;
+        if (request.estadoOperativoId() == null) {
+            estadoOperativoId = resolveEstadoPredeterminado(request.tipoActivoId());
         } else {
-            requireEstadoOperativoExists(estadoOperativoId);
+            validarEstadoParaTipo(request.tipoActivoId(), request.estadoOperativoId());
+            estadoOperativoId = request.estadoOperativoId();
         }
 
         Activo domain = Activo.builder()
@@ -112,8 +114,10 @@ public class ActivoService {
         validateUniqueCodigoForUpdate(codigo, domain.getId());
 
         if (request.estadoOperativoId() != null) {
-            requireEstadoOperativoExists(request.estadoOperativoId());
+            validarEstadoParaTipo(request.tipoActivoId(), request.estadoOperativoId());
             domain.setEstadoOperativoId(request.estadoOperativoId());
+        } else if (!Objects.equals(request.tipoActivoId(), domain.getTipoActivoId())) {
+            domain.setEstadoOperativoId(resolveEstadoPredeterminado(request.tipoActivoId()));
         }
 
         domain.setCodigo(codigo);
@@ -239,6 +243,7 @@ public class ActivoService {
                     .orElseThrow(() -> new ResourceNotFoundException("Estado operativo con código " + request.codigoEstado(), null));
         }
 
+        validarEstadoParaTipo(domain.getTipoActivoId(), estadoOperativo.getId());
         domain.setEstadoOperativoId(estadoOperativo.getId());
         Activo updated = activoRepository.save(domain);
         return toResponse(updated);
@@ -493,9 +498,22 @@ public class ActivoService {
         return normalized;
     }
 
-    private void requireEstadoOperativoExists(UUID estadoOperativoId) {
-        if (estadoOperativoId != null && !estadoOperativoRepository.existsById(estadoOperativoId)) {
-            throw new ResourceNotFoundException("Estado operativo", estadoOperativoId);
+    /** Estado inicial del activo: el predeterminado del catálogo de su tipo. */
+    private UUID resolveEstadoPredeterminado(UUID tipoActivoId) {
+        return tipoActivoEstadoRepository.findByTipoActivoIdAndPredeterminadoTrue(tipoActivoId)
+                .map(TipoActivoEstado::getEstadoOperativoId)
+                .orElseThrow(() -> new BusinessException(
+                        "ESTADO_OPERATIVO_PREDETERMINADO_NO_CONFIGURADO",
+                        "El tipo de activo no tiene un estado operativo predeterminado configurado"));
+    }
+
+    /** Todo estado asignado debe pertenecer al catálogo del tipo de activo. */
+    private void validarEstadoParaTipo(UUID tipoActivoId, UUID estadoOperativoId) {
+        if (!tipoActivoEstadoRepository.existsByTipoActivoIdAndEstadoOperativoId(
+                tipoActivoId, estadoOperativoId)) {
+            throw new BusinessException(
+                    "ESTADO_OPERATIVO_NO_PERMITIDO_PARA_TIPO",
+                    "El estado operativo no está permitido para el tipo de activo indicado");
         }
     }
 }

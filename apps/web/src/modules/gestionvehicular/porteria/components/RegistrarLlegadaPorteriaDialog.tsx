@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useId, useMemo, useState } from "react"
 import {
   AlertTriangle,
   CheckCheck,
@@ -18,8 +18,9 @@ import {
   FormDialogSubmit,
   RequiredFieldLabel,
 } from "@/shared/components/form-dialog"
+import { SegmentedRadioGroup } from "@/shared/components/segmented-radio-group"
 import { Button } from "@/shared/components/ui/button"
-import { Field, FieldLabel } from "@/shared/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
@@ -74,48 +75,36 @@ function RetornoToggle({
   value,
   onChange,
   esEntradaInicial = false,
+  name,
 }: {
   value: boolean
   onChange: (retornado: boolean) => void
   esEntradaInicial?: boolean
+  name: string
 }) {
   return (
-    <div
-      role="radiogroup"
-      aria-label={esEntradaInicial ? "Estado de salida" : "Estado de retorno"}
+    <SegmentedRadioGroup<"si" | "no">
+      name={name}
+      ariaLabel={esEntradaInicial ? "Estado de salida" : "Estado de retorno"}
+      value={value ? "si" : "no"}
+      onValueChange={(next) => onChange(next === "si")}
       className="inline-flex shrink-0 rounded-lg border bg-muted/40 p-0.5"
-    >
-      <button
-        type="button"
-        role="radio"
-        aria-checked={value}
-        onClick={() => onChange(true)}
-        className={cn(
-          "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-          value
-            ? "bg-emerald-600 text-white shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        <CheckCircle2 className="size-3.5" />
-        {esEntradaInicial ? "Salió" : "Retornó"}
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={!value}
-        onClick={() => onChange(false)}
-        className={cn(
-          "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-          !value
-            ? "bg-destructive text-white shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        <XCircle className="size-3.5" />
-        {esEntradaInicial ? "Se quedó" : "No retornó"}
-      </button>
-    </div>
+      buttonClassName="inline-flex gap-1 rounded-md px-2.5 py-1 text-xs font-medium"
+      options={[
+        {
+          value: "si",
+          label: esEntradaInicial ? "Salió" : "Retornó",
+          icon: <CheckCircle2 className="size-3.5" />,
+          activeClassName: "bg-emerald-600 text-white shadow-sm",
+        },
+        {
+          value: "no",
+          label: esEntradaInicial ? "Se quedó" : "No retornó",
+          icon: <XCircle className="size-3.5" />,
+          activeClassName: "bg-destructive text-white shadow-sm",
+        },
+      ]}
+    />
   )
 }
 
@@ -133,6 +122,9 @@ export function RegistrarLlegadaPorteriaDialog({
   registro,
 }: RegistrarLlegadaPorteriaDialogProps) {
   const mutation = useRegistrarLlegadaPorteriaMutation()
+  const fieldId = useId()
+  const fechaHoraField = `${fieldId}-fecha-hora`
+  const observacionField = `${fieldId}-observacion`
 
   const [fechaHoraLlegada, setFechaHoraLlegada] = useState(() =>
     getLocalDateTimeInputValue()
@@ -140,6 +132,10 @@ export function RegistrarLlegadaPorteriaDialog({
   const [observacionLlegada, setObservacionLlegada] = useState("")
   const [items, setItems] = useState<ItemLlegadaState[]>([])
   const [formError, setFormError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{
+    fechaHora?: string
+    items: Record<string, string>
+  }>({ items: {} })
 
   const openKey = open && registro ? registro.id : null
   const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null)
@@ -149,6 +145,7 @@ export function RegistrarLlegadaPorteriaDialog({
       setFechaHoraLlegada(getLocalDateTimeInputValue())
       setObservacionLlegada("")
       setFormError(null)
+      setFieldErrors({ items: {} })
       setItems(
         (registro.activos ?? []).map((a) => ({
           itemId: a.id,
@@ -195,26 +192,35 @@ export function RegistrarLlegadaPorteriaDialog({
   const handleSubmit = async () => {
     setFormError(null)
 
-    if (fechaInvalida) {
-      setFormError(
-        esEntradaInicial
-          ? "La hora de salida no puede ser anterior a la de entrada."
-          : "La hora de entrada no puede ser anterior a la de salida."
-      )
-      return
+    let nextFechaError: string | undefined
+    if (!fechaHoraLlegada) {
+      nextFechaError = "Seleccione la fecha y hora."
+    } else if (fechaInvalida) {
+      nextFechaError = esEntradaInicial
+        ? "La salida no puede ser anterior a la entrada."
+        : "La entrada no puede ser anterior a la salida."
     }
-    const sinMotivo = items.find(
-      (i) => !i.retornado && !i.observacionLlegada.trim()
-    )
-    if (sinMotivo) {
-      setFormError(
-        esEntradaInicial
-          ? `Indique el motivo por el que "${sinMotivo.nombre}" se quedó.`
-          : `Indique el motivo por el que "${sinMotivo.nombre}" no retornó.`
-      )
-      updateItem(sinMotivo.itemId, { mostrarObservacion: true })
-      return
+
+    const nextItemErrors: Record<string, string> = {}
+    for (const item of items) {
+      if (!item.retornado && !item.observacionLlegada.trim()) {
+        nextItemErrors[item.itemId] = esEntradaInicial
+          ? "Indique por qué se quedó."
+          : "Indique por qué no retornó."
+      }
     }
+
+    setFieldErrors({ fechaHora: nextFechaError, items: nextItemErrors })
+    if (Object.keys(nextItemErrors).length > 0) {
+      setItems((prev) =>
+        prev.map((item) =>
+          nextItemErrors[item.itemId]
+            ? { ...item, mostrarObservacion: true }
+            : item
+        )
+      )
+    }
+    if (nextFechaError || Object.keys(nextItemErrors).length > 0) return
 
     await mutation.mutateAsync({
       id: registro.id,
@@ -255,6 +261,7 @@ export function RegistrarLlegadaPorteriaDialog({
         <FormDialogSubmit
           canSubmit={Boolean(fechaHoraLlegada) && !fechaInvalida}
           isSubmitting={mutation.isPending}
+          allowInvalidSubmit
           label={
             esEntradaInicial
               ? pendientes > 0
@@ -322,16 +329,23 @@ export function RegistrarLlegadaPorteriaDialog({
 
         {/* Hora de cierre (entrada o salida) */}
         <Field>
-          <RequiredFieldLabel>
+          <RequiredFieldLabel htmlFor={fechaHoraField}>
             <Clock className="size-3.5" />
             {esEntradaInicial ? "Hora de salida" : "Hora de entrada"}
           </RequiredFieldLabel>
           <div className="flex gap-2">
             <Input
+              id={fechaHoraField}
               type="datetime-local"
               value={fechaHoraLlegada}
-              onChange={(e) => setFechaHoraLlegada(e.target.value)}
-              aria-invalid={fechaInvalida || undefined}
+              onChange={(e) => {
+                setFechaHoraLlegada(e.target.value)
+                setFieldErrors((prev) => ({ ...prev, fechaHora: undefined }))
+              }}
+              aria-invalid={Boolean(fieldErrors.fechaHora)}
+              aria-describedby={
+                fieldErrors.fechaHora ? `${fechaHoraField}-error` : undefined
+              }
               required
             />
             <Button
@@ -339,34 +353,24 @@ export function RegistrarLlegadaPorteriaDialog({
               variant="outline"
               size="sm"
               className="h-9 shrink-0"
-              onClick={() => setFechaHoraLlegada(getLocalDateTimeInputValue())}
+              onClick={() => {
+                setFechaHoraLlegada(getLocalDateTimeInputValue())
+                setFieldErrors((prev) => ({ ...prev, fechaHora: undefined }))
+              }}
             >
               Ahora
             </Button>
           </div>
-          {duracionMin !== null && (
-            <p
-              className={cn(
-                "flex items-center gap-1.5 text-xs",
-                fechaInvalida ? "text-destructive" : "text-muted-foreground"
-              )}
-            >
-              {fechaInvalida ? (
-                <>
-                  <AlertTriangle className="size-3.5" />
-                  {esEntradaInicial
-                    ? "La salida es anterior a la entrada."
-                    : "La entrada es anterior a la salida."}
-                </>
-              ) : (
-                <>
-                  <Timer className="size-3.5" />
-                  {esEntradaInicial ? "Tiempo adentro:" : "Tiempo afuera:"}{" "}
-                  <span className="font-medium text-foreground">
-                    {formatDuration(duracionMin)}
-                  </span>
-                </>
-              )}
+          <FieldError id={`${fechaHoraField}-error`}>
+            {fieldErrors.fechaHora}
+          </FieldError>
+          {duracionMin !== null && !fechaInvalida && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Timer className="size-3.5" />
+              {esEntradaInicial ? "Tiempo adentro:" : "Tiempo afuera:"}{" "}
+              <span className="font-medium text-foreground">
+                {formatDuration(duracionMin)}
+              </span>
             </p>
           )}
         </Field>
@@ -431,6 +435,8 @@ export function RegistrarLlegadaPorteriaDialog({
                 {items.map((item) => {
                   const mostrarObs =
                     item.mostrarObservacion || !item.retornado
+                  const itemObsField = `${fieldId}-item-${item.itemId}`
+                  const itemError = fieldErrors.items[item.itemId]
                   return (
                     <li
                       key={item.itemId}
@@ -472,36 +478,59 @@ export function RegistrarLlegadaPorteriaDialog({
                           </div>
                         </div>
                         <RetornoToggle
+                          name={`${itemObsField}-retorno`}
                           value={item.retornado}
                           esEntradaInicial={esEntradaInicial}
-                          onChange={(retornado) =>
+                          onChange={(retornado) => {
                             updateItem(item.itemId, { retornado })
-                          }
+                            setFieldErrors((prev) => {
+                              const nextItems = { ...prev.items }
+                              delete nextItems[item.itemId]
+                              return { ...prev, items: nextItems }
+                            })
+                          }}
                         />
                       </div>
 
                       {mostrarObs ? (
-                        <Input
-                          placeholder={
-                            item.retornado
-                              ? "Observación (estado, daños, etc.)"
-                              : esEntradaInicial
-                                ? "Motivo por el que se quedó *"
-                                : "Motivo por el que no retornó *"
-                          }
-                          value={item.observacionLlegada}
-                          aria-invalid={
-                            (!item.retornado &&
-                              Boolean(formError) &&
-                              !item.observacionLlegada.trim()) ||
-                            undefined
-                          }
-                          onChange={(e) =>
-                            updateItem(item.itemId, {
-                              observacionLlegada: e.target.value,
-                            })
-                          }
-                        />
+                        <>
+                          <FieldLabel htmlFor={itemObsField} className="sr-only">
+                            {item.nombre}:{" "}
+                            {esEntradaInicial
+                              ? "motivo por el que se quedó"
+                              : "motivo por el que no retornó"}
+                          </FieldLabel>
+                          <Input
+                            id={itemObsField}
+                            placeholder={
+                              item.retornado
+                                ? "Observación (estado, daños, etc.)"
+                                : esEntradaInicial
+                                  ? "Motivo por el que se quedó *"
+                                  : "Motivo por el que no retornó *"
+                            }
+                            value={item.observacionLlegada}
+                            aria-invalid={Boolean(itemError)}
+                            aria-describedby={
+                              itemError ? `${itemObsField}-error` : undefined
+                            }
+                            onChange={(e) => {
+                              updateItem(item.itemId, {
+                                observacionLlegada: e.target.value,
+                              })
+                              if (itemError) {
+                                setFieldErrors((prev) => {
+                                  const nextItems = { ...prev.items }
+                                  delete nextItems[item.itemId]
+                                  return { ...prev, items: nextItems }
+                                })
+                              }
+                            }}
+                          />
+                          <FieldError id={`${itemObsField}-error`}>
+                            {itemError}
+                          </FieldError>
+                        </>
                       ) : (
                         <button
                           type="button"
@@ -538,7 +567,7 @@ export function RegistrarLlegadaPorteriaDialog({
 
         {/* Observación general */}
         <Field>
-          <FieldLabel className="flex items-center gap-1.5">
+          <FieldLabel htmlFor={observacionField} className="flex items-center gap-1.5">
             {esEntradaInicial ? (
               <LogOut className="size-3.5" />
             ) : (
@@ -549,6 +578,7 @@ export function RegistrarLlegadaPorteriaDialog({
               : "Observación general de entrada"}
           </FieldLabel>
           <Textarea
+            id={observacionField}
             rows={2}
             placeholder={
               esEntradaInicial

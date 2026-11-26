@@ -5,6 +5,7 @@ import com.endecorani.sigma_api.modules.parametros.application.dto.response.Corr
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
 import com.endecorani.sigma_api.modules.parametros.domain.model.Correlativo;
 import com.endecorani.sigma_api.modules.parametros.domain.repository.CorrelativoRepository;
+import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,8 @@ public class CorrelativoService {
         boolean existe = correlativoRepository.existsByCodigoAndGestion(request.codigo(), request.gestion());
 
         if (existe) {
-            throw new IllegalStateException("Ya existe un correlativo con código " + request.codigo() + " para la gestión " + request.gestion());
+            throw new IllegalArgumentException("Ya existe un correlativo con código "
+                    + request.codigo() + " para la gestión " + request.gestion());
         }
 
         Correlativo correlativo = Correlativo.builder()
@@ -48,11 +50,7 @@ public class CorrelativoService {
 
         Correlativo correlativo = correlativoRepository
                 .findById(id)
-                .orElseThrow(() ->
-                        new IllegalStateException(
-                                "No existe el correlativo con id: " + id
-                        )
-                );
+                .orElseThrow(() -> new ResourceNotFoundException("Correlativo", id));
 
         return toResponse(correlativo);
     }
@@ -84,12 +82,15 @@ public class CorrelativoService {
                 .longitud(longitud)
                 .build();
 
-        try {
-            return correlativoRepository.save(nuevo);
-        } catch (Exception e) {
-            return correlativoRepository.findForUpdate(codigo, gestion)
-                    .orElseThrow(() -> new IllegalStateException("Error al inicializar correlativo para " + codigo + " gestión " + gestion, e));
-        }
+        // Dos transacciones pueden llegar aquí simultáneamente porque SELECT ... FOR UPDATE
+        // no bloquea filas inexistentes. La inserción atómica evita la violación de la
+        // restricción única y, por tanto, que PostgreSQL aborte la transacción; el
+        // ganador y el perdedor vuelven a leer (y bloquear) la misma fila.
+        correlativoRepository.insertIfAbsent(nuevo);
+
+        return correlativoRepository.findForUpdate(codigo, gestion)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No se pudo inicializar el correlativo " + codigo + " para la gestión " + gestion));
     }
 
     private String resolverPrefijoPorDefecto(String codigo) {

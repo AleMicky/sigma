@@ -29,6 +29,10 @@ import { routes } from "@/app/config/routes"
 import { getErrorMessage } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { PageShell } from "@/shared/components/page-shell"
+import {
+  StatusBadge,
+  type StatusBadgeVariant,
+} from "@/shared/components/status-badge"
 import { Pagination } from "@/shared/components/pagination"
 import {
   AlertDialog,
@@ -57,6 +61,7 @@ import { Skeleton } from "@/shared/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value"
+import { toLocalDateKey } from "@/shared/lib/date"
 import { cn } from "@/shared/lib/utils"
 
 import { useAnularRegistroPorteriaMutation } from "../api/porteria.mutations"
@@ -115,8 +120,7 @@ function getInitials(name?: string | null): string {
 }
 
 function dayKey(value: string): string {
-  const d = new Date(value)
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+  return toLocalDateKey(new Date(value))
 }
 
 function dayLabel(value: string): string {
@@ -124,8 +128,9 @@ function dayLabel(value: string): string {
   const today = new Date()
   const yesterday = new Date()
   yesterday.setDate(today.getDate() - 1)
-  if (dayKey(value) === dayKey(today.toISOString())) return "Hoy"
-  if (dayKey(value) === dayKey(yesterday.toISOString())) return "Ayer"
+  const valueKey = toLocalDateKey(d)
+  if (valueKey === toLocalDateKey(today)) return "Hoy"
+  if (valueKey === toLocalDateKey(yesterday)) return "Ayer"
   const label = d.toLocaleDateString("es-BO", {
     weekday: "long",
     day: "numeric",
@@ -149,24 +154,24 @@ function useNow(intervalMs = 60_000): number {
 
 const ESTADO_CONFIG: Record<
   EstadoRegistroPorteria,
-  { label: string; icon: typeof Clock; badge: string; avatar: string }
+  { label: string; icon: typeof Clock; variant: StatusBadgeVariant; avatar: string }
 > = {
   AFUERA: {
     label: "Afuera",
     icon: Clock,
-    badge: "border-amber-500/40 bg-amber-500/10 text-amber-600",
+    variant: "warning",
     avatar: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
   },
   COMPLETADO: {
     label: "Completado",
     icon: CheckCircle2,
-    badge: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+    variant: "success",
     avatar: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
   },
   ANULADO: {
     label: "Anulado",
     icon: XCircle,
-    badge: "border-destructive/40 bg-destructive/10 text-destructive",
+    variant: "danger",
     avatar: "bg-muted text-muted-foreground",
   },
 }
@@ -187,10 +192,9 @@ function EstadoBadge({
         : "Afuera"
       : cfg.label
   return (
-    <Badge variant="outline" className={cfg.badge}>
-      <Icon className="mr-1 size-3" />
+    <StatusBadge variant={cfg.variant} dot={false} icon={<Icon className="size-3" />}>
       {label}
-    </Badge>
+    </StatusBadge>
   )
 }
 
@@ -201,21 +205,19 @@ function TipoMovimientoBadge({
 }) {
   const esEntrada = tipoMovimiento === "ENTRADA"
   return (
-    <Badge
-      variant="outline"
-      className={
-        esEntrada
-          ? "border-emerald-500/40 bg-emerald-500/10 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300"
-          : "border-amber-500/40 bg-amber-500/10 text-[10px] font-semibold text-amber-700 dark:text-amber-300"
+    <StatusBadge
+      variant={esEntrada ? "success" : "warning"}
+      dot={false}
+      icon={
+        esEntrada ? (
+          <LogIn className="size-3" />
+        ) : (
+          <LogOut className="size-3" />
+        )
       }
     >
-      {esEntrada ? (
-        <LogIn className="mr-1 size-3" />
-      ) : (
-        <LogOut className="mr-1 size-3" />
-      )}
       {esEntrada ? "Entrada" : "Salida"}
-    </Badge>
+    </StatusBadge>
   )
 }
 
@@ -733,7 +735,7 @@ export function PorteriaPage() {
   }
 
   const handleFiltrarHoy = () => {
-    const today = new Date().toISOString().split("T")[0]
+    const today = toLocalDateKey()
     setFechaDesde(today)
     setFechaHasta(today)
     setPage(0)

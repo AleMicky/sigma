@@ -7,6 +7,7 @@ import com.endecorani.sigma_api.modules.workflow.application.dto.response.Workfl
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskActionsResponse;
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 import com.endecorani.sigma_api.modules.workflow.domain.model.Workflow;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -112,7 +113,8 @@ public class WorkflowApplicationService {
     ) {
 
         if (tarea == null || tarea.taskId() == null) {
-            throw new IllegalStateException(
+            // Regla de negocio explícita: se traduce a error 4xx controlado, no a 500 interno.
+            throw new BusinessException(
                     "El proceso no tiene una tarea activa"
             );
         }

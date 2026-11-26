@@ -1,4 +1,4 @@
-import { http } from "@/shared/api"
+import { http, openPdfInNewTab } from "@/shared/api"
 import type { PageParams, PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
@@ -220,17 +220,9 @@ export async function downloadControlActivoVehicularReportePdf(
 export async function openControlActivoVehicularReportePdf(
   id: string
 ): Promise<void> {
-  const blob = await http.get<Blob>(
+  await openPdfInNewTab(
     CONTROL_ACTIVO_VEHICULAR_ENDPOINTS.reportePdf(id),
-    {
-      responseType: "blob",
-      headers: {
-        Accept: "application/pdf",
-      },
-    }
+    `acta-control-activo-vehicular-${id}.pdf`,
   )
-
-  const url = window.URL.createObjectURL(blob)
-  window.open(url, "_blank")
 }
 

@@ -14,6 +14,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -45,5 +47,21 @@ public class ActivoAsignacionRepositoryImpl
         return springRepository
                 .findAll(ActivoAsignacionSpecifications.withCriteria(criteria), pageable)
                 .map(mapper::toDomain);
+    }
+
+    @Override
+    public Optional<ActivoAsignacion> findOpenByActivoId(UUID activoId) {
+        return springRepository.findOpenByActivoId(activoId).map(mapper::toDomain);
+    }
+
+    @Override
+    public boolean existsOverlappingByActivoId(
+            UUID activoId,
+            LocalDateTime fechaAsignacion,
+            LocalDateTime fechaDevolucion,
+            UUID excludeId
+    ) {
+        return springRepository.existsOverlappingByActivoId(
+                activoId, fechaAsignacion, fechaDevolucion, excludeId);
     }
 }

@@ -3,13 +3,21 @@
 # ==============================================================================
 
 SHELL := /bin/bash
-COMPOSE_PROD := docker compose -f compose.prod.yml
-COMPOSE_TEST := docker compose --env-file .env.test -f compose.test.yml
-COMPOSE_DEV  := docker compose -f compose.yml
-NETWORK_NAME := infraestructura-network
+
+# Archivos de variables: se usa .env.example como referencia si no existe el real.
+# Ningún target escribe .env automáticamente en producción.
+ENV_FILE_DEV  := $(if $(wildcard .env),.env,.env.example)
+ENV_FILE_TEST := $(if $(wildcard .env.test),.env.test,.env.example)
+ENV_FILE_PROD := $(if $(wildcard .env),.env,.env.example)
+
+COMPOSE_PROD  := docker compose --env-file $(ENV_FILE_PROD) -f compose.prod.yml
+COMPOSE_TEST  := docker compose --env-file $(ENV_FILE_TEST) -f compose.test.yml
+COMPOSE_DEV   := docker compose --env-file $(ENV_FILE_DEV) -f compose.yml
+NETWORK_NAME  := infraestructura-network
 
 # Colores para salida en consola
 GREEN  := \033[0;32m
+RED    := \033[0;31m
 YELLOW := \033[0;33m
 BLUE   := \033[0;34m
 CYAN   := \033[0;36m
@@ -30,13 +38,24 @@ help: ## Muestra este menú de ayuda interactivo
 # ------------------------------------------------------------------------------
 
 .PHONY: init-env
-init-env: ## Crea el archivo .env a partir de .env.example si no existe
+init-env: ## Crea .env desde .env.example SOLO para desarrollo local (nunca en deploy)
 	@if [ ! -f .env ]; then \
-		printf "$(YELLOW)Creando .env a partir de .env.example...$(RESET)\n"; \
+		printf "$(YELLOW)Creando .env a partir de .env.example (solo desarrollo)...$(RESET)\n"; \
 		cp .env.example .env; \
 		printf "$(GREEN).env creado exitosamente. Por favor actualiza sus variables.$(RESET)\n"; \
 	else \
 		printf "$(BLUE).env ya existe.$(RESET)\n"; \
+	fi
+
+.PHONY: check-env
+check-env: ## Verifica que exista un .env real antes de desplegar (nunca lo crea)
+	@if [ ! -f .env ]; then \
+		printf "$(RED)ERROR: no existe .env. Cópialo manualmente desde .env.example y completa valores reales antes de desplegar.$(RESET)\n"; \
+		exit 1; \
+	fi
+	@if grep -Eq '^[[:space:]]*(DB_PASSWORD|KEYCLOAK_CLIENT_SECRET|FLOWABLE_PASSWORD)[[:space:]]*=[[:space:]]*(change-me|postgres|)[[:space:]]*$$' .env; then \
+		printf "$(RED)ERROR: .env contiene valores de ejemplo (change-me/postgres/vacío). Completa secretos reales antes de desplegar.$(RESET)\n"; \
+		exit 1; \
 	fi
 
 .PHONY: init-network
@@ -50,11 +69,28 @@ init-network: ## Crea la red Docker externa 'infraestructura-network' si no exis
 	fi
 
 # ------------------------------------------------------------------------------
+# Validación
+# ------------------------------------------------------------------------------
+
+.PHONY: validate-compose
+validate-compose: ## Valida los 3 stacks de Docker Compose (config --quiet, sin exponer secretos)
+	@printf "$(YELLOW)Validando stacks de Docker Compose...$(RESET)\n"
+	docker compose --env-file $(ENV_FILE_DEV) -f compose.yml config --quiet
+	docker compose --env-file $(ENV_FILE_TEST) -f compose.test.yml config --quiet
+	docker compose --env-file $(ENV_FILE_PROD) -f compose.prod.yml config --quiet
+	@printf "$(GREEN)Los 3 stacks son válidos.$(RESET)\n"
+
+.PHONY: lint-web
+lint-web: ## Ejecuta ESLint del frontend Web (gate de calidad)
+	@printf "$(YELLOW)Ejecutando lint de Web...$(RESET)\n"
+	pnpm --filter web lint
+
+# ------------------------------------------------------------------------------
 # Despliegue en Producción (compose.prod.yml)
 # ------------------------------------------------------------------------------
 
 .PHONY: deploy
-deploy: init-env init-network ## Despliega todo el stack en producción (build + up en background)
+deploy: check-env validate-compose init-network ## Despliega todo el stack en producción (build + up en background)
 	@printf "$(YELLOW)Desplegando stack de producción SIGMA...$(RESET)\n"
 	$(COMPOSE_PROD) up -d --build --remove-orphans
 	@printf "$(GREEN)Despliegue completado exitosamente.$(RESET)\n"
@@ -179,6 +215,15 @@ clean: ## Limpia imágenes huérfanas/intermedias de Docker
 	docker image prune -f
 
 .PHONY: prune
-prune: ## Limpieza profunda de Docker (imágenes, contenedores detenidos y volúmenes sin uso)
-	@printf "$(YELLOW)Ejecutando limpieza profunda del sistema Docker...$(RESET)\n"
+prune: ## Limpieza segura de Docker (imágenes y contenedores detenidos; NO borra volúmenes)
+	@printf "$(YELLOW)Ejecutando limpieza segura del sistema Docker (sin volúmenes)...$(RESET)\n"
+	docker system prune -af
+
+.PHONY: prune-volumes
+prune-volumes: ## DESTRUCTIVO: borra también volúmenes sin uso. Requiere CONFIRM=YES
+	@if [ "$(CONFIRM)" != "YES" ]; then \
+		printf "$(RED)ERROR: este target elimina volúmenes. Ejecuta: make prune-volumes CONFIRM=YES$(RESET)\n"; \
+		exit 1; \
+	fi
+	@printf "$(RED)Eliminando volúmenes sin uso (CONFIRM=YES)...$(RESET)\n"
 	docker system prune -af --volumes

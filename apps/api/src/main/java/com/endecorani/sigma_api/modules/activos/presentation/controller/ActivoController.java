@@ -20,6 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -41,12 +42,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Activos", description = "Administración de activos")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize("isAuthenticated()")
 public class ActivoController {
 
         private final ActivoService activoService;
 
         @PostMapping
-        @Operation(summary = "Crear un nuevo activo")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Crear un nuevo activo (solo ADMIN)")
         public ResponseEntity<ApiResponse<ActivoResponse>> create(
                         @Valid @RequestBody ActivoRequest request) {
                 return ResponseEntity
@@ -58,7 +61,8 @@ public class ActivoController {
         }
 
         @PutMapping("/{id}")
-        @Operation(summary = "Actualizar un activo existente")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Actualizar un activo existente (solo ADMIN)")
         public ResponseEntity<ApiResponse<ActivoResponse>> update(
                         @PathVariable UUID id,
                         @Valid @RequestBody ActivoRequest request) {
@@ -135,7 +139,8 @@ public class ActivoController {
         }
 
         @PostMapping(value = "/{id}/imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-        @Operation(summary = "Subir o reemplazar la imagen del activo")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Subir o reemplazar la imagen del activo (solo ADMIN)")
         public ResponseEntity<ApiResponse<ActivoResponse>> uploadImagen(
                         @PathVariable UUID id,
                         @RequestParam("file") MultipartFile file) {
@@ -146,7 +151,8 @@ public class ActivoController {
         }
 
         @DeleteMapping("/{id}/imagen")
-        @Operation(summary = "Eliminar la imagen del activo")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Eliminar la imagen del activo (solo ADMIN)")
         public ResponseEntity<ApiResponse<ActivoResponse>> deleteImagen(
                         @PathVariable UUID id) {
                 return ResponseEntity.ok(
@@ -156,7 +162,8 @@ public class ActivoController {
         }
 
         @PatchMapping("/{id}/activo")
-        @Operation(summary = "Activar o desactivar un activo")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Activar o desactivar un activo (solo ADMIN)")
         public ResponseEntity<ApiResponse<ActivoResponse>> toggleActivo(
                         @PathVariable UUID id,
                         @Valid @RequestBody(required = false) ToggleActivoRequest body) {
@@ -167,7 +174,8 @@ public class ActivoController {
         }
 
         @PatchMapping("/{id}/estado-operativo")
-        @Operation(summary = "Cambiar el estado operativo de un activo")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Cambiar el estado operativo de un activo (solo ADMIN)")
         public ResponseEntity<ApiResponse<ActivoResponse>> cambiarEstadoOperativo(
                         @PathVariable UUID id,
                         @Valid @RequestBody CambiarEstadoOperativoRequest request) {
@@ -178,7 +186,8 @@ public class ActivoController {
         }
 
         @DeleteMapping("/{id}")
-        @Operation(summary = "Eliminar un activo")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Eliminar un activo (solo ADMIN)")
         public ResponseEntity<ApiResponse<Void>> delete(
                         @PathVariable UUID id) {
                 activoService.delete(id);

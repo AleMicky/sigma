@@ -37,12 +37,14 @@ import java.util.UUID;
         description = "Administración de accesorios"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize("isAuthenticated()")
 public class AccesorioController {
 
     private final AccesorioService accesorioService;
 
     @PostMapping
-    @Operation(summary = "Registrar un accesorio")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Registrar un accesorio (solo ADMIN)")
     public ResponseEntity<ApiResponse<AccesorioResponse>> create(
             @Valid @RequestBody AccesorioRequest request
     ) {
@@ -57,7 +59,8 @@ public class AccesorioController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Actualizar un accesorio")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Actualizar un accesorio (solo ADMIN)")
     public ResponseEntity<ApiResponse<AccesorioResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody AccesorioRequest request
@@ -109,7 +112,8 @@ public class AccesorioController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar un accesorio")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Eliminar un accesorio (solo ADMIN)")
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID id
     ) {

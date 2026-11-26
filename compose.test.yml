@@ -25,6 +25,13 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_SSL_MODE: ${DB_SSL_MODE:-require}
 
+      # Almacenamiento de archivos
+      STORAGE_BASE_DIR: ${STORAGE_BASE_DIR:-./uploads}
+      STORAGE_MAX_FILE_SIZE: ${STORAGE_MAX_FILE_SIZE:-20MB}
+      STORAGE_MAX_REQUEST_SIZE: ${STORAGE_MAX_REQUEST_SIZE:-20MB}
+      STORAGE_MAX_FILE_SIZE_BYTES: ${STORAGE_MAX_FILE_SIZE_BYTES:-5242880}
+      DOCUMENTS_MAX_FILE_SIZE_BYTES: ${DOCUMENTS_MAX_FILE_SIZE_BYTES:-20971520}
+
       # CORS
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
 
@@ -53,6 +60,21 @@ services:
       retries: 5
       start_period: 120s
 
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
     volumes:
       - sigma_uploads:/app/uploads
 
@@ -76,11 +98,26 @@ services:
         condition: service_healthy
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ > /dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ > /dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 192M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
 
     networks:
       - sigma-network

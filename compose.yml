@@ -3,7 +3,7 @@ name: sigma-dev
 services:
   # ── PostgreSQL ───────────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16.16-alpine3.23
     container_name: sigma-postgres
     restart: unless-stopped
     environment:
@@ -35,7 +35,13 @@ services:
     env_file: .env
     environment:
       DB_HOST: postgres
+      DB_SSL_MODE: ${DB_SSL_MODE:-require}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      STORAGE_BASE_DIR: ${STORAGE_BASE_DIR:-./uploads}
+      STORAGE_MAX_FILE_SIZE: ${STORAGE_MAX_FILE_SIZE:-20MB}
+      STORAGE_MAX_REQUEST_SIZE: ${STORAGE_MAX_REQUEST_SIZE:-20MB}
+      STORAGE_MAX_FILE_SIZE_BYTES: ${STORAGE_MAX_FILE_SIZE_BYTES:-5242880}
+      DOCUMENTS_MAX_FILE_SIZE_BYTES: ${DOCUMENTS_MAX_FILE_SIZE_BYTES:-20971520}
     ports:
       - "${SERVER_PORT:-8080}:8080"
     healthcheck:
@@ -59,9 +65,9 @@ services:
         VITE_APP_NAME: ${VITE_APP_NAME:-SIGMA}
     container_name: sigma-web
     ports:
-      - "3000:80"
+      - "3000:8080"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ > /dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ > /dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -18,12 +18,14 @@ type ActivoEmptyStateProps = {
   hasActiveFilters: boolean
   onResetFilters: () => void
   onCreate: () => void
+  canManage?: boolean
 }
 
 function ActivoEmptyState({
   hasActiveFilters,
   onResetFilters,
   onCreate,
+  canManage = false,
 }: Readonly<ActivoEmptyStateProps>) {
   if (hasActiveFilters) {
     return (
@@ -46,12 +48,18 @@ function ActivoEmptyState({
     <EmptyState
       icon={<Package className="size-8 text-muted-foreground/60" />}
       title="No hay activos registrados"
-      description="Comienza a registrar tu inventario creando el primer activo."
+      description={
+        canManage
+          ? "Comienza a registrar tu inventario creando el primer activo."
+          : "No hay activos registrados en el inventario."
+      }
       action={
-        <Button size="sm" type="button" onClick={onCreate}>
-          <Plus className="size-4" />
-          Nuevo Activo
-        </Button>
+        canManage ? (
+          <Button size="sm" type="button" onClick={onCreate}>
+            <Plus className="size-4" />
+            Nuevo Activo
+          </Button>
+        ) : undefined
       }
       className="py-12"
     />
@@ -73,6 +81,7 @@ type ActivoContentSectionProps = {
   onResetFilters: () => void
   onCreate: () => void
   onEdit: (activo: Activo) => void
+  canManage?: boolean
 }
 
 export function ActivoContentSection({
@@ -90,6 +99,7 @@ export function ActivoContentSection({
   onResetFilters,
   onCreate,
   onEdit,
+  canManage = false,
 }: Readonly<ActivoContentSectionProps>) {
   if (isLoading) {
     return (
@@ -116,6 +126,7 @@ export function ActivoContentSection({
         hasActiveFilters={hasActiveFilters}
         onResetFilters={onResetFilters}
         onCreate={onCreate}
+        canManage={canManage}
       />
     )
   }
@@ -133,6 +144,7 @@ export function ActivoContentSection({
             tiposById={tiposById}
             ubicacionesById={ubicacionesById}
             onEdit={onEdit}
+            canManage={canManage}
           />
         ) : (
           <ActivoGridView
@@ -140,6 +152,7 @@ export function ActivoContentSection({
             tiposById={tiposById}
             ubicacionesById={ubicacionesById}
             onEdit={onEdit}
+            canManage={canManage}
           />
         )}
       </div>

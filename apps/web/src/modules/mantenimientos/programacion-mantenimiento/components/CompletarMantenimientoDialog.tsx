@@ -12,6 +12,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { toLocalDateKey } from "@/shared/lib/date"
 import { useCompletarMantenimiento } from "../api/programacion-mantenimiento.mutations"
 import type { ProgramacionMantenimiento } from "../api/programacion-mantenimiento.service"
 
@@ -21,15 +22,8 @@ interface CompletarMantenimientoDialogProps {
   programacion: ProgramacionMantenimiento | null
 }
 
-function getTodayLocalDate(): string {
-  const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
-}
-
 function formatLocalDate(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+  return toLocalDateKey(date)
 }
 
 export function CompletarMantenimientoDialog({
@@ -61,7 +55,7 @@ function CompletarMantenimientoDialogContent({
   programacion,
   onOpenChange,
 }: CompletarMantenimientoDialogContentProps) {
-  const [fechaServicio, setFechaServicio] = useState(getTodayLocalDate)
+  const [fechaServicio, setFechaServicio] = useState(toLocalDateKey)
   const [kilometrajeServicio, setKilometrajeServicio] = useState<string>(() => {
     const kmCrit = programacion.criterios.find((c) => c.tipoCriterio === "KILOMETRAJE")
     return kmCrit?.proximoValorUso != null ? String(kmCrit.proximoValorUso) : ""

@@ -26,6 +26,9 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -86,6 +89,11 @@
   /* Destructive: Rojo de alerta de alta visibilidad (#dc2626) */
   --destructive: oklch(0.56 0.24 25);
 
+  /* Estados semánticos: variantes oscuras para cumplir WCAG AA sobre fondos claros */
+  --success: oklch(0.45 0.13 155);
+  --warning: oklch(0.46 0.14 75);
+  --info: oklch(0.46 0.14 250);
+
   /* Bordes & Inputs: Bordes limpios y calibrados (#e2e8f0) */
   --border: oklch(0.88 0.012 250);
   --input: oklch(0.89 0.012 250);
@@ -143,6 +151,11 @@
 
   /* Destructive */
   --destructive: oklch(0.62 0.22 25);
+
+  /* Estados semánticos: variantes claras para alto contraste sobre fondos oscuros */
+  --success: oklch(0.78 0.15 155);
+  --warning: oklch(0.82 0.15 80);
+  --info: oklch(0.78 0.14 250);
 
   /* Borders & Inputs */
   --border: oklch(0.28 0.02 260 / 60%);

@@ -41,6 +41,7 @@ import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.infrastructure.report.JasperReportService;
+import com.endecorani.sigma_api.shared.util.FlexibleLocalDateTimeParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -71,7 +72,7 @@ import java.util.stream.Collectors;
 public class RegistroPorteriaService {
 
     private static final String REPORTE_BITACORA_PORTERIA_PATH = "reports/gestion-vehicular/bitacora_porteria.jrxml";
-    private static final ZoneId ZONA = ZoneId.of("America/La_Paz");
+    private static final ZoneId ZONA = FlexibleLocalDateTimeParser.OPERATIONAL_ZONE;
     private static final DateTimeFormatter FECHA_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter HORA_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter FECHA_HORA_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -172,7 +173,7 @@ public class RegistroPorteriaService {
 
         String numero = correlativoService.generar(
                 CorrelativoCodigo.REGISTRO_PORTERIA,
-                LocalDate.now().getYear());
+                LocalDate.now(ZONA).getYear());
 
         RegistroPorteria registro = RegistroPorteria.builder()
                 .numero(numero)

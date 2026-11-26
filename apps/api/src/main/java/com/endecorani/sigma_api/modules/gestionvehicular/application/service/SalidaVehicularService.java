@@ -37,6 +37,7 @@ import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
+import com.endecorani.sigma_api.shared.util.FlexibleLocalDateTimeParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,7 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,6 +58,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SalidaVehicularService {
 
+    private static final ZoneId ZONA = FlexibleLocalDateTimeParser.OPERATIONAL_ZONE;
     private static final String WORKFLOW_CODIGO = "SALIDA_VEHICULAR";
     private static final String ESTADO_SALIDA = "SALIDA";
     private static final String ESTADO_LLEGADA = "LLEGADA";
@@ -111,7 +113,7 @@ public class SalidaVehicularService {
             throw new ResourceNotFoundException("Empleado", empleadoId);
         }
 
-        String numero = correlativoService.generar(CorrelativoCodigo.SALIDA_VEHICULAR, LocalDate.now().getYear());
+        String numero = correlativoService.generar(CorrelativoCodigo.SALIDA_VEHICULAR, LocalDate.now(ZONA).getYear());
 
         String observaciones = request.observaciones() != null && !request.observaciones().isBlank()
                 ? request.observaciones().trim()
@@ -195,8 +197,8 @@ public class SalidaVehicularService {
             LocalDateTime fechaHasta,
             PageRequestDto pageRequest) {
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
-        Instant instantDesde = fechaDesde != null ? fechaDesde.toInstant(ZoneOffset.UTC) : null;
-        Instant instantHasta = fechaHasta != null ? fechaHasta.toInstant(ZoneOffset.UTC) : null;
+        Instant instantDesde = fechaDesde != null ? fechaDesde.atZone(ZONA).toInstant() : null;
+        Instant instantHasta = fechaHasta != null ? fechaHasta.atZone(ZONA).toInstant() : null;
 
         AlcanceArea alcance = resolverAlcance(areaId, createdById);
         if (alcance.sinAcceso()) {

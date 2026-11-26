@@ -5,7 +5,6 @@ import com.endecorani.sigma_api.modules.activos.application.dto.request.TipoActi
 import com.endecorani.sigma_api.modules.activos.application.dto.response.TipoActivoResponse;
 import com.endecorani.sigma_api.modules.activos.application.service.TipoActivoService;
 import com.endecorani.sigma_api.shared.application.crud.CrudService;
-import com.endecorani.sigma_api.shared.presentation.controller.AbstractCrudController;
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,7 +20,7 @@ import java.util.UUID;
 @Tag(name = "Tipos de activo", description = "Administración del catálogo de tipos de activo")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class TipoActivoController
-        extends AbstractCrudController<TipoActivoRequest, TipoActivoResponse, UUID> {
+        extends AbstractActivoCatalogCrudController<TipoActivoRequest, TipoActivoResponse, UUID> {
 
     private final TipoActivoService tipoActivoService;
 

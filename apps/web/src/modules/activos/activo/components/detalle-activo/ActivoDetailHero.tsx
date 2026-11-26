@@ -24,6 +24,7 @@ type ActivoDetailHeroProps = {
   onOpenImageModal: () => void
   onOpenAddDocument: () => void
   onCambiarEstado?: () => void
+  canManage?: boolean
 }
 
 export function ActivoDetailHero({
@@ -36,6 +37,7 @@ export function ActivoDetailHero({
   onOpenImageModal,
   onOpenAddDocument,
   onCambiarEstado,
+  canManage = false,
 }: Readonly<ActivoDetailHeroProps>) {
   return (
     <div
@@ -135,23 +137,40 @@ export function ActivoDetailHero({
 
               {/* Estado Operativo */}
               {activo.estadoOperativo ? (
-                <button
-                  type="button"
-                  onClick={onCambiarEstado}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border shadow-2xs cursor-pointer hover:opacity-90 transition-opacity"
-                  style={{
-                    backgroundColor: `${activo.estadoOperativo.color || "#10b981"}18`,
-                    color: activo.estadoOperativo.color || "#10b981",
-                    borderColor: `${activo.estadoOperativo.color || "#10b981"}40`,
-                  }}
-                  title="Click para cambiar estado operativo"
-                >
+                canManage ? (
+                  <button
+                    type="button"
+                    onClick={onCambiarEstado}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border shadow-2xs cursor-pointer hover:opacity-90 transition-opacity"
+                    style={{
+                      backgroundColor: `${activo.estadoOperativo.color || "#10b981"}18`,
+                      color: activo.estadoOperativo.color || "#10b981",
+                      borderColor: `${activo.estadoOperativo.color || "#10b981"}40`,
+                    }}
+                    title="Click para cambiar estado operativo"
+                  >
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: activo.estadoOperativo.color || "#10b981" }}
+                    />
+                    {activo.estadoOperativo.nombre}
+                  </button>
+                ) : (
                   <span
-                    className="size-2 rounded-full"
-                    style={{ backgroundColor: activo.estadoOperativo.color || "#10b981" }}
-                  />
-                  {activo.estadoOperativo.nombre}
-                </button>
+                    className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border shadow-2xs"
+                    style={{
+                      backgroundColor: `${activo.estadoOperativo.color || "#10b981"}18`,
+                      color: activo.estadoOperativo.color || "#10b981",
+                      borderColor: `${activo.estadoOperativo.color || "#10b981"}40`,
+                    }}
+                  >
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: activo.estadoOperativo.color || "#10b981" }}
+                    />
+                    {activo.estadoOperativo.nombre}
+                  </span>
+                )
               ) : null}
 
               <span
@@ -170,33 +189,35 @@ export function ActivoDetailHero({
           </div>
         </div>
 
-        {/* Hero Quick Action Buttons */}
+        {/* Hero Quick Action Buttons: edición/cambio de estado solo ADMIN; adjuntar documento es operación diaria. */}
         <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-border/50">
-          {isEditing ? (
-            <Button
-              size="sm"
-              variant="outline"
-              type="button"
-              onClick={() => onToggleEdit?.(false)}
-              className="h-8.5 px-3.5 text-xs font-semibold gap-1.5"
-            >
-              <X className="size-3.5" />
-              Cancelar Edición
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="default"
-              type="button"
-              onClick={() => onToggleEdit?.(true)}
-              className="h-8.5 px-3.5 text-xs font-semibold shadow-xs gap-1.5"
-            >
-              <Edit2 className="size-3.5" />
-              Editar Información
-            </Button>
-          )}
+          {canManage ? (
+            isEditing ? (
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                onClick={() => onToggleEdit?.(false)}
+                className="h-8.5 px-3.5 text-xs font-semibold gap-1.5"
+              >
+                <X className="size-3.5" />
+                Cancelar Edición
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="default"
+                type="button"
+                onClick={() => onToggleEdit?.(true)}
+                className="h-8.5 px-3.5 text-xs font-semibold shadow-xs gap-1.5"
+              >
+                <Edit2 className="size-3.5" />
+                Editar Información
+              </Button>
+            )
+          ) : null}
 
-          {onCambiarEstado && (
+          {canManage && onCambiarEstado ? (
             <Button
               size="sm"
               variant="outline"
@@ -207,7 +228,7 @@ export function ActivoDetailHero({
               <Activity className="size-3.5 text-primary" />
               Cambiar Estado Operativo
             </Button>
-          )}
+          ) : null}
 
           <Button
             size="sm"

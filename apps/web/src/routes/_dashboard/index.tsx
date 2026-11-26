@@ -236,26 +236,41 @@ function HomePage() {
       <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card/90 to-primary/5 p-6 sm:p-8 shadow-xs">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 size-64 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary">
-                <Building2 className="size-3.5" />
-                ENDE Corani S.A.
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground capitalize">
-                <Calendar className="size-3.5" />
-                {formatCurrentDate()}
-              </span>
+          {isLoadingMenus ? (
+            <div className="flex flex-col gap-2" aria-busy="true">
+              <div className="flex flex-wrap items-center gap-2">
+                <Skeleton className="h-6 w-32 rounded-full" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+              <Skeleton className="h-8 w-72 max-w-full" />
+              <Skeleton className="h-4 w-full max-w-xl" />
+              <Skeleton className="h-4 w-3/4 max-w-lg" />
             </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary">
+                  <Building2 className="size-3.5" />
+                  ENDE Corani S.A.
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground capitalize">
+                  <Calendar className="size-3.5" />
+                  {formatCurrentDate()}
+                </span>
+              </div>
 
-            <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
-              {getGreeting()}, <span className="text-primary">{displayName}</span>
-            </h1>
+              <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
+                {getGreeting()},{" "}
+                <span className="text-primary">{displayName}</span>
+              </h1>
 
-            <p className="max-w-2xl text-sm text-muted-foreground sm:text-base leading-relaxed">
-              Bienvenido al {appConfig.description}. Selecciona un módulo o utiliza el buscador rápido para acceder a las opciones del sistema.
-            </p>
-          </div>
+              <p className="max-w-2xl text-sm text-muted-foreground sm:text-base leading-relaxed">
+                Bienvenido al {appConfig.description}. Selecciona un módulo o
+                utiliza el buscador rápido para acceder a las opciones del
+                sistema.
+              </p>
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             {isLoadingMenus ? (
@@ -368,7 +383,7 @@ function HomePage() {
           </div>
 
           {isLoadingMenus ? (
-            <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
@@ -435,7 +450,7 @@ function HomePage() {
         </div>
 
         {isLoadingMenus ? (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
             {Array.from({ length: 6 }).map((_, i) => (
               <Card key={i} className="overflow-hidden rounded-2xl border border-border/70">
                 <CardHeader className="pb-3 border-b border-border/40">
