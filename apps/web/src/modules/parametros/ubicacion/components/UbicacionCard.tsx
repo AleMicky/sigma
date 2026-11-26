@@ -7,7 +7,8 @@ import { Button } from "@/shared/components/ui/button"
 
 import { useDeleteUbicacion } from "../api/ubicacion.mutations"
 import type { Ubicacion } from "../api/ubicacion.service"
-import { TIPO_UBICACION_CONFIG, TipoUbicacionBadge } from "./TipoUbicacionBadge"
+import { TIPO_UBICACION_CONFIG } from "../lib/tipo-ubicacion.config"
+import { TipoUbicacionBadge } from "./TipoUbicacionBadge"
 
 type UbicacionCardProps = {
   ubicacion: Ubicacion

@@ -12,19 +12,17 @@ import { toast } from "sonner"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
 import type { Ubicacion } from "@/modules/parametros/ubicacion/api/ubicacion.service"
+import {
+  ALL_TIPOS,
+  ALL_UBICACIONES,
+} from "@/modules/activos/activo/lib/catalogo.utils"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { cn } from "@/shared/lib/utils"
-
-export const ALL_TIPOS = "__all__"
-export const ALL_UBICACIONES = "__all__"
 
 interface ActivoCatalogoToolbarProps {
   search: string
@@ -65,10 +63,89 @@ export function ActivoCatalogoToolbar({
     [ubicaciones],
   )
 
-  const selectedTipo =
-    tipoActivoId !== ALL_TIPOS ? tiposById.get(tipoActivoId) : null
-  const selectedUbicacion =
-    ubicacionId !== ALL_UBICACIONES ? ubicacionesById.get(ubicacionId) : null
+  const tipoOptions = useMemo<OptionsComboboxOption[]>(
+    () => [
+      { value: ALL_TIPOS, label: "Todos los tipos" },
+      ...tipos.map((tipo) => ({ value: tipo.id, label: tipo.nombre })),
+    ],
+    [tipos],
+  )
+
+  const ubicacionOptions = useMemo<OptionsComboboxOption[]>(
+    () => [
+      { value: ALL_UBICACIONES, label: "Todas las ubicaciones" },
+      ...ubicaciones.map((ubicacion) => ({
+        value: ubicacion.id,
+        label: ubicacion.nombre,
+      })),
+    ],
+    [ubicaciones],
+  )
+
+  const renderTipoValor = (option: OptionsComboboxOption) => {
+    const tipo = tiposById.get(option.value)
+    if (!tipo) {
+      return (
+        <span className="flex min-w-0 items-center gap-2 truncate">
+          <Filter className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="truncate">{option.label}</span>
+        </span>
+      )
+    }
+    return (
+      <span className="flex min-w-0 items-center gap-1.5 truncate">
+        <Filter className="size-3.5 shrink-0 text-muted-foreground" />
+        <span
+          className="size-2 shrink-0 rounded-full"
+          style={{ backgroundColor: tipo.color || DEFAULT_TIPO_ACTIVO_COLOR }}
+        />
+        <span className="truncate">{option.label}</span>
+      </span>
+    )
+  }
+
+  const renderTipoOption = (option: OptionsComboboxOption) => {
+    const tipo = tiposById.get(option.value)
+    if (!tipo) return <span className="truncate">{option.label}</span>
+    return (
+      <span className="flex min-w-0 items-center gap-2 truncate">
+        <span
+          className="size-2 shrink-0 rounded-full"
+          style={{ backgroundColor: tipo.color || DEFAULT_TIPO_ACTIVO_COLOR }}
+        />
+        <span className="truncate">{option.label}</span>
+      </span>
+    )
+  }
+
+  const renderUbicacion = (option: OptionsComboboxOption) => {
+    if (option.value === ALL_UBICACIONES) {
+      return <span className="truncate">{option.label}</span>
+    }
+    return (
+      <span className="flex min-w-0 items-center gap-1.5 truncate">
+        <MapPin className="size-3 shrink-0 text-muted-foreground/70" />
+        <span className="truncate">{option.label}</span>
+      </span>
+    )
+  }
+
+  const renderUbicacionValor = (option: OptionsComboboxOption) => {
+    if (option.value === ALL_UBICACIONES) {
+      return (
+        <span className="flex min-w-0 items-center gap-2 truncate">
+          <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="truncate">{option.label}</span>
+        </span>
+      )
+    }
+    return (
+      <span className="flex min-w-0 items-center gap-2 truncate">
+        <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+        <span className="truncate">{ubicacionesById.get(option.value)?.nombre ?? option.label}</span>
+      </span>
+    )
+  }
 
   function handleExportExcel() {
     toast.info("Exportación a Excel", {
@@ -91,87 +168,33 @@ export function ActivoCatalogoToolbar({
 
         {/* Filtros y Exportación */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:flex md:items-center gap-2 shrink-0">
-          {/* Tipo de Activo Select */}
-          <Select
+          {/* Tipo de Activo */}
+          <OptionsCombobox
+            options={tipoOptions}
             value={tipoActivoId}
-            onValueChange={(val) => onTipoActivoChange(val ?? ALL_TIPOS)}
-          >
-            <SelectTrigger
-              className="w-full sm:w-full md:w-[190px] h-9 text-xs"
-              aria-label="Filtrar por tipo de activo"
-            >
-              <div className="flex items-center gap-2 truncate">
-                <Filter className="size-3.5 text-muted-foreground shrink-0" />
-                <SelectValue placeholder="Todos los tipos">
-                  {!selectedTipo ? (
-                    "Todos los tipos"
-                  ) : (
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span
-                        className="size-2 rounded-full shrink-0"
-                        style={{
-                          backgroundColor:
-                            selectedTipo.color || DEFAULT_TIPO_ACTIVO_COLOR,
-                        }}
-                      />
-                      <span className="truncate">{selectedTipo.nombre}</span>
-                    </div>
-                  )}
-                </SelectValue>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_TIPOS}>Todos los tipos</SelectItem>
-              {tipos.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="size-2 rounded-full shrink-0"
-                      style={{
-                        backgroundColor: t.color || DEFAULT_TIPO_ACTIVO_COLOR,
-                      }}
-                    />
-                    <span>{t.nombre}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onValueChange={(val) => onTipoActivoChange(val || ALL_TIPOS)}
+            placeholder="Todos los tipos"
+            ariaLabel="Filtrar por tipo de activo"
+            size="sm"
+            className="w-full sm:w-full md:w-[190px]"
+            renderOption={renderTipoOption}
+            renderValue={renderTipoValor}
+            emptyMessage="No se encontraron tipos de activo"
+          />
 
-          {/* Ubicacion Select */}
-          <Select
+          {/* Ubicación */}
+          <OptionsCombobox
+            options={ubicacionOptions}
             value={ubicacionId}
-            onValueChange={(val) => onUbicacionChange(val ?? ALL_UBICACIONES)}
-          >
-            <SelectTrigger
-              className="w-full sm:w-full md:w-[190px] h-9 text-xs"
-              aria-label="Filtrar por ubicación"
-            >
-              <div className="flex items-center gap-2 truncate">
-                <MapPin className="size-3.5 text-muted-foreground shrink-0" />
-                <SelectValue placeholder="Todas las ubicaciones">
-                  {!selectedUbicacion ? (
-                    "Todas las ubicaciones"
-                  ) : (
-                    <span className="truncate">{selectedUbicacion.nombre}</span>
-                  )}
-                </SelectValue>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_UBICACIONES}>
-                Todas las ubicaciones
-              </SelectItem>
-              {ubicaciones.map((u) => (
-                <SelectItem key={u.id} value={u.id}>
-                  <div className="flex items-center gap-1.5 truncate">
-                    <MapPin className="size-3 text-muted-foreground/70 shrink-0" />
-                    <span>{u.nombre}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onValueChange={(val) => onUbicacionChange(val || ALL_UBICACIONES)}
+            placeholder="Todas las ubicaciones"
+            ariaLabel="Filtrar por ubicación"
+            size="sm"
+            className="w-full sm:w-full md:w-[190px]"
+            renderOption={renderUbicacion}
+            renderValue={renderUbicacionValor}
+            emptyMessage="No se encontraron ubicaciones"
+          />
 
           {/* Acciones: Limpiar y Exportar */}
           <div className="col-span-1 sm:col-span-2 md:col-span-1 flex items-center justify-end gap-2">

@@ -64,7 +64,7 @@ import type { ActivoDocumento } from "@/modules/activos/activo-documento/api/act
 import {
   formatDateString,
   getDocumentoEstado,
-} from "./ActivoDocumentosTab"
+} from "@/modules/activos/activo/lib/activo-documentos.utils"
 
 type ActivoInfoTabProps = {
   activo: Activo

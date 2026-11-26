@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -44,6 +45,14 @@ public class ActivoAtributoRepositoryImpl
     @Override
     protected ActivoAtributo toDomain(ActivoAtributoEntity entity) {
         return mapper.toDomain(entity);
+    }
+
+    @Override
+    public List<ActivoAtributo> findByTipoActivoId(UUID tipoActivoId) {
+        return springRepository.findByTipoActivoId(tipoActivoId)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 
     @Override

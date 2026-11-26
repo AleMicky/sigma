@@ -14,7 +14,7 @@ import {
 import { solicitudVehicularQueries } from "@/modules/gestionvehicular/solicitud/api/solicitud-vehicular.queries"
 import type { SolicitudVehicular } from "@/modules/gestionvehicular/solicitud/api/solicitud-vehicular.service"
 import { SolicitudVehicularDetailSheet } from "@/modules/gestionvehicular/solicitud/components/SolicitudVehicularDetailSheet"
-import { resolveStatusVariant } from "@/shared/components/status-badge"
+import { resolveStatusVariant } from "@/shared/lib/status-variant"
 
 const VEHICULAR_FILTERS: CalendarFilterOption[] = [
   { label: "Todos", value: "TODOS" },

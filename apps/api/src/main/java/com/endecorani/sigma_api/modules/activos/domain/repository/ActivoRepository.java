@@ -23,11 +23,33 @@ public interface ActivoRepository extends CrudRepository<Activo, UUID> {
             Boolean activo,
             Pageable pageable);
 
+    /** REQ-BIZ-006: versión con filtro de ubicación. */
+    Page<Activo> findAllFiltered(
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo,
+            Pageable pageable);
+
     Page<Activo> searchFiltered(
             String query,
             UUID tipoActivoId,
             Boolean activo,
             Pageable pageable);
+
+    /** REQ-BIZ-006: versión con filtro de ubicación. */
+    Page<Activo> searchFiltered(
+            String query,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo,
+            Pageable pageable);
+
+    /** REQ-BIZ-006: agregación con exactamente los mismos filtros del listado. */
+    ActivoResumenProjection summarize(
+            String query,
+            UUID tipoActivoId,
+            UUID ubicacionId,
+            Boolean activo);
 
     Page<Activo> searchDisponibilidad(
             String query,

@@ -84,7 +84,10 @@ function ActivoAccesorioFormModalContent({
     }),
     enabled: open,
   })
-  const accesorios = accesoriosQuery.data?.content ?? []
+  const accesorios = useMemo(
+    () => accesoriosQuery.data?.content ?? [],
+    [accesoriosQuery.data?.content],
+  )
 
   // Ensure itemToEdit is present in the list when editing
   const accesoriosList = useMemo(() => {

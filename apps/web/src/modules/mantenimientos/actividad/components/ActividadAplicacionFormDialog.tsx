@@ -67,8 +67,14 @@ export function ActividadAplicacionFormDialog({
     enabled: Boolean(tipoActivoId),
   })
 
-  const tiposActivo = tiposActivoQuery.data?.content ?? []
-  const componentes = componentesQuery.data?.content ?? []
+  const tiposActivo = useMemo(
+    () => tiposActivoQuery.data?.content ?? [],
+    [tiposActivoQuery.data?.content],
+  )
+  const componentes = useMemo(
+    () => componentesQuery.data?.content ?? [],
+    [componentesQuery.data?.content],
+  )
 
   const selectedTipoActivo = useMemo(
     () => tiposActivo.find((t) => t.id === tipoActivoId) ?? null,

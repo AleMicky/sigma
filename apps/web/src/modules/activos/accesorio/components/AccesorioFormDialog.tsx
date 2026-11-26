@@ -10,15 +10,12 @@ import {
   FormDialogSubmit,
   RequiredFieldLabel,
 } from "@/shared/components/form-dialog"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 
 import {
@@ -37,6 +34,24 @@ type AccesorioFormDialogProps = {
   categoriaId?: string
   accesorio?: Accesorio | null
   onSuccess?: () => void
+}
+
+function renderCategoriaOption(option: OptionsComboboxOption) {
+  return (
+    <span className="flex min-w-0 items-center gap-2 truncate">
+      <FolderTree className="size-3 shrink-0 text-muted-foreground" />
+      <span className="truncate font-medium text-foreground">{option.label}</span>
+    </span>
+  )
+}
+
+function renderCategoriaValue(option: OptionsComboboxOption) {
+  return (
+    <span className="flex min-w-0 items-center gap-2 truncate">
+      <FolderTree className="size-3.5 shrink-0 text-primary" />
+      <span className="truncate font-medium text-foreground">{option.label}</span>
+    </span>
+  )
 }
 
 export function AccesorioFormDialog({
@@ -61,8 +76,13 @@ export function AccesorioFormDialog({
     [categoriasQuery.data?.content],
   )
 
-  const categoriasById = useMemo(
-    () => new Map(categorias.map((c) => [c.id, c])),
+  const categoriaOptions = useMemo<OptionsComboboxOption[]>(
+    () =>
+      categorias.map((categoria) => ({
+        value: categoria.id,
+        label: `${categoria.nombre} (${categoria.codigo})`,
+        keywords: [categoria.codigo],
+      })),
     [categorias],
   )
 
@@ -155,49 +175,25 @@ export function AccesorioFormDialog({
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
-            const selected = categoriasById.get(field.state.value)
 
             return (
               <Field data-invalid={isInvalid || undefined}>
                 <RequiredFieldLabel htmlFor={field.name}>
                   Categoría
                 </RequiredFieldLabel>
-                <Select
-                  value={field.state.value || null}
-                  onValueChange={(value) => field.handleChange(value ?? "")}
-                >
-                  <SelectTrigger id={field.name} className="w-full">
-                    <SelectValue placeholder="Seleccionar categoría">
-                      {selected ? (
-                        <div className="flex items-center gap-2 truncate">
-                          <FolderTree className="size-3.5 shrink-0 text-primary" />
-                          <span className="truncate font-medium text-foreground">
-                            {selected.nombre}
-                          </span>
-                        </div>
-                      ) : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {categorias.map((cat) => (
-                      <SelectItem
-                        key={cat.id}
-                        value={cat.id}
-                        className="text-xs cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FolderTree className="size-3 text-muted-foreground shrink-0" />
-                          <span className="truncate font-medium text-foreground">
-                            {cat.nombre}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            ({cat.codigo})
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <OptionsCombobox
+                  options={categoriaOptions}
+                  value={field.state.value}
+                  onValueChange={field.handleChange}
+                  id={field.name}
+                  name={field.name}
+                  placeholder="Seleccionar categoría"
+                  ariaLabel="Categoría"
+                  aria-invalid={isInvalid}
+                  renderOption={renderCategoriaOption}
+                  renderValue={renderCategoriaValue}
+                  emptyMessage="No se encontraron categorías"
+                />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )

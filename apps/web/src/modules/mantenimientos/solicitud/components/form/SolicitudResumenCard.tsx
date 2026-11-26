@@ -3,7 +3,7 @@ import { AlertTriangle, FileText } from "lucide-react"
 import type { Empleado } from "@/modules/organizacion/empleado/api/empleado.service"
 import { cn } from "@/shared/lib/utils"
 import { formatDateTime } from "@/shared/utils/date.utils"
-import { useSolicitudFormContext } from "../../context/solicitud-form.context"
+import { useSolicitudFormContext } from "../../context/solicitud-form.context-state"
 import { extractPlaca, getPrioridadColorConfig } from "../../lib/solicitud.utils"
 
 function getEmpleadoNombre(emp?: Empleado | null): string {

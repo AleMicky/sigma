@@ -506,7 +506,10 @@ export function ControlActivoHistorialModal({
     enabled: open && Boolean(solicitudId),
   })
 
-  const allControles = (controlesQuery.data ?? []) as ControlActivo[]
+  const allControles = useMemo(
+    () => (controlesQuery.data ?? []) as ControlActivo[],
+    [controlesQuery.data],
+  )
 
   const entregasCount = useMemo(
     () => allControles.filter((c) => c.tipo === "ENTREGA").length,

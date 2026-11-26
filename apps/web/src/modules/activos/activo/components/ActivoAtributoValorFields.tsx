@@ -1,17 +1,19 @@
 import type { ActivoAtributo } from "@/modules/activos/activo-atributo/api/activo-atributo.service"
 import type { TipoDato } from "@/modules/parametros/tipo-dato/api/tipo-dato.service"
 import { RequiredFieldLabel } from "@/shared/components/form-dialog"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Field, FieldError, FieldLabel } from "@/shared/components/ui/field"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
+
+const BOOLEAN_OPTIONS: OptionsComboboxOption[] = [
+  { value: "true", label: "Sí" },
+  { value: "false", label: "No" },
+]
 
 type ActivoAtributoValorFieldsProps = {
   atributos: ActivoAtributo[]
@@ -165,21 +167,16 @@ function AtributoInput({
 
   if (codigo === "BOOLEAN") {
     return (
-      <Select
-        value={value || null}
+      <OptionsCombobox
+        options={BOOLEAN_OPTIONS}
+        value={value}
+        onValueChange={onChange}
+        id={fieldId}
+        placeholder="Selecciona…"
+        ariaLabel={atributo.etiqueta}
         disabled={disabled}
-        onValueChange={(next) => onChange(next ?? "")}
-      >
-        <SelectTrigger id={fieldId} aria-invalid={invalid} className="w-full">
-          <SelectValue placeholder="Selecciona…">
-            {value === "true" ? "Sí" : value === "false" ? "No" : null}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="true">Sí</SelectItem>
-          <SelectItem value="false">No</SelectItem>
-        </SelectContent>
-      </Select>
+        aria-invalid={invalid}
+      />
     )
   }
 
@@ -188,26 +185,24 @@ function AtributoInput({
     const selected = opciones.find(
       (opcion) => opcion.value.toLowerCase() === value.toLowerCase(),
     )
+    const opcionesCombobox: OptionsComboboxOption[] = opciones.map((opcion) => ({
+      value: opcion.value,
+      label: opcion.label,
+      keywords: [opcion.value],
+    }))
 
     return (
-      <Select
-        value={value || null}
+      <OptionsCombobox
+        options={opcionesCombobox}
+        value={selected?.value ?? value}
+        onValueChange={onChange}
+        id={fieldId}
+        placeholder="Selecciona…"
+        ariaLabel={atributo.etiqueta}
         disabled={disabled}
-        onValueChange={(next) => onChange(next ?? "")}
-      >
-        <SelectTrigger id={fieldId} aria-invalid={invalid} className="w-full">
-          <SelectValue placeholder="Selecciona…">
-            {selected?.label ?? null}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {opciones.map((opcion) => (
-            <SelectItem key={opcion.value} value={opcion.value}>
-              {opcion.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        aria-invalid={invalid}
+        emptyMessage="No se encontraron opciones"
+      />
     )
   }
 

@@ -19,6 +19,7 @@ import {
   RotateCcw,
   ShieldAlert,
   Tag,
+  type LucideIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -28,11 +29,24 @@ import { TipoActivoIcon } from "@/modules/activos/tipo-activo/lib/tipo-activo-ic
 import { tipoDocumentoQueries } from "@/modules/activos/tipo-documento/api/tipo-documento.queries"
 import type { TipoDocumento } from "@/modules/activos/tipo-documento/api/tipo-documento.service"
 import { activoDocumentoQueries } from "@/modules/activos/activo-documento/api/activo-documento.queries"
-import type { ActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.service"
+import {
+  EMPTY_ACTIVO_DOCUMENTO_RESUMEN,
+  type ActivoDocumento,
+} from "@/modules/activos/activo-documento/api/activo-documento.service"
+import {
+  ALL_DOCUMENTO_FILTER,
+  buildDocumentoFilters,
+  getDocumentoEstado,
+} from "@/modules/activos/activo-documento/lib/activo-documento.utils"
 import { fetchAuthenticatedBlob, getErrorMessage } from "@/shared/api"
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
+import { Pagination } from "@/shared/components/pagination"
 import {
   DetailPanelShell,
   MasterDetailLayout,
@@ -44,13 +58,6 @@ import { RefreshButton } from "@/shared/components/refresh-button"
 import { SearchField } from "@/shared/components/search-field"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { useMasterDetail } from "@/shared/hooks/use-master-detail"
 import {
   useClampPage,
@@ -64,26 +71,21 @@ import type { Activo } from "../api/activo.service"
 const PAGE_SIZE = 12
 const ALL_FILTER = "__all__"
 
-function getDocumentoEstado(
-  fechaVencimiento?: string | null,
-): "vigente" | "por_vencer" | "vencido" | "permanente" {
-  if (!fechaVencimiento) return "permanente"
+const DOCUMENTO_ESTADO_OPTIONS: OptionsComboboxOption[] = [
+  { value: ALL_DOCUMENTO_FILTER, label: "Todas las vigencias" },
+  { value: "vigente", label: "Vigente" },
+  { value: "por_vencer", label: "Por vencer (30d)" },
+  { value: "vencido", label: "Vencido" },
+  { value: "permanente", label: "Permanente" },
+]
 
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const parts = fechaVencimiento.split("-")
-  const expiry =
-    parts.length === 3
-      ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
-      : new Date(fechaVencimiento)
-  expiry.setHours(0, 0, 0, 0)
-
-  const diffTime = expiry.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  if (diffDays < 0) return "vencido"
-  if (diffDays <= 30) return "por_vencer"
-  return "vigente"
+function renderConIcono(option: OptionsComboboxOption, Icon: LucideIcon) {
+  return (
+    <span className="flex min-w-0 items-center gap-1.5 truncate">
+      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+      <span className="truncate">{option.label}</span>
+    </span>
+  )
 }
 
 function formatFileSize(bytes?: number | null): string {
@@ -139,72 +141,63 @@ function ActivoDetailReport({
   tiposDocumentoMap,
   tiposDoc,
 }: ActivoDetailReportProps) {
-  const [docSearch, setDocSearch] = useState("")
-  const [tipoDocFilter, setTipoDocFilter] = useState(ALL_FILTER)
-  const [estadoFilter, setEstadoFilter] = useState(ALL_FILTER)
+  const [tipoDocFilter, setTipoDocFilter] = useState(ALL_DOCUMENTO_FILTER)
+  const [estadoFilter, setEstadoFilter] = useState(ALL_DOCUMENTO_FILTER)
   const [loadingDocId, setLoadingDocId] = useState<string | null>(null)
 
-  const query = useQuery(
-    activoDocumentoQueries.byActivo(activo.id, {
-      size: 100,
-      sortBy: "createdAt",
-      direction: "DESC",
-    }),
+  const docSearch = usePaginatedSearch({
+    resetKey: `${tipoDocFilter}-${estadoFilter}`,
+  })
+
+  // Filtros compartidos por el listado paginado y el resumen del servidor.
+  const filtrosBase = useMemo(
+    () =>
+      buildDocumentoFilters({
+        search: docSearch.debouncedSearch,
+        tipoDocumentoId: tipoDocFilter,
+        estado: estadoFilter,
+      }),
+    [docSearch.debouncedSearch, tipoDocFilter, estadoFilter],
   )
 
-  const documentos = useMemo(() => query.data?.content ?? [], [query.data?.content])
+  const listFilters = useMemo(
+    () => ({
+      ...filtrosBase,
+      page: docSearch.page,
+      size: PAGE_SIZE,
+      sortBy: "createdAt",
+      direction: "DESC" as const,
+    }),
+    [filtrosBase, docSearch.page],
+  )
 
-  // Summary counts
-  const stats = useMemo(() => {
-    let vigentes = 0
-    let porVencer = 0
-    let vencidos = 0
-    let permanentes = 0
+  const resumenFilters = useMemo(
+    () => ({ activoId: activo.id, ...filtrosBase }),
+    [activo.id, filtrosBase],
+  )
 
-    documentos.forEach((doc) => {
-      const estado = getDocumentoEstado(doc.fechaVencimiento)
-      if (estado === "vigente") vigentes++
-      else if (estado === "por_vencer") porVencer++
-      else if (estado === "vencido") vencidos++
-      else permanentes++
-    })
+  const query = useQuery(activoDocumentoQueries.byActivo(activo.id, listFilters))
+  const resumenQuery = useQuery(activoDocumentoQueries.resumen(resumenFilters))
 
-    return {
-      total: documentos.length,
-      vigentes,
-      porVencer,
-      vencidos,
-      permanentes,
-    }
-  }, [documentos])
+  useClampPage(docSearch.page, docSearch.setPage, query.data?.totalPages)
 
-  // Filtered list
-  const filteredDocumentos = useMemo(() => {
-    return documentos.filter((doc) => {
-      if (tipoDocFilter !== ALL_FILTER && doc.tipoDocumentoId !== tipoDocFilter) {
-        return false
-      }
+  const documentos = useMemo(
+    () => query.data?.content ?? [],
+    [query.data?.content],
+  )
+  const stats = resumenQuery.data ?? EMPTY_ACTIVO_DOCUMENTO_RESUMEN
+  const hasDocumentoFilters =
+    docSearch.search.trim().length > 0 ||
+    tipoDocFilter !== ALL_DOCUMENTO_FILTER ||
+    estadoFilter !== ALL_DOCUMENTO_FILTER
 
-      const estado = getDocumentoEstado(doc.fechaVencimiento)
-      if (estadoFilter !== ALL_FILTER && estado !== estadoFilter) {
-        return false
-      }
-
-      if (docSearch.trim()) {
-        const term = docSearch.toLowerCase().trim()
-        const tipo = tiposDocumentoMap.get(doc.tipoDocumentoId)
-        const match =
-          doc.nombre.toLowerCase().includes(term) ||
-          (doc.numeroDocumento && doc.numeroDocumento.toLowerCase().includes(term)) ||
-          (doc.descripcion && doc.descripcion.toLowerCase().includes(term)) ||
-          (doc.nombreArchivo && doc.nombreArchivo.toLowerCase().includes(term)) ||
-          (tipo?.nombre && tipo.nombre.toLowerCase().includes(term))
-        if (!match) return false
-      }
-
-      return true
-    })
-  }, [documentos, tipoDocFilter, estadoFilter, docSearch, tiposDocumentoMap])
+  const tipoDocumentoOptions = useMemo<OptionsComboboxOption[]>(
+    () => [
+      { value: ALL_DOCUMENTO_FILTER, label: "Todos los tipos" },
+      ...tiposDoc.map((tipo) => ({ value: tipo.id, label: tipo.nombre })),
+    ],
+    [tiposDoc],
+  )
 
   async function handleViewFile(doc: ActivoDocumento) {
     try {
@@ -376,64 +369,50 @@ function ActivoDetailReport({
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-2 flex-1 flex-wrap">
             <SearchField
-              value={docSearch}
-              onChange={setDocSearch}
+              value={docSearch.search}
+              onChange={docSearch.setSearch}
               placeholder="Buscar en los documentos de este activo..."
               className="flex-1 min-w-[200px]"
             />
 
-            <Select value={tipoDocFilter} onValueChange={(v) => setTipoDocFilter(v ?? ALL_FILTER)}>
-              <SelectTrigger className="w-full sm:w-44 h-8.5 text-xs bg-background">
-                <FileCheck className="size-3.5 text-muted-foreground mr-1.5" />
-                <SelectValue placeholder="Tipo de Doc.">
-                  {tipoDocFilter === ALL_FILTER
-                    ? "Todos los tipos"
-                    : tiposDocumentoMap.get(tipoDocFilter)?.nombre ?? "Tipo de Doc."}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="max-h-64">
-                <SelectItem value={ALL_FILTER}>Todos los tipos</SelectItem>
-                {tiposDoc.map((td) => (
-                  <SelectItem key={td.id} value={td.id}>
-                    {td.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionsCombobox
+              options={tipoDocumentoOptions}
+              value={tipoDocFilter}
+              onValueChange={(value) =>
+                setTipoDocFilter(value || ALL_DOCUMENTO_FILTER)
+              }
+              placeholder="Tipo de Doc."
+              ariaLabel="Tipo de documento"
+              size="sm"
+              className="w-full sm:w-44"
+              renderValue={(option) => renderConIcono(option, FileCheck)}
+              emptyMessage="No se encontraron tipos de documento"
+            />
 
-            <Select value={estadoFilter} onValueChange={(v) => setEstadoFilter(v ?? ALL_FILTER)}>
-              <SelectTrigger className="w-full sm:w-38 h-8.5 text-xs bg-background">
-                <Filter className="size-3.5 text-muted-foreground mr-1.5" />
-                <SelectValue placeholder="Vigencia">
-                  {estadoFilter === ALL_FILTER
-                    ? "Todas las vigencias"
-                    : estadoFilter === "vigente"
-                      ? "Vigente"
-                      : estadoFilter === "por_vencer"
-                        ? "Por vencer (30d)"
-                        : estadoFilter === "vencido"
-                          ? "Vencido"
-                          : "Permanente"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_FILTER}>Todas las vigencias</SelectItem>
-                <SelectItem value="vigente">Vigente</SelectItem>
-                <SelectItem value="por_vencer">Por vencer (30d)</SelectItem>
-                <SelectItem value="vencido">Vencido</SelectItem>
-                <SelectItem value="permanente">Permanente</SelectItem>
-              </SelectContent>
-            </Select>
+            <OptionsCombobox
+              options={DOCUMENTO_ESTADO_OPTIONS}
+              value={estadoFilter}
+              onValueChange={(value) =>
+                setEstadoFilter(value || ALL_DOCUMENTO_FILTER)
+              }
+              placeholder="Vigencia"
+              ariaLabel="Vigencia del documento"
+              size="sm"
+              className="w-full sm:w-38"
+              renderValue={(option) => renderConIcono(option, Filter)}
+              emptyMessage="No se encontraron estados"
+            />
           </div>
 
-          {(docSearch.trim() || tipoDocFilter !== ALL_FILTER || estadoFilter !== ALL_FILTER) && (
+          {hasDocumentoFilters && (
             <Button
               size="sm"
               variant="outline"
               onClick={() => {
-                setDocSearch("")
-                setTipoDocFilter(ALL_FILTER)
-                setEstadoFilter(ALL_FILTER)
+                docSearch.setSearch("")
+                setTipoDocFilter(ALL_DOCUMENTO_FILTER)
+                setEstadoFilter(ALL_DOCUMENTO_FILTER)
+                docSearch.setPage(0)
               }}
               className="h-8.5 text-xs shrink-0 gap-1"
             >
@@ -457,22 +436,24 @@ function ActivoDetailReport({
             className="text-destructive py-6"
           />
         ) : documentos.length === 0 ? (
-          <EmptyState
-            icon={<FileSearch className="size-8 text-muted-foreground/60" />}
-            title="Sin documentos registrados"
-            description={`El activo ${activo.codigo} no tiene pólizas, actas ni certificados asociados en el repositorio.`}
-            className="py-8"
-          />
-        ) : filteredDocumentos.length === 0 ? (
-          <EmptyState
-            icon={<Filter className="size-7 text-muted-foreground/60" />}
-            title="Sin coincidencias con los filtros"
-            description="No hay documentos que cumplan con los criterios de búsqueda seleccionados."
-            className="py-6"
-          />
+          hasDocumentoFilters ? (
+            <EmptyState
+              icon={<Filter className="size-7 text-muted-foreground/60" />}
+              title="Sin coincidencias con los filtros"
+              description="No hay documentos que cumplan con los criterios de búsqueda seleccionados."
+              className="py-6"
+            />
+          ) : (
+            <EmptyState
+              icon={<FileSearch className="size-8 text-muted-foreground/60" />}
+              title="Sin documentos registrados"
+              description={`El activo ${activo.codigo} no tiene pólizas, actas ni certificados asociados en el repositorio.`}
+              className="py-8"
+            />
+          )
         ) : (
           <div className="flex flex-col gap-2.5">
-            {filteredDocumentos.map((doc) => {
+            {documentos.map((doc) => {
               const tipoInfo = tiposDocumentoMap.get(doc.tipoDocumentoId)
               const estado = getDocumentoEstado(doc.fechaVencimiento)
               const isLoading = loadingDocId === doc.id
@@ -621,6 +602,13 @@ function ActivoDetailReport({
                 </div>
               )
             })}
+            {query.data ? (
+              <Pagination
+                page={query.data}
+                onPageChange={docSearch.setPage}
+                className="border-t-0 bg-transparent px-0 py-1"
+              />
+            ) : null}
           </div>
         )}
       </div>
@@ -670,6 +658,14 @@ export function ActivoConsultaDocumentosPage() {
   const tiposActivo = useMemo(
     () => tiposActivoQuery.data?.content ?? [],
     [tiposActivoQuery.data?.content],
+  )
+
+  const tipoActivoOptions = useMemo<OptionsComboboxOption[]>(
+    () => [
+      { value: ALL_FILTER, label: "Todos los tipos de activo" },
+      ...tiposActivo.map((tipo) => ({ value: tipo.id, label: tipo.nombre })),
+    ],
+    [tiposActivo],
   )
 
   const tiposDoc = useMemo(
@@ -735,31 +731,20 @@ export function ActivoConsultaDocumentosPage() {
           >
             {/* Filter Tipo de Activo inside master panel */}
             <div className="border-b px-3 py-2 bg-muted/15">
-              <Select
+              <OptionsCombobox
+                options={tipoActivoOptions}
                 value={tipoActivoId}
-                onValueChange={(val) => {
-                  setTipoActivoId(val ?? ALL_FILTER)
+                onValueChange={(value) => {
+                  setTipoActivoId(value || ALL_FILTER)
                   search.setPage(0)
                 }}
-              >
-                <SelectTrigger className="w-full h-8 text-xs bg-background">
-                  <Layers className="size-3.5 text-muted-foreground mr-1.5 shrink-0" />
-                  <SelectValue placeholder="Tipo de Activo">
-                    {tipoActivoId === ALL_FILTER
-                      ? "Todos los tipos de activo"
-                      : tiposActivo.find((t) => t.id === tipoActivoId)?.nombre ??
-                      "Tipo de Activo"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-64">
-                  <SelectItem value={ALL_FILTER}>Todos los tipos de activo</SelectItem>
-                  {tiposActivo.map((ta) => (
-                    <SelectItem key={ta.id} value={ta.id}>
-                      {ta.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Tipo de Activo"
+                ariaLabel="Tipo de activo"
+                size="sm"
+                className="w-full"
+                renderValue={(option) => renderConIcono(option, Layers)}
+                emptyMessage="No se encontraron tipos de activo"
+              />
             </div>
 
             {/* List */}

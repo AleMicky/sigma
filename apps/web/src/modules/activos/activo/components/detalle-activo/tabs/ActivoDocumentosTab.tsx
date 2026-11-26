@@ -13,6 +13,11 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import {
+  formatDateString,
+  formatFileSize,
+  getDocumentoEstado,
+} from "@/modules/activos/activo/lib/activo-documentos.utils"
 import { useDeleteActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.mutations"
 import { activoDocumentoQueries } from "@/modules/activos/activo-documento/api/activo-documento.queries"
 import type { ActivoDocumento } from "@/modules/activos/activo-documento/api/activo-documento.service"
@@ -20,6 +25,10 @@ import { tipoDocumentoQueries } from "@/modules/activos/tipo-documento/api/tipo-
 import { fetchAuthenticatedBlob } from "@/shared/api"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,51 +41,13 @@ import {
 } from "@/shared/components/ui/alert-dialog"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 
-export function getDocumentoEstado(
-  fechaVencimiento?: string | null,
-): "vigente" | "por_vencer" | "vencido" {
-  if (!fechaVencimiento) return "vigente"
-
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const parts = fechaVencimiento.split("-")
-  const expiry =
-    parts.length === 3
-      ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
-      : new Date(fechaVencimiento)
-  expiry.setHours(0, 0, 0, 0)
-
-  const diffTime = expiry.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  if (diffDays < 0) return "vencido"
-  if (diffDays <= 30) return "por_vencer"
-  return "vigente"
-}
-
-export function formatFileSize(bytes?: number | null): string {
-  if (!bytes || bytes <= 0) return "0 B"
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
-}
-
-export function formatDateString(dateStr?: string | null): string {
-  if (!dateStr) return "No registrada"
-  const parts = dateStr.split("-")
-  if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`
-  }
-  return dateStr
-}
+const DOCUMENTO_ESTADO_OPTIONS: OptionsComboboxOption[] = [
+  { value: "todos", label: "Todos los estados" },
+  { value: "vigente", label: "Vigente" },
+  { value: "por_vencer", label: "Próximo a vencer" },
+  { value: "vencido", label: "Vencido" },
+]
 
 type ActivoDocumentosTabProps = {
   activoId: string
@@ -120,7 +91,10 @@ export function ActivoDocumentosTab({
       direction: "DESC",
     }),
   )
-  const documentos = documentosQuery.data?.content ?? []
+  const documentos = useMemo(
+    () => documentosQuery.data?.content ?? [],
+    [documentosQuery.data?.content],
+  )
 
   const tiposDocumentoQuery = useQuery(
     tipoDocumentoQueries.list({
@@ -227,20 +201,15 @@ export function ActivoDocumentosTab({
             />
           </div>
 
-          <Select
+          <OptionsCombobox
+            options={DOCUMENTO_ESTADO_OPTIONS}
             value={docFilter}
-            onValueChange={(val) => handleFilterChange(val ?? "todos")}
-          >
-            <SelectTrigger className="w-40 h-8.5 text-xs">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los estados</SelectItem>
-              <SelectItem value="vigente">Vigente</SelectItem>
-              <SelectItem value="por_vencer">Próximo a vencer</SelectItem>
-              <SelectItem value="vencido">Vencido</SelectItem>
-            </SelectContent>
-          </Select>
+            onValueChange={(val) => handleFilterChange(val || "todos")}
+            placeholder="Estado"
+            ariaLabel="Estado del documento"
+            size="sm"
+            className="w-40"
+          />
         </div>
 
         <Button

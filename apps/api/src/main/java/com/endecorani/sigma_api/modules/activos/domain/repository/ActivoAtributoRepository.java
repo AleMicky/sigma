@@ -5,10 +5,14 @@ import com.endecorani.sigma_api.shared.domain.repository.CrudRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface ActivoAtributoRepository
         extends CrudRepository<ActivoAtributo, UUID> {
+
+    /** REQ-BIZ-004: catálogo completo para validar los atributos requeridos del tipo. */
+    List<ActivoAtributo> findByTipoActivoId(UUID tipoActivoId);
 
     Page<ActivoAtributo> findByTipoActivoId(
             UUID tipoActivoId,

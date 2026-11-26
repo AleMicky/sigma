@@ -23,9 +23,9 @@ import { ConductorCombobox } from "@/modules/gestionvehicular/conductor/componen
 import { conductorQueries } from "@/modules/gestionvehicular/conductor/api/conductor.queries"
 import {
   VehiculoResponsableCombobox,
-  isVehiculoDisponible,
   type VehiculoResponsableItem,
 } from "./VehiculoResponsableCombobox"
+import { isVehiculoDisponible } from "../lib/vehiculo-responsable.utils"
 import { isApiError } from "@/shared/api"
 import {
   AlertDialog,

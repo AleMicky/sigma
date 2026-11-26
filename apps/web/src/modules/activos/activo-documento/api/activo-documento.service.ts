@@ -1,6 +1,8 @@
 import { http } from "@/shared/api"
-import type { PageParams, PageResponse } from "@/shared/types/api.types"
+import type { PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
+
+import { normalizeDocumentoFilters } from "../lib/activo-documento.utils"
 
 export type ActivoDocumento = AuditableEntity & {
   activoId: string
@@ -26,16 +28,59 @@ export type ActivoDocumentoPayload = {
   fechaVencimiento?: string | null
 }
 
-export type ActivoDocumentoFilters = PageParams & {
+export type ActivoDocumentoEstado =
+  | "VIGENTE"
+  | "POR_VENCER"
+  | "VENCIDO"
+  | "PERMANENTE"
+
+export type ActivoDocumentoEstadoInput =
+  | ActivoDocumentoEstado
+  | Lowercase<ActivoDocumentoEstado>
+
+export type ActivoDocumentoResumenFilters = {
   activoId?: string
+  query?: string
   tipoDocumentoId?: string
+  estado?: ActivoDocumentoEstadoInput
+}
+
+export type ActivoDocumentoFilters = ActivoDocumentoResumenFilters & {
+  page?: number
+  size?: number
+  sortBy?: string
+  direction?: "ASC" | "DESC"
+}
+
+export type ActivoDocumentoResumen = {
+  total: number
+  vigentes: number
+  porVencer: number
+  vencidos: number
+  permanentes: number
+}
+
+export const EMPTY_ACTIVO_DOCUMENTO_RESUMEN: ActivoDocumentoResumen = {
+  total: 0,
+  vigentes: 0,
+  porVencer: 0,
+  vencidos: 0,
+  permanentes: 0,
 }
 
 export async function listActivoDocumentos(
   filters?: ActivoDocumentoFilters,
 ): Promise<PageResponse<ActivoDocumento>> {
   return http.get<PageResponse<ActivoDocumento>>("/activo-documentos", {
-    params: filters,
+    params: normalizeDocumentoFilters(filters),
+  })
+}
+
+export async function getActivoDocumentosResumen(
+  filters?: ActivoDocumentoResumenFilters,
+): Promise<ActivoDocumentoResumen> {
+  return http.get<ActivoDocumentoResumen>("/activo-documentos/resumen", {
+    params: normalizeDocumentoFilters(filters),
   })
 }
 

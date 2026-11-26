@@ -3,6 +3,10 @@ import { AlertTriangle, Loader2 } from "lucide-react"
 
 import { ActivoCombobox } from "@/modules/mantenimientos/orden-trabajo/components/ActivoCombobox"
 import { EmpleadoCombobox } from "@/modules/organizacion/empleado/components/EmpleadoCombobox"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -14,13 +18,6 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
 
 import {
@@ -28,6 +25,22 @@ import {
   useRegistrarIncidenteMutation,
 } from "../api/incidente.mutations"
 import type { IncidenteActivo } from "../api/incidente.types"
+
+const TIPO_INCIDENTE_OPTIONS: OptionsComboboxOption[] = [
+  { value: "COLISION", label: "Colisión / Choque" },
+  { value: "FALLA_MECANICA", label: "Falla Mecánica Grave" },
+  { value: "ROBO_HURTO", label: "Robo / Pérdida" },
+  { value: "DANO_MATERIAL", label: "Daño Material / Vandalismo" },
+  { value: "ACCIDENTE_LABORAL", label: "Accidente Laboral" },
+  { value: "OTRO", label: "Otro Siniestro" },
+]
+
+const PRIORIDAD_OPTIONS: OptionsComboboxOption[] = [
+  { value: "BAJA", label: "Baja" },
+  { value: "MEDIA", label: "Media" },
+  { value: "ALTA", label: "Alta" },
+  { value: "CRITICA", label: "Crítica" },
+]
 
 interface RegistrarIncidenteDialogProps {
   open: boolean
@@ -184,45 +197,33 @@ function RegistrarIncidenteDialogContent({
           {/* Tipo de Incidente y Prioridad */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="font-semibold text-sm">
+              <Label htmlFor="tipo-incidente" className="font-semibold text-sm">
                 Tipo de Incidente <span className="text-red-500">*</span>
               </Label>
-              <Select
+              <OptionsCombobox
+                id="tipo-incidente"
+                options={TIPO_INCIDENTE_OPTIONS}
                 value={tipoIncidente}
-                onValueChange={(val: string | null) => setTipoIncidente(val ?? "COLISION")}
-              >
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Seleccione el tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="COLISION">Colisión / Choque</SelectItem>
-                  <SelectItem value="FALLA_MECANICA">Falla Mecánica Grave</SelectItem>
-                  <SelectItem value="ROBO_HURTO">Robo / Pérdida</SelectItem>
-                  <SelectItem value="DANO_MATERIAL">Daño Material / Vandalismo</SelectItem>
-                  <SelectItem value="ACCIDENTE_LABORAL">Accidente Laboral</SelectItem>
-                  <SelectItem value="OTRO">Otro Siniestro</SelectItem>
-                </SelectContent>
-              </Select>
+                onValueChange={(val) => setTipoIncidente(val || "COLISION")}
+                placeholder="Seleccione el tipo"
+                ariaLabel="Tipo de Incidente"
+                className="w-full"
+              />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="font-semibold text-sm">
+              <Label htmlFor="prioridad-incidente" className="font-semibold text-sm">
                 Nivel de Prioridad <span className="text-red-500">*</span>
               </Label>
-              <Select
+              <OptionsCombobox
+                id="prioridad-incidente"
+                options={PRIORIDAD_OPTIONS}
                 value={prioridad}
-                onValueChange={(val: string | null) => setPrioridad(val ?? "MEDIA")}
-              >
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Seleccione prioridad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BAJA">Baja</SelectItem>
-                  <SelectItem value="MEDIA">Media</SelectItem>
-                  <SelectItem value="ALTA">Alta</SelectItem>
-                  <SelectItem value="CRITICA">Crítica</SelectItem>
-                </SelectContent>
-              </Select>
+                onValueChange={(val) => setPrioridad(val || "MEDIA")}
+                placeholder="Seleccione prioridad"
+                ariaLabel="Nivel de Prioridad"
+                className="w-full"
+              />
             </div>
           </div>
 

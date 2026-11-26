@@ -1,7 +1,7 @@
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
-import { TIPO_UBICACION_CONFIG } from "../TipoUbicacionBadge"
+import { TIPO_UBICACION_CONFIG } from "../../lib/tipo-ubicacion.config"
 import type { TipoUbicacion } from "../../api/ubicacion.service"
 
 // Create a custom SVG marker icon based on location type

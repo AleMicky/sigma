@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.activos.application.service;
 
 import com.endecorani.sigma_api.modules.activos.application.dto.ActivoAtributoOpcionDto;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoAtributoValorRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoAtributosReplacementRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoAtributoValorResponse;
 import com.endecorani.sigma_api.modules.activos.domain.model.Activo;
 import com.endecorani.sigma_api.modules.activos.domain.model.ActivoAtributo;
@@ -31,8 +32,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -89,25 +92,95 @@ public class ActivoAtributoValorService extends AbstractCrudService<
         );
     }
 
-    @Override
-    protected ActivoAtributoValor toDomain(ActivoAtributoValorRequest request) {
-        Activo activo = requireActivo(request.activoId());
-        ActivoAtributo atributo = requireAtributo(request.activoAtributoId());
+    /**
+     * REQ-BIZ-004: reemplaza todo el conjunto de valores de atributos de un
+     * activo en una sola transacción. Todas las validaciones (catálogo del
+     * tipo, tipo de dato y atributos requeridos) se ejecutan antes de borrar
+     * los valores anteriores, de modo que un fallback deja los datos intactos.
+     */
+    @Transactional
+    public List<ActivoAtributoValorResponse> replaceValores(
+            UUID activoId,
+            ActivoAtributosReplacementRequest request
+    ) {
+        Activo activo = requireActivo(activoId);
+        Map<UUID, ActivoAtributosReplacementRequest.AtributoValorItem> valoresPorAtributo =
+                indexAndValidateItems(request);
+
+        validateRequiredAttributes(activo, valoresPorAtributo.keySet());
+
+        List<ActivoAtributoValor> nuevos = valoresPorAtributo.values().stream()
+                .map(item -> buildValor(activo, item.atributoId(), item.valor()))
+                .toList();
+
+        activoAtributoValorRepository.deleteAllByActivoId(activoId);
+
+        return nuevos.stream()
+                .map(valor -> toResponse(activoAtributoValorRepository.save(valor)))
+                .toList();
+    }
+
+    private Map<UUID, ActivoAtributosReplacementRequest.AtributoValorItem> indexAndValidateItems(
+            ActivoAtributosReplacementRequest request
+    ) {
+        List<ActivoAtributosReplacementRequest.AtributoValorItem> items =
+                request == null || request.valores() == null ? List.of() : request.valores();
+
+        Map<UUID, ActivoAtributosReplacementRequest.AtributoValorItem> indexed = new LinkedHashMap<>();
+        for (ActivoAtributosReplacementRequest.AtributoValorItem item : items) {
+            if (item == null || item.atributoId() == null) {
+                throw new BusinessException(
+                        "ATRIBUTO_ID_REQUERIDO",
+                        "Cada valor debe indicar el atributo correspondiente"
+                );
+            }
+            if (indexed.put(item.atributoId(), item) != null) {
+                throw new BusinessException(
+                        "ATRIBUTO_DUPLICADO_EN_VALORES",
+                        "El atributo '%s' aparece más de una vez en la lista de valores"
+                                .formatted(item.atributoId())
+                );
+            }
+        }
+        return indexed;
+    }
+
+    private void validateRequiredAttributes(Activo activo, Set<UUID> presentes) {
+        List<String> faltantes = activoAtributoRepository.findByTipoActivoId(activo.getTipoActivoId())
+                .stream()
+                .filter(atributo -> Boolean.TRUE.equals(atributo.getRequerido()))
+                .filter(atributo -> !presentes.contains(atributo.getId()))
+                .map(atributo -> atributo.getCodigo() != null
+                        ? atributo.getCodigo()
+                        : String.valueOf(atributo.getId()))
+                .toList();
+
+        if (!faltantes.isEmpty()) {
+            throw new BusinessException(
+                    "ATRIBUTOS_REQUERIDOS_FALTANTES",
+                    "Faltan los atributos requeridos: %s".formatted(String.join(", ", faltantes))
+            );
+        }
+    }
+
+    /** Construye y valida un valor sin aplicar la restricción de unicidad de alta suelta. */
+    private ActivoAtributoValor buildValor(Activo activo, UUID atributoId, String rawValor) {
+        ActivoAtributo atributo = requireAtributo(atributoId);
         validateTipoActivoMatch(activo, atributo);
-        validateUniqueForCreate(activo.getId(), atributo.getId());
-
         TipoDato tipoDato = requireTipoDato(atributo.getTipoDatoId());
-        String valor = normalizeAndValidateValor(
-                request.valor(),
-                atributo,
-                tipoDato
-        );
-
         return ActivoAtributoValor.builder()
                 .activoId(activo.getId())
                 .activoAtributoId(atributo.getId())
-                .valor(valor)
+                .valor(normalizeAndValidateValor(rawValor, atributo, tipoDato))
                 .build();
+    }
+
+    @Override
+    protected ActivoAtributoValor toDomain(ActivoAtributoValorRequest request) {
+        Activo activo = requireActivo(request.activoId());
+        ActivoAtributoValor valor = buildValor(activo, request.activoAtributoId(), request.valor());
+        validateUniqueForCreate(activo.getId(), valor.getActivoAtributoId());
+        return valor;
     }
 
     @Override

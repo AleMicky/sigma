@@ -12,16 +12,13 @@ import {
 
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
 import { CambiarEstadoOperativoDialog } from "@/modules/activos/activo/components/CambiarEstadoOperativoDialog"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card } from "@/shared/components/ui/card"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { Skeleton } from "@/shared/components/ui/skeleton"
 import {
   Table,
@@ -33,6 +30,13 @@ import {
 } from "@/shared/components/ui/table"
 import { formatDate } from "@/shared/lib/format-date"
 import { DisponibilidadActivoDetalleDialog } from "./DisponibilidadActivoDetalleDialog"
+
+const PAGE_SIZE_OPTIONS: OptionsComboboxOption[] = [
+  { value: "10", label: "10" },
+  { value: "20", label: "20" },
+  { value: "50", label: "50" },
+  { value: "100", label: "100" },
+]
 
 export interface DisponibilidadTableProps {
   activos: Activo[]
@@ -285,20 +289,16 @@ export function DisponibilidadTable({
 
             <div className="flex items-center gap-1.5 pl-3 border-l border-border/50">
               <span>Por página:</span>
-              <Select
+              <OptionsCombobox
+                options={PAGE_SIZE_OPTIONS}
                 value={String(pageSize)}
-                onValueChange={(val) => onPageSizeChange(Number(val))}
-              >
-                <SelectTrigger className="h-7 w-16 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
+                onValueChange={(val) => {
+                  if (val) onPageSizeChange(Number(val))
+                }}
+                ariaLabel="Registros por página"
+                size="sm"
+                className="w-16"
+              />
             </div>
           </div>
 

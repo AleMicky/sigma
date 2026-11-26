@@ -48,7 +48,7 @@ import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/shared/lib/utils"
 
-import { formatFileSize } from "../tabs/ActivoDocumentosTab"
+import { formatFileSize } from "@/modules/activos/activo/lib/activo-documentos.utils"
 
 type ActivoAddDocumentModalProps = {
   open: boolean
@@ -138,7 +138,10 @@ function ActivoAddDocumentModalContent({
     }),
     enabled: open,
   })
-  const tiposDocumento = tiposDocumentoQuery.data?.content ?? []
+  const tiposDocumento = useMemo(
+    () => tiposDocumentoQuery.data?.content ?? [],
+    [tiposDocumentoQuery.data?.content],
+  )
 
   const [tipoDocumentoId, setTipoDocumentoId] = useState(
     () => itemToEdit?.tipoDocumentoId || "",

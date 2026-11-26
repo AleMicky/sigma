@@ -51,7 +51,10 @@ export function InsumosPage() {
       direction: "ASC",
     }),
   )
-  const categorias = categoriasQuery.data?.content ?? []
+  const categorias = useMemo(
+    () => categoriasQuery.data?.content ?? [],
+    [categoriasQuery.data?.content],
+  )
 
   const categoriasById = useMemo(() => {
     const map = new Map<string, { id: string; nombre: string; codigo: string }>()
@@ -75,7 +78,10 @@ export function InsumosPage() {
       direction: "ASC",
     }),
   )
-  const unidadesMedida = unidadesMedidaQuery.data?.content ?? []
+  const unidadesMedida = useMemo(
+    () => unidadesMedidaQuery.data?.content ?? [],
+    [unidadesMedidaQuery.data?.content],
+  )
 
   const unidadesMedidaById = useMemo(() => {
     const map = new Map<string, { id: string; nombre: string; simbolo?: string | null; codigo?: string }>()

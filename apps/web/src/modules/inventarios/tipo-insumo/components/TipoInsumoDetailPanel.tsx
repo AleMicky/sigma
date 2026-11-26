@@ -93,7 +93,10 @@ export function TipoInsumoDetailPanel({
     return map
   }, [tiposDatoQuery.data])
 
-  const rawAtributos = atributosQuery.data?.content ?? []
+  const rawAtributos = useMemo(
+    () => atributosQuery.data?.content ?? [],
+    [atributosQuery.data?.content],
+  )
   const filteredAtributos = useMemo(() => {
     if (!search.trim()) return rawAtributos
     const term = search.toLowerCase()

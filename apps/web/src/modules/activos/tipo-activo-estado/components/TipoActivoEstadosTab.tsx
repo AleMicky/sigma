@@ -7,6 +7,10 @@ import { getErrorMessage } from "@/shared/api"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -18,13 +22,6 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog"
 import { Field, FieldLabel } from "@/shared/components/ui/field"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { cn } from "@/shared/lib/utils"
 
 import { estadoOperativoQueries } from "@/modules/activos/estado-operativo/api/estado-operativo.queries"
@@ -67,6 +64,28 @@ export function TipoActivoEstadosTab({ tipoActivoId }: TipoActivoEstadosTabProps
   // Estados disponibles que aún no han sido asignados
   const assignedIds = new Set(asignaciones.map((a) => a.estadoOperativoId))
   const estadosDisponibles = todosEstados.filter((e) => !assignedIds.has(e.id))
+
+  const estadoOptions: OptionsComboboxOption[] = estadosDisponibles.map((estado) => ({
+    value: estado.id,
+    label: estado.nombre,
+    keywords: [estado.codigo],
+  }))
+
+  const renderEstado = (option: OptionsComboboxOption) => {
+    const estado = estadosMap.get(option.value)
+    return (
+      <span className="flex min-w-0 items-center gap-2 truncate">
+        <span
+          className="size-2.5 shrink-0 rounded-full"
+          style={{ backgroundColor: estado?.color || "#10B981" }}
+        />
+        <span className="truncate">{option.label}</span>
+        <span className="font-mono text-xs text-muted-foreground">
+          ({estado?.codigo})
+        </span>
+      </span>
+    )
+  }
 
   async function handleAssign() {
     if (!selectedEstadoId) {
@@ -264,30 +283,19 @@ export function TipoActivoEstadosTab({ tipoActivoId }: TipoActivoEstadosTabProps
           <div className="space-y-4 py-2">
             <Field>
               <FieldLabel htmlFor="estado-select">Estado Operativo</FieldLabel>
-              <Select
+              <OptionsCombobox
+                id="estado-select"
+                options={estadoOptions}
                 value={selectedEstadoId}
-                onValueChange={(val) => val && setSelectedEstadoId(val)}
-              >
-                <SelectTrigger id="estado-select">
-                  <SelectValue placeholder="Seleccionar estado..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {estadosDisponibles.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="size-2.5 rounded-full"
-                          style={{ backgroundColor: e.color || "#10B981" }}
-                        />
-                        <span>{e.nombre}</span>
-                        <span className="font-mono text-xs text-muted-foreground">
-                          ({e.codigo})
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onValueChange={(val) => {
+                  if (val) setSelectedEstadoId(val)
+                }}
+                placeholder="Seleccionar estado..."
+                ariaLabel="Estado Operativo"
+                renderOption={renderEstado}
+                renderValue={renderEstado}
+                emptyMessage="No hay estados disponibles"
+              />
             </Field>
 
             <label className="flex items-center gap-2.5 cursor-pointer text-sm font-medium text-foreground select-none">

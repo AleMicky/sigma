@@ -34,7 +34,7 @@ export function RolUsuariosTab({ rol }: RolUsuariosTabProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
   const usuariosQuery = useQuery(rolQueries.usuarios(rol.id))
-  const usuarios = usuariosQuery.data ?? []
+  const usuarios = useMemo(() => usuariosQuery.data ?? [], [usuariosQuery.data])
 
   const filteredUsuarios = useMemo(() => {
     const query = searchQuery.toLowerCase().trim()

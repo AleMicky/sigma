@@ -9,7 +9,10 @@ import { activoAtributoQueries } from "@/modules/activos/activo-atributo/api/act
 import type { ActivoAtributo } from "@/modules/activos/activo-atributo/api/activo-atributo.service"
 import { activoAtributoValorKeys } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.keys"
 import { activoAtributoValorQueries } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.queries"
-import type { ActivoAtributoValor } from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.service"
+import {
+  replaceActivoAtributos,
+  type ActivoAtributoValor,
+} from "@/modules/activos/activo-atributo-valor/api/activo-atributo-valor.service"
 import { estadoOperativoQueries } from "@/modules/activos/estado-operativo/api/estado-operativo.queries"
 import { tipoActivoQueries } from "@/modules/activos/tipo-activo/api/tipo-activo.queries"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
@@ -38,7 +41,11 @@ import { ActivoFormHeader } from "../components/form/ActivoFormHeader"
 import { ActivoFormImageSection } from "../components/form/ActivoFormImageSection"
 import { ActivoFormMainSection } from "../components/form/ActivoFormMainSection"
 import { ActivoLivePreviewCard } from "../components/form/ActivoLivePreviewCard"
-import { syncAtributoValores, validateAtributos } from "../lib/activo-form.utils"
+import {
+  buildReplaceAtributosPayload,
+  mapAtributoValidationErrors,
+  validateAtributos,
+} from "../lib/activo-form.utils"
 import {
   includeCurrentEstadoOption,
   resolveEstadoPredeterminadoId,
@@ -211,12 +218,10 @@ export function ActivoFormPage({
           await deleteActivoImagen(saved.id)
         }
 
-        await syncAtributoValores({
-          activoId: saved.id,
-          atributos,
-          valores: currentValores,
-          existentes,
-        })
+        await replaceActivoAtributos(
+          saved.id,
+          buildReplaceAtributosPayload(atributos, currentValores, existentes),
+        )
 
         void queryClient.invalidateQueries({ queryKey: activoKeys.lists() })
         void queryClient.invalidateQueries({
@@ -228,6 +233,10 @@ export function ActivoFormPage({
 
         await navigate({ to: routes.activos.listarActivos })
       } catch (error) {
+        const serverFieldErrors = mapAtributoValidationErrors(error, atributos)
+        if (Object.keys(serverFieldErrors).length > 0) {
+          setAtributoErrors(serverFieldErrors)
+        }
         setFormError(
           isApiError(error)
             ? error.message

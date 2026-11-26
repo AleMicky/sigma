@@ -46,4 +46,9 @@ public class ActivoDocumentoRepositoryImpl
                 .findAll(ActivoDocumentoSpecifications.withCriteria(criteria), pageable)
                 .map(mapper::toDomain);
     }
+
+    @Override
+    public long count(ActivoDocumentoSearchCriteria criteria) {
+        return springRepository.count(ActivoDocumentoSpecifications.withCriteria(criteria));
+    }
 }

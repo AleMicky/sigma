@@ -1,15 +1,13 @@
+import { useMemo } from "react"
 import { FileSpreadsheet, Filter, LayoutGrid, List, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
+import {
+  OptionsCombobox,
+  type OptionsComboboxOption,
+} from "@/shared/components/options-combobox"
 import { SearchField } from "@/shared/components/search-field"
 import { Button } from "@/shared/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
 import { cn } from "@/shared/lib/utils"
 import type { TipoActivo } from "@/modules/activos/tipo-activo/api/tipo-activo.service"
 import { DEFAULT_TIPO_ACTIVO_COLOR } from "@/modules/activos/tipo-activo/lib/tipo-activo-colors"
@@ -60,6 +58,53 @@ export function ActivoFilterToolbar({
   viewMode = "list",
   onViewModeChange,
 }: Readonly<ActivoFilterToolbarProps>) {
+  const tipoOptions = useMemo<OptionsComboboxOption[]>(
+    () => [
+      { value: ALL_TIPOS, label: "Todos los tipos" },
+      ...tipos.map((tipo) => ({ value: tipo.id, label: tipo.nombre })),
+    ],
+    [tipos],
+  )
+
+  const renderTipoValor = (option: OptionsComboboxOption) => {
+    const tipo = tiposById.get(option.value)
+    if (!tipo) {
+      return (
+        <span className="flex min-w-0 items-center gap-2 truncate">
+          <Filter className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="truncate">{option.label}</span>
+        </span>
+      )
+    }
+    return (
+      <span className="flex min-w-0 items-center gap-1.5 truncate">
+        <Filter className="size-3.5 shrink-0 text-muted-foreground" />
+        <span
+          className="size-2 shrink-0 rounded-full"
+          style={{
+            backgroundColor: tipo.color || DEFAULT_TIPO_ACTIVO_COLOR,
+          }}
+        />
+        <span className="truncate">{option.label}</span>
+      </span>
+    )
+  }
+
+  const renderTipoOption = (option: OptionsComboboxOption) => {
+    const tipo = tiposById.get(option.value)
+    if (!tipo) return <span className="truncate">{option.label}</span>
+    return (
+      <span className="flex min-w-0 items-center gap-2 truncate">
+        <span
+          className="size-2 shrink-0 rounded-full"
+          style={{
+            backgroundColor: tipo.color || DEFAULT_TIPO_ACTIVO_COLOR,
+          }}
+        />
+        <span className="truncate">{option.label}</span>
+      </span>
+    )
+  }
 
   return (
     <div className="flex shrink-0 flex-col gap-3 py-3 sm:py-4 border-b border-border/60">
@@ -177,54 +222,18 @@ export function ActivoFilterToolbar({
         />
 
         <div className="flex items-center gap-2 shrink-0">
-          <Select
+          <OptionsCombobox
+            options={tipoOptions}
             value={tipoActivoId}
-            onValueChange={(val) => onTipoActivoChange(val ?? ALL_TIPOS)}
-          >
-            <SelectTrigger
-              className="w-full sm:w-[220px] h-9 text-xs"
-              aria-label="Filtrar por tipo"
-            >
-              <div className="flex items-center gap-2 truncate">
-                <Filter className="size-3.5 text-muted-foreground shrink-0" />
-                <SelectValue placeholder="Todos los tipos">
-                  {tipoActivoId === ALL_TIPOS ? (
-                    "Todos los tipos"
-                  ) : (
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span
-                        className="size-2 rounded-full shrink-0"
-                        style={{
-                          backgroundColor:
-                            tiposById.get(tipoActivoId)?.color ||
-                            DEFAULT_TIPO_ACTIVO_COLOR,
-                        }}
-                      />
-                      <span className="truncate">
-                        {tiposById.get(tipoActivoId)?.nombre}
-                      </span>
-                    </div>
-                  )}
-                </SelectValue>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_TIPOS}>Todos los tipos</SelectItem>
-              {tipos.map((tipo) => (
-                <SelectItem key={tipo.id} value={tipo.id}>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="size-2 rounded-full shrink-0"
-                      style={{
-                        backgroundColor: tipo.color || DEFAULT_TIPO_ACTIVO_COLOR,
-                      }}
-                    />
-                    <span>{tipo.nombre}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onValueChange={(val) => onTipoActivoChange(val || ALL_TIPOS)}
+            placeholder="Todos los tipos"
+            ariaLabel="Filtrar por tipo"
+            size="sm"
+            className="w-full sm:w-[220px]"
+            renderOption={renderTipoOption}
+            renderValue={renderTipoValor}
+            emptyMessage="No se encontraron tipos de activo"
+          />
 
           {hasActiveFilters ? (
             <Button

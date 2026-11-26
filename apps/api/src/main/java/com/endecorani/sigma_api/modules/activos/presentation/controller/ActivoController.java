@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.modules.activos.presentation.controller;
 
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.ActivoRequest;
+import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResumenResponse;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.CambiarEstadoOperativoRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.ToggleActivoRequest;
 import com.endecorani.sigma_api.modules.activos.application.dto.response.ActivoResponse;
@@ -72,6 +73,18 @@ public class ActivoController {
                                                 activoService.update(id, request)));
         }
 
+        @GetMapping("/resumen")
+        @Operation(summary = "KPIs agregados de activos con los mismos filtros del listado (REQ-BIZ-006)")
+        public ResponseEntity<ApiResponse<ActivoResumenResponse>> resumen(
+                        @RequestParam(required = false) String q,
+                        @RequestParam(required = false) UUID tipoActivoId,
+                        @RequestParam(required = false) UUID ubicacionId,
+                        @RequestParam(required = false) Boolean activo) {
+                return ResponseEntity.ok(
+                                ApiResponse.success(
+                                                activoService.resumen(q, tipoActivoId, ubicacionId, activo)));
+        }
+
         @GetMapping("/{id}")
         @Operation(summary = "Obtener un activo por ID")
         public ResponseEntity<ApiResponse<ActivoResponse>> findById(
@@ -82,15 +95,16 @@ public class ActivoController {
         }
 
         @GetMapping
-        @Operation(summary = "Listar activos con paginación y filtros opcionales (búsqueda, tipo de activo, estado activo/inactivo)")
+        @Operation(summary = "Listar activos con paginación y filtros opcionales (búsqueda, tipo de activo, ubicación, estado activo/inactivo)")
         public ResponseEntity<ApiResponse<PageResponse<ActivoResponse>>> findAll(
                         @RequestParam(required = false) String q,
                         @RequestParam(required = false) UUID tipoActivoId,
+                        @RequestParam(required = false) UUID ubicacionId,
                         @RequestParam(required = false) Boolean activo,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
                 return ResponseEntity.ok(
                                 ApiResponse.success(
-                                                activoService.findAll(q, tipoActivoId, activo, pageRequest)));
+                                                activoService.findAll(q, tipoActivoId, ubicacionId, activo, pageRequest)));
         }
 
         @GetMapping("/disponibilidad")

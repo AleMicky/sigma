@@ -48,7 +48,7 @@ import {
   type OrdenTrabajoActividadEvidencia,
 } from "../api/orden-trabajo.service"
 import { solicitudQueries } from "@/modules/mantenimientos/solicitud/api/solicitud.queries"
-import { formatEstadoLabel } from "./OrdenTrabajoMasterPanel"
+import { formatEstadoLabel } from "../lib/orden-trabajo.utils"
 
 function formatFileSize(bytes?: number | null): string {
   if (!bytes || bytes === 0) return ""

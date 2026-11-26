@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react"
 
+import { ESTADOS_SOLICITUD } from "../lib/reporte-solicitudes.constants"
 import {
   ReporteVehiculoCombobox,
   type ReporteVehiculoItemData,
@@ -65,16 +66,6 @@ export interface ReporteSolicitudesFiltrosBarProps {
   totalItems?: number
   placaSeleccionada?: string | null
 }
-
-export const ESTADOS_SOLICITUD = [
-  { value: "TODOS", label: "Todos los Estados" },
-  { value: "BORRADOR", label: "Borrador" },
-  { value: "SOLICITADO", label: "Solicitado (Pendiente)" },
-  { value: "ASIGNADO", label: "Asignado" },
-  { value: "EN_CURSO", label: "En Curso / Viaje" },
-  { value: "FINALIZADA", label: "Finalizada" },
-  { value: "RECHAZADA", label: "Rechazada / Cancelada" },
-]
 
 export function ReporteSolicitudesFiltrosBar({
   activoId,

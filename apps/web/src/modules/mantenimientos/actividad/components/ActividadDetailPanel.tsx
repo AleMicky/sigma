@@ -107,7 +107,10 @@ export function ActividadDetailPanel({
     enabled: Boolean(actividad?.id),
   })
 
-  const rawAplicaciones = aplicacionesQuery.data?.content ?? []
+  const rawAplicaciones = useMemo(
+    () => aplicacionesQuery.data?.content ?? [],
+    [aplicacionesQuery.data?.content],
+  )
 
   const aplicaciones = useMemo<EnrichedAplicacion[]>(() => {
     return rawAplicaciones.map((app) => {

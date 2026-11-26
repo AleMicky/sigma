@@ -11,7 +11,7 @@ import {
 } from "@/shared/components/ui/select"
 
 import type { TipoUbicacion } from "../api/ubicacion.service"
-import { TIPO_UBICACION_CONFIG } from "./TipoUbicacionBadge"
+import { TIPO_UBICACION_CONFIG } from "../lib/tipo-ubicacion.config"
 
 const ALL_TIPOS = "__all__"
 

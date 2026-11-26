@@ -10,10 +10,8 @@ import {
 } from "lucide-react"
 
 import { ConductorCombobox } from "@/modules/gestionvehicular/conductor/components/ConductorCombobox"
-import {
-  extractPlaca,
-  VehiculoResponsableCombobox,
-} from "@/modules/gestionvehicular/asignacion-vehicular/components/VehiculoResponsableCombobox"
+import { VehiculoResponsableCombobox } from "@/modules/gestionvehicular/asignacion-vehicular/components/VehiculoResponsableCombobox"
+import { extractPlaca } from "@/modules/gestionvehicular/asignacion-vehicular/lib/vehiculo-responsable.utils"
 import {
   getPlacaFromAtributos,
   getVehiculoTituloDinamico,
