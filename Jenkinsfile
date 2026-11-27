@@ -46,8 +46,8 @@ pipeline {
                         exit 1
                     fi
 
-                    # Variables críticas declaradas en compose*.yml. Solo se imprimen nombres, nunca valores.
-                    REQUIRED_VARS="SPRING_PROFILES_ACTIVE DB_HOST DB_NAME DB_USERNAME DB_PASSWORD CORS_ALLOWED_ORIGINS KEYCLOAK_ISSUER_URI KEYCLOAK_TOKEN_URL KEYCLOAK_LOGOUT_URL KEYCLOAK_CLIENT_ID KEYCLOAK_CLIENT_SECRET FLOWABLE_BASE_URL FLOWABLE_USERNAME FLOWABLE_PASSWORD VITE_API_URL"
+                    # Variables críticas declaradas como requeridas en compose.prod.yml (SPRING_PROFILES_ACTIVE=prod está fijado en el compose). Solo se imprimen nombres, nunca valores.
+                    REQUIRED_VARS="DB_HOST DB_NAME DB_USERNAME DB_PASSWORD CORS_ALLOWED_ORIGINS KEYCLOAK_ISSUER_URI KEYCLOAK_TOKEN_URL KEYCLOAK_LOGOUT_URL KEYCLOAK_CLIENT_ID KEYCLOAK_CLIENT_SECRET FLOWABLE_BASE_URL FLOWABLE_USERNAME FLOWABLE_PASSWORD VITE_API_URL"
 
                     awk -v vars="${REQUIRED_VARS}" -v env_file="${ENV_FILE}" '
                         BEGIN {
