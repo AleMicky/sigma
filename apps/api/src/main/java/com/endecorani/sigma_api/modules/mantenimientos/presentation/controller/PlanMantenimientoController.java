@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +31,7 @@ import java.util.UUID;
         description = "Administración de los planes de mantenimiento preventivo y técnico"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class PlanMantenimientoController {
 
     private final PlanMantenimientoService service;
@@ -38,8 +40,10 @@ public class PlanMantenimientoController {
     @Operation(summary = "Listar planes de mantenimiento con paginación, filtro por tipo de activo y búsqueda opcional (search o q)")
     public ResponseEntity<ApiResponse<PageResponse<PlanMantenimientoResponse>>> listar(
             @RequestParam(required = false) UUID tipoActivoId,
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute SearchPageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.listar(pageRequest.getSearchTerm(), tipoActivoId, pageRequest.toPageRequest()))
         );
@@ -77,6 +81,7 @@ public class PlanMantenimientoController {
 
     @PostMapping
     @Operation(summary = "Crear un nuevo plan de mantenimiento")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<PlanMantenimientoResponse>> crear(
             @Valid @RequestBody PlanMantenimientoRequest dto
     ) {
@@ -88,6 +93,7 @@ public class PlanMantenimientoController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar un plan de mantenimiento existente")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<PlanMantenimientoResponse>> actualizar(
             @PathVariable UUID id,
             @Valid @RequestBody PlanMantenimientoUpdate dto
@@ -100,6 +106,7 @@ public class PlanMantenimientoController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar un plan de mantenimiento")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<Void>> eliminar(
             @PathVariable UUID id
     ) {

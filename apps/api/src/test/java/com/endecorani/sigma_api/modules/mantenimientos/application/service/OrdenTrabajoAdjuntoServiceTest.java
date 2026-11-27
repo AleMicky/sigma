@@ -7,6 +7,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.OrdenTr
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.OrdenTrabajoRepository;
 import com.endecorani.sigma_api.shared.application.storage.DocumentStorageService;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -54,8 +55,10 @@ class OrdenTrabajoAdjuntoServiceTest {
                 .url(initialUrl)
                 .build();
 
+        UUID ordenTrabajoId = domain.getOrdenTrabajoId();
         List<UUID> capturedIds = new ArrayList<>();
-        when(repository.findById(adjuntoId)).thenReturn(Optional.of(domain));
+        when(ordenTrabajoRepository.findById(ordenTrabajoId)).thenReturn(Optional.of(mock(com.endecorani.sigma_api.modules.mantenimientos.domain.model.OrdenTrabajo.class)));
+        when(repository.findByIdAndOrdenTrabajoId(adjuntoId, ordenTrabajoId)).thenReturn(Optional.of(domain));
         when(documentStorageService.store(eq("orden_trabajo_adjuntos"), any(UUID.class), any(MultipartFile.class)))
                 .thenAnswer(inv -> {
                     UUID fileId = inv.getArgument(1);
@@ -73,11 +76,11 @@ class OrdenTrabajoAdjuntoServiceTest {
         });
 
         MockMultipartFile pdf1 = new MockMultipartFile("file", "ot1.pdf", "application/pdf", "%PDF-1.4".getBytes());
-        OrdenTrabajoAdjuntoResponse r1 = service.replaceFile(adjuntoId, pdf1);
+        OrdenTrabajoAdjuntoResponse r1 = service.replaceFile(ordenTrabajoId, adjuntoId, pdf1);
         String url1 = r1.url();
 
         MockMultipartFile pdf2 = new MockMultipartFile("file", "ot2.pdf", "application/pdf", "%PDF-1.5".getBytes());
-        OrdenTrabajoAdjuntoResponse r2 = service.replaceFile(adjuntoId, pdf2);
+        OrdenTrabajoAdjuntoResponse r2 = service.replaceFile(ordenTrabajoId, adjuntoId, pdf2);
         String url2 = r2.url();
 
         assertEquals(2, capturedIds.size());
@@ -103,18 +106,34 @@ class OrdenTrabajoAdjuntoServiceTest {
         String existingUrl = "/api/v1/files/orden_trabajo_adjuntos/valido.pdf";
         OrdenTrabajoAdjunto domain = OrdenTrabajoAdjunto.builder()
                 .id(adjuntoId)
+                .ordenTrabajoId(UUID.randomUUID())
                 .url(existingUrl)
                 .build();
 
+        UUID ordenTrabajoId = domain.getOrdenTrabajoId();
         MockMultipartFile invalidFile = new MockMultipartFile("file", "bad.svg", "image/svg+xml", "<svg/>".getBytes());
-        when(repository.findById(adjuntoId)).thenReturn(Optional.of(domain));
+        when(ordenTrabajoRepository.findById(ordenTrabajoId)).thenReturn(Optional.of(mock(com.endecorani.sigma_api.modules.mantenimientos.domain.model.OrdenTrabajo.class)));
+        when(repository.findByIdAndOrdenTrabajoId(adjuntoId, ordenTrabajoId)).thenReturn(Optional.of(domain));
         when(documentStorageService.store(eq("orden_trabajo_adjuntos"), any(UUID.class), eq(invalidFile)))
                 .thenThrow(new BusinessException("INVALID_MIME", "Formato no soportado"));
 
-        assertThrows(BusinessException.class, () -> service.replaceFile(adjuntoId, invalidFile));
+        assertThrows(BusinessException.class, () -> service.replaceFile(ordenTrabajoId, adjuntoId, invalidFile));
 
         verify(documentStorageService, never()).delete(any());
         verify(repository, never()).save(any());
         assertEquals(existingUrl, domain.getUrl());
+    }
+
+    @Test
+    void findById_cuandoAdjuntoPerteneceAOtraOrden_debeOcultarloComo404() {
+        UUID ordenTrabajoId = UUID.randomUUID();
+        UUID adjuntoId = UUID.randomUUID();
+        when(ordenTrabajoRepository.findById(ordenTrabajoId))
+                .thenReturn(Optional.of(mock(com.endecorani.sigma_api.modules.mantenimientos.domain.model.OrdenTrabajo.class)));
+        when(repository.findByIdAndOrdenTrabajoId(adjuntoId, ordenTrabajoId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.findById(ordenTrabajoId, adjuntoId));
+
+        verify(repository, never()).findById(any());
     }
 }

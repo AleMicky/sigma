@@ -41,6 +41,26 @@ function getTodayDateTimeString() {
   return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
+/**
+ * Cuerpo enviado a POST/PUT /api/v1/solicitudes-mantenimiento.
+ * `SolicitudMantenimientoRequest` no expone `fechaSolicitud`: el valor del
+ * formulario es sólo informativo y nunca debe llegar al contrato HTTP.
+ */
+export function buildSolicitudPayload(
+  value: SolicitudFormValues,
+): SolicitudPayload {
+  return {
+    titulo: value.titulo.trim(),
+    descripcion: value.descripcion.trim(),
+    tipoFallas:
+      value.tipoFallas && value.tipoFallas.length > 0 ? value.tipoFallas : null,
+    activoId: value.activoId.trim(),
+    tipoMantenimientoId: value.tipoMantenimientoId.trim(),
+    prioridadId: value.prioridadId.trim(),
+    solicitanteId: value.solicitanteId.trim(),
+  }
+}
+
 export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
   const navigate = useNavigate()
   const isEditing = Boolean(solicitudId)
@@ -223,22 +243,7 @@ export function useSolicitudForm({ solicitudId }: UseSolicitudFormProps = {}) {
       setFormError(null)
 
       try {
-        const payload: SolicitudPayload = {
-          titulo: value.titulo.trim(),
-          descripcion: value.descripcion.trim(),
-          tipoFallas: value.tipoFallas && value.tipoFallas.length > 0 ? value.tipoFallas : null,
-          activoId: value.activoId.trim(),
-          tipoMantenimientoId: value.tipoMantenimientoId.trim(),
-          prioridadId: value.prioridadId.trim(),
-          solicitanteId: value.solicitanteId.trim(),
-          fechaSolicitud: value.fechaSolicitud
-            ? (value.fechaSolicitud.length === 16
-              ? `${value.fechaSolicitud}:00`
-              : (value.fechaSolicitud.includes("T")
-                ? value.fechaSolicitud
-                : `${value.fechaSolicitud}T00:00:00`))
-            : null,
-        }
+        const payload = buildSolicitudPayload(value)
 
         if (isEditing && solicitudId) {
           await updateMutation.mutateAsync({

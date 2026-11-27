@@ -44,6 +44,16 @@ public class ProgramacionMantenimientoHistorialRepositoryAdapter implements Prog
     }
 
     @Override
+    public boolean existsBySolicitudMantenimientoId(UUID solicitudMantenimientoId) {
+        return springRepository.existsBySolicitudMantenimientoId(solicitudMantenimientoId);
+    }
+
+    @Override
+    public boolean existsByProgramacionMantenimientoId(UUID programacionMantenimientoId) {
+        return springRepository.existsByProgramacionMantenimientoId(programacionMantenimientoId);
+    }
+
+    @Override
     public ProgramacionMantenimientoHistorial save(ProgramacionMantenimientoHistorial item) {
         ProgramacionMantenimientoHistorialEntity entity = mapper.toEntity(item);
         ProgramacionMantenimientoHistorialEntity saved = springRepository.save(entity);

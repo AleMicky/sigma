@@ -1,5 +1,7 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.controlactivo.response;
 
+import tools.jackson.databind.annotation.JsonDeserialize;
+import com.endecorani.sigma_api.shared.infrastructure.datetime.FlexibleLocalDateTimeDeserializer;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.enums.TipoControlActivo;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 
@@ -15,6 +17,7 @@ public record ControlActivoResponse(
         TipoControlActivo tipo,
         UUID entregadoPorId,
         UUID recibidoPorId,
+        @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
         LocalDateTime fecha,
         boolean conforme,
         String observacion,

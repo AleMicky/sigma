@@ -1,5 +1,6 @@
 import { useState } from "react"
 import {
+  AlertTriangle,
   CalendarClock,
   CheckCircle,
   Clock,
@@ -26,6 +27,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu"
 import { Skeleton } from "@/shared/components/ui/skeleton"
 import type { ProgramacionMantenimiento } from "../api/programacion-mantenimiento.service"
+import { diffDiasLocales, toLocalDateOnly } from "../lib/seguimiento-alertas"
 import {
   useActivarProgramacion,
   useDeleteProgramacion,
@@ -38,6 +40,10 @@ import { ProgramacionHistorialSheet } from "./ProgramacionHistorialSheet"
 interface ProgramacionMantenimientoListViewProps {
   programaciones: ProgramacionMantenimiento[]
   isLoading: boolean
+  isError?: boolean
+  isFetching?: boolean
+  errorMessage?: string
+  onRetry?: () => void
   onEdit: (programacion: ProgramacionMantenimiento) => void
   searchTerm: string
   onSearchChange: (search: string) => void
@@ -48,6 +54,10 @@ interface ProgramacionMantenimientoListViewProps {
 export function ProgramacionMantenimientoListView({
   programaciones,
   isLoading,
+  isError = false,
+  isFetching = false,
+  errorMessage,
+  onRetry,
   onEdit,
   searchTerm,
   onSearchChange,
@@ -62,10 +72,35 @@ export function ProgramacionMantenimientoListView({
   const desactivarMutation = useDesactivarProgramacion()
   const deleteMutation = useDeleteProgramacion()
 
-  const todayStr = new Date().toISOString().split("T")[0]
+  const hoy = new Date()
 
   return (
     <div className="space-y-4">
+      {isError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-destructive/30 bg-destructive/10 text-destructive text-xs"
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="size-4 shrink-0" />
+            <span>
+              No se pudieron cargar las programaciones
+              {errorMessage ? `: ${errorMessage}` : "."} Intente nuevamente.
+            </span>
+          </div>
+          {onRetry && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onRetry}
+              className="h-8 text-xs cursor-pointer border-destructive/30 hover:bg-destructive/10 text-destructive"
+            >
+              Reintentar
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Barra de Filtros y Búsqueda */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
@@ -116,14 +151,18 @@ export function ProgramacionMantenimientoListView({
       </div>
 
       {/* Grid de Tarjetas de Programación */}
+      <div aria-busy={isLoading || isFetching}>
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
           <Skeleton className="h-44 w-full rounded-2xl" />
           <Skeleton className="h-44 w-full rounded-2xl" />
           <Skeleton className="h-44 w-full rounded-2xl" />
         </div>
-      ) : programaciones.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border/70 p-12 text-center text-xs text-muted-foreground">
+      ) : !isError && programaciones.length === 0 ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-dashed border-border/70 p-12 text-center text-xs text-muted-foreground"
+        >
           <CalendarClock className="size-10 mx-auto mb-2 text-muted-foreground/60" />
           <p className="font-semibold text-sm text-foreground">No se encontraron programaciones</p>
           <p className="text-[11.5px] mt-1 max-w-sm mx-auto">
@@ -142,11 +181,11 @@ export function ProgramacionMantenimientoListView({
 
             for (const c of criteriosActivos) {
               if (c.tipoCriterio === "TIEMPO") {
-                if (c.proximaFecha && c.proximaFecha <= todayStr) {
-                  hasVencido = true
-                } else if (c.proximaFecha) {
-                  const diffDays = Math.ceil((new Date(c.proximaFecha).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24))
-                  if (diffDays <= 7) hasProximo = true
+                const fechaProxima = toLocalDateOnly(c.proximaFecha)
+                if (fechaProxima) {
+                  const diffDias = diffDiasLocales(hoy, fechaProxima)
+                  if (diffDias <= 0) hasVencido = true
+                  else if (diffDias <= 7) hasProximo = true
                 }
               } else {
                 const actual = c.valorActualUso ?? 0
@@ -438,9 +477,12 @@ export function ProgramacionMantenimientoListView({
                         let isVencido = false
                         let isCerca = false
                         if (targetDate) {
-                          diffDays = Math.ceil((new Date(targetDate).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24))
-                          isVencido = diffDays <= 0
-                          isCerca = diffDays > 0 && diffDays <= 7
+                          const fechaObjetivo = toLocalDateOnly(targetDate)
+                          if (fechaObjetivo) {
+                            diffDays = diffDiasLocales(hoy, fechaObjetivo)
+                            isVencido = diffDays <= 0
+                            isCerca = diffDays > 0 && diffDays <= 7
+                          }
                         }
 
                         return (
@@ -543,6 +585,7 @@ export function ProgramacionMantenimientoListView({
           })}
         </div>
       )}
+      </div>
 
       {/* Diálogos modales */}
       <EvaluarProgramacionDialog

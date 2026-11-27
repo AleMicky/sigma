@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,7 @@ import java.util.UUID;
         description = "Administración de tipos de mantenimiento"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class TipoMantenimientoController {
 
     private final TipoMantenimientoService service;
@@ -36,8 +38,10 @@ public class TipoMantenimientoController {
     @GetMapping
     @Operation(summary = "Listar tipos de mantenimiento con paginación y búsqueda opcional (search o q)")
     public ResponseEntity<ApiResponse<PageResponse<TipoMantenimientoResponse>>> listar(
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute SearchPageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.listar(pageRequest.getSearchTerm(), pageRequest.toPageRequest()))
         );
@@ -55,6 +59,7 @@ public class TipoMantenimientoController {
 
     @PostMapping
     @Operation(summary = "Crear un nuevo tipo de mantenimiento")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<TipoMantenimientoResponse>> crear(
             @Valid @RequestBody TipoMantenimientoRequest dto
     ) {
@@ -66,6 +71,7 @@ public class TipoMantenimientoController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar un tipo de mantenimiento existente")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<TipoMantenimientoResponse>> actualizar(
             @PathVariable UUID id,
             @Valid @RequestBody TipoMantenimientoUpdate dto
@@ -78,6 +84,7 @@ public class TipoMantenimientoController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar un tipo de mantenimiento")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<Void>> eliminar(
             @PathVariable UUID id
     ) {

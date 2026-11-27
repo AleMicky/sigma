@@ -1,5 +1,7 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.request;
 
+import tools.jackson.databind.annotation.JsonDeserialize;
+import com.endecorani.sigma_api.shared.infrastructure.datetime.FlexibleLocalDateTimeDeserializer;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -24,6 +26,7 @@ public record OrdenTrabajoActividadUpdate(
         @Size(max = 1500, message = "La observación no puede superar los 1500 caracteres")
         String observacion,
 
+        @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
         LocalDateTime fechaRealizacion,
 
         @Valid

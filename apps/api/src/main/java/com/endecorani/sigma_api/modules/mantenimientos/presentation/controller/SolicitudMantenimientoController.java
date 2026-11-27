@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +42,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Solicitudes de Mantenimiento", description = "Administración de solicitudes de mantenimiento")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class SolicitudMantenimientoController {
 
         private final SolicitudMantenimientoService service;
@@ -58,7 +60,9 @@ public class SolicitudMantenimientoController {
                         @RequestParam(required = false) String q,
                         @RequestParam(required = false) UUID tipoActivoId,
                         @RequestParam(required = false) UUID solicitudIdExcluir,
+                        @RequestParam(name = "size", required = false) Integer sizeSolicitado,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
+                MantenimientoPageSizeValidator.validar(sizeSolicitado);
                 return ResponseEntity.ok(
                                 ApiResponse.success(service.listarActivosParaSolicitud(
                                                 q,
@@ -69,6 +73,7 @@ public class SolicitudMantenimientoController {
 
         @PostMapping
         @Operation(summary = "Registrar una solicitud de mantenimiento")
+        @PreAuthorize(MantenimientoRoles.SOLICITUD)
         public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> create(
                         @Valid @RequestBody SolicitudMantenimientoRequest request) {
                 return ResponseEntity
@@ -78,6 +83,7 @@ public class SolicitudMantenimientoController {
 
         @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
         @Operation(summary = "Registrar una solicitud de mantenimiento con archivos adjuntos")
+        @PreAuthorize(MantenimientoRoles.SOLICITUD)
         public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> createWithFiles(
                         @Valid @RequestPart("data") SolicitudMantenimientoRequest request,
                         @RequestPart(value = "files", required = false) List<MultipartFile> files) {
@@ -89,6 +95,7 @@ public class SolicitudMantenimientoController {
 
         @PostMapping("/{id}/enviar")
         @Operation(summary = "Enviar solicitud e iniciar flujo de trabajo")
+        @PreAuthorize(MantenimientoRoles.SOLICITUD)
         public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> enviar(
                         @PathVariable UUID id,
                         @Valid @RequestBody EnviarSolicitudMantenimientoRequest request) {
@@ -102,6 +109,7 @@ public class SolicitudMantenimientoController {
 
         @PostMapping("/{id}/workflow/complete")
         @Operation(summary = "Completar tarea de workflow para una solicitud")
+        @PreAuthorize(MantenimientoRoles.WORKFLOW)
         public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> completarWorkflow(
                         @PathVariable UUID id,
                         @Valid @RequestBody CompleteWorkflowTaskRequest request) {
@@ -113,6 +121,7 @@ public class SolicitudMantenimientoController {
 
         @PutMapping("/{id}")
         @Operation(summary = "Actualizar una solicitud de mantenimiento")
+        @PreAuthorize(MantenimientoRoles.SOLICITUD)
         public ResponseEntity<ApiResponse<SolicitudMantenimientoResponse>> update(
                         @PathVariable UUID id,
                         @Valid @RequestBody SolicitudMantenimientoRequest request) {
@@ -152,13 +161,16 @@ public class SolicitudMantenimientoController {
                         @RequestParam(required = false) String q,
                         @RequestParam(required = false) String estado,
                         @RequestParam(required = false) String interfaz,
+                        @RequestParam(name = "size", required = false) Integer sizeSolicitado,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
+                MantenimientoPageSizeValidator.validar(sizeSolicitado);
                 return ResponseEntity.ok(
                                 ApiResponse.success(service.findAll(q, estado, interfaz, pageRequest)));
         }
 
         @DeleteMapping("/{id}")
         @Operation(summary = "Eliminar una solicitud de mantenimiento")
+        @PreAuthorize(MantenimientoRoles.SOLICITUD)
         public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
                 service.delete(id);
                 return ResponseEntity.ok(ApiResponse.success("Registro eliminado correctamente"));

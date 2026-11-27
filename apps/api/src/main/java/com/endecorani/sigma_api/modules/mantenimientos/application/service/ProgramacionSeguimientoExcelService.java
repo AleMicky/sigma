@@ -1,9 +1,12 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.service;
 
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ReporteSeguimientoFiltros.NivelAlertaReporte;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ReporteSeguimientoFiltros.TipoCriterioReporte;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.ProgramacionMantenimientoCriterioResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.ProgramacionMantenimientoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.enums.TipoCriterioMantenimiento;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.util.FlexibleLocalDateTimeParser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -17,11 +20,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -30,25 +37,77 @@ public class ProgramacionSeguimientoExcelService {
     private static final DateTimeFormatter FECHA_HORA_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter FECHA_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+    /**
+     * REQ-MANT-015: la tabla Web calcula fechas y márgenes con la fecha local del navegador
+     * (es-BO). En servidor se usa la misma zona operacional, nunca la zona del host.
+     */
+    private static final ZoneId ZONA = FlexibleLocalDateTimeParser.OPERATIONAL_ZONE;
+
     private static final byte[] COLOR_HEADER_RGB = new byte[]{(byte) 11, (byte) 79, (byte) 138}; // #0B4F8A ENDE Blue
     private static final byte[] COLOR_ZEBRA_RGB = new byte[]{(byte) 248, (byte) 250, (byte) 252}; // #F8FAFC
 
-    // Colores de alerta
-    private static final byte[] COLOR_CRITICO_BG = new byte[]{(byte) 254, (byte) 226, (byte) 226}; // #FEE2E2 Rojo suave
+    private static final byte[] COLOR_CRITICO_BG = new byte[]{(byte) 254, (byte) 226, (byte) 226}; // #FEE2E2
     private static final byte[] COLOR_CRITICO_FG = new byte[]{(byte) 185, (byte) 28, (byte) 28};   // #B91C1C
-    private static final byte[] COLOR_ALERTA_BG = new byte[]{(byte) 254, (byte) 243, (byte) 199};  // #FEF3C7 Amarillo suave
+    private static final byte[] COLOR_ALERTA_BG = new byte[]{(byte) 254, (byte) 243, (byte) 199};  // #FEF3C7
     private static final byte[] COLOR_ALERTA_FG = new byte[]{(byte) 180, (byte) 83, (byte) 9};    // #B45309
-    private static final byte[] COLOR_OK_BG = new byte[]{(byte) 220, (byte) 252, (byte) 231};      // #DCFCE7 Verde suave
+    private static final byte[] COLOR_OK_BG = new byte[]{(byte) 220, (byte) 252, (byte) 231};      // #DCFCE7
     private static final byte[] COLOR_OK_FG = new byte[]{(byte) 21, (byte) 128, (byte) 61};       // #15803D
 
+    private record FilaSeguimiento(
+            String activoCodigo,
+            String activoNombre,
+            String tipoActivo,
+            String planCodigo,
+            String planNombre,
+            TipoCriterioMantenimiento tipoCriterio,
+            String frecuenciaLabel,
+            String lecturaActualLabel,
+            String proximoUmbralLabel,
+            int porcentaje,
+            String margenRestanteLabel,
+            NivelAlertaReporte estadoAlerta,
+            boolean programacionActiva
+    ) {}
+
+    private record CalculoCriterio(
+            String frecuenciaLabel,
+            String lecturaActualLabel,
+            String proximoUmbralLabel,
+            int porcentaje,
+            String margenRestanteLabel,
+            NivelAlertaReporte estadoBase
+    ) {}
+
+    /** Compatibilidad con el contrato anterior: sin filtros nuevos. */
     public byte[] generarExcel(List<ProgramacionMantenimientoResponse> programaciones) {
+        return generarExcel(programaciones, null, null, null);
+    }
+
+    /**
+     * REQ-MANT-015: genera exactamente las mismas filas que la tabla Web después de aplicar
+     * alerta, tipo de criterio y búsqueda ({@code q}) sobre la proyección calculada en servidor.
+     */
+    public byte[] generarExcel(
+            List<ProgramacionMantenimientoResponse> programaciones,
+            String q,
+            NivelAlertaReporte filtroAlerta,
+            TipoCriterioReporte filtroCriterio
+    ) {
+        // REQ-MANT-034: regla canónica = fecha local entera America/La_Paz; la hora no interviene.
+        LocalDate hoy = LocalDate.now(ZONA);
+        NumberFormat numero = NumberFormat.getNumberInstance(Locale.forLanguageTag("es-BO"));
+
+        List<FilaSeguimiento> todasLasFilas = construirFilas(programaciones, hoy, numero);
+        List<FilaSeguimiento> filas = todasLasFilas.stream()
+                .filter(fila -> cumpleFiltros(fila, q, filtroAlerta, filtroCriterio))
+                .toList();
+
         try (XSSFWorkbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             XSSFSheet sheet = workbook.createSheet("Seguimiento Preventivo");
             sheet.setDisplayGridlines(true);
 
-            // Estilos
             CellStyle titleStyle = crearEstiloTitulo(workbook);
             CellStyle subtitleStyle = crearEstiloSubtitulo(workbook);
             CellStyle metaStyle = crearEstiloMeta(workbook);
@@ -61,14 +120,12 @@ public class ProgramacionSeguimientoExcelService {
             CellStyle dataZebraCenter = crearEstiloTexto(workbook, HorizontalAlignment.CENTER, true);
             CellStyle dataZebraRight = crearEstiloTexto(workbook, HorizontalAlignment.RIGHT, true);
 
-            // Estilos de badge / alerta
             CellStyle styleCritico = crearEstiloAlerta(workbook, COLOR_CRITICO_BG, COLOR_CRITICO_FG);
             CellStyle styleAlerta = crearEstiloAlerta(workbook, COLOR_ALERTA_BG, COLOR_ALERTA_FG);
             CellStyle styleOk = crearEstiloAlerta(workbook, COLOR_OK_BG, COLOR_OK_FG);
 
             int rowIndex = 0;
 
-            // Fila 0: Título principal
             Row titleRow = sheet.createRow(rowIndex++);
             titleRow.setHeightInPoints(24);
             Cell titleCell = titleRow.createCell(0);
@@ -76,71 +133,38 @@ public class ProgramacionSeguimientoExcelService {
             titleCell.setCellStyle(titleStyle);
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 13));
 
-            // Fila 1: Subtítulo
             Row subtitleRow = sheet.createRow(rowIndex++);
             subtitleRow.setHeightInPoints(18);
             Cell subtitleCell = subtitleRow.createCell(0);
-            subtitleCell.setCellValue("Sistema Integrado de Gestión SIGMA | Emitido: " + LocalDateTime.now().format(FECHA_HORA_FORMATTER));
+            subtitleCell.setCellValue("Sistema Integrado de Gestión SIGMA | Emitido: "
+                    + LocalDateTime.now(ZONA).format(FECHA_HORA_FORMATTER));
             subtitleCell.setCellStyle(subtitleStyle);
             sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 13));
 
-            // Contar alertas preventivas
-            long totalProgs = programaciones.size();
-            long vigentes = programaciones.stream().filter(p -> Boolean.TRUE.equals(p.activo())).count();
-            int contadorCriticos = 0;
-            int contadorAlertas = 0;
-            int contadorAlDia = 0;
+            // REQ-MANT-015: el resumen usa todas las filas calculadas, igual que las métricas Web.
+            long totalProgs = programaciones == null ? 0 : programaciones.size();
+            long vigentes = programaciones == null ? 0 : programaciones.stream()
+                    .filter(p -> Boolean.TRUE.equals(p.activo()))
+                    .count();
+            long criticos = todasLasFilas.stream().filter(f -> f.estadoAlerta() == NivelAlertaReporte.CRITICO).count();
+            long proximos = todasLasFilas.stream().filter(f -> f.estadoAlerta() == NivelAlertaReporte.PROXIMO).count();
+            long alDia = todasLasFilas.stream().filter(f -> f.estadoAlerta() == NivelAlertaReporte.AL_DIA).count();
 
-            LocalDate hoy = LocalDate.now();
-
-            for (ProgramacionMantenimientoResponse p : programaciones) {
-                if (!Boolean.TRUE.equals(p.activo())) continue;
-                String peorEstado = "AL_DIA";
-                if (p.criterios() != null) {
-                    for (ProgramacionMantenimientoCriterioResponse c : p.criterios()) {
-                        if (!Boolean.TRUE.equals(c.activo())) continue;
-                        String estado = calcularEstadoCriterio(c, hoy);
-                        if ("REQUIERE_SERVICIO".equals(estado)) {
-                            peorEstado = "REQUIERE_SERVICIO";
-                            break;
-                        } else if ("PROXIMO".equals(estado)) {
-                            peorEstado = "PROXIMO";
-                        }
-                    }
-                }
-                if ("REQUIERE_SERVICIO".equals(peorEstado)) contadorCriticos++;
-                else if ("PROXIMO".equals(peorEstado)) contadorAlertas++;
-                else contadorAlDia++;
-            }
-
-            // Fila 2: Resumen ejecutivo
             Row metaRow = sheet.createRow(rowIndex++);
             metaRow.setHeightInPoints(16);
             Cell metaCell = metaRow.createCell(0);
-            metaCell.setCellValue(String.format("Total Programaciones: %d | Vigentes: %d | 🔴 Requieren Servicio: %d | 🟡 Próximos a Vencer: %d | 🟢 Al Día: %d",
-                    totalProgs, vigentes, contadorCriticos, contadorAlertas, contadorAlDia));
+            metaCell.setCellValue(String.format(
+                    "Total Programaciones: %d | Vigentes: %d | 🔴 Requieren Servicio: %d | 🟡 Atención Próxima: %d | 🟢 Al Día: %d",
+                    totalProgs, vigentes, criticos, proximos, alDia));
             metaCell.setCellStyle(metaStyle);
             sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 13));
 
-            // Fila 3: Espacio
             rowIndex++;
 
-            // Fila 4: Cabeceras
             String[] headers = {
-                    "Nº",
-                    "Código Activo",
-                    "Nombre del Activo",
-                    "Tipo de Activo",
-                    "Código Plan",
-                    "Plan de Mantenimiento",
-                    "Criterio",
-                    "Frecuencia / Intervalo",
-                    "Lectura Actual",
-                    "Próximo Umbral",
-                    "% Progreso",
-                    "Margen Restante",
-                    "Estado de Alerta",
-                    "Programación"
+                    "Nº", "Código Activo", "Nombre del Activo", "Tipo de Activo", "Código Plan",
+                    "Plan de Mantenimiento", "Criterio", "Frecuencia / Intervalo", "Lectura Actual",
+                    "Próximo Umbral", "% Progreso", "Margen Restante", "Estado de Alerta", "Programación"
             };
 
             Row headerRow = sheet.createRow(rowIndex++);
@@ -151,198 +175,50 @@ public class ProgramacionSeguimientoExcelService {
                 cell.setCellStyle(headerStyle);
             }
 
-            // Filas de datos
             int itemIndex = 1;
-            for (ProgramacionMantenimientoResponse prog : programaciones) {
-                ProgramacionMantenimientoResponse.PlanActivoInfo info = prog.planActivo();
-                String activoCodigo = info != null && info.activoCodigo() != null ? info.activoCodigo() : "N/D";
-                String activoNombre = info != null && info.activoNombre() != null ? info.activoNombre() : "N/D";
-                String tipoActivo = info != null && info.tipoActivoNombre() != null ? info.tipoActivoNombre() : "N/D";
-                String planCodigo = info != null && info.planCodigo() != null ? info.planCodigo() : "N/D";
-                String planNombre = info != null && info.planNombre() != null ? info.planNombre() : "N/D";
-                boolean progActiva = Boolean.TRUE.equals(prog.activo());
+            for (FilaSeguimiento fila : filas) {
+                Row row = sheet.createRow(rowIndex++);
+                row.setHeightInPoints(18);
+                boolean isZebra = (itemIndex % 2 == 0);
+                CellStyle textLeft = isZebra ? dataZebraLeft : dataTextLeft;
+                CellStyle textCenter = isZebra ? dataZebraCenter : dataTextCenter;
+                CellStyle textRight = isZebra ? dataZebraRight : dataTextRight;
 
-                List<ProgramacionMantenimientoCriterioResponse> criterios = prog.criterios();
-                if (criterios == null || criterios.isEmpty()) {
-                    Row row = sheet.createRow(rowIndex++);
-                    row.setHeightInPoints(18);
-                    boolean isZebra = (itemIndex % 2 == 0);
-                    CellStyle tLeft = isZebra ? dataZebraLeft : dataTextLeft;
-                    CellStyle tCenter = isZebra ? dataZebraCenter : dataTextCenter;
-
-                    row.createCell(0).setCellValue(itemIndex++);
-                    row.getCell(0).setCellStyle(tCenter);
-                    row.createCell(1).setCellValue(activoCodigo);
-                    row.getCell(1).setCellStyle(tCenter);
-                    row.createCell(2).setCellValue(activoNombre);
-                    row.getCell(2).setCellStyle(tLeft);
-                    row.createCell(3).setCellValue(tipoActivo);
-                    row.getCell(3).setCellStyle(tLeft);
-                    row.createCell(4).setCellValue(planCodigo);
-                    row.getCell(4).setCellStyle(tCenter);
-                    row.createCell(5).setCellValue(planNombre);
-                    row.getCell(5).setCellStyle(tLeft);
-                    row.createCell(6).setCellValue("Sin Criterios");
-                    row.getCell(6).setCellStyle(tCenter);
-                    row.createCell(7).setCellValue("-");
-                    row.getCell(7).setCellStyle(tCenter);
-                    row.createCell(8).setCellValue("-");
-                    row.getCell(8).setCellStyle(tCenter);
-                    row.createCell(9).setCellValue("-");
-                    row.getCell(9).setCellStyle(tCenter);
-                    row.createCell(10).setCellValue("-");
-                    row.getCell(10).setCellStyle(tCenter);
-                    row.createCell(11).setCellValue("-");
-                    row.getCell(11).setCellStyle(tCenter);
-                    row.createCell(12).setCellValue("SIN CRITERIOS");
-                    row.getCell(12).setCellStyle(tCenter);
-                    row.createCell(13).setCellValue(progActiva ? "ACTIVA" : "INACTIVA");
-                    row.getCell(13).setCellStyle(tCenter);
-                    continue;
+                Cell[] celdas = new Cell[14];
+                for (int i = 0; i < celdas.length; i++) {
+                    celdas[i] = row.createCell(i);
                 }
 
-                for (ProgramacionMantenimientoCriterioResponse criterio : criterios) {
-                    Row row = sheet.createRow(rowIndex++);
-                    row.setHeightInPoints(18);
-                    boolean isZebra = (itemIndex % 2 == 0);
-
-                    CellStyle textLeft = isZebra ? dataZebraLeft : dataTextLeft;
-                    CellStyle textCenter = isZebra ? dataZebraCenter : dataTextCenter;
-                    CellStyle textRight = isZebra ? dataZebraRight : dataTextRight;
-
-                    // Nº
-                    Cell c0 = row.createCell(0);
-                    c0.setCellValue(itemIndex++);
-                    c0.setCellStyle(textCenter);
-
-                    // Código Activo
-                    Cell c1 = row.createCell(1);
-                    c1.setCellValue(activoCodigo);
-                    c1.setCellStyle(textCenter);
-
-                    // Nombre Activo
-                    Cell c2 = row.createCell(2);
-                    c2.setCellValue(activoNombre);
-                    c2.setCellStyle(textLeft);
-
-                    // Tipo Activo
-                    Cell c3 = row.createCell(3);
-                    c3.setCellValue(tipoActivo);
-                    c3.setCellStyle(textLeft);
-
-                    // Plan Código
-                    Cell c4 = row.createCell(4);
-                    c4.setCellValue(planCodigo);
-                    c4.setCellStyle(textCenter);
-
-                    // Plan Nombre
-                    Cell c5 = row.createCell(5);
-                    c5.setCellValue(planNombre);
-                    c5.setCellStyle(textLeft);
-
-                    // Criterio
-                    Cell c6 = row.createCell(6);
-                    TipoCriterioMantenimiento tipo = criterio.tipoCriterio();
-                    c6.setCellValue(formatearTipoCriterio(tipo));
-                    c6.setCellStyle(textCenter);
-
-                    String frecuenciaStr = "-";
-                    String actualStr = "-";
-                    String proximoStr = "-";
-                    String progresoStr = "0%";
-                    String margenStr = "-";
-                    String estadoAlerta;
-
-                    if (!progActiva || !Boolean.TRUE.equals(criterio.activo())) {
-                        estadoAlerta = "INACTIVO";
-                    } else {
-                        estadoAlerta = calcularEstadoCriterio(criterio, hoy);
-                    }
-
-                    if (tipo == TipoCriterioMantenimiento.TIEMPO) {
-                        int dias = criterio.intervaloDias() != null ? criterio.intervaloDias() : 0;
-                        frecuenciaStr = "Cada " + dias + " días";
-                        actualStr = hoy.format(FECHA_FORMATTER);
-                        proximoStr = criterio.proximaFecha() != null ? criterio.proximaFecha().format(FECHA_FORMATTER) : "-";
-
-                        if (criterio.proximaFecha() != null && dias > 0) {
-                            LocalDate fechaBase = criterio.proximaFecha().minusDays(dias);
-                            long diasTranscurridos = ChronoUnit.DAYS.between(fechaBase, hoy);
-                            long diasRestantes = ChronoUnit.DAYS.between(hoy, criterio.proximaFecha());
-
-                            double pct = Math.min(Math.max(((double) diasTranscurridos / dias) * 100.0, 0.0), 999.0);
-                            progresoStr = String.format("%.0f%%", pct);
-
-                            if (diasRestantes < 0) {
-                                margenStr = String.format("Vencido hace %d d", Math.abs(diasRestantes));
-                            } else {
-                                margenStr = String.format("Faltan %d d", diasRestantes);
-                            }
-                        }
-                    } else {
-                        String unidad = tipo == TipoCriterioMantenimiento.KILOMETRAJE ? " km" : " hrs";
-                        BigDecimal intervalo = criterio.intervaloUso() != null ? criterio.intervaloUso() : BigDecimal.ZERO;
-                        BigDecimal prox = criterio.proximoValorUso() != null ? criterio.proximoValorUso() : BigDecimal.ZERO;
-                        BigDecimal actual = criterio.valorActualUso() != null ? criterio.valorActualUso() : BigDecimal.ZERO;
-                        BigDecimal base = prox.subtract(intervalo);
-
-                        frecuenciaStr = "Cada " + intervalo.stripTrailingZeros().toPlainString() + unidad;
-                        actualStr = actual.stripTrailingZeros().toPlainString() + unidad;
-                        proximoStr = prox.stripTrailingZeros().toPlainString() + unidad;
-
-                        if (intervalo.compareTo(BigDecimal.ZERO) > 0) {
-                            BigDecimal avance = actual.subtract(base).max(BigDecimal.ZERO);
-                            BigDecimal pct = avance.multiply(BigDecimal.valueOf(100)).divide(intervalo, 0, RoundingMode.HALF_UP);
-                            progresoStr = pct + "%";
-                        }
-
-                        BigDecimal diff = prox.subtract(actual);
-                        if (diff.compareTo(BigDecimal.ZERO) <= 0) {
-                            margenStr = String.format("Rebasado por %s%s", diff.abs().stripTrailingZeros().toPlainString(), unidad);
-                        } else {
-                            margenStr = String.format("Faltan %s%s", diff.stripTrailingZeros().toPlainString(), unidad);
-                        }
-                    }
-
-                    Cell c7 = row.createCell(7);
-                    c7.setCellValue(frecuenciaStr);
-                    c7.setCellStyle(textCenter);
-
-                    Cell c8 = row.createCell(8);
-                    c8.setCellValue(actualStr);
-                    c8.setCellStyle(textCenter);
-
-                    Cell c9 = row.createCell(9);
-                    c9.setCellValue(proximoStr);
-                    c9.setCellStyle(textCenter);
-
-                    Cell c10 = row.createCell(10);
-                    c10.setCellValue(progresoStr);
-                    c10.setCellStyle(textRight);
-
-                    Cell c11 = row.createCell(11);
-                    c11.setCellValue(margenStr);
-                    c11.setCellStyle(textLeft);
-
-                    Cell c12 = row.createCell(12);
-                    c12.setCellValue(formatearEstadoAlerta(estadoAlerta));
-                    if ("REQUIERE_SERVICIO".equals(estadoAlerta)) {
-                        c12.setCellStyle(styleCritico);
-                    } else if ("PROXIMO".equals(estadoAlerta)) {
-                        c12.setCellStyle(styleAlerta);
-                    } else if ("INACTIVO".equals(estadoAlerta)) {
-                        c12.setCellStyle(textCenter);
-                    } else {
-                        c12.setCellStyle(styleOk);
-                    }
-
-                    Cell c13 = row.createCell(13);
-                    c13.setCellValue(progActiva ? "ACTIVA" : "INACTIVA");
-                    c13.setCellStyle(textCenter);
-                }
+                celdas[0].setCellValue(itemIndex++);
+                celdas[0].setCellStyle(textCenter);
+                celdas[1].setCellValue(fila.activoCodigo());
+                celdas[1].setCellStyle(textCenter);
+                celdas[2].setCellValue(fila.activoNombre());
+                celdas[2].setCellStyle(textLeft);
+                celdas[3].setCellValue(fila.tipoActivo());
+                celdas[3].setCellStyle(textLeft);
+                celdas[4].setCellValue(fila.planCodigo());
+                celdas[4].setCellStyle(textCenter);
+                celdas[5].setCellValue(fila.planNombre());
+                celdas[5].setCellStyle(textLeft);
+                celdas[6].setCellValue(formatearTipoCriterio(fila.tipoCriterio()));
+                celdas[6].setCellStyle(textCenter);
+                celdas[7].setCellValue(fila.frecuenciaLabel());
+                celdas[7].setCellStyle(textCenter);
+                celdas[8].setCellValue(fila.lecturaActualLabel());
+                celdas[8].setCellStyle(textCenter);
+                celdas[9].setCellValue(fila.proximoUmbralLabel());
+                celdas[9].setCellStyle(textCenter);
+                celdas[10].setCellValue(fila.porcentaje() + "%");
+                celdas[10].setCellStyle(textRight);
+                celdas[11].setCellValue(fila.margenRestanteLabel());
+                celdas[11].setCellStyle(textLeft);
+                celdas[12].setCellValue(formatearEstadoAlerta(fila.estadoAlerta()));
+                celdas[12].setCellStyle(estiloAlerta(fila.estadoAlerta(), styleCritico, styleAlerta, styleOk, textCenter));
+                celdas[13].setCellValue(fila.programacionActiva() ? "ACTIVA" : "INACTIVA");
+                celdas[13].setCellStyle(textCenter);
             }
 
-            // Autoajustar ancho de columnas clave
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
                 int currentWidth = sheet.getColumnWidth(i);
@@ -357,47 +233,211 @@ public class ProgramacionSeguimientoExcelService {
         }
     }
 
-    private String calcularEstadoCriterio(ProgramacionMantenimientoCriterioResponse c, LocalDate hoy) {
-        if (c.tipoCriterio() == TipoCriterioMantenimiento.TIEMPO) {
-            if (c.proximaFecha() == null) return "AL_DIA";
-            if (!c.proximaFecha().isAfter(hoy)) return "REQUIERE_SERVICIO";
-            long diasRestantes = ChronoUnit.DAYS.between(hoy, c.proximaFecha());
-            if (diasRestantes <= 15) return "PROXIMO";
-            return "AL_DIA";
-        } else {
-            BigDecimal prox = c.proximoValorUso() != null ? c.proximoValorUso() : BigDecimal.ZERO;
-            BigDecimal actual = c.valorActualUso() != null ? c.valorActualUso() : BigDecimal.ZERO;
-            BigDecimal intervalo = c.intervaloUso() != null ? c.intervaloUso() : BigDecimal.ZERO;
-            BigDecimal base = prox.subtract(intervalo);
-
-            if (actual.compareTo(prox) >= 0 && prox.compareTo(BigDecimal.ZERO) > 0) {
-                return "REQUIERE_SERVICIO";
-            }
-
-            if (intervalo.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal avance = actual.subtract(base).max(BigDecimal.ZERO);
-                double pct = avance.doubleValue() / intervalo.doubleValue();
-                if (pct >= 0.85) return "PROXIMO";
-            }
-
-            return "AL_DIA";
+    /**
+     * REQ-MANT-015: desglose por criterio (o una fila "sin criterios"), con la misma semántica
+     * que {@code ProgramacionSeguimientoReportView.tsx:76-209}.
+     */
+    private List<FilaSeguimiento> construirFilas(
+            List<ProgramacionMantenimientoResponse> programaciones, LocalDate hoy, NumberFormat numero) {
+        List<FilaSeguimiento> filas = new ArrayList<>();
+        if (programaciones == null) {
+            return filas;
         }
+        for (ProgramacionMantenimientoResponse prog : programaciones) {
+            ProgramacionMantenimientoResponse.PlanActivoInfo info = prog.planActivo();
+            String activoCodigo = n(info == null ? null : info.activoCodigo());
+            String activoNombre = n(info == null ? null : info.activoNombre());
+            String tipoActivo = n(info == null ? null : info.tipoActivoNombre());
+            String planCodigo = n(info == null ? null : info.planCodigo());
+            String planNombre = n(info == null ? null : info.planNombre());
+            boolean progActiva = Boolean.TRUE.equals(prog.activo());
+
+            List<ProgramacionMantenimientoCriterioResponse> criterios = prog.criterios();
+            if (criterios == null || criterios.isEmpty()) {
+                filas.add(new FilaSeguimiento(
+                        activoCodigo, activoNombre, tipoActivo, planCodigo, planNombre,
+                        TipoCriterioMantenimiento.TIEMPO,
+                        "Sin criterios configurados", "-", "-", 0, "Pendiente configuración",
+                        NivelAlertaReporte.INACTIVO, progActiva));
+                continue;
+            }
+
+            for (ProgramacionMantenimientoCriterioResponse criterio : criterios) {
+                boolean criterioActivo = Boolean.TRUE.equals(criterio.activo());
+                TipoCriterioMantenimiento tipo = criterio.tipoCriterio() != null
+                        ? criterio.tipoCriterio() : TipoCriterioMantenimiento.TIEMPO;
+
+                CalculoCriterio calculo;
+                if (tipo == TipoCriterioMantenimiento.TIEMPO) {
+                    calculo = calcularTiempo(hoy, criterio.proximaFecha(), criterio.intervaloDias());
+                } else {
+                    calculo = calcularUso(
+                            tipo,
+                            criterio.intervaloUso(),
+                            criterio.proximoValorUso(),
+                            criterio.valorActualUso(),
+                            numero);
+                }
+
+                NivelAlertaReporte estado = (!progActiva || !criterioActivo)
+                        ? NivelAlertaReporte.INACTIVO
+                        : calculo.estadoBase();
+
+                filas.add(new FilaSeguimiento(
+                        activoCodigo, activoNombre, tipoActivo, planCodigo, planNombre, tipo,
+                        calculo.frecuenciaLabel(), calculo.lecturaActualLabel(), calculo.proximoUmbralLabel(),
+                        calculo.porcentaje(), calculo.margenRestanteLabel(), estado, progActiva));
+            }
+        }
+        return filas;
     }
 
-    private String formatearTipoCriterio(TipoCriterioMantenimiento tipo) {
-        if (tipo == null) return "N/D";
-        return switch (tipo) {
-            case TIEMPO -> "Tiempo (Días)";
-            case KILOMETRAJE -> "Odómetro (Km)";
-            case HORAS_USO -> "Horómetro (Hrs)";
+    /**
+     * Regla Web para TIEMPO: progreso = HALF_UP exacto de ((hoy - base) / intervalo * 100), limitado a 999.
+     * CRITICO si la fecha ya pasó; PROXIMO si faltan ≤ 15 días o el progreso es ≥ 85%; AL_DIA en
+     * caso contrario. {@code base = proximaFecha - intervaloDias}. La hora del día no interviene.
+     */
+    private CalculoCriterio calcularTiempo(LocalDate hoy, LocalDate proximaFecha, Integer intervaloDias) {
+        int dias = intervaloDias != null ? intervaloDias : 0;
+        String frecuencia = "Cada " + dias + " días";
+        String lectura = hoy.format(FECHA_FORMATTER);
+        String proximo = proximaFecha != null ? proximaFecha.format(FECHA_FORMATTER) : "-";
+
+        if (proximaFecha == null || dias <= 0) {
+            return new CalculoCriterio(frecuencia, lectura, proximo, 0, "", NivelAlertaReporte.AL_DIA);
+        }
+
+        LocalDate fechaBase = proximaFecha.minusDays(dias);
+        long transcurridos = ChronoUnit.DAYS.between(fechaBase, hoy);
+        // REQ-MANT-035: HALF_UP exacto, igual que la rama de uso (evita 57.5 -> 57 por double).
+        long porcentajeRedondeado = BigDecimal.valueOf(transcurridos)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(dias), 0, RoundingMode.HALF_UP)
+                .longValueExact();
+        int porcentaje = (int) Math.min(Math.max(porcentajeRedondeado, 0L), 999L);
+
+        long diffDias = ChronoUnit.DAYS.between(hoy, proximaFecha);
+        String margen = diffDias < 0
+                ? "Vencido hace " + Math.abs(diffDias) + " d"
+                : "Faltan " + diffDias + " d";
+
+        NivelAlertaReporte estado;
+        if (diffDias < 0) {
+            estado = NivelAlertaReporte.CRITICO;
+        } else if (diffDias <= 15 || porcentaje >= 85) {
+            estado = NivelAlertaReporte.PROXIMO;
+        } else {
+            estado = NivelAlertaReporte.AL_DIA;
+        }
+        return new CalculoCriterio(frecuencia, lectura, proximo, porcentaje, margen, estado);
+    }
+
+    /**
+     * Regla Web para KILOMETRAJE/HORAS_USO: avance = max(actual - (umbral - intervalo), 0);
+     * progreso = redondeo(avance / intervalo * 100), limitado a 999. CRITICO si el umbral se
+     * rebasó (o se alcanzó con umbral > 0); PROXIMO si el progreso es ≥ 85% (margen del 15%).
+     */
+    private CalculoCriterio calcularUso(
+            TipoCriterioMantenimiento tipo,
+            BigDecimal intervaloCrudo,
+            BigDecimal proxCrudo,
+            BigDecimal actualCrudo,
+            NumberFormat numero
+    ) {
+        BigDecimal intervalo = intervaloCrudo != null ? intervaloCrudo : BigDecimal.ZERO;
+        BigDecimal prox = proxCrudo != null ? proxCrudo : BigDecimal.ZERO;
+        BigDecimal actual = actualCrudo != null ? actualCrudo : BigDecimal.ZERO;
+        String unidad = tipo == TipoCriterioMantenimiento.KILOMETRAJE ? "km" : "hrs";
+        BigDecimal base = prox.subtract(intervalo);
+
+        String frecuencia = "Cada " + numero.format(intervalo) + " " + unidad;
+        String lectura = numero.format(actual) + " " + unidad;
+        String proximo = numero.format(prox) + " " + unidad;
+
+        int porcentaje = 0;
+        if (intervalo.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal avance = actual.subtract(base).max(BigDecimal.ZERO);
+            BigDecimal pct = avance.multiply(BigDecimal.valueOf(100))
+                    .divide(intervalo, 0, RoundingMode.HALF_UP);
+            porcentaje = Math.min(pct.intValue(), 999);
+        }
+
+        BigDecimal diff = prox.subtract(actual);
+        String margen;
+        NivelAlertaReporte estado;
+        if (diff.compareTo(BigDecimal.ZERO) <= 0 && prox.compareTo(BigDecimal.ZERO) > 0) {
+            margen = "Rebasado por " + numero.format(diff.abs()) + " " + unidad;
+            estado = NivelAlertaReporte.CRITICO;
+        } else {
+            margen = "Faltan " + numero.format(diff) + " " + unidad;
+            estado = porcentaje >= 85 ? NivelAlertaReporte.PROXIMO : NivelAlertaReporte.AL_DIA;
+        }
+        return new CalculoCriterio(frecuencia, lectura, proximo, porcentaje, margen, estado);
+    }
+
+    /** Espejo de {@code filasFiltradas} en la vista Web. */
+    private boolean cumpleFiltros(
+            FilaSeguimiento fila, String q, NivelAlertaReporte alerta, TipoCriterioReporte criterio) {
+        if (alerta != null && fila.estadoAlerta() != alerta) {
+            return false;
+        }
+        if (criterio != null && fila.tipoCriterio() != mapear(criterio)) {
+            return false;
+        }
+        if (q != null && !q.isBlank()) {
+            String busqueda = q.trim().toLowerCase(Locale.ROOT);
+            return contiene(fila.activoCodigo(), busqueda)
+                    || contiene(fila.activoNombre(), busqueda)
+                    || contiene(fila.planCodigo(), busqueda)
+                    || contiene(fila.planNombre(), busqueda)
+                    || contiene(fila.tipoActivo(), busqueda);
+        }
+        return true;
+    }
+
+    private boolean contiene(String valor, String busqueda) {
+        return valor != null && valor.toLowerCase(Locale.ROOT).contains(busqueda);
+    }
+
+    private TipoCriterioMantenimiento mapear(TipoCriterioReporte filtro) {
+        return switch (filtro) {
+            case TIEMPO -> TipoCriterioMantenimiento.TIEMPO;
+            case KILOMETRAJE -> TipoCriterioMantenimiento.KILOMETRAJE;
+            case HORAS_USO -> TipoCriterioMantenimiento.HORAS_USO;
         };
     }
 
-    private String formatearEstadoAlerta(String estado) {
-        if ("REQUIERE_SERVICIO".equals(estado)) return "🔴 REQUIERE SERVICIO";
-        if ("PROXIMO".equals(estado)) return "🟡 PRÓXIMO A VENCER";
-        if ("INACTIVO".equals(estado)) return "⚪ INACTIVO";
-        return "🟢 AL DÍA";
+    private String n(String valor) {
+        return valor == null || valor.isBlank() ? "N/D" : valor;
+    }
+
+    private String formatearTipoCriterio(TipoCriterioMantenimiento tipo) {
+        if (tipo == null) return "Tiempo";
+        return switch (tipo) {
+            case TIEMPO -> "Tiempo";
+            case KILOMETRAJE -> "Odómetro";
+            case HORAS_USO -> "Horómetro";
+        };
+    }
+
+    private String formatearEstadoAlerta(NivelAlertaReporte estado) {
+        return switch (estado) {
+            case CRITICO -> "🔴 Requiere Servicio";
+            case PROXIMO -> "🟡 Atención Próxima";
+            case INACTIVO -> "⚪ Pausado";
+            case AL_DIA -> "🟢 Al Día";
+        };
+    }
+
+    private CellStyle estiloAlerta(
+            NivelAlertaReporte estado,
+            CellStyle styleCritico, CellStyle styleAlerta, CellStyle styleOk, CellStyle textCenter) {
+        return switch (estado) {
+            case CRITICO -> styleCritico;
+            case PROXIMO -> styleAlerta;
+            case INACTIVO -> textCenter;
+            case AL_DIA -> styleOk;
+        };
     }
 
     private CellStyle crearEstiloTitulo(XSSFWorkbook workbook) {
@@ -482,7 +522,7 @@ public class ProgramacionSeguimientoExcelService {
 
         style.setAlignment(HorizontalAlignment.CENTER);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
-        aplicarBordes(style, BorderStyle.THIN, IndexedColors.GREY_40_PERCENT.getIndex());
+        aplicarBordes(style, BorderStyle.THIN, IndexedColors.GREY_25_PERCENT.getIndex());
         return style;
     }
 

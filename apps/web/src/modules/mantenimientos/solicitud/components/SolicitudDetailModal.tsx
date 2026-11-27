@@ -37,6 +37,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import { openOrDownloadProtectedFile } from "@/shared/api"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { cn } from "@/shared/lib/utils"
 import { WorkflowStatusBadge } from "@/modules/workflow/components/WorkflowStatusBadge"
 import { solicitudQueries } from "../api/solicitud.queries"
@@ -73,7 +74,7 @@ export function SolicitudDetailModal({
   onGestionarOrdenTrabajo,
 }: SolicitudDetailModalProps) {
   const [activeTab, setActiveTab] = useState<string>("general")
-  const [copied, setCopied] = useState(false)
+  const { copy, isCopied } = useCopyToClipboard()
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
   const [openingFileId, setOpeningFileId] = useState<string | null>(null)
 
@@ -157,13 +158,12 @@ export function SolicitudDetailModal({
     }
   }
 
-  const copyFolio = (e: MouseEvent) => {
+  const copyFolio = async (e: MouseEvent) => {
     e.stopPropagation()
     if (!currentSolicitud?.numero) return
-    navigator.clipboard.writeText(currentSolicitud.numero)
-    setCopied(true)
-    toast.success("Folio copiado", { duration: 1200 })
-    setTimeout(() => setCopied(false), 2000)
+    if (await copy(currentSolicitud.numero, currentSolicitud.numero)) {
+      toast.success("Folio copiado", { duration: 1200 })
+    }
   }
 
   const handleDownloadPdf = async (e?: MouseEvent) => {
@@ -210,7 +210,7 @@ export function SolicitudDetailModal({
                   >
                     <Hash className="size-3 text-muted-foreground" />
                     <span>{currentSolicitud.numero}</span>
-                    {copied ? (
+                    {isCopied(currentSolicitud?.numero ?? "") ? (
                       <Check className="size-3 text-emerald-500" />
                     ) : (
                       <Copy className="size-3 opacity-40 hover:opacity-100" />

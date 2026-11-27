@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,7 @@ import java.util.UUID;
         description = "Administración de prioridades de mantenimiento"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class PrioridadController {
 
     private final PrioridadService service;
@@ -36,8 +38,10 @@ public class PrioridadController {
     @GetMapping
     @Operation(summary = "Listar prioridades con paginación y búsqueda opcional (search o q)")
     public ResponseEntity<ApiResponse<PageResponse<PrioridadResponse>>> listar(
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute SearchPageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.listar(pageRequest.getSearchTerm(), pageRequest.toPageRequest()))
         );
@@ -55,6 +59,7 @@ public class PrioridadController {
 
     @PostMapping
     @Operation(summary = "Crear una nueva prioridad")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<PrioridadResponse>> crear(
             @Valid @RequestBody PrioridadRequest dto
     ) {
@@ -66,6 +71,7 @@ public class PrioridadController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar una prioridad existente")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<PrioridadResponse>> actualizar(
             @PathVariable UUID id,
             @Valid @RequestBody PrioridadUpdate dto
@@ -78,6 +84,7 @@ public class PrioridadController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una prioridad")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<Void>> eliminar(
             @PathVariable UUID id
     ) {

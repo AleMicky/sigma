@@ -162,7 +162,7 @@ public class GlobalExceptionHandler {
                 ApiErrorResponse.validation(
                         HttpStatus.BAD_REQUEST.value(),
                         HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                        "VALIDATION_ERROR",
+                        resolveValidationCode(errors),
                         "Existen errores de validación",
                         request.getRequestURI(),
                         errors
@@ -213,8 +213,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             MethodArgumentTypeMismatchException.class,
             MissingServletRequestParameterException.class,
-            HttpMessageNotReadableException.class,
-            IllegalArgumentException.class
+            HttpMessageNotReadableException.class
     })
     public ResponseEntity<ApiErrorResponse> handleBadRequest(
             Exception exception,
@@ -223,6 +222,30 @@ public class GlobalExceptionHandler {
         return buildResponse(
                 HttpStatus.BAD_REQUEST,
                 "BAD_REQUEST",
+                resolveBadRequestMessage(exception),
+                request.getRequestURI()
+        );
+    }
+
+    /** REQ-MANT-030: los controllers de mantenimientos lanzan INVALID_PAGE_SIZE antes del clamp global. */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgument(
+            IllegalArgumentException exception,
+            HttpServletRequest request
+    ) {
+        boolean invalidPageSize = com.endecorani.sigma_api.shared.application.pagination.PageRequestDto.INVALID_PAGE_SIZE_CODE
+                .equals(exception.getMessage());
+        // REQ-MANT-015: el parser de filtros del reporte usa su propio código de contrato.
+        boolean invalidFilterValue = com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ReporteSeguimientoFiltros.INVALID_FILTER_VALUE_CODE
+                .equals(exception.getMessage());
+        String code = invalidPageSize
+                ? com.endecorani.sigma_api.shared.application.pagination.PageRequestDto.INVALID_PAGE_SIZE_CODE
+                : invalidFilterValue
+                        ? com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ReporteSeguimientoFiltros.INVALID_FILTER_VALUE_CODE
+                        : "BAD_REQUEST";
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                code,
                 resolveBadRequestMessage(exception),
                 request.getRequestURI()
         );
@@ -273,6 +296,17 @@ public class GlobalExceptionHandler {
                 exception
         );
 
+        // REQ-MANT-010: la violación del índice parcial de programación activa
+        // se reporta con el código de dominio acordado, no con el genérico.
+        if (esProgramacionActivaDuplicada(exception)) {
+            return buildResponse(
+                    HttpStatus.CONFLICT,
+                    "PROGRAMACION_ACTIVA_DUPLICADA",
+                    "Ya existe una programación de mantenimiento activa para esta asignación del activo al plan",
+                    request.getRequestURI()
+            );
+        }
+
         return buildResponse(
                 HttpStatus.CONFLICT,
                 "DATA_INTEGRITY_VIOLATION",
@@ -280,6 +314,12 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
 
+    }
+
+    private boolean esProgramacionActivaDuplicada(DataIntegrityViolationException exception) {
+        Throwable cause = exception.getMostSpecificCause();
+        String detail = cause != null && cause.getMessage() != null ? cause.getMessage() : "";
+        return detail.contains("uq_programacion_activa_por_plan_activo");
     }
 
     @ExceptionHandler(Exception.class)
@@ -299,6 +339,15 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
 
+    }
+
+    /** REQ-MANT-030: el constraint {@code @Max} del campo size se traduce al código del contrato. */
+    private String resolveValidationCode(List<FieldValidationError> errors) {
+        boolean invalidPageSize = errors.stream().anyMatch(error ->
+                "size".equals(error.field())
+                        && error.rejectedValue() instanceof Number number
+                        && number.intValue() > com.endecorani.sigma_api.shared.util.ApiConstants.MAX_PAGE_SIZE);
+        return invalidPageSize ? "INVALID_PAGE_SIZE" : "VALIDATION_ERROR";
     }
 
     private FieldValidationError mapFieldError(

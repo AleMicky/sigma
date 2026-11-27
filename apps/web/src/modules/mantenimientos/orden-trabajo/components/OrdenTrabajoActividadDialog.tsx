@@ -13,6 +13,7 @@ import {
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { toLocalDateTimeIso } from "@/shared/lib/date"
 
 import {
   useCreateOrdenTrabajoActividad,
@@ -180,9 +181,9 @@ function OrdenTrabajoActividadForm({
             const checked = e.target.checked
             setRealizado(checked)
             if (checked && !fechaRealizacion) {
-              const now = new Date()
-              now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-              setFechaRealizacion(now.toISOString().slice(0, 16))
+              setFechaRealizacion(
+                toLocalDateTimeIso(new Date().toISOString()).slice(0, 16),
+              )
             }
           }}
           className="size-4 rounded border-border text-emerald-600 focus:ring-emerald-500 cursor-pointer"

@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,7 @@ import java.util.UUID;
         description = "Administración de órdenes de trabajo de mantenimiento técnico"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class OrdenTrabajoController {
 
     private final OrdenTrabajoService service;
@@ -55,8 +57,10 @@ public class OrdenTrabajoController {
     public ResponseEntity<ApiResponse<PageResponse<OrdenTrabajoResponse>>> listar(
             @RequestParam(required = false) UUID solicitudMantenimientoId,
             @RequestParam(required = false) String search,
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.listar(solicitudMantenimientoId, search, pageRequest))
         );
@@ -94,6 +98,7 @@ public class OrdenTrabajoController {
 
     @GetMapping("/sugerir-actividades")
     @Operation(summary = "Sugerir actividades y checklist del plan de mantenimiento para una solicitud")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<List<ActividadSugeridaResponse>>> sugerirActividades(
             @RequestParam UUID solicitudMantenimientoId
     ) {
@@ -104,6 +109,7 @@ public class OrdenTrabajoController {
 
     @PostMapping
     @Operation(summary = "Crear una nueva orden de trabajo con sus actividades y adjuntos")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> create(
             @Valid @RequestBody OrdenTrabajoRequest dto
     ) {
@@ -115,6 +121,7 @@ public class OrdenTrabajoController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar una orden de trabajo existente")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody OrdenTrabajoUpdate dto
@@ -127,6 +134,7 @@ public class OrdenTrabajoController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una orden de trabajo")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID id
     ) {

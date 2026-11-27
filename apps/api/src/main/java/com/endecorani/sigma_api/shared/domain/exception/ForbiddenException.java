@@ -8,4 +8,8 @@ public class ForbiddenException extends DomainException {
         super(DEFAULT_CODE, message);
     }
 
+    public ForbiddenException(String code, String message) {
+        super(code, message);
+    }
+
 }

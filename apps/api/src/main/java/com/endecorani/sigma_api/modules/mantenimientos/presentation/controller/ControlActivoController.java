@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,7 @@ import java.util.UUID;
         description = "Administración de controles de activos (entrega y devolución de accesorios)"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class ControlActivoController {
 
     private final ControlActivoService service;
@@ -52,8 +54,10 @@ public class ControlActivoController {
     @GetMapping
     @Operation(summary = "Listar controles de activos con paginación")
     public ResponseEntity<ApiResponse<PageResponse<ControlActivoResponse>>> findAll(
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.findAll(pageRequest))
         );
@@ -101,6 +105,7 @@ public class ControlActivoController {
 
     @PostMapping
     @Operation(summary = "Crear un nuevo control de activo con sus detalles")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<ControlActivoResponse>> create(
             @Valid @RequestBody ControlActivoRequest dto
     ) {
@@ -112,6 +117,7 @@ public class ControlActivoController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar un control de activo existente")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<ControlActivoResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody ControlActivoUpdate dto
@@ -124,6 +130,7 @@ public class ControlActivoController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar un control de activo")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID id
     ) {

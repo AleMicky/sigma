@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
 import { Badge } from "@/shared/components/ui/badge"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { formatDateTime } from "@/shared/utils/date.utils"
 
 import { useDeletePrioridad } from "../api/prioridad.mutations"
@@ -50,23 +51,20 @@ export function PrioridadListView({
   onEdit,
 }: PrioridadListViewProps) {
   const [prioridadToDelete, setPrioridadToDelete] = useState<Prioridad | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copy, isCopied } = useCopyToClipboard()
   const deleteMutation = useDeletePrioridad()
 
-  function copyCode(e: React.MouseEvent, prioridad: Prioridad) {
+  async function copyCode(e: React.MouseEvent, prioridad: Prioridad) {
     e.stopPropagation()
-    navigator.clipboard.writeText(prioridad.codigo)
-    setCopiedId(prioridad.id)
-    toast.success(`Código "${prioridad.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedId(null), 2000)
+    if (await copy(prioridad.codigo, prioridad.id)) {
+      toast.success(`Código "${prioridad.codigo}" copiado al portapapeles`)
+    }
   }
 
   return (
     <div className="w-full rounded-2xl border border-border/80 bg-card divide-y divide-border/40 overflow-hidden shadow-2xs">
       {prioridades.map((prioridad) => {
         const nivelStyles = getNivelPrioridadStyles(prioridad.nivel)
-        const isCopied = copiedId === prioridad.id
-
         const audit =
           "auditoria" in prioridad && prioridad.auditoria
             ? prioridad.auditoria
@@ -109,7 +107,7 @@ export function PrioridadListView({
                       className="inline-flex size-4 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
                       title="Copiar código"
                     >
-                      {isCopied ? (
+                      {isCopied(prioridad.id) ? (
                         <Check className="size-2.5 text-emerald-500" />
                       ) : (
                         <Copy className="size-2.5" />

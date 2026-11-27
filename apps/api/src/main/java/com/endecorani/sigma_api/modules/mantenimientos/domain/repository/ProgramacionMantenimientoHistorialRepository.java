@@ -16,5 +16,10 @@ public interface ProgramacionMantenimientoHistorialRepository {
 
     Optional<ProgramacionMantenimientoHistorial> findBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
 
+    /** REQ-MANT-004/011: detectar historial antes de borrar solicitudes o programaciones. */
+    boolean existsBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
+
+    boolean existsByProgramacionMantenimientoId(UUID programacionMantenimientoId);
+
     ProgramacionMantenimientoHistorial save(ProgramacionMantenimientoHistorial item);
 }

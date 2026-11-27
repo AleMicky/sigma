@@ -1,5 +1,7 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.response;
 
+import tools.jackson.databind.annotation.JsonDeserialize;
+import com.endecorani.sigma_api.shared.infrastructure.datetime.FlexibleLocalDateTimeDeserializer;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 
 import java.time.LocalDateTime;
@@ -16,12 +18,16 @@ public record SolicitudMantenimientoResponse(
                 EmpleadoInfo solicitante,
                 String titulo,
                 String descripcion,
+                @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
                 LocalDateTime fechaSolicitud,
                 EmpleadoInfo aprobador,
                 EmpleadoInfo responsable,
                 EmpleadoInfo supervisor,
+                @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
                 LocalDateTime fechaInicioMantenimiento,
+                @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
                 LocalDateTime fechaFinMantenimiento,
+                @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
                 LocalDateTime fechaCierre,
                 String processInstanceId,
                 String estado,

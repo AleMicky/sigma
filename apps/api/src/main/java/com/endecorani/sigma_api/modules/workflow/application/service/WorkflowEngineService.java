@@ -19,6 +19,11 @@ public interface WorkflowEngineService {
             String processInstanceId
     );
 
+    /** REQ-MANT-027: permite resolver el dominio del proceso antes de completar una tarea. */
+    String obtenerDefinitionKey(
+            String processInstanceId
+    );
+
     WorkflowTaskActionsResponse obtenerAccionesDisponibles(
             String processInstanceId
     );

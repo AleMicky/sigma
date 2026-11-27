@@ -28,6 +28,12 @@ public class OrdenTrabajoActividadEvidenciaRepositoryAdapter implements OrdenTra
     }
 
     @Override
+    public Optional<OrdenTrabajoActividadEvidencia> findByIdAndOrdenTrabajoActividadId(UUID id, UUID ordenTrabajoActividadId) {
+        return springRepository.findByIdAndOrdenTrabajoActividadId(id, ordenTrabajoActividadId)
+                .map(mapper::toEvidenciaDomain);
+    }
+
+    @Override
     public Page<OrdenTrabajoActividadEvidencia> findByOrdenTrabajoActividadId(UUID ordenTrabajoActividadId, Pageable pageable) {
         return springRepository.findByOrdenTrabajoActividadId(ordenTrabajoActividadId, pageable).map(mapper::toEvidenciaDomain);
     }

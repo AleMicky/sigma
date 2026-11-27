@@ -33,6 +33,7 @@ import {
 } from "@/shared/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import { openOrDownloadProtectedFile } from "@/shared/api"
+import { toLocalDateTimeIso } from "@/shared/lib/date"
 import { cn } from "@/shared/lib/utils"
 
 import { solicitudQueries } from "@/modules/mantenimientos/solicitud/api/solicitud.queries"
@@ -208,7 +209,7 @@ export function OrdenTrabajoDetailModal({
         realizado: !act.realizado,
         observacion: act.observacion || null,
         fechaRealizacion: !act.realizado
-          ? new Date().toISOString().slice(0, 19)
+          ? toLocalDateTimeIso(new Date().toISOString())
           : null,
       },
     })

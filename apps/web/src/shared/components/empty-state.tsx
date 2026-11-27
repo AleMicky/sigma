@@ -22,6 +22,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
+      role="alert"
       className={cn(
         "flex flex-1 flex-col items-center justify-center gap-3.5 p-6 text-center sm:p-10 select-none",
         bordered && "rounded-xl border border-dashed border-border/80 bg-muted/10",

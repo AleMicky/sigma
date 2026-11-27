@@ -1,4 +1,10 @@
 import { http } from "@/shared/api"
+import { toLocalDateKey } from "@/shared/lib/date"
+import type { PageResponse } from "@/shared/types/api.types"
+import type {
+  FiltroAlertaSeguimiento,
+  FiltroCriterioSeguimiento,
+} from "../lib/seguimiento-alertas"
 import { programacionMantenimientoEndpoints } from "./programacion-mantenimiento.endpoints"
 
 export type TipoCriterioMantenimiento = "TIEMPO" | "KILOMETRAJE" | "HORAS_USO"
@@ -155,16 +161,14 @@ export type ListProgramacionesParams = {
   activo?: boolean
   q?: string
   page?: number
+  size?: number
+  /** Alias retrocompatible con consumidores anteriores; se envía como `size`. */
   pageSize?: number
+  sortBy?: "id" | "createdAt" | "updatedAt"
+  direction?: "ASC" | "DESC"
 }
 
-export type PageResponse<T> = {
-  content: T[]
-  totalElements: number
-  totalPages: number
-  size: number
-  number: number
-}
+export type { PageResponse }
 
 export async function getProgramaciones(
   params?: ListProgramacionesParams,
@@ -175,8 +179,9 @@ export async function getProgramaciones(
   if (params?.activo !== undefined) query.append("activo", String(params.activo))
   if (params?.q) query.append("q", params.q)
   if (params?.page !== undefined) query.append("page", String(params.page))
-  const size = params?.pageSize ?? 100
-  query.append("size", String(size))
+  query.append("size", String(params?.size ?? params?.pageSize ?? 100))
+  if (params?.sortBy) query.append("sortBy", params.sortBy)
+  if (params?.direction) query.append("direction", params.direction)
 
   const qs = query.toString()
   return http.get<PageResponse<ProgramacionMantenimiento>>(
@@ -325,12 +330,21 @@ export async function exportarSeguimientoExcel(params?: {
   activoId?: string
   activo?: boolean
   q?: string
+  filtroAlerta?: FiltroAlertaSeguimiento | ""
+  filtroCriterio?: FiltroCriterioSeguimiento | ""
 }): Promise<void> {
   const queryParams: Record<string, string> = {}
   if (params?.planMantenimientoActivoId) queryParams.planMantenimientoActivoId = params.planMantenimientoActivoId
   if (params?.activoId) queryParams.activoId = params.activoId
   if (params?.activo !== undefined) queryParams.activo = String(params.activo)
   if (params?.q) queryParams.q = params.q
+  // `TODOS`, vacío o ausencia equivalen a "sin filtro" en el contrato de la API.
+  if (params?.filtroAlerta && params.filtroAlerta !== "TODOS") {
+    queryParams.filtroAlerta = params.filtroAlerta
+  }
+  if (params?.filtroCriterio && params.filtroCriterio !== "TODOS") {
+    queryParams.filtroCriterio = params.filtroCriterio
+  }
 
   const blob = await http.get<Blob>(programacionMantenimientoEndpoints.reporteExcel, {
     params: queryParams,
@@ -343,7 +357,7 @@ export async function exportarSeguimientoExcel(params?: {
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  const fechaHoy = new Date().toISOString().split("T")[0]
+  const fechaHoy = toLocalDateKey()
   a.download = `seguimiento-mantenimiento-preventivo-${fechaHoy}.xlsx`
   document.body.appendChild(a)
   a.click()

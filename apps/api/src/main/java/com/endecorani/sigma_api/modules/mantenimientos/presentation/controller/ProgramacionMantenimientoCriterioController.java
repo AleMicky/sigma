@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,7 @@ import java.util.UUID;
         description = "Administración individual de criterios preventivos (tiempo, odómetro, horómetro) asociados a programaciones"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class ProgramacionMantenimientoCriterioController {
 
     private final ProgramacionMantenimientoCriterioService service;
@@ -36,6 +38,7 @@ public class ProgramacionMantenimientoCriterioController {
             summary = "Agregar un criterio a una programación",
             description = "Valida que no exista otro criterio del mismo tipo en la programación (R2) y que el activo soporte dicho dato (R3)."
     )
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<ProgramacionMantenimientoCriterioResponse>> create(
             @PathVariable UUID programacionId,
             @Valid @RequestBody ProgramacionMantenimientoCriterioRequest request
@@ -51,6 +54,7 @@ public class ProgramacionMantenimientoCriterioController {
             summary = "Actualizar un criterio de programación",
             description = "Actualiza intervalos o valores límite. Garantiza que la programación conserve al menos un criterio activo (R1)."
     )
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<ProgramacionMantenimientoCriterioResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody ProgramacionMantenimientoCriterioUpdate request
@@ -77,6 +81,7 @@ public class ProgramacionMantenimientoCriterioController {
 
     @PatchMapping("/{id}/activar")
     @Operation(summary = "Activar un criterio de programación")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<ProgramacionMantenimientoCriterioResponse>> activar(
             @PathVariable UUID id
     ) {
@@ -89,6 +94,7 @@ public class ProgramacionMantenimientoCriterioController {
             summary = "Desactivar un criterio de programación",
             description = "Valida que no sea el único criterio activo de la programación (Regla 1)."
     )
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<ProgramacionMantenimientoCriterioResponse>> desactivar(
             @PathVariable UUID id
     ) {
@@ -101,6 +107,7 @@ public class ProgramacionMantenimientoCriterioController {
             summary = "Eliminar un criterio de programación",
             description = "Valida que no sea el único criterio activo de la programación (Regla 1)."
     )
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID id
     ) {

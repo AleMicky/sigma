@@ -6,9 +6,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface SpringOrdenTrabajoActividadEvidenciaRepository extends JpaRepository<OrdenTrabajoActividadEvidenciaEntity, UUID> {
+
+    Optional<OrdenTrabajoActividadEvidenciaEntity> findByIdAndOrdenTrabajoActividadId(UUID id, UUID ordenTrabajoActividadId);
 
     Page<OrdenTrabajoActividadEvidenciaEntity> findByOrdenTrabajoActividadId(UUID ordenTrabajoActividadId, Pageable pageable);
 

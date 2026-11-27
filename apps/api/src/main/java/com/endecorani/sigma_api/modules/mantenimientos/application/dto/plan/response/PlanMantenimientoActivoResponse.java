@@ -1,5 +1,7 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.plan.response;
 
+import tools.jackson.databind.annotation.JsonDeserialize;
+import com.endecorani.sigma_api.shared.infrastructure.datetime.FlexibleLocalDateDeserializer;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 
 import java.time.LocalDate;
@@ -13,7 +15,9 @@ public record PlanMantenimientoActivoResponse(
         ActivoInfo activo,
         UUID responsableId,
         ResponsableInfo responsable,
+        @JsonDeserialize(using = FlexibleLocalDateDeserializer.class)
         LocalDate fechaInicio,
+        @JsonDeserialize(using = FlexibleLocalDateDeserializer.class)
         LocalDate fechaFin,
         Boolean estadoActivo,
         AuditoriaResponse auditoria

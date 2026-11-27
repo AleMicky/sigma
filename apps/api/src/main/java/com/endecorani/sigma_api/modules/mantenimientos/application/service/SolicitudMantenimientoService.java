@@ -11,6 +11,8 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.criteria.Solicitud
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimiento;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoAdjunto;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.model.SolicitudMantenimientoTrazabilidad;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.OrdenTrabajoRepository;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.ProgramacionMantenimientoHistorialRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoResumenProjection;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.SolicitudMantenimientoTrazabilidadRepository;
@@ -34,15 +36,22 @@ import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.storage.DocumentStorageService;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
+import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -81,6 +90,8 @@ public class SolicitudMantenimientoService {
 
     private final SolicitudMantenimientoRepository repository;
     private final SolicitudMantenimientoTrazabilidadRepository trazabilidadRepository;
+    private final ProgramacionMantenimientoHistorialRepository programacionHistorialRepository;
+    private final OrdenTrabajoRepository ordenTrabajoRepository;
     private final EmpleadoRepository empleadoRepository;
     private final SpringVEmpleadoRepository vEmpleadoRepository;
     private final UsuarioRepository usuarioRepository;
@@ -128,6 +139,219 @@ public class SolicitudMantenimientoService {
             return new InterfazFiltros(null, null, null, empleadoActual, false);
         }
         return new InterfazFiltros(empleadoActual, null, null, null, false);
+    }
+
+    /** REQ-MANT-002: roles con lectura global de solicitudes; SOLICITANTE queda limitado a su ámbito. */
+    private boolean esRolLecturaPrivilegiada() {
+        return securityUtils.isAdmin() || tieneRol("SUPERVISOR") || tieneRol("ENCARGADO");
+    }
+
+    private boolean tieneRol(String rol) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(String::toUpperCase)
+                .map(a -> a.replaceFirst("^(ROLE_|ROL_)", "").trim())
+                .anyMatch(a -> a.equals(rol.toUpperCase()));
+    }
+
+    /**
+     * REQ-MANT-002: un SOLICITANTE solo ve sus solicitudes o las de su área.
+     * Sin empleado vinculado se niega el acceso (fail-closed).
+     */
+    private void validarAcceso(SolicitudMantenimiento solicitud) {
+        if (solicitud == null || esRolLecturaPrivilegiada()) {
+            return;
+        }
+        UUID empleadoActualId = obtenerEmpleadoIdActual();
+        if (empleadoActualId == null) {
+            throw new ForbiddenException("El usuario actual no está vinculado a un empleado para acceder a la solicitud");
+        }
+        UUID solicitanteId = solicitud.getSolicitante() != null ? solicitud.getSolicitante().getId() : null;
+        if (empleadoActualId.equals(solicitanteId)) {
+            return;
+        }
+
+        Empleado empleadoActual = empleadoRepository.findById(empleadoActualId).orElse(null);
+        UUID areaActual = empleadoActual != null ? empleadoActual.getAreaId() : null;
+        UUID areaSolicitante = null;
+        if (solicitanteId != null) {
+            areaSolicitante = empleadoRepository.findById(solicitanteId)
+                    .map(Empleado::getAreaId)
+                    .orElse(null);
+        }
+        if (areaActual != null && areaActual.equals(areaSolicitante)) {
+            return;
+        }
+        throw new ForbiddenException("No tiene permisos para acceder a esta solicitud de mantenimiento");
+    }
+
+    /** REQ-MANT-003: el actor/solicitante siempre se deriva del JWT; cualquier ID distinto se rechaza. */
+    private void validarActorDeclarado(Map<String, Object> variables, UUID empleadoAutenticadoId) {
+        // El bypass auditado aplica solo a ADMIN; SUPERVISOR/ENCARGADO también deben declarar el actor real.
+        if (variables == null || securityUtils.isAdmin()) {
+            return;
+        }
+        for (String key : List.of("solicitanteId", "actorId", "empleadoId")) {
+            Object declarado = variables.get(key);
+            if (declarado == null || declarado.toString().isBlank()) {
+                continue;
+            }
+            if (empleadoAutenticadoId == null
+                    || !empleadoAutenticadoId.toString().equalsIgnoreCase(declarado.toString().trim())) {
+                throw new ForbiddenException("El " + key + " declarado no coincide con el usuario autenticado");
+            }
+        }
+    }
+
+    /** Valida que el aprobador exista y tenga rol SUPERVISOR o ADMIN.
+     * REQ-MANT-008: también lo reutiliza la programación preventiva para no duplicar la política. */
+    public Empleado validarAprobador(UUID aprobadorId) {
+        if (aprobadorId == null) {
+            throw new BusinessException(
+                    "APROBADOR_REQUERIDO",
+                    "Debe seleccionar un aprobador con rol SUPERVISOR o ADMIN");
+        }
+        Empleado aprobador = empleadoRepository.findById(aprobadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Empleado", aprobadorId));
+        if (!empleadoTieneRolAprobador(aprobador)) {
+            throw new BusinessException(
+                    "APROBADOR_ROL_INVALIDO",
+                    "El aprobador seleccionado debe tener rol SUPERVISOR o ADMIN");
+        }
+        return aprobador;
+    }
+
+    /**
+     * REQ-MANT-032: candidatos reales a aprobador de la programación preventiva.
+     * Se consultan solo los empleados cuyo usuario tiene el rol SUPERVISOR activo;
+     * nunca se recorre el catálogo completo ni se elige un empleado al azar.
+     */
+    @Transactional(readOnly = true)
+    public List<Empleado> findAprobadoresSupervisores() {
+        List<UUID> personaIds;
+        try {
+            personaIds = jdbcClient.sql("""
+                            SELECT DISTINCT u.persona_id
+                            FROM seguridad.usuarios u
+                            JOIN seguridad.usuarios_roles ur ON ur.usuario_id = u.id AND ur.activo
+                            JOIN seguridad.roles r ON r.id = ur.rol_id AND r.activo
+                            WHERE upper(r.codigo) IN ('SUPERVISOR', 'ROLE_SUPERVISOR')
+                              AND u.persona_id IS NOT NULL
+                            """)
+                    .query(UUID.class)
+                    .list();
+        } catch (Exception ex) {
+            log.warn("No se pudieron resolver los supervisores candidatos a aprobador: {}", ex.getMessage());
+            return List.of();
+        }
+        if (personaIds == null || personaIds.isEmpty()) {
+            return List.of();
+        }
+        return personaIds.stream()
+                .map(empleadoRepository::findFirstByPersonaId)
+                .flatMap(Optional::stream)
+                .toList();
+    }
+
+    /**
+     * REQ-MANT-028: valida el aprobador en las transiciones de aprobación de la ruta por ID.
+     * En {@code borradorSolicitud} el aprobador viene del formulario Web; en
+     * {@code revisarSolicitud} Web no lo envía, por lo que se deriva del contexto persistido
+     * (o del assignee de la tarea) sin forzar un 422 al cliente real.
+     */
+    private void validarAprobadorEnTransicion(
+            String taskDefinitionKey,
+            UUID actorEmpleadoId,
+            Map<String, Object> variables,
+            String assignee,
+            SolicitudMantenimiento solicitud) {
+
+        boolean esBorrador = "borradorSolicitud".equalsIgnoreCase(taskDefinitionKey);
+        boolean esRevision = "revisarSolicitud".equalsIgnoreCase(taskDefinitionKey);
+        if (!esBorrador && !esRevision) {
+            return;
+        }
+
+        UUID aprobadorId = null;
+        if (variables != null) {
+            Object declarado = variables.get("aprobadorId");
+            if (declarado != null && !declarado.toString().isBlank()) {
+                try {
+                    aprobadorId = UUID.fromString(declarado.toString().trim());
+                } catch (IllegalArgumentException ex) {
+                    throw new BusinessException(
+                            "APROBADOR_ID_INVALIDO",
+                            "El aprobador indicado no tiene un identificador válido");
+                }
+            }
+        }
+        if (aprobadorId == null && solicitud.getAprobador() != null) {
+            aprobadorId = solicitud.getAprobador().getId();
+        }
+        if (aprobadorId == null && esRevision && assignee != null && !assignee.isBlank()) {
+            try {
+                aprobadorId = UUID.fromString(assignee.trim());
+            } catch (IllegalArgumentException ex) {
+                throw new BusinessException(
+                        "APROBADOR_ID_INVALIDO",
+                        "El responsable asignado a la tarea no tiene un identificador válido");
+            }
+        }
+
+        Empleado aprobador = validarAprobador(aprobadorId);
+        UUID solicitanteId = solicitud.getSolicitante() != null ? solicitud.getSolicitante().getId() : null;
+
+        if (securityUtils.isAdmin()) {
+            log.info("REQ-MANT-028 ADMIN bypass en validación de aprobador: solicitud {} tarea {} usuario {} aprobador {}",
+                    solicitud.getId(), taskDefinitionKey, securityUtils.getCurrentUsername(), aprobadorId);
+        } else if (esBorrador && actorEmpleadoId != null && aprobadorId.equals(actorEmpleadoId)) {
+            throw new ForbiddenException("El aprobador debe ser distinto del solicitante que completa la tarea");
+        } else if (solicitanteId != null && aprobadorId.equals(solicitanteId)) {
+            throw new ForbiddenException("El aprobador debe ser distinto del solicitante de la solicitud");
+        }
+
+        // REQ-MANT-008: segregación de duties; quien ejecuta el mantenimiento no puede aprobarlo.
+        UUID responsableId = solicitud.getResponsable() != null ? solicitud.getResponsable().getId() : null;
+        if (!securityUtils.isAdmin() && responsableId != null && responsableId.equals(aprobadorId)) {
+            throw new ForbiddenException("APROBADOR_ES_RESPONSABLE",
+                    "El responsable de la ejecución no puede aprobar su propio mantenimiento");
+        }
+
+        solicitud.setAprobador(aprobador);
+        if (variables != null) {
+            variables.put("aprobadorId", aprobador.getId().toString());
+        }
+    }
+
+    private boolean empleadoTieneRolAprobador(Empleado empleado) {
+        if (empleado == null || empleado.getPersonaId() == null) {
+            return false;
+        }
+        try {
+            List<String> codigos = jdbcClient.sql("""
+                            SELECT upper(r.codigo)
+                            FROM seguridad.usuarios u
+                            JOIN seguridad.usuarios_roles ur ON ur.usuario_id = u.id AND ur.activo
+                            JOIN seguridad.roles r ON r.id = ur.rol_id AND r.activo
+                            WHERE u.persona_id = :personaId
+                            """)
+                    .param("personaId", empleado.getPersonaId())
+                    .query(String.class)
+                    .list();
+            if (codigos == null) {
+                return false;
+            }
+            return codigos.stream()
+                    .map(c -> c != null ? c.toUpperCase().replaceFirst("^ROLE_", "") : "")
+                    .anyMatch(c -> c.equals("SUPERVISOR") || c.equals("ADMIN"));
+        } catch (Exception ex) {
+            log.warn("No se pudieron resolver los roles del aprobador {}: {}", empleado.getId(), ex.getMessage());
+            return false;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -452,12 +676,26 @@ public class SolicitudMantenimientoService {
     }
 
     private SolicitudMantenimientoResponse createInternal(SolicitudMantenimientoRequest dto, List<MultipartFile> files) {
+        UUID empleadoAutenticadoId = obtenerEmpleadoIdActual();
+        if (!securityUtils.isAdmin()) {
+            if (empleadoAutenticadoId == null) {
+                throw new ForbiddenException("El usuario actual no está vinculado a un empleado para crear solicitudes");
+            }
+            if (dto.solicitanteId() != null && !empleadoAutenticadoId.equals(dto.solicitanteId())) {
+                throw new ForbiddenException("El solicitante declarado no coincide con el usuario autenticado");
+            }
+        }
+
         validarActivoSinSolicitudEnProceso(dto.activoId(), null);
 
         String numero = correlativoService.generar(CorrelativoCodigo.SOLICITUD_MANTENIMIENTO,
                 LocalDateTime.now().getYear());
 
         SolicitudMantenimiento solicitud = mapper.toDomain(dto);
+        if (!securityUtils.isAdmin() && empleadoAutenticadoId != null
+                && (solicitud.getSolicitante() == null || solicitud.getSolicitante().getId() == null)) {
+            empleadoRepository.findById(empleadoAutenticadoId).ifPresent(solicitud::setSolicitante);
+        }
 
         solicitud.setNumero(numero);
         solicitud.setFechaSolicitud(LocalDateTime.now());
@@ -519,6 +757,11 @@ public class SolicitudMantenimientoService {
     public SolicitudMantenimientoResponse update(UUID id, SolicitudMantenimientoRequest dto) {
         SolicitudMantenimiento actual = obtenerPorId(id);
 
+        UUID solicitanteActual = actual.getSolicitante() != null ? actual.getSolicitante().getId() : null;
+        if (!securityUtils.isAdmin() && dto.solicitanteId() != null && !dto.solicitanteId().equals(solicitanteActual)) {
+            throw new ForbiddenException("No puede cambiar el solicitante de una solicitud ajena");
+        }
+
         String estadoActual = actual.getEstado() != null ? actual.getEstado().toUpperCase() : "";
         if (!"BORRADOR".equals(estadoActual) && !"OBSERVADO".equals(estadoActual)) {
             throw new ConflictException(
@@ -538,6 +781,20 @@ public class SolicitudMantenimientoService {
     public SolicitudMantenimientoResponse enviar(UUID id, EnviarSolicitudMantenimientoRequest request) {
 
         SolicitudMantenimiento solicitud = obtenerPorId(id);
+
+        // REQ-MANT-003: el actor se deriva del JWT, nunca del cuerpo ni del primer empleado disponible.
+        UUID actorEmpleadoId = obtenerEmpleadoIdActual();
+        UUID solicitanteId = solicitud.getSolicitante() != null ? solicitud.getSolicitante().getId() : null;
+        if (!securityUtils.isAdmin()) {
+            if (actorEmpleadoId == null) {
+                throw new ForbiddenException("El usuario actual no está vinculado a un empleado para enviar la solicitud");
+            }
+            if (!actorEmpleadoId.equals(solicitanteId)) {
+                throw new ForbiddenException("Solo el solicitante puede enviar su solicitud de mantenimiento");
+            }
+        } else {
+            log.info("ADMIN bypass en enviar: solicitud {} ejecutada por usuario {}", id, securityUtils.getCurrentUsername());
+        }
 
         if (!ESTADO_BORRADOR.equalsIgnoreCase(solicitud.getEstado())) {
             throw new ConflictException(
@@ -565,22 +822,10 @@ public class SolicitudMantenimientoService {
         if (aprobadorId == null && solicitud.getResponsable() != null) {
             aprobadorId = solicitud.getResponsable().getId();
         }
-        if (aprobadorId == null) {
-            aprobadorId = empleadoRepository.findAll(org.springframework.data.domain.Pageable.ofSize(1))
-                    .stream()
-                    .findFirst()
-                    .map(Empleado::getId)
-                    .orElse(null);
-        }
-        if (aprobadorId == null) {
-            throw new BusinessException(
-                    "APROBADOR_REQUERIDO",
-                    "Debe seleccionar un aprobador");
-        }
 
-        final UUID finalAprobadorId = aprobadorId;
-        Empleado aprobador = empleadoRepository.findById(finalAprobadorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Empleado", finalAprobadorId));
+        // Ya no se usa "primer empleado" como aprobador por defecto (REQ-MANT-003).
+        Empleado aprobador = validarAprobador(aprobadorId);
+        aprobadorId = aprobador.getId();
         solicitud.setAprobador(aprobador);
 
         if (request != null && request.responsableId() != null) {
@@ -597,8 +842,8 @@ public class SolicitudMantenimientoService {
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("solicitudId", solicitud.getId().toString());
-        if (solicitud.getSolicitante() != null && solicitud.getSolicitante().getId() != null) {
-            variables.put("solicitanteId", solicitud.getSolicitante().getId().toString());
+        if (solicitanteId != null) {
+            variables.put("solicitanteId", solicitanteId.toString());
         }
         variables.put("aprobadorId", aprobadorId.toString());
 
@@ -624,16 +869,13 @@ public class SolicitudMantenimientoService {
         CompleteWorkflowTaskRequest taskRequest = new CompleteWorkflowTaskRequest(variables);
         workflowApplicationService.completarTarea(
                 solicitud.getProcessInstanceId(),
-                taskRequest);
+                taskRequest,
+                true);
 
         solicitud.setEstado(ESTADO_SOLICITADO);
 
         SolicitudMantenimiento actualizado = repository.save(solicitud);
 
-        UUID actorEmpleadoId = obtenerEmpleadoIdActual();
-        if (actorEmpleadoId == null && actualizado.getSolicitante() != null) {
-            actorEmpleadoId = actualizado.getSolicitante().getId();
-        }
         registrarTrazabilidad(
                 actualizado.getId(),
                 estadoAnterior,
@@ -671,20 +913,29 @@ public class SolicitudMantenimientoService {
                     "La solicitud no tiene una tarea activa en el flujo de trabajo");
         }
 
+        // REQ-MANT-003: una tarea sin responsable no puede completarse ni por ADMIN.
+        String assignee = tareaActual.assignee() != null ? tareaActual.assignee().trim() : null;
+        if (assignee == null || assignee.isBlank()) {
+            throw new ConflictException(
+                    "TAREA_NO_ASIGNADA",
+                    "La tarea activa no tiene un responsable asignado");
+        }
+
         // Validar permisos del actor asignado a la tarea
         UUID currentEmpId = obtenerEmpleadoIdActual();
-        if (!securityUtils.isAdmin()) {
+        if (securityUtils.isAdmin()) {
+            log.info("ADMIN bypass en completarWorkflow: solicitud {} tarea {} ejecutada por usuario {} (assignee {})",
+                    solicitudId, tareaActual.id(), securityUtils.getCurrentUsername(), assignee);
+        } else {
             if (currentEmpId == null) {
                 throw new BusinessException(
                         "USUARIO_NO_EMPLEADO",
                         "El usuario actual no está vinculado a un empleado para ejecutar acciones del flujo");
             }
-            if (tareaActual.assignee() != null && !tareaActual.assignee().isBlank()) {
-                if (!currentEmpId.toString().equalsIgnoreCase(tareaActual.assignee().trim())) {
-                    throw new ConflictException(
-                            "TAREA_NO_ASIGNADA",
-                            "No tiene permisos para completar esta tarea de la solicitud. Está asignada a otro usuario.");
-                }
+            if (!currentEmpId.toString().equalsIgnoreCase(assignee)) {
+                throw new ConflictException(
+                        "TAREA_NO_ASIGNADA",
+                        "No tiene permisos para completar esta tarea de la solicitud. Está asignada a otro usuario.");
             }
         }
 
@@ -696,7 +947,12 @@ public class SolicitudMantenimientoService {
 
         Map<String, Object> effectiveVariables = new HashMap<>();
         if (request != null && request.variables() != null) {
+            validarActorDeclarado(request.variables(), currentEmpId);
             effectiveVariables.putAll(request.variables());
+        }
+        if (!securityUtils.isAdmin() && currentEmpId != null) {
+            // El valor de solicitud/actor siempre se deriva del JWT; se ignora cualquier valor del cuerpo.
+            effectiveVariables.put("solicitanteId", currentEmpId.toString());
         }
 
         if (!effectiveVariables.containsKey("supervisorId")) {
@@ -712,11 +968,19 @@ public class SolicitudMantenimientoService {
             effectiveVariables.put("responsableId", solicitud.getResponsable().getId().toString());
         }
 
+        validarAprobadorEnTransicion(
+                tareaActual.taskDefinitionKey(),
+                currentEmpId,
+                effectiveVariables,
+                assignee,
+                solicitud);
+
         CompleteWorkflowTaskRequest effectiveRequest = new CompleteWorkflowTaskRequest(effectiveVariables);
 
         WorkflowTaskActionsResponse resultado = workflowApplicationService.completarTarea(
                 solicitud.getProcessInstanceId(),
-                effectiveRequest);
+                effectiveRequest,
+                true);
 
         String nuevoEstado = resultado.status() != null ? resultado.status().toLowerCase().trim() : null;
         if (nuevoEstado != null) {
@@ -731,18 +995,7 @@ public class SolicitudMantenimientoService {
         // Controlar que variables de asignación solo se actualicen en las tareas correspondientes del BPMN
         String taskDefKey = tareaActual.taskDefinitionKey() != null ? tareaActual.taskDefinitionKey().trim() : "";
         if (request != null && request.variables() != null) {
-            if ("borradorSolicitud".equalsIgnoreCase(taskDefKey) || securityUtils.isAdmin()) {
-                Object aprobadorIdObj = request.variables().get("aprobadorId");
-                if (aprobadorIdObj != null && !aprobadorIdObj.toString().isBlank()) {
-                    try {
-                        empleadoRepository.findById(UUID.fromString(aprobadorIdObj.toString().trim()))
-                                .ifPresent(solicitud::setAprobador);
-                    } catch (Exception e) {
-                        log.warn("No se pudo asignar aprobadorId={} en solicitud {}: {}", aprobadorIdObj, solicitudId, e.getMessage());
-                    }
-                }
-            }
-
+            // REQ-MANT-028: el aprobador ya fue validado y persistido antes de completar la tarea.
             if ("revisarSolicitud".equalsIgnoreCase(taskDefKey) || securityUtils.isAdmin()) {
                 Object responsableIdObj = request.variables().get("responsableId");
                 if (responsableIdObj != null && !responsableIdObj.toString().isBlank()) {
@@ -885,15 +1138,89 @@ public class SolicitudMantenimientoService {
                 .toList();
     }
 
+    /**
+     * REQ-MANT-004: borrado con alcance (REQ-MANT-002) y sin borrar registros en uso.
+     * REQ-MANT-031: la limpieza de archivos se registra en {@code afterCommit}, nunca
+     * antes del borrado en BD, para que un 409/rollback no deje el storage sin archivos.
+     * Nunca se deja escapar un {@code DATA_INTEGRITY_VIOLATION} genérico: cualquier uso
+     * se reporta como {@code 409 SOLICITUD_EN_USO}.
+     */
     @Transactional
     public void delete(UUID id) {
-        obtenerPorId(id);
-        repository.deleteById(id);
+        SolicitudMantenimiento solicitud = obtenerPorId(id);
+        validarSinUsosParaBorrado(solicitud);
+
+        try {
+            repository.deleteById(id);
+        } catch (DataIntegrityViolationException ex) {
+            throw new ConflictException("SOLICITUD_EN_USO",
+                    "No se puede eliminar la solicitud porque tiene registros dependientes");
+        }
+
+        programarLimpiezaDeAdjuntos(solicitud);
+    }
+
+    /** REQ-MANT-031: solo las URLs de los adjuntos de la solicitud borrada, tras el commit. */
+    private void programarLimpiezaDeAdjuntos(SolicitudMantenimiento solicitud) {
+        if (solicitud.getAdjuntos() == null) {
+            return;
+        }
+        List<String> urls = solicitud.getAdjuntos().stream()
+                .filter(Objects::nonNull)
+                .map(SolicitudMantenimientoAdjunto::getUrl)
+                .filter(url -> url != null && !url.isBlank())
+                .distinct()
+                .toList();
+        if (urls.isEmpty()) {
+            return;
+        }
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    eliminarAdjuntos(urls);
+                }
+            });
+        } else {
+            // Sin sincronización activa no hay transacción que pueda hacer rollback.
+            eliminarAdjuntos(urls);
+        }
+    }
+
+    private void eliminarAdjuntos(List<String> urls) {
+        for (String url : urls) {
+            try {
+                documentStorageService.delete(url);
+            } catch (RuntimeException ex) {
+                log.warn("No se pudo eliminar el adjunto {} tras borrar la solicitud: {}", url, ex.getMessage());
+            }
+        }
+    }
+
+    private void validarSinUsosParaBorrado(SolicitudMantenimiento solicitud) {
+        UUID id = solicitud.getId();
+        String motivo = null;
+        if (solicitud.getProcessInstanceId() != null && !solicitud.getProcessInstanceId().isBlank()) {
+            motivo = "tiene una instancia de workflow activa";
+        } else if (ordenTrabajoRepository.existsBySolicitudMantenimientoId(id)) {
+            motivo = "tiene una orden de trabajo asociada";
+        } else if (!trazabilidadRepository.findBySolicitudMantenimientoId(id).isEmpty()) {
+            motivo = "tiene historial de trazabilidad";
+        } else if (programacionHistorialRepository.existsBySolicitudMantenimientoId(id)) {
+            motivo = "es el disparador de una programación preventiva";
+        }
+        if (motivo != null) {
+            throw new ConflictException("SOLICITUD_EN_USO",
+                    "No se puede eliminar la solicitud " + solicitud.getNumero() + " porque " + motivo + ".");
+        }
     }
 
     private SolicitudMantenimiento obtenerPorId(UUID id) {
-        return repository.findById(id)
+        SolicitudMantenimiento solicitud = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitud de mantenimiento", id));
+        validarAcceso(solicitud);
+        return solicitud;
     }
 
     private void registrarTrazabilidad(UUID solicitudId, String estadoAnterior, String estadoNuevo, String comentario,

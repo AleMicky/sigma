@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,6 +26,13 @@ public class ActividadMantenimientoAplicacionRepositoryAdapter implements Activi
     @Override
     public Optional<ActividadMantenimientoAplicacion> findById(UUID id) {
         return springRepository.findById(id).map(mapper::toAplicacionDomain);
+    }
+
+    @Override
+    public List<ActividadMantenimientoAplicacion> findAllByIdIn(Collection<UUID> ids) {
+        return springRepository.findAllById(ids).stream()
+                .map(mapper::toAplicacionDomain)
+                .collect(Collectors.toList());
     }
 
     @Override

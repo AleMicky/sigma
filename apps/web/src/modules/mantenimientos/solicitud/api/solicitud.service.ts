@@ -1,5 +1,6 @@
 import type { CompleteWorkflowTaskPayload } from "@/modules/workflow"
 import { http } from "@/shared/api"
+import { openPdfInNewTab } from "@/shared/api/files"
 import type { PageResponse } from "@/shared/types/api.types"
 
 import { SOLICITUD_ENDPOINTS } from "./solicitud.endpoints"
@@ -70,7 +71,6 @@ export type SolicitudMantenimientoPayload = {
   solicitanteId: string
   titulo: string
   descripcion: string
-  fechaSolicitud?: string | null
 }
 
 export type SolicitudPayload = SolicitudMantenimientoPayload
@@ -161,15 +161,10 @@ export async function downloadSolicitudReportePdf(
  * Endpoint: GET /api/v1/solicitudes-mantenimiento/{id}/reporte-pdf
  */
 export async function openSolicitudReportePdf(id: string): Promise<void> {
-  const blob = await http.get<Blob>(SOLICITUD_ENDPOINTS.reportePdf(id), {
-    responseType: "blob",
-    headers: {
-      Accept: "application/pdf",
-    },
-  })
-
-  const url = window.URL.createObjectURL(blob)
-  window.open(url, "_blank")
+  await openPdfInNewTab(
+    SOLICITUD_ENDPOINTS.reportePdf(id),
+    `solicitud-${id}.pdf`,
+  )
 }
 
 // Aliases para conveniencia y compatibilidad

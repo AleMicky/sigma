@@ -28,6 +28,11 @@ public class OrdenTrabajoAdjuntoRepositoryAdapter implements OrdenTrabajoAdjunto
     }
 
     @Override
+    public Optional<OrdenTrabajoAdjunto> findByIdAndOrdenTrabajoId(UUID id, UUID ordenTrabajoId) {
+        return springRepository.findByIdAndOrdenTrabajoId(id, ordenTrabajoId).map(mapper::toAdjuntoDomain);
+    }
+
+    @Override
     public Page<OrdenTrabajoAdjunto> findByOrdenTrabajoId(UUID ordenTrabajoId, Pageable pageable) {
         return springRepository.findByOrdenTrabajoId(ordenTrabajoId, pageable).map(mapper::toAdjuntoDomain);
     }

@@ -46,8 +46,7 @@ export function SolicitudClasificacionSection() {
 
       {/* Título de la Solicitud */}
       <form.Field name="titulo">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(field: any) => {
+        {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -77,8 +76,7 @@ export function SolicitudClasificacionSection() {
 
       {/* Tipo de Mantenimiento (Badges interactivos) */}
       <form.Field name="tipoMantenimientoId">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(field: any) => {
+        {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -129,8 +127,7 @@ export function SolicitudClasificacionSection() {
 
       {/* Solicitante Selector */}
       <form.Field name="solicitanteId">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(field: any) => {
+        {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -166,8 +163,7 @@ export function SolicitudClasificacionSection() {
       {/* Tipo de Falla y Nivel de Prioridad */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-0.5 items-start">
         <form.Field name="tipoFallas">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -197,8 +193,7 @@ export function SolicitudClasificacionSection() {
         </form.Field>
 
         <form.Field name="prioridadId">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(field: any) => {
+          {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             const selected = prioridadesMap.get(field.state.value)

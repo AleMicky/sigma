@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,12 +25,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Detalles de Controles de Activos", description = "Administración de detalles de controles de activos (accesorios)")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class ControlActivoDetalleController {
 
         private final ControlActivoDetalleService controlActivoDetalleService;
 
         @PostMapping
         @Operation(summary = "Crear un detalle de control de activo")
+        @PreAuthorize(MantenimientoRoles.OPERACION)
         public ResponseEntity<ApiResponse<ControlActivoDetalleResponse>> create(
                         @Valid @RequestBody ControlActivoDetalleRequest request) {
                 ControlActivoDetalleResponse response = controlActivoDetalleService.create(request);
@@ -43,6 +46,7 @@ public class ControlActivoDetalleController {
 
         @PutMapping("/{id}")
         @Operation(summary = "Actualizar un detalle de control de activo")
+        @PreAuthorize(MantenimientoRoles.OPERACION)
         public ResponseEntity<ApiResponse<ControlActivoDetalleResponse>> update(
                         @PathVariable UUID id,
                         @Valid @RequestBody ControlActivoDetalleRequest request) {
@@ -66,7 +70,9 @@ public class ControlActivoDetalleController {
         @Operation(summary = "Listar detalles de controles de activos de forma paginada")
         public ResponseEntity<ApiResponse<PageResponse<ControlActivoDetalleResponse>>> findAll(
                         @RequestParam(required = false) UUID controlActivoId,
+                        @RequestParam(name = "size", required = false) Integer sizeSolicitado,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
+                MantenimientoPageSizeValidator.validar(sizeSolicitado);
                 PageResponse<ControlActivoDetalleResponse> response = controlActivoId != null
                                 ? controlActivoDetalleService.findAll(controlActivoId, pageRequest)
                                 : controlActivoDetalleService.findAll(pageRequest);
@@ -77,6 +83,7 @@ public class ControlActivoDetalleController {
 
         @DeleteMapping("/{id}")
         @Operation(summary = "Eliminar un detalle de control de activo")
+        @PreAuthorize(MantenimientoRoles.OPERACION)
         public ResponseEntity<ApiResponse<Void>> delete(
                         @PathVariable UUID id) {
                 controlActivoDetalleService.delete(id);

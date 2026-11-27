@@ -1,4 +1,5 @@
 import { http } from "@/shared/api"
+import type { PageResponse } from "@/shared/types/api.types"
 
 import { planMantenimientoActivoEndpoints } from "./plan-mantenimiento-activo.endpoints"
 
@@ -93,14 +94,6 @@ export async function activarPlanMantenimientoActivo(id: string): Promise<PlanMa
 
 export async function deletePlanMantenimientoActivo(id: string): Promise<void> {
   return http.delete<void>(planMantenimientoActivoEndpoints.detail(id))
-}
-
-export type PageResponse<T> = {
-  content: T[]
-  totalElements: number
-  totalPages: number
-  size: number
-  number: number
 }
 
 export async function getPlanMantenimientoActivosPaginado(params?: {

@@ -30,8 +30,14 @@ public record PageRequestDto(
         Sort.Direction direction
 ) {
 
+    /** REQ-MANT-030: código del contrato que usan los controllers de mantenimientos para rechazar {@code size > 500}. */
+    public static final String INVALID_PAGE_SIZE_CODE = "INVALID_PAGE_SIZE";
+
     public PageRequestDto {
         page = page == null || page < 0 ? 0 : page;
+        // REQ-MANT-030: se restaura el clamp global (heredado): size>500 se recorta a 500
+        // y responde 200. El rechazo 400 INVALID_PAGE_SIZE es exclusivo de mantenimientos
+        // y se aplica en sus controllers con MantenimientoPageSizeValidator antes de este DTO.
         size = size == null || size <= 0 ? ApiConstants.DEFAULT_PAGE_SIZE : Math.min(size, ApiConstants.MAX_PAGE_SIZE);
         sortBy = sortBy == null || sortBy.isBlank()
                 ? ApiConstants.DEFAULT_SORT_FIELD

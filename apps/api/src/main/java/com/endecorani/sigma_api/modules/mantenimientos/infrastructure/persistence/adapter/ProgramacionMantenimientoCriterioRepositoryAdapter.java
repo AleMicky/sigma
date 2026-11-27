@@ -9,6 +9,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistenc
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +30,13 @@ public class ProgramacionMantenimientoCriterioRepositoryAdapter implements Progr
     @Override
     public List<ProgramacionMantenimientoCriterio> findByProgramacionMantenimientoId(UUID programacionMantenimientoId) {
         return springRepository.findByProgramacionMantenimientoId(programacionMantenimientoId).stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProgramacionMantenimientoCriterio> findByProgramacionMantenimientoIdIn(Collection<UUID> programacionIds) {
+        return springRepository.findByProgramacionMantenimientoIdIn(programacionIds).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }

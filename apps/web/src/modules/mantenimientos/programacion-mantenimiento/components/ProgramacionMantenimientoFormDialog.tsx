@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select"
+import { toLocalDateKey } from "@/shared/lib/date"
 import { cn } from "@/shared/lib/utils"
 
 import { planMantenimientoQueries } from "../../plan-mantenimiento/api/plan-mantenimiento.queries"
@@ -132,9 +133,7 @@ function ProgramacionMantenimientoFormDialogContent({
   const [diasIntervalo, setDiasIntervalo] = useState<number | "">(
     () => initialCritTiempo?.intervaloDias ?? 90,
   )
-  const [fechaBase, setFechaBase] = useState<string>(
-    () => new Date().toISOString().split("T")[0],
-  )
+  const [fechaBase, setFechaBase] = useState<string>(toLocalDateKey)
   const [horasInicial, setHorasInicial] = useState<number | "">(
     () => initialCritHoras?.valorActualUso ?? "",
   )
@@ -202,11 +201,13 @@ function ProgramacionMantenimientoFormDialogContent({
   }, [kmInicial, kmIntervalo])
 
   const proximaFechaCalculada = useMemo(() => {
-    const base = fechaBase ? new Date(fechaBase) : new Date()
     const dias = Number(diasIntervalo) || 0
     if (dias <= 0) return ""
-    const target = new Date(base.getTime() + dias * 24 * 60 * 60 * 1000)
-    return target.toISOString().split("T")[0]
+    // `yyyy-MM-dd` se interpreta como fecha local: sumar días sobre componentes
+    // locales evita el desplazamiento de `toISOString()` en UTC-4.
+    const target = fechaBase ? new Date(`${fechaBase}T00:00:00`) : new Date()
+    target.setDate(target.getDate() + dias)
+    return toLocalDateKey(target)
   }, [fechaBase, diasIntervalo])
 
   const proximoHorasLimite = useMemo(() => {
@@ -359,7 +360,7 @@ function ProgramacionMantenimientoFormDialogContent({
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {formError && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+            <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
               <AlertTriangle className="size-4 shrink-0 mt-0.5" />
               <p className="leading-relaxed font-medium">{formError}</p>
             </div>

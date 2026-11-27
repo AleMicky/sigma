@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.model.PlanMantenim
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,6 +14,9 @@ public interface PlanMantenimientoActivoRepository {
     Page<PlanMantenimientoActivo> findAll(Pageable pageable);
 
     Optional<PlanMantenimientoActivo> findById(UUID id);
+
+    /** REQ-MANT-019: resolución en lote para el enriquecimiento de listados. */
+    List<PlanMantenimientoActivo> findAllByIdIn(Collection<UUID> ids);
 
     List<PlanMantenimientoActivo> findByPlanMantenimientoId(UUID planMantenimientoId);
 

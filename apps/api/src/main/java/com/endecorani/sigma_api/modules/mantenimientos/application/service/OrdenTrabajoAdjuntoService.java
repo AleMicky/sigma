@@ -42,9 +42,7 @@ public class OrdenTrabajoAdjuntoService {
 
     @Transactional
     public OrdenTrabajoAdjuntoResponse createWithFile(UUID ordenTrabajoId, OrdenTrabajoAdjuntoRequest request, MultipartFile file) {
-        if (!ordenTrabajoRepository.findById(ordenTrabajoId).isPresent()) {
-            throw new ResourceNotFoundException("Orden de trabajo", ordenTrabajoId);
-        }
+        validarOrdenTrabajo(ordenTrabajoId);
 
         UUID fileId = UUID.randomUUID();
         DocumentStorageService.StoredFile stored = documentStorageService.store(
@@ -68,8 +66,8 @@ public class OrdenTrabajoAdjuntoService {
     }
 
     @Transactional
-    public OrdenTrabajoAdjuntoResponse replaceFile(UUID id, MultipartFile file) {
-        OrdenTrabajoAdjunto domain = obtenerPorId(id);
+    public OrdenTrabajoAdjuntoResponse replaceFile(UUID ordenTrabajoId, UUID id, MultipartFile file) {
+        OrdenTrabajoAdjunto domain = obtenerPorId(ordenTrabajoId, id);
         String oldUrl = domain.getUrl();
 
         UUID fileId = UUID.randomUUID();
@@ -94,29 +92,38 @@ public class OrdenTrabajoAdjuntoService {
     }
 
     @Transactional(readOnly = true)
-    public OrdenTrabajoAdjuntoResponse findById(UUID id) {
-        OrdenTrabajoAdjunto domain = obtenerPorId(id);
+    public OrdenTrabajoAdjuntoResponse findById(UUID ordenTrabajoId, UUID id) {
+        OrdenTrabajoAdjunto domain = obtenerPorId(ordenTrabajoId, id);
         return mapper.toAdjuntoResponse(domain);
     }
 
     @Transactional(readOnly = true)
     public PageResponse<OrdenTrabajoAdjuntoResponse> findByOrdenTrabajoId(UUID ordenTrabajoId, PageRequestDto pageRequest) {
+        validarOrdenTrabajo(ordenTrabajoId);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Page<OrdenTrabajoAdjunto> resultado = repository.findByOrdenTrabajoId(ordenTrabajoId, pageable);
         return PageResponse.from(resultado, mapper::toAdjuntoResponse);
     }
 
     @Transactional
-    public void delete(UUID id) {
-        OrdenTrabajoAdjunto domain = obtenerPorId(id);
+    public void delete(UUID ordenTrabajoId, UUID id) {
+        OrdenTrabajoAdjunto domain = obtenerPorId(ordenTrabajoId, id);
         if (domain.getUrl() != null) {
             documentStorageService.delete(domain.getUrl());
         }
         repository.deleteById(id);
     }
 
-    private OrdenTrabajoAdjunto obtenerPorId(UUID id) {
-        return repository.findById(id)
+    private void validarOrdenTrabajo(UUID ordenTrabajoId) {
+        if (ordenTrabajoId == null || !ordenTrabajoRepository.findById(ordenTrabajoId).isPresent()) {
+            throw new ResourceNotFoundException("Orden de trabajo", ordenTrabajoId);
+        }
+    }
+
+    /** REQ-MANT-002: el ID del padre es obligatorio; un adjunto de otra orden se oculta como 404. */
+    private OrdenTrabajoAdjunto obtenerPorId(UUID ordenTrabajoId, UUID id) {
+        validarOrdenTrabajo(ordenTrabajoId);
+        return repository.findByIdAndOrdenTrabajoId(id, ordenTrabajoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Adjunto de orden de trabajo", id));
     }
 }

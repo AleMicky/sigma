@@ -178,7 +178,8 @@ public class WorkflowEntitySupport {
         CompleteWorkflowTaskRequest taskRequest = new CompleteWorkflowTaskRequest(effectiveVariables);
         WorkflowTaskActionsResponse siguienteTarea = workflowApplicationService.completarTarea(
                 processInstanceId,
-                taskRequest
+                taskRequest,
+                true // REQ-MANT-029: llamada interna de un módulo gestionado
         );
 
         return new WorkflowExecutionResult(
