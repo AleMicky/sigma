@@ -4,6 +4,7 @@ import { toast } from "sonner"
 
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { RowActions } from "@/shared/components/row-actions"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { formatDateTime } from "@/shared/utils/date.utils"
 
 import { useDeleteTipoMantenimiento } from "../api/tipo-mantenimiento.mutations"
@@ -19,22 +20,19 @@ export function TipoMantenimientoListView({
   onEdit,
 }: TipoMantenimientoListViewProps) {
   const [itemToDelete, setItemToDelete] = useState<TipoMantenimiento | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copy, isCopied } = useCopyToClipboard()
   const deleteMutation = useDeleteTipoMantenimiento()
 
-  function copyCode(e: React.MouseEvent, item: TipoMantenimiento) {
+  async function copyCode(e: React.MouseEvent, item: TipoMantenimiento) {
     e.stopPropagation()
-    navigator.clipboard.writeText(item.codigo)
-    setCopiedId(item.id)
-    toast.success(`Código "${item.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedId(null), 2000)
+    if (await copy(item.codigo, item.id)) {
+      toast.success(`Código "${item.codigo}" copiado al portapapeles`)
+    }
   }
 
   return (
     <div className="w-full rounded-2xl border border-border/80 bg-card divide-y divide-border/40 overflow-hidden shadow-2xs">
       {tiposMantenimiento.map((tipo) => {
-        const isCopied = copiedId === tipo.id
-
         const audit =
           "auditoria" in tipo && tipo.auditoria
             ? tipo.auditoria
@@ -71,7 +69,7 @@ export function TipoMantenimientoListView({
                       className="inline-flex size-4 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
                       title="Copiar código"
                     >
-                      {isCopied ? (
+                      {isCopied(tipo.id) ? (
                         <Check className="size-2.5 text-emerald-500" />
                       ) : (
                         <Copy className="size-2.5" />

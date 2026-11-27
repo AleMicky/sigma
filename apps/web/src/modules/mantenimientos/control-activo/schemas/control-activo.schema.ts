@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { toLocalDateTimeIso } from "@/shared/lib/date"
+
 export const controlActivoDetalleItemSchema = z.object({
   accesorioId: z.string().uuid("Seleccione un accesorio válido"),
   nombreAccesorio: z.string().optional(),
@@ -46,7 +48,7 @@ export const defaultControlActivoValues: ControlActivoFormValues = {
   tipo: "ENTREGA",
   entregadoPorId: null,
   recibidoPorId: null,
-  fecha: new Date().toISOString().substring(0, 16),
+  fecha: toLocalDateTimeIso(new Date().toISOString()).slice(0, 16),
   conforme: true,
   observacion: "",
   detalles: [],

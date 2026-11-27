@@ -14,7 +14,10 @@ import {
   Sparkles,
 } from "lucide-react"
 import { getErrorMessage } from "@/shared/api"
+import { Pagination } from "@/shared/components/pagination"
 import { Button } from "@/shared/components/ui/button"
+import { Skeleton } from "@/shared/components/ui/skeleton"
+import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { useProgramaciones } from "../api/programacion-mantenimiento.queries"
 import type { ProgramacionMantenimiento } from "../api/programacion-mantenimiento.service"
 import { ProgramacionMantenimientoListView } from "../components/ProgramacionMantenimientoListView"
@@ -23,11 +26,16 @@ import { ProgramacionMantenimientoFormDialog } from "../components/ProgramacionM
 import { EvaluarTodasDialog } from "../components/EvaluarTodasDialog"
 import { EvaluarProgramacionDialog } from "../components/EvaluarProgramacionDialog"
 
+const PAGE_SIZE = 20
+
 export function ProgramacionesMantenimientoPage() {
   const navigate = useNavigate()
   const [vistaActiva, setVistaActiva] = useState<"tarjetas" | "reporte">("tarjetas")
-  const [searchTerm, setSearchTerm] = useState("")
   const [filtroEstado, setFiltroEstado] = useState<"todos" | "activos" | "inactivos">("todos")
+  const search = usePaginatedSearch({
+    debounceMs: 300,
+    resetKey: `${vistaActiva}|${filtroEstado}`,
+  })
   const [showExplain, setShowExplain] = useState(true)
   const [formDialogOpen, setFormDialogOpen] = useState(false)
   const [evaluarTodasOpen, setEvaluarTodasOpen] = useState(false)
@@ -35,11 +43,16 @@ export function ProgramacionesMantenimientoPage() {
   const [programacionAEvaluar, setProgramacionAEvaluar] = useState<ProgramacionMantenimiento | null>(null)
   const [evaluarIndividualOpen, setEvaluarIndividualOpen] = useState(false)
 
-  const { data: pageData, isLoading, isError, error, refetch, isRefetching } = useProgramaciones({
+  const { data: pageData, isLoading, isError, error, refetch, isFetching, isRefetching } = useProgramaciones({
     activo: filtroEstado === "todos" ? undefined : filtroEstado === "activos",
-    q: searchTerm.trim() || undefined,
-    pageSize: 100,
+    q: search.debouncedSearch.trim() || undefined,
+    page: search.page,
+    size: PAGE_SIZE,
+    sortBy: "id",
+    direction: "ASC",
   })
+
+  useClampPage(search.page, search.setPage, pageData?.totalPages)
 
   const programaciones: ProgramacionMantenimiento[] = useMemo(() => {
     if (Array.isArray(pageData)) return pageData
@@ -49,8 +62,15 @@ export function ProgramacionesMantenimientoPage() {
     return []
   }, [pageData])
 
-  // Métricas
-  const total = programaciones.length
+  const errorMessage = isError ? getErrorMessage(error) : undefined
+  const valorKpi = (valor: string | number) => {
+    if (isLoading) return <Skeleton className="h-8 w-12" />
+    return isError ? "—" : valor
+  }
+
+  // Métricas: el total viene del agregado del servidor, no de la página parcial.
+  const totalElements = pageData?.totalElements ?? 0
+  const total = totalElements
   const vigentes = useMemo(() => programaciones.filter((p) => p.activo).length, [programaciones])
   const conTiempo = useMemo(
     () => programaciones.filter((p) => (p.criterios ?? []).some((c) => c.tipoCriterio === "TIEMPO" && c.activo)).length,
@@ -181,12 +201,15 @@ export function ProgramacionesMantenimientoPage() {
 
       {/* Alerta si falla la consulta */}
       {isError && (
-        <div className="flex items-center justify-between p-4 rounded-2xl border border-destructive/30 bg-destructive/10 text-destructive text-xs">
+        <div
+          role="alert"
+          className="flex items-center justify-between p-4 rounded-2xl border border-destructive/30 bg-destructive/10 text-destructive text-xs"
+        >
           <div className="flex items-center gap-2">
             <AlertTriangle className="size-4 shrink-0" />
             <span>
               Ocurrió un error al cargar las programaciones de mantenimiento:{" "}
-              {getErrorMessage(error)}
+              {errorMessage}. Los indicadores no están disponibles.
             </span>
           </div>
           <Button
@@ -234,8 +257,10 @@ export function ProgramacionesMantenimientoPage() {
                 <span className="text-[11.5px] font-medium">Total Programaciones</span>
                 <Sparkles className="size-4 text-amber-500" />
               </div>
-              <div className="text-2xl font-bold tracking-tight text-foreground">{total}</div>
-              <p className="text-[10.5px] text-muted-foreground mt-0.5">{vigentes} vigentes actualmente</p>
+              <div className="text-2xl font-bold tracking-tight text-foreground">{valorKpi(total)}</div>
+              <p className="text-[10.5px] text-muted-foreground mt-0.5">
+                {valorKpi(vigentes)} vigentes en esta página
+              </p>
             </div>
 
             <div className="rounded-2xl border border-border/60 bg-card p-3.5 shadow-xs">
@@ -243,7 +268,7 @@ export function ProgramacionesMantenimientoPage() {
                 <span className="text-[11.5px] font-medium">Por Tiempo (Días)</span>
                 <Clock className="size-4 text-blue-500" />
               </div>
-              <div className="text-2xl font-bold tracking-tight text-foreground">{conTiempo}</div>
+              <div className="text-2xl font-bold tracking-tight text-foreground">{valorKpi(conTiempo)}</div>
               <p className="text-[10.5px] text-muted-foreground mt-0.5">Control de fechas límites</p>
             </div>
 
@@ -252,7 +277,7 @@ export function ProgramacionesMantenimientoPage() {
                 <span className="text-[11.5px] font-medium">Por Odómetro (Km)</span>
                 <Gauge className="size-4 text-amber-500" />
               </div>
-              <div className="text-2xl font-bold tracking-tight text-foreground">{conKm}</div>
+              <div className="text-2xl font-bold tracking-tight text-foreground">{valorKpi(conKm)}</div>
               <p className="text-[10.5px] text-muted-foreground mt-0.5">Vehículos y flotas</p>
             </div>
 
@@ -261,7 +286,7 @@ export function ProgramacionesMantenimientoPage() {
                 <span className="text-[11.5px] font-medium">Por Horómetro (Hrs)</span>
                 <Hourglass className="size-4 text-purple-500" />
               </div>
-              <div className="text-2xl font-bold tracking-tight text-foreground">{conHoras}</div>
+              <div className="text-2xl font-bold tracking-tight text-foreground">{valorKpi(conHoras)}</div>
               <p className="text-[10.5px] text-muted-foreground mt-0.5">Maquinaria pesada y equipos</p>
             </div>
           </div>
@@ -270,9 +295,13 @@ export function ProgramacionesMantenimientoPage() {
           <ProgramacionMantenimientoListView
             programaciones={programaciones}
             isLoading={isLoading}
+            isError={isError}
+            isFetching={isFetching}
+            errorMessage={errorMessage}
+            onRetry={refetch}
             onEdit={handleEdit}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            searchTerm={search.search}
+            onSearchChange={search.setSearch}
             filtroEstado={filtroEstado}
             onFiltroEstadoChange={setFiltroEstado}
           />
@@ -282,10 +311,27 @@ export function ProgramacionesMantenimientoPage() {
         <ProgramacionSeguimientoReportView
           programaciones={programaciones}
           isLoading={isLoading}
+          isError={isError}
+          isFetching={isFetching}
+          errorMessage={errorMessage}
+          onRetry={refetch}
           onEdit={handleEdit}
           onEvaluarIndividual={handleEvaluarIndividual}
         />
       )}
+
+      {/* Paginación real del servidor: page/size/sortBy/direction viajan en la query y en la query key */}
+      <Pagination
+        page={{
+          page: pageData?.page ?? search.page,
+          size: pageData?.size ?? PAGE_SIZE,
+          totalElements,
+          totalPages: pageData?.totalPages ?? 0,
+          first: pageData?.first ?? true,
+          last: pageData?.last ?? true,
+        }}
+        onPageChange={search.setPage}
+      />
 
       {/* Diálogo de Creación / Edición */}
       <ProgramacionMantenimientoFormDialog

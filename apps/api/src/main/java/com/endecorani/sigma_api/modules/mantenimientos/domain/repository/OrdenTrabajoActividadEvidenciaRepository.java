@@ -12,6 +12,8 @@ public interface OrdenTrabajoActividadEvidenciaRepository {
 
     Optional<OrdenTrabajoActividadEvidencia> findById(UUID id);
 
+    Optional<OrdenTrabajoActividadEvidencia> findByIdAndOrdenTrabajoActividadId(UUID id, UUID ordenTrabajoActividadId);
+
     Page<OrdenTrabajoActividadEvidencia> findByOrdenTrabajoActividadId(UUID ordenTrabajoActividadId, Pageable pageable);
 
     List<OrdenTrabajoActividadEvidencia> findByOrdenTrabajoActividadId(UUID ordenTrabajoActividadId);

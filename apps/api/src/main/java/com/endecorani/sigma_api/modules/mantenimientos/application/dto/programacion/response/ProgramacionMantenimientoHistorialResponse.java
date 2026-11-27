@@ -1,5 +1,8 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response;
 
+import tools.jackson.databind.annotation.JsonDeserialize;
+import com.endecorani.sigma_api.shared.infrastructure.datetime.FlexibleLocalDateDeserializer;
+import com.endecorani.sigma_api.shared.infrastructure.datetime.FlexibleLocalDateTimeDeserializer;
 import com.endecorani.sigma_api.modules.mantenimientos.domain.enums.TipoCriterioMantenimiento;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 
@@ -16,9 +19,11 @@ public record ProgramacionMantenimientoHistorialResponse(
         TipoCriterioMantenimiento tipoCriterioDisparador,
         String valorDisparador,
         String valorLimite,
+        @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
         LocalDateTime fechaDisparo,
         String snapshotValores,
         Boolean completado,
+        @JsonDeserialize(using = FlexibleLocalDateDeserializer.class)
         LocalDate fechaServicio,
         BigDecimal valorUsoServicio,
         String observacion,

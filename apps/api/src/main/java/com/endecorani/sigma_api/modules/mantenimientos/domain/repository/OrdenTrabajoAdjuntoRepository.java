@@ -12,6 +12,8 @@ public interface OrdenTrabajoAdjuntoRepository {
 
     Optional<OrdenTrabajoAdjunto> findById(UUID id);
 
+    Optional<OrdenTrabajoAdjunto> findByIdAndOrdenTrabajoId(UUID id, UUID ordenTrabajoId);
+
     Page<OrdenTrabajoAdjunto> findByOrdenTrabajoId(UUID ordenTrabajoId, Pageable pageable);
 
     List<OrdenTrabajoAdjunto> findByOrdenTrabajoId(UUID ordenTrabajoId);

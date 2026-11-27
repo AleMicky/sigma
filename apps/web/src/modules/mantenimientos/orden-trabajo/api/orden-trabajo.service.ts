@@ -1,4 +1,5 @@
 import { http, isApiError } from "@/shared/api"
+import { openPdfInNewTab } from "@/shared/api/files"
 import type { PageParams, PageResponse } from "@/shared/types/api.types"
 import type { AuditableEntity } from "@/shared/types/audit.types"
 
@@ -362,15 +363,10 @@ export async function downloadOrdenTrabajoReportePdf(
  * Endpoint: GET /api/v1/ordenes-trabajo/{id}/reporte-pdf
  */
 export async function openOrdenTrabajoReportePdf(id: string): Promise<void> {
-  const blob = await http.get<Blob>(ORDEN_TRABAJO_ENDPOINTS.reportePdf(id), {
-    responseType: "blob",
-    headers: {
-      Accept: "application/pdf",
-    },
-  })
-
-  const url = window.URL.createObjectURL(blob)
-  window.open(url, "_blank")
+  await openPdfInNewTab(
+    ORDEN_TRABAJO_ENDPOINTS.reportePdf(id),
+    `orden-trabajo-${id}.pdf`,
+  )
 }
 
 export type ChecklistItemSugerido = {

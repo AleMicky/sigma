@@ -30,6 +30,7 @@ import { AuditInfo } from "@/shared/components/audit-info"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { cn } from "@/shared/lib/utils"
 
 import { useDeleteActividad } from "../api/actividad.mutations"
@@ -68,7 +69,7 @@ export function ActividadDetailPanel({
     useState<EnrichedAplicacion | null>(null)
   const [showDeleteActividadDialog, setShowDeleteActividadDialog] =
     useState(false)
-  const [copiedCode, setCopiedCode] = useState(false)
+  const { copy, isCopied } = useCopyToClipboard()
 
   // Checklist modal state
   const [activeAplicacionForChecklist, setActiveAplicacionForChecklist] =
@@ -153,12 +154,11 @@ export function ActividadDetailPanel({
     aplicacionesQuery.data?.totalElements ?? rawAplicaciones.length
   const hasAplicacion = totalAplicaciones > 0
 
-  function copyActividadCode() {
+  async function copyActividadCode() {
     if (!actividad) return
-    navigator.clipboard.writeText(actividad.codigo)
-    setCopiedCode(true)
-    toast.success(`Código "${actividad.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedCode(false), 2000)
+    if (await copy(actividad.codigo, actividad.id)) {
+      toast.success(`Código "${actividad.codigo}" copiado al portapapeles`)
+    }
   }
 
   function handleOpenAddChecklistItem(app: ActividadAplicacion) {
@@ -323,7 +323,7 @@ export function ActividadDetailPanel({
                   className="inline-flex size-3.5 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground cursor-pointer"
                   title="Copiar código"
                 >
-                  {copiedCode ? (
+                  {isCopied(actividad.id) ? (
                     <Check className="size-3 text-emerald-500" />
                   ) : (
                     <Copy className="size-3" />
@@ -331,7 +331,7 @@ export function ActividadDetailPanel({
                 </button>
               </div>
               <span className="text-[10px] text-muted-foreground font-medium">
-                {copiedCode ? "Copiado!" : "Referencia"}
+                {isCopied(actividad.id) ? "Copiado!" : "Referencia"}
               </span>
             </div>
           </div>

@@ -25,6 +25,7 @@ import { getErrorMessage } from "@/shared/api"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -63,7 +64,7 @@ export function PlanActivosTabContent({ plan }: PlanActivosTabContentProps) {
   const [itemToDesactivar, setItemToDesactivar] = useState<PlanMantenimientoActivo | null>(null)
   const [searchFilter, setSearchFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
-  const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const { copy, isCopied } = useCopyToClipboard()
 
   const planId = plan.id
 
@@ -143,11 +144,10 @@ export function PlanActivosTabContent({ plan }: PlanActivosTabContentProps) {
     })
   }, [asignaciones, searchFilter, statusFilter])
 
-  function copyText(code: string) {
-    navigator.clipboard.writeText(code)
-    setCopiedCode(code)
-    toast.success(`Código "${code}" copiado`)
-    setTimeout(() => setCopiedCode(null), 2000)
+  async function copyText(code: string) {
+    if (await copy(code, code)) {
+      toast.success(`Código "${code}" copiado`)
+    }
   }
 
   return (
@@ -323,7 +323,7 @@ export function PlanActivosTabContent({ plan }: PlanActivosTabContentProps) {
         ) : (
           <div className="space-y-3">
             {filteredAsignaciones.map((item) => {
-              const isCopied = copiedCode === item.activo?.codigo
+              const estaCopiado = isCopied(item.activo?.codigo ?? "")
               const isActivo = Boolean(item.estadoActivo)
               const prog = programacionesByPlanActivo.get(item.id)
 
@@ -368,7 +368,7 @@ export function PlanActivosTabContent({ plan }: PlanActivosTabContentProps) {
                                 className="inline-flex size-4 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
                                 title="Copiar código"
                               >
-                                {isCopied ? (
+                                {estaCopiado ? (
                                   <Check className="size-2.5 text-emerald-500" />
                                 ) : (
                                   <Copy className="size-2.5" />

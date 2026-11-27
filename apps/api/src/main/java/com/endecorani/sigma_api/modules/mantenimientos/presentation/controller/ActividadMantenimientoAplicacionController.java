@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,12 +28,14 @@ import java.util.UUID;
         description = "Administración de relaciones entre actividades de mantenimiento, tipos de activo y componentes"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class ActividadMantenimientoAplicacionController {
 
     private final ActividadMantenimientoAplicacionService service;
 
     @PostMapping
     @Operation(summary = "Crear una aplicación de actividad de mantenimiento")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<ActividadMantenimientoAplicacionResponse>> create(
             @Valid @RequestBody ActividadMantenimientoAplicacionRequest request
     ) {
@@ -44,6 +47,7 @@ public class ActividadMantenimientoAplicacionController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar una aplicación de actividad de mantenimiento")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<ActividadMantenimientoAplicacionResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody ActividadMantenimientoAplicacionRequest request
@@ -68,8 +72,10 @@ public class ActividadMantenimientoAplicacionController {
     @Operation(summary = "Listar aplicaciones por actividad de mantenimiento")
     public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoAplicacionResponse>>> findByActividadMantenimientoId(
             @RequestParam UUID actividadMantenimientoId,
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.findByActividadMantenimientoId(actividadMantenimientoId, pageRequest))
         );
@@ -88,8 +94,10 @@ public class ActividadMantenimientoAplicacionController {
     @GetMapping
     @Operation(summary = "Listar todas las aplicaciones de forma paginada")
     public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoAplicacionResponse>>> findAll(
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.findAll(pageRequest))
         );
@@ -97,6 +105,7 @@ public class ActividadMantenimientoAplicacionController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una aplicación de actividad de mantenimiento")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID id
     ) {

@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,12 +25,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Órdenes de Trabajo Actividades", description = "Administración de actividades de órdenes de trabajo")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class OrdenTrabajoActividadController {
 
         private final OrdenTrabajoActividadService service;
 
         @PostMapping
         @Operation(summary = "Crear una actividad de orden de trabajo")
+        @PreAuthorize(MantenimientoRoles.OPERACION)
         public ResponseEntity<ApiResponse<OrdenTrabajoActividadResponse>> create(
                         @Valid @RequestBody OrdenTrabajoActividadRequest request) {
                 return ResponseEntity
@@ -42,6 +45,7 @@ public class OrdenTrabajoActividadController {
 
         @PutMapping("/{id}")
         @Operation(summary = "Actualizar una actividad de orden de trabajo")
+        @PreAuthorize(MantenimientoRoles.OPERACION)
         public ResponseEntity<ApiResponse<OrdenTrabajoActividadResponse>> update(
                         @PathVariable UUID id,
                         @Valid @RequestBody OrdenTrabajoActividadRequest request) {
@@ -63,7 +67,9 @@ public class OrdenTrabajoActividadController {
         @Operation(summary = "Listar actividades por orden de trabajo")
         public ResponseEntity<ApiResponse<PageResponse<OrdenTrabajoActividadResponse>>> findByOrdenTrabajoId(
                         @RequestParam UUID ordenTrabajoId,
+                        @RequestParam(name = "size", required = false) Integer sizeSolicitado,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
+                MantenimientoPageSizeValidator.validar(sizeSolicitado);
                 return ResponseEntity.ok(
                                 ApiResponse.success(
                                                 service.findByOrdenTrabajoId(ordenTrabajoId, pageRequest)));
@@ -72,7 +78,9 @@ public class OrdenTrabajoActividadController {
         @GetMapping
         @Operation(summary = "Listar todas las actividades de órdenes de trabajo")
         public ResponseEntity<ApiResponse<PageResponse<OrdenTrabajoActividadResponse>>> findAll(
+                        @RequestParam(name = "size", required = false) Integer sizeSolicitado,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
+                MantenimientoPageSizeValidator.validar(sizeSolicitado);
                 return ResponseEntity.ok(
                                 ApiResponse.success(
                                                 service.findAll(pageRequest)));
@@ -80,6 +88,7 @@ public class OrdenTrabajoActividadController {
 
         @DeleteMapping("/{id}")
         @Operation(summary = "Eliminar una actividad de orden de trabajo")
+        @PreAuthorize(MantenimientoRoles.OPERACION)
         public ResponseEntity<ApiResponse<Void>> delete(
                         @PathVariable UUID id) {
                 service.delete(id);

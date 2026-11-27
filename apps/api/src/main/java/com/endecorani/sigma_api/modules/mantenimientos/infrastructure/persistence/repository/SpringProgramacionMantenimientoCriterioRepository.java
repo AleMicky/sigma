@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.enums.TipoCriterio
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity.ProgramacionMantenimientoCriterioEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +13,8 @@ public interface SpringProgramacionMantenimientoCriterioRepository
         extends JpaRepository<ProgramacionMantenimientoCriterioEntity, UUID> {
 
     List<ProgramacionMantenimientoCriterioEntity> findByProgramacionMantenimientoId(UUID programacionMantenimientoId);
+
+    List<ProgramacionMantenimientoCriterioEntity> findByProgramacionMantenimientoIdIn(Collection<UUID> programacionIds);
 
     List<ProgramacionMantenimientoCriterioEntity> findByProgramacionMantenimientoIdAndActivoTrue(UUID programacionMantenimientoId);
 

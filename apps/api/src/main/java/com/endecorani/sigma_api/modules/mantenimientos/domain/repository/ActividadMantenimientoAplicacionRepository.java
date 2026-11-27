@@ -4,6 +4,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.model.ActividadMan
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,6 +12,9 @@ import java.util.UUID;
 public interface ActividadMantenimientoAplicacionRepository {
 
     Optional<ActividadMantenimientoAplicacion> findById(UUID id);
+
+    /** REQ-MANT-019: una sola consulta para las aplicaciones sugeridas por un plan. */
+    List<ActividadMantenimientoAplicacion> findAllByIdIn(Collection<UUID> ids);
 
     Page<ActividadMantenimientoAplicacion> findAll(Pageable pageable);
 

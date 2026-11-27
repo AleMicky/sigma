@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -52,6 +53,13 @@ public class PlanMantenimientoRepositoryAdapter implements PlanMantenimientoRepo
     @Override
     public Optional<PlanMantenimiento> findById(UUID id) {
         return springRepository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<PlanMantenimiento> findAllByIdIn(Collection<UUID> ids) {
+        return springRepository.findAllById(ids).stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
     }
 
     @Override

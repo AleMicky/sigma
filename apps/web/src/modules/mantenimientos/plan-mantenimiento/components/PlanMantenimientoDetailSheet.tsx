@@ -23,6 +23,7 @@ import { getErrorMessage } from "@/shared/api"
 import { ConfirmDeleteDialog } from "@/shared/components/confirm-delete-dialog"
 import { EmptyState } from "@/shared/components/empty-state"
 import { ListSkeleton } from "@/shared/components/list-skeleton"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -77,7 +78,7 @@ function PlanMantenimientoDetailSheetContent({
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<PlanMantenimientoActividad | null>(null)
   const [searchFilter, setSearchFilter] = useState("")
-  const [copiedCode, setCopiedCode] = useState(false)
+  const { copy, isCopied } = useCopyToClipboard()
 
   const planId = plan?.id ?? ""
 
@@ -141,12 +142,11 @@ function PlanMantenimientoDetailSheetContent({
   )
   const opcionalesCount = totalActividades - obligatoriasCount
 
-  function copyCode() {
+  async function copyCode() {
     if (!plan?.codigo) return
-    navigator.clipboard.writeText(plan.codigo)
-    setCopiedCode(true)
-    toast.success(`Código "${plan.codigo}" copiado al portapapeles`)
-    setTimeout(() => setCopiedCode(false), 2000)
+    if (await copy(plan.codigo, plan.id)) {
+      toast.success(`Código "${plan.codigo}" copiado al portapapeles`)
+    }
   }
 
   async function handleToggleObligatorio(actividad: PlanMantenimientoActividad) {
@@ -218,7 +218,7 @@ function PlanMantenimientoDetailSheetContent({
                       className="inline-flex size-5 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
                       title="Copiar código"
                     >
-                      {copiedCode ? (
+                      {isCopied(plan.id) ? (
                         <Check className="size-3 text-emerald-500" />
                       ) : (
                         <Copy className="size-3" />

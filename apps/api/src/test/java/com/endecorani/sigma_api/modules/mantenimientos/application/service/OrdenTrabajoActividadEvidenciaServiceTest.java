@@ -7,6 +7,7 @@ import com.endecorani.sigma_api.modules.mantenimientos.domain.repository.OrdenTr
 import com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.repository.SpringOrdenTrabajoActividadRepository;
 import com.endecorani.sigma_api.shared.application.storage.DocumentStorageService;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -54,8 +55,10 @@ class OrdenTrabajoActividadEvidenciaServiceTest {
                 .url(initialUrl)
                 .build();
 
+        UUID actividadId = domain.getOrdenTrabajoActividadId();
         List<UUID> capturedIds = new ArrayList<>();
-        when(repository.findById(evidenciaId)).thenReturn(Optional.of(domain));
+        when(actividadRepository.existsById(actividadId)).thenReturn(true);
+        when(repository.findByIdAndOrdenTrabajoActividadId(evidenciaId, actividadId)).thenReturn(Optional.of(domain));
         when(documentStorageService.store(eq("orden_trabajo_evidencias"), any(UUID.class), any(MultipartFile.class)))
                 .thenAnswer(inv -> {
                     UUID fileId = inv.getArgument(1);
@@ -73,11 +76,11 @@ class OrdenTrabajoActividadEvidenciaServiceTest {
         });
 
         MockMultipartFile pdf1 = new MockMultipartFile("file", "ev1.pdf", "application/pdf", "%PDF-1.4".getBytes());
-        OrdenTrabajoActividadEvidenciaResponse r1 = service.replaceFile(evidenciaId, pdf1);
+        OrdenTrabajoActividadEvidenciaResponse r1 = service.replaceFile(actividadId, evidenciaId, pdf1);
         String url1 = r1.url();
 
         MockMultipartFile pdf2 = new MockMultipartFile("file", "ev2.pdf", "application/pdf", "%PDF-1.5".getBytes());
-        OrdenTrabajoActividadEvidenciaResponse r2 = service.replaceFile(evidenciaId, pdf2);
+        OrdenTrabajoActividadEvidenciaResponse r2 = service.replaceFile(actividadId, evidenciaId, pdf2);
         String url2 = r2.url();
 
         assertEquals(2, capturedIds.size());
@@ -103,18 +106,33 @@ class OrdenTrabajoActividadEvidenciaServiceTest {
         String existingUrl = "/api/v1/files/orden_trabajo_evidencias/valido.pdf";
         OrdenTrabajoActividadEvidencia domain = OrdenTrabajoActividadEvidencia.builder()
                 .id(evidenciaId)
+                .ordenTrabajoActividadId(UUID.randomUUID())
                 .url(existingUrl)
                 .build();
 
+        UUID actividadId = domain.getOrdenTrabajoActividadId();
         MockMultipartFile invalidFile = new MockMultipartFile("file", "too-big.pdf", "application/pdf", new byte[10]);
-        when(repository.findById(evidenciaId)).thenReturn(Optional.of(domain));
+        when(actividadRepository.existsById(actividadId)).thenReturn(true);
+        when(repository.findByIdAndOrdenTrabajoActividadId(evidenciaId, actividadId)).thenReturn(Optional.of(domain));
         when(documentStorageService.store(eq("orden_trabajo_evidencias"), any(UUID.class), eq(invalidFile)))
                 .thenThrow(new BusinessException("FILE_TOO_LARGE", "El archivo supera el límite permitido"));
 
-        assertThrows(BusinessException.class, () -> service.replaceFile(evidenciaId, invalidFile));
+        assertThrows(BusinessException.class, () -> service.replaceFile(actividadId, evidenciaId, invalidFile));
 
         verify(documentStorageService, never()).delete(any());
         verify(repository, never()).save(any());
         assertEquals(existingUrl, domain.getUrl());
+    }
+
+    @Test
+    void findById_cuandoEvidenciaPerteneceAOtraActividad_debeOcultarlaComo404() {
+        UUID actividadId = UUID.randomUUID();
+        UUID evidenciaId = UUID.randomUUID();
+        when(actividadRepository.existsById(actividadId)).thenReturn(true);
+        when(repository.findByIdAndOrdenTrabajoActividadId(evidenciaId, actividadId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.findById(actividadId, evidenciaId));
+
+        verify(repository, never()).findById(any());
     }
 }

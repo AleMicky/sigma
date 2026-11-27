@@ -14,7 +14,9 @@ import com.endecorani.sigma_api.shared.util.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +31,7 @@ import java.util.UUID;
         description = "Administración del catálogo de actividades técnicas de mantenimiento"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class ActividadMantenimientoController extends AbstractExtendedCrudController<
         ActividadMantenimientoRequest,
         ActividadMantenimientoUpdate,
@@ -63,6 +66,16 @@ public class ActividadMantenimientoController extends AbstractExtendedCrudContro
         return service.listar(pageRequest.getSearchTerm(), pageRequest.toPageRequest());
     }
 
+    // REQ-MANT-030: el listado heredado también aplica la regla de tamaño del módulo.
+    @Override
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<ActividadMantenimientoResponse>>> findAll(
+            @Valid @ModelAttribute SearchPageRequestDto pageRequest
+    ) {
+        MantenimientoPageSizeValidator.validarTamanoDeLaPeticion();
+        return super.findAll(pageRequest);
+    }
+
     @GetMapping("/codigo/{codigo}")
     @Operation(summary = "Obtener una actividad de mantenimiento por su código")
     public ResponseEntity<ApiResponse<ActividadMantenimientoResponse>> findByCodigo(
@@ -81,5 +94,32 @@ public class ActividadMantenimientoController extends AbstractExtendedCrudContro
         return ResponseEntity.ok(
                 ApiResponse.success(service.findByTipoActivoId(tipoActivoId))
         );
+    }
+
+    // La anotación de lectura de la clase no habilita escrituras: se refuerzan aquí.
+    @Override
+    @PostMapping
+    @PreAuthorize(MantenimientoRoles.OPERACION)
+    public ResponseEntity<ApiResponse<ActividadMantenimientoResponse>> create(
+            @Valid @RequestBody ActividadMantenimientoRequest request
+    ) {
+        return super.create(request);
+    }
+
+    @Override
+    @PutMapping("/{id}")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
+    public ResponseEntity<ApiResponse<ActividadMantenimientoResponse>> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody ActividadMantenimientoUpdate request
+    ) {
+        return super.update(id, request);
+    }
+
+    @Override
+    @DeleteMapping("/{id}")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+        return super.delete(id);
     }
 }

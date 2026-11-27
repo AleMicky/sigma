@@ -8,6 +8,7 @@ import com.endecorani.sigma_api.modules.workflow.application.service.WorkflowApp
 import com.endecorani.sigma_api.shared.util.ApiConstants;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +23,8 @@ public class WorkflowRuntimeController {
 
     private final WorkflowApplicationService workflowApplicationService;
 
+    /** REQ-MANT-027: autorización explícita sin excluir roles de otros módulos (p. ej. CONDUCTOR). */
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/instances/{processInstanceId}/current-task")
     public WorkflowTaskResponse obtenerTareaActual(
             @PathVariable String processInstanceId
@@ -30,6 +33,7 @@ public class WorkflowRuntimeController {
                 .obtenerTareaActual(processInstanceId);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/instances/{processInstanceId}/actions")
     public WorkflowTaskActionsResponse obtenerAcciones(
             @PathVariable String processInstanceId
@@ -38,6 +42,7 @@ public class WorkflowRuntimeController {
                 .obtenerAccionesDisponibles(processInstanceId);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/instances/{processInstanceId}/history")
     public WorkflowHistoryResponse obtenerHistorial(
             @PathVariable String processInstanceId
@@ -48,6 +53,7 @@ public class WorkflowRuntimeController {
                 );
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/instances/{processInstanceId}/complete")
     public WorkflowTaskActionsResponse completarTarea(
             @PathVariable String processInstanceId,
@@ -56,7 +62,8 @@ public class WorkflowRuntimeController {
         return workflowApplicationService
                 .completarTarea(
                         processInstanceId,
-                        request
+                        request,
+                        false // REQ-MANT-029: puerta genérica, nunca gestiona mantenimientos
                 );
     }
 }

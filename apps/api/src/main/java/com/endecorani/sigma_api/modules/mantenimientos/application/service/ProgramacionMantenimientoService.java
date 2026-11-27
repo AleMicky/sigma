@@ -10,6 +10,8 @@ import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entit
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoRepository;
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.repository.SpringActivoAtributoValorRepository;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.*;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ReporteSeguimientoFiltros.NivelAlertaReporte;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.request.ReporteSeguimientoFiltros.TipoCriterioReporte;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.*;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.EnviarSolicitudMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.solicitud.request.SolicitudMantenimientoRequest;
@@ -41,11 +43,15 @@ import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
+import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
+import com.endecorani.sigma_api.shared.util.ApiConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -55,12 +61,22 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProgramacionMantenimientoService {
+
+    private static final String CODIGO_UNICIDAD_ACTIVA = "PROGRAMACION_ACTIVA_DUPLICADA";
+    private static final String CODIGO_PROGRAMACION_COMPLETADA = "PROGRAMACION_YA_COMPLETADA";
+    private static final int TAMANO_LOTE = ApiConstants.MAX_PAGE_SIZE;
+    private static final Set<String> ESTADOS_FINALES_MANTENIMIENTO =
+            Set.of("FINALIZADO", "FINALIZADA", "CERRADO", "CERRADA", "TRABAJO_REALIZADO", "COMPLETADO");
+    private static final List<String> CODIGOS_KILOMETRAJE = List.of("KILOMETRAJE", "KM", "ODOMETRO");
+    private static final List<String> CODIGOS_HORAS_USO =
+            List.of("HORAS_USO", "HOROMETRO", "HORAS", "HORAS_TRABAJO");
 
     private final ProgramacionMantenimientoRepository repository;
     private final ProgramacionMantenimientoCriterioRepository criterioRepository;
@@ -90,6 +106,113 @@ public class ProgramacionMantenimientoService {
     @org.springframework.beans.factory.annotation.Autowired
     @Lazy
     private ProgramacionMantenimientoService self;
+
+    private ConflictException programacionActivaDuplicada() {
+        return new ConflictException(CODIGO_UNICIDAD_ACTIVA,
+                "Ya existe una programación de mantenimiento activa para esta asignación del activo al plan.");
+    }
+
+    /** REQ-MANT-010: el flush forcea la violación del índice parcial de V184. */
+    private ProgramacionMantenimiento guardarConUnicidad(ProgramacionMantenimiento item) {
+        try {
+            return repository.saveAndFlush(item);
+        } catch (DataIntegrityViolationException ex) {
+            throw programacionActivaDuplicada();
+        }
+    }
+
+    private boolean tieneRolOperacion() {
+        return securityUtils.isAdmin() || tieneRol("ENCARGADO");
+    }
+
+    private boolean tieneRol(String rol) {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                .map(String::toUpperCase)
+                .map(a -> a.replaceFirst("^(ROLE_|ROL_)", "").trim())
+                .anyMatch(a -> a.equals(rol.toUpperCase()));
+    }
+
+    /** REQ-MANT-006: los valores de telemetría enviados por el cliente son un override privilegiado. */
+    private void validarOverrideEvaluacion(EvaluarProgramacionRequest request) {
+        if (request == null) {
+            return;
+        }
+        boolean hayOverride = request.fechaActual() != null
+                || request.kilometrajeActual() != null
+                || request.horasUsoActual() != null;
+        if (hayOverride && !tieneRolOperacion()) {
+            throw new ForbiddenException("TELEMETRIA_OVERRIDE_NO_PERMITIDO",
+                    "Solo ENCARGADO o ADMIN pueden enviar valores de telemetría en la evaluación");
+        }
+        if (request.fechaActual() != null && request.fechaActual().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("FECHA_EVALUACION_FUTURA");
+        }
+    }
+
+    private void validarOverrideCompletar(CompletarMantenimientoProgramadoRequest request) {
+        if (request == null) {
+            return;
+        }
+        boolean hayOverride = request.kilometrajeServicio() != null || request.horasUsoServicio() != null;
+        if (hayOverride && !tieneRolOperacion()) {
+            throw new ForbiddenException("TELEMETRIA_OVERRIDE_NO_PERMITIDO",
+                    "Solo ENCARGADO o ADMIN pueden enviar kilometraje u horas de uso del servicio");
+        }
+        if (request.fechaServicio() != null && request.fechaServicio().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("FECHA_SERVICIO_FUTURA");
+        }
+    }
+
+    /**
+     * REQ-MANT-032: el aprobador se resuelve entre los empleados con rol SUPERVISOR activo,
+     * distinto del responsable del plan y del solicitante. La política de rol se reutiliza
+     * de {@link SolicitudMantenimientoService#validarAprobador(UUID)} (REQ-MANT-008) para
+     * no duplicar reglas de segregación ni de autorización.
+     */
+    private UUID resolverAprobadorPreventivo(UUID responsableId, UUID solicitanteId) {
+        List<Empleado> candidatos = solicitudMantenimientoService.findAprobadoresSupervisores();
+        if (candidatos != null) {
+            for (Empleado candidato : candidatos) {
+                if (candidato == null || candidato.getId() == null) {
+                    continue;
+                }
+                UUID candidatoId = candidato.getId();
+                if (candidatoId.equals(responsableId) || candidatoId.equals(solicitanteId)) {
+                    continue;
+                }
+                try {
+                    solicitudMantenimientoService.validarAprobador(candidatoId);
+                    return candidatoId;
+                } catch (RuntimeException ex) {
+                    log.debug("Candidato supervisor {} descartado como aprobador preventivo: {}",
+                            candidatoId, ex.getMessage());
+                }
+            }
+        }
+        throw new BusinessException("APROBADOR_REQUERIDO",
+                "No se encontró un aprobador con rol SUPERVISOR distinto del responsable del plan y del solicitante");
+    }
+
+    /** REQ-MANT-018: sustituye {@code Pageable.unpaged()} por lotes de 500. */
+    private List<ProgramacionMantenimiento> buscarPorLotes(
+            UUID planMantenimientoActivoId, UUID activoId, Boolean activo, String q) {
+        List<ProgramacionMantenimiento> resultado = new ArrayList<>();
+        int pagina = 0;
+        Page<ProgramacionMantenimiento> lote;
+        do {
+            lote = repository.search(planMantenimientoActivoId, activoId, activo, q,
+                    PageRequest.of(pagina, TAMANO_LOTE));
+            resultado.addAll(lote.getContent());
+            pagina++;
+        } while (pagina < lote.getTotalPages());
+        return resultado;
+    }
 
     private UUID resolverOCrearPlanActivo(ProgramacionMantenimientoRequest request) {
         if (request.activoId() == null || request.planMantenimientoId() == null) {
@@ -128,7 +251,7 @@ public class ProgramacionMantenimientoService {
         // Evitar múltiples programaciones activas para la misma asignación de activo
         if (Boolean.TRUE.equals(request.activo()) &&
                 repository.existsByPlanMantenimientoActivoIdAndActivoTrue(planActivoId)) {
-            throw new ConflictException("Ya existe una programación de mantenimiento activa para esta asignación del activo al plan.");
+            throw programacionActivaDuplicada();
         }
 
         // Regla 1: Cada programación debe tener al menos un criterio activo.
@@ -169,7 +292,7 @@ public class ProgramacionMantenimientoService {
         // Guardar la cabecera de la programación
         ProgramacionMantenimiento domain = mapper.toDomain(request);
         domain.setPlanMantenimientoActivoId(planActivoId);
-        ProgramacionMantenimiento saved = repository.save(domain);
+        ProgramacionMantenimiento saved = guardarConUnicidad(domain);
 
         // Guardar los criterios asociados
         List<ProgramacionMantenimientoCriterio> criteriosGuardados = new ArrayList<>();
@@ -224,7 +347,7 @@ public class ProgramacionMantenimientoService {
         if (request.activo() != null) {
             if (Boolean.TRUE.equals(request.activo()) &&
                     repository.existsByPlanMantenimientoActivoIdAndActivoTrueAndIdNot(programacion.getPlanMantenimientoActivoId(), id)) {
-                throw new ConflictException("Ya existe otra programación activa para esta asignación del activo al plan.");
+                throw programacionActivaDuplicada();
             }
             programacion.setActivo(request.activo());
         }
@@ -315,61 +438,69 @@ public class ProgramacionMantenimientoService {
         PlanMantenimiento plan = planMantenimientoRepository.findById(request.planMantenimientoId())
                 .orElseThrow(() -> new ResourceNotFoundException("Plan de mantenimiento no encontrado: " + request.planMantenimientoId()));
 
-        Page<Activo> activosPage = activoRepository.findByTipoActivoId(request.tipoActivoId(), Pageable.unpaged());
-        List<Activo> activos = activosPage.getContent();
-        if (activos.isEmpty()) {
-            throw new BusinessException("No se encontraron activos asociados al tipo de activo seleccionado.");
-        }
-
         int creados = 0;
         int actualizados = 0;
+        int procesados = 0;
+        int pagina = 0;
+        Page<Activo> activosPage;
 
-        for (Activo a : activos) {
-            // Asignar al plan si no está asignado
-            List<PlanMantenimientoActivo> asigs = planMantenimientoActivoRepository.findByActivoId(a.getId());
-            PlanMantenimientoActivo pma = asigs.stream()
-                    .filter(x -> Boolean.TRUE.equals(x.getActivo()) && request.planMantenimientoId().equals(x.getPlanMantenimientoId()))
-                    .findFirst()
-                    .orElseGet(() -> {
-                        PlanMantenimientoActivo nuevo = new PlanMantenimientoActivo();
-                        nuevo.setActivoId(a.getId());
-                        nuevo.setPlanMantenimientoId(request.planMantenimientoId());
-                        nuevo.setResponsableId(obtenerEmpleadoIdActual());
-                        nuevo.setFechaInicio(LocalDate.now());
-                        nuevo.setActivo(true);
-                        return planMantenimientoActivoRepository.save(nuevo);
-                    });
+        // REQ-MANT-018: recorrer el tipo de activo en lotes acotados en lugar de Pageable.unpaged().
+        do {
+            activosPage = activoRepository.findByTipoActivoId(
+                    request.tipoActivoId(), PageRequest.of(pagina, TAMANO_LOTE));
+            for (Activo a : activosPage.getContent()) {
+                // Asignar al plan si no está asignado
+                List<PlanMantenimientoActivo> asigs = planMantenimientoActivoRepository.findByActivoId(a.getId());
+                PlanMantenimientoActivo pma = asigs.stream()
+                        .filter(x -> Boolean.TRUE.equals(x.getActivo()) && request.planMantenimientoId().equals(x.getPlanMantenimientoId()))
+                        .findFirst()
+                        .orElseGet(() -> {
+                            PlanMantenimientoActivo nuevo = new PlanMantenimientoActivo();
+                            nuevo.setActivoId(a.getId());
+                            nuevo.setPlanMantenimientoId(request.planMantenimientoId());
+                            nuevo.setResponsableId(obtenerEmpleadoIdActual());
+                            nuevo.setFechaInicio(LocalDate.now());
+                            nuevo.setActivo(true);
+                            return planMantenimientoActivoRepository.save(nuevo);
+                        });
 
-            Optional<ProgramacionMantenimiento> existProg = repository.findByPlanMantenimientoActivoIdAndActivoTrue(pma.getId());
-            if (existProg.isPresent()) {
-                ProgramacionMantenimientoUpdate updateDto = new ProgramacionMantenimientoUpdate(
-                        true,
-                        null,
-                        null,
-                        request.criterios()
-                );
-                update(existProg.get().getId(), updateDto);
-                actualizados++;
-            } else {
-                ProgramacionMantenimientoRequest req = new ProgramacionMantenimientoRequest(
-                        pma.getId(),
-                        a.getId(),
-                        request.planMantenimientoId(),
-                        true,
-                        null,
-                        null,
-                        request.criterios()
-                );
-                create(req);
-                creados++;
+                Optional<ProgramacionMantenimiento> existProg = repository.findByPlanMantenimientoActivoIdAndActivoTrue(pma.getId());
+                if (existProg.isPresent()) {
+                    ProgramacionMantenimientoUpdate updateDto = new ProgramacionMantenimientoUpdate(
+                            true,
+                            null,
+                            null,
+                            request.criterios()
+                    );
+                    update(existProg.get().getId(), updateDto);
+                    actualizados++;
+                } else {
+                    ProgramacionMantenimientoRequest req = new ProgramacionMantenimientoRequest(
+                            pma.getId(),
+                            a.getId(),
+                            request.planMantenimientoId(),
+                            true,
+                            null,
+                            null,
+                            request.criterios()
+                    );
+                    create(req);
+                    creados++;
+                }
             }
+            procesados += activosPage.getContent().size();
+            pagina++;
+        } while (pagina < activosPage.getTotalPages());
+
+        if (procesados == 0) {
+            throw new BusinessException("No se encontraron activos asociados al tipo de activo seleccionado.");
         }
 
         return new BatchProgramacionTipoResponse(
                 creados,
                 actualizados,
-                activos.size(),
-                "Programación preventiva aplicada exitosamente a " + activos.size() + " activos (" + creados + " nuevas, " + actualizados + " actualizadas)."
+                procesados,
+                "Programación preventiva aplicada exitosamente a " + procesados + " activos (" + creados + " nuevas, " + actualizados + " actualizadas)."
         );
     }
 
@@ -379,7 +510,7 @@ public class ProgramacionMantenimientoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Programación de mantenimiento no encontrada: " + id));
 
         if (repository.existsByPlanMantenimientoActivoIdAndActivoTrueAndIdNot(programacion.getPlanMantenimientoActivoId(), id)) {
-            throw new ConflictException("Ya existe una programación activa para esta asignación del activo.");
+            throw programacionActivaDuplicada();
         }
 
         // Regla 1: Cada programación debe tener al menos un criterio activo
@@ -389,7 +520,7 @@ public class ProgramacionMantenimientoService {
         }
 
         programacion.setActivo(true);
-        return toEnrichedResponse(repository.save(programacion));
+        return toEnrichedResponse(guardarConUnicidad(programacion));
     }
 
     @Transactional
@@ -404,6 +535,13 @@ public class ProgramacionMantenimientoService {
     public void delete(UUID id) {
         ProgramacionMantenimiento programacion = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Programación de mantenimiento no encontrada: " + id));
+
+        // REQ-MANT-011: V148 mantiene el FK con ON DELETE CASCADE; el servicio impide
+        // destruir la auditoría. No se toca la migración ya aplicada.
+        if (historialRepository.existsByProgramacionMantenimientoId(id)) {
+            throw new ConflictException("PROGRAMACION_CON_HISTORIAL",
+                    "No se puede eliminar la programación porque tiene historial de ejecuciones registrado.");
+        }
 
         // Eliminar criterios asociados y la programación
         List<ProgramacionMantenimientoCriterio> criterios = criterioRepository.findByProgramacionMantenimientoId(id);
@@ -432,20 +570,18 @@ public class ProgramacionMantenimientoService {
         Pageable pageable = pageRequest.toPageable(Set.of("id", "createdAt", "updatedAt", "activo"));
         String searchQ = (q != null && !q.isBlank()) ? q.trim() : null;
         Page<ProgramacionMantenimiento> page = repository.search(planMantenimientoActivoId, activoId, activo, searchQ, pageable);
-        List<ProgramacionMantenimientoResponse> content = page.getContent().stream()
-                .map(this::toEnrichedResponse)
-                .collect(Collectors.toList());
+        // REQ-MANT-019: una sola tanda de consultas para toda la página.
+        List<ProgramacionMantenimientoResponse> content = toEnrichedResponses(page.getContent());
 
         return PageResponse.of(content, page);
     }
 
     @Transactional(readOnly = true)
     public List<ProgramacionMantenimientoResponse> findByPlanMantenimientoActivoId(UUID planMantenimientoActivoId) {
-        return repository.findByPlanMantenimientoActivoId(planMantenimientoActivoId).stream()
-                .map(this::toEnrichedResponse)
-                .collect(Collectors.toList());
+        return toEnrichedResponses(repository.findByPlanMantenimientoActivoId(planMantenimientoActivoId));
     }
 
+    /** Contrato anterior del reporte: sin filtros de alerta/criterio. */
     @Transactional(readOnly = true)
     public byte[] generarReporteExcel(
             UUID planMantenimientoActivoId,
@@ -453,13 +589,37 @@ public class ProgramacionMantenimientoService {
             Boolean activo,
             String q
     ) {
+        return generarReporteExcel(planMantenimientoActivoId, activoId, activo, q, null, null);
+    }
+
+    /**
+     * REQ-MANT-015: los filtros se validan antes de consultar y se aplican sobre la misma
+     * proyección que usa la tabla Web; la consulta sigue haciéndose por lotes de 500.
+     */
+    @Transactional(readOnly = true)
+    public byte[] generarReporteExcel(
+            UUID planMantenimientoActivoId,
+            UUID activoId,
+            Boolean activo,
+            String q,
+            String filtroAlerta,
+            String filtroCriterio
+    ) {
+        NivelAlertaReporte alerta = ReporteSeguimientoFiltros.parsearAlerta(filtroAlerta);
+        TipoCriterioReporte criterio = ReporteSeguimientoFiltros.parsearCriterio(filtroCriterio);
+
         log.info("Generando reporte Excel de seguimiento preventivo");
         String searchQ = (q != null && !q.isBlank()) ? q.trim() : null;
-        Page<ProgramacionMantenimiento> page = repository.search(planMantenimientoActivoId, activoId, activo, searchQ, Pageable.unpaged());
-        List<ProgramacionMantenimientoResponse> content = page.getContent().stream()
-                .map(this::toEnrichedResponse)
-                .collect(Collectors.toList());
-        return excelService.generarExcel(content);
+        // REQ-MANT-018: el reporte completo se arma por lotes de 500, sin Pageable.unpaged().
+        List<ProgramacionMantenimientoResponse> content = new ArrayList<>();
+        List<ProgramacionMantenimiento> porLotes =
+                buscarPorLotes(planMantenimientoActivoId, activoId, activo, searchQ);
+        // REQ-MANT-019: el enriquecimiento también es por lote, sin un findById por fila.
+        for (int desde = 0; desde < porLotes.size(); desde += TAMANO_LOTE) {
+            content.addAll(toEnrichedResponses(
+                    porLotes.subList(desde, Math.min(desde + TAMANO_LOTE, porLotes.size()))));
+        }
+        return excelService.generarExcel(content, searchQ, alerta, criterio);
     }
 
     /**
@@ -469,6 +629,7 @@ public class ProgramacionMantenimientoService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public EvaluacionProgramacionResponse evaluarProgramacion(UUID id, EvaluarProgramacionRequest request) {
         log.info("Evaluando programación de mantenimiento: {}", id);
+        validarOverrideEvaluacion(request);
 
         ProgramacionMantenimiento programacion = repository.findByIdWithLock(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Programación de mantenimiento no encontrada: " + id));
@@ -626,15 +787,11 @@ public class ProgramacionMantenimientoService {
                     .map(Empleado::getId)
                     .orElse(null);
         }
-        if (solicitanteId == null) {
-            solicitanteId = empleadoRepository.findAll(Pageable.ofSize(1)).stream()
-                    .findFirst()
-                    .map(Empleado::getId)
-                    .orElse(null);
-        }
+        // REQ-MANT-009: se eliminó el fallback a "primer empleado". Sin responsable
+        // resolvable se falla en cerrado con código de dominio, nunca se elige uno al azar.
         if (solicitanteId == null) {
             throw new BusinessException("SOLICITANTE_NO_ASIGNADO",
-                    "No se puede generar la solicitud automática: no se encontró un empleado responsable o disponible para el activo ('" +
+                    "No se puede generar la solicitud automática: el plan no tiene responsable asignado para el activo ('" +
                     activo.getCodigo() + " - " + activo.getNombre() + "').");
         }
 
@@ -646,15 +803,35 @@ public class ProgramacionMantenimientoService {
                     planMantenimientoActividadRepository.findByPlanMantenimientoId(plan.getId());
             if (actividadesPlan != null && !actividadesPlan.isEmpty()) {
                 detalleTareas.append("\n\nTareas y Actividades Programadas del Plan:\n");
+                // REQ-MANT-019: resolver aplicaciones y actividades en dos lotes, no por fila.
+                Set<UUID> aplicacionIds = actividadesPlan.stream()
+                        .map(PlanMantenimientoActividad::getActividadMantenimientoAplicacionId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+                Map<UUID, ActividadMantenimientoAplicacion> aplicaciones = aplicacionIds.isEmpty()
+                        ? Map.of()
+                        : actividadMantenimientoAplicacionRepository.findAllByIdIn(aplicacionIds).stream()
+                                .collect(Collectors.toMap(
+                                        ActividadMantenimientoAplicacion::getId,
+                                        Function.identity(), (a, b) -> a));
+                Set<UUID> actividadIds = aplicaciones.values().stream()
+                        .map(ActividadMantenimientoAplicacion::getActividadMantenimientoId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+                Map<UUID, ActividadMantenimiento> actividades = actividadIds.isEmpty()
+                        ? Map.of()
+                        : actividadMantenimientoRepository.findAllByIdIn(actividadIds).stream()
+                                .collect(Collectors.toMap(
+                                        ActividadMantenimiento::getId, Function.identity(), (a, b) -> a));
                 int idx = 1;
                 for (PlanMantenimientoActividad actPlan : actividadesPlan) {
                     if (actPlan.getActividadMantenimientoAplicacionId() == null) continue;
-                    Optional<ActividadMantenimientoAplicacion> appOpt = actividadMantenimientoAplicacionRepository.findById(actPlan.getActividadMantenimientoAplicacionId());
-                    if (appOpt.isEmpty()) continue;
-                    ActividadMantenimientoAplicacion app = appOpt.get();
+                    ActividadMantenimientoAplicacion app =
+                            aplicaciones.get(actPlan.getActividadMantenimientoAplicacionId());
+                    if (app == null) continue;
                     String actNombre = null;
                     if (app.getActividadMantenimientoId() != null) {
-                        ActividadMantenimiento actInfo = actividadMantenimientoRepository.findById(app.getActividadMantenimientoId()).orElse(null);
+                        ActividadMantenimiento actInfo = actividades.get(app.getActividadMantenimientoId());
                         if (actInfo != null) {
                             actNombre = actInfo.getNombre();
                         }
@@ -728,22 +905,19 @@ public class ProgramacionMantenimientoService {
 
         historialRepository.save(historial);
 
-        // Promover automáticamente la solicitud preventiva a estado SOLICITADO para ingresar al flujo de aprobación
-        try {
-            UUID aprobador = planActivo.getResponsableId() != null ? planActivo.getResponsableId() : solicitanteId;
-            solicitudMantenimientoService.enviar(
-                    solResponse.id(),
-                    new EnviarSolicitudMantenimientoRequest(
-                            aprobador,
-                            planActivo.getResponsableId(),
-                            planActivo.getResponsableId()
-                    )
-            );
-            log.info("Solicitud preventiva {} promovida automáticamente a SOLICITADO", solResponse.numero());
-        } catch (Exception e) {
-            log.warn("Solicitud preventiva {} creada en BORRADOR (no se pudo auto-enviar a aprobación: {})",
-                    solResponse.numero(), e.getMessage());
-        }
+        // REQ-MANT-008/032: la segregación de duties se resuelve antes de enviar. Si no hay
+        // supervisor distinto del responsable del plan y del solicitante, falla en cerrado.
+        UUID responsableId = planActivo.getResponsableId();
+        UUID aprobador = resolverAprobadorPreventivo(responsableId, solicitanteId);
+        solicitudMantenimientoService.enviar(
+                solResponse.id(),
+                new EnviarSolicitudMantenimientoRequest(
+                        aprobador,
+                        responsableId,
+                        responsableId
+                )
+        );
+        log.info("Solicitud preventiva {} promovida automáticamente a SOLICITADO", solResponse.numero());
 
         return new EvaluacionProgramacionResponse(
                 id,
@@ -821,12 +995,66 @@ public class ProgramacionMantenimientoService {
      * Regla 5: Una vez completado el mantenimiento, recalcular todos los criterios de la programación tomando como referencia el servicio realizado.
      * Regla 6: Conservar el historial de los valores que provocaron cada mantenimiento y registrar la culminación del servicio.
      */
+    /**
+     * REQ-MANT-005: valida que la solicitud indicada pertenezca a esta programación, que
+     * esté en un estado final y que la ejecución no haya sido cerrada antes. Sin
+     * {@code solicitudId} se mantiene la compatibilidad con el historial pendiente más reciente.
+     */
+    private ProgramacionMantenimientoHistorial validarEjecucionCompletar(
+            UUID programacionId, CompletarMantenimientoProgramadoRequest request) {
+        if (request == null || request.solicitudId() == null) {
+            return historialRepository.findFirstPendingByProgramacionMantenimientoId(programacionId).orElse(null);
+        }
+
+        UUID solicitudId = request.solicitudId();
+        ProgramacionMantenimientoHistorial historial = historialRepository
+                .findBySolicitudMantenimientoId(solicitudId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Historial de programación para la solicitud", solicitudId));
+
+        if (!programacionId.equals(historial.getProgramacionMantenimientoId())) {
+            throw new ConflictException("SOLICITUD_NO_PERTENECE_A_PROGRAMACION",
+                    "La solicitud " + solicitudId + " no pertenece a la programación " + programacionId + ".");
+        }
+        if (Boolean.TRUE.equals(historial.getCompletado())) {
+            throw new ConflictException(CODIGO_PROGRAMACION_COMPLETADA,
+                    "La ejecución de la programación " + programacionId + " ya fue completada el "
+                            + historial.getFechaServicio() + ".");
+        }
+
+        SolicitudMantenimiento solicitud = solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud de mantenimiento", solicitudId));
+        String estado = solicitud.getEstado();
+        String estadoNormalizado = estado == null ? "" : estado.trim().toUpperCase(Locale.ROOT);
+        if (!ESTADOS_FINALES_MANTENIMIENTO.contains(estadoNormalizado)) {
+            throw new BusinessException("SOLICITUD_NO_FINALIZADA",
+                    "La solicitud " + solicitudId + " debe estar finalizada para cerrar la programación (estado actual: "
+                            + (estado != null ? estado : "sin estado") + ").");
+        }
+        return historial;
+    }
+
     @Transactional
     public ProgramacionMantenimientoResponse completarMantenimiento(UUID id, CompletarMantenimientoProgramadoRequest request) {
+        return completarMantenimiento(id, request, true);
+    }
+
+    /**
+     * REQ-MANT-005: una ejecución ya cerrada no se recalcula dos veces. La validación de
+     * pertenencia e idempotencia se ejecuta antes de cualquier mutación de criterios/historial.
+     * El paso 3 ({@code validarOverride}) se omite en la sincronización interna por evento.
+     */
+    private ProgramacionMantenimientoResponse completarMantenimiento(
+            UUID id, CompletarMantenimientoProgramadoRequest request, boolean validarOverride) {
         log.info("Completando mantenimiento y recalculando criterios para la programación {}", id);
+        if (validarOverride) {
+            validarOverrideCompletar(request);
+        }
 
         ProgramacionMantenimiento programacion = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Programación de mantenimiento no encontrada: " + id));
+
+        ProgramacionMantenimientoHistorial historialSeleccionado = validarEjecucionCompletar(id, request);
 
         LocalDate fechaServicio = (request != null && request.fechaServicio() != null)
                 ? request.fechaServicio()
@@ -869,13 +1097,9 @@ public class ProgramacionMantenimientoService {
             criterioRepository.save(criterio);
         }
 
-        // Actualizar historial si existía registro pendiente
-        Optional<ProgramacionMantenimientoHistorial> histOpt = (request != null && request.solicitudId() != null)
-                ? historialRepository.findBySolicitudMantenimientoId(request.solicitudId())
-                : historialRepository.findFirstPendingByProgramacionMantenimientoId(id);
-
-        if (histOpt.isPresent()) {
-            ProgramacionMantenimientoHistorial hist = histOpt.get();
+        // REQ-MANT-005: se cierra exactamente la ejecución validada al inicio del método.
+        if (historialSeleccionado != null) {
+            ProgramacionMantenimientoHistorial hist = historialSeleccionado;
             hist.setCompletado(true);
             hist.setFechaServicio(fechaServicio);
             if (request != null) {
@@ -933,7 +1157,9 @@ public class ProgramacionMantenimientoService {
                         (hist.getSolicitudNumero() != null ? hist.getSolicitudNumero() : solicitudId)
         );
 
-        completarMantenimiento(programacionId, req);
+        // La telemetría del evento es real, no un override del cliente: se omite la
+        // validación de rol (REQ-MANT-006) pero se mantienen las guardias de REQ-MANT-005.
+        completarMantenimiento(programacionId, req, false);
         log.info("Programación {} recalculada exitosamente por finalización de solicitud {}", programacionId, solicitudId);
     }
 
@@ -1084,31 +1310,64 @@ public class ProgramacionMantenimientoService {
                 .orElse(null);
     }
 
+    /** REQ-MANT-019: datos ya resueltos para un lote de programaciones. */
+    private record EnriquecimientoCache(
+            Map<UUID, PlanMantenimientoActivo> planesActivo,
+            Map<UUID, PlanMantenimiento> planes,
+            Map<UUID, Activo> activos,
+            Map<UUID, TipoActivo> tiposActivo,
+            Map<UUID, List<ProgramacionMantenimientoCriterio>> criterios) {
+    }
+
+    /** REQ-MANT-019: la telemetría se resuelve igual para una fila que para un lote. */
+    @FunctionalInterface
+    private interface ResolvedorTelemetria {
+        BigDecimal valor(UUID activoId, TipoCriterioMantenimiento tipo);
+    }
+
     private ProgramacionMantenimientoResponse toEnrichedResponse(ProgramacionMantenimiento domain) {
+        return toEnrichedResponse(
+                domain,
+                cacheParaUnItem(domain),
+                (activoId, tipo) -> {
+                    if (tipo == TipoCriterioMantenimiento.KILOMETRAJE) {
+                        return obtenerKilometrajeActual(activoId);
+                    }
+                    if (tipo == TipoCriterioMantenimiento.HORAS_USO) {
+                        return obtenerHorasUsoActual(activoId);
+                    }
+                    return null;
+                });
+    }
+
+    private ProgramacionMantenimientoResponse toEnrichedResponse(
+            ProgramacionMantenimiento domain,
+            EnriquecimientoCache cache,
+            ResolvedorTelemetria telemetria) {
         ProgramacionMantenimientoResponse.PlanActivoInfo planActivoInfo = null;
 
         UUID resolvedActivoId = null;
-        if (domain.getPlanMantenimientoActivoId() != null) {
-            Optional<PlanMantenimientoActivo> paOpt = planMantenimientoActivoRepository.findById(domain.getPlanMantenimientoActivoId());
-            if (paOpt.isPresent()) {
-                PlanMantenimientoActivo pa = paOpt.get();
+        UUID planActivoId = domain.getPlanMantenimientoActivoId();
+        if (planActivoId != null) {
+            PlanMantenimientoActivo pa = cache.planesActivo().get(planActivoId);
+            if (pa != null) {
                 resolvedActivoId = pa.getActivoId();
-                Optional<PlanMantenimiento> planOpt = planMantenimientoRepository.findById(pa.getPlanMantenimientoId());
-                Optional<Activo> activoOpt = activoRepository.findById(pa.getActivoId());
-                Optional<TipoActivo> tipoActivoOpt = activoOpt.flatMap(a -> a.getTipoActivoId() != null
-                        ? tipoActivoRepository.findById(a.getTipoActivoId())
-                        : Optional.empty());
+                PlanMantenimiento plan = cache.planes().get(pa.getPlanMantenimientoId());
+                Activo activo = cache.activos().get(pa.getActivoId());
+                TipoActivo tipoActivo = activo != null && activo.getTipoActivoId() != null
+                        ? cache.tiposActivo().get(activo.getTipoActivoId())
+                        : null;
 
                 planActivoInfo = new ProgramacionMantenimientoResponse.PlanActivoInfo(
                         pa.getId(),
                         pa.getPlanMantenimientoId(),
-                        planOpt.map(PlanMantenimiento::getCodigo).orElse(null),
-                        planOpt.map(PlanMantenimiento::getNombre).orElse(null),
+                        plan != null ? plan.getCodigo() : null,
+                        plan != null ? plan.getNombre() : null,
                         pa.getActivoId(),
-                        activoOpt.map(Activo::getCodigo).orElse(null),
-                        activoOpt.map(Activo::getNombre).orElse(null),
-                        tipoActivoOpt.map(TipoActivo::getId).orElse(null),
-                        tipoActivoOpt.map(TipoActivo::getNombre).orElse(null),
+                        activo != null ? activo.getCodigo() : null,
+                        activo != null ? activo.getNombre() : null,
+                        tipoActivo != null ? tipoActivo.getId() : null,
+                        tipoActivo != null ? tipoActivo.getNombre() : null,
                         pa.getFechaInicio(),
                         pa.getFechaFin(),
                         pa.getActivo()
@@ -1117,17 +1376,12 @@ public class ProgramacionMantenimientoService {
         }
 
         final UUID targetActivoId = resolvedActivoId;
-        List<ProgramacionMantenimientoCriterioResponse> criteriosResponse = criterioRepository
-                .findByProgramacionMantenimientoId(domain.getId()).stream()
+        List<ProgramacionMantenimientoCriterioResponse> criteriosResponse = cache.criterios()
+                .getOrDefault(domain.getId(), List.of()).stream()
                 .map(c -> {
-                    BigDecimal valorActual = null;
-                    if (targetActivoId != null) {
-                        if (c.getTipoCriterio() == TipoCriterioMantenimiento.KILOMETRAJE) {
-                            valorActual = obtenerKilometrajeActual(targetActivoId);
-                        } else if (c.getTipoCriterio() == TipoCriterioMantenimiento.HORAS_USO) {
-                            valorActual = obtenerHorasUsoActual(targetActivoId);
-                        }
-                    }
+                    BigDecimal valorActual = targetActivoId != null
+                            ? telemetria.valor(targetActivoId, c.getTipoCriterio())
+                            : null;
                     ProgramacionMantenimientoCriterioResponse base = criterioMapper.toResponse(c);
                     if (base == null) {
                         return new ProgramacionMantenimientoCriterioResponse(
@@ -1159,6 +1413,171 @@ public class ProgramacionMantenimientoService {
                 .collect(Collectors.toList());
 
         return mapper.toResponse(domain, planActivoInfo, criteriosResponse);
+    }
+
+    /** REQ-MANT-019: operaciones de una sola fila conservan sus consultas originales. */
+    private EnriquecimientoCache cacheParaUnItem(ProgramacionMantenimiento domain) {
+        Map<UUID, PlanMantenimientoActivo> planesActivo = new HashMap<>();
+        Map<UUID, PlanMantenimiento> planes = new HashMap<>();
+        Map<UUID, Activo> activos = new HashMap<>();
+        Map<UUID, TipoActivo> tiposActivo = new HashMap<>();
+        Map<UUID, List<ProgramacionMantenimientoCriterio>> criterios = new HashMap<>();
+
+        UUID planActivoId = domain.getPlanMantenimientoActivoId();
+        if (planActivoId != null) {
+            planMantenimientoActivoRepository.findById(planActivoId).ifPresent(pa -> {
+                planesActivo.put(pa.getId(), pa);
+                planMantenimientoRepository.findById(pa.getPlanMantenimientoId())
+                        .ifPresent(p -> planes.put(p.getId(), p));
+                activoRepository.findById(pa.getActivoId()).ifPresent(a -> {
+                    activos.put(a.getId(), a);
+                    if (a.getTipoActivoId() != null) {
+                        tipoActivoRepository.findById(a.getTipoActivoId())
+                                .ifPresent(t -> tiposActivo.put(t.getId(), t));
+                    }
+                });
+            });
+        }
+        if (domain.getId() != null) {
+            criterios.put(domain.getId(),
+                    criterioRepository.findByProgramacionMantenimientoId(domain.getId()));
+        }
+        return new EnriquecimientoCache(planesActivo, planes, activos, tiposActivo, criterios);
+    }
+
+    /** REQ-MANT-019: número de consultas constante respecto al tamaño de la página. */
+    private List<ProgramacionMantenimientoResponse> toEnrichedResponses(
+            List<ProgramacionMantenimiento> domains) {
+        if (domains.isEmpty()) {
+            return List.of();
+        }
+        EnriquecimientoCache cache = cargarCacheEnLote(domains);
+        ResolvedorTelemetria telemetria = telemetriaEnLote(cache);
+        return domains.stream()
+                .map(d -> toEnrichedResponse(d, cache, telemetria))
+                .collect(Collectors.toList());
+    }
+
+    private EnriquecimientoCache cargarCacheEnLote(List<ProgramacionMantenimiento> domains) {
+        Set<UUID> planesActivoIds = domains.stream()
+                .map(ProgramacionMantenimiento::getPlanMantenimientoActivoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        List<PlanMantenimientoActivo> planesActivo = planesActivoIds.isEmpty()
+                ? List.of()
+                : planMantenimientoActivoRepository.findAllByIdIn(planesActivoIds);
+
+        Set<UUID> planIds = planesActivo.stream()
+                .map(PlanMantenimientoActivo::getPlanMantenimientoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<UUID> activoIds = planesActivo.stream()
+                .map(PlanMantenimientoActivo::getActivoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<PlanMantenimiento> planes = planIds.isEmpty()
+                ? List.of()
+                : planMantenimientoRepository.findAllByIdIn(planIds);
+        List<Activo> activos = activoIds.isEmpty()
+                ? List.of()
+                : activoRepository.findAllById(activoIds);
+
+        Set<UUID> tipoActivoIds = activos.stream()
+                .map(Activo::getTipoActivoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        List<TipoActivo> tiposActivo = tipoActivoIds.isEmpty()
+                ? List.of()
+                : tipoActivoRepository.findAllById(tipoActivoIds);
+
+        Set<UUID> programacionIds = domains.stream()
+                .map(ProgramacionMantenimiento::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        List<ProgramacionMantenimientoCriterio> criterios = programacionIds.isEmpty()
+                ? List.of()
+                : criterioRepository.findByProgramacionMantenimientoIdIn(programacionIds);
+
+        return new EnriquecimientoCache(
+                planesActivo.stream().collect(Collectors.toMap(PlanMantenimientoActivo::getId, Function.identity(), (a, b) -> a)),
+                planes.stream().collect(Collectors.toMap(PlanMantenimiento::getId, Function.identity(), (a, b) -> a)),
+                activos.stream().collect(Collectors.toMap(Activo::getId, Function.identity(), (a, b) -> a)),
+                tiposActivo.stream().collect(Collectors.toMap(TipoActivo::getId, Function.identity(), (a, b) -> a)),
+                criterios.stream().collect(Collectors.groupingBy(
+                        ProgramacionMantenimientoCriterio::getProgramacionMantenimientoId))
+        );
+    }
+
+    private ResolvedorTelemetria telemetriaEnLote(EnriquecimientoCache cache) {
+        Set<UUID> activoIds = cache.planesActivo().values().stream()
+                .map(PlanMantenimientoActivo::getActivoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, BigDecimal> kilometrajePorActivo = new HashMap<>();
+        Map<UUID, BigDecimal> horasPorActivo = new HashMap<>();
+        if (!activoIds.isEmpty()) {
+            List<ActivoAtributoValorEntity> valores =
+                    springActivoAtributoValorRepository.findByActivoIdIn(activoIds);
+            Set<UUID> atributoIds = valores.stream()
+                    .map(ActivoAtributoValorEntity::getActivoAtributoId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            Map<UUID, ActivoAtributoEntity> definiciones = atributoIds.isEmpty()
+                    ? Map.of()
+                    : springActivoAtributoRepository.findAllById(atributoIds).stream()
+                            .collect(Collectors.toMap(
+                                    ActivoAtributoEntity::getId, Function.identity(), (a, b) -> a));
+            Map<UUID, List<ActivoAtributoValorEntity>> valoresPorActivo = valores.stream()
+                    .collect(Collectors.groupingBy(
+                            ActivoAtributoValorEntity::getActivoId,
+                            LinkedHashMap::new,
+                            Collectors.toList()));
+            for (UUID activoId : activoIds) {
+                List<ActivoAtributoValorEntity> valoresDelActivo =
+                        valoresPorActivo.getOrDefault(activoId, List.of());
+                kilometrajePorActivo.put(activoId, primeraTelemetria(
+                        activoId, valoresDelActivo, definiciones, CODIGOS_KILOMETRAJE));
+                horasPorActivo.put(activoId, primeraTelemetria(
+                        activoId, valoresDelActivo, definiciones, CODIGOS_HORAS_USO));
+            }
+        }
+        return (activoId, tipo) -> {
+            if (activoId == null) {
+                return null;
+            }
+            if (tipo == TipoCriterioMantenimiento.KILOMETRAJE) {
+                return kilometrajePorActivo.get(activoId);
+            }
+            if (tipo == TipoCriterioMantenimiento.HORAS_USO) {
+                return horasPorActivo.get(activoId);
+            }
+            return null;
+        };
+    }
+
+    /** Misma precedencia que {@code obtenerKilometrajeActual}/{@code obtenerHorasUsoActual}. */
+    private BigDecimal primeraTelemetria(
+            UUID activoId,
+            List<ActivoAtributoValorEntity> valores,
+            Map<UUID, ActivoAtributoEntity> definiciones,
+            List<String> codigos) {
+        try {
+            for (ActivoAtributoValorEntity valor : valores) {
+                if (valor.getActivoAtributoId() == null
+                        || valor.getValor() == null || valor.getValor().isBlank()) {
+                    continue;
+                }
+                ActivoAtributoEntity definicion = definiciones.get(valor.getActivoAtributoId());
+                if (definicion != null
+                        && codigos.stream().anyMatch(c -> c.equalsIgnoreCase(definicion.getCodigo()))) {
+                    return new BigDecimal(valor.getValor().trim());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo resolver la telemetría en lote para activo {}: {}", activoId, e.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -1202,11 +1621,10 @@ public class ProgramacionMantenimientoService {
             return Collections.emptyList();
         }
         List<PlanMantenimientoActivo> planes = planMantenimientoActivoRepository.findByActivoId(activoId);
-        List<ProgramacionMantenimientoResponse> responses = new ArrayList<>();
+        List<ProgramacionMantenimiento> programaciones = new ArrayList<>();
         for (PlanMantenimientoActivo pma : planes) {
-            repository.findByPlanMantenimientoActivoId(pma.getId())
-                    .forEach(prog -> responses.add(toEnrichedResponse(prog)));
+            programaciones.addAll(repository.findByPlanMantenimientoActivoId(pma.getId()));
         }
-        return responses;
+        return toEnrichedResponses(programaciones);
     }
 }

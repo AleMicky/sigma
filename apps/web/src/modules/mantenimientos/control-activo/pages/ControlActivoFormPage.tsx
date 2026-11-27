@@ -41,6 +41,7 @@ import { Card } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { toLocalDateTimeIso } from "@/shared/lib/date"
 import { cn } from "@/shared/lib/utils"
 import { formatDate } from "@/shared/utils/date.utils"
 
@@ -49,6 +50,10 @@ import {
   useUpdateControlActivoWithDetalles,
 } from "../api/control-activo.mutations"
 import { controlActivoQueries } from "../api/control-activo.queries"
+import {
+  controlActivoFormSchema,
+  type ControlActivoFormValues,
+} from "../schemas/control-activo.schema"
 import type {
   ControlActivo,
   ControlActivoDetalle,
@@ -73,10 +78,17 @@ type ControlActivoFormPageProps = {
   initialTipo?: TipoControlActivo
 }
 
+const FIELD_LABELS: Partial<Record<keyof ControlActivoFormValues, string>> = {
+  solicitudMantenimientoId: "Solicitud",
+  activoId: "Activo",
+  tipo: "Tipo de acta",
+  entregadoPorId: "Entregado por",
+  recibidoPorId: "Recibido por",
+  conforme: "Conformidad",
+}
+
 function getDefaultFecha(): string {
-  const now = new Date()
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-  return now.toISOString().slice(0, 16)
+  return toLocalDateTimeIso(new Date().toISOString()).slice(0, 16)
 }
 
 export function ControlActivoFormPage({
@@ -314,6 +326,10 @@ function ControlActivoFormContent({
     return initialControlActivo?.observacion || ""
   })
 
+  const [validationErrors, setValidationErrors] = useState<
+    Partial<Record<keyof ControlActivoFormValues, string>>
+  >({})
+
   // Lista de accesorios a controlar
   const [items, setItems] = useState<AccesorioItemState[]>(() => {
     if (isEditing) {
@@ -532,19 +548,48 @@ function ControlActivoFormContent({
       return
     }
 
-    if (!fecha) {
-      toast.error("La fecha y hora del control es obligatoria")
-      return
+    const formValues: ControlActivoFormValues = {
+      solicitudMantenimientoId: solicitudId,
+      ordenTrabajoId: null,
+      activoId,
+      tipo,
+      entregadoPorId: entregadoPorId || null,
+      recibidoPorId: recibidoPorId || null,
+      fecha,
+      conforme: conformeGeneral,
+      observacion: observacionGeneral.trim() || null,
+      detalles: items.map((item) => ({
+        accesorioId: item.accesorioId,
+        nombreAccesorio: item.nombre,
+        codigoAccesorio: item.codigo,
+        cantidadEsperada: item.cantidadEsperada,
+        cantidadEncontrada: item.cantidadEncontrada,
+        conforme: item.conforme,
+        observacion: item.observacion.trim() || null,
+      })),
     }
 
-    for (const item of items) {
-      if (item.cantidadEsperada < 0 || item.cantidadEncontrada < 0) {
-        toast.error(
-          "Las cantidades de los accesorios deben ser mayores o iguales a 0",
-        )
-        return
+    const parsed = controlActivoFormSchema.safeParse(formValues)
+    if (!parsed.success) {
+      const nextErrors: Partial<
+        Record<keyof ControlActivoFormValues, string>
+      > = {}
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as keyof ControlActivoFormValues | undefined
+        if (field && !nextErrors[field]) {
+          nextErrors[field] = issue.message
+        }
       }
+      setValidationErrors(nextErrors)
+      toast.error(
+        nextErrors.fecha ??
+          nextErrors.detalles ??
+          Object.values(nextErrors)[0] ??
+          "Revise los campos marcados del acta",
+      )
+      return
     }
+    setValidationErrors({})
 
     try {
       if (isEditing && controlActivoId) {
@@ -556,7 +601,7 @@ function ControlActivoFormContent({
             tipo: tipo,
             entregadoPorId: entregadoPorId || null,
             recibidoPorId: recibidoPorId || null,
-            fecha: new Date(fecha).toISOString().slice(0, 19),
+            fecha: toLocalDateTimeIso(fecha),
             conforme: conformeGeneral,
             observacion: observacionGeneral.trim() || null,
           },
@@ -576,7 +621,7 @@ function ControlActivoFormContent({
             tipo: tipo,
             entregadoPorId: entregadoPorId || null,
             recibidoPorId: recibidoPorId || null,
-            fecha: new Date(fecha).toISOString().slice(0, 19),
+            fecha: toLocalDateTimeIso(fecha),
             conforme: conformeGeneral,
             observacion: observacionGeneral.trim() || null,
           },
@@ -595,6 +640,10 @@ function ControlActivoFormContent({
       // Manejado por mutation
     }
   }
+
+  const otherValidationErrors = Object.entries(validationErrors).filter(
+    ([field]) => !["fecha", "observacion", "detalles"].includes(field),
+  )
 
   return (
     <PageShell
@@ -651,6 +700,22 @@ function ControlActivoFormContent({
 
       {/* Main Form Body */}
       <form onSubmit={handleSubmit} className="space-y-3">
+        {otherValidationErrors.length > 0 && (
+          <div
+            className="rounded-xl border border-destructive/30 bg-destructive/5 p-2.5 text-[11px] text-destructive space-y-0.5"
+            aria-live="polite"
+          >
+            {otherValidationErrors.map(([campo, mensaje]) => (
+              <p key={campo}>
+                <span className="font-semibold">
+                  {FIELD_LABELS[campo as keyof ControlActivoFormValues] ?? campo}:
+                </span>{" "}
+                {mensaje}
+              </p>
+            ))}
+          </div>
+        )}
+
         {/* Banner Superior: Tipo + Activo + Solicitud */}
         <Card className="p-3 border bg-card shadow-2xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -811,10 +876,27 @@ function ControlActivoFormContent({
                 id="fechaControl"
                 type="datetime-local"
                 value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
+                onChange={(e) => {
+                  setFecha(e.target.value)
+                  if (validationErrors.fecha) {
+                    setValidationErrors((prev) => ({ ...prev, fecha: undefined }))
+                  }
+                }}
                 className="h-8.5 text-xs font-medium bg-background"
+                aria-invalid={Boolean(validationErrors.fecha)}
+                aria-describedby={
+                  validationErrors.fecha ? "fechaControl-error" : undefined
+                }
                 required
               />
+              {validationErrors.fecha && (
+                <p
+                  id="fechaControl-error"
+                  className="text-[10.5px] text-destructive"
+                >
+                  {validationErrors.fecha}
+                </p>
+              )}
             </div>
 
             {/* Entregado Por */}
@@ -898,6 +980,12 @@ function ControlActivoFormContent({
               </Button>
             </div>
           </div>
+
+          {validationErrors.detalles && (
+            <p className="text-[10.5px] text-destructive" aria-live="polite">
+              {validationErrors.detalles}
+            </p>
+          )}
 
           {/* Lista de Accesorios */}
           {items.length === 0 ? (
@@ -1125,7 +1213,16 @@ function ControlActivoFormContent({
                 value={observacionGeneral}
                 onChange={(e) => setObservacionGeneral(e.target.value)}
                 className="text-xs resize-none min-h-[56px] py-1.5 px-2.5"
+                aria-invalid={Boolean(validationErrors.observacion)}
+                aria-describedby={
+                  validationErrors.observacion ? "obsGeneral-error" : undefined
+                }
               />
+              {validationErrors.observacion && (
+                <p id="obsGeneral-error" className="text-[10.5px] text-destructive">
+                  {validationErrors.observacion}
+                </p>
+              )}
             </div>
           </div>
         </Card>

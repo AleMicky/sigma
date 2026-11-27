@@ -24,8 +24,7 @@ export function SolicitudResumenCard() {
 
   return (
     <form.Subscribe
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      selector={(state: any) => ({
+      selector={(state) => ({
         titulo: state.values.titulo,
         tipoMantenimientoId: state.values.tipoMantenimientoId,
         prioridadId: state.values.prioridadId,
@@ -36,8 +35,7 @@ export function SolicitudResumenCard() {
         tipoFallas: state.values.tipoFallas,
       })}
     >
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      {(values: any) => {
+      {(values) => {
         const isFormComplete = Boolean(
           values.titulo?.trim() &&
           values.tipoMantenimientoId &&
@@ -164,7 +162,7 @@ export function SolicitudResumenCard() {
                       Fallas:
                     </span>
                     <div className="flex flex-wrap gap-1 min-w-0">
-                      {values.tipoFallas.map((f: string) => (
+                      {values.tipoFallas.map((f) => (
                         <span
                           key={f}
                           className="inline-flex items-center px-1.5 py-0.2 rounded-md text-[10px] font-medium bg-background/80 border border-inherit/20 text-foreground"

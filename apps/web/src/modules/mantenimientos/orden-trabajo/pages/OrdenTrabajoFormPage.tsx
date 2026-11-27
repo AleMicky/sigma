@@ -33,6 +33,7 @@ import { Card } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { toLocalDateTimeIso } from "@/shared/lib/date"
 import { cn, generateId } from "@/shared/lib/utils"
 
 import { useCreateOrdenTrabajoWithActividades } from "../api/orden-trabajo.mutations"
@@ -86,11 +87,9 @@ export function OrdenTrabajoFormPage({
   const [responsableId, setResponsableId] = useState<string>(
     initialResponsableId,
   )
-  const [fechaInicio, setFechaInicio] = useState<string>(() => {
-    const now = new Date()
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-    return now.toISOString().slice(0, 16)
-  })
+  const [fechaInicio, setFechaInicio] = useState<string>(() =>
+    toLocalDateTimeIso(new Date().toISOString()).slice(0, 16),
+  )
   const [fechaFin, setFechaFin] = useState<string>("")
   const [diagnostico, setDiagnostico] = useState<string>("")
   const [observacion, setObservacion] = useState<string>("")

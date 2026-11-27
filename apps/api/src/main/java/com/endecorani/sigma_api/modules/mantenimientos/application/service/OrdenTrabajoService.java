@@ -56,9 +56,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -182,6 +184,30 @@ public class OrdenTrabajoService {
             return List.of();
         }
 
+        // REQ-MANT-019: dos consultas en lote, independientes del número de actividades.
+        Set<UUID> aplicacionIds = actividadesPlan.stream()
+                .map(PlanMantenimientoActividad::getActividadMantenimientoAplicacionId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, ActividadMantenimientoAplicacion> aplicaciones = aplicacionIds.isEmpty()
+                ? Map.of()
+                : actividadMantenimientoAplicacionRepository.findAllByIdIn(aplicacionIds).stream()
+                        .collect(Collectors.toMap(
+                                ActividadMantenimientoAplicacion::getId,
+                                actividad -> actividad,
+                                (a, b) -> a));
+        Set<UUID> actividadIds = aplicaciones.values().stream()
+                .map(ActividadMantenimientoAplicacion::getActividadMantenimientoId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, ActividadMantenimiento> actividades = actividadIds.isEmpty()
+                ? Map.of()
+                : actividadMantenimientoRepository.findAllByIdIn(actividadIds).stream()
+                        .collect(Collectors.toMap(
+                                ActividadMantenimiento::getId,
+                                actividad -> actividad,
+                                (a, b) -> a));
+
         List<ActividadSugeridaResponse> sugeridas = new ArrayList<>();
         int orden = 1;
 
@@ -191,15 +217,14 @@ public class OrdenTrabajoService {
                 continue;
             }
 
-            Optional<ActividadMantenimientoAplicacion> appOpt = actividadMantenimientoAplicacionRepository.findById(appUuid);
-            if (appOpt.isEmpty()) {
+            ActividadMantenimientoAplicacion app = aplicaciones.get(appUuid);
+            if (app == null) {
                 continue;
             }
-            ActividadMantenimientoAplicacion app = appOpt.get();
 
             ActividadMantenimiento actInfo = null;
             if (app.getActividadMantenimientoId() != null) {
-                actInfo = actividadMantenimientoRepository.findById(app.getActividadMantenimientoId()).orElse(null);
+                actInfo = actividades.get(app.getActividadMantenimientoId());
             }
 
             String codigo = actInfo != null ? actInfo.getCodigo() : null;

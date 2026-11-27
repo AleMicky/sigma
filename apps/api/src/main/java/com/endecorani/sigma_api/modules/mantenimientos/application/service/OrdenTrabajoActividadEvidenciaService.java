@@ -41,9 +41,7 @@ public class OrdenTrabajoActividadEvidenciaService {
 
     @Transactional
     public OrdenTrabajoActividadEvidenciaResponse createWithFile(UUID ordenTrabajoActividadId, MultipartFile file) {
-        if (!actividadRepository.existsById(ordenTrabajoActividadId)) {
-            throw new ResourceNotFoundException("Actividad de orden de trabajo", ordenTrabajoActividadId);
-        }
+        validarActividad(ordenTrabajoActividadId);
 
         UUID fileId = UUID.randomUUID();
         DocumentStorageService.StoredFile stored = documentStorageService.store(
@@ -64,8 +62,8 @@ public class OrdenTrabajoActividadEvidenciaService {
     }
 
     @Transactional
-    public OrdenTrabajoActividadEvidenciaResponse replaceFile(UUID id, MultipartFile file) {
-        OrdenTrabajoActividadEvidencia domain = obtenerPorId(id);
+    public OrdenTrabajoActividadEvidenciaResponse replaceFile(UUID ordenTrabajoActividadId, UUID id, MultipartFile file) {
+        OrdenTrabajoActividadEvidencia domain = obtenerPorId(ordenTrabajoActividadId, id);
         String oldUrl = domain.getUrl();
 
         UUID fileId = UUID.randomUUID();
@@ -90,8 +88,8 @@ public class OrdenTrabajoActividadEvidenciaService {
     }
 
     @Transactional(readOnly = true)
-    public OrdenTrabajoActividadEvidenciaResponse findById(UUID id) {
-        OrdenTrabajoActividadEvidencia domain = obtenerPorId(id);
+    public OrdenTrabajoActividadEvidenciaResponse findById(UUID ordenTrabajoActividadId, UUID id) {
+        OrdenTrabajoActividadEvidencia domain = obtenerPorId(ordenTrabajoActividadId, id);
         return mapper.toEvidenciaResponse(domain);
     }
 
@@ -100,22 +98,31 @@ public class OrdenTrabajoActividadEvidenciaService {
             UUID ordenTrabajoActividadId,
             PageRequestDto pageRequest
     ) {
+        validarActividad(ordenTrabajoActividadId);
         Pageable pageable = pageRequest.toPageable(SORT_FIELDS);
         Page<OrdenTrabajoActividadEvidencia> resultado = repository.findByOrdenTrabajoActividadId(ordenTrabajoActividadId, pageable);
         return PageResponse.from(resultado, mapper::toEvidenciaResponse);
     }
 
     @Transactional
-    public void delete(UUID id) {
-        OrdenTrabajoActividadEvidencia domain = obtenerPorId(id);
+    public void delete(UUID ordenTrabajoActividadId, UUID id) {
+        OrdenTrabajoActividadEvidencia domain = obtenerPorId(ordenTrabajoActividadId, id);
         if (domain.getUrl() != null) {
             documentStorageService.delete(domain.getUrl());
         }
         repository.deleteById(id);
     }
 
-    private OrdenTrabajoActividadEvidencia obtenerPorId(UUID id) {
-        return repository.findById(id)
+    private void validarActividad(UUID ordenTrabajoActividadId) {
+        if (ordenTrabajoActividadId == null || !actividadRepository.existsById(ordenTrabajoActividadId)) {
+            throw new ResourceNotFoundException("Actividad de orden de trabajo", ordenTrabajoActividadId);
+        }
+    }
+
+    /** REQ-MANT-002: el ID de la actividad padre es obligatorio; evidencias cruzadas se ocultan como 404. */
+    private OrdenTrabajoActividadEvidencia obtenerPorId(UUID ordenTrabajoActividadId, UUID id) {
+        validarActividad(ordenTrabajoActividadId);
+        return repository.findByIdAndOrdenTrabajoActividadId(id, ordenTrabajoActividadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Evidencia de actividad de orden de trabajo", id));
     }
 }

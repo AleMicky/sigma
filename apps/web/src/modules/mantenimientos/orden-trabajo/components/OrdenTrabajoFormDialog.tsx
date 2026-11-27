@@ -14,6 +14,7 @@ import {
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { toLocalDateTimeIso } from "@/shared/lib/date"
 
 import {
   useCreateOrdenTrabajo,
@@ -121,9 +122,7 @@ function OrdenTrabajoForm({
     if (ordenTrabajo?.fechaInicio) {
       return ordenTrabajo.fechaInicio.slice(0, 16)
     }
-    const now = new Date()
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-    return now.toISOString().slice(0, 16)
+    return toLocalDateTimeIso(new Date().toISOString()).slice(0, 16)
   })
   const [fechaFin, setFechaFin] = useState<string>(
     ordenTrabajo?.fechaFin ? ordenTrabajo.fechaFin.slice(0, 16) : "",

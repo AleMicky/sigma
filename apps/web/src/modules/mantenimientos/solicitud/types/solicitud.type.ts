@@ -63,10 +63,11 @@ export type SolicitudMantenimiento = {
   auditoria?: SolicitudAuditoria | null
 }
 
+// GET /api/v1/solicitudes-mantenimiento sólo admite q, estado, interfaz y
+// paginación (PageRequestDto). `solicitanteId` no es un filtro del contrato.
 export type SolicitudMantenimientoFilters = PageParams & {
   q?: string
   estado?: string
-  solicitanteId?: string
   interfaz?: string
 }
 
@@ -84,9 +85,9 @@ export type SolicitudMantenimientoResumen = {
   // EncargadoMantenimientoPage
   porIniciar?: number
   enEjecucion?: number
-  // SupervisorMantenimientoPage
+  // SupervisorMantenimientoPage. La API integra `observadasMantenimiento`
+  // dentro de `observadas` cuando interfaz=SupervisorMantenimientoPage.
   porRevisar?: number
-  observadasMantenimiento?: number
   validadas?: number
   trabajoConcluido?: number
 }

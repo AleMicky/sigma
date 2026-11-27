@@ -8,6 +8,7 @@ import com.endecorani.sigma_api.modules.workflow.application.dto.response.Workfl
 import com.endecorani.sigma_api.modules.workflow.application.dto.response.WorkflowTaskResponse;
 import com.endecorani.sigma_api.modules.workflow.domain.model.Workflow;
 import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
+import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,8 +22,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WorkflowApplicationService {
 
+    /** REQ-MANT-029: código de dominio devuelto por la puerta genérica cuando intenta un proceso de mantenimientos. */
+    public static final String WORKFLOW_MODULO_NO_GENERICO = "WORKFLOW_MODULO_NO_GENERICO";
+
     private final WorkflowConfigService workflowConfigService;
     private final WorkflowEngineService workflowEngineService;
+    private final WorkflowCompletionGuard completionGuard;
 
     public String iniciar(
             String workflowCodigo,
@@ -74,10 +79,25 @@ public class WorkflowApplicationService {
         workflowEngineService.cancelarProceso(processInstanceId, motivo);
     }
 
+    /**
+     * REQ-MANT-029: {@code moduleManaged=false} corresponde a la puerta REST genérica; en ese caso
+     * los procesos de mantenimientos se rechazan antes de cualquier mutación de Flowable y deben
+     * completarse por la ruta del módulo, donde sí se validan aprobador y matriz de roles.
+     */
     public WorkflowTaskActionsResponse completarTarea(
             String processInstanceId,
-            CompleteWorkflowTaskRequest request
+            CompleteWorkflowTaskRequest request,
+            boolean moduleManaged
     ) {
+
+        String definitionKey = workflowEngineService.obtenerDefinitionKey(processInstanceId);
+        if (!moduleManaged
+                && WorkflowCompletionGuard.MANTENIMIENTOS_DEFINITION_KEY.equalsIgnoreCase(definitionKey)) {
+            throw new ForbiddenException(
+                    WORKFLOW_MODULO_NO_GENERICO,
+                    "Las transiciones de mantenimientos deben completarse por "
+                            + "/api/v1/mantenimientos/solicitudes/{id}/workflow/complete");
+        }
 
         WorkflowTaskActionsResponse tareaActual =
                 workflowEngineService
@@ -91,6 +111,9 @@ public class WorkflowApplicationService {
                 request != null && request.variables() != null
                         ? new HashMap<>(request.variables())
                         : new HashMap<>();
+
+        // REQ-MANT-027: control de actor antes de mutar el workflow (dominios no aplicables se omiten).
+        completionGuard.validar(processInstanceId, variables);
 
         validarVariables(
                 variables,

@@ -442,7 +442,8 @@ public class SolicitudVehicularService {
             CompleteWorkflowTaskRequest taskRequest = new CompleteWorkflowTaskRequest(variables);
             workflowApplicationService.completarTarea(
                     solicitud.getProcessInstanceId(),
-                    taskRequest);
+                    taskRequest,
+                    true);
         }
 
         solicitud.setResponsableAsignacionId(aprobadorId);
@@ -489,7 +490,8 @@ public class SolicitudVehicularService {
 
         WorkflowTaskActionsResponse resultado = workflowApplicationService.completarTarea(
                 solicitud.getProcessInstanceId(),
-                effectiveRequest);
+                effectiveRequest,
+                true);
 
         String accionEnviada = effectiveVariables.get("accion") != null
                 ? effectiveVariables.get("accion").toString().trim().toUpperCase()

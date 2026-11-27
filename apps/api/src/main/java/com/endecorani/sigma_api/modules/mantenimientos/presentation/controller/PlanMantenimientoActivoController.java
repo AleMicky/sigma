@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,7 @@ import java.util.UUID;
         description = "Administración de activos cubiertos por planes de mantenimiento preventivo y técnico"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class PlanMantenimientoActivoController {
 
     private final PlanMantenimientoActivoService service;
@@ -38,6 +40,7 @@ public class PlanMantenimientoActivoController {
             summary = "Asignar un activo a un plan de mantenimiento",
             description = "Valida correspondencia de tipo de activo con el plan, fechaFin >= fechaInicio y evita asignaciones activas duplicadas."
     )
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<PlanMantenimientoActivoResponse>> create(
             @Valid @RequestBody PlanMantenimientoActivoRequest request
     ) {
@@ -52,6 +55,7 @@ public class PlanMantenimientoActivoController {
             summary = "Actualizar asignación de activo al plan",
             description = "Permite actualizar responsable, rango de fechas y estado de vigencia respetando validaciones de coherencia temporal."
     )
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<PlanMantenimientoActivoResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody PlanMantenimientoActivoUpdate request
@@ -67,6 +71,7 @@ public class PlanMantenimientoActivoController {
             summary = "Desactivar una asignación de activo",
             description = "Desactiva la asignación para impedir la generación de nuevas solicitudes automáticas, preservando intacto el historial."
     )
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<PlanMantenimientoActivoResponse>> desactivar(
             @PathVariable UUID id
     ) {
@@ -81,6 +86,7 @@ public class PlanMantenimientoActivoController {
             summary = "Reactivar una asignación de activo al plan",
             description = "Reactiva la asignación verificando que no existan otras asignaciones activas duplicadas."
     )
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<PlanMantenimientoActivoResponse>> activar(
             @PathVariable UUID id
     ) {
@@ -103,8 +109,10 @@ public class PlanMantenimientoActivoController {
     @GetMapping
     @Operation(summary = "Listar todas las asignaciones de activos a planes de forma paginada")
     public ResponseEntity<ApiResponse<PageResponse<PlanMantenimientoActivoResponse>>> listarPaginado(
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.listarPaginado(pageRequest))
         );
@@ -131,8 +139,10 @@ public class PlanMantenimientoActivoController {
     @Operation(summary = "Listar asignaciones de un plan de mantenimiento de forma paginada")
     public ResponseEntity<ApiResponse<PageResponse<PlanMantenimientoActivoResponse>>> listarPorPlanPaginado(
             @PathVariable UUID planMantenimientoId,
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.listarPorPlanPaginado(planMantenimientoId, pageRequest))
         );
@@ -152,8 +162,10 @@ public class PlanMantenimientoActivoController {
     @Operation(summary = "Listar planes asignados a un activo específico de forma paginada")
     public ResponseEntity<ApiResponse<PageResponse<PlanMantenimientoActivoResponse>>> listarPorActivoPaginado(
             @PathVariable UUID activoId,
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.listarPorActivoPaginado(activoId, pageRequest))
         );
@@ -164,6 +176,7 @@ public class PlanMantenimientoActivoController {
             summary = "Eliminar físicamente una asignación",
             description = "Solo permite la eliminación si el activo no cuenta con órdenes de trabajo o mantenimientos ejecutados registrados."
     )
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID id
     ) {

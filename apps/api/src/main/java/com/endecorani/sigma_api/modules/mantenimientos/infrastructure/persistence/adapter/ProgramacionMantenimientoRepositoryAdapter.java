@@ -75,6 +75,13 @@ public class ProgramacionMantenimientoRepositoryAdapter implements ProgramacionM
     }
 
     @Override
+    public ProgramacionMantenimiento saveAndFlush(ProgramacionMantenimiento item) {
+        ProgramacionMantenimientoEntity entity = mapper.toEntity(item);
+        ProgramacionMantenimientoEntity saved = springRepository.saveAndFlush(entity);
+        return mapper.toDomain(saved);
+    }
+
+    @Override
     public void deleteById(UUID id) {
         springRepository.deleteById(id);
     }

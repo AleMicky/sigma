@@ -21,4 +21,8 @@ public interface SpringProgramacionMantenimientoHistorialRepository
     Optional<ProgramacionMantenimientoHistorialEntity> findBySolicitudMantenimientoId(
             UUID solicitudMantenimientoId
     );
+
+    boolean existsBySolicitudMantenimientoId(UUID solicitudMantenimientoId);
+
+    boolean existsByProgramacionMantenimientoId(UUID programacionMantenimientoId);
 }

@@ -14,6 +14,7 @@ import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
 import type { Activo } from "@/modules/activos/activo/api/activo.service"
 import { empleadoQueries } from "@/modules/organizacion/empleado/api/empleado.queries"
 import type { Empleado } from "@/modules/organizacion/empleado/api/empleado.service"
+import { toLocalDateKey } from "@/shared/lib/date"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -65,9 +66,7 @@ function PlanActivoAddDialogContent({
 }: PlanActivoAddDialogProps) {
   const [selectedActivo, setSelectedActivo] = useState<Activo | null>(null)
   const [selectedResponsable, setSelectedResponsable] = useState<Empleado | null>(null)
-  const [fechaInicio, setFechaInicio] = useState<string>(
-    () => new Date().toISOString().split("T")[0],
-  )
+  const [fechaInicio, setFechaInicio] = useState<string>(toLocalDateKey)
   const [fechaFin, setFechaFin] = useState<string>("")
   const [estadoActivo, setEstadoActivo] = useState<boolean>(true)
 

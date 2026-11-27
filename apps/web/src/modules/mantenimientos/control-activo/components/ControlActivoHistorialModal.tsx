@@ -37,6 +37,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { useCopyToClipboard } from "@/shared/hooks/use-copy-to-clipboard"
 import { cn } from "@/shared/lib/utils"
 import { formatDate } from "@/shared/utils/date.utils"
 
@@ -467,7 +468,7 @@ export function ControlActivoHistorialModal({
   const navigate = useNavigate()
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("ALL")
   const [controlToDelete, setControlToDelete] = useState<ControlActivo | null>(null)
-  const [copiedFolio, setCopiedFolio] = useState(false)
+  const { copy, isCopied } = useCopyToClipboard()
   const deleteMutation = useDeleteControlActivo()
 
   const solicitudQuery = useQuery({
@@ -527,13 +528,12 @@ export function ControlActivoHistorialModal({
     return allControles.filter((c) => c.tipo === tipoFilter)
   }, [allControles, tipoFilter])
 
-  const handleCopyFolio = (e: MouseEvent) => {
+  const handleCopyFolio = async (e: MouseEvent) => {
     e.stopPropagation()
     if (!solicitudNumero) return
-    navigator.clipboard.writeText(solicitudNumero)
-    setCopiedFolio(true)
-    toast.success("Folio copiado al portapapeles", { duration: 1500 })
-    setTimeout(() => setCopiedFolio(false), 2000)
+    if (await copy(solicitudNumero, solicitudNumero)) {
+      toast.success("Folio copiado al portapapeles", { duration: 1500 })
+    }
   }
 
   return (
@@ -617,7 +617,7 @@ export function ControlActivoHistorialModal({
                         >
                           <Hash className="size-3 text-muted-foreground" />
                           <span>{solicitudNumero}</span>
-                          {copiedFolio ? (
+                          {isCopied(solicitudNumero ?? "") ? (
                             <Check className="size-3 text-emerald-500" />
                           ) : (
                             <Copy className="size-3 opacity-40 hover:opacity-100" />

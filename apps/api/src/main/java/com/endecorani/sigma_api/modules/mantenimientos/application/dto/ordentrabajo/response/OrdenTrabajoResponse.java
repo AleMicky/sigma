@@ -1,5 +1,7 @@
 package com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.response;
 
+import tools.jackson.databind.annotation.JsonDeserialize;
+import com.endecorani.sigma_api.shared.infrastructure.datetime.FlexibleLocalDateTimeDeserializer;
 import com.endecorani.sigma_api.shared.application.dto.response.AuditoriaResponse;
 
 import java.time.LocalDateTime;
@@ -12,7 +14,9 @@ public record OrdenTrabajoResponse(
         UUID solicitudMantenimientoId,
         UUID activoId,
         UUID responsableId,
+        @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
         LocalDateTime fechaInicio,
+        @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
         LocalDateTime fechaFin,
         String diagnostico,
         String trabajoRealizado,

@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,12 +30,14 @@ import java.util.UUID;
         description = "Administración de ítems de verificación para aplicaciones de actividades de mantenimiento"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class ChecklistItemController {
 
     private final ChecklistItemService service;
 
     @PostMapping
     @Operation(summary = "Crear un ítem de checklist")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<ChecklistItemResponse>> create(
             @Valid @RequestBody ChecklistItemRequest request
     ) {
@@ -46,6 +49,7 @@ public class ChecklistItemController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar un ítem de checklist")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<ChecklistItemResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody ChecklistItemUpdate request
@@ -70,8 +74,10 @@ public class ChecklistItemController {
     @Operation(summary = "Listar ítems de checklist con filtro opcional por aplicación de actividad de mantenimiento")
     public ResponseEntity<ApiResponse<PageResponse<ChecklistItemResponse>>> findAll(
             @RequestParam(required = false) UUID actividadMantenimientoAplicacionId,
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         if (actividadMantenimientoAplicacionId != null) {
             return ResponseEntity.ok(
                     ApiResponse.success(service.findByActividadMantenimientoAplicacionId(actividadMantenimientoAplicacionId, pageRequest))
@@ -94,6 +100,7 @@ public class ChecklistItemController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar un ítem de checklist")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID id
     ) {

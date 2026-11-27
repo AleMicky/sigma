@@ -28,6 +28,9 @@ public interface ProgramacionMantenimientoRepository {
 
     ProgramacionMantenimiento save(ProgramacionMantenimiento item);
 
+    /** REQ-MANT-010: fuerza el flush para traducir la violación del índice único a 409. */
+    ProgramacionMantenimiento saveAndFlush(ProgramacionMantenimiento item);
+
     void deleteById(UUID id);
 
     boolean existsByPlanMantenimientoActivoIdAndActivoTrue(UUID planMantenimientoActivoId);

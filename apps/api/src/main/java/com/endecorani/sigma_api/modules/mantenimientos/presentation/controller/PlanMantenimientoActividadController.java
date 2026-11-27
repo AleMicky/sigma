@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,12 +30,14 @@ import java.util.UUID;
         description = "Administración de las actividades técnicas asignadas a los planes de mantenimiento"
 )
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class PlanMantenimientoActividadController {
 
     private final PlanMantenimientoActividadService service;
 
     @PostMapping
     @Operation(summary = "Asignar una actividad a un plan de mantenimiento")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<PlanMantenimientoActividadResponse>> create(
             @Valid @RequestBody PlanMantenimientoActividadRequest request
     ) {
@@ -46,6 +49,7 @@ public class PlanMantenimientoActividadController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar orden y obligatoriedad de una actividad en el plan")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<PlanMantenimientoActividadResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody PlanMantenimientoActividadUpdate request
@@ -70,8 +74,10 @@ public class PlanMantenimientoActividadController {
     @Operation(summary = "Listar actividades de un plan de mantenimiento de forma paginada")
     public ResponseEntity<ApiResponse<PageResponse<PlanMantenimientoActividadResponse>>> findByPlanMantenimientoId(
             @RequestParam UUID planMantenimientoId,
+            @RequestParam(name = "size", required = false) Integer sizeSolicitado,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
+        MantenimientoPageSizeValidator.validar(sizeSolicitado);
         return ResponseEntity.ok(
                 ApiResponse.success(service.findByPlanMantenimientoId(planMantenimientoId, pageRequest))
         );
@@ -89,6 +95,7 @@ public class PlanMantenimientoActividadController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Desvincular una actividad del plan de mantenimiento")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID id
     ) {

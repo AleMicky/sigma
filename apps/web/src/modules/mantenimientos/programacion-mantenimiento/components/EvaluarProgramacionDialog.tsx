@@ -1,5 +1,7 @@
 import { useState } from "react"
 import { AlertCircle, CheckCircle2, Clock, Gauge, Hourglass, Play, Sparkles } from "lucide-react"
+import { getErrorMessage } from "@/shared/api"
+import { toLocalDateKey } from "@/shared/lib/date"
 import {
   Dialog,
   DialogContent,
@@ -26,11 +28,12 @@ export function EvaluarProgramacionDialog({
   onOpenChange,
   programacion,
 }: EvaluarProgramacionDialogProps) {
-  const [fechaActual, setFechaActual] = useState(new Date().toISOString().split("T")[0])
+  const [fechaActual, setFechaActual] = useState(toLocalDateKey)
   const [kilometrajeActual, setKilometrajeActual] = useState<string>("")
   const [horasUsoActual, setHorasUsoActual] = useState<string>("")
   const [forzarGeneracion, setForzarGeneracion] = useState(false)
   const [resultado, setResultado] = useState<EvaluacionProgramacionResponse | null>(null)
+  const [errorEvaluacion, setErrorEvaluacion] = useState<string | null>(null)
 
   const evaluarMutation = useEvaluarProgramacion()
 
@@ -40,20 +43,26 @@ export function EvaluarProgramacionDialog({
 
   async function handleEvaluar() {
     setResultado(null)
-    const res = await evaluarMutation.mutateAsync({
-      id: programacion!.id,
-      payload: {
-        fechaActual: fechaActual || undefined,
-        kilometrajeActual: kilometrajeActual ? Number(kilometrajeActual) : undefined,
-        horasUsoActual: horasUsoActual ? Number(horasUsoActual) : undefined,
-        forzarGeneracion,
-      },
-    })
-    setResultado(res)
+    setErrorEvaluacion(null)
+    try {
+      const res = await evaluarMutation.mutateAsync({
+        id: programacion!.id,
+        payload: {
+          fechaActual: fechaActual || undefined,
+          kilometrajeActual: kilometrajeActual ? Number(kilometrajeActual) : undefined,
+          horasUsoActual: horasUsoActual ? Number(horasUsoActual) : undefined,
+          forzarGeneracion,
+        },
+      })
+      setResultado(res)
+    } catch (err: unknown) {
+      setErrorEvaluacion(getErrorMessage(err))
+    }
   }
 
   function handleClose() {
     setResultado(null)
+    setErrorEvaluacion(null)
     onOpenChange(false)
   }
 
@@ -171,6 +180,20 @@ export function EvaluarProgramacionDialog({
             <span>Forzar generación de solicitud aunque aún no se alcancen los umbrales</span>
           </label>
         </div>
+
+        {/* Error recuperable de la evaluación (409/422/503, etc.). */}
+        {errorEvaluacion && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3.5 text-xs text-destructive"
+          >
+            <AlertCircle className="size-4 shrink-0" />
+            <span>
+              No se pudo evaluar la programación: {errorEvaluacion}. Puede
+              corregir los datos e intentar nuevamente.
+            </span>
+          </div>
+        )}
 
         {/* Panel de Resultado */}
         {resultado && (

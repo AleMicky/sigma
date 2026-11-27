@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,12 +29,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Adjuntos de Órdenes de Trabajo", description = "Administración de adjuntos de órdenes de trabajo")
 @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
+@PreAuthorize(MantenimientoRoles.LECTURA)
 public class OrdenTrabajoAdjuntoController {
 
         private final OrdenTrabajoAdjuntoService service;
 
         @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
         @Operation(summary = "Registrar un adjunto con su archivo en una orden de trabajo")
+        @PreAuthorize(MantenimientoRoles.OPERACION)
         public ResponseEntity<ApiResponse<OrdenTrabajoAdjuntoResponse>> createWithFile(
                         @PathVariable UUID ordenTrabajoId,
                         @RequestPart("file") MultipartFile file,
@@ -48,28 +51,33 @@ public class OrdenTrabajoAdjuntoController {
 
         @PostMapping(value = "/{id}/archivo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
         @Operation(summary = "Reemplazar el archivo de un adjunto existente")
+        @PreAuthorize(MantenimientoRoles.OPERACION)
         public ResponseEntity<ApiResponse<OrdenTrabajoAdjuntoResponse>> replaceFile(
+                        @PathVariable UUID ordenTrabajoId,
                         @PathVariable UUID id,
                         @RequestPart("file") MultipartFile file) {
                 return ResponseEntity.ok(
                                 ApiResponse.success(
                                                 "Archivo actualizado correctamente",
-                                                service.replaceFile(id, file)));
+                                                service.replaceFile(ordenTrabajoId, id, file)));
         }
 
         @GetMapping("/{id}")
         @Operation(summary = "Obtener un adjunto por ID")
         public ResponseEntity<ApiResponse<OrdenTrabajoAdjuntoResponse>> findById(
+                        @PathVariable UUID ordenTrabajoId,
                         @PathVariable UUID id) {
                 return ResponseEntity.ok(
-                                ApiResponse.success(service.findById(id)));
+                                ApiResponse.success(service.findById(ordenTrabajoId, id)));
         }
 
         @GetMapping
         @Operation(summary = "Listar adjuntos de una orden de trabajo")
         public ResponseEntity<ApiResponse<PageResponse<OrdenTrabajoAdjuntoResponse>>> findByOrdenTrabajoId(
                         @PathVariable UUID ordenTrabajoId,
+                        @RequestParam(name = "size", required = false) Integer sizeSolicitado,
                         @Valid @ModelAttribute PageRequestDto pageRequest) {
+                MantenimientoPageSizeValidator.validar(sizeSolicitado);
                 return ResponseEntity.ok(
                                 ApiResponse.success(
                                                 service.findByOrdenTrabajoId(ordenTrabajoId, pageRequest)));
@@ -77,9 +85,11 @@ public class OrdenTrabajoAdjuntoController {
 
         @DeleteMapping("/{id}")
         @Operation(summary = "Eliminar un adjunto de una orden de trabajo")
+        @PreAuthorize(MantenimientoRoles.OPERACION)
         public ResponseEntity<ApiResponse<Void>> delete(
+                        @PathVariable UUID ordenTrabajoId,
                         @PathVariable UUID id) {
-                service.delete(id);
+                service.delete(ordenTrabajoId, id);
                 return ResponseEntity.ok(
                                 ApiResponse.success(
                                                 "Registro eliminado correctamente"));

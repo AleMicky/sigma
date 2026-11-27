@@ -86,6 +86,17 @@ public class FlowableWorkflowEngineService implements WorkflowEngineService {
     }
 
     @Override
+    public String obtenerDefinitionKey(String processInstanceId) {
+        WorkflowTaskResponse task = obtenerTareaActual(processInstanceId);
+        if (task == null || task.processDefinitionId() == null || task.processDefinitionId().isBlank()) {
+            return null;
+        }
+        ProcessDefinitionResponse definition =
+                flowableClient.obtenerProcessDefinition(task.processDefinitionId());
+        return definition != null ? definition.key() : null;
+    }
+
+    @Override
     public WorkflowTaskActionsResponse obtenerAccionesDisponibles(
             String processInstanceId
     ) {
