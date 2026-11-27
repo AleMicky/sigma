@@ -31,6 +31,11 @@ public interface PlanMantenimientoMapper {
     @Mapping(target = "nombre", source = "domain.nombre")
     @Mapping(target = "descripcion", source = "domain.descripcion")
     @Mapping(target = "tipoActivoId", source = "domain.tipoActivoId")
+    @Mapping(target = "tipoMantenimientoId", source = "domain.tipoMantenimientoId")
+    @Mapping(target = "estado", source = "domain.estado")
+    @Mapping(target = "criterioDefaultTipo", source = "domain.criterioDefaultTipo")
+    @Mapping(target = "criterioDefaultDias", source = "domain.criterioDefaultDias")
+    @Mapping(target = "criterioDefaultUso", source = "domain.criterioDefaultUso")
     @Mapping(target = "tipoActivoNombre", source = "tipoActivoNombre")
     @Mapping(target = "totalActividades", constant = "0")
     PlanMantenimientoResponse toResponse(PlanMantenimiento domain, String tipoActivoNombre);
@@ -41,6 +46,11 @@ public interface PlanMantenimientoMapper {
     @Mapping(target = "nombre", source = "domain.nombre")
     @Mapping(target = "descripcion", source = "domain.descripcion")
     @Mapping(target = "tipoActivoId", source = "domain.tipoActivoId")
+    @Mapping(target = "tipoMantenimientoId", source = "domain.tipoMantenimientoId")
+    @Mapping(target = "estado", source = "domain.estado")
+    @Mapping(target = "criterioDefaultTipo", source = "domain.criterioDefaultTipo")
+    @Mapping(target = "criterioDefaultDias", source = "domain.criterioDefaultDias")
+    @Mapping(target = "criterioDefaultUso", source = "domain.criterioDefaultUso")
     @Mapping(target = "tipoActivoNombre", source = "tipoActivoNombre")
     @Mapping(target = "totalActividades", source = "totalActividades")
     PlanMantenimientoResponse toResponse(PlanMantenimiento domain, String tipoActivoNombre, Integer totalActividades);

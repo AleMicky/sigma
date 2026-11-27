@@ -23,6 +23,7 @@ public class OrdenTrabajoPersistenceMapper {
         entity.setId(domain.getId());
         entity.setNumero(domain.getNumero());
         entity.setSolicitudMantenimientoId(domain.getSolicitudMantenimientoId());
+        entity.setProgramacionMantenimientoId(domain.getProgramacionMantenimientoId());
         entity.setActivoId(domain.getActivoId());
         entity.setResponsableId(domain.getResponsableId());
         entity.setFechaInicio(domain.getFechaInicio());
@@ -53,6 +54,7 @@ public class OrdenTrabajoPersistenceMapper {
                 .id(entity.getId())
                 .numero(entity.getNumero())
                 .solicitudMantenimientoId(entity.getSolicitudMantenimientoId())
+                .programacionMantenimientoId(entity.getProgramacionMantenimientoId())
                 .activoId(entity.getActivoId())
                 .responsableId(entity.getResponsableId())
                 .fechaInicio(entity.getFechaInicio())

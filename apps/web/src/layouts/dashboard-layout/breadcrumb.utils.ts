@@ -48,6 +48,8 @@ export const SEGMENT_LABELS: Record<string, string> = {
   supervisor: "Supervisor",
   actividades: "Actividades",
   "planes-mantenimiento": "Planes de Mantenimiento",
+  "programaciones-mantenimiento": "Programaciones de Mantenimiento",
+  preventivo: "Mantenimiento Preventivo",
   "tipos-mantenimiento": "Tipos de Mantenimiento",
   prioridades: "Prioridades",
   "controles-activos": "Controles de Activos",

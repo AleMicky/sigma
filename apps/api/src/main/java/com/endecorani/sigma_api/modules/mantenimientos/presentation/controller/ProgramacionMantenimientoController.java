@@ -11,6 +11,8 @@ import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programac
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.EvaluacionProgramacionResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.ProgramacionMantenimientoHistorialResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.programacion.response.ProgramacionMantenimientoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.ordentrabajo.response.OrdenTrabajoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.service.OrdenTrabajoPreventivaService;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.ProgramacionMantenimientoService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
@@ -34,7 +36,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping(ApiConstants.API_V1 + "/programaciones-mantenimiento")
-@RequiredArgsConstructor
 @Tag(
         name = "Programaciones de Mantenimiento",
         description = "Administración de programaciones preventivas, evaluación de criterios e historial de ejecuciones"
@@ -44,6 +45,20 @@ import java.util.UUID;
 public class ProgramacionMantenimientoController {
 
     private final ProgramacionMantenimientoService service;
+    private final OrdenTrabajoPreventivaService ordenTrabajoPreventivaService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ProgramacionMantenimientoController(
+            ProgramacionMantenimientoService service,
+            OrdenTrabajoPreventivaService ordenTrabajoPreventivaService
+    ) {
+        this.service = service;
+        this.ordenTrabajoPreventivaService = ordenTrabajoPreventivaService;
+    }
+
+    public ProgramacionMantenimientoController(ProgramacionMantenimientoService service) {
+        this(service, null);
+    }
 
     @PostMapping
     @Operation(
@@ -241,6 +256,18 @@ public class ProgramacionMantenimientoController {
             @PathVariable UUID activoId
     ) {
         return ResponseEntity.ok(ApiResponse.success(service.findByActivoId(activoId)));
+    }
+
+    @PostMapping("/{id}/generar-orden-trabajo")
+    @Operation(summary = "Generar Orden de Trabajo desde programación preventiva")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
+    public ResponseEntity<ApiResponse<OrdenTrabajoResponse>> generarOrdenTrabajo(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID responsableId
+    ) {
+        OrdenTrabajoResponse response = ordenTrabajoPreventivaService.generarDesdeProgramacion(id, responsableId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Orden de trabajo preventiva generada correctamente", response));
     }
 
     @PostMapping("/activo/{activoId}/evaluar")

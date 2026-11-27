@@ -58,10 +58,14 @@ public class OrdenTrabajoEntity extends BaseEntity {
     private String numero;
 
     @Column(
-            name = "solicitud_mantenimiento_id",
-            nullable = false
+            name = "solicitud_mantenimiento_id"
     )
     private UUID solicitudMantenimientoId;
+
+    @Column(
+            name = "programacion_mantenimiento_id"
+    )
+    private UUID programacionMantenimientoId;
 
     @Column(
             name = "activo_id",

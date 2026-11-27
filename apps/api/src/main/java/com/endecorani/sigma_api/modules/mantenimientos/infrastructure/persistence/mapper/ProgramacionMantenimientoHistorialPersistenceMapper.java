@@ -16,6 +16,7 @@ public class ProgramacionMantenimientoHistorialPersistenceMapper {
         entity.setId(domain.getId());
         entity.setProgramacionMantenimientoId(domain.getProgramacionMantenimientoId());
         entity.setSolicitudMantenimientoId(domain.getSolicitudMantenimientoId());
+        entity.setOrdenTrabajoId(domain.getOrdenTrabajoId());
         entity.setSolicitudNumero(domain.getSolicitudNumero());
         entity.setTipoCriterioDisparador(domain.getTipoCriterioDisparador());
         entity.setValorDisparador(domain.getValorDisparador());
@@ -38,6 +39,7 @@ public class ProgramacionMantenimientoHistorialPersistenceMapper {
                 .id(entity.getId())
                 .programacionMantenimientoId(entity.getProgramacionMantenimientoId())
                 .solicitudMantenimientoId(entity.getSolicitudMantenimientoId())
+                .ordenTrabajoId(entity.getOrdenTrabajoId())
                 .solicitudNumero(entity.getSolicitudNumero())
                 .tipoCriterioDisparador(entity.getTipoCriterioDisparador())
                 .valorDisparador(entity.getValorDisparador())

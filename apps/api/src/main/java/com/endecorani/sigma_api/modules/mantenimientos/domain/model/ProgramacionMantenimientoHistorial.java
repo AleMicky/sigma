@@ -23,6 +23,7 @@ public class ProgramacionMantenimientoHistorial extends AuditableModel {
     private UUID id;
     private UUID programacionMantenimientoId;
     private UUID solicitudMantenimientoId;
+    private UUID ordenTrabajoId;
     private String solicitudNumero;
     private TipoCriterioMantenimiento tipoCriterioDisparador;
     private String valorDisparador;
