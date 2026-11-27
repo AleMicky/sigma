@@ -12,6 +12,7 @@ public record OrdenTrabajoResponse(
         UUID id,
         String numero,
         UUID solicitudMantenimientoId,
+        UUID programacionMantenimientoId,
         UUID activoId,
         UUID responsableId,
         @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)

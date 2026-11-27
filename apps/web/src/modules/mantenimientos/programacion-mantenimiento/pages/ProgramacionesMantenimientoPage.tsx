@@ -1,9 +1,7 @@
 import { useState, useMemo } from "react"
-import { useNavigate } from "@tanstack/react-router"
 import {
   AlertTriangle,
   CalendarClock,
-  ClipboardList,
   Clock,
   FileSpreadsheet,
   Gauge,
@@ -29,7 +27,6 @@ import { EvaluarProgramacionDialog } from "../components/EvaluarProgramacionDial
 const PAGE_SIZE = 20
 
 export function ProgramacionesMantenimientoPage() {
-  const navigate = useNavigate()
   const [vistaActiva, setVistaActiva] = useState<"tarjetas" | "reporte">("tarjetas")
   const [filtroEstado, setFiltroEstado] = useState<"todos" | "activos" | "inactivos">("todos")
   const search = usePaginatedSearch({
@@ -114,23 +111,13 @@ export function ProgramacionesMantenimientoPage() {
                 Programaciones de Mantenimiento
               </h1>
               <p className="text-xs text-muted-foreground">
-                Motor de monitoreo preventivo y disparo automatizado por odómetro, horómetro y calendario
+                Controla cuándo le toca mantenimiento a cada equipo según fecha, kilometraje u horas de uso.
               </p>
             </div>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate({ to: "/mantenimientos/planes-mantenimiento" })}
-            className="h-9 gap-1.5 text-xs rounded-xl border-blue-500/30 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300 cursor-pointer font-medium"
-          >
-            <ClipboardList className="size-3.5 text-blue-500" />
-            <span>Ver Planes Base</span>
-          </Button>
-
           <Button
             variant="outline"
             size="sm"
@@ -149,7 +136,7 @@ export function ProgramacionesMantenimientoPage() {
             className="h-9 gap-1.5 text-xs rounded-xl border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 hover:text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 dark:hover:bg-amber-400/20 cursor-pointer shadow-xs transition-colors font-medium"
           >
             <Sparkles className="size-3.5 text-amber-500" />
-            <span>Evaluar Parque Preventivo</span>
+            <span>Revisar Vencimientos</span>
           </Button>
 
           <Button
@@ -158,7 +145,7 @@ export function ProgramacionesMantenimientoPage() {
             className="h-9 gap-1.5 text-xs rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs cursor-pointer"
           >
             <Plus className="size-4" />
-            <span>Nueva Programación</span>
+            <span>Programar Activo</span>
           </Button>
         </div>
       </div>
@@ -176,7 +163,7 @@ export function ProgramacionesMantenimientoPage() {
             }`}
           >
             <LayoutGrid className="size-3.5 text-amber-500" />
-            <span>Tarjetas de Telemetría</span>
+            <span>Vista por Equipo</span>
           </button>
           <button
             type="button"
@@ -188,14 +175,14 @@ export function ProgramacionesMantenimientoPage() {
             }`}
           >
             <FileSpreadsheet className="size-3.5 text-emerald-500" />
-            <span>Reporte de Seguimiento y Auditoría</span>
+            <span>Tabla y Exportar Excel</span>
           </button>
         </div>
 
         <p className="text-[11px] text-muted-foreground">
           {vistaActiva === "tarjetas"
-            ? "Monitoreo gráfico por activo con barras de progreso y umbrales en tiempo real"
-            : "Matriz ejecutiva con estado de alertas preventivas, exportación Excel e impresión oficial"}
+            ? "Ver cada activo con su avance actual y botón para completar o revisar"
+            : "Ver listado resumido por alerta (Crítico / Próximo / Al día) y descargar Excel"}
         </p>
       </div>
 
@@ -243,10 +230,20 @@ export function ProgramacionesMantenimientoPage() {
             </div>
 
             {showExplain && (
-              <p className="text-[11.5px] text-muted-foreground leading-relaxed">
-                El sistema monitorea activamente la telemetría de cada activo: <strong>odómetro de retorno</strong> de viajes vehiculares, <strong>horómetro</strong> de operación y <strong>calendario</strong>.
-                Cuando un activo alcanza o supera su umbral objetivo, la evaluación genera automáticamente una <strong>Solicitud de Mantenimiento Preventivo</strong> con las actividades técnicas de su plan. Al registrar la culminación en <em>"Completar"</em>, el nuevo umbral se recalcula automáticamente sumando el intervalo de uso.
-              </p>
+              <div className="grid grid-cols-1 gap-2 pt-1 md:grid-cols-3 text-[11.5px] text-muted-foreground">
+                <div className="rounded-xl border border-border/60 bg-background/80 p-2.5">
+                  <strong className="text-foreground">1. Programa un Activo:</strong>{" "}
+                  Usa <em>Programar Activo</em> para asignar un plan y frecuencia a un equipo o a todo un tipo de activo.
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background/80 p-2.5">
+                  <strong className="text-foreground">2. Controla el vencimiento:</strong>{" "}
+                  Cada tarjeta muestra cuánto falta por <strong>fecha</strong>, <strong>km</strong> u <strong>horas</strong>.
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background/80 p-2.5">
+                  <strong className="text-foreground">3. Completa el servicio:</strong>{" "}
+                  Al marcar <em>Completar</em>, el sistema guarda el histórico y calcula automáticamente la siguiente fecha o lectura.
+                </div>
+              </div>
             )}
           </div>
 

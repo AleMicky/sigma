@@ -22,6 +22,7 @@ public class OrdenTrabajo extends AuditableModel {
     private UUID id;
     private String numero;
     private UUID solicitudMantenimientoId;
+    private UUID programacionMantenimientoId;
     private UUID activoId;
     private UUID responsableId;
     private LocalDateTime fechaInicio;

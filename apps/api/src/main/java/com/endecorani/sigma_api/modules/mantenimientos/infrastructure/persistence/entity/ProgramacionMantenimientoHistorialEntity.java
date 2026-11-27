@@ -43,6 +43,9 @@ public class ProgramacionMantenimientoHistorialEntity extends BaseEntity {
     @Column(name = "solicitud_mantenimiento_id")
     private UUID solicitudMantenimientoId;
 
+    @Column(name = "orden_trabajo_id")
+    private UUID ordenTrabajoId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "solicitud_mantenimiento_id", insertable = false, updatable = false)
     private SolicitudMantenimientoEntity solicitudMantenimiento;

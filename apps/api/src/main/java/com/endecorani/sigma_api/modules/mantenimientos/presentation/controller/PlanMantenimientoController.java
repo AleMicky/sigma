@@ -3,8 +3,11 @@ package com.endecorani.sigma_api.modules.mantenimientos.presentation.controller;
 import com.endecorani.sigma_api.config.openapi.OpenApiConfig;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.plan.request.PlanMantenimientoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.plan.request.PlanMantenimientoUpdate;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.plan.request.PlanPreventivoCompletoRequest;
 import com.endecorani.sigma_api.modules.mantenimientos.application.dto.plan.response.PlanMantenimientoResponse;
+import com.endecorani.sigma_api.modules.mantenimientos.application.dto.plan.response.PlanPreventivoCompletoResponse;
 import com.endecorani.sigma_api.modules.mantenimientos.application.service.PlanMantenimientoService;
+import com.endecorani.sigma_api.modules.mantenimientos.application.service.PlanPreventivoService;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
 import com.endecorani.sigma_api.shared.application.pagination.SearchPageRequestDto;
@@ -35,6 +38,7 @@ import java.util.UUID;
 public class PlanMantenimientoController {
 
     private final PlanMantenimientoService service;
+    private final PlanPreventivoService planPreventivoService;
 
     @GetMapping
     @Operation(summary = "Listar planes de mantenimiento con paginación, filtro por tipo de activo y búsqueda opcional (search o q)")
@@ -101,6 +105,38 @@ public class PlanMantenimientoController {
         PlanMantenimientoResponse response = service.actualizar(id, dto);
         return ResponseEntity.ok(
                 ApiResponse.success("Plan de mantenimiento actualizado correctamente", response)
+        );
+    }
+
+    @GetMapping("/{id}/completo")
+    @Operation(summary = "Obtener plan preventivo completo con actividades, activos y criterios")
+    @PreAuthorize(MantenimientoRoles.LECTURA)
+    public ResponseEntity<ApiResponse<PlanPreventivoCompletoResponse>> obtenerCompleto(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(planPreventivoService.obtenerCompleto(id)));
+    }
+
+    @PostMapping("/completo")
+    @Operation(summary = "Crear plan preventivo completo en una sola transacción")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
+    public ResponseEntity<ApiResponse<PlanPreventivoCompletoResponse>> crearCompleto(
+            @Valid @RequestBody PlanPreventivoCompletoRequest dto
+    ) {
+        PlanPreventivoCompletoResponse response = planPreventivoService.crearCompleto(dto);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Plan preventivo creado correctamente", response));
+    }
+
+    @PutMapping("/{id}/completo")
+    @Operation(summary = "Actualizar plan preventivo completo en una sola transacción")
+    @PreAuthorize(MantenimientoRoles.OPERACION)
+    public ResponseEntity<ApiResponse<PlanPreventivoCompletoResponse>> actualizarCompleto(
+            @PathVariable UUID id,
+            @Valid @RequestBody PlanPreventivoCompletoRequest dto
+    ) {
+        PlanPreventivoCompletoResponse response = planPreventivoService.actualizarCompleto(id, dto);
+        return ResponseEntity.ok(
+                ApiResponse.success("Plan preventivo actualizado correctamente", response)
         );
     }
 

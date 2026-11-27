@@ -167,11 +167,11 @@ export function PlanesMantenimientoPage() {
           <Button
             size="sm"
             type="button"
-            onClick={openCreate}
+            onClick={() => navigate({ to: "/mantenimientos/planes-mantenimiento/nuevo" })}
             className="cursor-pointer gap-1.5 font-semibold rounded-xl"
           >
             <Plus className="size-4" />
-            <span>Nuevo Plan</span>
+            <span>Nuevo Plan (Wizard)</span>
           </Button>
         </div>
       </header>

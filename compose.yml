@@ -1,10 +1,11 @@
 name: sigma-dev
 
 services:
-  # ── PostgreSQL ───────────────────────────────────────────────
+  # ── PostgreSQL (opcional: docker compose --profile local-db up) ─
   postgres:
     image: postgres:16.16-alpine3.23
     container_name: sigma-postgres
+    profiles: ["local-db"]
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-sigma_db}
@@ -29,12 +30,9 @@ services:
       dockerfile: Dockerfile
     container_name: sigma-api
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     env_file: .env
     environment:
-      DB_HOST: postgres
+      DB_HOST: ${DB_HOST:-postgres}
       DB_SSL_MODE: ${DB_SSL_MODE:-disable}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       # Keycloak (el valor de ejemplo de KEYCLOAK_BASE_URL vive solo en .env.example).

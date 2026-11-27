@@ -130,6 +130,14 @@ export const DOCUMENTED_SUBMODULE_ROUTES: Readonly<
   "/mantenimientos/controles-activos": [
     "/mantenimientos/controles-activos/nuevo",
   ],
+  "/mantenimientos/planes-mantenimiento": [
+    "/mantenimientos/planes-mantenimiento/nuevo",
+    "/mantenimientos/planes-mantenimiento/:planId/editar",
+  ],
+  "/mantenimientos/preventivo": [
+    "/mantenimientos/planes-mantenimiento/nuevo",
+    "/mantenimientos/planes-mantenimiento/:planId/editar",
+  ],
   "/gestion-vehicular/solicitudes": [
     "/gestion-vehicular/solicitudes/nueva",
     "/gestion-vehicular/solicitudes/:solicitudId/editar",

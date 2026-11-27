@@ -1,14 +1,18 @@
 package com.endecorani.sigma_api.modules.mantenimientos.infrastructure.persistence.entity;
 
 import com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.TipoActivoEntity;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.enums.EstadoPlanMantenimiento;
+import com.endecorani.sigma_api.modules.mantenimientos.domain.enums.TipoCriterioMantenimiento;
 import com.endecorani.sigma_api.shared.infrastructure.persistence.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 
@@ -69,4 +73,22 @@ public class PlanMantenimientoEntity extends BaseEntity {
             columnDefinition = "TEXT"
     )
     private String descripcion;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false, length = 20)
+    @Builder.Default
+    private EstadoPlanMantenimiento estado = EstadoPlanMantenimiento.ACTIVO;
+
+    @Column(name = "tipo_mantenimiento_id")
+    private UUID tipoMantenimientoId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "criterio_default_tipo", length = 20)
+    private TipoCriterioMantenimiento criterioDefaultTipo;
+
+    @Column(name = "criterio_default_dias")
+    private Integer criterioDefaultDias;
+
+    @Column(name = "criterio_default_uso", precision = 15, scale = 2)
+    private BigDecimal criterioDefaultUso;
 }
