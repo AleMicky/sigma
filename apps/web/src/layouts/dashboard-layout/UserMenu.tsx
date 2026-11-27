@@ -50,7 +50,7 @@ export function UserMenu() {
     try {
       await logoutMutation.mutateAsync()
     } catch {
-      // La sesión local se limpia igual si el proveedor de auth ya invalidó el token.
+      // useLogout ya mostró un aviso no bloqueante y limpió la sesión local.
     } finally {
       await navigate({ to: "/login" })
     }

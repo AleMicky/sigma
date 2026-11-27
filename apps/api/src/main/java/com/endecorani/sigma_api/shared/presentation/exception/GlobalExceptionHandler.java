@@ -22,10 +22,16 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final String KEYCLOAK_UNAVAILABLE_CODE = "KEYCLOAK_UNAVAILABLE";
+    private static final String VALIDATION_ERROR_CODE = "VALIDATION_ERROR";
+    private static final String REDACTED = "[REDACTED]";
+    private static final Pattern SENSITIVE_FIELD = Pattern.compile("(?i)password|token|secret");
 
     @ExceptionHandler({
             ResourceNotFoundException.class,
@@ -62,8 +68,15 @@ public class GlobalExceptionHandler {
             BusinessException exception,
             HttpServletRequest request
     ) {
+        // REQ-SEG-006/007: el código de dominio fija el status del contrato (503 si Keycloak
+        // no está disponible, 400 si la validación se detecta en la capa de aplicación).
+        HttpStatus status = KEYCLOAK_UNAVAILABLE_CODE.equals(exception.getCode())
+                ? HttpStatus.SERVICE_UNAVAILABLE
+                : VALIDATION_ERROR_CODE.equals(exception.getCode())
+                        ? HttpStatus.BAD_REQUEST
+                        : HttpStatus.UNPROCESSABLE_CONTENT;
         return buildResponse(
-                HttpStatus.UNPROCESSABLE_CONTENT,
+                status,
                 exception.getCode(),
                 exception.getMessage(),
                 request.getRequestURI()
@@ -183,15 +196,14 @@ public class GlobalExceptionHandler {
         List<FieldValidationError> errors = exception
                 .getConstraintViolations()
                 .stream()
-                .map(violation ->
-                        new FieldValidationError(
-                                violation
-                                        .getPropertyPath()
-                                        .toString(),
-                                violation.getMessage(),
-                                violation.getInvalidValue()
-                        )
-                )
+                .map(violation -> {
+                    String field = violation.getPropertyPath().toString();
+                    return new FieldValidationError(
+                            field,
+                            violation.getMessage(),
+                            sanitizeRejectedValue(field, violation.getInvalidValue())
+                    );
+                })
                 .toList();
 
         ApiErrorResponse response =
@@ -356,8 +368,22 @@ public class GlobalExceptionHandler {
         return new FieldValidationError(
                 error.getField(),
                 error.getDefaultMessage(),
-                error.getRejectedValue()
+                sanitizeRejectedValue(error.getField(), error.getRejectedValue())
         );
+    }
+
+    /**
+     * REQ-SEG-005: los errores 400 no devuelven valores rechazados de campos sensibles
+     * (password/token/secret), ni cadenas que los contengan.
+     */
+    private static Object sanitizeRejectedValue(String field, Object rejectedValue) {
+        if (field != null && SENSITIVE_FIELD.matcher(field).find()) {
+            return REDACTED;
+        }
+        if (rejectedValue instanceof CharSequence text && SENSITIVE_FIELD.matcher(text).find()) {
+            return REDACTED;
+        }
+        return rejectedValue;
     }
 
     private ResponseEntity<ApiErrorResponse> buildResponse(

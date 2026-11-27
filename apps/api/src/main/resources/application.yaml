@@ -12,11 +12,8 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI}
-          # Keycloak por defecto pone aud=account. Aceptamos también sigma-api
-          # cuando exista el audience mapper en el client sigma-web.
-          audiences:
-            - account
-            - ${KEYCLOAK_AUDIENCE:sigma-api}
+          # REQ-SEG-008: la audiencia permitida se define en app.keycloak.audience
+          # (KEYCLOAK_AUDIENCE, default sigma-api). Nunca aceptar aud=account.
   datasource:
     # REQ-BIZ-009: el modo SSL se controla por entorno; dev/local sin TLS por defecto.
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sigma_db}?sslmode=${DB_SSL_MODE:disable}
@@ -53,6 +50,8 @@ management:
 
 springdoc:
   api-docs:
+    # REQ-SEG-010: documentación sólo habilitada explícitamente en el perfil dev.
+    enabled: false
     path: /v3/api-docs
   swagger-ui:
     enabled: false
@@ -67,6 +66,8 @@ app:
   keycloak:
     base-url: ${KEYCLOAK_BASE_URL:}
     realm: ${KEYCLOAK_REALM:}
+    # REQ-SEG-008: tolerancia explícita a desfase de reloj entre API y Keycloak.
+    jwt-clock-skew-seconds: ${KEYCLOAK_JWT_CLOCK_SKEW_SECONDS:60}
     token-url: ${KEYCLOAK_TOKEN_URL}
     logout-url: ${KEYCLOAK_LOGOUT_URL}
     client-id: ${KEYCLOAK_CLIENT_ID:sigma-web}

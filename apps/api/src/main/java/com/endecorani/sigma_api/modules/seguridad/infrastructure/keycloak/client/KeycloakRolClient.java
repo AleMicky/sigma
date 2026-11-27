@@ -8,10 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
@@ -39,45 +37,21 @@ public class KeycloakRolClient {
 
             return roles == null ? List.of() : roles;
         } catch (RestClientResponseException ex) {
-            log.error("Error al obtener roles desde Keycloak Admin API (status={}): {}",
-                    ex.getStatusCode().value(), ex.getResponseBodyAsString());
-            throw new BusinessException(
-                    "KEYCLOAK_SYNC_ERROR",
-                    "Error al sincronizar roles con Keycloak (" + ex.getStatusCode().value() + "): " +
-                            (ex.getResponseBodyAsString().isBlank() ? ex.getStatusText()
-                                    : ex.getResponseBodyAsString()));
+            throw KeycloakAdminApiSupport.mapResponseError(ex, "obtener roles");
         } catch (BusinessException ex) {
             throw ex;
+        } catch (ResourceAccessException ex) {
+            throw KeycloakAdminApiSupport.mapNetworkError(ex, "obtener roles");
         } catch (Exception ex) {
-            log.error("Error inesperado al conectar con Keycloak para obtener roles", ex);
-            throw new BusinessException(
-                    "KEYCLOAK_SYNC_ERROR",
-                    "No se pudo sincronizar roles con Keycloak: " + ex.getMessage());
+            throw KeycloakAdminApiSupport.mapUnexpectedError(ex, "obtener roles");
         }
     }
 
+    /**
+     * REQ-SEG-006: la Admin API se invoca con la cuenta de servicio, nunca con el JWT del
+     * administrador en sesión.
+     */
     private String resolveAccessToken() {
-        // 1. Intentar con el token del usuario actualmente autenticado (admin)
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
-            String userToken = jwt.getTokenValue();
-            if (userToken != null && !userToken.isBlank()) {
-                log.debug("Usando token de usuario autenticado para consultar Keycloak Admin API (roles)");
-                return userToken;
-            }
-        }
-
-        // 2. Si no hay contexto de usuario, usar client_credentials grant
-        try {
-            var clientToken = tokenClient.clientCredentialsGrant();
-            return clientToken.accessToken();
-        } catch (Exception ex) {
-            log.warn("Fallo al obtener token por client_credentials: {}", ex.getMessage());
-            throw new BusinessException(
-                    "KEYCLOAK_SYNC_AUTH_ERROR",
-                    "No se pudo autenticar con Keycloak. " +
-                            "Habilita 'Service accounts roles' en el client '" + properties.clientId()
-                            + "' de Keycloak o asigna el rol 'view-realm' / 'query-groups' / 'realm-admin' al usuario.");
-        }
+        return KeycloakAdminApiSupport.serviceAccountToken(tokenClient);
     }
 }

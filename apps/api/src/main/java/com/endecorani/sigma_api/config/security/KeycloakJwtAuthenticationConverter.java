@@ -1,6 +1,8 @@
 package com.endecorani.sigma_api.config.security;
 
+import com.endecorani.sigma_api.config.keycloak.KeycloakProperties;
 import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -22,6 +24,21 @@ public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, Abstra
     private static final String ROLES = "roles";
     private static final String ROLE_PREFIX = "ROLE_";
 
+    private final KeycloakProperties keycloakProperties;
+
+    /**
+     * Constructor sin propiedades reservado a tests que no negocian JWT. Sin client-id
+     * configurado no se acepta ningún rol de cliente (fail-closed).
+     */
+    public KeycloakJwtAuthenticationConverter() {
+        this(null);
+    }
+
+    @Autowired
+    public KeycloakJwtAuthenticationConverter(KeycloakProperties keycloakProperties) {
+        this.keycloakProperties = keycloakProperties;
+    }
+
     @Override
     public AbstractAuthenticationToken convert(@NonNull Jwt jwt) {
         Collection<GrantedAuthority> authorities = extractRoles(jwt);
@@ -42,29 +59,34 @@ public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, Abstra
         if (realmAccess != null && realmAccess.get(ROLES) instanceof Collection<?> realmRoles) {
             for (Object role : realmRoles) {
                 if (role instanceof String roleName && !roleName.isBlank()) {
-                    String authority = roleName.startsWith(ROLE_PREFIX) ? roleName : ROLE_PREFIX + roleName;
-                    authorities.add(new SimpleGrantedAuthority(authority));
+                    authorities.add(toAuthority(roleName));
                 }
             }
         }
 
-        // 2. Roles de Clientes (resource_access.<client>.roles)
+        // REQ-SEG-003: sólo los roles del client configurado en app.keycloak.client-id.
+        // Los roles de otros clients del mismo realm NO deben convertirse en autoridades
+        // de esta aplicación (evita escalada de ADMIN entre clientes).
+        String clientId = keycloakProperties == null ? null : keycloakProperties.clientId();
         Map<String, Object> resourceAccess = jwt.getClaimAsMap(RESOURCE_ACCESS);
-        if (resourceAccess != null) {
-            for (Map.Entry<String, Object> entry : resourceAccess.entrySet()) {
-                if (entry.getValue() instanceof Map<?, ?> clientData
-                        && clientData.get(ROLES) instanceof Collection<?> clientRoles) {
-                    for (Object role : clientRoles) {
-                        if (role instanceof String roleName && !roleName.isBlank()) {
-                            String authority = roleName.startsWith(ROLE_PREFIX) ? roleName : ROLE_PREFIX + roleName;
-                            authorities.add(new SimpleGrantedAuthority(authority));
-                        }
+        if (resourceAccess != null && clientId != null && !clientId.isBlank()) {
+            Object clientData = resourceAccess.get(clientId);
+            if (clientData instanceof Map<?, ?> rolesByClient
+                    && rolesByClient.get(ROLES) instanceof Collection<?> clientRoles) {
+                for (Object role : clientRoles) {
+                    if (role instanceof String roleName && !roleName.isBlank()) {
+                        authorities.add(toAuthority(roleName));
                     }
                 }
             }
         }
 
         return authorities;
+    }
+
+    private static SimpleGrantedAuthority toAuthority(String roleName) {
+        String authority = roleName.startsWith(ROLE_PREFIX) ? roleName : ROLE_PREFIX + roleName;
+        return new SimpleGrantedAuthority(authority);
     }
 
     private String resolvePrincipalName(Jwt jwt) {

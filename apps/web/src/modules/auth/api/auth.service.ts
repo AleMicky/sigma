@@ -40,12 +40,20 @@ export async function refreshSession(
 }
 
 export async function logout(
-  refreshToken: string,
+  refreshToken: string | null,
+  accessToken?: string | null,
 ): Promise<void> {
+  // El contrato mantiene logout como permitAll, pero la API valida el `sub`
+  // del Bearer cuando está presente. `skipAuth` evita el flujo de refresh
+  // en esta llamada y el header se envía explícitamente.
+  const headers = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : undefined
+
   await http.post<void, { refreshToken: string }>(
     authEndpoints.logout,
-    { refreshToken },
-    { skipAuth: true },
+    { refreshToken: refreshToken ?? "" },
+    { skipAuth: true, ...(headers ? { headers } : {}) },
   )
 }
 

@@ -2,6 +2,7 @@ package com.endecorani.sigma_api.shared.presentation.exception;
 
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.response.ApiErrorResponse;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -59,6 +60,24 @@ class GlobalExceptionHandlerTest {
         ApiErrorResponse body = response.getBody();
         assertNotNull(body);
         assertEquals("INVALID_PAGE_SIZE", body.code());
+    }
+
+    @Test
+    void handleBusiness_paraFalloDeSincronizacionKeycloak_debeRetornar422ConCodigoKEYCLOAK_SYNC_ERROR() {
+        BusinessException exception = new BusinessException(
+                "KEYCLOAK_SYNC_ERROR", "Error al sincronizar roles desde Keycloak (500)");
+
+        ResponseEntity<ApiErrorResponse> response = handler.handleBusiness(exception, request);
+
+        assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, response.getStatusCode());
+        ApiErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertFalse(body.success());
+        assertEquals(422, body.status());
+        assertEquals("Unprocessable Content", body.error());
+        assertEquals("KEYCLOAK_SYNC_ERROR", body.code());
+        assertEquals("/api/v1/porteria", body.path());
+        assertNotNull(body.timestamp());
     }
 
     @Test

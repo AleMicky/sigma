@@ -1,4 +1,5 @@
 import { createCrudMutations } from "@/shared/api"
+import { authKeys } from "@/modules/auth/api/auth.keys"
 
 import { menuKeys } from "./menu.keys"
 import {
@@ -26,6 +27,7 @@ const menuMutations = createCrudMutations<Menu, CreateMenuDto>({
     menuKeys.arbol(),
     menuKeys.allList(),
     menuKeys.misMenus(),
+    authKeys.me(),
   ],
 })
 

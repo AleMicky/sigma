@@ -4,8 +4,7 @@ import { useShallow } from "zustand/react/shallow"
 
 import { queryClient } from "@/app/query/queryClient"
 import { router } from "@/app/router/router"
-import { useAuthStore } from "@/app/store/auth.store"
-import { authKeys } from "@/modules/auth/api/auth.keys"
+import { getAuthSessionKey, useAuthStore } from "@/app/store/auth.store"
 
 function subscribeToHydration(onStoreChange: () => void) {
   const unsubHydrate = useAuthStore.persist.onHydrate(onStoreChange)
@@ -35,17 +34,11 @@ export function RouterApp() {
     () => true,
   )
 
-  const authSessionKey = `${auth.isAuthenticated}:${auth.user?.id ?? ""}`
+  const authSessionKey = getAuthSessionKey(auth.isAuthenticated, auth.user)
   const prevAuthSessionKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!hydrated) return
-
-    if (!auth.isAuthenticated) {
-      queryClient.removeQueries({
-        queryKey: authKeys.all,
-      })
-    }
 
     if (
       prevAuthSessionKeyRef.current !== null &&

@@ -1,4 +1,6 @@
 import { createCrudMutations } from "@/shared/api"
+import { authKeys } from "@/modules/auth/api/auth.keys"
+import { menuKeys } from "@/modules/seguridad/menu/api/menu.keys"
 
 import { permisoKeys } from "./permiso.keys"
 import {
@@ -24,6 +26,8 @@ const permisoMutations = createCrudMutations<Permiso, CreatePermisoDto>({
   invalidateKeys: [
     permisoKeys.all,
     permisoKeys.allList(),
+    authKeys.me(),
+    menuKeys.misMenus(),
   ],
 })
 

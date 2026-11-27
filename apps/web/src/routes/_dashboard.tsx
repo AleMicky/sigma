@@ -29,23 +29,17 @@ function buildLoginRedirect(pathname: string, searchStr: string) {
 
 export const Route = createFileRoute("/_dashboard")({
   beforeLoad: async ({ context, location }) => {
-    if (!context.auth.isAuthenticated) {
+    if (
+      !context.auth.isAuthenticated ||
+      !useAuthStore.getState().validateSession()
+    ) {
       throw buildLoginRedirect(location.pathname, location.searchStr)
     }
 
     try {
-      const user = await context.queryClient.ensureQueryData(
-        authQueries.me(),
-      )
-      const { accessToken, refreshToken } = useAuthStore.getState()
-
-      if (accessToken) {
-        useAuthStore.getState().setSession({
-          user,
-          accessToken,
-          refreshToken,
-        })
-      }
+      // /auth/me se consulta fresco (staleTime: 0) pero no reescribe el store:
+      // el store es la única fuente de verdad de la sesión del cliente.
+      await context.queryClient.ensureQueryData(authQueries.me())
     } catch (error) {
       // El interceptor ya limpia la sesión si el refresh falla.
       if (!useAuthStore.getState().isAuthenticated) {
@@ -71,7 +65,7 @@ export const Route = createFileRoute("/_dashboard")({
 function DashboardRoute() {
   const location = useLocation()
   const user = useAuthStore((state) => state.user)
-  const { allowedRoutes, isLoading, isError, refetch } = useAllowedNavItems()
+  const { allowedRoutes, menuTree, isLoading, isError, refetch } = useAllowedNavItems()
 
   const bypassCheck =
     isAlwaysAllowedDashboardPath(location.pathname) ||
@@ -123,7 +117,7 @@ function DashboardRoute() {
 
   const authorized =
     bypassCheck ||
-    isRouteAuthorized(location.pathname, allowedRoutes, user?.roles)
+    isRouteAuthorized(location.pathname, allowedRoutes, user?.roles, menuTree)
 
   if (!authorized) {
     return (

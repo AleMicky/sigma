@@ -118,14 +118,14 @@ class SolicitudMantenimientoWorkflowSecurityTest {
                 "usuario-tests",
                 "n/a",
                 List.of(new SimpleGrantedAuthority("ROLE_" + rol))));
-        when(securityUtils.isAdmin()).thenReturn("ADMIN".equals(rol));
+        when(securityUtils.isAdmin()).thenReturn(tieneRolAdminEnContexto());
         if (!vincularEmpleado) {
             return;
         }
         UUID userId = UUID.randomUUID();
         UUID personaId = UUID.randomUUID();
         when(securityUtils.getCurrentUserId()).thenReturn(Optional.of(userId));
-        if ("ADMIN".equals(rol)) {
+        if (tieneRolAdminEnContexto()) {
             when(securityUtils.getCurrentUsername()).thenReturn("usuario-tests");
         }
         when(usuarioRepository.findById(userId))
@@ -152,10 +152,16 @@ class SolicitudMantenimientoWorkflowSecurityTest {
                 "usuario-tests",
                 "n/a",
                 List.of(new SimpleGrantedAuthority("ROLE_" + rol))));
-        when(securityUtils.isAdmin()).thenReturn("ADMIN".equals(rol));
-        if ("ADMIN".equals(rol)) {
+        when(securityUtils.isAdmin()).thenReturn(tieneRolAdminEnContexto());
+        if (tieneRolAdminEnContexto()) {
             when(securityUtils.getCurrentUsername()).thenReturn("usuario-tests");
         }
+    }
+
+    /** REQ-SEG-001: el rol se resuelve desde authorities reales, nunca desde el nombre del usuario. */
+    private boolean tieneRolAdminEnContexto() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
     }
 
     private WorkflowApplicationService workflowServiceConGuardia() {

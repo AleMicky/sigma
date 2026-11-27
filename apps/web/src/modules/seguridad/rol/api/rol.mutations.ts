@@ -2,10 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { getErrorMessage } from "@/shared/api"
+import { authKeys } from "@/modules/auth/api/auth.keys"
 import { menuKeys } from "@/modules/seguridad/menu/api/menu.keys"
 
 import { rolKeys } from "./rol.keys"
 import { asignarMenusRol, sincronizarRoles } from "./rol.service"
+import { getSincronizacionErrorMessage } from "@/shared/api/sync-error"
 
 export function useSincronizarRoles() {
   const queryClient = useQueryClient()
@@ -14,13 +16,15 @@ export function useSincronizarRoles() {
     mutationFn: sincronizarRoles,
     onSuccess: (total) => {
       void queryClient.invalidateQueries({ queryKey: rolKeys.all })
+      void queryClient.invalidateQueries({ queryKey: authKeys.me() })
       void queryClient.invalidateQueries({ queryKey: menuKeys.misMenus() })
       toast.success(
         `Sincronización completada: ${total} ${total === 1 ? "rol procesado" : "roles procesados"}`,
       )
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error))
+      // Ninguna invalidación de éxito: la sincronización no se completó.
+      toast.error(getSincronizacionErrorMessage(error, "los roles"))
     },
   })
 }
@@ -35,6 +39,7 @@ export function useAsignarMenusRol() {
       void queryClient.invalidateQueries({ queryKey: rolKeys.menus(variables.id) })
       void queryClient.invalidateQueries({ queryKey: rolKeys.menuIds(variables.id) })
       void queryClient.invalidateQueries({ queryKey: rolKeys.menuArbol(variables.id) })
+      void queryClient.invalidateQueries({ queryKey: authKeys.me() })
       void queryClient.invalidateQueries({ queryKey: menuKeys.misMenus() })
       toast.success("Menús y permisos del rol actualizados correctamente")
     },

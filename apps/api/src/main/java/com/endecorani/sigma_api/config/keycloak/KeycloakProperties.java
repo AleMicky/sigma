@@ -20,7 +20,10 @@ public record KeycloakProperties(
         if (tokenUrl != null && tokenUrl.contains("/realms/")) {
             return tokenUrl.substring(0, tokenUrl.indexOf("/realms/"));
         }
-        return "http://157.173.99.216:8081";
+        // REQ-SEG-010: nunca usar una IP fija como fallback. KEYCLOAK_BASE_URL es la
+        // única fuente explícita; como último recurso se deriva del token URL.
+        throw new IllegalStateException(
+                "Configura KEYCLOAK_BASE_URL (app.keycloak.base-url) o KEYCLOAK_TOKEN_URL con /realms/");
     }
 
     public String resolvedRealm() {

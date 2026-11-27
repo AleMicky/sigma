@@ -15,9 +15,11 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -72,12 +74,13 @@ public class AuthController {
     @SecurityRequirements
     @Operation(
             summary = "Cerrar sesión",
-            description = "Invalida el refresh token en Keycloak (logout endpoint). No requiere Authorize de Swagger."
+            description = "Invalida el refresh token en Keycloak (logout endpoint). No exige Bearer; si se envía, su sub debe coincidir con el del refresh token."
     )
     public ResponseEntity<ApiResponse<Void>> logout(
-            @Valid @RequestBody LogoutRequest request
+            @Valid @RequestBody LogoutRequest request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization
     ) {
-        authService.logout(request);
+        authService.logout(request, authorization);
         return ResponseEntity.ok(
                 ApiResponse.success("Sesión cerrada")
         );

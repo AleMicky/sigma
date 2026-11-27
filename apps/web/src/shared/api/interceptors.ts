@@ -9,10 +9,14 @@ import { routes } from "@/app/config/routes";
 import type { AuthUser } from "@/app/router/router.context";
 import { useAuthStore } from "@/app/store/auth.store";
 import { authEndpoints } from "@/modules/auth/api/auth.endpoints";
+import { authKeys } from "@/modules/auth/api/auth.keys";
+import { menuKeys } from "@/modules/seguridad/menu/api/menu.keys";
 
 import { queryClient } from "@/app/query/queryClient";
+import { authRedirectState } from "./auth-redirect-state";
 import { axiosInstance } from "./axios";
 import { parseApiError } from "./errors";
+import { navigateToExternalUrl } from "./navigation";
 
 type ApiSuccessEnvelope<T> = {
     success: true;
@@ -24,6 +28,7 @@ type ApiSuccessEnvelope<T> = {
 type RefreshTokenResponse = {
     accessToken: string;
     refreshToken: string | null;
+    expiresIn?: number | null;
     user: AuthUser;
 };
 
@@ -81,35 +86,48 @@ function handleRequestError(
     return Promise.reject(parseApiError(error));
 }
 
-let isRedirecting = false;
-
 function redirectToLogin(): void {
-    if (isRedirecting) {
+    // La limpieza no depende de la deduplicación: cada 401 definitivo cierra la
+    // sesión (y la suscripción de REQ-112 vacía la caché) aunque ya se esté
+    // navegando. No se llama a queryClient.clear() aquí para no duplicarla.
+    useAuthStore.getState().clearSession();
+
+    if (authRedirectState.isRedirecting) {
         return;
     }
-
-    queryClient.clear();
-    useAuthStore.getState().clearSession();
 
     const currentPath = window.location.pathname;
 
     if (currentPath !== routes.login) {
-        isRedirecting = true;
+        authRedirectState.isRedirecting = true;
         const relativePath = `${window.location.pathname}${window.location.search}`;
         const redirectUrl = encodeURIComponent(relativePath);
+        const loginUrl = `${routes.login}?redirect=${redirectUrl}`;
 
-        window.location.href = `${routes.login}?redirect=${redirectUrl}`;
+        // Se programa en un microtask para que los 401 concurrentes compartan
+        // el intento; al terminar (éxito o fallo) se libera la bandera y un
+        // 401 posterior puede volver a intentar la navegación.
+        const attempt = Promise.resolve().then(() => {
+            navigateToExternalUrl(loginUrl);
+        });
+        authRedirectState.redirectPromise = attempt;
+        void attempt
+            .catch(() => undefined)
+            .finally(() => {
+                if (authRedirectState.redirectPromise === attempt) {
+                    authRedirectState.redirectPromise = null;
+                    authRedirectState.isRedirecting = false;
+                }
+            });
     }
 }
 
-let refreshPromise: Promise<string> | null = null;
-
 async function refreshAccessToken(): Promise<string> {
-    if (refreshPromise) {
-        return refreshPromise;
+    if (authRedirectState.refreshPromise) {
+        return authRedirectState.refreshPromise;
     }
 
-    refreshPromise = (async () => {
+    authRedirectState.refreshPromise = (async () => {
         const refreshToken =
             useAuthStore.getState().refreshToken;
 
@@ -135,14 +153,20 @@ async function refreshAccessToken(): Promise<string> {
             user: session.user,
             accessToken: session.accessToken,
             refreshToken: session.refreshToken,
+            expiresIn: session.expiresIn,
         });
+
+        // Un refresh puede traer roles distintos: /auth/me y mis-menus dejan
+        // de ser válidos en cuanto cambia la identidad autorizada.
+        void queryClient.invalidateQueries({ queryKey: authKeys.me() });
+        void queryClient.invalidateQueries({ queryKey: menuKeys.misMenus() });
 
         return session.accessToken;
     })().finally(() => {
-        refreshPromise = null;
+        authRedirectState.refreshPromise = null;
     });
 
-    return refreshPromise;
+    return authRedirectState.refreshPromise;
 }
 
 async function normalizeBlobErrorResponse(
